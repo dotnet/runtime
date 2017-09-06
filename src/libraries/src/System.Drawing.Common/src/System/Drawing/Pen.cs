@@ -721,26 +721,28 @@ namespace System.Drawing
         {
             get
             {
-                int count = 0;
-                int status = SafeNativeMethods.Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out count);
+                int status = SafeNativeMethods.Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out int count);
                 SafeNativeMethods.Gdip.CheckStatus(status);
-            
-                // Allocate temporary native memory buffer
-                // and pass it to GDI+ to retrieve dash array elements.
-                IntPtr buf = Marshal.AllocHGlobal(checked(4 * count));
-                try
-                {
-                    status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), buf, count);
-                    SafeNativeMethods.Gdip.CheckStatus(status);
 
-                    var dashArray = new float[count];
-                    Marshal.Copy(buf, dashArray, 0, count);
-                    return dashArray;
-                }
-                finally
+                float[] pattern;
+                // don't call GdipGetPenDashArray with a 0 count
+                if (count > 0)
                 {
-                    Marshal.FreeHGlobal(buf);
+                    pattern = new float[count];
+                    status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), pattern, count);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
+                else if (DashStyle == DashStyle.Custom)
+                {
+                    // special case (not handled inside GDI+)
+                    pattern = new float[1];
+                    pattern[0] = 1.0f;
+                }
+                else
+                {
+                    pattern = new float[0];
+                }
+                return pattern;
             }
             set
             {
