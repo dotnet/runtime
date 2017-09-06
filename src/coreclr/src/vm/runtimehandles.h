@@ -126,8 +126,9 @@ public:
 
     // Static method on RuntimeTypeHandle
     static FCDECL1(Object*, Allocate, ReflectClassBaseObject *refType) ; //A.CI work	
-    static FCDECL4(Object*, CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
+    static FCDECL5(Object*, CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
                                             CLR_BOOL publicOnly,
+                                            CLR_BOOL wrapExceptions,
                                             CLR_BOOL *pbCanBeCached,
                                             MethodDesc** pConstructor);
 
@@ -266,7 +267,7 @@ class RuntimeMethodHandle {
 public:  
     static FCDECL1(ReflectMethodObject*, GetCurrentMethod, StackCrawlMark* stackMark);
 
-    static FCDECL4(Object*, InvokeMethod, Object *target, PTRArray *objs, SignatureNative* pSig, CLR_BOOL fConstructor);
+    static FCDECL5(Object*, InvokeMethod, Object *target, PTRArray *objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions);
 	
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a

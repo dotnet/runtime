@@ -487,18 +487,19 @@ namespace System.Reflection.Emit
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             // if we are here we passed all the previous checks. Time to look at the arguments
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             Object retValue = null;
             if (actualCount > 0)
             {
                 Object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
-                retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false);
+                retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
                     parameters[index] = arguments[index];
             }
             else
             {
-                retValue = RuntimeMethodHandle.InvokeMethod(null, null, sig, false);
+                retValue = RuntimeMethodHandle.InvokeMethod(null, null, sig, false, wrapExceptions);
             }
 
             GC.KeepAlive(this);

@@ -220,7 +220,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object CreateInstance(RuntimeType type, bool publicOnly, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor);
+        internal static extern Object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Object CreateCaInstance(RuntimeType type, IRuntimeMethodInfo ctor);
@@ -912,7 +912,7 @@ namespace System
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static object InvokeMethod(object target, object[] arguments, Signature sig, bool constructor);
+        internal extern static object InvokeMethod(object target, object[] arguments, Signature sig, bool constructor, bool wrapExceptions);
 
         #region Private Invocation Helpers
         internal static INVOCATION_FLAGS GetSecurityFlags(IRuntimeMethodInfo handle)

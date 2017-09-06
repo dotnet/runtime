@@ -109,7 +109,7 @@ static void TryCallMethodWorker(MethodDescCallSite* pMethodCallSite, ARG_SLOT* a
 // then transfers that data to the newly produced TargetInvocationException. This one
 // doesn't take those same steps. 
 //
-static void TryCallMethod(MethodDescCallSite* pMethodCallSite, ARG_SLOT* args) {
+static void TryCallMethod(MethodDescCallSite* pMethodCallSite, ARG_SLOT* args, bool wrapExceptions) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -117,32 +117,39 @@ static void TryCallMethod(MethodDescCallSite* pMethodCallSite, ARG_SLOT* args) {
     }
     CONTRACTL_END;
 
-    OBJECTREF ppException = NULL;
-    GCPROTECT_BEGIN(ppException);
-
-    // The sole purpose of having this frame is to tell the debugger that we have a catch handler here 
-    // which may swallow managed exceptions.  The debugger needs this in order to send a 
-    // CatchHandlerFound (CHF) notification.
-    FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame;
-    EX_TRY {
-        TryCallMethodWorker(pMethodCallSite, args, &catchFrame);
-    } 
-    EX_CATCH {
-        ppException = GET_THROWABLE();
-        _ASSERTE(ppException);
-    }
-    EX_END_CATCH(RethrowTransientExceptions)
-    catchFrame.Pop();
-
-    // It is important to re-throw outside the catch block because re-throwing will invoke
-    // the jitter and managed code and will cause us to use more than the backout stack limit.
-    if (ppException != NULL) 
+    if (wrapExceptions)
     {
-        // If we get here we need to throw an TargetInvocationException
-        OBJECTREF except = InvokeUtil::CreateTargetExcept(&ppException);
-        COMPlusThrow(except);
+        OBJECTREF ppException = NULL;
+        GCPROTECT_BEGIN(ppException);
+
+        // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
+        // which may swallow managed exceptions.  The debugger needs this in order to send a
+        // CatchHandlerFound (CHF) notification.
+        FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame;
+        EX_TRY{
+            TryCallMethodWorker(pMethodCallSite, args, &catchFrame);
+        }
+            EX_CATCH{
+                ppException = GET_THROWABLE();
+                _ASSERTE(ppException);
+        }
+            EX_END_CATCH(RethrowTransientExceptions)
+            catchFrame.Pop();
+
+        // It is important to re-throw outside the catch block because re-throwing will invoke
+        // the jitter and managed code and will cause us to use more than the backout stack limit.
+        if (ppException != NULL)
+        {
+            // If we get here we need to throw an TargetInvocationException
+            OBJECTREF except = InvokeUtil::CreateTargetExcept(&ppException);
+            COMPlusThrow(except);
+        }
+        GCPROTECT_END();
     }
-    GCPROTECT_END();
+    else
+    {
+        pMethodCallSite->CallWithValueTypes(args);
+    }
 }
 
 
@@ -394,8 +401,9 @@ FCIMPL1(Object*, RuntimeTypeHandle::Allocate, ReflectClassBaseObject* pTypeUNSAF
 }//Allocate
 FCIMPLEND
 
-FCIMPL4(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
+FCIMPL5(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
                                                     CLR_BOOL publicOnly,
+                                                    CLR_BOOL wrapExceptions,
                                                     CLR_BOOL* pbCanBeCached,
                                                     MethodDesc** pConstructor) {
     CONTRACTL {
@@ -500,17 +508,17 @@ FCIMPL4(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
         else // !pVMT->HasDefaultConstructor()
         {
             pMeth = pVMT->GetDefaultConstructor();
-            
+
             // Validate the method can be called by this caller
             DWORD attr = pMeth->GetAttrs();
 
             if (!IsMdPublic(attr) && publicOnly)
-                COMPlusThrow(kMissingMethodException,W("Arg_NoDefCTor"));
+                COMPlusThrow(kMissingMethodException, W("Arg_NoDefCTor"));
 
             // We've got the class, lets allocate it and call the constructor
             OBJECTREF o;
             bool remoting = false;
-        
+
             o = AllocateObject(pVMT);
             GCPROTECT_BEGIN(o);
 
@@ -524,7 +532,7 @@ FCIMPL4(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
                 arg = ObjToArgSlot(o);
 
             // Call the method
-            TryCallMethod(&ctor, &arg);
+            TryCallMethod(&ctor, &arg, wrapExceptions);
 
             rv = o;
             GCPROTECT_END();
@@ -589,7 +597,7 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBa
     ARG_SLOT arg = ObjToArgSlot(gc.rv); 
 
     // Call the method
-    TryCallMethod(&ctor, &arg);
+    TryCallMethod(&ctor, &arg, true);
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(gc.rv);
@@ -1026,8 +1034,9 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
     GCPROTECT_END();
 }
 
-FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod, 
-    Object *target, PTRArray *objs, SignatureNative* pSigUNSAFE, CLR_BOOL fConstructor)
+FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
+    Object *target, PTRArray *objs, SignatureNative* pSigUNSAFE,
+    CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions)
 {
     FCALL_CONTRACT;
 
@@ -1333,30 +1342,38 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             FrameWithCookie<ProtectValueClassFrame>(pThread, pValueClasses);
     }
 
-    // The sole purpose of having this frame is to tell the debugger that we have a catch handler here 
-    // which may swallow managed exceptions.  The debugger needs this in order to send a 
-    // CatchHandlerFound (CHF) notification.
-    FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame(pThread);
-
     // Call the method
     bool fExceptionThrown = false;
-    EX_TRY_THREAD(pThread) {
-        CallDescrWorkerReflectionWrapper(&callDescrData, &catchFrame);
-    } EX_CATCH {
-        // Rethrow transient exceptions for constructors for backward compatibility
-        if (fConstructor && GET_EXCEPTION()->IsTransient())
-        {
-            EX_RETHROW;
-        }
+    if (fWrapExceptions)
+    {
+        // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
+        // which may swallow managed exceptions.  The debugger needs this in order to send a
+        // CatchHandlerFound (CHF) notification.
+        FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame(pThread);
+
+        EX_TRY_THREAD(pThread) {
+            CallDescrWorkerReflectionWrapper(&callDescrData, &catchFrame);
+        } EX_CATCH{
+            // Rethrow transient exceptions for constructors for backward compatibility
+            if (fConstructor && GET_EXCEPTION()->IsTransient())
+            {
+                EX_RETHROW;
+            }
 
         // Abuse retval to store the exception object
         gc.retVal = GET_THROWABLE();
         _ASSERTE(gc.retVal);
 
         fExceptionThrown = true;
-    } EX_END_CATCH(SwallowAllExceptions);
+        } EX_END_CATCH(SwallowAllExceptions);
 
-    catchFrame.Pop(pThread);
+        catchFrame.Pop(pThread);
+    }
+    else
+    {
+        CallDescrWorkerWithHandler(&callDescrData);
+    }
+
 
     // Now that we are safely out of the catch block, we can create and raise the
     // TargetInvocationException.
