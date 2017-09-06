@@ -14,6 +14,7 @@
 #include "gcenv.base.h"
 #include "gcenv.os.h"
 #include "gcenv.unix.inl"
+#include "volatile.h"
 
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>
