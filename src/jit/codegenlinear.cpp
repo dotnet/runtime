@@ -1087,6 +1087,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 void CodeGen::genCopyRegIfNeeded(GenTree* node, regNumber needReg)
 {
     assert((node->gtRegNum != REG_NA) && (needReg != REG_NA));
+    assert(!node->isUsedFromSpillTemp());
     if (node->gtRegNum != needReg)
     {
         inst_RV_RV(INS_mov, needReg, node->gtRegNum, node->TypeGet());
