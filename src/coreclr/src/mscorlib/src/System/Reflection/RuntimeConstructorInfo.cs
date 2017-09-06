@@ -363,16 +363,17 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             // if we are here we passed all the previous checks. Time to look at the arguments
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (actualCount > 0)
             {
                 Object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
-                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false);
+                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
                     parameters[index] = arguments[index];
                 return retValue;
             }
-            return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false);
+            return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false, wrapExceptions);
         }
 
         public override MethodBody GetMethodBody()
@@ -433,16 +434,17 @@ namespace System.Reflection
             // JIT/NGen will insert the call to .cctor in the instance ctor.
 
             // if we are here we passed all the previous checks. Time to look at the arguments
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (actualCount > 0)
             {
                 Object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
-                Object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true);
+                Object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
                     parameters[index] = arguments[index];
                 return retValue;
             }
-            return RuntimeMethodHandle.InvokeMethod(null, null, sig, true);
+            return RuntimeMethodHandle.InvokeMethod(null, null, sig, true, wrapExceptions);
         }
         #endregion
     }

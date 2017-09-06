@@ -930,7 +930,6 @@ namespace System.Runtime.InteropServices
         // Creates a new instance of "structuretype" and marshals data from a
         // native memory block to it.
         //====================================================================
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Object PtrToStructure(IntPtr ptr, Type structureType)
         {
             if (ptr == IntPtr.Zero) return null;
@@ -946,9 +945,7 @@ namespace System.Runtime.InteropServices
             if (rt == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(structureType));
 
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            Object structure = rt.CreateInstanceDefaultCtor(false /*publicOnly*/, false /*skipCheckThis*/, false /*fillCache*/, ref stackMark);
+            Object structure = rt.CreateInstanceDefaultCtor(false /*publicOnly*/, false /*skipCheckThis*/, false /*fillCache*/, true /*wrapExceptions*/);
             PtrToStructureHelper(ptr, structure, true);
             return structure;
         }
