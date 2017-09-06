@@ -834,6 +834,13 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_FLT_CALLEE_SAVED    (0)
   #define RBM_FLT_CALLEE_TRASH    (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5|RBM_XMM6|RBM_XMM7| \
                                    RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
+  #define REG_PROFILER_ENTER_ARG_0 REG_R14
+  #define RBM_PROFILER_ENTER_ARG_0 RBM_R14
+  #define REG_PROFILER_ENTER_ARG_1 REG_R15
+  #define RBM_PROFILER_ENTER_ARG_1 RBM_R15
+
+  #define REG_DEFAULT_PROFILER_CALL_TARGET REG_R11
+
 #else // !UNIX_AMD64_ABI
 #define MIN_ARG_AREA_FOR_CALL     (4 * REGSIZE_BYTES)       // Minimum required outgoing argument space for a call.
 
@@ -980,7 +987,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   //    profiler.
   #define REG_DEFAULT_HELPER_CALL_TARGET    REG_RAX
 
-  // GenericPInvokeCalliHelper VASigCookie Parameter 
+  // GenericPInvokeCalliHelper VASigCookie Parameter
   #define REG_PINVOKE_COOKIE_PARAM          REG_R11
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R11
   #define PREDICT_REG_PINVOKE_COOKIE_PARAM  PREDICT_REG_R11

@@ -1397,16 +1397,51 @@ void CodeGen::genReturn(GenTreePtr treeNode)
         // Since we are invalidating the assumption that we would slip into the epilog
         // right after the "return", we need to preserve the return reg's GC state
         // across the call until actual method return.
+        ReturnTypeDesc retTypeDesc;
+        unsigned       regCount;
+        if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            if (varTypeIsLong(compiler->info.compRetNativeType))
+            {
+                retTypeDesc.InitializeLongReturnType(compiler);
+            }
+            else // we must have a struct return type
+            {
+                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass);
+            }
+            regCount = retTypeDesc.GetReturnRegCount();
+        }
+
         if (varTypeIsGC(compiler->info.compRetType))
         {
             gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetType);
+        }
+        else if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
+                {
+                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                }
+            }
         }
 
         genProfilingLeaveCallback();
 
         if (varTypeIsGC(compiler->info.compRetType))
         {
-            gcInfo.gcMarkRegSetNpt(REG_INTRET);
+            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
+        }
+        else if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
+                {
+                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
+                }
+            }
         }
     }
 #endif
@@ -8291,7 +8326,6 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
                 var_types memType = (gcPtrs[i] == TYPE_GC_REF) ? TYP_REF : TYP_BYREF;
                 getEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), REG_RCX, REG_RSI, 0);
                 genStoreRegToStackArg(memType, REG_RCX, i * TARGET_POINTER_SIZE);
-
 #ifdef DEBUG
                 numGCSlotsCopied++;
 #endif // DEBUG
