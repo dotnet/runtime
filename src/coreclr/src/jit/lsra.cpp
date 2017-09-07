@@ -5472,7 +5472,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
     }
 
     RegRecord* availablePhysRegInterval = nullptr;
-    Interval*  intervalToUnassign       = nullptr;
+    bool       unassignInterval         = false;
 
     // Each register will receive a score which is the sum of the scoring criteria below.
     // These were selected on the assumption that they will have an impact on the "goodness"
@@ -5550,7 +5550,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         if (physRegRecord->assignedInterval == currentInterval)
         {
             availablePhysRegInterval = physRegRecord;
-            intervalToUnassign       = nullptr;
+            unassignInterval         = false;
             break;
         }
 
@@ -5710,7 +5710,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         {
             bestLocation             = nextPhysRefLocation;
             availablePhysRegInterval = physRegRecord;
-            intervalToUnassign       = physRegRecord->assignedInterval;
+            unassignInterval         = true;
             bestScore                = score;
         }
 
@@ -5723,9 +5723,9 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
     if (availablePhysRegInterval != nullptr)
     {
-        if (isAssigned(availablePhysRegInterval ARM_ARG(currentInterval->registerType)))
+        if (unassignInterval && isAssigned(availablePhysRegInterval ARM_ARG(currentInterval->registerType)))
         {
-            intervalToUnassign = availablePhysRegInterval->assignedInterval;
+            Interval* const intervalToUnassign = availablePhysRegInterval->assignedInterval;
             unassignPhysReg(availablePhysRegInterval ARM_ARG(currentInterval->registerType));
 
             if ((bestScore & VALUE_AVAILABLE) != 0 && intervalToUnassign != nullptr)
