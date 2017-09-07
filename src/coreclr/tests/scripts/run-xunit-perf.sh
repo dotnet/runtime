@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+dp0=$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+function run_command {
+    echo ""
+    echo $USER@`hostname` "$PWD"
+    echo `date +"[%m/%d/%Y %H:%M:%S]"`" $ $@"
+    "$@"
+    return $?
+}
+
 function print_usage {
     echo ''
     echo 'CoreCLR perf test script on Linux.'
@@ -14,28 +24,26 @@ function print_usage {
     echo '    --coreFxBinDir="corefx/bin/Linux.AnyCPU.Debug"'
     echo ''
     echo 'Required arguments:'
-    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. coreclr/bin/tests/Windows_NT.x64.Debug).'
-    echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. coreclr/bin/obj/Linux.x64.Debug/tests).'
+    echo '  --testRootDir=<path>              : Root directory of the test build (e.g. coreclr/bin/tests/Windows_NT.x64.Debug).'
+    echo '  --testNativeBinDir=<path>         : Directory of the native CoreCLR test build (e.g. coreclr/bin/obj/Linux.x64.Debug/tests).'
     echo '  (Also required: Either --coreOverlayDir, or all of the switches --coreOverlayDir overrides)'
     echo ''
     echo 'Optional arguments:'
-    echo '  --coreOverlayDir=<path>          : Directory containing core binaries and test dependencies. If not specified, the'
-    echo '                                     default is testRootDir/Tests/coreoverlay. This switch overrides --coreClrBinDir,'
-    echo '                                     --mscorlibDir, and --coreFxBinDir.'
-    echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. coreclr/bin/Product/Linux.x64.Debug).'
-    echo '  --mscorlibDir=<path>             : Directory containing the built mscorlib.dll. If not specified, it is expected to be'
+    echo '  --coreOverlayDir=<path>           : Directory containing core binaries and test dependencies. If not specified, the'
+    echo '                                      default is testRootDir/Tests/coreoverlay. This switch overrides --coreClrBinDir,'
+    echo '                                      --mscorlibDir, and --coreFxBinDir.'
+    echo '  --coreClrBinDir=<path>            : Directory of the CoreCLR build (e.g. coreclr/bin/Product/Linux.x64.Debug).'
+    echo '  --mscorlibDir=<path>              : Directory containing the built mscorlib.dll. If not specified, it is expected to be'
     echo '                                       in the directory specified by --coreClrBinDir.'
-    echo '  --coreFxBinDir="<path>"          : The path to the unpacked runtime folder that is produced as part of a CoreFX build'
-	echo '  --uploadToBenchview              : Specify this flag in order to have the results of the run uploaded to Benchview.'
-	echo '                                     This also requires that the os flag and runtype flag to be set.  Lastly you must'
-	echo '                                     also have the BV_UPLOAD_SAS_TOKEN set to a SAS token for the Benchview upload container'
-	echo '  --benchViewOS=<os>               : Specify the os that will be used to insert data into Benchview.'
-	echo '  --runType=<private|rolling>      : Specify the runType for Benchview.'
+    echo '  --coreFxBinDir="<path>"           : The path to the unpacked runtime folder that is produced as part of a CoreFX build'
+    echo '  --generatebenchviewdata           : BenchView tools directory.'
+    echo '  --uploadToBenchview               : Specify this flag in order to have the results of the run uploaded to Benchview.'
+    echo '                                      This requires that the generatebenchviewdata, os and runtype flags to be set, and'
+    echo '                                      also have the BV_UPLOAD_SAS_TOKEN set to a SAS token for the Benchview upload container'
+    echo '  --benchViewOS=<os>                : Specify the os that will be used to insert data into Benchview.'
+    echo '  --runType=<local|private|rolling> : Specify the runType for Benchview. [Default: local]'
+    echo '  --outputdir                       : Specifies the directory where the generated performance output will be saved.'
 }
-
-# Variables for xUnit-style XML output. XML format: https://xunit.github.io/docs/format-xml-v2.html
-xunitOutputPath=
-xunitTestOutputPath=
 
 # libExtension determines extension for dynamic library files
 OSName=$(uname -s)
@@ -59,95 +67,6 @@ case $OSName in
         ;;
 esac
 
-function xunit_output_end {
-    local errorSource=$1
-    local errorMessage=$2
-
-    local errorCount
-    if [ -z "$errorSource" ]; then
-        ((errorCount = 0))
-    else
-        ((errorCount = 1))
-    fi
-
-    echo '<?xml version="1.0" encoding="utf-8"?>' >>"$xunitOutputPath"
-    echo '<assemblies>' >>"$xunitOutputPath"
-
-    local line
-
-    # <assembly ...>
-    line="  "
-    line="${line}<assembly"
-    line="${line} name=\"CoreClrTestAssembly\""
-    line="${line} total=\"${countTotalTests}\""
-    line="${line} passed=\"${countPassedTests}\""
-    line="${line} failed=\"${countFailedTests}\""
-    line="${line} skipped=\"${countSkippedTests}\""
-    line="${line} errors=\"${errorCount}\""
-    line="${line}>"
-    echo "$line" >>"$xunitOutputPath"
-
-    # <collection ...>
-    line="    "
-    line="${line}<collection"
-    line="${line} name=\"CoreClrTestCollection\""
-    line="${line} total=\"${countTotalTests}\""
-    line="${line} passed=\"${countPassedTests}\""
-    line="${line} failed=\"${countFailedTests}\""
-    line="${line} skipped=\"${countSkippedTests}\""
-    line="${line}>"
-    echo "$line" >>"$xunitOutputPath"
-
-    # <test .../> <test .../> ...
-    if [ -f "$xunitTestOutputPath" ]; then
-        cat "$xunitTestOutputPath" >>"$xunitOutputPath"
-        rm -f "$xunitTestOutputPath"
-    fi
-
-    # </collection>
-    line="    "
-    line="${line}</collection>"
-    echo "$line" >>"$xunitOutputPath"
-
-    if [ -n "$errorSource" ]; then
-        # <errors>
-        line="    "
-        line="${line}<errors>"
-        echo "$line" >>"$xunitOutputPath"
-
-        # <error ...>
-        line="      "
-        line="${line}<error"
-        line="${line} type=\"TestHarnessError\""
-        line="${line} name=\"${errorSource}\""
-        line="${line}>"
-        echo "$line" >>"$xunitOutputPath"
-
-        # <failure .../>
-        line="        "
-        line="${line}<failure>${errorMessage}</failure>"
-        echo "$line" >>"$xunitOutputPath"
-
-        # </error>
-        line="      "
-        line="${line}</error>"
-        echo "$line" >>"$xunitOutputPath"
-
-        # </errors>
-        line="    "
-        line="${line}</errors>"
-        echo "$line" >>"$xunitOutputPath"
-    fi
-
-    # </assembly>
-    line="  "
-    line="${line}</assembly>"
-    echo "$line" >>"$xunitOutputPath"
-
-    # </assemblies>
-    echo '</assemblies>' >>"$xunitOutputPath"
-}
-
 function exit_with_error {
     local errorSource=$1
     local errorMessage=$2
@@ -158,10 +77,11 @@ function exit_with_error {
     fi
 
     echo "$errorMessage"
-    xunit_output_end "$errorSource" "$errorMessage"
     if ((printUsage != 0)); then
         print_usage
     fi
+
+    echo "Exiting script with error code: $EXIT_CODE_EXCEPTION"
     exit $EXIT_CODE_EXCEPTION
 }
 
@@ -185,11 +105,12 @@ function create_core_overlay {
 
     if [ -n "$coreOverlayDir" ]; then
         export CORE_ROOT="$coreOverlayDir"
-        return
+        return 0
     fi
 
-    # Check inputs to make sure we have enough information to create the core layout. $testRootDir/Tests/Core_Root should
-    # already exist and contain test dependencies that are not built.
+    # Check inputs to make sure we have enough information to create the core
+    # layout. $testRootDir/Tests/Core_Root should already exist and contain test
+    # dependencies that are not built.
     local testDependenciesDir=$testRootDir/Tests/Core_Root
     if [ ! -d "$testDependenciesDir" ]; then
         exit_with_error "$errorSource" "Did not find the test dependencies directory: $testDependenciesDir"
@@ -208,13 +129,30 @@ function create_core_overlay {
     coreOverlayDir=$testRootDir/Tests/coreoverlay
     export CORE_ROOT="$coreOverlayDir"
     if [ -e "$coreOverlayDir" ]; then
-        rm -f -r "$coreOverlayDir"
+        rm -rf "$coreOverlayDir" || exit 1
     fi
+
     mkdir "$coreOverlayDir"
 
-	cp -f -v "$coreFxBinDir"/* "$coreOverlayDir/" 2>/dev/null
-    cp -f -v "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
-    cp -n -v "$testDependenciesDir"/* "$coreOverlayDir/" 2>/dev/null
+    cp -f -v "$coreFxBinDir/"* "$coreOverlayDir/"               || exit 2
+    cp -f -p -v "$coreClrBinDir/"* "$coreOverlayDir/"           # || exit 3
+    if [ -d "$mscorlibDir/bin" ]; then
+        cp -f -v "$mscorlibDir/bin/"* "$coreOverlayDir/"        || exit 4
+    fi
+    cp -f -v "$testDependenciesDir/"xunit* "$coreOverlayDir/"   || exit 5
+    cp -n -v "$testDependenciesDir/"* "$coreOverlayDir/"        # || exit 6
+    if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
+        # Test dependencies come from a Windows build, and mscorlib.ni.dll would be the one from Windows
+        rm -f "$coreOverlayDir/mscorlib.ni.dll"                 || exit 7
+    fi
+    if [ -f "$coreOverlayDir/System.Private.CoreLib.ni.dll" ]; then
+        # Test dependencies come from a Windows build, and System.Private.CoreLib.ni.dll would be the one from Windows
+        rm -f "$coreOverlayDir/System.Private.CoreLib.ni.dll"   || exit 8
+    fi
+
+    copy_test_native_bin_to_test_root                           || exit 9
+
+    return 0
 }
 
 function precompile_overlay_assemblies {
@@ -227,19 +165,19 @@ function precompile_overlay_assemblies {
         for fileToPrecompile in ${filesToPrecompile}
         do
             local filename=${fileToPrecompile}
-            echo Precompiling $filename
+            echo "Precompiling $filename"
             $overlayDir/crossgen /Platform_Assemblies_Paths $overlayDir $filename 2>/dev/null
             local exitCode=$?
             if [ $exitCode == -2146230517 ]; then
-                echo $filename is not a managed assembly.
+                echo "$filename is not a managed assembly."
             elif [ $exitCode != 0 ]; then
-                echo Unable to precompile $filename.
+                echo "Unable to precompile $filename."
             else
-                echo Successfully precompiled $filename
+                echo "Successfully precompiled $filename"
             fi
         done
     else
-        echo Skipping crossgen of FX assemblies.
+        echo "Skipping crossgen of FX assemblies."
     fi
 }
 
@@ -279,8 +217,15 @@ coreClrBinDir=
 mscorlibDir=
 coreFxBinDir=
 uploadToBenchview=
-benchViewOS=
-runType=
+benchViewOS=`lsb_release -i -s``lsb_release -r -s`
+runType=local
+BENCHVIEW_TOOLS_PATH=
+benchViewGroup=CoreCLR
+perfCollection=
+collectionflags=stopwatch
+hasWarmupRun=--drop-first-value
+stabilityPrefix=
+benchmarksOutputDir=$dp0/../../bin/sandbox/Logs
 
 for i in "$@"
 do
@@ -307,11 +252,23 @@ do
         --coreFxBinDir=*)
             coreFxBinDir=${i#*=}
             ;;
-		--benchViewOS=*)
+        --benchViewOS=*)
             benchViewOS=${i#*=}
             ;;
-		--runType=*)
+        --runType=*)
             runType=${i#*=}
+            ;;
+        --collectionflags=*)
+            collectionflags=${i#*=}
+            ;;
+        --generatebenchviewdata=*)
+            BENCHVIEW_TOOLS_PATH=${i#*=}
+            ;;
+        --stabilityPrefix=*)
+            stabilityPrefix=${i#*=}
+            ;;
+        --outputdir=*)
+            benchmarksOutputDir=${i#*=}
             ;;
         --uploadToBenchview)
             uploadToBenchview=TRUE
@@ -333,69 +290,101 @@ if [ ! -d "$testRootDir" ]; then
     echo "Directory specified by --testRootDir does not exist: $testRootDir"
     exit $EXIT_CODE_EXCEPTION
 fi
-
-# Copy native interop test libraries over to the mscorlib path in
-# order for interop tests to run on linux.
-if [ -z "$mscorlibDir" ]; then
-    mscorlibDir=$coreClrBinDir
+if [ ! -z "$BENCHVIEW_TOOLS_PATH" ] && { [ ! -d "$BENCHVIEW_TOOLS_PATH" ]; }; then
+    echo BenchView path: "$BENCHVIEW_TOOLS_PATH" was specified, but it does not exist.
+    exit $EXIT_CODE_EXCEPTION
 fi
-if [ -d "$mscorlibDir" ] && [ -d "$mscorlibDir/bin" ]; then
-    cp $mscorlibDir/bin/* $mscorlibDir
+if [ "$collectionflags" == "stopwatch" ]; then
+    perfCollection=Off
+else
+    perfCollection=On
 fi
 
 # Install xunit performance packages
-export NUGET_PACKAGES=$testNativeBinDir/../../../../packages
-echo "NUGET_PACKAGES = $NUGET_PACKAGES"
+CORECLR_REPO=$testNativeBinDir/../../../..
+DOTNETCLI_PATH=$CORECLR_REPO/Tools/dotnetcli
 
-pushd $testNativeBinDir/../../../../tests/scripts
-$testNativeBinDir/../../../../Tools/dotnetcli/dotnet restore --fallbacksource https://dotnet.myget.org/F/dotnet-buildtools/ --fallbacksource https://dotnet.myget.org/F/dotnet-core/
-popd
+export NUGET_PACKAGES=$CORECLR_REPO/packages
 
 # Creat coreoverlay dir which contains all dependent binaries
-create_core_overlay
-precompile_overlay_assemblies
-copy_test_native_bin_to_test_root
+create_core_overlay                 || { echo "Creating core overlay failed."; exit 1; }
+precompile_overlay_assemblies       || { echo "Precompiling overlay assemblies failed."; exit 1; }
 
-# Deploy xunit performance packages
+# If the output Logs folder exist, it was from a previous run (It needs to be deleted).
+if [ ! -d "$benchmarksOutputDir" ]; then
+    mkdir -p "$benchmarksOutputDir" || { echo "Failed to delete $benchmarksOutputDir"; exit 1; }
+fi
+
 cd $CORE_ROOT
-echo "CORE_ROOT dir = $CORE_ROOT"
 
 DO_SETUP=TRUE
-
 if [ ${DO_SETUP} == "TRUE" ]; then
-cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0040/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
-cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.analysis.cli/1.0.0-alpha-build0040/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.analysis.cli.dll .
-cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0040/lib/dotnet/*.dll .
+    # Deploy xunit performance packages
+    $DOTNETCLI_PATH/dotnet restore $CORECLR_REPO/tests/src/Common/PerfHarness/PerfHarness.csproj                                    || { echo "dotnet restore failed."; exit 1; }
+    $DOTNETCLI_PATH/dotnet publish $CORECLR_REPO/tests/src/Common/PerfHarness/PerfHarness.csproj -c Release -o "$coreOverlayDir"    || { echo "dotnet publish failed."; exit 1; }
 fi
 
 # Run coreclr performance tests
-echo "Test root dir is: $testRootDir"
+echo "Test root dir: $testRootDir"
 tests=($(find $testRootDir/JIT/Performance/CodeQuality -name '*.exe') $(find $testRootDir/performance/perflab/PerfLab -name '*.dll'))
 
-echo "current dir is $PWD"
-rm measurement.json
+if [ -f measurement.json ]; then
+    rm measurement.json || exit $EXIT_CODE_EXCEPTION;
+fi
+
 for testcase in ${tests[@]}; do
+    directory=$(dirname "$testcase")
+    filename=$(basename "$testcase")
+    filename="${filename%.*}"
 
-test=$(basename $testcase)
-testname=$(basename $testcase .exe)
-echo "....Running $testname"
-cp $testcase .
-cp $testcase-*.txt .
+    test=$(basename $testcase)
+    testname=$(basename $testcase .exe)
 
-chmod u+x ./corerun
-echo "./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner xunit.console.netcore.exe -runnerhost ./corerun -verbose -runid perf-$testname"
-./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner xunit.console.netcore.exe -runnerhost ./corerun -verbose -runid perf-$testname
-echo "./corerun Microsoft.DotNet.xunit.performance.analysis.cli.dll perf-$testname.xml -xml perf-$testname-summary.xml"
-./corerun Microsoft.DotNet.xunit.performance.analysis.cli.dll perf-$testname.xml -xml perf-$testname-summary.xml
-if [ "$uploadToBenchview" == "TRUE" ]
-    then
-	python3.5 ../../../../../tests/scripts/Microsoft.BenchView.JSONFormat/tools/measurement.py xunit perf-$testname.xml --better desc --drop-first-value --append
-fi
+    cp $testcase .                    || exit 1
+    if [ stat -t "$directory/$filename"*.txt 1>/dev/null 2>&1 ]; then
+        cp "$directory/$filename"*.txt .  || exit 1
+    fi
+
+    # FIXME: We should not need this here.
+    chmod u+x ./corerun
+
+    xUnitRunId=Perf-$perfCollection
+    perfLogFileName=$benchmarksOutputDir/$xUnitRunId-$filename.log
+    perfXmlFileName=$benchmarksOutputDir/$xUnitRunId-$filename.xml
+
+    echo ""
+    echo "----------"
+    echo "  Running $xUnitRunId $testname"
+    echo "----------"
+
+    run_command $stabilityPrefix ./corerun PerfHarness.dll $test --perf:runid "$xUnitRunId" --perf:outputdir "$benchmarksOutputDir" --perf:collect $collectionflags 1>"$perfLogFileName" 2>&1 || exit 1
+    if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
+        run_command python3.5 "$BENCHVIEW_TOOLS_PATH/measurement.py" xunit "$perfXmlFileName" --better desc $hasWarmupRun --append || {
+            echo [ERROR] Failed to generate BenchView data;
+            exit 1;
+        }
+    fi
 done
-if [ "$uploadToBenchview" == "TRUE" ]
-    then
-	python3.5 ../../../../../tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission.py measurement.json --build ../../../../../build.json --machine-data ../../../../../machinedata.json --metadata ../../../../../submission-metadata.json --group "CoreCLR" --type "$runType" --config-name "Release" --config Configuration "Release" --config OS "$benchViewOS" --arch "x64" --machinepool "Perfsnake"
-	python3.5 ../../../../../tests/scripts/Microsoft.BenchView.JSONFormat/tools/upload.py submission.json --container coreclr
+
+if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
+    args=measurement.json
+    args+=" --build $CORECLR_REPO/build.json"
+    args+=" --machine-data $CORECLR_REPO/machinedata.json"
+    args+=" --metadata $CORECLR_REPO/submission-metadata.json"
+    args+=" --group $benchViewGroup"
+    args+=" --type $runType"
+    args+=" --config-name Release"
+    args+=" --config Configuration Release"
+    args+=" --config OS $benchViewOS"
+    args+=" --config Profile $perfCollection"
+    args+=" --architecture x64"
+    args+=" --machinepool Perfsnake"
+    run_command python3.5 "$BENCHVIEW_TOOLS_PATH/submission.py" $args || {
+        echo [ERROR] Failed to generate BenchView submission data;
+        exit 1;
+    }
 fi
-mkdir ../../../../../sandbox
-cp *.xml ../../../../../sandbox
+
+if [ -d "$BENCHVIEW_TOOLS_PATH" ] && { [ "$uploadToBenchview" == "TRUE" ]; }; then
+    run_command python3.5 "$BENCHVIEW_TOOLS_PATH/upload.py" submission.json --container coreclr
+fi

@@ -21,7 +21,6 @@
 #include "excep.h"
 #include "dllimport.h"
 #include "log.h"
-#include "security.h"
 #include "comdelegate.h"
 #include "array.h"
 #include "jitinterface.h"
@@ -2537,7 +2536,7 @@ VOID StubLinkerCPU::X86EmitCurrentAppDomainFetch(X86Reg dstreg, unsigned preserv
 
 #if defined(_TARGET_X86_)
 
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL)
 VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
 {
     STANDARD_VM_CONTRACT;
@@ -2621,7 +2620,7 @@ VOID StubLinkerCPU::EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame)
         _ASSERTE(!"Unrecognized vtble passed to EmitComMethodStubEpilog with profiling turned on.");
     }
 }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL
 
 
 #ifndef FEATURE_STUBS_AS_IL
@@ -6698,7 +6697,7 @@ BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     CONTRACTL
     {
         THROWS;         // Creating a JumpStub could throw OutOfMemory
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -6720,7 +6719,7 @@ BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     }
     else if (pOldValue[OFFSETOF_PRECODE_TYPE_CALL_OR_JMP] == FixupPrecode::Type)
     {
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
         // No change needed, jmp is already in place
 #else
         // Setting the target more than once is unexpected

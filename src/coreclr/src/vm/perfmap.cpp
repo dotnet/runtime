@@ -27,6 +27,13 @@ void PerfMap::Initialize()
 
         // Create the map.
         s_Current = new PerfMap(currentPid);
+
+        int signalNum = (int) CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapIgnoreSignal);
+
+        if (signalNum > 0)
+        {
+            PAL_IgnoreProfileSignal(signalNum);
+        }
     }
 }
 
@@ -49,6 +56,8 @@ PerfMap::PerfMap(int pid)
 
     // Initialize with no failures.
     m_ErrorEncountered = false;
+
+    m_StubsMapped = 0;
 
     // Build the path to the map file on disk.
     WCHAR tempPath[MAX_LONGPATH+1];
@@ -76,6 +85,8 @@ PerfMap::PerfMap()
 
     // Initialize with no failures.
     m_ErrorEncountered = false;
+
+    m_StubsMapped = 0;
 }
 
 // Clean-up resources.
@@ -216,6 +227,38 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
     {
         s_Current->LogMethod(pMethod, pCode, codeSize);
     }
+}
+
+// Log a set of stub to the map.
+void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (s_Current == nullptr || s_Current->m_FileStream == nullptr)
+    {
+        return;
+    }
+
+    // Logging failures should not cause any exceptions to flow upstream.
+    EX_TRY
+    {
+        if(!stubOwner)
+        {
+            stubOwner = "?";
+        }
+        if(!stubType)
+        {
+            stubOwner = "?";
+        }
+
+        // Build the map file line.
+        SString line;
+        line.Printf("%p %x stub<%d> %s<%s>\n", pCode, codeSize, ++(s_Current->m_StubsMapped), stubType, stubOwner);
+
+        // Write the line.
+        s_Current->WriteLine(line);
+    }
+    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
 void PerfMap::GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned int nSigSize)

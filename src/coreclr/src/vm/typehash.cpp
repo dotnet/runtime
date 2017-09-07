@@ -67,8 +67,8 @@ LoaderAllocator *EETypeHashTable::GetLoaderAllocator()
     }
     else
     {
-        _ASSERTE(m_pModule != NULL);
-        return m_pModule->GetLoaderAllocator();
+        _ASSERTE(!m_pModule.IsNull());
+        return GetModule()->GetLoaderAllocator();
     }
 }
 
@@ -417,7 +417,7 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
                     {
                         Module *pDefiningModule;
-                        PCCOR_SIGNATURE pSig = m_pModule->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
+                        PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
                         if (pDefiningModule == NULL)
                             break;
 
@@ -487,7 +487,8 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
         Module *pDefiningModule;
-        PCCOR_SIGNATURE pSig = m_pModule->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
+
+        PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
 
         // First check that the modules for the generic type defs match
         if (dac_cast<TADDR>(pDefiningModule) !=
@@ -536,7 +537,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
         DACCOP_IGNORE(CastOfMarshalledType, "Dual mode DAC problem, but since the size is the same, the cast is safe");
         TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
 
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(m_pModule, candidateArg, inst[i]))
+        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, inst[i]))
         {
             return FALSE;
         }
@@ -578,7 +579,7 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
     for (DWORD i = 0; i <= numArgs; i++)
     {
         TADDR candidateArg = retAndArgTypes2[i].AsTAddr();
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(m_pModule, candidateArg, retAndArgTypes[i]))
+        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, retAndArgTypes[i]))
         {
             return FALSE;
         }
@@ -647,7 +648,7 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         PRECONDITION(!data.IsEncodedFixup());
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
         PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType()); // It's an instantiated type or an array/ptr/byref type
-        PRECONDITION(!m_pModule || m_pModule->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
+        PRECONDITION(m_pModule.IsNull() || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
     }
     CONTRACTL_END
 
@@ -673,7 +674,7 @@ void EETypeHashTable::Save(DataImage *image, Module *module, CorProfileData *pro
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(image->GetModule() == m_pModule);
+        PRECONDITION(image->GetModule() == GetModule());
     }
     CONTRACTL_END;
 
@@ -715,7 +716,7 @@ void EETypeHashTable::Save(DataImage *image, Module *module, CorProfileData *pro
                     {
                         if (flags & (1<<ReadTypeHashTable))
                         {
-                            TypeHandle th = m_pModule->LoadIBCTypeHelper(pBlobSigEntry);
+                            TypeHandle th = GetModule()->LoadIBCTypeHelper(image, pBlobSigEntry);
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
                             g_pConfig->DebugCheckAndForceIBCFailure(EEConfig::CallSite_8);
 #endif
@@ -798,14 +799,14 @@ void EETypeHashTable::FixupEntry(DataImage *pImage, EETypeHashEntry_t *pEntry, v
     if (pType.IsTypeDesc())
     {
         pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(EETypeHashEntry_t, m_data),
-                           pType.AsTypeDesc(), 2);
+                           pType.AsTypeDesc(), 2, IMAGE_REL_BASED_RelativePointer);
 
         pType.AsTypeDesc()->Fixup(pImage);
     }
     else
     {
         pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(EETypeHashEntry_t, m_data),
-                           pType.AsMethodTable());
+                           pType.AsMethodTable(), 0, IMAGE_REL_BASED_RelativePointer);
 
         pType.AsMethodTable()->Fixup(pImage);
     }
@@ -838,17 +839,20 @@ TypeHandle EETypeHashEntry::GetTypeHandle()
     LIMITED_METHOD_DAC_CONTRACT;
 
     // Remove any hot entry indicator bit that may have been set as the result of Ngen saving.
-    return TypeHandle::FromTAddr(m_data & ~0x1);
+    TADDR data = dac_cast<TADDR>(GetData());
+    return TypeHandle::FromTAddr(data & ~0x1);
 }
 
+#ifndef DACCESS_COMPILE
 void EETypeHashEntry::SetTypeHandle(TypeHandle handle)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     // We plan to steal the low-order bit of the handle for ngen purposes.
     _ASSERTE((handle.AsTAddr() & 0x1) == 0);
-    m_data = handle.AsTAddr();
+    m_data.SetValueMaybeNull(handle.AsPtr());
 }
+#endif // !DACCESS_COMPILE
 
 #ifdef FEATURE_PREJIT
 bool EETypeHashEntry::IsHot()
@@ -856,16 +860,21 @@ bool EETypeHashEntry::IsHot()
     LIMITED_METHOD_CONTRACT;
 
     // Low order bit of data field indicates a hot entry.
-    return (m_data & 1) != 0;
+    TADDR data = dac_cast<TADDR>(GetData());
+    return (data & 1) != 0;
 }
 
+#ifndef DACCESS_COMPILE
 void EETypeHashEntry::MarkAsHot()
 {
     LIMITED_METHOD_CONTRACT;
 
     // Low order bit of data field indicates a hot entry.
-    m_data |= 0x1;
+    TADDR data = dac_cast<TADDR>(GetData());
+    data |= 0x1;
+    m_data.SetValueMaybeNull(dac_cast<PTR_VOID>(data));
 }
+#endif // !DACCESS_COMPILE
 #endif // FEATURE_PREJIT
 
 #ifdef _MSC_VER

@@ -18,7 +18,6 @@ namespace System
     // The ArithmeticException is thrown when overflow or underflow
     // occurs.
     // 
-    [Serializable]
     public class ArithmeticException : SystemException
     {
         // Creates a new ArithmeticException with its message string set to
@@ -27,7 +26,7 @@ namespace System
         public ArithmeticException()
             : base(SR.Arg_ArithmeticException)
         {
-            HResult = __HResults.COR_E_ARITHMETIC;
+            HResult = HResults.COR_E_ARITHMETIC;
         }
 
         // Creates a new ArithmeticException with its message string set to
@@ -37,15 +36,18 @@ namespace System
         public ArithmeticException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_ARITHMETIC;
+            HResult = HResults.COR_E_ARITHMETIC;
         }
 
         public ArithmeticException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ARITHMETIC;
+            HResult = HResults.COR_E_ARITHMETIC;
         }
 
-        protected ArithmeticException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected ArithmeticException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

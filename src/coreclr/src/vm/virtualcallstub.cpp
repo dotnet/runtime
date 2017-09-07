@@ -20,6 +20,10 @@
 #include "compile.h"
 #endif
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 #ifndef DACCESS_COMPILE 
 
 //@TODO: make these conditional on whether logs are being produced
@@ -592,20 +596,20 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     //
     // Align up all of the commit and reserve sizes
     //
-    indcell_heap_reserve_size        = (DWORD) ALIGN_UP(indcell_heap_reserve_size,     PAGE_SIZE);
-    indcell_heap_commit_size         = (DWORD) ALIGN_UP(indcell_heap_commit_size,      PAGE_SIZE);
+    indcell_heap_reserve_size        = (DWORD) ALIGN_UP(indcell_heap_reserve_size,     GetOsPageSize());
+    indcell_heap_commit_size         = (DWORD) ALIGN_UP(indcell_heap_commit_size,      GetOsPageSize());
 
-    cache_entry_heap_reserve_size    = (DWORD) ALIGN_UP(cache_entry_heap_reserve_size, PAGE_SIZE);
-    cache_entry_heap_commit_size     = (DWORD) ALIGN_UP(cache_entry_heap_commit_size,  PAGE_SIZE);
+    cache_entry_heap_reserve_size    = (DWORD) ALIGN_UP(cache_entry_heap_reserve_size, GetOsPageSize());
+    cache_entry_heap_commit_size     = (DWORD) ALIGN_UP(cache_entry_heap_commit_size,  GetOsPageSize());
 
-    lookup_heap_reserve_size         = (DWORD) ALIGN_UP(lookup_heap_reserve_size,      PAGE_SIZE);
-    lookup_heap_commit_size          = (DWORD) ALIGN_UP(lookup_heap_commit_size,       PAGE_SIZE);
+    lookup_heap_reserve_size         = (DWORD) ALIGN_UP(lookup_heap_reserve_size,      GetOsPageSize());
+    lookup_heap_commit_size          = (DWORD) ALIGN_UP(lookup_heap_commit_size,       GetOsPageSize());
 
-    dispatch_heap_reserve_size       = (DWORD) ALIGN_UP(dispatch_heap_reserve_size,    PAGE_SIZE);
-    dispatch_heap_commit_size        = (DWORD) ALIGN_UP(dispatch_heap_commit_size,     PAGE_SIZE);
+    dispatch_heap_reserve_size       = (DWORD) ALIGN_UP(dispatch_heap_reserve_size,    GetOsPageSize());
+    dispatch_heap_commit_size        = (DWORD) ALIGN_UP(dispatch_heap_commit_size,     GetOsPageSize());
 
-    resolve_heap_reserve_size        = (DWORD) ALIGN_UP(resolve_heap_reserve_size,     PAGE_SIZE);
-    resolve_heap_commit_size         = (DWORD) ALIGN_UP(resolve_heap_commit_size,      PAGE_SIZE);
+    resolve_heap_reserve_size        = (DWORD) ALIGN_UP(resolve_heap_reserve_size,     GetOsPageSize());
+    resolve_heap_commit_size         = (DWORD) ALIGN_UP(resolve_heap_commit_size,      GetOsPageSize());
 
     BYTE * initReservedMem = NULL;
 
@@ -624,16 +628,16 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
             DWORD dwWastedReserveMemSize = dwTotalReserveMemSize - dwTotalReserveMemSizeCalc;
             if (dwWastedReserveMemSize != 0)
             {
-                DWORD cWastedPages = dwWastedReserveMemSize / PAGE_SIZE;
+                DWORD cWastedPages = dwWastedReserveMemSize / GetOsPageSize();
                 DWORD cPagesPerHeap = cWastedPages / 5;
                 DWORD cPagesRemainder = cWastedPages % 5; // We'll throw this at the resolve heap
 
-                indcell_heap_reserve_size += cPagesPerHeap * PAGE_SIZE;
-                cache_entry_heap_reserve_size += cPagesPerHeap * PAGE_SIZE;
-                lookup_heap_reserve_size += cPagesPerHeap * PAGE_SIZE;
-                dispatch_heap_reserve_size += cPagesPerHeap * PAGE_SIZE;
-                resolve_heap_reserve_size += cPagesPerHeap * PAGE_SIZE;
-                resolve_heap_reserve_size += cPagesRemainder * PAGE_SIZE;
+                indcell_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                cache_entry_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                lookup_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                dispatch_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                resolve_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                resolve_heap_reserve_size += cPagesRemainder * GetOsPageSize();
             }
 
             CONSISTENCY_CHECK((indcell_heap_reserve_size     +
@@ -653,20 +657,20 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     }
     else
     {
-        indcell_heap_reserve_size        = PAGE_SIZE;
-        indcell_heap_commit_size         = PAGE_SIZE;
+        indcell_heap_reserve_size        = GetOsPageSize();
+        indcell_heap_commit_size         = GetOsPageSize();
 
-        cache_entry_heap_reserve_size    = PAGE_SIZE;
-        cache_entry_heap_commit_size     = PAGE_SIZE;
+        cache_entry_heap_reserve_size    = GetOsPageSize();
+        cache_entry_heap_commit_size     = GetOsPageSize();
 
-        lookup_heap_reserve_size         = PAGE_SIZE;
-        lookup_heap_commit_size          = PAGE_SIZE;
+        lookup_heap_reserve_size         = GetOsPageSize();
+        lookup_heap_commit_size          = GetOsPageSize();
 
-        dispatch_heap_reserve_size       = PAGE_SIZE;
-        dispatch_heap_commit_size        = PAGE_SIZE;
+        dispatch_heap_reserve_size       = GetOsPageSize();
+        dispatch_heap_commit_size        = GetOsPageSize();
 
-        resolve_heap_reserve_size        = PAGE_SIZE;
-        resolve_heap_commit_size         = PAGE_SIZE;
+        resolve_heap_reserve_size        = GetOsPageSize();
+        resolve_heap_commit_size         = GetOsPageSize();
 
 #ifdef _DEBUG
         DWORD dwTotalReserveMemSizeCalc  = indcell_heap_reserve_size     +
@@ -2694,6 +2698,10 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     LOG((LF_STUBS, LL_INFO10000, "GenerateDispatchStub for token" FMT_ADDR "and pMT" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+#endif
+
     RETURN (holder);
 }
 
@@ -2735,6 +2743,10 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     stats.stub_space += static_cast<UINT32>(DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG));
     LOG((LF_STUBS, LL_INFO10000, "GenerateDispatchStub for token" FMT_ADDR "and pMT" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+#endif
 
     RETURN (holder);
 }
@@ -2822,6 +2834,10 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
     LOG((LF_STUBS, LL_INFO10000, "GenerateResolveStub  for token" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size());
+#endif
+
     RETURN (holder);
 }
 
@@ -2851,6 +2867,10 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
     stats.stub_space += sizeof(LookupHolder);
     LOG((LF_STUBS, LL_INFO10000, "GenerateLookupStub   for token" FMT_ADDR "at" FMT_ADDR "\n",
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size());
+#endif
 
     RETURN (holder);
 }

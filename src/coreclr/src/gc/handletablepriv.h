@@ -56,9 +56,6 @@
 #define HANDLE_HANDLES_PER_BLOCK    (64)        // segment suballocation granularity
 #define HANDLE_OPTIMIZE_FOR_64_HANDLE_BLOCKS    // flag for certain optimizations
 
-// maximum number of internally supported handle types
-#define HANDLE_MAX_INTERNAL_TYPES   (12)                             // should be a multiple of 4
-
 // number of types allowed for public callers
 #define HANDLE_MAX_PUBLIC_TYPES     (HANDLE_MAX_INTERNAL_TYPES - 1) // reserve one internal type
 
@@ -341,6 +338,37 @@ struct HandleTypeCache
     int32_t lFreeIndex;
 };
 
+/*
+ * Async pin EE callback context, used to call back tot he EE when enumerating
+ * over async pinned handles.
+ */
+class AsyncPinCallbackContext
+{
+private:
+    async_pin_enum_fn m_callback;
+    void* m_context;
+
+public:
+    /*
+     * Constructs a new AsyncPinCallbackContext from a callback and a context,
+     * which will be passed to the callback as its second parameter every time
+     * it is invoked.
+     */
+    AsyncPinCallbackContext(async_pin_enum_fn callback, void* context)
+        : m_callback(callback), m_context(context)
+    {}
+
+    /*
+     * Invokes the callback with the given argument, returning the callback's
+     * result.'
+     */
+    bool Invoke(Object* argument) const
+    {
+        assert(m_callback != nullptr);
+        return m_callback(argument, m_context);
+    }
+};
+
 
 /*---------------------------------------------------------------------------*/
 
@@ -482,6 +510,11 @@ struct HandleTable
     uint32_t rgTypeFlags[HANDLE_MAX_INTERNAL_TYPES];
 
     /*
+     * per-table AppDomain info
+     */
+    ADIndex uADIndex;
+
+    /*
      * lock for this table
      */
     CrstStatic Lock;
@@ -511,11 +544,6 @@ struct HandleTable
      * per-table user info
      */
     uint32_t uTableIndex;
-
-    /*
-     * per-table AppDomain info
-     */
-    ADIndex uADIndex;
 
     /*
      * one-level per-type 'quick' handle cache
@@ -759,7 +787,7 @@ void SegmentFree(TableSegment *pSegment);
  * Mark ready for all non-pending OverlappedData that get moved to default domain.
  *
  */
-BOOL TableHandleAsyncPinHandles(HandleTable *pTable);
+BOOL TableHandleAsyncPinHandles(HandleTable *pTable, const AsyncPinCallbackContext& callbackCtx);
 
 /*
  * TableRelocateAsyncPinHandles

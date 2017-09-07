@@ -145,6 +145,8 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
+        assert(LIR::AsRange(block).CheckLIR(compiler));
+
         // Figure out which registers hold variables on entry to this block
 
         regSet.ClearMaskVars();
@@ -164,11 +166,12 @@ void CodeGen::genCodeForBBlist()
         regMaskTP newRegGCrefSet = RBM_NONE;
         regMaskTP newRegByrefSet = RBM_NONE;
 #ifdef DEBUG
-        VARSET_TP VARSET_INIT_NOCOPY(removedGCVars, VarSetOps::MakeEmpty(compiler));
-        VARSET_TP VARSET_INIT_NOCOPY(addedGCVars, VarSetOps::MakeEmpty(compiler));
+        VARSET_TP removedGCVars(VarSetOps::MakeEmpty(compiler));
+        VARSET_TP addedGCVars(VarSetOps::MakeEmpty(compiler));
 #endif
-        VARSET_ITER_INIT(compiler, iter, block->bbLiveIn, varIndex);
-        while (iter.NextElem(compiler, &varIndex))
+        VarSetOps::Iter iter(compiler, block->bbLiveIn);
+        unsigned        varIndex = 0;
+        while (iter.NextElem(&varIndex))
         {
             unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
             LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
@@ -497,10 +500,11 @@ void CodeGen::genCodeForBBlist()
         // it up to date for vars that are not register candidates
         // (it would be nice to have a xor set function)
 
-        VARSET_TP VARSET_INIT_NOCOPY(extraLiveVars, VarSetOps::Diff(compiler, block->bbLiveOut, compiler->compCurLife));
+        VARSET_TP extraLiveVars(VarSetOps::Diff(compiler, block->bbLiveOut, compiler->compCurLife));
         VarSetOps::UnionD(compiler, extraLiveVars, VarSetOps::Diff(compiler, compiler->compCurLife, block->bbLiveOut));
-        VARSET_ITER_INIT(compiler, extraLiveVarIter, extraLiveVars, extraLiveVarIndex);
-        while (extraLiveVarIter.NextElem(compiler, &extraLiveVarIndex))
+        VarSetOps::Iter extraLiveVarIter(compiler, extraLiveVars);
+        unsigned        extraLiveVarIndex = 0;
+        while (extraLiveVarIter.NextElem(&extraLiveVarIndex))
         {
             unsigned   varNum = compiler->lvaTrackedToVarNum[extraLiveVarIndex];
             LclVarDsc* varDsc = compiler->lvaTable + varNum;
@@ -731,10 +735,7 @@ void CodeGen::genSpillVar(GenTreePtr tree)
             restoreRegVar = true;
         }
 
-        // mask off the flag to generate the right spill code, then bring it back
-        tree->gtFlags &= ~GTF_REG_VAL;
-
-        instruction storeIns = ins_Store(tree->TypeGet(), compiler->isSIMDTypeLocalAligned(varNum));
+        instruction storeIns = ins_Store(lclTyp, compiler->isSIMDTypeLocalAligned(varNum));
 #if CPU_LONG_USES_REGPAIR
         if (varTypeIsMultiReg(tree))
         {
@@ -751,7 +752,6 @@ void CodeGen::genSpillVar(GenTreePtr tree)
             assert(varDsc->lvRegNum == tree->gtRegNum);
             inst_TT_RV(storeIns, tree, tree->gtRegNum, 0, size);
         }
-        tree->gtFlags |= GTF_REG_VAL;
 
         if (restoreRegVar)
         {
@@ -919,7 +919,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 #else
             NYI("Unspilling not implemented for this target architecture.");
 #endif
-            unspillTree->SetInReg();
 
             // TODO-Review: We would like to call:
             //      genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(tree));
@@ -1006,8 +1005,62 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             }
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
-            unspillTree->SetInReg();
         }
+#ifdef _TARGET_ARM_
+        else if (unspillTree->OperIsPutArgSplit())
+        {
+            GenTreePutArgSplit* splitArg = unspillTree->AsPutArgSplit();
+            unsigned            regCount = splitArg->gtNumRegs;
+
+            // In case of split struct argument node, GTF_SPILLED flag on it indicates that
+            // one or more of its result regs are spilled.  Call node needs to be
+            // queried to know which specific result regs to be unspilled.
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                unsigned flags = splitArg->GetRegSpillFlagByIdx(i);
+                if ((flags & GTF_SPILLED) != 0)
+                {
+                    BYTE*     gcPtrs  = splitArg->gtGcPtrs;
+                    var_types dstType = splitArg->GetRegType(i);
+                    regNumber dstReg  = splitArg->GetRegNumByIdx(i);
+
+                    TempDsc* t = regSet.rsUnspillInPlace(splitArg, dstReg, i);
+                    getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
+                                              0);
+                    compiler->tmpRlsTemp(t);
+                    gcInfo.gcMarkRegPtrVal(dstReg, dstType);
+                }
+            }
+
+            unspillTree->gtFlags &= ~GTF_SPILLED;
+        }
+        else if (unspillTree->OperIsMultiRegOp())
+        {
+            GenTreeMultiRegOp* multiReg = unspillTree->AsMultiRegOp();
+            unsigned           regCount = multiReg->GetRegCount();
+
+            // In case of split struct argument node, GTF_SPILLED flag on it indicates that
+            // one or more of its result regs are spilled.  Call node needs to be
+            // queried to know which specific result regs to be unspilled.
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                unsigned flags = multiReg->GetRegSpillFlagByIdx(i);
+                if ((flags & GTF_SPILLED) != 0)
+                {
+                    var_types dstType = multiReg->GetRegType(i);
+                    regNumber dstReg  = multiReg->GetRegNumByIdx(i);
+
+                    TempDsc* t = regSet.rsUnspillInPlace(multiReg, dstReg, i);
+                    getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
+                                              0);
+                    compiler->tmpRlsTemp(t);
+                    gcInfo.gcMarkRegPtrVal(dstReg, dstType);
+                }
+            }
+
+            unspillTree->gtFlags &= ~GTF_SPILLED;
+        }
+#endif
         else
         {
             TempDsc* t = regSet.rsUnspillInPlace(unspillTree, unspillTree->gtRegNum);
@@ -1016,7 +1069,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             compiler->tmpRlsTemp(t);
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
-            unspillTree->SetInReg();
             gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
         }
     }
@@ -1035,6 +1087,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 void CodeGen::genCopyRegIfNeeded(GenTree* node, regNumber needReg)
 {
     assert((node->gtRegNum != REG_NA) && (needReg != REG_NA));
+    assert(!node->isUsedFromSpillTemp());
     if (node->gtRegNum != needReg)
     {
         inst_RV_RV(INS_mov, needReg, node->gtRegNum, node->TypeGet());
@@ -1282,12 +1335,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 {
     GenTree* firstOp  = tree->gtOp1;
     GenTree* secondOp = tree->gtOp2;
-    if ((tree->gtFlags & GTF_REVERSE_OPS) != 0)
-    {
-        assert(secondOp != nullptr);
-        firstOp  = secondOp;
-        secondOp = tree->gtOp1;
-    }
+
     if (firstOp != nullptr)
     {
         genConsumeRegs(firstOp);
@@ -1398,6 +1446,31 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
+
+#ifdef _TARGET_ARM_
+//------------------------------------------------------------------------
+// genConsumeArgRegSplit: Consume register(s) in Call node to set split struct argument.
+//                        Liveness update for the PutArgSplit node is not needed
+//
+// Arguments:
+//    putArgNode - the PUTARG_STK tree.
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
+{
+    assert(putArgNode->OperGet() == GT_PUTARG_SPLIT);
+    assert(putArgNode->gtHasReg());
+
+    genUnspillRegIfNeeded(putArgNode);
+
+    // Skip updating GC info
+    // GC info for all argument registers will be cleared in caller
+
+    genCheckConsumeNode(putArgNode);
+}
+#endif
 
 //------------------------------------------------------------------------
 // genSetBlockSize: Ensure that the block size is in the given register
@@ -1511,71 +1584,28 @@ void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
 
 void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg)
 {
-    // We have to consume the registers, and perform any copies, in the actual execution order.
-    // The nominal order is: dst, src, size.  However this may have been changed
-    // with reverse flags on the blkNode and the setting of gtEvalSizeFirst in the case of a dynamic
-    // block size.
+    // We have to consume the registers, and perform any copies, in the actual execution order: dst, src, size.
+    //
     // Note that the register allocator ensures that the registers ON THE NODES will not interfere
     // with one another if consumed (i.e. reloaded or moved to their ASSIGNED reg) in execution order.
     // Further, it ensures that they will not interfere with one another if they are then copied
     // to the REQUIRED register (if a fixed register requirement) in execution order.  This requires,
     // then, that we first consume all the operands, then do any necessary moves.
 
-    GenTree* dstAddr       = blkNode->Addr();
-    GenTree* src           = nullptr;
-    unsigned blockSize     = blkNode->Size();
-    GenTree* size          = nullptr;
-    bool     evalSizeFirst = true;
+    GenTree* const dstAddr = blkNode->Addr();
 
-    // First, consume all the sources in order
+    // First, consume all the sources in order.
+    genConsumeReg(dstAddr);
+    genConsumeBlockSrc(blkNode);
     if (blkNode->OperGet() == GT_STORE_DYN_BLK)
     {
-        size = blkNode->AsDynBlk()->gtDynamicSize;
-        if (blkNode->AsDynBlk()->gtEvalSizeFirst)
-        {
-            genConsumeReg(size);
-        }
-        else
-        {
-            evalSizeFirst = false;
-        }
-    }
-    if (blkNode->IsReverseOp())
-    {
-
-        genConsumeBlockSrc(blkNode);
-        genConsumeReg(dstAddr);
-    }
-    else
-    {
-        genConsumeReg(dstAddr);
-        genConsumeBlockSrc(blkNode);
-    }
-    if (!evalSizeFirst)
-    {
-        noway_assert(size != nullptr);
-        genConsumeReg(size);
+        genConsumeReg(blkNode->AsDynBlk()->gtDynamicSize);
     }
 
     // Next, perform any necessary moves.
-    if (evalSizeFirst)
-    {
-        genSetBlockSize(blkNode, sizeReg);
-    }
-    if (blkNode->IsReverseOp())
-    {
-        genSetBlockSrc(blkNode, srcReg);
-        genCopyRegIfNeeded(dstAddr, dstReg);
-    }
-    else
-    {
-        genCopyRegIfNeeded(dstAddr, dstReg);
-        genSetBlockSrc(blkNode, srcReg);
-    }
-    if (!evalSizeFirst)
-    {
-        genSetBlockSize(blkNode, sizeReg);
-    }
+    genCopyRegIfNeeded(dstAddr, dstReg);
+    genSetBlockSrc(blkNode, srcReg);
+    genSetBlockSize(blkNode, sizeReg);
 }
 
 //-------------------------------------------------------------------------
@@ -1607,7 +1637,6 @@ void CodeGen::genProduceReg(GenTree* tree)
         if (genIsRegCandidateLocal(tree))
         {
             // Store local variable to its home location.
-            tree->gtFlags &= ~GTF_REG_VAL;
             // Ensure that lclVar stores are typed correctly.
             unsigned varNum = tree->gtLclVarCommon.gtLclNum;
             assert(!compiler->lvaTable[varNum].lvNormalizeOnStore() ||
@@ -1632,15 +1661,47 @@ void CodeGen::genProduceReg(GenTree* tree)
                     if ((flags & GTF_SPILL) != 0)
                     {
                         regNumber reg = call->GetRegNumByIdx(i);
-                        call->SetInReg();
                         regSet.rsSpillTree(reg, call, i);
                         gcInfo.gcMarkRegSetNpt(genRegMask(reg));
                     }
                 }
             }
+#ifdef _TARGET_ARM_
+            else if (tree->OperIsPutArgSplit())
+            {
+                GenTreePutArgSplit* argSplit = tree->AsPutArgSplit();
+                unsigned            regCount = argSplit->gtNumRegs;
+
+                for (unsigned i = 0; i < regCount; ++i)
+                {
+                    unsigned flags = argSplit->GetRegSpillFlagByIdx(i);
+                    if ((flags & GTF_SPILL) != 0)
+                    {
+                        regNumber reg = argSplit->GetRegNumByIdx(i);
+                        regSet.rsSpillTree(reg, argSplit, i);
+                        gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+                    }
+                }
+            }
+            else if (tree->OperIsMultiRegOp())
+            {
+                GenTreeMultiRegOp* multiReg = tree->AsMultiRegOp();
+                unsigned           regCount = multiReg->GetRegCount();
+
+                for (unsigned i = 0; i < regCount; ++i)
+                {
+                    unsigned flags = multiReg->GetRegSpillFlagByIdx(i);
+                    if ((flags & GTF_SPILL) != 0)
+                    {
+                        regNumber reg = multiReg->GetRegNumByIdx(i);
+                        regSet.rsSpillTree(reg, multiReg, i);
+                        gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+                    }
+                }
+            }
+#endif // _TARGET_ARM_
             else
             {
-                tree->SetInReg();
                 regSet.rsSpillTree(tree->gtRegNum, tree);
                 gcInfo.gcMarkRegSetNpt(genRegMask(tree->gtRegNum));
             }
@@ -1712,7 +1773,6 @@ void CodeGen::genProduceReg(GenTree* tree)
             }
         }
     }
-    tree->SetInReg();
 }
 
 // transfer gc/byref status of src reg to dst reg
@@ -1807,5 +1867,40 @@ void CodeGen::genEmitCall(int                   callType,
                                indir->Offset());
 }
 // clang-format on
+
+//------------------------------------------------------------------------
+// genCodeForCast: Generates the code for GT_CAST.
+//
+// Arguments:
+//    tree - the GT_CAST node.
+//
+void CodeGen::genCodeForCast(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_CAST));
+
+    var_types targetType = tree->TypeGet();
+
+    if (varTypeIsFloating(targetType) && varTypeIsFloating(tree->gtOp1))
+    {
+        // Casts float/double <--> double/float
+        genFloatToFloatCast(tree);
+    }
+    else if (varTypeIsFloating(tree->gtOp1))
+    {
+        // Casts float/double --> int32/int64
+        genFloatToIntCast(tree);
+    }
+    else if (varTypeIsFloating(targetType))
+    {
+        // Casts int32/uint32/int64/uint64 --> float/double
+        genIntToFloatCast(tree);
+    }
+    else
+    {
+        // Casts int <--> int
+        genIntToIntCast(tree);
+    }
+    // The per-case functions call genProduceReg()
+}
 
 #endif // !LEGACY_BACKEND

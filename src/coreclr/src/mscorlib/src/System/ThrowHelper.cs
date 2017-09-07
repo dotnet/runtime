@@ -241,6 +241,11 @@ namespace System
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumEnded);
         }
 
+        internal static void ThrowInvalidOperationException_EnumCurrent(int index)
+        {
+            throw GetInvalidOperationException_EnumCurrent(index);
+        }
+
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
         {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
@@ -302,6 +307,14 @@ namespace System
         private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource)
         {
             return new ArgumentOutOfRangeException(GetArgumentName(argument) + "[" + paramNumber.ToString() + "]", GetResourceString(resource));
+        }
+
+        private static InvalidOperationException GetInvalidOperationException_EnumCurrent(int index)
+        {
+            return GetInvalidOperationException(
+                index < 0 ?
+                ExceptionResource.InvalidOperation_EnumNotStarted :
+                ExceptionResource.InvalidOperation_EnumEnded);
         }
 
         // Allow nulls for reference types and Nullable<U>, but not for value types.
@@ -416,7 +429,11 @@ namespace System
         type,
         stateMachine,
         pHandle,
-        values
+        values,
+        task,
+        s,
+        input,
+        ownedMemory
     }
 
     //
@@ -509,6 +526,8 @@ namespace System
         TaskT_TransitionToFinal_AlreadyCompleted,
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
+        Memory_ThrowIfDisposed,
+        Memory_OutstandingReferences,
         InvalidOperation_WrongAsyncResultOrEndCalledMultiple,
         ConcurrentDictionary_ConcurrencyLevelMustBePositive,
         ConcurrentDictionary_CapacityMustNotBeNegative,

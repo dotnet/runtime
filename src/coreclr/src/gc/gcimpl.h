@@ -254,7 +254,7 @@ private:
         // to threads returning to cooperative mode is down after gc.
         // In other words, if the sequence in GCHeap::RestartEE changes,
         // the condition here may have to change as well.
-        return g_TrapReturningThreads == 0;
+        return !GCToEEInterface::TrapReturningThreads();
     }
 public:
     //return TRUE if GC actually happens, otherwise FALSE

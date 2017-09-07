@@ -515,6 +515,8 @@ typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 // Each thread has a stack that tracks all enter and leave requests
 struct Dbg_TrackSync
 {
+    virtual ~Dbg_TrackSync() = default;
+
     virtual void EnterSync    (UINT_PTR caller, void *pAwareLock) = 0;
     virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
 };
@@ -1944,7 +1946,7 @@ public:
     // Create all new threads here.  The thread is created as suspended, so
     // you must ::ResumeThread to kick it off.  It is guaranteed to create the
     // thread, or throw.
-    BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
+    BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
 
 
     enum StackSizeBucket
@@ -3573,7 +3575,7 @@ private:
     PTR_VOID    m_CacheStackLimit;
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
 
-#define HARD_GUARD_REGION_SIZE OS_PAGE_SIZE
+#define HARD_GUARD_REGION_SIZE GetOsPageSize()
 
 private:
     //
@@ -3587,8 +3589,8 @@ private:
 
     // Every stack has a single reserved page at its limit that we call the 'hard guard page'. This page is never
     // committed, and access to it after a stack overflow will terminate the thread.
-#define HARD_GUARD_REGION_SIZE OS_PAGE_SIZE
-#define SIZEOF_DEFAULT_STACK_GUARANTEE 1 * OS_PAGE_SIZE
+#define HARD_GUARD_REGION_SIZE GetOsPageSize()
+#define SIZEOF_DEFAULT_STACK_GUARANTEE 1 * GetOsPageSize()
 
 public:
     // This will return the last stack address that one could write to before a stack overflow.
@@ -5249,11 +5251,9 @@ public:
     // object associated with them (e.g., the bgc thread).
     void SetGCSpecial(bool fGCSpecial);
 
-#ifndef FEATURE_PAL
 private:
     WORD m_wCPUGroup;
     DWORD_PTR m_pAffinityMask;
-#endif // !FEATURE_PAL
 
 public:
     void ChooseThreadCPUGroupAffinity();
@@ -5289,6 +5289,10 @@ private:
     // Whether or not the thread is currently writing an event.
     Volatile<bool> m_eventWriteInProgress;
 
+    // SampleProfiler thread state.  This is set on suspension and cleared before restart.
+    // True if the thread was in cooperative mode.  False if it was in preemptive when the suspension started.
+    Volatile<ULONG> m_gcModeOnSuspension;
+
 public:
     EventPipeBufferList* GetEventPipeBufferList()
     {
@@ -5312,6 +5316,23 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_eventWriteInProgress = value;
+    }
+
+    bool GetGCModeOnSuspension()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_gcModeOnSuspension;
+    }
+
+    void SaveGCModeOnSuspension()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_gcModeOnSuspension = m_fPreemptiveGCDisabled;
+    }
+
+    void ClearGCModeOnSuspension()
+    {
+        m_gcModeOnSuspension = 0;
     }
 #endif // FEATURE_PERFTRACING
 
@@ -5341,6 +5362,70 @@ public:
         m_HijackReturnKind = returnKind;
     }
 #endif // FEATURE_HIJACK
+
+private:
+    static int s_yieldsPerNormalizedYield;
+    static int s_optimalMaxNormalizedYieldsPerSpinIteration;
+
+private:
+    static void InitializeYieldProcessorNormalized();
+
+public:
+    static bool IsYieldProcessorNormalizedInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_yieldsPerNormalizedYield != 0 && s_optimalMaxNormalizedYieldsPerSpinIteration != 0;
+    }
+
+public:
+    static void EnsureYieldProcessorNormalizedInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (!IsYieldProcessorNormalizedInitialized())
+        {
+            InitializeYieldProcessorNormalized();
+        }
+    }
+
+public:
+    static int GetOptimalMaxNormalizedYieldsPerSpinIteration()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        return s_optimalMaxNormalizedYieldsPerSpinIteration;
+    }
+
+public:
+    static void YieldProcessorNormalized()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        int n = s_yieldsPerNormalizedYield;
+        while (--n >= 0)
+        {
+            YieldProcessor();
+        }
+    }
+
+    static void YieldProcessorNormalizedWithBackOff(unsigned int spinIteration)
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        int n = s_optimalMaxNormalizedYieldsPerSpinIteration;
+        if (spinIteration <= 30 && (1 << spinIteration) < n)
+        {
+            n = 1 << spinIteration;
+        }
+        n *= s_yieldsPerNormalizedYield;
+        while (--n >= 0)
+        {
+            YieldProcessor();
+        }
+    }
 };
 
 // End of class Thread
@@ -5643,6 +5728,7 @@ private:
     DPTR(PTR_Thread)    m_idToThread;         // map thread ids to threads
     DWORD       m_idToThreadCapacity; // capacity of the map
 
+#ifndef DACCESS_COMPILE
     void GrowIdToThread()
     {
         CONTRACTL
@@ -5654,7 +5740,6 @@ private:
         }
         CONTRACTL_END;
 
-#ifndef DACCESS_COMPILE
         DWORD newCapacity = m_idToThreadCapacity == 0 ? 16 : m_idToThreadCapacity*2;
         Thread **newIdToThread = new Thread*[newCapacity];
 
@@ -5671,11 +5756,8 @@ private:
         delete[] m_idToThread;
         m_idToThread = newIdToThread;
         m_idToThreadCapacity = newCapacity;
-#else
-        DacNotImpl();
-#endif // !DACCESS_COMPILE
-
     }
+#endif // !DACCESS_COMPILE
 
 public:
     IdDispenser() :
@@ -5705,9 +5787,9 @@ public:
         return (id > 0) && (id <= m_highestId);
     }
 
+#ifndef DACCESS_COMPILE
     void NewId(Thread *pThread, DWORD & newId)
     {
-#ifndef DACCESS_COMPILE
         WRAPPER_NO_CONTRACT;
         DWORD result;
         CrstHolder ch(&m_Crst);
@@ -5733,15 +5815,12 @@ public:
         newId = result;
         if (result < m_idToThreadCapacity)
             m_idToThread[result] = pThread;
-
-#else
-        DacNotImpl();
-#endif // !DACCESS_COMPILE
     }
+#endif // !DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
     void DisposeId(DWORD id)
     {
-#ifndef DACCESS_COMPILE
         CONTRACTL
         {
             NOTHROW;
@@ -5770,10 +5849,8 @@ public:
             }
 #endif
         }
-#else
-        DacNotImpl();
-#endif // !DACCESS_COMPILE
     }
+#endif // !DACCESS_COMPILE
 
     Thread *IdToThread(DWORD id)
     {

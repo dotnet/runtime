@@ -28,6 +28,7 @@
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)..\src\dir.targets" />
   <Target Name="Build"

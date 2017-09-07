@@ -15,7 +15,6 @@ namespace System
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [Serializable]
     [ClassInterface(ClassInterfaceType.AutoDual)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Delegate : ICloneable, ISerializable
@@ -545,8 +544,9 @@ namespace System
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            throw new NotSupportedException();
+            throw new PlatformNotSupportedException();
         }
+
         //
         // internal implementation details (FCALLS and utilities)
         //

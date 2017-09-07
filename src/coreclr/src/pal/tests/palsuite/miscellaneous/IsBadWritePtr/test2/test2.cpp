@@ -16,7 +16,6 @@
 **=========================================================*/
 
 #include <palsuite.h>
-#define PAGE_SIZE 4096
 
 int __cdecl main(int argc, char *argv[]) {
     
@@ -32,7 +31,7 @@ int __cdecl main(int argc, char *argv[]) {
     */
     
     PageOne = VirtualAlloc(NULL, 
-			   PAGE_SIZE*4, 
+			   GetOsPageSize()*4,
 			   MEM_RESERVE, 
 			   PAGE_NOACCESS);
 
@@ -44,7 +43,7 @@ int __cdecl main(int argc, char *argv[]) {
     /* Set the first Page to PAGE_NOACCESS */
     
     PageOne = VirtualAlloc(PageOne,
-			   PAGE_SIZE,
+			   GetOsPageSize(),
 			   MEM_COMMIT,
 			   PAGE_NOACCESS);
 
@@ -58,8 +57,8 @@ int __cdecl main(int argc, char *argv[]) {
 
     /* Set the second Page to PAGE_READWRITE */
 
-    PageTwo = VirtualAlloc(((BYTE*)PageOne)+PAGE_SIZE,
-			   PAGE_SIZE,
+    PageTwo = VirtualAlloc(((BYTE*)PageOne)+GetOsPageSize(),
+			   GetOsPageSize(),
 			   MEM_COMMIT,
 			   PAGE_READWRITE);
     if(PageTwo == NULL)
@@ -72,8 +71,8 @@ int __cdecl main(int argc, char *argv[]) {
     
     /* Set the third Page to PAGE_NOACCESS */
 
-    PageThree = VirtualAlloc(((BYTE*)PageTwo) + (2 * PAGE_SIZE),
-			     PAGE_SIZE,
+    PageThree = VirtualAlloc(((BYTE*)PageTwo) + (2 * GetOsPageSize()),
+			     GetOsPageSize(),
 			     MEM_COMMIT,
 			     PAGE_NOACCESS);
       
@@ -88,7 +87,7 @@ int __cdecl main(int argc, char *argv[]) {
     
 /* Check that calling IsBadWritePtr on the first page returns non-zero */
     
-    if(IsBadWritePtr(PageThree,PAGE_SIZE) == 0)
+    if(IsBadWritePtr(PageThree,GetOsPageSize()) == 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 
@@ -99,7 +98,7 @@ int __cdecl main(int argc, char *argv[]) {
 
     /* Check that calling IsBadWritePtr on the middle page returns 0 */
 
-    if(IsBadWritePtr(PageTwo,PAGE_SIZE) != 0)
+    if(IsBadWritePtr(PageTwo,GetOsPageSize()) != 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 
@@ -109,7 +108,7 @@ int __cdecl main(int argc, char *argv[]) {
 
     /* Check that calling IsBadWritePtr on the third page returns non-zero */
     
-    if(IsBadWritePtr(PageThree,PAGE_SIZE) == 0)
+    if(IsBadWritePtr(PageThree,GetOsPageSize()) == 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 

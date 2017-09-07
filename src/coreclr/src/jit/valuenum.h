@@ -30,6 +30,8 @@
 #include "gentree.h"
 // Defines the type ValueNum.
 #include "valuenumtype.h"
+// Defines the type SmallHashTable.
+#include "smallhash.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
 // compilation.
@@ -537,27 +539,39 @@ public:
     // Returns true iff the VN represents an integeral constant.
     bool IsVNInt32Constant(ValueNum vn);
 
-    struct ArrLenUnsignedBoundInfo
+    typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
+
+    // Returns true if the VN is known or likely to appear as the conservative value number
+    // of the length argument to a GT_ARR_BOUNDS_CHECK node.
+    bool IsVNCheckedBound(ValueNum vn);
+
+    // Record that a VN is known to appear as the conservative value number of the length
+    // argument to a GT_ARR_BOUNDS_CHECK node.
+    void SetVNIsCheckedBound(ValueNum vn);
+
+    // Information about the individual components of a value number representing an unsigned
+    // comparison of some value against a checked bound VN.
+    struct UnsignedCompareCheckedBoundInfo
     {
         unsigned cmpOper;
         ValueNum vnIdx;
-        ValueNum vnLen;
+        ValueNum vnBound;
 
-        ArrLenUnsignedBoundInfo() : cmpOper(GT_NONE), vnIdx(NoVN), vnLen(NoVN)
+        UnsignedCompareCheckedBoundInfo() : cmpOper(GT_NONE), vnIdx(NoVN), vnBound(NoVN)
         {
         }
     };
 
-    struct ArrLenArithBoundInfo
+    struct CompareCheckedBoundArithInfo
     {
-        // (vnArr.len - 1) > vnOp
-        // (vnArr.len arrOper arrOp) cmpOper cmpOp
-        ValueNum vnArray;
+        // (vnBound - 1) > vnOp
+        // (vnBound arrOper arrOp) cmpOper cmpOp
+        ValueNum vnBound;
         unsigned arrOper;
         ValueNum arrOp;
         unsigned cmpOper;
         ValueNum cmpOp;
-        ArrLenArithBoundInfo() : vnArray(NoVN), arrOper(GT_NONE), arrOp(NoVN), cmpOper(GT_NONE), cmpOp(NoVN)
+        CompareCheckedBoundArithInfo() : vnBound(NoVN), arrOper(GT_NONE), arrOp(NoVN), cmpOper(GT_NONE), cmpOp(NoVN)
         {
         }
 #ifdef DEBUG
@@ -567,7 +581,7 @@ public:
             printf(" ");
             printf(vnStore->VNFuncName((VNFunc)cmpOper));
             printf(" ");
-            vnStore->vnDump(vnStore->m_pComp, vnArray);
+            vnStore->vnDump(vnStore->m_pComp, vnBound);
             if (arrOper != GT_NONE)
             {
                 printf(vnStore->VNFuncName((VNFunc)arrOper));
@@ -618,26 +632,26 @@ public:
     // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.
     void GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info);
 
-    // If "vn" is of the form "(uint)var < (uint)a.len" (or equivalent) return true.
-    bool IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo* info);
+    // If "vn" is of the form "(uint)var < (uint)len" (or equivalent) return true.
+    bool IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info);
 
-    // If "vn" is of the form "var < a.len" or "a.len <= var" return true.
-    bool IsVNArrLenBound(ValueNum vn);
+    // If "vn" is of the form "var < len" or "len <= var" return true.
+    bool IsVNCompareCheckedBound(ValueNum vn);
 
-    // If "vn" is arr len bound, then populate the "info" fields for the arrVn, cmpOp, cmpOper.
-    void GetArrLenBoundInfo(ValueNum vn, ArrLenArithBoundInfo* info);
+    // If "vn" is checked bound, then populate the "info" fields for the boundVn, cmpOp, cmpOper.
+    void GetCompareCheckedBound(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
-    // If "vn" is of the form "a.len +/- var" return true.
-    bool IsVNArrLenArith(ValueNum vn);
+    // If "vn" is of the form "len +/- var" return true.
+    bool IsVNCheckedBoundArith(ValueNum vn);
 
-    // If "vn" is arr len arith, then populate the "info" fields for arrOper, arrVn, arrOp.
-    void GetArrLenArithInfo(ValueNum vn, ArrLenArithBoundInfo* info);
+    // If "vn" is checked bound arith, then populate the "info" fields for arrOper, arrVn, arrOp.
+    void GetCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
-    // If "vn" is of the form "var < a.len +/- k" return true.
-    bool IsVNArrLenArithBound(ValueNum vn);
+    // If "vn" is of the form "var < len +/- k" return true.
+    bool IsVNCompareCheckedBoundArith(ValueNum vn);
 
-    // If "vn" is arr len arith bound, then populate the "info" fields for cmpOp, cmpOper.
-    void GetArrLenArithBoundInfo(ValueNum vn, ArrLenArithBoundInfo* info);
+    // If "vn" is checked bound arith, then populate the "info" fields for cmpOp, cmpOper.
+    void GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
     // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.
     unsigned GetHandleFlags(ValueNum vn);
@@ -858,20 +872,19 @@ private:
     // The base VN of the next chunk to be allocated.  Should always be a multiple of ChunkSize.
     ValueNum m_nextChunkBase;
 
-    DECLARE_TYPED_ENUM(ChunkExtraAttribs, BYTE)
+    enum ChunkExtraAttribs : BYTE
     {
-        CEA_None,          // No extra attributes.
-            CEA_Const,     // This chunk contains constant values.
-            CEA_Handle,    // This chunk contains handle constants.
-            CEA_NotAField, // This chunk contains "not a field" values.
-            CEA_Func0,     // Represents functions of arity 0.
-            CEA_Func1,     // ...arity 1.
-            CEA_Func2,     // ...arity 2.
-            CEA_Func3,     // ...arity 3.
-            CEA_Func4,     // ...arity 4.
-            CEA_Count
-    }
-    END_DECLARE_TYPED_ENUM(ChunkExtraAttribs, BYTE);
+        CEA_None,      // No extra attributes.
+        CEA_Const,     // This chunk contains constant values.
+        CEA_Handle,    // This chunk contains handle constants.
+        CEA_NotAField, // This chunk contains "not a field" values.
+        CEA_Func0,     // Represents functions of arity 0.
+        CEA_Func1,     // ...arity 1.
+        CEA_Func2,     // ...arity 2.
+        CEA_Func3,     // ...arity 3.
+        CEA_Func4,     // ...arity 4.
+        CEA_Count
+    };
 
     // A "Chunk" holds "ChunkSize" value numbers, starting at "m_baseVN".  All of these share the same
     // "m_typ" and "m_attribs".  These properties determine the interpretation of "m_defs", as discussed below.
@@ -1039,6 +1052,9 @@ private:
 
     // Returns true if "sel(map, ind)" is a member of "m_fixedPointMapSels".
     bool SelectIsBeingEvaluatedRecursively(ValueNum map, ValueNum ind);
+
+    // This is the set of value numbers that have been flagged as arguments to bounds checks, in the length position.
+    CheckedBoundVNSet m_checkedBoundVNs;
 
     // This is a map from "chunk number" to the attributes of the chunk.
     ExpandArrayStack<Chunk*> m_chunks;

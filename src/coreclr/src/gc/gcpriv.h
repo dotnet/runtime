@@ -121,8 +121,6 @@ inline void FATAL_GC_ERROR()
 #define FFIND_OBJECT        //faster find_object, slower allocation
 #define FFIND_DECAY  7      //Number of GC for which fast find will be active
 
-//#define NO_WRITE_BARRIER  //no write barrier, use Write Watch feature
-
 //#define DEBUG_WRITE_WATCH //Additional debug for write watch
 
 //#define STRESS_PINNING    //Stress pinning by pinning randomly
@@ -236,46 +234,6 @@ const int policy_compact = 1;
 const int policy_expand  = 2;
 
 #ifdef TRACE_GC
-
-
-extern int     print_level;
-extern BOOL    trace_gc;
-extern int    gc_trace_fac;
-
-
-class hlet
-{
-    static hlet* bindings;
-    int prev_val;
-    int* pval;
-    hlet* prev_let;
-public:
-    hlet (int& place, int value)
-    {
-        prev_val = place;
-        pval = &place;
-        place = value;
-        prev_let = bindings;
-        bindings = this;
-    }
-    ~hlet ()
-    {
-        *pval = prev_val;
-        bindings = prev_let;
-    }
-};
-
-
-#define let(p,v) hlet __x = hlet (p, v);
-
-#else //TRACE_GC
-
-#define gc_count    -1
-#define let(s,v)
-
-#endif //TRACE_GC
-
-#ifdef TRACE_GC
 #define SEG_REUSE_LOG_0 7
 #define SEG_REUSE_LOG_1 (SEG_REUSE_LOG_0 + 1)
 #define DT_LOG_0 (SEG_REUSE_LOG_1 + 1)
@@ -301,15 +259,12 @@ void GCLog (const char *fmt, ... );
 //#define dprintf(l,x) {if ((l==GTC_LOG) || (l <= 1)) {GCLog x;}}
 //#define dprintf(l,x) {if (trace_gc && ((l <= print_level) || (l==GTC_LOG))) {GCLog x;}}
 //#define dprintf(l,x) {if (l==GTC_LOG) {printf ("\n");printf x ; fflush(stdout);}}
-#else //SIMPLE_DPRINTF
+#else
 
-// The GCTrace output goes to stdout by default but can get sent to the stress log or the logfile if the
-// reg key GCTraceFacility is set.  THe stress log can only take a format string and 4 numbers or
-// string literals.
-#define dprintf(l,x) {if (trace_gc && (l<=print_level)) { \
-      if ( !gc_trace_fac) {printf ("\n");printf x ; fflush(stdout);} \
-      else if ( gc_trace_fac == 2) {LogSpewAlways x;LogSpewAlways ("\n");} \
-      else if ( gc_trace_fac == 1) {STRESS_LOG_VA(x);}}}
+// Nobody used the logging mechanism that used to be here. If we find ourselves
+// wanting to inspect GC logs on unmodified builds, we can use this define here
+// to do so.
+#define dprintf(l, x)
 
 #endif //SIMPLE_DPRINTF
 
@@ -327,24 +282,13 @@ void GCLog (const char *fmt, ... );
 #define ASSERT _ASSERTE
 #endif // FEATURE_REDHAWK
 
-#ifdef _DEBUG
-
 struct GCDebugSpinLock {
     VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
+#ifdef _DEBUG
     VOLATILE(Thread *) holding_thread;     // -1 if no thread holds the lock.
     VOLATILE(BOOL) released_by_gc_p;       // a GC thread released the lock.
-
-    GCDebugSpinLock()
-        : lock(-1), holding_thread((Thread*) -1)
-    {
-    }
-};
-typedef GCDebugSpinLock GCSpinLock;
-
-#elif defined (SYNCHRONIZATION_STATS)
-
-struct GCSpinLockInstru {
-    VOLATILE(int32_t) lock;
+#endif
+#if defined (SYNCHRONIZATION_STATS)
     // number of times we went into SwitchToThread in enter_spin_lock.
     unsigned int num_switch_thread;
     // number of times we went into WaitLonger.
@@ -353,12 +297,20 @@ struct GCSpinLockInstru {
     unsigned int num_switch_thread_w;
     // number of times we went to calling DisablePreemptiveGC in WaitLonger.
     unsigned int num_disable_preemptive_w;
+#endif
 
-    GCSpinLockInstru()
-        : lock(-1), num_switch_thread(0), num_wait_longer(0), num_switch_thread_w(0), num_disable_preemptive_w(0)
+    GCDebugSpinLock()
+        : lock(-1)
+#ifdef _DEBUG
+        , holding_thread((Thread*) -1)
+#endif
+#if defined (SYNCHRONIZATION_STATS)
+        , num_switch_thread(0), num_wait_longer(0), num_switch_thread_w(0), num_disable_preemptive_w(0)
+#endif
     {
     }
 
+#if defined (SYNCHRONIZATION_STATS)
     void init()
     {
         num_switch_thread = 0;
@@ -366,23 +318,9 @@ struct GCSpinLockInstru {
         num_switch_thread_w = 0;
         num_disable_preemptive_w = 0;
     }
-};
-
-typedef GCSpinLockInstru GCSpinLock;
-
-#else
-
-struct GCDebugSpinLock {
-    VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
-
-    GCDebugSpinLock()
-        : lock(-1)
-    {
-    }
+#endif
 };
 typedef GCDebugSpinLock GCSpinLock;
-
-#endif
 
 class mark;
 class heap_segment;
@@ -604,7 +542,7 @@ struct GCStatistics
     : public StatisticsBase
 {
     // initialized to the contents of COMPlus_GcMixLog, or NULL, if not present
-    static TCHAR* logFileName;
+    static char* logFileName;
     static FILE*  logFile;
 
     // number of times we executed a background GC, a foreground GC, or a
@@ -1078,12 +1016,6 @@ enum interesting_data_point
 //class definition of the internal class
 class gc_heap
 {
-    friend struct ::_DacGlobals;
-#ifdef DACCESS_COMPILE
-    friend class ::ClrDataAccess;
-    friend class ::DacHeapWalker;
-#endif //DACCESS_COMPILE
-
     friend class GCHeap;
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     friend class CFinalize;
@@ -2056,8 +1988,6 @@ protected:
     PER_HEAP
     uint8_t* next_end (heap_segment* seg, uint8_t* f);
     PER_HEAP
-    void fix_card_table ();
-    PER_HEAP
     void mark_through_object (uint8_t* oo, BOOL mark_class_object_p THREAD_NUMBER_DCL);
     PER_HEAP
     BOOL process_mark_overflow (int condemned_gen_number);
@@ -3003,8 +2933,24 @@ public:
     PER_HEAP_ISOLATED
     size_t last_gc_index;
 
+#ifdef SEG_MAPPING_TABLE
     PER_HEAP_ISOLATED
     size_t min_segment_size;
+
+    PER_HEAP_ISOLATED
+    size_t min_segment_size_shr;
+#endif //SEG_MAPPING_TABLE
+
+    // For SOH we always allocate segments of the same
+    // size unless no_gc_region requires larger ones.
+    PER_HEAP_ISOLATED
+    size_t soh_segment_size;
+
+    PER_HEAP_ISOLATED
+    size_t min_loh_segment_size;
+
+    PER_HEAP_ISOLATED
+    size_t segment_info_size;
 
     PER_HEAP
     uint8_t* lowest_address;
@@ -3675,7 +3621,7 @@ protected:
 }; // class gc_heap
 
 #define ASSERT_OFFSETS_MATCH(field) \
-  static_assert_no_msg(offsetof(dac_gc_heap, field) == offsetof(gc_heap, field))
+  static_assert(offsetof(dac_gc_heap, field) == offsetof(gc_heap, field), #field " offset mismatch")
 
 #ifdef MULTIPLE_HEAPS
 ASSERT_OFFSETS_MATCH(alloc_allocated);
@@ -4302,6 +4248,8 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
     return &dynamic_data_table [ gen_number ];
 }
 
+#define GC_PAGE_SIZE 0x1000
+
 #define card_word_width ((size_t)32)
 
 //
@@ -4309,9 +4257,9 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
 // In the code we also rely on the assumption that one card_table entry (uint32_t) covers an entire os page
 //
 #if defined (BIT64)
-#define card_size ((size_t)(2*OS_PAGE_SIZE/card_word_width))
+#define card_size ((size_t)(2*GC_PAGE_SIZE/card_word_width))
 #else
-#define card_size ((size_t)(OS_PAGE_SIZE/card_word_width))
+#define card_size ((size_t)(GC_PAGE_SIZE/card_word_width))
 #endif // BIT64
 
 // Returns the index of the card word a card is in

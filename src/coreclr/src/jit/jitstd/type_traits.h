@@ -194,4 +194,31 @@ struct make_unsigned<__int64>
     typedef unsigned __int64 type;
 };
 
+template<typename Type1>
+struct make_signed
+{
+};
+
+template<>
+struct make_signed<unsigned int>
+{
+    typedef signed int type;
+};
+
+#ifndef _HOST_UNIX_
+
+template<>
+struct make_signed<unsigned long>
+{
+    typedef signed long type;
+};
+
+#endif // !_HOST_UNIX_
+
+template<>
+struct make_signed<unsigned __int64>
+{
+    typedef signed __int64 type;
+};
+
 } // namespace jit_std

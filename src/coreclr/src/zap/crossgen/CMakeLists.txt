@@ -26,3 +26,6 @@ endif (FEATURE_READYTORUN)
 
 add_precompiled_header(common.h ../common.cpp ZAP_SOURCES)
 add_library_clr(corzap_crossgen STATIC ${ZAP_SOURCES})
+if(FEATURE_MERGE_JIT_AND_ENGINE)
+  target_link_libraries(corzap_crossgen clrjit_crossgen)
+endif(FEATURE_MERGE_JIT_AND_ENGINE)

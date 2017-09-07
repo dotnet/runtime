@@ -96,7 +96,7 @@ This file contains the logic for providing Execution Script generation.
   -->
   
   <ItemGroup>
-    <ExecutionScriptKind Include="Batch" />
+    <ExecutionScriptKind Include="Batch" Condition="'$(BuildOS)' == 'Windows_NT'"/>
     <ExecutionScriptKind Include="Bash" />
   </ItemGroup>
 

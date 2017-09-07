@@ -20,7 +20,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
-    [Serializable]
     public class CustomAttributeData
     {
         #region Public Static Members
@@ -570,7 +569,6 @@ namespace System.Reflection
         #endregion
     }
 
-    [Serializable]
     public struct CustomAttributeNamedArgument
     {
         #region Public Static Members
@@ -659,7 +657,6 @@ namespace System.Reflection
 
     }
 
-    [Serializable]
     public struct CustomAttributeTypedArgument
     {
         #region Public Static Members
@@ -958,7 +955,6 @@ namespace System.Reflection
         #endregion
     }
 
-    [Serializable]
     internal struct CustomAttributeRecord
     {
         internal ConstArray blob;
@@ -989,7 +985,6 @@ namespace System.Reflection
         Enum = 0x55
     }
 
-    [Serializable]
     [StructLayout(LayoutKind.Auto)]
     internal struct CustomAttributeEncodedArgument
     {
@@ -1044,7 +1039,6 @@ namespace System.Reflection
         #endregion
     }
 
-    [Serializable]
     [StructLayout(LayoutKind.Auto)]
     internal struct CustomAttributeNamedParameter
     {
@@ -1076,7 +1070,6 @@ namespace System.Reflection
         #endregion
     }
 
-    [Serializable]
     [StructLayout(LayoutKind.Auto)]
     internal struct CustomAttributeCtorParameter
     {
@@ -1098,7 +1091,6 @@ namespace System.Reflection
         #endregion
     }
 
-    [Serializable]
     [StructLayout(LayoutKind.Auto)]
     internal struct CustomAttributeType
     {

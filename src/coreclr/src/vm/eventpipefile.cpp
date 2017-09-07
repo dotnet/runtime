@@ -25,6 +25,9 @@ EventPipeFile::EventPipeFile(
     }
     CONTRACTL_END;
 
+    SetObjectVersion(2);
+    SetMinReaderVersion(0);
+
     m_pSerializer = new FastSerializer(outputFilePath, *this);
     m_serializationLock.Init(LOCK_TYPE_DEFAULT);
     m_pMetadataLabels = new MapSHashWithRemove<EventPipeEvent*, StreamLabel>();

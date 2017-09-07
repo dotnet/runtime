@@ -4,7 +4,6 @@
 
 namespace System
 {
-    [Serializable]
     public class UnhandledExceptionEventArgs : EventArgs
     {
         private Object _exception;

@@ -110,10 +110,6 @@ private:
     // branch to on condition being false.
     static void genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
 
-#if !defined(_TARGET_64BIT_)
-    static void genJumpKindsForTreeLongHi(GenTreePtr cmpTree, emitJumpKind jmpKind[2]);
-#endif //! defined(_TARGET_64BIT_)
-
     static bool genShouldRoundFP();
 
     GenTreeIndir indirForm(var_types type, GenTree* base);
@@ -360,6 +356,10 @@ protected:
     void genFreeLclFrame(unsigned           frameSize,
                          /* IN OUT */ bool* pUnwindStarted,
                          bool               jmpEpilog);
+
+    void genMov32RelocatableDisplacement(BasicBlock* block, regNumber reg);
+    void genMov32RelocatableDataLabel(unsigned value, regNumber reg);
+    void genMov32RelocatableImmediate(emitAttr size, unsigned value, regNumber reg);
 
     bool genUsedPopToReturn; // True if we use the pop into PC to return,
                              // False if we didn't and must branch to LR to return.
@@ -959,7 +959,11 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
+#ifdef _TARGET_ARM64_
+    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_ISH);
+#else
     void instGen_MemoryBarrier();
+#endif
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 

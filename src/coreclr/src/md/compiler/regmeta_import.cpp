@@ -67,7 +67,7 @@ ErrExit:
 //*****************************************************************************
 // Close an enumerator.
 //*****************************************************************************
-void __stdcall RegMeta::CloseEnum(
+void STDMETHODCALLTYPE RegMeta::CloseEnum(
     HCORENUM        hEnum)          // The enumerator.
 {
     BEGIN_CLEANUP_ENTRYPOINT;

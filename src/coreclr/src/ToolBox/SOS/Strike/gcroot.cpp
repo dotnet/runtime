@@ -1317,9 +1317,9 @@ void PrintNotReachableInRange(TADDR rngStart, TADDR rngEnd, BOOL bExcludeReadyFo
 // In the code we also rely on the assumption that one card_table entry (DWORD) covers an entire os page
 //
 #if defined (_TARGET_WIN64_)
-#define card_size ((size_t)(2*DT_OS_PAGE_SIZE/card_word_width))
+#define card_size ((size_t)(2*DT_GC_PAGE_SIZE/card_word_width))
 #else
-#define card_size ((size_t)(DT_OS_PAGE_SIZE/card_word_width))
+#define card_size ((size_t)(DT_GC_PAGE_SIZE/card_word_width))
 #endif //_TARGET_WIN64_
 
 // so card_size = 128 on x86, 256 on x64

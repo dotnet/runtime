@@ -22,7 +22,7 @@
 //
 // TypeNameFactory
 //
-HRESULT __stdcall TypeNameFactory::QueryInterface(REFIID riid, void **ppUnk)
+HRESULT STDMETHODCALLTYPE TypeNameFactory::QueryInterface(REFIID riid, void **ppUnk)
 {
     WRAPPER_NO_CONTRACT;
     
@@ -64,7 +64,7 @@ HRESULT TypeNameFactoryCreateObject(REFIID riid, void **ppUnk)
 }
 
 
-HRESULT __stdcall TypeNameFactory::ParseTypeName(LPCWSTR szTypeName, DWORD* pError, ITypeName** ppTypeName)
+HRESULT STDMETHODCALLTYPE TypeNameFactory::ParseTypeName(LPCWSTR szTypeName, DWORD* pError, ITypeName** ppTypeName)
 {
     CONTRACTL
     {
@@ -107,7 +107,7 @@ HRESULT __stdcall TypeNameFactory::ParseTypeName(LPCWSTR szTypeName, DWORD* pErr
     return hr;
 }
 
-HRESULT __stdcall TypeNameFactory::GetTypeNameBuilder(ITypeNameBuilder** ppTypeNameBuilder)
+HRESULT STDMETHODCALLTYPE TypeNameFactory::GetTypeNameBuilder(ITypeNameBuilder** ppTypeNameBuilder)
 {
     CONTRACTL
     {
@@ -166,7 +166,7 @@ SString* TypeName::ToString(SString* pBuf, BOOL bAssemblySpec, BOOL bSignature, 
 }
 
 
-DWORD __stdcall TypeName::AddRef() 
+DWORD STDMETHODCALLTYPE TypeName::AddRef()
 { 
     LIMITED_METHOD_CONTRACT; 
 
@@ -175,7 +175,7 @@ DWORD __stdcall TypeName::AddRef()
     return m_count; 
 }
 
-DWORD __stdcall TypeName::Release() 
+DWORD STDMETHODCALLTYPE TypeName::Release()
 { 
     CONTRACTL
     {
@@ -210,7 +210,7 @@ TypeName::~TypeName()
         m_genericArguments[i]->Release();
 }
 
-HRESULT __stdcall TypeName::QueryInterface(REFIID riid, void **ppUnk)
+HRESULT STDMETHODCALLTYPE TypeName::QueryInterface(REFIID riid, void **ppUnk)
 {
     WRAPPER_NO_CONTRACT;
     
@@ -227,7 +227,7 @@ HRESULT __stdcall TypeName::QueryInterface(REFIID riid, void **ppUnk)
     return S_OK;
 }
 
-HRESULT __stdcall TypeName::GetNameCount(DWORD* pCount)
+HRESULT STDMETHODCALLTYPE TypeName::GetNameCount(DWORD* pCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -239,7 +239,7 @@ HRESULT __stdcall TypeName::GetNameCount(DWORD* pCount)
     return S_OK;
 }
 
-HRESULT __stdcall TypeName::GetNames(DWORD count, BSTR* bszName, DWORD* pFetched)
+HRESULT STDMETHODCALLTYPE TypeName::GetNames(DWORD count, BSTR* bszName, DWORD* pFetched)
 {
     CONTRACTL
     {
@@ -270,7 +270,7 @@ HRESULT __stdcall TypeName::GetNames(DWORD count, BSTR* bszName, DWORD* pFetched
     return hr;
 }
 
-HRESULT __stdcall TypeName::GetTypeArgumentCount(DWORD* pCount)
+HRESULT STDMETHODCALLTYPE TypeName::GetTypeArgumentCount(DWORD* pCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -282,7 +282,7 @@ HRESULT __stdcall TypeName::GetTypeArgumentCount(DWORD* pCount)
     return S_OK;
 }
 
-HRESULT __stdcall TypeName::GetTypeArguments(DWORD count, ITypeName** ppArguments, DWORD* pFetched)
+HRESULT STDMETHODCALLTYPE TypeName::GetTypeArguments(DWORD count, ITypeName** ppArguments, DWORD* pFetched)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -306,7 +306,7 @@ HRESULT __stdcall TypeName::GetTypeArguments(DWORD count, ITypeName** ppArgument
     return S_OK;
 }
 
-HRESULT __stdcall TypeName::GetModifierLength(DWORD* pCount)
+HRESULT STDMETHODCALLTYPE TypeName::GetModifierLength(DWORD* pCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -318,7 +318,7 @@ HRESULT __stdcall TypeName::GetModifierLength(DWORD* pCount)
     return S_OK;
 }
 
-HRESULT __stdcall TypeName::GetModifiers(DWORD count, DWORD* pModifiers, DWORD* pFetched)
+HRESULT STDMETHODCALLTYPE TypeName::GetModifiers(DWORD count, DWORD* pModifiers, DWORD* pFetched)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -339,7 +339,7 @@ HRESULT __stdcall TypeName::GetModifiers(DWORD count, DWORD* pModifiers, DWORD* 
     return S_OK;
 }
 
-HRESULT __stdcall TypeName::GetAssemblyName(BSTR* pszAssemblyName)
+HRESULT STDMETHODCALLTYPE TypeName::GetAssemblyName(BSTR* pszAssemblyName)
 {
     CONTRACTL
     {

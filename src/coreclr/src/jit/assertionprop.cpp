@@ -141,7 +141,7 @@ void Compiler::optAddCopies()
         // heavier-than-average uses of a parameter.
         // Initial value is all blocks.
 
-        BlockSet BLOCKSET_INIT_NOCOPY(paramImportantUseDom, BlockSetOps::MakeFull(this));
+        BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
         unsigned paramAvgWtdRefDiv2 = (varDsc->lvRefCntWtd + varDsc->lvRefCnt / 2) / (varDsc->lvRefCnt * 2);
@@ -168,21 +168,22 @@ void Compiler::optAddCopies()
 
         bool isDominatedByFirstBB = false;
 
-        BLOCKSET_ITER_INIT(this, iter, varDsc->lvRefBlks, blkNum);
-        while (iter.NextElem(this, &blkNum))
+        BlockSetOps::Iter iter(this, varDsc->lvRefBlks);
+        unsigned          bbNum = 0;
+        while (iter.NextElem(&bbNum))
         {
-            /* Find the block 'blkNum' */
+            /* Find the block 'bbNum' */
             BasicBlock* block = fgFirstBB;
-            while (block && (block->bbNum != blkNum))
+            while (block && (block->bbNum != bbNum))
             {
                 block = block->bbNext;
             }
-            noway_assert(block && (block->bbNum == blkNum));
+            noway_assert(block && (block->bbNum == bbNum));
 
             bool     importantUseInBlock = (varDsc->lvIsParam) && (block->getBBWeight(this) > paramAvgWtdRefDiv2);
             bool     isPreHeaderBlock    = ((block->bbFlags & BBF_LOOP_PREHEADER) != 0);
-            BlockSet BLOCKSET_INIT_NOCOPY(blockDom, BlockSetOps::UninitVal());
-            BlockSet BLOCKSET_INIT_NOCOPY(blockDomSub0, BlockSetOps::UninitVal());
+            BlockSet blockDom(BlockSetOps::UninitVal());
+            BlockSet blockDomSub0(BlockSetOps::UninitVal());
 
             if (block->bbIDom == nullptr && isPreHeaderBlock)
             {
@@ -214,7 +215,7 @@ void Compiler::optAddCopies()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("        Referenced in BB%02u, bbWeight is %s", blkNum, refCntWtd2str(block->getBBWeight(this)));
+                printf("        Referenced in BB%02u, bbWeight is %s", bbNum, refCntWtd2str(block->getBBWeight(this)));
 
                 if (isDominatedByFirstBB)
                 {
@@ -320,17 +321,17 @@ void Compiler::optAddCopies()
 #endif
 
             /* We have already calculated paramImportantUseDom above. */
-
-            BLOCKSET_ITER_INIT(this, iter, paramImportantUseDom, blkNum);
-            while (iter.NextElem(this, &blkNum))
+            BlockSetOps::Iter iter(this, paramImportantUseDom);
+            unsigned          bbNum = 0;
+            while (iter.NextElem(&bbNum))
             {
-                /* Advance block to point to 'blkNum' */
+                /* Advance block to point to 'bbNum' */
                 /* This assumes that the iterator returns block number is increasing lexical order. */
-                while (block && (block->bbNum != blkNum))
+                while (block && (block->bbNum != bbNum))
                 {
                     block = block->bbNext;
                 }
-                noway_assert(block && (block->bbNum == blkNum));
+                noway_assert(block && (block->bbNum == bbNum));
 
 #ifdef DEBUG
                 if (verbose)
@@ -523,7 +524,7 @@ ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
 
 void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 {
-    apTraits = new (getAllocator()) BitVecTraits(assertionCount, this);
+    apTraits = new (this, CMK_AssertionProp) BitVecTraits(assertionCount, this);
     apFull   = BitVecOps::MakeFull(apTraits);
 }
 
@@ -546,9 +547,9 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
 
     optLocalAssertionProp  = isLocalProp;
-    optAssertionTabPrivate = new (getAllocator()) AssertionDsc[optMaxAssertionCount];
+    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
     optComplementaryAssertionMap =
-        new (getAllocator()) AssertionIndex[optMaxAssertionCount](); // zero-inited (NO_ASSERTION_INDEX.)
+        new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     assert(NO_ASSERTION_INDEX == 0);
 
     if (!isLocalProp)
@@ -558,7 +559,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     if (optAssertionDep == nullptr)
     {
-        optAssertionDep = new (getAllocator()) ExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
+        optAssertionDep = new (this, CMK_AssertionProp) ExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
     }
 
     optAssertionTraitsInit(optMaxAssertionCount);
@@ -627,12 +628,12 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         vnStore->vnDump(this, curAssertion->op1.bnd.vnLen);
         printf("]");
     }
-    else if (curAssertion->op1.kind == O1K_ARRLEN_OPER_BND)
+    else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
     {
         printf("Oper_Bnd");
         vnStore->vnDump(this, curAssertion->op1.vn);
     }
-    else if (curAssertion->op1.kind == O1K_ARRLEN_LOOP_BND)
+    else if (curAssertion->op1.kind == O1K_BOUND_LOOP_BND)
     {
         printf("Loop_Bnd");
         vnStore->vnDump(this, curAssertion->op1.vn);
@@ -711,12 +712,12 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                     printf("MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
                     assert(curAssertion->op2.u1.iconFlags != 0);
                 }
-                else if (curAssertion->op1.kind == O1K_ARRLEN_OPER_BND)
+                else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
                 {
                     assert(!optLocalAssertionProp);
                     vnStore->vnDump(this, curAssertion->op2.vn);
                 }
-                else if (curAssertion->op1.kind == O1K_ARRLEN_LOOP_BND)
+                else if (curAssertion->op1.kind == O1K_BOUND_LOOP_BND)
                 {
                     assert(!optLocalAssertionProp);
                     vnStore->vnDump(this, curAssertion->op2.vn);
@@ -804,8 +805,8 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 Compiler::AssertionDsc* Compiler::optGetAssertion(AssertionIndex assertIndex)
 {
     assert(NO_ASSERTION_INDEX == 0);
-    noway_assert(assertIndex != NO_ASSERTION_INDEX);
-    noway_assert(assertIndex <= optAssertionCount);
+    assert(assertIndex != NO_ASSERTION_INDEX);
+    assert(assertIndex <= optAssertionCount);
     AssertionDsc* assertion = &optAssertionTabPrivate[assertIndex - 1];
 #ifdef DEBUG
     optDebugCheckAssertion(assertion);
@@ -1625,8 +1626,8 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O1K_ARR_BND:
             // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
             break;
-        case O1K_ARRLEN_OPER_BND:
-        case O1K_ARRLEN_LOOP_BND:
+        case O1K_BOUND_OPER_BND:
+        case O1K_BOUND_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND:
         case O1K_VALUE_NUMBER:
             assert(!optLocalAssertionProp);
@@ -1702,7 +1703,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
     }
 
     AssertionDsc& candidateAssertion = *optGetAssertion(assertionIndex);
-    if (candidateAssertion.op1.kind == O1K_ARRLEN_OPER_BND || candidateAssertion.op1.kind == O1K_ARRLEN_LOOP_BND ||
+    if (candidateAssertion.op1.kind == O1K_BOUND_OPER_BND || candidateAssertion.op1.kind == O1K_BOUND_LOOP_BND ||
         candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND)
     {
         AssertionDsc dsc  = candidateAssertion;
@@ -1768,17 +1769,17 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
 
     ValueNum vn = op1->gtVNPair.GetConservative();
 
-    ValueNumStore::ArrLenUnsignedBoundInfo arrLenUnsignedBnd;
-    // Cases where op1 holds the condition with array arithmetic and op2 is 0.
-    // Loop condition like: "i < a.len +/-k == 0"
-    // Assertion: "i < a.len +/- k == 0"
-    if (vnStore->IsVNArrLenArithBound(vn) &&
+    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    // Cases where op1 holds the upper bound arithmetic and op2 is 0.
+    // Loop condition like: "i < bnd +/-k == 0"
+    // Assertion: "i < bnd +/- k == 0"
+    if (vnStore->IsVNCompareCheckedBoundArith(vn) &&
         op2->gtVNPair.GetConservative() == vnStore->VNZeroForType(op2->TypeGet()) &&
         (relop->gtOper == GT_EQ || relop->gtOper == GT_NE))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind         = O1K_ARRLEN_OPER_BND;
+        dsc.op1.kind         = O1K_BOUND_OPER_BND;
         dsc.op1.vn           = vn;
         dsc.op2.kind         = O2K_CONST_INT;
         dsc.op2.vn           = vnStore->VNZeroForType(op2->TypeGet());
@@ -1788,16 +1789,16 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Cases where op1 holds the condition array length and op2 is 0.
-    // Loop condition like: "i < a.len == 0"
-    // Assertion: "i < a.len == false"
-    else if (vnStore->IsVNArrLenBound(vn) &&
+    // Cases where op1 holds the upper bound and op2 is 0.
+    // Loop condition like: "i < bnd == 0"
+    // Assertion: "i < bnd == false"
+    else if (vnStore->IsVNCompareCheckedBound(vn) &&
              (op2->gtVNPair.GetConservative() == vnStore->VNZeroForType(op2->TypeGet())) &&
              (relop->gtOper == GT_EQ || relop->gtOper == GT_NE))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind         = O1K_ARRLEN_LOOP_BND;
+        dsc.op1.kind         = O1K_BOUND_LOOP_BND;
         dsc.op1.vn           = vn;
         dsc.op2.kind         = O2K_CONST_INT;
         dsc.op2.vn           = vnStore->VNZeroForType(op2->TypeGet());
@@ -1807,14 +1808,14 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Cases where op1 holds the lhs of the condition op2 holds rhs.
-    // Loop condition like "i < a.len"
-    // Assertion: "i < a.len != 0"
-    else if (vnStore->IsVNArrLenBound(relop->gtVNPair.GetConservative()))
+    // Cases where op1 holds the lhs of the condition op2 holds the bound.
+    // Loop condition like "i < bnd"
+    // Assertion: "i < bnd != 0"
+    else if (vnStore->IsVNCompareCheckedBound(relop->gtVNPair.GetConservative()))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
-        dsc.op1.kind         = O1K_ARRLEN_LOOP_BND;
+        dsc.op1.kind         = O1K_BOUND_LOOP_BND;
         dsc.op1.vn           = relop->gtVNPair.GetConservative();
         dsc.op2.kind         = O2K_CONST_INT;
         dsc.op2.vn           = vnStore->VNZeroForType(TYP_INT);
@@ -1824,28 +1825,28 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Loop condition like "(uint)i < (uint)a.len" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < a.len (on the appropiate edge)
-    else if (vnStore->IsVNArrLenUnsignedBound(relop->gtVNPair.GetConservative(), &arrLenUnsignedBnd))
+    // Loop condition like "(uint)i < (uint)bnd" or equivalent
+    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropiate edge)
+    else if (vnStore->IsVNUnsignedCompareCheckedBound(relop->gtVNPair.GetConservative(), &unsignedCompareBnd))
     {
-        assert(arrLenUnsignedBnd.vnIdx != ValueNumStore::NoVN);
-        assert((arrLenUnsignedBnd.cmpOper == VNF_LT_UN) || (arrLenUnsignedBnd.cmpOper == VNF_GE_UN));
-        assert(vnStore->IsVNArrLen(arrLenUnsignedBnd.vnLen));
+        assert(unsignedCompareBnd.vnIdx != ValueNumStore::NoVN);
+        assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
+        assert(vnStore->IsVNCheckedBound(unsignedCompareBnd.vnBound));
 
         AssertionDsc dsc;
         dsc.assertionKind = OAK_NO_THROW;
         dsc.op1.kind      = O1K_ARR_BND;
         dsc.op1.vn        = relop->gtVNPair.GetConservative();
-        dsc.op1.bnd.vnIdx = arrLenUnsignedBnd.vnIdx;
-        dsc.op1.bnd.vnLen = arrLenUnsignedBnd.vnLen;
+        dsc.op1.bnd.vnIdx = unsignedCompareBnd.vnIdx;
+        dsc.op1.bnd.vnLen = unsignedCompareBnd.vnBound;
         dsc.op2.kind      = O2K_INVALID;
         dsc.op2.vn        = ValueNumStore::NoVN;
 
         AssertionIndex index = optAddAssertion(&dsc);
-        if (arrLenUnsignedBnd.cmpOper == VNF_GE_UN)
+        if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
-            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= a.len but we're really
-            // after i < a.len so we need to change the assertion edge to "next".
+            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
+            // after i < bnd so we need to change the assertion edge to "next".
             return AssertionInfo::ForNextEdge(index);
         }
         return index;
@@ -2149,6 +2150,10 @@ void Compiler::optMapComplementary(AssertionIndex assertionIndex, AssertionIndex
     {
         return;
     }
+
+    assert(assertionIndex <= optMaxAssertionCount);
+    assert(index <= optMaxAssertionCount);
+
     optComplementaryAssertionMap[assertionIndex] = index;
     optComplementaryAssertionMap[index]          = assertionIndex;
 }
@@ -2853,15 +2858,15 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    while (iter.NextElem(apTraits, &index))
+    while (iter.NextElem(&index))
     {
-        index++;
-        if (index > optAssertionCount)
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
         {
             break;
         }
         // See if the variable is equal to a constant or another variable.
-        AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
         if (curAssertion->assertionKind != OAK_EQUAL || curAssertion->op1.kind != O1K_LCLVAR)
         {
             continue;
@@ -2877,7 +2882,7 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
             if (optLocalAssertionProp)
             {
                 // Perform copy assertion prop.
-                GenTreePtr newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG((AssertionIndex)index));
+                GenTreePtr newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 if (newTree == nullptr)
                 {
                     // Skip and try next assertion.
@@ -2897,7 +2902,7 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
             // If local assertion prop just, perform constant prop.
             if (optLocalAssertionProp)
             {
-                return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG((AssertionIndex)index));
+                return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             }
             // If global assertion, perform constant propagation only if the VN's match and the lcl is non-CSE.
             else if (curAssertion->op1.vn == tree->gtVNPair.GetConservative())
@@ -2907,7 +2912,7 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
                 if (!lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
 #endif
                 {
-                    return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG((AssertionIndex)index));
+                    return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 }
             }
         }
@@ -2973,14 +2978,14 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
     }
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    while (iter.NextElem(apTraits, &index))
+    while (iter.NextElem(&index))
     {
-        index++;
-        if (index > optAssertionCount)
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
         {
             break;
         }
-        AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
         if ((curAssertion->assertionKind != OAK_EQUAL && curAssertion->assertionKind != OAK_NOT_EQUAL))
         {
             continue;
@@ -2989,7 +2994,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         if (curAssertion->op1.vn == op1->gtVNPair.GetConservative() &&
             curAssertion->op2.vn == op2->gtVNPair.GetConservative())
         {
-            return (AssertionIndex)index;
+            return assertionIndex;
         }
     }
     return NO_ASSERTION_INDEX;
@@ -3338,7 +3343,7 @@ GenTreePtr Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, const Ge
         return nullptr;
     }
 
-    unsigned index = optAssertionIsSubrange(lcl, toType, assertions);
+    AssertionIndex index = optAssertionIsSubrange(lcl, toType, assertions);
     if (index != NO_ASSERTION_INDEX)
     {
         LclVarDsc* varDsc = &lvaTable[lcl->gtLclVarCommon.gtLclNum];
@@ -3416,7 +3421,7 @@ GenTreePtr Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, const G
     if ((tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK) &&
         ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
     {
-        optRemoveRangeCheck(tree, stmt, true, GTF_ASG, true /* force remove */);
+        optRemoveRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
     }
     return nullptr;
@@ -3470,6 +3475,7 @@ GenTreePtr Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, const Gen
         }
 #endif
         tree->gtFlags &= ~GTF_EXCEPT;
+        tree->gtFlags |= GTF_IND_NONFAULTING;
 
         // Set this flag to prevent reordering
         tree->gtFlags |= GTF_ORDER_SIDEEFF;
@@ -3524,24 +3530,24 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTreePtr op, ASSERT_VAL
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
-        ValueNum vn = op->gtVNPair.GetConservative();
-
-        if (BitVecOps::IsEmpty(apTraits, assertions))
+        if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
         {
             return NO_ASSERTION_INDEX;
         }
 
+        ValueNum vn = op->gtVNPair.GetConservative();
+
         // Check each assertion to find if we have a vn == or != null assertion.
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;
-        while (iter.NextElem(apTraits, &index))
+        while (iter.NextElem(&index))
         {
-            index++;
-            if (index > optAssertionCount)
+            AssertionIndex assertionIndex = GetAssertionIndex(index);
+            if (assertionIndex > optAssertionCount)
             {
                 break;
             }
-            AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+            AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
             if (curAssertion->assertionKind != OAK_NOT_EQUAL)
             {
                 continue;
@@ -3550,7 +3556,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTreePtr op, ASSERT_VAL
             {
                 continue;
             }
-            return (AssertionIndex)index;
+            return assertionIndex;
         }
     }
     else
@@ -3708,15 +3714,15 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    while (iter.NextElem(apTraits, &index))
+    while (iter.NextElem(&index))
     {
-        index++;
-        if (index > optAssertionCount)
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
         {
             break;
         }
         // If it is not a nothrow assertion, skip.
-        AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
         if (!curAssertion->IsBoundsCheckNoThrow())
         {
             continue;
@@ -3795,8 +3801,8 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in BB%02u:\n", dbgMsg, index,
-                   compCurBB->bbNum);
+            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in BB%02u:\n", dbgMsg,
+                   assertionIndex, compCurBB->bbNum);
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
@@ -3961,20 +3967,20 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
         // Check each assertion in chkAssertions to see if it can be applied to curAssertion
         BitVecOps::Iter chkIter(apTraits, chkAssertions);
         unsigned        chkIndex = 0;
-        while (chkIter.NextElem(apTraits, &chkIndex))
+        while (chkIter.NextElem(&chkIndex))
         {
-            chkIndex++;
-            if (chkIndex > optAssertionCount)
+            AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
+            if (chkAssertionIndex > optAssertionCount)
             {
                 break;
             }
-            if (chkIndex == assertionIndex)
+            if (chkAssertionIndex == assertionIndex)
             {
                 continue;
             }
 
             // Determine which one is a copy assertion and use the other to check for implied assertions.
-            AssertionDsc* iterAssertion = optGetAssertion((AssertionIndex)chkIndex);
+            AssertionDsc* iterAssertion = optGetAssertion(chkAssertionIndex);
             if (curAssertion->IsCopyAssertion())
             {
                 optImpliedByCopyAssertion(curAssertion, iterAssertion, activeAssertions);
@@ -4010,15 +4016,15 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
     // Check each assertion in activeAssertions to see if it can be applied to constAssertion
     BitVecOps::Iter chkIter(apTraits, activeAssertions);
     unsigned        chkIndex = 0;
-    while (chkIter.NextElem(apTraits, &chkIndex))
+    while (chkIter.NextElem(&chkIndex))
     {
-        chkIndex++;
-        if (chkIndex > optAssertionCount)
+        AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
+        if (chkAssertionIndex > optAssertionCount)
         {
             break;
         }
         // chkAssertion must be Type/Subtype is equal assertion
-        AssertionDsc* chkAssertion = optGetAssertion((AssertionIndex)chkIndex);
+        AssertionDsc* chkAssertion = optGetAssertion(chkAssertionIndex);
         if ((chkAssertion->op1.kind != O1K_SUBTYPE && chkAssertion->op1.kind != O1K_EXACT_TYPE) ||
             (chkAssertion->assertionKind != OAK_EQUAL))
         {
@@ -4026,12 +4032,12 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         }
 
         // Search the assertion table for a non-null assertion on op1 that matches chkAssertion
-        for (unsigned impIndex = 1; impIndex <= optAssertionCount; impIndex++)
+        for (AssertionIndex impIndex = 1; impIndex <= optAssertionCount; impIndex++)
         {
-            AssertionDsc* impAssertion = optGetAssertion((AssertionIndex)impIndex);
+            AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
             //  The impAssertion must be different from the chkAssertion
-            if (impIndex == chkIndex)
+            if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
@@ -4052,7 +4058,8 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
                 if (verbose)
                 {
                     printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkIndex, impIndex);
+                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                           impIndex);
                 }
 #endif
             }
@@ -4107,15 +4114,15 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
     // Check each assertion in chkAssertions to see if it can be applied to constAssertion
     BitVecOps::Iter chkIter(apTraits, chkAssertions);
     unsigned        chkIndex = 0;
-    while (chkIter.NextElem(apTraits, &chkIndex))
+    while (chkIter.NextElem(&chkIndex))
     {
-        chkIndex++;
-        if (chkIndex > optAssertionCount)
+        AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
+        if (chkAssertionIndex > optAssertionCount)
         {
             break;
         }
         // The impAssertion must be different from the const assertion.
-        AssertionDsc* impAssertion = optGetAssertion((AssertionIndex)chkIndex);
+        AssertionDsc* impAssertion = optGetAssertion(chkAssertionIndex);
         if (impAssertion == constAssertion)
         {
             continue;
@@ -4148,7 +4155,7 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
 
         if (usable)
         {
-            BitVecOps::AddElemD(apTraits, result, chkIndex - 1);
+            BitVecOps::AddElemD(apTraits, result, chkIndex);
 #ifdef DEBUG
             if (verbose)
             {
@@ -4855,7 +4862,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Gen
 //
 void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree)
 {
-    ASSERT_TP  empty   = BitVecOps::MakeEmpty(apTraits);
+    ASSERT_TP  empty   = BitVecOps::UninitVal();
     GenTreePtr newTree = nullptr;
     if (tree->OperGet() == GT_CALL)
     {

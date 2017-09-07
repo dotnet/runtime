@@ -78,11 +78,14 @@ using namespace CorUnix;
 
 CObjectType CorUnix::otProcess(
                 otiProcess,
-                NULL,
-                NULL,
-                0,
+                NULL,   // No cleanup routine
+                NULL,   // No initialization routine
+                0,      // No immutable data
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
-                0,
+                NULL,   // No process local data cleanup routine
+                0,      // No shared data
                 PROCESS_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
@@ -97,7 +100,7 @@ CObjectType CorUnix::otProcess(
 //
 // Helper memory page used by the FlushProcessWriteBuffers
 //
-static int s_helperPage[VIRTUAL_PAGE_SIZE / sizeof(int)] __attribute__((aligned(VIRTUAL_PAGE_SIZE)));
+static int* s_helperPage = 0;
 
 //
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
@@ -2951,6 +2954,10 @@ PROCAbortInitialize()
             {
                 *argv++ = "--triage";
             }
+            else if (strcmp(envvar, "4") == 0)
+            {
+                *argv++ = "--full";
+            }
         }
 
         envvar = getenv("COMPlus_CreateDumpDiagnostics");
@@ -2963,6 +2970,58 @@ PROCAbortInitialize()
         *argv = nullptr;
     }
     return TRUE;
+}
+
+/*++
+Function:
+  PROCCreateCrashDumpIfEnabled
+
+  Creates crash dump of the process (if enabled). Can be
+  called from the unhandled native exception handler.
+
+(no return value)
+--*/
+VOID
+PROCCreateCrashDumpIfEnabled()
+{
+#if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
+    // If enabled, launch the create minidump utility and wait until it completes
+    if (g_argvCreateDump[0] == nullptr)
+        return;
+
+    // Fork the core dump child process.
+    pid_t childpid = fork();
+
+    // If error, write an error to trace log and abort
+    if (childpid == -1)
+    {
+        ERROR("PROCAbort: fork() FAILED %d (%s)\n", errno, strerror(errno));
+    }
+    else if (childpid == 0)
+    {
+        // Child process
+        if (execve(g_argvCreateDump[0], g_argvCreateDump, palEnvironment) == -1)
+        {
+            ERROR("PROCAbort: execve FAILED %d (%s)\n", errno, strerror(errno));
+        }
+    }
+    else
+    {
+        // Gives the child process permission to use /proc/<pid>/mem and ptrace
+        if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
+        {
+            ERROR("PROCAbort: prctl() FAILED %d (%s)\n", errno, strerror(errno));
+        }
+        // Parent waits until the child process is done
+        int wstatus;
+        int result = waitpid(childpid, &wstatus, 0);
+        if (result != childpid)
+        {
+            ERROR("PROCAbort: waitpid FAILED result %d wstatus %d errno %d (%s)\n",
+                result, wstatus, errno, strerror(errno));
+        }
+    }
+#endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
 }
 
 /*++
@@ -2981,44 +3040,8 @@ PROCAbort()
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-#if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-    // If enabled, launch the create minidump utility and wait until it completes
-    if (g_argvCreateDump[0] != nullptr)
-    {
-        // Fork the core dump child process.
-        pid_t childpid = fork();
+    PROCCreateCrashDumpIfEnabled();
 
-        // If error, write an error to trace log and abort
-        if (childpid == -1)
-        {
-            ERROR("PROCAbort: fork() FAILED %d (%s)\n", errno, strerror(errno));
-        }
-        else if (childpid == 0)
-        {
-            // Child process
-            if (execve(g_argvCreateDump[0], g_argvCreateDump, palEnvironment) == -1)
-            {
-                ERROR("PROCAbort: execve FAILED %d (%s)\n", errno, strerror(errno));
-            }
-        }
-        else
-        {
-            // Gives the child process permission to use /proc/<pid>/mem and ptrace
-            if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
-            {
-                ERROR("PROCAbort: prctl() FAILED %d (%s)\n", errno, strerror(errno));
-            }
-            // Parent waits until the child process is done
-            int wstatus;
-            int result = waitpid(childpid, &wstatus, 0);
-            if (result != childpid)
-            {
-                ERROR("PROCAbort: waitpid FAILED result %d wstatus %d errno %d (%s)\n",
-                    result, wstatus, errno, strerror(errno));
-            }
-        }
-    }
-#endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
     // Abort the process after waiting for the core dump to complete
     abort();
 }
@@ -3035,13 +3058,22 @@ Return
 BOOL 
 InitializeFlushProcessWriteBuffers()
 {
-    // Verify that the s_helperPage is really aligned to the VIRTUAL_PAGE_SIZE
-    _ASSERTE((((SIZE_T)s_helperPage) & (VIRTUAL_PAGE_SIZE - 1)) == 0);
+    _ASSERTE(s_helperPage == 0);
+
+    s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+
+    if(s_helperPage == MAP_FAILED)
+    {
+        return false;
+    }
+
+    // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
+    _ASSERTE((((SIZE_T)s_helperPage) & (GetVirtualPageSize() - 1)) == 0);
 
     // Locking the page ensures that it stays in memory during the two mprotect
     // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
     // those calls, they would not have the expected effect of generating IPI.
-    int status = mlock(s_helperPage, VIRTUAL_PAGE_SIZE);
+    int status = mlock(s_helperPage, GetVirtualPageSize());
 
     if (status != 0)
     {
@@ -3051,7 +3083,7 @@ InitializeFlushProcessWriteBuffers()
     status = pthread_mutex_init(&flushProcessWriteBuffersMutex, NULL);
     if (status != 0)
     {
-        munlock(s_helperPage, VIRTUAL_PAGE_SIZE);
+        munlock(s_helperPage, GetVirtualPageSize());
     }
 
     return status == 0;
@@ -3084,14 +3116,14 @@ FlushProcessWriteBuffers()
     // Changing a helper memory page protection from read / write to no access 
     // causes the OS to issue IPI to flush TLBs on all processors. This also
     // results in flushing the processor buffers.
-    status = mprotect(s_helperPage, VIRTUAL_PAGE_SIZE, PROT_READ | PROT_WRITE);
+    status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
     FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
 
     // Ensure that the page is dirty before we change the protection so that
     // we prevent the OS from skipping the global TLB flush.
     InterlockedIncrement(s_helperPage);
 
-    status = mprotect(s_helperPage, VIRTUAL_PAGE_SIZE, PROT_NONE);
+    status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
     FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
 
     status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);

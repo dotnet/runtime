@@ -73,8 +73,6 @@ namespace System.Diagnostics
             Write(string.Format(null, format, args));
         }
 
-        private static readonly object s_ForLock = new Object();
-
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Assert(bool condition)
         {

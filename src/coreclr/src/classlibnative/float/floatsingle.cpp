@@ -181,10 +181,9 @@ FCIMPL1_V(float, COMSingle::Round, float x)
     // We had a number that was equally close to 2 integers.
     // We need to return the even one.
 
-    float tempVal = (x + 0.5f);
-    float flrTempVal = floorf(tempVal);
+    float flrTempVal = floorf(x + 0.5f);
 
-    if ((flrTempVal == tempVal) && (fmodf(tempVal, 2.0f) != 0)) {
+    if ((x == (floorf(x) + 0.5f)) && (fmod(flrTempVal, 2.0f) != 0)) {
         flrTempVal -= 1.0f;
     }
 

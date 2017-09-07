@@ -5,12 +5,12 @@
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Tools/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
   </PropertyGroup>
-   <ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.BuildTools">
-	  <Version>$(BuildToolsPackageVersion)</Version>
-	</PackageReference>
+      <Version>$(BuildToolsPackageVersion)</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.DotNet.BuildTools.Coreclr">
-	  <Version>1.0.4-prerelease</Version>
-	</PackageReference>
+      <Version>1.0.4-prerelease</Version>
+    </PackageReference>
   </ItemGroup>
 </Project>

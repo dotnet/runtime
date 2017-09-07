@@ -6,7 +6,6 @@ namespace System.Runtime.CompilerServices
 {
     // Attribute used to communicate to the VS7 debugger that a class should be treated as if it has global scope.
     
-    [Serializable]
     [AttributeUsage(AttributeTargets.Class)]
     public class CompilerGlobalScopeAttribute : Attribute
     {

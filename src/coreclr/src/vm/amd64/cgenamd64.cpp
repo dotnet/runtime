@@ -670,6 +670,19 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     _ASSERTE(DbgIsExecutable(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0]));
 }
 
+void UMEntryThunkCode::Poison()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    m_movR10[0] = X86_INSTR_INT3;
+}
+
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
 {
     LIMITED_METHOD_CONTRACT;

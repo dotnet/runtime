@@ -2,17 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-//
-//
-
-//
 // ==--==
 //
 // File: CLASS.H
-//
-
-
 //
 
 //
@@ -43,7 +35,6 @@
 #include "clrex.h"
 #include "hash.h"
 #include "crst.h"
-#include "objecthandle.h"
 #include "cgensys.h"
 #include "declsec.h"
 #ifdef FEATURE_COMINTEROP
@@ -110,6 +101,7 @@ class LoaderAllocator;
 class ComCallWrapperTemplate;
 
 typedef DPTR(DictionaryLayout) PTR_DictionaryLayout;
+typedef DPTR(FieldMarshaler) PTR_FieldMarshaler;
 
 
 //---------------------------------------------------------------------------------
@@ -440,7 +432,7 @@ class EEClassLayoutInfo
         // An array of FieldMarshaler data blocks, used to drive call-time
         // marshaling of NStruct reference parameters. The number of elements
         // equals m_numCTMFields.
-        FieldMarshaler *m_pFieldMarshalers;
+        RelativePointer<PTR_FieldMarshaler> m_pFieldMarshalers;
 
 
     public:
@@ -469,11 +461,19 @@ class EEClassLayoutInfo
             return m_numCTMFields;
         }
 
-        FieldMarshaler *GetFieldMarshalers() const
+        PTR_FieldMarshaler GetFieldMarshalers() const
         {
             LIMITED_METHOD_CONTRACT;
-            return m_pFieldMarshalers;
+            return ReadPointerMaybeNull(this, &EEClassLayoutInfo::m_pFieldMarshalers);
         }
+
+#ifndef DACCESS_COMPILE
+        void SetFieldMarshalers(FieldMarshaler *pFieldMarshallers)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_pFieldMarshalers.SetValueMaybeNull(pFieldMarshallers);
+        }
+#endif // DACCESS_COMPILE
 
         BOOL IsBlittable() const
         {
@@ -518,6 +518,7 @@ class EEClassLayoutInfo
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
+        CorElementType GetNativeHFATypeRaw();
 #ifdef FEATURE_HFA
         bool IsNativeHFA()
         {
@@ -532,7 +533,16 @@ class EEClassLayoutInfo
                 return (m_bFlags & e_R4_HFA) ? ELEMENT_TYPE_R4 : ELEMENT_TYPE_R8;
             return ELEMENT_TYPE_END;
         }
-#endif
+#else // !FEATURE_HFA
+        bool IsNativeHFA()
+        {
+            return GetNativeHFATypeRaw() != ELEMENT_TYPE_END;
+        }
+        CorElementType GetNativeHFAType()
+        {
+            return GetNativeHFATypeRaw();
+        }
+#endif // !FEATURE_HFA
 
     private:
         void SetIsBlittable(BOOL isBlittable)
@@ -676,7 +686,7 @@ class EEClassOptionalFields
 
     // Variance info for each type parameter (gpNonVariant, gpCovariant, or gpContravariant)
     // If NULL, this type has no type parameters that are co/contravariant
-    BYTE* m_pVarianceInfo;
+    RelativePointer<PTR_BYTE> m_pVarianceInfo;
 
     //
     // COM RELATED FIELDS.
@@ -714,6 +724,13 @@ class EEClassOptionalFields
 
     // Set default values for optional fields.
     inline void Init();
+
+    PTR_BYTE GetVarianceInfo()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return ReadPointerMaybeNull(this, &EEClassOptionalFields::m_pVarianceInfo);
+    }
 };
 typedef DPTR(EEClassOptionalFields) PTR_EEClassOptionalFields;
 
@@ -971,12 +988,12 @@ public:
     // will return the method table pointer corresponding to the "canonical"
     // instantiation, as defined in typehandle.h.
     //
-    inline MethodTable* GetMethodTable()
+    inline PTR_MethodTable GetMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return m_pMethodTable;
+        return ReadPointerMaybeNull(this, &EEClass::m_pMethodTable);
     }
 
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
@@ -993,14 +1010,14 @@ public:
         CANNOT_HAVE_CONTRACT;
         SUPPORTS_DAC;
 
-        return m_pMethodTable;
+        return ReadPointerMaybeNull(this, &EEClass::m_pMethodTable);
     }
-#ifndef DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
     inline void SetMethodTable(MethodTable*  pMT)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMethodTable = pMT;
+        m_pMethodTable.SetValueMaybeNull(pMT);
     }
 #endif // !DACCESS_COMPILE
 
@@ -1222,7 +1239,7 @@ public:
     inline void SetFieldDescList (FieldDesc* pFieldDescList)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFieldDescList.SetValue(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pFieldDescList), pFieldDescList);
+        m_pFieldDescList.SetValue(pFieldDescList);
     }
 #endif // !DACCESS_COMPILE
 
@@ -1285,77 +1302,6 @@ public:
     }
 #endif
 
-    inline BOOL IsCritical()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) != VMFLAG_TRANSPARENCY_TRANSPARENT
-            && !IsAllTransparent();
-    }
-
-    inline BOOL IsTreatAsSafe()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_ALLCRITICAL_TAS ||
-               (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_TAS_NOTCRITICAL
-            ;
-    }
-
-    inline BOOL IsAllTransparent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_ALL_TRANSPARENT;
-    }
-
-    inline BOOL IsAllCritical()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_ALLCRITICAL
-            || (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_ALLCRITICAL_TAS;
-    }
-
-    inline BOOL HasCriticalTransparentInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) != VMFLAG_TRANSPARENCY_UNKNOWN;
-    }
-
-    void SetCriticalTransparentInfo(
-                                    BOOL fIsTreatAsSafe,
-                                    BOOL fIsAllTransparent,
-                                    BOOL fIsAllCritical)
-    {
-        WRAPPER_NO_CONTRACT;
-        
-        // TAS wihtout critical doesn't make sense - although it was allowed in the v2 desktop model,
-        // so we need to allow it for compatibility reasons on the desktop.
-        _ASSERTE(!fIsTreatAsSafe || fIsAllCritical);
-
-        //if nothing is set, then we're transparent.
-        unsigned flags = VMFLAG_TRANSPARENCY_TRANSPARENT;
-
-        if (fIsAllTransparent)
-        {
-            flags = VMFLAG_TRANSPARENCY_ALL_TRANSPARENT;
-        }
-        else if (fIsAllCritical)
-        {
-            flags = fIsTreatAsSafe ? VMFLAG_TRANSPARENCY_ALLCRITICAL_TAS :
-                                     VMFLAG_TRANSPARENCY_ALLCRITICAL;
-        }
-        else
-        {
-            flags = fIsTreatAsSafe ? VMFLAG_TRANSPARENCY_TAS_NOTCRITICAL :
-                                     VMFLAG_TRANSPARENCY_TRANSPARENT;
-        }
-
-        FastInterlockOr(EnsureWritablePages(&m_VMFlags), flags);
-
-        _ASSERTE(HasCriticalTransparentInfo());
-    }
     inline DWORD IsUnsafeValueClass()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1383,29 +1329,6 @@ public:
     }
 
 public:
-
-    inline void SetDoesNotHaveSuppressUnmanagedCodeAccessAttr()
-    {
-        WRAPPER_NO_CONTRACT;
-        FastInterlockOr(EnsureWritablePages(&m_VMFlags),VMFLAG_NOSUPPRESSUNMGDCODEACCESS);
-    }
-
-    inline BOOL HasSuppressUnmanagedCodeAccessAttr()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !(m_VMFlags & VMFLAG_NOSUPPRESSUNMGDCODEACCESS);
-    }
-
-    inline BOOL HasRemotingProxyAttribute()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_VMFlags & VMFLAG_REMOTING_PROXY_ATTRIBUTE;
-    }
-    inline void SetHasRemotingProxyAttribute()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_REMOTING_PROXY_ATTRIBUTE;
-    }
     inline BOOL IsAlign8Candidate()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1503,11 +1426,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_DELEGATE;
     }
-
-    // This is only applicable to interfaces. This method does not
-    // provide correct information for non-interface types.
-    DWORD  SomeMethodsRequireInheritanceCheck();
-    void SetSomeMethodsRequireInheritanceCheck();
 
     BOOL HasFixedAddressVTStatics()
     {
@@ -1645,7 +1563,7 @@ public:
     inline void SetChunks (MethodDescChunk* pChunks)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pChunks.SetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pChunks), pChunks);
+        m_pChunks.SetValueMaybeNull(pChunks);
     }
 #endif // !DACCESS_COMPILE
     void AddChunk (MethodDescChunk* pNewChunk);
@@ -1655,14 +1573,15 @@ public:
     inline PTR_GuidInfo GetGuidInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pGuidInfo;
+
+        return ReadPointerMaybeNull(this, &EEClass::m_pGuidInfo);
     }
 
     inline void SetGuidInfo(GuidInfo* pGuidInfo)
     {
         WRAPPER_NO_CONTRACT;
         #ifndef DACCESS_COMPILE
-        *EnsureWritablePages(&m_pGuidInfo) = pGuidInfo;
+        EnsureWritablePages(&m_pGuidInfo)->SetValueMaybeNull(pGuidInfo);
         #endif // DACCESS_COMPILE
     }
 
@@ -1708,6 +1627,13 @@ public:
         }
     }
 #endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING    
+
+#if defined(FEATURE_HFA)
+    bool CheckForHFA(MethodTable ** pByValueClassCache);
+    VOID CheckForNativeHFA();
+#else // !FEATURE_HFA
+    bool CheckForHFA();
+#endif // FEATURE_HFA
 
 #ifdef FEATURE_COMINTEROP
     inline TypeHandle GetCoClassForInterface()
@@ -1824,6 +1750,7 @@ public:
         GetOptionalFields()->m_pDictLayout = pLayout;
     }
 
+#ifndef DACCESS_COMPILE
     static CorGenericParamAttr GetVarianceOfTypeParameter(BYTE * pbVarianceInfo, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1842,15 +1769,16 @@ public:
     BYTE* GetVarianceInfo()
     {
         LIMITED_METHOD_CONTRACT;
-        return HasOptionalFields() ? GetOptionalFields()->m_pVarianceInfo : NULL;
+        return HasOptionalFields() ? GetOptionalFields()->GetVarianceInfo() : NULL;
     }
 
     void SetVarianceInfo(BYTE *pVarianceInfo)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_pVarianceInfo = pVarianceInfo;
+        GetOptionalFields()->m_pVarianceInfo.SetValueMaybeNull(pVarianceInfo);
     }
+#endif // !DACCESS_COMPILE
 
     // Check that a signature blob uses type parameters correctly
     // in accordance with the variance annotations specified by this class
@@ -1996,35 +1924,7 @@ public:
 #endif
         VMFLAG_DELEGATE                        = 0x00000002,
 
-        //Desktop
-        // --------------
-        //Flag              | All Transparent   | Critical  | All Critical  | TreatAsSafe
-        //TRANSPARENT       |        0          |    0      |       0       |       0
-        //ALL_TRANSPARENT   |        1          |    0      |       0       |       0
-        //CRITICAL          |        0          |    1      |       0       |       0
-        //TAS_CRITICAL      |        0          |    1      |       0       |       1
-        //ALLCRITICAL       |        0          |    0      |       1       |       0
-        //ALLCRITICAL_TAS   |        0          |    0      |       1       |       1
-        //TAS_NOTCRITICAL   |        0          |    0      |       0       |       1
-        //
-        //
-        //On CoreCLR TAS implies Critical and "All Critical" and "Critical" are the same thing.
-        //CoreCLR
-        // --------------
-        //Flag              | All Transparent   | Critical  | TreatAsSafe
-        //TRANSPARENT       |        0          |    0      |       0
-        //ALL_TRANSPARENT   |        1          |    0      |       0
-        //CRITICAL          |        0          |    1      |       0
-        //TAS_CRITICAL      |        0          |    1      |       1
-        VMFLAG_TRANSPARENCY_MASK               = 0x0000001c,
-        VMFLAG_TRANSPARENCY_UNKNOWN            = 0x00000000,
-        VMFLAG_TRANSPARENCY_TRANSPARENT        = 0x00000004,
-        VMFLAG_TRANSPARENCY_ALL_TRANSPARENT    = 0x00000008,
-        VMFLAG_TRANSPARENCY_CRITICAL           = 0x0000000c,
-        VMFLAG_TRANSPARENCY_CRITICAL_TAS       = 0x00000010,
-        VMFLAG_TRANSPARENCY_ALLCRITICAL        = 0x00000014,
-        VMFLAG_TRANSPARENCY_ALLCRITICAL_TAS    = 0x00000018,
-        VMFLAG_TRANSPARENCY_TAS_NOTCRITICAL    = 0x0000001c,
+        // VMFLAG_UNUSED                       = 0x0000001c,
 
         VMFLAG_FIXED_ADDRESS_VT_STATICS        = 0x00000020, // Value type Statics in this class will be pinned
         VMFLAG_HASLAYOUT                       = 0x00000040,
@@ -2050,13 +1950,13 @@ public:
         VMFLAG_BESTFITMAPPING                  = 0x00004000, // BestFitMappingAttribute.Value
         VMFLAG_THROWONUNMAPPABLECHAR           = 0x00008000, // BestFitMappingAttribute.ThrowOnUnmappableChar
 
-        VMFLAG_NOSUPPRESSUNMGDCODEACCESS       = 0x00010000,
+        // unused                              = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
         VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
-        VMFLAG_REMOTING_PROXY_ATTRIBUTE        = 0x00080000,
+        // unused                              = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
-        VMFLAG_METHODS_REQUIRE_INHERITANCE_CHECKS = 0x00400000,
+        // unused                              = 0x00400000,
 
 #ifdef FEATURE_COMINTEROP
         VMFLAG_SPARSE_FOR_COMINTEROP           = 0x00800000,
@@ -2090,7 +1990,7 @@ public:
     // C_ASSERTs in Jitinterface.cpp need this to be public to check the offset.
     // Put it first so the offset rarely changes, which just reduces the number of times we have to fiddle
     // with the offset.
-    PTR_GuidInfo m_pGuidInfo;           // The cached guid inforation for interfaces.
+    RelativePointer<PTR_GuidInfo> m_pGuidInfo;  // The cached guid information for interfaces.
 
 #ifdef _DEBUG
 public:
@@ -2104,7 +2004,7 @@ private:
     RelativePointer<PTR_EEClassOptionalFields> m_rpOptionalFields;
 
     // TODO: Remove this field. It is only used by SOS and object validation for stress.
-    PTR_MethodTable m_pMethodTable;
+    RelativePointer<PTR_MethodTable> m_pMethodTable;
 
     RelativePointer<PTR_FieldDesc> m_pFieldDescList;
     RelativePointer<PTR_MethodDescChunk> m_pChunks;
@@ -2300,15 +2200,15 @@ struct ComPlusCallInfo;
 class DelegateEEClass : public EEClass
 {
 public:
-    PTR_Stub            m_pStaticCallStub;
-    PTR_Stub            m_pInstRetBuffCallStub;
-    PTR_MethodDesc      m_pInvokeMethod;
-    PTR_Stub            m_pMultiCastInvokeStub;
-    PTR_Stub            m_pSecureDelegateInvokeStub;
-    UMThunkMarshInfo*   m_pUMThunkMarshInfo;
-    PTR_MethodDesc      m_pBeginInvokeMethod;
-    PTR_MethodDesc      m_pEndInvokeMethod;
-    Volatile<PCODE>     m_pMarshalStub;
+    PTR_Stub                         m_pStaticCallStub;
+    PTR_Stub                         m_pInstRetBuffCallStub;
+    RelativePointer<PTR_MethodDesc>  m_pInvokeMethod;
+    PTR_Stub                         m_pMultiCastInvokeStub;
+    PTR_Stub                         m_pSecureDelegateInvokeStub;
+    UMThunkMarshInfo*                m_pUMThunkMarshInfo;
+    RelativePointer<PTR_MethodDesc>  m_pBeginInvokeMethod;
+    RelativePointer<PTR_MethodDesc>  m_pEndInvokeMethod;
+    Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
     ComPlusCallInfo *m_pComPlusCallInfo;
@@ -2320,6 +2220,21 @@ public:
     //
     MethodDesc*         m_pForwardStubMD; // marshaling stub for calls to unmanaged code
     MethodDesc*         m_pReverseStubMD; // marshaling stub for calls from unmanaged code
+
+    PTR_MethodDesc GetInvokeMethod()
+    {
+        return ReadPointer(this, &DelegateEEClass::m_pInvokeMethod);
+    }
+
+    PTR_MethodDesc GetBeginInvokeMethod()
+    {
+        return ReadPointer(this, &DelegateEEClass::m_pBeginInvokeMethod);
+    }
+
+    PTR_MethodDesc GetEndInvokeMethod()
+    {
+        return ReadPointer(this, &DelegateEEClass::m_pEndInvokeMethod);
+    }
 
 #ifndef DACCESS_COMPILE
     DelegateEEClass() : EEClass(sizeof(DelegateEEClass))

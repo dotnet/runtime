@@ -15,7 +15,6 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 [assembly: MeasureGCCounts]
 
 namespace BenchmarksGame

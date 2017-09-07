@@ -16,7 +16,7 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
-            _name = culture._name;
+            m_name = culture._name;
             _sortName = culture.SortName;
 
             if (_invariantMode)
@@ -92,7 +92,7 @@ namespace System.Globalization
             int flags = GetNativeCompareFlags(options);
             int tmpHash = 0;
 #if CORECLR
-            tmpHash = InternalGetGlobalizedHashCode(_sortHandle, _sortName, source, source.Length, flags, 0);
+            tmpHash = InternalGetGlobalizedHashCode(_sortHandle, _sortName, source, source.Length, flags);
 #else
             fixed (char* pSource = source)
             {
@@ -469,6 +469,7 @@ namespace System.Globalization
             Debug.Assert(!_invariantMode);
 
             Interop.Kernel32.NlsVersionInfoEx nlsVersion = new Interop.Kernel32.NlsVersionInfoEx();
+            nlsVersion.dwNLSVersionInfoSize = Marshal.SizeOf(typeof(Interop.Kernel32.NlsVersionInfoEx));
             Interop.Kernel32.GetNLSVersionEx(Interop.Kernel32.COMPARE_STRING, _sortName, &nlsVersion);
             return new SortVersion(
                         nlsVersion.dwNLSVersion,
@@ -480,7 +481,7 @@ namespace System.Globalization
         // Get a locale sensitive sort hash code from native code -- COMNlsInfo::InternalGetGlobalizedHashCode
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        private static extern int InternalGetGlobalizedHashCode(IntPtr handle, string localeName, string source, int length, int dwFlags, long additionalEntropy);
+        private static extern int InternalGetGlobalizedHashCode(IntPtr handle, string localeName, string source, int length, int dwFlags);
 #endif
     }
 }

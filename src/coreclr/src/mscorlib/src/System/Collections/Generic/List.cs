@@ -30,14 +30,15 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class List<T> : IList<T>, System.Collections.IList, IReadOnlyList<T>
     {
         private const int _defaultCapacity = 4;
 
-        private T[] _items;
+        private T[] _items; // Do not rename (binary serialization)
         [ContractPublicPropertyName("Count")]
-        private int _size;
-        private int _version;
+        private int _size; // Do not rename (binary serialization)
+        private int _version; // Do not rename (binary serialization)
         [NonSerialized]
         private Object _syncRoot;
 
@@ -1254,7 +1255,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [Serializable]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private List<T> list;

@@ -191,7 +191,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     Compiler* comp = m_pCompiler;
 
     BitVecTraits traits(comp->fgBBNumMax + 1, comp);
-    BitVec       BITVEC_INIT_NOCOPY(visited, BitVecOps::MakeEmpty(&traits));
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
 
     // Display basic blocks.
     DBEXEC(VERBOSE, comp->fgDispBasicBlocks());
@@ -264,7 +264,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
             block->bbPostOrderNum = postIndex;
             postIndex += 1;
 
-            DBG_SSA_JITDUMP("postOrder[%d] = [%p] and BB%02u\n", postIndex, dspPtr(block), block->bbNum);
+            DBG_SSA_JITDUMP("postOrder[%d] = %s\n", postIndex, block->dspToString());
         }
     }
 
@@ -295,7 +295,7 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
 
     // Add entry point to processed as its IDom is NULL.
     BitVecTraits traits(m_pCompiler->fgBBNumMax + 1, m_pCompiler);
-    BitVec       BITVEC_INIT_NOCOPY(processed, BitVecOps::MakeEmpty(&traits));
+    BitVec       processed(BitVecOps::MakeEmpty(&traits));
 
     BitVecOps::AddElemD(&traits, processed, m_pCompiler->fgFirstBB->bbNum);
     assert(postOrder[count - 1] == m_pCompiler->fgFirstBB);
@@ -381,7 +381,7 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
  */
 void SsaBuilder::DomTreeWalk(BasicBlock* curBlock, BlkToBlkSetMap* domTree, int* preIndex, int* postIndex)
 {
-    JITDUMP("[SsaBuilder::DomTreeWalk] block [%p], BB%02u:\n", dspPtr(curBlock), curBlock->bbNum);
+    JITDUMP("[SsaBuilder::DomTreeWalk] block %s:\n", curBlock->dspToString());
 
     // Store the order number at the block number in the pre order list.
     m_pDomPreOrder[curBlock->bbNum] = *preIndex;
@@ -760,8 +760,9 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
         }
 
         // For each local var number "lclNum" that "block" assigns to...
-        VARSET_ITER_INIT(m_pCompiler, defVars, block->bbVarDef, varIndex);
-        while (defVars.NextElem(m_pCompiler, &varIndex))
+        VarSetOps::Iter defVars(m_pCompiler, block->bbVarDef);
+        unsigned        varIndex = 0;
+        while (defVars.NextElem(&varIndex))
         {
             unsigned lclNum = m_pCompiler->lvaTrackedToVarNum[varIndex];
             DBG_SSA_JITDUMP("  Considering local var V%02u:\n", lclNum);

@@ -18,7 +18,6 @@ namespace System
     // The DuplicateWaitObjectException is thrown when an object 
     // appears more than once in the list of objects to WaitAll or WaitAny.
     // 
-    [Serializable]
     public class DuplicateWaitObjectException : ArgumentException
     {
         private static volatile String s_duplicateWaitObjectMessage = null;
@@ -38,28 +37,30 @@ namespace System
         public DuplicateWaitObjectException()
             : base(DuplicateWaitObjectMessage)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(String parameterName)
             : base(DuplicateWaitObjectMessage, parameterName)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(String parameterName, String message)
             : base(message, parameterName)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
-
-        // This constructor is required for serialization
-        protected DuplicateWaitObjectException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        
+        protected DuplicateWaitObjectException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

@@ -1607,8 +1607,8 @@ public:
 
 // IUnknown interface
     virtual COM_METHOD QueryInterface(REFIID riid, VOID** ppInterface);
-    virtual ULONG __stdcall AddRef();
-    virtual ULONG __stdcall Release();
+    virtual ULONG STDMETHODCALLTYPE AddRef();
+    virtual ULONG STDMETHODCALLTYPE Release();
 
 // ICorDebugEnum interface
     virtual COM_METHOD Clone(ICorDebugEnum **ppEnum);
@@ -5431,7 +5431,7 @@ public:
     HRESULT GetILCode(CordbILCode ** ppCode);
 
     // Finds or creates an ILCode for a given rejit request
-    HRESULT LookupOrCreateReJitILCode(VMPTR_SharedReJitInfo vmSharedRejitInfo,
+    HRESULT LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCodeVersionNode,
                                       CordbReJitILCode** ppILCode);
 
 
@@ -5775,7 +5775,7 @@ class CordbReJitILCode : public CordbILCode, public ICorDebugILCode, public ICor
 {
 public:
     // Initialize a new CordbILCode instance
-    CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_SharedReJitInfo vmSharedReJitInfo);
+    CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_ILCodeVersionNode vmILCodeVersionNode);
 
     //-----------------------------------------------------------
     // IUnknown

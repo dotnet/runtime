@@ -121,7 +121,7 @@ inline bool RefTypeIsDef(RefType refType)
     return ((refType & RefTypeDef) == RefTypeDef);
 }
 
-typedef regNumber* VarToRegMap;
+typedef regNumberSmall* VarToRegMap;
 
 template <typename ElementType, CompMemKind MemKind>
 class ListElementAllocator
@@ -672,6 +672,8 @@ public:
     // Used by Lowering when considering whether to split Longs, as well as by identifyCandidates().
     bool isRegCandidate(LclVarDsc* varDsc);
 
+    bool isContainableMemoryOp(GenTree* node);
+
 private:
     // Determine which locals are candidates for allocation
     void identifyCandidates();
@@ -696,7 +698,24 @@ private:
 
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
+    RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
+    bool canSpillDoubleReg(RegRecord*   physRegRecord,
+                           LsraLocation refLocation,
+                           unsigned*    recentAssignedRefWeight,
+                           unsigned     farthestRefPosWeight);
+    void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
+    void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
+    void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
+    bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
+    bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
+    bool checkActiveInterval(Interval* interval, LsraLocation refLocation);
+    bool checkActiveIntervals(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType);
+    bool canSpillReg(RegRecord*   physRegRecord,
+                     LsraLocation refLocation,
+                     unsigned*    recentAssignedRefWeight,
+                     unsigned     farthestRefPosWeight);
+    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLocation* nextLocation);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
@@ -731,29 +750,6 @@ private:
 
     // Update reg state for an incoming register argument
     void updateRegStateForArg(LclVarDsc* argDsc);
-
-    inline void setTreeNodeInfo(GenTree* tree, TreeNodeInfo info)
-    {
-        tree->gtLsraInfo = info;
-        tree->gtClearReg(compiler);
-
-        DBEXEC(VERBOSE, info.dump(this));
-    }
-
-    inline void clearDstCount(GenTree* tree)
-    {
-        tree->gtLsraInfo.dstCount = 0;
-    }
-
-    inline void clearOperandCounts(GenTree* tree)
-    {
-        TreeNodeInfo& info = tree->gtLsraInfo;
-        info.srcCount      = 0;
-        info.dstCount      = 0;
-
-        info.internalIntCount   = 0;
-        info.internalFloatCount = 0;
-    }
 
     inline bool isLocalDefUse(GenTree* tree)
     {
@@ -849,10 +845,20 @@ public:
 private:
     Interval* newInterval(RegisterType regType);
 
-    Interval* getIntervalForLocalVar(unsigned varNum)
+    Interval* getIntervalForLocalVar(unsigned varIndex)
     {
-        return localVarIntervals[varNum];
+        assert(varIndex < compiler->lvaTrackedCount);
+        assert(localVarIntervals[varIndex] != nullptr);
+        return localVarIntervals[varIndex];
     }
+
+    Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
+    {
+        LclVarDsc* varDsc = &compiler->lvaTable[tree->gtLclNum];
+        assert(varDsc->lvTracked);
+        return getIntervalForLocalVar(varDsc->lvVarIndex);
+    }
+
     RegRecord* getRegisterRecord(regNumber regNum);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
@@ -894,7 +900,10 @@ private:
         assignPhysReg(getRegisterRecord(reg), interval);
     }
 
+    bool isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType));
+    bool isAssigned(RegRecord* regRec, LsraLocation lastLocation ARM_ARG(RegisterType newRegType));
     void checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefPosition);
+    void unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType));
     void unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPosition);
     void unassignPhysRegNoSpill(RegRecord* reg);
     void unassignPhysReg(regNumber reg)
@@ -947,7 +956,8 @@ private:
     void setOutVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg);
     VarToRegMap getInVarToRegMap(unsigned int bbNum);
     VarToRegMap getOutVarToRegMap(unsigned int bbNum);
-    regNumber getVarReg(VarToRegMap map, unsigned int varNum);
+    void setVarReg(VarToRegMap map, unsigned int trackedVarIndex, regNumber reg);
+    regNumber getVarReg(VarToRegMap map, unsigned int trackedVarIndex);
     // Initialize the incoming VarToRegMap to the given map values (generally a predecessor of
     // the block)
     VarToRegMap setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarToRegMap);
@@ -1062,6 +1072,7 @@ private:
         LSRA_STAT_SPILL, LSRA_STAT_COPY_REG, LSRA_STAT_RESOLUTION_MOV, LSRA_STAT_SPLIT_EDGE,
     };
 
+    unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
 
     void dumpLsraStats(FILE* file);
@@ -1100,6 +1111,7 @@ private:
 
     RegRecord physRegs[REG_COUNT];
 
+    // Map from tracked variable index to Interval*.
     Interval** localVarIntervals;
 
     // Set of blocks that have been visited.
@@ -1150,6 +1162,14 @@ private:
     // True if the method contains any critical edges.
     bool hasCriticalEdges;
 
+    // True if there are any register candidate lclVars available for allocation.
+    bool enregisterLocalVars;
+
+    virtual bool willEnregisterLocalVars() const
+    {
+        return enregisterLocalVars;
+    }
+
     // Ordered list of RefPositions
     RefPositionList refPositions;
 
@@ -1165,8 +1185,10 @@ private:
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
 
-    // Current set of live tracked vars, used during building of RefPositions to determine whether
-    // to preference to callee-save
+    // The set of all register candidates. Note that this may be a subset of tracked vars.
+    VARSET_TP registerCandidateVars;
+    // Current set of live register candidate vars, used during building of RefPositions to determine
+    // whether to preference to callee-save.
     VARSET_TP currentLiveVars;
     // Set of variables that may require resolution across an edge.
     // This is first constructed during interval building, to contain all the lclVars that are live at BB edges.
@@ -1192,6 +1214,57 @@ private:
     // Set of large vector (TYP_SIMD32 on AVX) variables to consider for callee-save registers.
     VARSET_TP largeVectorCalleeSaveCandidateVars;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+    //-----------------------------------------------------------------------
+    // TreeNodeInfo methods
+    //-----------------------------------------------------------------------
+
+    void TreeNodeInfoInit(GenTree* stmt);
+
+    void TreeNodeInfoInitCheckByteable(GenTree* tree);
+
+    void SetDelayFree(GenTree* delayUseSrc);
+
+    void TreeNodeInfoInitSimple(GenTree* tree);
+    int GetOperandSourceCount(GenTree* node);
+    int GetIndirSourceCount(GenTreeIndir* indirTree);
+    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
+
+    void TreeNodeInfoInitStoreLoc(GenTree* tree);
+    void TreeNodeInfoInitReturn(GenTree* tree);
+    void TreeNodeInfoInitShiftRotate(GenTree* tree);
+    void TreeNodeInfoInitPutArgReg(GenTreeUnOp* node);
+    void TreeNodeInfoInitCall(GenTreeCall* call);
+    void TreeNodeInfoInitCmp(GenTreePtr tree);
+    void TreeNodeInfoInitStructArg(GenTreePtr structArg);
+    void TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode);
+    void TreeNodeInfoInitModDiv(GenTree* tree);
+    void TreeNodeInfoInitIntrinsic(GenTree* tree);
+    void TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* tree);
+    void TreeNodeInfoInitIndir(GenTreeIndir* indirTree);
+    void TreeNodeInfoInitGCWriteBarrier(GenTree* tree);
+    void TreeNodeInfoInitCast(GenTree* tree);
+
+#ifdef _TARGET_X86_
+    bool ExcludeNonByteableRegisters(GenTree* tree);
+#endif
+
+#if defined(_TARGET_XARCH_)
+    // returns true if the tree can use the read-modify-write memory instruction form
+    bool isRMWRegOper(GenTreePtr tree);
+    void TreeNodeInfoInitMul(GenTreePtr tree);
+    void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
+#endif // defined(_TARGET_XARCH_)
+
+#ifdef FEATURE_SIMD
+    void TreeNodeInfoInitSIMD(GenTreeSIMD* tree);
+#endif // FEATURE_SIMD
+
+    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode);
+#ifdef _TARGET_ARM_
+    void TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* tree);
+#endif
+    void TreeNodeInfoInitLclHeap(GenTree* tree);
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1242,7 +1315,7 @@ public:
     void microDump();
 #endif // DEBUG
 
-    void setLocalNumber(unsigned localNum, LinearScan* l);
+    void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
     regMaskTP registerPreferences;
@@ -1425,6 +1498,105 @@ public:
 class RefPosition
 {
 public:
+    // A RefPosition refers to either an Interval or a RegRecord. 'referent' points to one
+    // of these types. If it refers to a RegRecord, then 'isPhysRegRef' is true. If it
+    // refers to an Interval, then 'isPhysRegRef' is false.
+    //
+    // Q: can 'referent' be NULL?
+
+    Referenceable* referent;
+
+    // nextRefPosition is the next in code order.
+    // Note that in either case there is no need for these to be doubly linked, as they
+    // are only traversed in the forward direction, and are not moved.
+    RefPosition* nextRefPosition;
+
+    // The remaining fields are common to both options
+    GenTree*     treeNode;
+    unsigned int bbNum;
+
+    // Prior to the allocation pass, registerAssignment captures the valid registers
+    // for this RefPosition. An empty set means that any register is valid.  A non-empty
+    // set means that it must be one of the given registers (may be the full set if the
+    // only constraint is that it must reside in SOME register)
+    // After the allocation pass, this contains the actual assignment
+    LsraLocation nodeLocation;
+    regMaskTP    registerAssignment;
+
+    RefType refType;
+
+    // NOTE: C++ only packs bitfields if the base type is the same. So make all the base
+    // NOTE: types of the logically "bool" types that follow 'unsigned char', so they match
+    // NOTE: RefType that precedes this, and multiRegIdx can also match.
+
+    // Indicates whether this ref position is to be allocated a reg only if profitable. Currently these are the
+    // ref positions that lower/codegen has indicated as reg optional and is considered a contained memory operand if
+    // no reg is allocated.
+    unsigned char allocRegIfProfitable : 1;
+
+    // Used by RefTypeDef/Use positions of a multi-reg call node.
+    // Indicates the position of the register that this ref position refers to.
+    // The max bits needed is based on max value of MAX_RET_REG_COUNT value
+    // across all targets and that happens 4 on on Arm.  Hence index value
+    // would be 0..MAX_RET_REG_COUNT-1.
+    unsigned char multiRegIdx : 2;
+
+    // Last Use - this may be true for multiple RefPositions in the same Interval
+    unsigned char lastUse : 1;
+
+    // Spill and Copy info
+    //   reload indicates that the value was spilled, and must be reloaded here.
+    //   spillAfter indicates that the value is spilled here, so a spill must be added.
+    //   copyReg indicates that the value needs to be copied to a specific register,
+    //      but that it will also retain its current assigned register.
+    //   moveReg indicates that the value needs to be moved to a different register,
+    //      and that this will be its new assigned register.
+    // A RefPosition may have any flag individually or the following combinations:
+    //  - reload and spillAfter (i.e. it remains in memory), but not in combination with copyReg or moveReg
+    //    (reload cannot exist with copyReg or moveReg; it should be reloaded into the appropriate reg)
+    //  - spillAfter and copyReg (i.e. it must be copied to a new reg for use, but is then spilled)
+    //  - spillAfter and moveReg (i.e. it most be both spilled and moved)
+    //    NOTE: a moveReg involves an explicit move, and would usually not be needed for a fixed Reg if it is going
+    //    to be spilled, because the code generator will do the move to the fixed register, and doesn't need to
+    //    record the new register location as the new "home" location of the lclVar. However, if there is a conflicting
+    //    use at the same location (e.g. lclVar V1 is in rdx and needs to be in rcx, but V2 needs to be in rdx), then
+    //    we need an explicit move.
+    //  - copyReg and moveReg must not exist with each other.
+
+    unsigned char reload : 1;
+    unsigned char spillAfter : 1;
+    unsigned char copyReg : 1;
+    unsigned char moveReg : 1; // true if this var is moved to a new register
+
+    unsigned char isPhysRegRef : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
+    unsigned char isFixedRegRef : 1;
+    unsigned char isLocalDefUse : 1;
+
+    // delayRegFree indicates that the register should not be freed right away, but instead wait
+    // until the next Location after it would normally be freed.  This is used for the case of
+    // non-commutative binary operators, where op2 must not be assigned the same register as
+    // the target.  We do this by not freeing it until after the target has been defined.
+    // Another option would be to actually change the Location of the op2 use until the same
+    // Location as the def, but then it could potentially reuse a register that has been freed
+    // from the other source(s), e.g. if it's a lastUse or spilled.
+    unsigned char delayRegFree : 1;
+
+    // outOfOrder is marked on a (non-def) RefPosition that doesn't follow a definition of the
+    // register currently assigned to the Interval.  This happens when we use the assigned
+    // register from a predecessor that is not the most recently allocated BasicBlock.
+    unsigned char outOfOrder : 1;
+
+#ifdef DEBUG
+    // Minimum number registers that needs to be ensured while
+    // constraining candidates for this ref position under
+    // LSRA stress.
+    unsigned minRegCandidateCount;
+
+    // The unique RefPosition number, equal to its index in the
+    // refPositions list. Only used for debugging dumps.
+    unsigned rpNum;
+#endif // DEBUG
+
     RefPosition(unsigned int bbNum, LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
         : referent(nullptr)
         , nextRefPosition(nullptr)
@@ -1451,14 +1623,6 @@ public:
     {
     }
 
-    // A RefPosition refers to either an Interval or a RegRecord. 'referent' points to one
-    // of these types. If it refers to a RegRecord, then 'isPhysRegRef' is true. If it
-    // refers to an Interval, then 'isPhysRegRef' is false.
-    //
-    // Q: can 'referent' be NULL?
-
-    Referenceable* referent;
-
     Interval* getInterval()
     {
         assert(!isPhysRegRef);
@@ -1482,23 +1646,6 @@ public:
         registerAssignment = genRegMask(r->regNum);
     }
 
-    // nextRefPosition is the next in code order.
-    // Note that in either case there is no need for these to be doubly linked, as they
-    // are only traversed in the forward direction, and are not moved.
-    RefPosition* nextRefPosition;
-
-    // The remaining fields are common to both options
-    GenTree*     treeNode;
-    unsigned int bbNum;
-
-    // Prior to the allocation pass, registerAssignment captures the valid registers
-    // for this RefPosition. An empty set means that any register is valid.  A non-empty
-    // set means that it must be one of the given registers (may be the full set if the
-    // only constraint is that it must reside in SOME register)
-    // After the allocation pass, this contains the actual assignment
-    LsraLocation nodeLocation;
-    regMaskTP    registerAssignment;
-
     regNumber assignedReg()
     {
         if (registerAssignment == RBM_NONE)
@@ -1508,8 +1655,6 @@ public:
 
         return genRegNumFromMask(registerAssignment);
     }
-
-    RefType refType;
 
     // Returns true if it is a reference on a gentree node.
     bool IsActualRef()
@@ -1527,14 +1672,7 @@ public:
                !AllocateIfProfitable();
     }
 
-    // Indicates whether this ref position is to be allocated
-    // a reg only if profitable. Currently these are the
-    // ref positions that lower/codegen has indicated as reg
-    // optional and is considered a contained memory operand if
-    // no reg is allocated.
-    unsigned allocRegIfProfitable : 1;
-
-    void setAllocateIfProfitable(unsigned val)
+    void setAllocateIfProfitable(bool val)
     {
         allocRegIfProfitable = val;
     }
@@ -1550,13 +1688,6 @@ public:
         return allocRegIfProfitable && !copyReg && !moveReg;
     }
 
-    // Used by RefTypeDef/Use positions of a multi-reg call node.
-    // Indicates the position of the register that this ref position refers to.
-    // The max bits needed is based on max value of MAX_RET_REG_COUNT value
-    // across all targets and that happens 4 on on Arm.  Hence index value
-    // would be 0..MAX_RET_REG_COUNT-1.
-    unsigned multiRegIdx : 2;
-
     void setMultiRegIdx(unsigned idx)
     {
         multiRegIdx = idx;
@@ -1568,66 +1699,10 @@ public:
         return multiRegIdx;
     }
 
-    // Last Use - this may be true for multiple RefPositions in the same Interval
-    bool lastUse : 1;
-
-    // Spill and Copy info
-    //   reload indicates that the value was spilled, and must be reloaded here.
-    //   spillAfter indicates that the value is spilled here, so a spill must be added.
-    //   copyReg indicates that the value needs to be copied to a specific register,
-    //      but that it will also retain its current assigned register.
-    //   moveReg indicates that the value needs to be moved to a different register,
-    //      and that this will be its new assigned register.
-    // A RefPosition may have any flag individually or the following combinations:
-    //  - reload and spillAfter (i.e. it remains in memory), but not in combination with copyReg or moveReg
-    //    (reload cannot exist with copyReg or moveReg; it should be reloaded into the appropriate reg)
-    //  - spillAfter and copyReg (i.e. it must be copied to a new reg for use, but is then spilled)
-    //  - spillAfter and moveReg (i.e. it most be both spilled and moved)
-    //    NOTE: a moveReg involves an explicit move, and would usually not be needed for a fixed Reg if it is going
-    //    to be spilled, because the code generator will do the move to the fixed register, and doesn't need to
-    //    record the new register location as the new "home" location of the lclVar. However, if there is a conflicting
-    //    use at the same location (e.g. lclVar V1 is in rdx and needs to be in rcx, but V2 needs to be in rdx), then
-    //    we need an explicit move.
-    //  - copyReg and moveReg must not exist with each other.
-
-    bool reload : 1;
-    bool spillAfter : 1;
-    bool copyReg : 1;
-    bool moveReg : 1; // true if this var is moved to a new register
-
-    bool isPhysRegRef : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
-    bool isFixedRegRef : 1;
-    bool isLocalDefUse : 1;
-
-    // delayRegFree indicates that the register should not be freed right away, but instead wait
-    // until the next Location after it would normally be freed.  This is used for the case of
-    // non-commutative binary operators, where op2 must not be assigned the same register as
-    // the target.  We do this by not freeing it until after the target has been defined.
-    // Another option would be to actually change the Location of the op2 use until the same
-    // Location as the def, but then it could potentially reuse a register that has been freed
-    // from the other source(s), e.g. if it's a lastUse or spilled.
-    bool delayRegFree : 1;
-
-    // outOfOrder is marked on a (non-def) RefPosition that doesn't follow a definition of the
-    // register currently assigned to the Interval.  This happens when we use the assigned
-    // register from a predecessor that is not the most recently allocated BasicBlock.
-    bool outOfOrder : 1;
-
     LsraLocation getRefEndLocation()
     {
         return delayRegFree ? nodeLocation + 1 : nodeLocation;
     }
-
-#ifdef DEBUG
-    // Minimum number registers that needs to be ensured while
-    // constraining candidates for this ref position under
-    // LSRA stress.
-    unsigned minRegCandidateCount;
-
-    // The unique RefPosition number, equal to its index in the
-    // refPositions list. Only used for debugging dumps.
-    unsigned rpNum;
-#endif // DEBUG
 
     bool isIntervalRef()
     {

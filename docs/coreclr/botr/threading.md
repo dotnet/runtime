@@ -16,7 +16,7 @@ The public Thread interface available to managed code intentionally hides the de
 - Different operating systems expose different abstractions for native threads.
 - In principle, managed threads are "virtualized".
 
-The CLR provide equivalent abstractions for managed threads, implemented by the CLR itself. For example, it does not expose the operating system's thread-local storage (TLS) mechanism, but instead provide managed "thread-static" variables. Similarly, it does not expose the native thread's "thread ID," but instead provide a "managed thread ID" which is generated independently of the OS. However, for diagnostic purposes, some details of the underlying native thread may be obtained via types in the System.Diagnostics namespace.
+The CLR provides equivalent abstractions for managed threads, implemented by the CLR itself. For example, it does not expose the operating system's thread-local storage (TLS) mechanism, but instead provides managed "thread-static" variables. Similarly, it does not expose the native thread's "thread ID," but instead provides a "managed thread ID" which is generated independently of the OS. However, for diagnostic purposes, some details of the underlying native thread may be obtained via types in the System.Diagnostics namespace.
 
 Managed threads require additional functionality typically not needed by native threads. First, managed threads hold GC references on their stacks, so the CLR must be able to enumerate (and possibly modify) these references every time a GC occurs. To do this, the CLR must "suspend" each managed thread (stop it at a point where all of its GC references can be found).  Second, when an AppDomain is unloaded, the CLR must ensure that no thread is executing code in that AppDomain. This requires the ability to force a thread to unwind out of that AppDomain. The CLR does this by injecting a ThreadAbortException into such threads.
 
@@ -27,7 +27,7 @@ Every managed thread has an associated Thread object, defined in [threads.h][thr
 
 All Thread objects are stored in the ThreadStore (also defined in [threads.h][threads.h]), which is a simple list of all known Thread objects. To enumerate all managed threads, one must first acquire the ThreadStoreLock, then use ThreadStore::GetAllThreadList to enumerate all Thread objects. This list may include managed threads which are not currently assigned to native threads (for example, they may not yet be started, or the native thread may already have exited).
 
-[threads.h]: (https://github.com/dotnet/coreclr/blob/master/src/vm/threads.h)
+[threads.h]: ../../src/vm/threads.h
 
 Each managed thread that is currently assigned to a native thread is reachable via a native thread-local storage (TLS) slot on that native thread. This allows code that is executing on that native thread to get the corresponding Thread object, via GetThread().
 
@@ -41,7 +41,7 @@ Thread Lifetimes
 A managed thread is created in the following situations:
 
 1. Managed code explicitly asks the CLR to create a new thread via System.Threading.Thread.
-2. The CLR creates the managed thread directly (see "special threads" below).
+2. The CLR creates the managed thread directly (see ["special threads"](#special-threads) below).
 3. Native code calls managed code on a native thread which is not yet associated with a managed thread (via "reverse p/invoke" or COM interop).
 4. A managed process starts (invoking its Main method on the process' Main thread).
 
@@ -54,9 +54,9 @@ When a native thread dies, the CLR is notified via its DllMain function. This ha
 Suspension
 ==========
 
-The CLR must be able to find all references to managed objects in order to perform a GC. Managed code is constantly accessing the GC heap, and manipulating references stored on the stack and in registers. The CLR must ensure that all managed threads are stopped (so they aren't modifying the heap) to safely and reliably find all managed objects. It only stops at _safe point_, when registers and stack locations can be inspected for live references.
+The CLR must be able to find all references to managed objects in order to perform a GC. Managed code is constantly accessing the GC heap, and manipulating references stored on the stack and in registers. The CLR must ensure that all managed threads are stopped (so they aren't modifying the heap) to safely and reliably find all managed objects. It only stops at _safe points_, when registers and stack locations can be inspected for live references.
 
-Another way of putting this is that the GC heap, and every thread's stack and register state, is "shared state," accessed by multiple threads. As with most shared state, some sort of "lock" is required to protect it. Managed code must hold this lock while accessing the heap, and can only release the lock at safe points.
+Another way of putting this is that the GC heap, and every thread's stack and register state, are "shared state," accessed by multiple threads. As with most shared state, some sort of "lock" is required to protect it. Managed code must hold this lock while accessing the heap, and can only release the lock at safe points.
 
 The CLR refers to this "lock" as the thread's "GC mode." A thread which is in "cooperative mode" holds its lock; it must "cooperate" with the GC (by releasing the lock) in order for a GC to proceed. A thread which is in "preemptive" mode does not hold its lock – the GC may proceed "preemptively" because the thread is known to not be accessing the GC heap.
 
@@ -116,7 +116,7 @@ ThreadAbortException is a special type of exception. It can be caught by user co
 
 A ThreadAbortException is typically 'thrown' by simply setting a bit on the managed thread marking it as "aborting." This bit is checked by various parts of the CLR (most notably, every return from a p/invoke) and often times setting this bit is all that is needed to get the thread aborted in a timely manner.
 
-However, if the thread is, for example, executing a long-running managed loop, it may never check this bit. To get such a thread to abort faster, the thread i "hijacked" and forced to raise a ThreadAbortException. This hijacking is done in the same way as GC suspension, except that the stubs that the thread is redirected to will cause a ThreadAbortException to be raised, rather than waiting for a GC to complete.
+However, if the thread is, for example, executing a long-running managed loop, it may never check this bit. To get such a thread to abort faster, the thread is "hijacked" and forced to raise a ThreadAbortException. This hijacking is done in the same way as GC suspension, except that the stubs that the thread is redirected to will cause a ThreadAbortException to be raised, rather than waiting for a GC to complete.
 
 This hijacking means that a ThreadAbortException can be raised at essentially any arbitrary point in managed code. This makes it extremely difficult for managed code to deal successfully with a ThreadAbortException. It is therefore unwise to use this mechanism for any purpose other than AppDomain-Unload, which ensures that any state corrupted by the ThreadAbort will be cleaned up along with the AppDomain.
 
@@ -135,8 +135,8 @@ Sync blocks are stored in the Sync Block Table, and are addressed by sync block 
 
 The details of object headers and sync blocks are defined in [syncblk.h][syncblk.h]/[.cpp][syncblk.cpp].
 
-[syncblk.h]: https://github.com/dotnet/coreclr/blob/master/src/vm/syncblk.h
-[syncblk.cpp]: https://github.com/dotnet/coreclr/blob/master/src/vm/syncblk.cpp
+[syncblk.h]: ../../src/vm/syncblk.h
+[syncblk.cpp]: ../../src/vm/syncblk.cpp
 
 If there is room on the object header, Monitor stores the managed thread ID of the thread that currently holds the lock on the object (or zero (0) if no thread holds the lock). Acquiring the lock in this case is a simple matter of spin-waiting until the object header's thread ID is zero, and then atomically setting it to the current thread's managed thread ID.
 
@@ -164,7 +164,7 @@ Native code generally does not manipulate the GC mode directly, but rather uses 
 
 It is important to understand that GCX\_COOP effectively acquires a lock on the GC heap. No GC may proceed while the thread is in cooperative mode. And native code cannot be "hijacked" as is done for managed code, so the thread will remain in cooperative mode until it explicitly switches back to preemptive mode.
 
-Thus entering cooperative mode in native code is discouraged. In cases where  cooperative mode must be entered, it should be kept to as short a time as possible. The thread should not be blocked in this mode, and in particular cannot generally acquire locks safely.
+Thus entering cooperative mode in native code is discouraged. In cases where cooperative mode must be entered, it should be kept to as short a time as possible. The thread should not be blocked in this mode, and in particular cannot generally acquire locks safely.
 
 Similarly, GCX\_PREEMP potentially _releases_ a lock that had been held by the thread. Great care must be taken to ensure that all GC references are properly protected before entering preemptive mode.
 

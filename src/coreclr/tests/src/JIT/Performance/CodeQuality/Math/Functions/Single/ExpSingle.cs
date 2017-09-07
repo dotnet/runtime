@@ -14,14 +14,17 @@ namespace Functions
         private const float expSingleDelta = 0.0004f;
         private const float expSingleExpectedResult = 5877.28564f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = ExpSingleIterations)]
         public static void ExpSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    ExpSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        ExpSingleTest();
+                    }
                 }
             }
         }

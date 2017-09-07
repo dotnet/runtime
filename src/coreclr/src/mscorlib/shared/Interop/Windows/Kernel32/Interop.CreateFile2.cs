@@ -3,29 +3,30 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFile2", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal static extern unsafe SafeFileHandle CreateFile2(
+        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFile2", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern SafeFileHandle CreateFile2Private(
             string lpFileName,
             int dwDesiredAccess,
-            System.IO.FileShare dwShareMode,
-            System.IO.FileMode dwCreationDisposition,
-            CREATEFILE2_EXTENDED_PARAMETERS* pCreateExParams);
+            FileShare dwShareMode,
+            FileMode dwCreationDisposition,
+            ref Kernel32.CREATEFILE2_EXTENDED_PARAMETERS pCreateExParams);
 
-        internal unsafe struct CREATEFILE2_EXTENDED_PARAMETERS
+        internal static SafeFileHandle CreateFile2(
+            string lpFileName,
+            int dwDesiredAccess,
+            FileShare dwShareMode,
+            FileMode dwCreationDisposition,
+            ref Kernel32.CREATEFILE2_EXTENDED_PARAMETERS pCreateExParams)
         {
-            internal uint dwSize;
-            internal uint dwFileAttributes;
-            internal uint dwFileFlags;
-            internal uint dwSecurityQosFlags;
-            internal SECURITY_ATTRIBUTES* lpSecurityAttributes;
-            internal IntPtr hTemplateFile;
+            lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
+            return CreateFile2Private(lpFileName, dwDesiredAccess, dwShareMode, dwCreationDisposition, ref pCreateExParams);
         }
     }
 }

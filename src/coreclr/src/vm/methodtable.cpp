@@ -33,7 +33,6 @@
 #include "fieldmarshaler.h"
 #include "cgensys.h"
 #include "gcheaputilities.h"
-#include "security.h"
 #include "dbginterface.h"
 #include "comdelegate.h"
 #include "eventtrace.h"
@@ -67,7 +66,6 @@
 #include "typeequivalencehash.hpp"
 #endif
 
-#include "listlock.inl"
 #include "generics.h"
 #include "genericdict.h"
 #include "typestring.h"
@@ -593,7 +591,7 @@ void MethodTable::SetIsRestored()
     // for details on the race.
     // 
     {
-        ReJitPublishMethodTableHolder(this);
+        PublishMethodTableHolder(this);
         FastInterlockAnd(EnsureWritablePages(&(GetWriteableDataForWrite()->m_dwFlags)), ~MethodTableWriteableData::enum_flag_Unrestored);
     }
 #ifndef DACCESS_COMPILE
@@ -1013,7 +1011,7 @@ void MethodTable::SetInterfaceMap(WORD wNumInterfaces, InterfaceInfo_t* iMap)
     m_wNumInterfaces = wNumInterfaces;
 
     CONSISTENCY_CHECK(IS_ALIGNED(iMap, sizeof(void*)));
-    m_pInterfaceMap = iMap;
+    m_pInterfaceMap.SetValue(iMap);
 }
 
 //==========================================================================================
@@ -1236,7 +1234,12 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     if (TotalNumInterfaces > 0) {
         InterfaceInfo_t *pInterfaceMap = GetInterfaceMap();
         PREFIX_ASSUME(pInterfaceMap != NULL);
-        memcpy(pNewItfMap, pInterfaceMap, TotalNumInterfaces * sizeof(InterfaceInfo_t));
+
+        for (unsigned index = 0; index < TotalNumInterfaces; ++index)
+        {
+          InterfaceInfo_t *pIntInfo = (InterfaceInfo_t *) (pNewItfMap + index);
+          pIntInfo->SetMethodTable((pInterfaceMap + index)->GetMethodTable());
+        }
     }
 
     // Add the new interface at the end of the map.
@@ -1246,7 +1249,8 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     *(((DWORD_PTR *)pNewItfMap) - 1) = NumDynAddedInterfaces + 1;
 
     // Switch the old interface map with the new one.
-    VolatileStore(EnsureWritablePages(&m_pInterfaceMap), pNewItfMap);
+    EnsureWritablePages(&m_pInterfaceMap);
+    m_pInterfaceMap.SetValueVolatile(pNewItfMap);
 
     // Log the fact that we leaked the interface vtable map.
 #ifdef _DEBUG
@@ -1287,7 +1291,7 @@ void MethodTable::SetupGenericsStaticsInfo(FieldDesc* pStaticFieldDescs)
         pInfo->m_DynamicTypeID = (SIZE_T)-1;
     }
 
-    pInfo->m_pFieldDescs = pStaticFieldDescs;
+    pInfo->m_pFieldDescs.SetValueMaybeNull(pStaticFieldDescs);
 }
 
 #endif // !DACCESS_COMPILE
@@ -1784,7 +1788,7 @@ TypeHandle::CastResult MethodTable::CanCastToClassNoGC(MethodTable *pTargetMT)
             if (pMT == pTargetMT)
                 return TypeHandle::CanCast;
 
-            pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
+            pMT = MethodTable::GetParentMethodTable(pMT);
         } while (pMT);
     }
 
@@ -3147,7 +3151,7 @@ void MethodTable::AllocateRegularStaticBoxes()
         OBJECTREF* pStaticSlots = (OBJECTREF*)(pStaticBase + pClassCtorInfoEntry->firstBoxedStaticOffset);
         GCPROTECT_BEGININTERIOR(pStaticSlots);
 
-        ArrayDPTR(FixupPointer<PTR_MethodTable>) ppMTs = GetLoaderModule()->GetZapModuleCtorInfo()->
+        ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppMTs = GetLoaderModule()->GetZapModuleCtorInfo()->
             GetGCStaticMTs(pClassCtorInfoEntry->firstBoxedStaticMTIndex);
 
         DWORD numBoxedStatics = pClassCtorInfoEntry->numBoxedStatics;
@@ -4122,7 +4126,7 @@ void ModuleCtorInfo::AddElement(MethodTable *pMethodTable)
     {
         _ASSERTE(numElements == numLastAllocated);
 
-        MethodTable ** ppOldMTEntries = ppMT;
+        RelativePointer<MethodTable *> *ppOldMTEntries = ppMT;
 
 #ifdef _PREFAST_ 
 #pragma warning(push)
@@ -4133,12 +4137,19 @@ void ModuleCtorInfo::AddElement(MethodTable *pMethodTable)
 #pragma warning(pop)
 #endif // _PREFAST_
 
-        ppMT = new MethodTable* [numNewAllocated];
+        ppMT = new RelativePointer<MethodTable *> [numNewAllocated];
 
         _ASSERTE(ppMT);
 
-        memcpy(ppMT, ppOldMTEntries, sizeof(MethodTable *) * numLastAllocated);
-        memset(ppMT + numLastAllocated, 0, sizeof(MethodTable *) * (numNewAllocated - numLastAllocated));
+        for (unsigned index = 0; index < numLastAllocated; ++index)
+        {
+            ppMT[index].SetValueMaybeNull(ppOldMTEntries[index].GetValueMaybeNull());
+        }
+
+        for (unsigned index = numLastAllocated; index < numNewAllocated; ++index)
+        {
+            ppMT[index].SetValueMaybeNull(NULL);
+        }
 
         delete[] ppOldMTEntries;
 
@@ -4150,7 +4161,7 @@ void ModuleCtorInfo::AddElement(MethodTable *pMethodTable)
     // Note the use of two "parallel" arrays.  We do this to keep the workingset smaller since we
     // often search (in GetClassCtorInfoIfExists) for a methodtable pointer but never actually find it.
 
-    ppMT[numElements] = pMethodTable;
+    ppMT[numElements].SetValue(pMethodTable);
     numElements++;
 }
 
@@ -4276,16 +4287,32 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
         // Dynamic interface maps have an additional DWORD_PTR preceding the InterfaceInfo_t array
         if (HasDynamicInterfaceMap())
         {
-            ZapStoredStructure * pInterfaceMapNode = image->StoreInternedStructure(((DWORD_PTR *)GetInterfaceMap()) - 1, 
-                                                                                   GetInterfaceMapSize(), 
-                                                                                   DataImage::ITEM_INTERFACE_MAP);
-                                                                                   
+            ZapStoredStructure * pInterfaceMapNode;
+            if (decltype(InterfaceInfo_t::m_pMethodTable)::isRelative)
+            {
+                pInterfaceMapNode = image->StoreStructure(((DWORD_PTR *)GetInterfaceMap()) - 1,
+                                                          GetInterfaceMapSize(),
+                                                          DataImage::ITEM_INTERFACE_MAP);
+            }
+            else
+            {
+                pInterfaceMapNode = image->StoreInternedStructure(((DWORD_PTR *)GetInterfaceMap()) - 1,
+                                                                  GetInterfaceMapSize(),
+                                                                  DataImage::ITEM_INTERFACE_MAP);
+            }
             image->BindPointer(GetInterfaceMap(), pInterfaceMapNode, sizeof(DWORD_PTR));
         }
         else
 #endif // FEATURE_COMINTEROP
         {
-            image->StoreInternedStructure(GetInterfaceMap(), GetInterfaceMapSize(), DataImage::ITEM_INTERFACE_MAP);
+            if (decltype(InterfaceInfo_t::m_pMethodTable)::isRelative)
+            {
+                image->StoreStructure(GetInterfaceMap(), GetInterfaceMapSize(), DataImage::ITEM_INTERFACE_MAP);
+            }
+            else
+            {
+                image->StoreInternedStructure(GetInterfaceMap(), GetInterfaceMapSize(), DataImage::ITEM_INTERFACE_MAP);
+            }
         }
 
         SaveExtraInterfaceInfo(image);
@@ -4302,7 +4329,14 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
         ZapStoredStructure * pPerInstInfoNode;
         if (CanEagerBindToParentDictionaries(image, NULL))
         {
-            pPerInstInfoNode = image->StoreInternedStructure((BYTE *)GetPerInstInfo() - sizeof(GenericsDictInfo), GetPerInstInfoSize() + sizeof(GenericsDictInfo), DataImage::ITEM_DICTIONARY);
+            if (PerInstInfoElem_t::isRelative)
+            {
+                pPerInstInfoNode = image->StoreStructure((BYTE *)GetPerInstInfo() - sizeof(GenericsDictInfo), GetPerInstInfoSize() + sizeof(GenericsDictInfo), DataImage::ITEM_DICTIONARY);
+            }
+            else
+            {
+                pPerInstInfoNode = image->StoreInternedStructure((BYTE *)GetPerInstInfo() - sizeof(GenericsDictInfo), GetPerInstInfoSize() + sizeof(GenericsDictInfo), DataImage::ITEM_DICTIONARY);
+            }
         }
         else
         {
@@ -4470,18 +4504,20 @@ BOOL MethodTable::ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pV
 
     if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)
     {
-        DefineFullyQualifiedNameForClass();
-        LPCUTF8 name = GetFullyQualifiedNameForClass(this);
-        printf ("MethodTable %s needs restore? ", name);
+        DefineFullyQualifiedNameForClassW();
+        LPCWSTR name = GetFullyQualifiedNameForClassW(this);
+        WszOutputDebugString(W("MethodTable "));
+        WszOutputDebugString(name);
+        WszOutputDebugString(W(" needs restore? "));
     }
     if (g_CorCompileVerboseLevel >= CORCOMPILE_STATS && GetModule()->GetNgenStats())
         GetModule()->GetNgenStats()->MethodTableRestoreNumReasons[TotalMethodTables]++;
 
-    #define UPDATE_RESTORE_REASON(c)                         \
-        if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)  \
-            printf ("Yes, " #c " \n");                       \
-        if (g_CorCompileVerboseLevel >= CORCOMPILE_STATS && GetModule()->GetNgenStats())    \
-            GetModule()->GetNgenStats()->MethodTableRestoreNumReasons[c]++;
+    #define UPDATE_RESTORE_REASON(ARG)                                                    \
+        if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)                               \
+            { WszOutputDebugString(W("Yes, ")); WszOutputDebugString(W(#ARG "\n")); }          \
+        if (g_CorCompileVerboseLevel >= CORCOMPILE_STATS && GetModule()->GetNgenStats())  \
+            GetModule()->GetNgenStats()->MethodTableRestoreNumReasons[ARG]++;
 
     // The special method table for IL stubs has to be prerestored. Restore is not able to handle it
     // because of it does not have a token. In particular, this is a problem for /profiling native images.
@@ -4570,7 +4606,9 @@ BOOL MethodTable::ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pV
     }
 
     if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)
-        printf ("No \n");
+    {
+        WszOutputDebugString(W("No\n"));
+    }
     return FALSE;
 }
 
@@ -4645,14 +4683,21 @@ BOOL MethodTable::IsWriteable()
 // target module.  Thus we want to call CanEagerBindToMethodTable
 // to check we can hardbind to the containing structure.
 static
-void HardBindOrClearDictionaryPointer(DataImage *image, MethodTable *pMT, void * p, SSIZE_T offset)
+void HardBindOrClearDictionaryPointer(DataImage *image, MethodTable *pMT, void * p, SSIZE_T offset, bool isRelative)
 {
     WRAPPER_NO_CONTRACT;
 
     if (image->CanEagerBindToMethodTable(pMT) &&
         image->CanHardBindToZapModule(pMT->GetLoaderModule()))
     {
-        image->FixupPointerField(p, offset);
+        if (isRelative)
+        {
+            image->FixupRelativePointerField(p, offset);
+        }
+        else
+        {
+            image->FixupPointerField(p, offset);
+        }
     }
     else
     {
@@ -4690,7 +4735,7 @@ void MethodTable::Fixup(DataImage *image)
     if (IsCanonicalMethodTable())
     {
         // Pointer to EEClass
-        image->FixupPointerField(this, offsetof(MethodTable, m_pEEClass));
+        image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pEEClass);
     }
     else
     {
@@ -4705,7 +4750,7 @@ void MethodTable::Fixup(DataImage *image)
             if (image->CanHardBindToZapModule(pCanonMT->GetLoaderModule()))
             {
                 // Pointer to canonical methodtable
-                image->FixupField(this, offsetof(MethodTable, m_pCanonMT), pCanonMT, UNION_METHODTABLE);
+                image->FixupPlainOrRelativeField(this, &MethodTable::m_pCanonMT, pCanonMT, UNION_METHODTABLE);
             }
             else
             {
@@ -4723,18 +4768,28 @@ void MethodTable::Fixup(DataImage *image)
 
         if (pImport != NULL)
         {
-            image->FixupFieldToNode(this, offsetof(MethodTable, m_pCanonMT), pImport, UNION_INDIRECTION);
+            image->FixupPlainOrRelativeFieldToNode(this, &MethodTable::m_pCanonMT, pImport, UNION_INDIRECTION);
         }
     }
 
-    image->FixupField(this, offsetof(MethodTable, m_pLoaderModule), pZapModule);
+    image->FixupField(this, offsetof(MethodTable, m_pLoaderModule), pZapModule, 0, IMAGE_REL_BASED_RELPTR);
 
 #ifdef _DEBUG
     image->FixupPointerField(this, offsetof(MethodTable, debug_m_szClassName));
 #endif // _DEBUG
 
     MethodTable * pParentMT = GetParentMethodTable();
-    _ASSERTE(!pNewMT->GetFlag(enum_flag_HasIndirectParent));
+    _ASSERTE(!pNewMT->m_pParentMethodTable.IsIndirectPtrMaybeNull());
+
+    ZapRelocationType relocType;
+    if (decltype(MethodTable::m_pParentMethodTable)::isRelative)
+    {
+        relocType = IMAGE_REL_BASED_RELPTR;
+    }
+    else
+    {
+        relocType = IMAGE_REL_BASED_PTR;
+    }
 
     if (pParentMT != NULL)
     {
@@ -4746,7 +4801,8 @@ void MethodTable::Fixup(DataImage *image)
         {
             if (image->CanHardBindToZapModule(pParentMT->GetLoaderModule()))
             {
-                image->FixupPointerField(this, offsetof(MethodTable, m_pParentMethodTable));
+                _ASSERTE(!m_pParentMethodTable.IsIndirectPtr());
+                image->FixupField(this, offsetof(MethodTable, m_pParentMethodTable), pParentMT, 0, relocType);
             }
             else
             {
@@ -4782,8 +4838,7 @@ void MethodTable::Fixup(DataImage *image)
 
         if (pImport != NULL)
         {
-            image->FixupFieldToNode(this, offsetof(MethodTable, m_pParentMethodTable), pImport, -(SSIZE_T)offsetof(MethodTable, m_pParentMethodTable));
-            pNewMT->SetFlag(enum_flag_HasIndirectParent);
+            image->FixupFieldToNode(this, offsetof(MethodTable, m_pParentMethodTable), pImport, FIXUP_POINTER_INDIRECTION, relocType);
         }
     }
 
@@ -4796,14 +4851,14 @@ void MethodTable::Fixup(DataImage *image)
 
     if (HasInterfaceMap())
     {
-        image->FixupPointerField(this, offsetof(MethodTable, m_pMultipurposeSlot2));
+        image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pInterfaceMap);
 
         FixupExtraInterfaceInfo(image);
     }
 
     _ASSERTE(GetWriteableData());
-    image->FixupPointerField(this, offsetof(MethodTable, m_pWriteableData));
-    m_pWriteableData->Fixup(image, this, needsRestore);
+    image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pWriteableData);
+    m_pWriteableData.GetValue()->Fixup(image, this, needsRestore);
 
 #ifdef FEATURE_COMINTEROP
     if (HasGuidInfo())
@@ -4871,7 +4926,14 @@ void MethodTable::Fixup(DataImage *image)
         VtableIndirectionSlotIterator it = IterateVtableIndirectionSlots();
         while (it.Next())
         {
-            image->FixupPointerField(this, it.GetOffsetFromMethodTable());
+            if (VTableIndir_t::isRelative)
+            {
+                image->FixupRelativePointerField(this, it.GetOffsetFromMethodTable());
+            }
+            else
+            {
+                image->FixupPointerField(this, it.GetOffsetFromMethodTable());
+            }
         }
     }
 
@@ -4892,7 +4954,7 @@ void MethodTable::Fixup(DataImage *image)
         {
             // Virtual slots live in chunks pointed to by vtable indirections
 
-            slotBase = (PVOID) GetVtableIndirections()[GetIndexOfVtableIndirection(slotNumber)];
+            slotBase = (PVOID) GetVtableIndirections()[GetIndexOfVtableIndirection(slotNumber)].GetValueMaybeNull();
             slotOffset = GetIndexAfterVtableIndirection(slotNumber) * sizeof(PCODE);
         }
         else if (HasSingleNonVirtualSlot())
@@ -4987,7 +5049,7 @@ void MethodTable::Fixup(DataImage *image)
     if (HasPerInstInfo())
     {
         // Fixup the pointer to the per-inst table
-        image->FixupPointerField(this, offsetof(MethodTable, m_pPerInstInfo));
+        image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pPerInstInfo);
 
         for (MethodTable *pChain = this; pChain != NULL; pChain = pChain->GetParentMethodTable())
         {
@@ -5000,10 +5062,23 @@ void MethodTable::Fixup(DataImage *image)
 
                 // We special-case the dictionary for this method table because we must always
                 // hard bind to it even if it's not in its preferred zap module
+                size_t sizeDict = sizeof(PerInstInfoElem_t);
+
                 if (pChain == this)
-                    image->FixupPointerField(GetPerInstInfo(), dictNum * sizeof(Dictionary *));
+                {
+                    if (PerInstInfoElem_t::isRelative)
+                    {
+                        image->FixupRelativePointerField(GetPerInstInfo(), dictNum * sizeDict);
+                    }
+                    else
+                    {
+                        image->FixupPointerField(GetPerInstInfo(), dictNum * sizeDict);
+                    }
+                }
                 else
-                    HardBindOrClearDictionaryPointer(image, pChain, GetPerInstInfo(), dictNum * sizeof(Dictionary *));
+                {
+                    HardBindOrClearDictionaryPointer(image, pChain, GetPerInstInfo(), dictNum * sizeDict, PerInstInfoElem_t::isRelative);
+                }
             }
         }
     }
@@ -5032,7 +5107,7 @@ void MethodTable::Fixup(DataImage *image)
     {
         GenericsStaticsInfo *pInfo = GetGenericsStaticsInfo();
 
-        image->FixupPointerField(this, (BYTE *)&pInfo->m_pFieldDescs - (BYTE *)this);
+        image->FixupRelativePointerField(this, (BYTE *)&pInfo->m_pFieldDescs - (BYTE *)this);
         if (!isCanonical)
         {
             for (DWORD i = 0; i < GetClass()->GetNumStaticFields(); i++)
@@ -5044,12 +5119,12 @@ void MethodTable::Fixup(DataImage *image)
 
         if (NeedsCrossModuleGenericsStaticsInfo())
         {
-            MethodTableWriteableData * pNewWriteableData = (MethodTableWriteableData *)image->GetImagePointer(m_pWriteableData);
+            MethodTableWriteableData * pNewWriteableData = (MethodTableWriteableData *)image->GetImagePointer(m_pWriteableData.GetValue());
             CrossModuleGenericsStaticsInfo * pNewCrossModuleGenericsStaticsInfo = pNewWriteableData->GetCrossModuleGenericsStaticsInfo();
 
             pNewCrossModuleGenericsStaticsInfo->m_DynamicTypeID = pInfo->m_DynamicTypeID;
 
-            image->ZeroPointerField(m_pWriteableData, sizeof(MethodTableWriteableData) + offsetof(CrossModuleGenericsStaticsInfo, m_pModuleForStatics));
+            image->ZeroPointerField(m_pWriteableData.GetValue(), sizeof(MethodTableWriteableData) + offsetof(CrossModuleGenericsStaticsInfo, m_pModuleForStatics));
 
             pNewMT->SetFlag(enum_flag_StaticsMask_IfGenericsThenCrossModule);
         }
@@ -5154,7 +5229,7 @@ void MethodTable::CheckRestore()
 BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTypeHnd,
                                const InstantiationContext *pInstContext);
 
-static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT, UINT resIDWhy, BOOL checkTargetTypeTransparency)
+static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT, UINT resIDWhy)
 {
     CONTRACTL
     {
@@ -5168,8 +5243,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
     if (!ClassLoader::CanAccessClass(&accessContext,
                                      pTargetMT,                 //the desired class
                                      pTargetMT->GetAssembly(),  //the desired class's assembly
-                                     *AccessCheckOptions::s_pNormalAccessChecks,
-                                     checkTargetTypeTransparency
+                                     *AccessCheckOptions::s_pNormalAccessChecks
                                     ))
     {
         SString displayName;
@@ -5218,7 +5292,7 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
     }
     else
     {
-        DoAccessibilityCheck(pAskingMT, thConstraint.GetMethodTable(), resIDWhy, FALSE);
+        DoAccessibilityCheck(pAskingMT, thConstraint.GetMethodTable(), resIDWhy);
     }
 
 }
@@ -5582,7 +5656,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 // A transparenct type should not be allowed to derive from a critical type.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
-                DoAccessibilityCheck(this, pParentMT, E_ACCESSDENIED, /* checkTargetTypeTransparency*/ FALSE);
+                DoAccessibilityCheck(this, pParentMT, E_ACCESSDENIED);
             }
         }
     }
@@ -5601,7 +5675,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 // A transparenct type should not be allowed to implement a critical interface.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
-                DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS, /* checkTargetTypeTransparency*/ FALSE);
+                DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS);
             }
         }
     }
@@ -5640,7 +5714,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
                 if (fNeedAccessChecks)
                 {
-                    DoAccessibilityCheck(this, th.GetMethodTable(), E_ACCESSDENIED, FALSE);
+                    DoAccessibilityCheck(this, th.GetMethodTable(), E_ACCESSDENIED);
                 }
 
             }
@@ -5902,6 +5976,19 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     }
 
+    if (level >= CLASS_DEPENDENCIES_LOADED && IsArray())
+    {
+        // The array type should be loaded, if template method table is loaded
+        // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject
+        TypeHandle th = ClassLoader::LoadArrayTypeThrowing(GetApproxArrayElementTypeHandle(),
+                                                           GetInternalCorElementType(),
+                                                           GetRank(),
+                                                           ClassLoader::LoadTypes,
+                                                           level);
+        _ASSERTE(th.IsTypeDesc() && th.IsArray());
+        _ASSERTE(!(level == CLASS_LOADED && !th.IsFullyLoaded()));
+    }
+
     END_SO_INTOLERANT_CODE;
     
 #endif //!DACCESS_COMPILE
@@ -5936,9 +6023,9 @@ void MethodTable::DoRestoreTypeKey()
 
     // If we have an indirection cell then restore the m_pCanonMT and its module pointer
     //
-    if (union_getLowBits(m_pCanonMT) == UNION_INDIRECTION)
+    if (union_getLowBits(m_pCanonMT.GetValue()) == UNION_INDIRECTION)
     {
-        Module::RestoreMethodTablePointerRaw((MethodTable **)(union_getPointer(m_pCanonMT)), 
+        Module::RestoreMethodTablePointerRaw((MethodTable **)(union_getPointer(m_pCanonMT.GetValue())),
             GetLoaderModule(), CLASS_LOAD_UNRESTORED);
     }
 
@@ -6014,7 +6101,7 @@ void MethodTable::Restore()
     //
     // Restore parent method table
     //
-    Module::RestoreMethodTablePointerRaw(GetParentMethodTablePtr(), GetLoaderModule(), CLASS_LOAD_APPROXPARENTS);
+    Module::RestoreMethodTablePointer(&m_pParentMethodTable, GetLoaderModule(), CLASS_LOAD_APPROXPARENTS);
 
     //
     // Restore interface classes
@@ -6175,7 +6262,7 @@ BOOL MethodTable::IsWinRTObjectType()
 //==========================================================================================
 // Return a pointer to the dictionary for an instantiated type
 // Return NULL if not instantiated
-Dictionary* MethodTable::GetDictionary()
+PTR_Dictionary MethodTable::GetDictionary()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -6183,7 +6270,8 @@ Dictionary* MethodTable::GetDictionary()
     {
         // The instantiation for this class is stored in the type slots table
         // *after* any inherited slots
-        return GetPerInstInfo()[GetNumDicts()-1];
+        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[GetNumDicts()-1]));
+        return PerInstInfoElem_t::GetValueMaybeNullAtPtr(base);
     }
     else
     {
@@ -6200,7 +6288,8 @@ Instantiation MethodTable::GetInstantiation()
     if (HasInstantiation())
     {
         PTR_GenericsDictInfo  pDictInfo = GetGenericsDictInfo();
-        return Instantiation(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]->GetInstantiation(), pDictInfo->m_wNumTyPars);
+        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]));
+        return Instantiation(PerInstInfoElem_t::GetValueMaybeNullAtPtr(base)->GetInstantiation(), pDictInfo->m_wNumTyPars);
     }
     else
     {
@@ -7579,7 +7668,7 @@ BOOL MethodTable::SanityCheck()
     // strings have component size2, all other non-arrays should have 0
     _ASSERTE((GetComponentSize() <= 2) || IsArray());
 
-    if (m_pEEClass == NULL)
+    if (m_pEEClass.IsNull())
     {
         if (IsAsyncPinType())
         {
@@ -7719,7 +7808,7 @@ ClassCtorInfoEntry* MethodTable::GetClassCtorInfoIfExists()
     if (HasBoxedRegularStatics())
     {
         ModuleCtorInfo *pModuleCtorInfo = GetZapModule()->GetZapModuleCtorInfo();
-        DPTR(PTR_MethodTable) ppMT = pModuleCtorInfo->ppMT;
+        DPTR(RelativePointer<PTR_MethodTable>) ppMT = pModuleCtorInfo->ppMT;
         PTR_DWORD hotHashOffsets = pModuleCtorInfo->hotHashOffsets;
         PTR_DWORD coldHashOffsets = pModuleCtorInfo->coldHashOffsets;
 
@@ -7730,8 +7819,8 @@ ClassCtorInfoEntry* MethodTable::GetClassCtorInfoIfExists()
 
             for (DWORD i = hotHashOffsets[hash]; i != hotHashOffsets[hash + 1]; i++)
             {
-                _ASSERTE(ppMT[i]);
-                if (dac_cast<TADDR>(ppMT[i]) == dac_cast<TADDR>(this))
+                _ASSERTE(!ppMT[i].IsNull());
+                if (dac_cast<TADDR>(pModuleCtorInfo->GetMT(i)) == dac_cast<TADDR>(this))
                 {
                     return pModuleCtorInfo->cctorInfoHot + i;
                 }
@@ -7745,8 +7834,8 @@ ClassCtorInfoEntry* MethodTable::GetClassCtorInfoIfExists()
 
             for (DWORD i = coldHashOffsets[hash]; i != coldHashOffsets[hash + 1]; i++)
             {
-                _ASSERTE(ppMT[i]);
-                if (dac_cast<TADDR>(ppMT[i]) == dac_cast<TADDR>(this))
+                _ASSERTE(!ppMT[i].IsNull());
+                if (dac_cast<TADDR>(pModuleCtorInfo->GetMT(i)) == dac_cast<TADDR>(this))
                 {
                     return pModuleCtorInfo->cctorInfoCold + (i - pModuleCtorInfo->numElementsHot);
                 }
@@ -7770,13 +7859,8 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
         return FALSE;
 
-    if (!GetFlag(enum_flag_HasIndirectParent))
-    {
-        return TRUE;
-    }
-    TADDR pMT;
-    pMT = *PTR_TADDR(m_pParentMethodTable + offsetof(MethodTable, m_pParentMethodTable));
-    return !CORCOMPILE_IS_POINTER_TAGGED(pMT);
+    TADDR base = dac_cast<TADDR>(this) + offsetof(MethodTable, m_pParentMethodTable);
+    return !m_pParentMethodTable.IsTagged(base);
 }
 #endif
 
@@ -9151,9 +9235,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    if (m_pWriteableData.IsValid())
+    PTR_MethodTableWriteableData pWriteableData = ReadPointer(this, &MethodTable::m_pWriteableData);
+    if (pWriteableData.IsValid())
     {
-        m_pWriteableData.EnumMem();
+        pWriteableData.EnumMem();
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
@@ -9341,24 +9426,21 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
         if (!IsCanonicalMethodTable())
         {
-            if (GetVtableIndirections()[indirectionIndex] == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex])
+            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
                 fSharedVtableChunk = TRUE;
         }
 
         if (slotNumber < GetNumParentVirtuals())
         {
-            if (GetVtableIndirections()[indirectionIndex] == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex])
+            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
                 fSharedVtableChunk = TRUE;
         }
 
         if (fSharedVtableChunk)
         {
             MethodDesc* pMD = GetMethodDescForSlotAddress(slotCode);
-#ifndef FEATURE_INTERPRETER
-            // TBD: Make this take a "stable" debug arg, determining whether to make these assertions.
             _ASSERTE(pMD->HasStableEntryPoint());
             _ASSERTE(pMD->GetStableEntryPoint() == slotCode);
-#endif // FEATURE_INTERPRETER
         }
     }
 #endif
@@ -9616,8 +9698,6 @@ bool MethodTable::ClassRequiresUnmanagedCodeCheck()
     return false;
 }
 
-#endif // !DACCESS_COMPILE
-
 
 
 BOOL MethodTable::Validate()
@@ -9627,13 +9707,14 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
     
 #ifdef _DEBUG    
-    if (m_pWriteableData == NULL)
+    if (m_pWriteableData.IsNull())
     {
         _ASSERTE(IsAsyncPinType());
         return TRUE;
     }
 
-    DWORD dwLastVerifiedGCCnt = m_pWriteableData->m_dwLastVerifedGCCnt;
+    MethodTableWriteableData *pWriteableData = m_pWriteableData.GetValue();
+    DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but 
     // this is no longer true because with background gc. Since the purpose of having 
     // m_dwLastVerifedGCCnt is just to only verify the same method table once for each GC
@@ -9664,12 +9745,14 @@ BOOL MethodTable::Validate()
 #ifdef _DEBUG    
     // It is not a fatal error to fail the update the counter. We will run slower and retry next time, 
     // but the system will function properly.
-    if (EnsureWritablePagesNoThrow(m_pWriteableData, sizeof(MethodTableWriteableData)))
-        m_pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
+    if (EnsureWritablePagesNoThrow(pWriteableData, sizeof(MethodTableWriteableData)))
+        pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
 #endif //_DEBUG
 
     return TRUE;
 }
+
+#endif // !DACCESS_COMPILE
 
 NOINLINE BYTE *MethodTable::GetLoaderAllocatorObjectForGC()
 {

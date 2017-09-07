@@ -32,18 +32,21 @@ private:
 
 void ValidateObjectAndAppDomain(OBJECTREF objRef, ADIndex appDomainIndex);
 void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef);
+void DiagHandleCreated(OBJECTHANDLE handle, OBJECTREF object);
+void DiagHandleDestroyed(OBJECTHANDLE handle);
 
 // Given a handle, returns an OBJECTREF for the object it refers to.
 inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
 {
     _ASSERTE(handle);
 
-#ifdef _DEBUG_IMPL
+#if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
+    // not allowed to dispatch virtually on a IGCHandleManager when compiling for DAC
     DWORD context = (DWORD)GCHandleUtilities::GetGCHandleManager()->GetHandleContext(handle);
     OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
 
     ValidateObjectAndAppDomain(objRef, ADIndex(context));
-#endif // _DEBUG_IMPL
+#endif // defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
 
     // Wrap the raw OBJECTREF and return it
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
@@ -67,104 +70,61 @@ inline BOOL ObjectHandleIsNull(OBJECTHANDLE handle)
 #ifndef DACCESS_COMPILE
 
 // Handle creation convenience functions
-
-inline OBJECTHANDLE CreateHandle(IGCHandleStore* store, OBJECTREF object)
+inline OBJECTHANDLE CreateHandleCommon(IGCHandleStore* store, OBJECTREF object, HandleType type)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_DEFAULT);
+    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), type);
     if (!hnd)
     {
         COMPlusThrowOM();
     }
 
+    DiagHandleCreated(hnd, object);
     return hnd;
+}
+
+inline OBJECTHANDLE CreateHandle(IGCHandleStore* store, OBJECTREF object)
+{
+    return CreateHandleCommon(store, object, HNDTYPE_DEFAULT);
 }
 
 inline OBJECTHANDLE CreateWeakHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_DEFAULT);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_WEAK_DEFAULT);
 }
 
 inline OBJECTHANDLE CreateShortWeakHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_SHORT);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_WEAK_SHORT);
 }
 
 inline OBJECTHANDLE CreateLongWeakHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_LONG);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_WEAK_LONG);
 }
 
 inline OBJECTHANDLE CreateStrongHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_STRONG);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_STRONG);
 }
 
 inline OBJECTHANDLE CreatePinningHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_PINNED);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_PINNED);
 }
 
 inline OBJECTHANDLE CreateAsyncPinningHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_ASYNCPINNED);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_ASYNCPINNED);
 }
 
 inline OBJECTHANDLE CreateRefcountedHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_REFCOUNTED);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_REFCOUNTED);
 }
 
 inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_SIZEDREF);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateHandleCommon(store, object, HNDTYPE_SIZEDREF);
 }
 
 inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object, int heapToAffinitizeTo)
@@ -175,89 +135,58 @@ inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object
         COMPlusThrowOM();
     }
 
+    DiagHandleCreated(hnd, object);
     return hnd;
 }
 
 // Global handle creation convenience functions
-
-inline OBJECTHANDLE CreateGlobalHandle(OBJECTREF object)
+inline OBJECTHANDLE CreateGlobalHandleCommon(OBJECTREF object, HandleType type)
 {
     CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
-    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_DEFAULT);
+    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), type);
     if (!hnd)
     {
         COMPlusThrowOM();
     }
 
+    DiagHandleCreated(hnd, object);
     return hnd;
+
+}
+
+inline OBJECTHANDLE CreateGlobalHandle(OBJECTREF object)
+{
+    return CreateGlobalHandleCommon(object, HNDTYPE_DEFAULT);
 }
 
 inline OBJECTHANDLE CreateGlobalWeakHandle(OBJECTREF object)
 {
-    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_DEFAULT);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateGlobalHandleCommon(object, HNDTYPE_WEAK_DEFAULT);
 }
 
 inline OBJECTHANDLE CreateGlobalShortWeakHandle(OBJECTREF object)
 {
-    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
-    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_SHORT);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateGlobalHandleCommon(object, HNDTYPE_WEAK_SHORT);
 }
 
 inline OBJECTHANDLE CreateGlobalLongWeakHandle(OBJECTREF object)
 {
-    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_LONG);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateGlobalHandleCommon(object, HNDTYPE_WEAK_LONG);
 }
 
 inline OBJECTHANDLE CreateGlobalStrongHandle(OBJECTREF object)
 {
-    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
-    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_STRONG);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateGlobalHandleCommon(object, HNDTYPE_STRONG);
 }
 
 inline OBJECTHANDLE CreateGlobalPinningHandle(OBJECTREF object)
 {
-    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_PINNED);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateGlobalHandleCommon(object, HNDTYPE_PINNED);
 }
 
 inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 {
-    OBJECTHANDLE hnd = GCHandleUtilities::GetGCHandleManager()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_REFCOUNTED);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    return hnd;
+    return CreateGlobalHandleCommon(object, HNDTYPE_REFCOUNTED);
 }
 
 // Special handle creation convenience functions
@@ -271,6 +200,7 @@ inline OBJECTHANDLE CreateWinRTWeakHandle(IGCHandleStore* store, OBJECTREF objec
         COMPlusThrowOM();
     }
 
+    DiagHandleCreated(hnd, object);
     return hnd;
 }
 #endif // FEATURE_COMINTEROP
@@ -284,6 +214,7 @@ inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object
         COMPlusThrowOM();
     }
 
+    DiagHandleCreated(hnd, object);
     return hnd;
 }
 
@@ -316,8 +247,7 @@ inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
 }
 
 // Handle destruction convenience functions
-
-inline void DestroyHandle(OBJECTHANDLE handle)
+inline void DestroyHandleCommon(OBJECTHANDLE handle, HandleType type)
 {
     CONTRACTL
     {
@@ -329,91 +259,98 @@ inline void DestroyHandle(OBJECTHANDLE handle)
     }
     CONTRACTL_END;
 
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_DEFAULT);
+    DiagHandleDestroyed(handle);
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, type);
+}
+
+inline void DestroyHandle(OBJECTHANDLE handle)
+{
+    DestroyHandleCommon(handle, HNDTYPE_DEFAULT);
 }
 
 inline void DestroyWeakHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_DEFAULT);
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_DEFAULT);
 }
 
 inline void DestroyShortWeakHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_SHORT);
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_SHORT);
 }
 
 inline void DestroyLongWeakHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_LONG);
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_LONG);
 }
 
 inline void DestroyStrongHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_STRONG);
+    DestroyHandleCommon(handle, HNDTYPE_STRONG);
 }
 
 inline void DestroyPinningHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_PINNED);
+    DestroyHandleCommon(handle, HNDTYPE_PINNED);
 }
 
 inline void DestroyAsyncPinningHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_ASYNCPINNED);
+    DestroyHandleCommon(handle, HNDTYPE_ASYNCPINNED);
 }
 
 inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_REFCOUNTED);
+    DestroyHandleCommon(handle, HNDTYPE_REFCOUNTED);
 }
 
 inline void DestroyDependentHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_DEPENDENT);
+    DestroyHandleCommon(handle, HNDTYPE_DEPENDENT);
 }
 
 inline void  DestroyVariableHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_VARIABLE);
+    DestroyHandleCommon(handle, HNDTYPE_VARIABLE);
 }
 
 inline void DestroyGlobalHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_DEFAULT);
+    DestroyHandleCommon(handle, HNDTYPE_DEFAULT);
 }
 
 inline void DestroyGlobalWeakHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_DEFAULT);
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_DEFAULT);
 }
 
 inline void DestroyGlobalShortWeakHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_SHORT);
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_SHORT);
 }
 
 inline void DestroyGlobalLongWeakHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_LONG);
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_LONG);
 }
 
 inline void DestroyGlobalStrongHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_STRONG);
+    DestroyHandleCommon(handle, HNDTYPE_STRONG);
 }
 
 inline void DestroyGlobalPinningHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_PINNED);
+    DestroyHandleCommon(handle, HNDTYPE_PINNED);
 }
 
 inline void DestroyGlobalRefcountedHandle(OBJECTHANDLE handle)
 {
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_REFCOUNTED);
+    DestroyHandleCommon(handle, HNDTYPE_REFCOUNTED);
 }
 
 inline void DestroyTypedHandle(OBJECTHANDLE handle)
 {
+    DiagHandleDestroyed(handle);
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
 
@@ -440,6 +377,7 @@ inline void DestroyWinRTWeakHandle(OBJECTHANDLE handle)
         pWinRTWeakReference->Release();
     }
 
+    DiagHandleDestroyed(handle);
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_WINRT);
 }
 #endif

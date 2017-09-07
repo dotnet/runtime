@@ -20,7 +20,6 @@ namespace System.Globalization
     **      Thai        0544/01/01  10542/12/31
     ============================================================================*/
 
-    [Serializable]
     public class ThaiBuddhistCalendar : Calendar
     {
         // Initialize our era info.

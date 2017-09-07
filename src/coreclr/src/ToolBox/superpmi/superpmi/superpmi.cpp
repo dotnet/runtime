@@ -240,7 +240,10 @@ int __cdecl main(int argc, char* argv[])
 
     if (o.applyDiff)
     {
-        nearDiffer.InitAsmDiff();
+        if (!nearDiffer.InitAsmDiff())
+        {
+            return -1;
+        }
     }
 
     while (true)
@@ -309,6 +312,21 @@ int __cdecl main(int argc, char* argv[])
 
         mc->cr         = new CompileResult();
         mc->originalCR = crl;
+
+        if (mc->wasEnviromentChanged())
+        {
+            if (!jit->resetConfig(mc))
+            {
+                LogError("JIT can't reset enviroment");
+            }
+            if (o.nameOfJit2 != nullptr)
+            {
+                if (!jit2->resetConfig(mc))
+                {
+                    LogError("JIT2 can't reset enviroment");
+                }
+            }
+        }
 
         jittedCount++;
         st3.Start();

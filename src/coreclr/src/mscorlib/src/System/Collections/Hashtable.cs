@@ -66,7 +66,6 @@ namespace System.Collections
     // 
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-    [Serializable]
     internal class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable
     {
         /*
@@ -919,58 +918,7 @@ namespace System.Collections
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            Contract.EndContractBlock();
-            // This is imperfect - it only works well if all other writes are
-            // also using our synchronized wrapper.  But it's still a good idea.
-            lock (SyncRoot)
-            {
-                // This method hasn't been fully tweaked to be safe for a concurrent writer.
-                int oldVersion = version;
-                info.AddValue(LoadFactorName, loadFactor);
-                info.AddValue(VersionName, version);
-
-                //
-                // We need to maintain serialization compatibility with Everett and RTM.
-                // If the comparer is null or a compatible comparer, serialize Hashtable
-                // in a format that can be deserialized on Everett and RTM.            
-                //
-#pragma warning disable 618
-                IEqualityComparer keyComparerForSerilization = _keycomparer;
-
-                if (keyComparerForSerilization == null)
-                {
-                    info.AddValue(ComparerName, null, typeof(IComparer));
-                    info.AddValue(HashCodeProviderName, null, typeof(IHashCodeProvider));
-                }
-                else if (keyComparerForSerilization is CompatibleComparer)
-                {
-                    CompatibleComparer c = keyComparerForSerilization as CompatibleComparer;
-                    info.AddValue(ComparerName, c.Comparer, typeof(IComparer));
-                    info.AddValue(HashCodeProviderName, c.HashCodeProvider, typeof(IHashCodeProvider));
-                }
-                else
-                {
-                    info.AddValue(KeyComparerName, keyComparerForSerilization, typeof(IEqualityComparer));
-                }
-#pragma warning restore 618
-
-                info.AddValue(HashSizeName, buckets.Length); //This is the length of the bucket array.
-                Object[] serKeys = new Object[count];
-                Object[] serValues = new Object[count];
-                CopyKeys(serKeys, 0);
-                CopyValues(serValues, 0);
-                info.AddValue(KeysName, serKeys, typeof(Object[]));
-                info.AddValue(ValuesName, serValues, typeof(Object[]));
-
-                // Explicitly check to see if anyone changed the Hashtable while we 
-                // were serializing it.  That's a race condition in their code.
-                if (version != oldVersion)
-                    throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
-            }
+            throw new PlatformNotSupportedException();
         }
 
         //
@@ -1073,7 +1021,6 @@ namespace System.Collections
 
         // Implements a Collection for the keys of a hashtable. An instance of this
         // class is created by the GetKeys method of a hashtable.
-        [Serializable]
         private class KeyCollection : ICollection
         {
             private Hashtable _hashtable;
@@ -1120,7 +1067,6 @@ namespace System.Collections
 
         // Implements a Collection for the values of a hashtable. An instance of
         // this class is created by the GetValues method of a hashtable.
-        [Serializable]
         private class ValueCollection : ICollection
         {
             private Hashtable _hashtable;
@@ -1166,7 +1112,6 @@ namespace System.Collections
         }
 
         // Synchronized wrapper for hashtable
-        [Serializable]
         private class SyncHashtable : Hashtable, IEnumerable
         {
             protected Hashtable _table;
@@ -1189,17 +1134,7 @@ namespace System.Collections
             ==============================================================================*/
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                if (info == null)
-                {
-                    throw new ArgumentNullException(nameof(info));
-                }
-                Contract.EndContractBlock();
-                // Our serialization code hasn't been fully tweaked to be safe 
-                // for a concurrent writer.
-                lock (_table.SyncRoot)
-                {
-                    info.AddValue("ParentTable", _table, typeof(Hashtable));
-                }
+                throw new PlatformNotSupportedException();
             }
 
             public override int Count
@@ -1339,7 +1274,7 @@ namespace System.Collections
             ==============================================================================*/
             public override void OnDeserialization(Object sender)
             {
-                return;
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -1347,7 +1282,6 @@ namespace System.Collections
         // Implements an enumerator for a hashtable. The enumerator uses the
         // internal version number of the hashtabke to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
-        [Serializable]
         private class HashtableEnumerator : IDictionaryEnumerator, ICloneable
         {
             private Hashtable hashtable;
@@ -1458,10 +1392,7 @@ namespace System.Collections
     [FriendAccessAllowed]
     internal static class HashHelpers
     {
-#if FEATURE_RANDOMIZED_STRING_HASHING
         public const int HashCollisionThreshold = 100;
-        public static bool s_UseRandomizedStringHashing = String.UseRandomizedHashing();
-#endif
 
         // Table of prime numbers to use as hash table sizes. 
         // A typical resize algorithm would pick the smallest prime number in this array

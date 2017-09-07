@@ -153,22 +153,22 @@ private:
 class TypeNameBuilderWrapper : public ITypeNameBuilder
 {
 public:
-    virtual HRESULT __stdcall QueryInterface(REFIID riid, void **ppUnk);
-    virtual ULONG __stdcall AddRef();
-    virtual ULONG __stdcall Release();
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppUnk);
+    virtual ULONG STDMETHODCALLTYPE AddRef();
+    virtual ULONG STDMETHODCALLTYPE Release();
 
-    virtual HRESULT __stdcall OpenGenericArguments(); 
-    virtual HRESULT __stdcall CloseGenericArguments(); 
-    virtual HRESULT __stdcall OpenGenericArgument(); 
-    virtual HRESULT __stdcall CloseGenericArgument();
-    virtual HRESULT __stdcall AddName(LPCWSTR szName); 
-    virtual HRESULT __stdcall AddPointer(); 
-    virtual HRESULT __stdcall AddByRef(); 
-    virtual HRESULT __stdcall AddSzArray(); 
-    virtual HRESULT __stdcall AddArray(DWORD rank);
-    virtual HRESULT __stdcall AddAssemblySpec(LPCWSTR szAssemblySpec);
-    virtual HRESULT __stdcall ToString(BSTR* pszStringRepresentation);
-    virtual HRESULT __stdcall Clear();
+    virtual HRESULT STDMETHODCALLTYPE OpenGenericArguments();
+    virtual HRESULT STDMETHODCALLTYPE CloseGenericArguments();
+    virtual HRESULT STDMETHODCALLTYPE OpenGenericArgument();
+    virtual HRESULT STDMETHODCALLTYPE CloseGenericArgument();
+    virtual HRESULT STDMETHODCALLTYPE AddName(LPCWSTR szName);
+    virtual HRESULT STDMETHODCALLTYPE AddPointer();
+    virtual HRESULT STDMETHODCALLTYPE AddByRef();
+    virtual HRESULT STDMETHODCALLTYPE AddSzArray();
+    virtual HRESULT STDMETHODCALLTYPE AddArray(DWORD rank);
+    virtual HRESULT STDMETHODCALLTYPE AddAssemblySpec(LPCWSTR szAssemblySpec);
+    virtual HRESULT STDMETHODCALLTYPE ToString(BSTR* pszStringRepresentation);
+    virtual HRESULT STDMETHODCALLTYPE Clear();
 
     TypeNameBuilderWrapper() : m_ref(0) { WRAPPER_NO_CONTRACT; }
     virtual ~TypeNameBuilderWrapper() {}

@@ -7,14 +7,8 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public class StrongNameKeyPair : IDeserializationCallback, ISerializable
     {
-        private bool _keyPairExported;
-        private byte[] _keyPairArray;
-        private string _keyPairContainer;
-        private byte[] _publicKey;
-
         // Build key pair from file.
         public StrongNameKeyPair(FileStream keyPairFile)
         {
@@ -22,10 +16,8 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(keyPairFile));
 
             int length = (int)keyPairFile.Length;
-            _keyPairArray = new byte[length];
-            keyPairFile.Read(_keyPairArray, 0, length);
-
-            _keyPairExported = true;
+            byte[] keyPairArray = new byte[length];
+            keyPairFile.Read(keyPairArray, 0, length);
         }
 
         // Build key pair from byte array in memory.
@@ -33,19 +25,11 @@ namespace System.Reflection
         {
             if (keyPairArray == null)
                 throw new ArgumentNullException(nameof(keyPairArray));
-
-            _keyPairArray = new byte[keyPairArray.Length];
-            Array.Copy(keyPairArray, _keyPairArray, keyPairArray.Length);
-
-            _keyPairExported = true;
         }
 
         protected StrongNameKeyPair(SerializationInfo info, StreamingContext context)
         {
-            _keyPairExported = (bool)info.GetValue("_keyPairExported", typeof(bool));
-            _keyPairArray = (byte[])info.GetValue("_keyPairArray", typeof(byte[]));
-            _keyPairContainer = (string)info.GetValue("_keyPairContainer", typeof(string));
-            _publicKey = (byte[])info.GetValue("_publicKey", typeof(byte[]));
+            throw new PlatformNotSupportedException();
         }
 
         public StrongNameKeyPair(string keyPairContainer)
@@ -63,12 +47,12 @@ namespace System.Reflection
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("_keyPairExported", _keyPairExported);
-            info.AddValue("_keyPairArray", _keyPairArray);
-            info.AddValue("_keyPairContainer", _keyPairContainer);
-            info.AddValue("_publicKey", _publicKey);
+            throw new PlatformNotSupportedException();
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender) { }
+        void IDeserializationCallback.OnDeserialization(object sender)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

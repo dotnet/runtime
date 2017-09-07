@@ -1784,10 +1784,9 @@ GenTreePtr Compiler::createAddressNodeForSIMDInit(GenTreePtr tree, unsigned simd
         // The length for boundary check should be the maximum index number which should be
         // (first argument's index number) + (how many array arguments we have) - 1
         // = indexVal + arrayElementsCount - 1
-        unsigned arrayElementsCount = simdSize / genTypeSize(baseType);
-        checkIndexExpr              = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, indexVal + arrayElementsCount - 1);
-        GenTreeArrLen* arrLen =
-            new (this, GT_ARR_LENGTH) GenTreeArrLen(TYP_INT, arrayRef, (int)offsetof(CORINFO_Array, length));
+        unsigned arrayElementsCount  = simdSize / genTypeSize(baseType);
+        checkIndexExpr               = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, indexVal + arrayElementsCount - 1);
+        GenTreeArrLen*    arrLen     = gtNewArrLen(TYP_INT, arrayRef, (int)offsetof(CORINFO_Array, length));
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
             GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, SCK_RNGCHK_FAIL);
 
@@ -2240,8 +2239,8 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
                     op3 = gtCloneExpr(index);
                 }
 
-                GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH)
-                    GenTreeArrLen(TYP_INT, arrayRefForArgRngChk, (int)offsetof(CORINFO_Array, length));
+                GenTreeArrLen* arrLen =
+                    gtNewArrLen(TYP_INT, arrayRefForArgRngChk, (int)offsetof(CORINFO_Array, length));
                 argRngChk = new (this, GT_ARR_BOUNDS_CHECK)
                     GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, op3CheckKind);
                 // Now, clone op3 to create another node for the argChk
@@ -2261,8 +2260,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             {
                 op2CheckKind = SCK_ARG_EXCPN;
             }
-            GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH)
-                GenTreeArrLen(TYP_INT, arrayRefForArgChk, (int)offsetof(CORINFO_Array, length));
+            GenTreeArrLen*    arrLen = gtNewArrLen(TYP_INT, arrayRefForArgChk, (int)offsetof(CORINFO_Array, length));
             GenTreeBoundsChk* argChk = new (this, GT_ARR_BOUNDS_CHECK)
                 GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, op2CheckKind);
 
@@ -2609,11 +2607,70 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         // Unary operators that take and return a Vector.
         case SIMDIntrinsicCast:
+        case SIMDIntrinsicConvertToSingle:
+        case SIMDIntrinsicConvertToDouble:
+        case SIMDIntrinsicConvertToInt32:
+        case SIMDIntrinsicConvertToUInt32:
         {
             op1 = impSIMDPopStack(simdType, instMethod);
 
             simdTree = gtNewSIMDNode(simdType, op1, nullptr, simdIntrinsicID, baseType, size);
             retVal   = simdTree;
+        }
+        break;
+
+        case SIMDIntrinsicConvertToInt64:
+        case SIMDIntrinsicConvertToUInt64:
+        {
+#ifdef _TARGET_AMD64_
+            op1 = impSIMDPopStack(simdType, instMethod);
+
+            simdTree = gtNewSIMDNode(simdType, op1, nullptr, simdIntrinsicID, baseType, size);
+            retVal   = simdTree;
+#else
+            JITDUMP("SIMD Conversion to Int64/UInt64 is not supported on this platform\n");
+            return nullptr;
+#endif
+        }
+        break;
+
+        case SIMDIntrinsicNarrow:
+        {
+            assert(!instMethod);
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
+            // op1 and op2 are two input Vector<T>.
+            simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, baseType, size);
+            retVal   = simdTree;
+        }
+        break;
+
+        case SIMDIntrinsicWiden:
+        {
+            GenTree* dstAddrHi = impSIMDPopStack(TYP_BYREF);
+            GenTree* dstAddrLo = impSIMDPopStack(TYP_BYREF);
+            op1                = impSIMDPopStack(simdType);
+            GenTree* dupOp1    = fgInsertCommaFormTemp(&op1, gtGetStructHandleForSIMD(simdType, baseType));
+
+            // Widen the lower half and assign it to dstAddrLo.
+            simdTree = gtNewSIMDNode(simdType, op1, nullptr, SIMDIntrinsicWidenLo, baseType, size);
+            GenTree* loDest =
+                new (this, GT_BLK) GenTreeBlk(GT_BLK, simdType, dstAddrLo, getSIMDTypeSizeInBytes(clsHnd));
+            GenTree* loAsg = gtNewBlkOpNode(loDest, simdTree, getSIMDTypeSizeInBytes(clsHnd),
+                                            false, // not volatile
+                                            true); // copyBlock
+            loAsg->gtFlags |= ((simdTree->gtFlags | dstAddrLo->gtFlags) & GTF_ALL_EFFECT);
+
+            // Widen the upper half and assign it to dstAddrHi.
+            simdTree = gtNewSIMDNode(simdType, dupOp1, nullptr, SIMDIntrinsicWidenHi, baseType, size);
+            GenTree* hiDest =
+                new (this, GT_BLK) GenTreeBlk(GT_BLK, simdType, dstAddrHi, getSIMDTypeSizeInBytes(clsHnd));
+            GenTree* hiAsg = gtNewBlkOpNode(hiDest, simdTree, getSIMDTypeSizeInBytes(clsHnd),
+                                            false, // not volatile
+                                            true); // copyBlock
+            hiAsg->gtFlags |= ((simdTree->gtFlags | dstAddrHi->gtFlags) & GTF_ALL_EFFECT);
+
+            retVal = gtNewOperNode(GT_COMMA, simdType, loAsg, hiAsg);
         }
         break;
 

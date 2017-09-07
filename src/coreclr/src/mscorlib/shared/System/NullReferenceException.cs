@@ -15,27 +15,29 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class NullReferenceException : SystemException
     {
         public NullReferenceException()
             : base(SR.Arg_NullReferenceException)
         {
-            HResult = __HResults.COR_E_NULLREFERENCE;
+            HResult = HResults.COR_E_NULLREFERENCE;
         }
 
         public NullReferenceException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_NULLREFERENCE;
+            HResult = HResults.COR_E_NULLREFERENCE;
         }
 
         public NullReferenceException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_NULLREFERENCE;
+            HResult = HResults.COR_E_NULLREFERENCE;
         }
 
-        protected NullReferenceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected NullReferenceException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

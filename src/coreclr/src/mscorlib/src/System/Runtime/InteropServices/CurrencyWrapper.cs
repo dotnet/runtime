@@ -16,7 +16,6 @@ using System;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public sealed class CurrencyWrapper
     {
         public CurrencyWrapper(Decimal obj)

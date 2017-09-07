@@ -12,6 +12,11 @@
 
 #include "stdafx.h"
 #include <daccess.h>
+
+// This header include will need to be rmeoved as part of GitHub#12170.
+// The only reason it's here now is that this file references the GC-private
+// variable g_HandleTableMap.
+#include "../../gc/objecthandle.h"
 #include "../../vm/virtualcallstub.h"
 #include "../../vm/win32threadpool.h"
 #include "../../vm/hillclimbing.h"
@@ -42,16 +47,12 @@ void DacGlobals::Initialize()
 {
     TADDR baseAddress = PTR_TO_TADDR(PAL_GetSymbolModuleBase((void *)DacGlobals::Initialize));
     g_dacTable.InitializeEntries(baseAddress);
-#ifdef FEATURE_SVR_GC
-    g_dacTable.InitializeSVREntries(baseAddress);
-#endif
 }
 
 // Initializes the non-SVR table entries
 void DacGlobals::InitializeEntries(TADDR baseAddress)
 {
 #define DEFINE_DACVAR(id_type, size, id, var)                   id = PTR_TO_TADDR(&var) - baseAddress;
-#define DEFINE_DACVAR_SVR(id_type, size, id, var) 
 #define DEFINE_DACVAR_NO_DUMP(id_type, size, id, var)           id = PTR_TO_TADDR(&var) - baseAddress;
 #include "dacvars.h"
 

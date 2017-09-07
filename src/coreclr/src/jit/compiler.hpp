@@ -1121,8 +1121,21 @@ inline GenTreePtr Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd, 
 
 /*****************************************************************************/
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, unsigned flags, GenTreeArgList* args)
+//------------------------------------------------------------------------------
+// gtNewHelperCallNode : Helper to create a call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTreeArgList* args)
 {
+    unsigned     flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? 0 : GTF_EXCEPT;
     GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
     result->gtFlags |= flags;
 
@@ -1226,6 +1239,43 @@ inline GenTreePtr Compiler::gtNewIndexRef(var_types typ, GenTreePtr arrayOp, Gen
     GenTreeIndex* gtIndx = new (this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
 
     return gtIndx;
+}
+
+//------------------------------------------------------------------------------
+// gtNewArrLen : Helper to create an array length node.
+//
+//
+// Arguments:
+//    typ      -  Type of the node
+//    arrayOp  -  Array node
+//    lenOffset - Offset of the length field
+//
+// Return Value:
+//    New GT_ARR_LENGTH node
+
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset)
+{
+    GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
+    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    arrLen->SetIndirExceptionFlags(this);
+    return arrLen;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Helper to create an indirection node.
+//
+// Arguments:
+//    typ   -  Type of the node
+//    addr  -  Address of the indirection
+//
+// Return Value:
+//    New GT_IND node
+
+inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
+{
+    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
+    indir->SetIndirExceptionFlags(this);
+    return indir;
 }
 
 /*****************************************************************************
@@ -1512,8 +1562,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(!OperIsConst(oper)); // use ChangeOperLeaf() instead
 
+    unsigned mask = GTF_COMMON_MASK;
+    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    {
+        mask |= GTF_IND_NONFAULTING;
+    }
     SetOper(oper, vnUpdate);
-    gtFlags &= GTF_COMMON_MASK;
+    gtFlags &= mask;
 
     // Do "oper"-specific initializations...
     switch (oper)
@@ -1529,8 +1584,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 
 inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
 {
+    unsigned mask = GTF_COMMON_MASK;
+    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    {
+        mask |= GTF_IND_NONFAULTING;
+    }
     SetOperRaw(oper); // Trust the caller and don't use SetOper()
-    gtFlags &= GTF_COMMON_MASK;
+    gtFlags &= mask;
 }
 
 /*****************************************************************************
@@ -2134,7 +2194,7 @@ inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(GenTreePtr stmt)
     GenTreePtr tree;
     unsigned   varNum;
     LclVarDsc* varDsc;
-    VARSET_TP  VARSET_INIT_NOCOPY(lclMask, VarSetOps::MakeEmpty(this));
+    VARSET_TP  lclMask(VarSetOps::MakeEmpty(this));
 
     assert(stmt->gtOper == GT_STMT);
     assert(fgStmtListThreaded);
@@ -2780,16 +2840,25 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
 #endif
 
     fgWalkResult result;
-    if (computeStack)
+    if (lclVarsOnly && computeStack)
     {
-        GenTreeStack parentStack(this);
-        walkData.parentStack = &parentStack;
-        result               = fgWalkTreePreRec<true>(pTree, &walkData);
+        GenericTreeWalker<true, true, false, true, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
+    }
+    else if (lclVarsOnly)
+    {
+        GenericTreeWalker<false, true, false, true, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
+    }
+    else if (computeStack)
+    {
+        GenericTreeWalker<true, true, false, false, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        walkData.parentStack = nullptr;
-        result               = fgWalkTreePreRec<false>(pTree, &walkData);
+        GenericTreeWalker<false, true, false, false, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
     }
 
 #ifdef DEBUG
@@ -2828,17 +2897,74 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTreePtr*   pTree,
     fgWalkResult result;
     if (computeStack)
     {
-        GenTreeStack parentStack(this);
-        walkData.parentStack = &parentStack;
-        result               = fgWalkTreePostRec<true>(pTree, &walkData);
+        GenericTreeWalker<true, false, true, false, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        walkData.parentStack = nullptr;
-        result               = fgWalkTreePostRec<false>(pTree, &walkData);
+        GenericTreeWalker<false, false, true, false, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
     }
 
     assert(result == WALK_CONTINUE || result == WALK_ABORT);
+
+    return result;
+}
+
+/*****************************************************************************
+ *
+ *  Call the given function pointer for all nodes in the tree. The 'visitor'
+ *  fn should return one of the following values:
+ *
+ *  WALK_ABORT          stop walking and return immediately
+ *  WALK_CONTINUE       continue walking
+ *  WALK_SKIP_SUBTREES  don't walk any subtrees of the node just visited
+ */
+
+inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTreePtr*  pTree,
+                                                   fgWalkPreFn* preVisitor,
+                                                   fgWalkPreFn* postVisitor,
+                                                   void*        callBackData)
+
+{
+    fgWalkData walkData;
+
+    walkData.compiler      = this;
+    walkData.wtprVisitorFn = preVisitor;
+    walkData.wtpoVisitorFn = postVisitor;
+    walkData.pCallbackData = callBackData;
+    walkData.parent        = nullptr;
+    walkData.wtprLclsOnly  = false;
+#ifdef DEBUG
+    walkData.printModified = false;
+#endif
+
+    fgWalkResult result;
+
+    assert(preVisitor || postVisitor);
+
+    if (preVisitor && postVisitor)
+    {
+        GenericTreeWalker<true, true, true, false, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
+    }
+    else if (preVisitor)
+    {
+        GenericTreeWalker<true, true, false, false, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
+    }
+    else
+    {
+        GenericTreeWalker<true, false, true, false, true> walker(&walkData);
+        result = walker.WalkTree(pTree, nullptr);
+    }
+
+#ifdef DEBUG
+    if (verbose && walkData.printModified)
+    {
+        gtDispTree(*pTree);
+    }
+#endif
 
     return result;
 }
@@ -2954,6 +3080,35 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 */
 inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 {
+    // If we're converting a BBJ_CALLFINALLY block to a BBJ_THROW block,
+    // then mark the subsequent BBJ_ALWAYS block as unreferenced.
+    if (block->isBBCallAlwaysPair())
+    {
+        BasicBlock* leaveBlk = block->bbNext;
+        noway_assert(leaveBlk->bbJumpKind == BBJ_ALWAYS);
+
+        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+        leaveBlk->bbRefs  = 0;
+        leaveBlk->bbPreds = nullptr;
+
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+        // This function (fgConvertBBToThrowBB) can be called before the predecessor lists are created (e.g., in
+        // fgMorph). The fgClearFinallyTargetBit() function to update the BBF_FINALLY_TARGET bit depends on these
+        // predecessor lists. If there are no predecessor lists, we immediately clear all BBF_FINALLY_TARGET bits
+        // (to allow subsequent dead code elimination to delete such blocks without asserts), and set a flag to
+        // recompute them later, before they are required.
+        if (fgComputePredsDone)
+        {
+            fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
+        }
+        else
+        {
+            fgClearAllFinallyTargetBits();
+            fgNeedToAddFinallyTargetBits = true;
+        }
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+    }
+
     block->bbJumpKind = BBJ_THROW;
     block->bbSetRunRarely(); // any block with a throw is rare
 }
@@ -3845,7 +4000,7 @@ inline bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
     assert(lnum < optLoopCount);
     if (var < lclMAX_ALLSET_TRACKED)
     {
-        ALLVARSET_TP ALLVARSET_INIT_NOCOPY(vs, AllVarSetOps::MakeSingleton(this, var));
+        ALLVARSET_TP vs(AllVarSetOps::MakeSingleton(this, var));
         return optIsSetAssgLoop(lnum, vs) != 0;
     }
     else
@@ -4022,6 +4177,31 @@ inline bool Compiler::IsTreeAlwaysHoistable(GenTreePtr tree)
     }
 }
 
+inline bool Compiler::IsGcSafePoint(GenTreePtr tree)
+{
+    if (tree->IsCall())
+    {
+        GenTreeCall* call = tree->AsCall();
+        if (!call->IsFastTailCall())
+        {
+            if (call->gtCallType == CT_INDIRECT)
+            {
+                return true;
+            }
+            else if (call->gtCallType == CT_USER_FUNC)
+            {
+                if ((call->gtCallMoreFlags & GTF_CALL_M_NOGCCHECK) == 0)
+                {
+                    return true;
+                }
+            }
+            // otherwise we have a CT_HELPER
+        }
+    }
+
+    return false;
+}
+
 //
 // Note that we want to have two special FIELD_HANDLES that will both
 // be considered non-Data Offset handles
@@ -4103,6 +4283,13 @@ inline void* Compiler::compGetMem(size_t sz, CompMemKind cmk)
 }
 
 #endif
+
+// Wrapper for Compiler::compGetMem that can be forward-declared for use in template
+// types which Compiler depends on but which need to allocate heap memory.
+inline void* compGetMem(Compiler* comp, size_t sz)
+{
+    return comp->compGetMem(sz);
+}
 
 /*****************************************************************************
  *
@@ -4590,10 +4777,8 @@ unsigned Compiler::GetSsaNumForLocalVarDef(GenTreePtr lcl)
         return SsaConfig::RESERVED_SSA_NUM;
     }
 
-    assert(lcl->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEDEF));
     if (lcl->gtFlags & GTF_VAR_USEASG)
     {
-        assert((lcl->gtFlags & GTF_VAR_USEDEF) == 0);
         // It's an "lcl op= rhs" assignment.  "lcl" is both used and defined here;
         // we've chosen in this case to annotate "lcl" with the SSA number (and VN) of the use,
         // and to store the SSA number of the def in a side table.
@@ -4613,25 +4798,306 @@ unsigned Compiler::GetSsaNumForLocalVarDef(GenTreePtr lcl)
     }
 }
 
+template <typename TVisitor>
+void GenTree::VisitOperands(TVisitor visitor)
+{
+    switch (OperGet())
+    {
+        // Leaf nodes
+        case GT_LCL_VAR:
+        case GT_LCL_FLD:
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
+        case GT_CATCH_ARG:
+        case GT_LABEL:
+        case GT_FTN_ADDR:
+        case GT_RET_EXPR:
+        case GT_CNS_INT:
+        case GT_CNS_LNG:
+        case GT_CNS_DBL:
+        case GT_CNS_STR:
+        case GT_MEMORYBARRIER:
+        case GT_JMP:
+        case GT_JCC:
+        case GT_SETCC:
+        case GT_NO_OP:
+        case GT_START_NONGC:
+        case GT_PROF_HOOK:
+#if !FEATURE_EH_FUNCLETS
+        case GT_END_LFIN:
+#endif // !FEATURE_EH_FUNCLETS
+        case GT_PHI_ARG:
+#ifndef LEGACY_BACKEND
+        case GT_JMPTABLE:
+#endif // LEGACY_BACKEND
+        case GT_REG_VAR:
+        case GT_CLS_VAR:
+        case GT_CLS_VAR_ADDR:
+        case GT_ARGPLACE:
+        case GT_PHYSREG:
+        case GT_EMITNOP:
+        case GT_PINVOKE_PROLOG:
+        case GT_PINVOKE_EPILOG:
+        case GT_IL_OFFSET:
+            return;
+
+        // Unary operators with an optional operand
+        case GT_NOP:
+        case GT_RETURN:
+        case GT_RETFILT:
+            if (this->AsUnOp()->gtOp1 == nullptr)
+            {
+                return;
+            }
+            __fallthrough;
+
+        // Standard unary operators
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+        case GT_NOT:
+        case GT_NEG:
+        case GT_COPY:
+        case GT_RELOAD:
+        case GT_ARR_LENGTH:
+        case GT_CAST:
+        case GT_BITCAST:
+        case GT_CKFINITE:
+        case GT_LCLHEAP:
+        case GT_ADDR:
+        case GT_IND:
+        case GT_OBJ:
+        case GT_BLK:
+        case GT_BOX:
+        case GT_ALLOCOBJ:
+        case GT_INIT_VAL:
+        case GT_JTRUE:
+        case GT_SWITCH:
+        case GT_NULLCHECK:
+        case GT_PUTARG_REG:
+        case GT_PUTARG_STK:
+#if defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND)
+        case GT_PUTARG_SPLIT:
+#endif
+        case GT_RETURNTRAP:
+            visitor(this->AsUnOp()->gtOp1);
+            return;
+
+        // Variadic nodes
+        case GT_PHI:
+            assert(this->AsUnOp()->gtOp1 != nullptr);
+            this->AsUnOp()->gtOp1->VisitListOperands(visitor);
+            return;
+
+        case GT_FIELD_LIST:
+            VisitListOperands(visitor);
+            return;
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
+            {
+                assert(this->AsSIMD()->gtOp1 != nullptr);
+                this->AsSIMD()->gtOp1->VisitListOperands(visitor);
+            }
+            else
+            {
+                VisitBinOpOperands<TVisitor>(visitor);
+            }
+            return;
+#endif // FEATURE_SIMD
+
+        // Special nodes
+        case GT_CMPXCHG:
+        {
+            GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
+            if (visitor(cmpXchg->gtOpLocation) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (visitor(cmpXchg->gtOpValue) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(cmpXchg->gtOpComparand);
+            return;
+        }
+
+        case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+        case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+        {
+            GenTreeBoundsChk* const boundsChk = this->AsBoundsChk();
+            if (visitor(boundsChk->gtIndex) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(boundsChk->gtArrLen);
+            return;
+        }
+
+        case GT_FIELD:
+            if (this->AsField()->gtFldObj != nullptr)
+            {
+                visitor(this->AsField()->gtFldObj);
+            }
+            return;
+
+        case GT_STMT:
+            if (this->AsStmt()->gtStmtExpr != nullptr)
+            {
+                visitor(this->AsStmt()->gtStmtExpr);
+            }
+            return;
+
+        case GT_ARR_ELEM:
+        {
+            GenTreeArrElem* const arrElem = this->AsArrElem();
+            if (visitor(arrElem->gtArrObj) == VisitResult::Abort)
+            {
+                return;
+            }
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                if (visitor(arrElem->gtArrInds[i]) == VisitResult::Abort)
+                {
+                    return;
+                }
+            }
+            return;
+        }
+
+        case GT_ARR_OFFSET:
+        {
+            GenTreeArrOffs* const arrOffs = this->AsArrOffs();
+            if (visitor(arrOffs->gtOffset) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (visitor(arrOffs->gtIndex) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(arrOffs->gtArrObj);
+            return;
+        }
+
+        case GT_DYN_BLK:
+        {
+            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(dynBlock->gtDynamicSize);
+            return;
+        }
+
+        case GT_STORE_DYN_BLK:
+        {
+            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (visitor(dynBlock->gtOp2) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(dynBlock->gtDynamicSize);
+            return;
+        }
+
+        case GT_CALL:
+        {
+            GenTreeCall* const call = this->AsCall();
+            if ((call->gtCallObjp != nullptr) && (visitor(call->gtCallObjp) == VisitResult::Abort))
+            {
+                return;
+            }
+            if ((call->gtCallArgs != nullptr) && (call->gtCallArgs->VisitListOperands(visitor) == VisitResult::Abort))
+            {
+                return;
+            }
+            if ((call->gtCallLateArgs != nullptr) &&
+                (call->gtCallLateArgs->VisitListOperands(visitor)) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (call->gtCallType == CT_INDIRECT)
+            {
+                if ((call->gtCallCookie != nullptr) && (visitor(call->gtCallCookie) == VisitResult::Abort))
+                {
+                    return;
+                }
+                if ((call->gtCallAddr != nullptr) && (visitor(call->gtCallAddr) == VisitResult::Abort))
+                {
+                    return;
+                }
+            }
+            if ((call->gtControlExpr != nullptr))
+            {
+                visitor(call->gtControlExpr);
+            }
+            return;
+        }
+
+        // Binary nodes
+        default:
+            assert(this->OperIsBinary());
+            VisitBinOpOperands<TVisitor>(visitor);
+            return;
+    }
+}
+
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitListOperands(TVisitor visitor)
+{
+    for (GenTreeArgList* node = this->AsArgList(); node != nullptr; node = node->Rest())
+    {
+        if (visitor(node->gtOp1) == VisitResult::Abort)
+        {
+            return VisitResult::Abort;
+        }
+    }
+
+    return VisitResult::Continue;
+}
+
+template <typename TVisitor>
+void GenTree::VisitBinOpOperands(TVisitor visitor)
+{
+    assert(this->OperIsBinary());
+
+    GenTreeOp* const op = this->AsOp();
+
+    GenTree* const op1 = op->gtOp1;
+    if ((op1 != nullptr) && (visitor(op1) == VisitResult::Abort))
+    {
+        return;
+    }
+
+    GenTree* const op2 = op->gtOp2;
+    if (op2 != nullptr)
+    {
+        visitor(op2);
+    }
+}
+
 /*****************************************************************************
  *  operator new
  *
  *  Note that compGetMem is an arena allocator that returns memory that is
  *  not zero-initialized and can contain data from a prior allocation lifetime.
- *  it also requires that 'sz' be aligned to a multiple of sizeof(int)
  */
 
 inline void* __cdecl operator new(size_t sz, Compiler* context, CompMemKind cmk)
 {
-    sz = AlignUp(sz, sizeof(int));
-    assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
     return context->compGetMem(sz, cmk);
 }
 
 inline void* __cdecl operator new[](size_t sz, Compiler* context, CompMemKind cmk)
 {
-    sz = AlignUp(sz, sizeof(int));
-    assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
     return context->compGetMem(sz, cmk);
 }
 

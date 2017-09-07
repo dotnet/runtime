@@ -39,9 +39,9 @@
     },
     {
       "enabled": true,
-      "continueOnError": true,
+      "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run sync.cmd",
+      "displayName": "Sync test native binaries",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -59,6 +59,60 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Sync packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "sync.cmd",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -BlobNamePrefix=$(PB_BuildType)/pkg/Microsoft",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Sync runtime packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "sync.cmd",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -BlobNamePrefix=$(PB_BuildType)/pkg/runtime",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Generate version props file",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "msbuild",
+        "arguments": "createVersionFile.proj /p:OfficialBuildId=$(OfficialBuildId)",
+        "workingFolder": "src",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Run build-test.cmd",
       "timeoutInMinutes": 0,
       "task": {
@@ -68,7 +122,7 @@
       },
       "inputs": {
         "filename": "build-test.cmd",
-        "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg)$(CrossgenArg)-OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority)",
+        "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg)$(CrossgenArg)-OfficialBuildId=$(OfficialBuildId) -OverwriteCoreClrPackageVersion -Priority=$(Priority)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

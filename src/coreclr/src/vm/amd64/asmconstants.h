@@ -609,10 +609,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayBase__m_NumComponents
 ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
                     == offsetof(StringObject, m_StringLength));
 
-#define               OFFSETOF__ArrayTypeDesc__m_TemplateMT 8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayTypeDesc__m_TemplateMT
-                    == offsetof(ArrayTypeDesc, m_TemplateMT));
-
 #define               OFFSETOF__ArrayTypeDesc__m_Arg 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayTypeDesc__m_Arg
                     == offsetof(ArrayTypeDesc, m_Arg));

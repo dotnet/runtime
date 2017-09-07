@@ -26,15 +26,16 @@ namespace System
     // three fields from an ArraySegment may not see the same ArraySegment from one call to another
     // (ie, users could assign a new value to the old location).  
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
     {
         // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
         public static ArraySegment<T> Empty { get; } = new ArraySegment<T>(new T[0]);
 
-        private readonly T[] _array;
-        private readonly int _offset;
-        private readonly int _count;
+        private readonly T[] _array; // Do not rename (binary serialization)
+        private readonly int _offset; // Do not rename (binary serialization)
+        private readonly int _count; // Do not rename (binary serialization)
 
         public ArraySegment(T[] array)
         {
@@ -316,7 +317,6 @@ namespace System
             }
         }
 
-        [Serializable]
         public struct Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;

@@ -267,8 +267,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
-    dmb  ST
-    str  x15, [x14]
+    stlr  x15, [x14]
 
 #ifdef WRITE_BARRIER_CHECK
     // Update GC Shadow Heap
@@ -296,7 +295,7 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
     // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
     // conditions are caught by INVALIDGCVALUE.
-    dmb  sy
+    dmb  ish
 
     // if ([x14] == x15) goto end
     ldr  x13, [x14]
@@ -1113,6 +1112,7 @@ LOCAL_LABEL(Promote):
     mov     x16, #256
     str     x16, [x13]         // be quick to reset the counter so we don't get a bunch of contending threads
     orr     x11, x11, #PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG
+    mov     x12, x9           // We pass the ResolveCacheElem to ResolveWorkerAsmStub instead of the DispatchToken
 
 LOCAL_LABEL(Fail):
     b       ResolveWorkerAsmStub // call the ResolveWorkerAsmStub method to transition into the VM
@@ -1302,3 +1302,100 @@ LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
     ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
     ret lr
 LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
+LEAF_ENTRY JIT_Stelem_Ref, _TEXT
+    // We retain arguments as they were passed and use x0 == array x1 == idx x2 == val
+
+    // check for null array
+    cbz     x0, LOCAL_LABEL(ThrowNullReferenceException)
+
+    // idx bounds check
+    ldr     x3,[x0,#ArrayBase__m_NumComponents]
+    cmp     x3, x1
+    bls     LOCAL_LABEL(ThrowIndexOutOfRangeException)
+
+    // fast path to null assignment (doesn't need any write-barriers)
+    cbz     x2, LOCAL_LABEL(AssigningNull)
+
+    // Verify the array-type and val-type matches before writing
+    ldr     x12, [x0] // x12 = array MT
+    ldr     x3, [x2] // x3 = val->GetMethodTable()
+    ldr     x12, [x12, #MethodTable__m_ElementType] // array->GetArrayElementTypeHandle()
+    cmp     x3, x12
+    beq     C_FUNC(JIT_Stelem_DoWrite)
+
+    // Types didnt match but allow writing into an array of objects
+    ldr     x3, =g_pObjectClass
+    ldr     x3, [x3]  // x3 = *g_pObjectClass
+    cmp     x3, x12   // array type matches with Object*
+    beq     C_FUNC(JIT_Stelem_DoWrite)
+
+    // array type and val type do not exactly match. Raise frame and do detailed match
+    b       C_FUNC(JIT_Stelem_Ref_NotExactMatch)
+
+LOCAL_LABEL(AssigningNull):
+    // Assigning null doesn't need write barrier
+    add     x0, x0, x1, LSL #3           // x0 = x0 + (x1 x 8) = array->m_array[idx]
+    str     x2, [x0, #PtrArray__m_Array] // array->m_array[idx] = val
+    ret
+
+LOCAL_LABEL(ThrowNullReferenceException):
+    // Tail call JIT_InternalThrow(NullReferenceException)
+    ldr     x0, =CORINFO_NullReferenceException_ASM
+    b       C_FUNC(JIT_InternalThrow)
+
+LOCAL_LABEL(ThrowIndexOutOfRangeException):
+    // Tail call JIT_InternalThrow(NullReferenceException)
+    ldr     x0, =CORINFO_IndexOutOfRangeException_ASM
+    b       C_FUNC(JIT_InternalThrow)
+
+LEAF_END JIT_Stelem_Ref, _TEXT
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref_NotExactMatch(PtrArray* array,
+//                                                       unsigned idx, Object* val)
+//   x12 = array->GetArrayElementTypeHandle()
+//
+NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -48
+    // Spill callee saved registers
+    PROLOG_SAVE_REG_PAIR   x0, x1, 16
+    PROLOG_SAVE_REG        x2, 32
+
+    // allow in case val can be casted to array element type
+    // call ObjIsInstanceOfNoGC(val, array->GetArrayElementTypeHandle())
+    mov     x1, x12 // array->GetArrayElementTypeHandle()
+    mov     x0, x2
+    bl      C_FUNC(ObjIsInstanceOfNoGC)
+    cmp     x0, TypeHandle_CanCast
+    beq     LOCAL_LABEL(DoWrite)             // ObjIsInstance returned TypeHandle::CanCast
+
+    // check via raising frame
+LOCAL_LABEL(NeedFrame):
+    add     x1, sp, #16             // x1 = &array
+    add     x0, sp, #32             // x0 = &val
+
+    bl      C_FUNC(ArrayStoreCheck) // ArrayStoreCheck(&val, &array)
+
+LOCAL_LABEL(DoWrite):
+    EPILOG_RESTORE_REG_PAIR           x0, x1, 16
+    EPILOG_RESTORE_REG                x2, 32
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   48
+    b C_FUNC(JIT_Stelem_DoWrite)
+NESTED_END JIT_Stelem_Ref_NotExactMatch, _TEXT
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)
+LEAF_ENTRY  JIT_Stelem_DoWrite, _TEXT
+
+    // Setup args for JIT_WriteBarrier. x14 = &array->m_array[idx] x15 = val
+    add     x14, x0, #PtrArray__m_Array // x14 = &array->m_array
+    add     x14, x14, x1, LSL #3
+    mov     x15, x2                     // x15 = val
+
+    // Branch to the write barrier (which is already correctly overwritten with
+    // single or multi-proc code based on the current CPU
+    b       C_FUNC(JIT_WriteBarrier)
+LEAF_END JIT_Stelem_DoWrite, _TEXT

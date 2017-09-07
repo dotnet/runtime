@@ -74,11 +74,21 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
     ReleaseSuspensionLock(pThread);
 
     int pipe_descs[2];
-    if (pipe(pipe_descs) == -1)
+    int pipeRv =
+#if HAVE_PIPE2
+        pipe2(pipe_descs, O_CLOEXEC);
+#else
+        pipe(pipe_descs);
+#endif // HAVE_PIPE2
+    if (pipeRv == -1)
     {
         ERROR("pipe() failed! error is %d (%s)\n", errno, strerror(errno));
         return ERROR_NOT_ENOUGH_MEMORY;
     }
+#if !HAVE_PIPE2
+    fcntl(pipe_descs[0], F_SETFD, FD_CLOEXEC); // make pipe non-inheritable, if possible
+    fcntl(pipe_descs[1], F_SETFD, FD_CLOEXEC);
+#endif // !HAVE_PIPE2
 
     // [0] is the read end of the pipe, and [1] is the write end.
     pThread->suspensionInfo.SetBlockingPipe(pipe_descs[1]);

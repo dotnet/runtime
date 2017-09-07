@@ -1003,9 +1003,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     //
     if (structSize <= sizeof(double))
     {
-        // We set the "primitive" useType based upon the structSize
-        // and also examine the clsHnd to see if it is an HFA of count one
-        useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+#if defined LEGACY_BACKEND
+        if (!IsHfa(clsHnd))
+#endif
+        {
+            // We set the "primitive" useType based upon the structSize
+            // and also examine the clsHnd to see if it is an HFA of count one
+            useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+        }
     }
 
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -1043,8 +1048,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // Structs that are HFA's are returned in multiple registers
             if (IsHfa(clsHnd))
             {
+#if !defined(LEGACY_BACKEND)
                 // HFA's of count one should have been handled by getPrimitiveTypeForStruct
                 assert(GetHfaCount(clsHnd) >= 2);
+#endif // !defined(LEGACY_BACKEND)
 
                 // setup wbPassType and useType indicate that this is returned by value as an HFA
                 //  using multiple registers
@@ -1615,11 +1622,11 @@ void Compiler::compShutdown()
     fprintf(fout, "GenTree node allocation stats\n");
     fprintf(fout, "---------------------------------------------------\n");
 
-    fprintf(fout, "Allocated %6u tree nodes (%7u bytes total, avg %4u bytes per method)\n",
+    fprintf(fout, "Allocated %6I64u tree nodes (%7I64u bytes total, avg %4I64u bytes per method)\n",
             genNodeSizeStats.genTreeNodeCnt, genNodeSizeStats.genTreeNodeSize,
             genNodeSizeStats.genTreeNodeSize / genMethodCnt);
 
-    fprintf(fout, "Allocated %7u bytes of unused tree node space (%3.2f%%)\n",
+    fprintf(fout, "Allocated %7I64u bytes of unused tree node space (%3.2f%%)\n",
             genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,
             (float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) /
                 genNodeSizeStats.genTreeNodeSize);
@@ -1895,7 +1902,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
+#ifdef LEGACY_BACKEND
         compQMarks = nullptr;
+#endif
     }
     else
     {
@@ -1911,7 +1920,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
+#ifdef LEGACY_BACKEND
         compQMarks = new (this, CMK_Unknown) ExpandArrayStack<GenTreePtr>(getAllocator());
+#endif
     }
 
 #ifdef FEATURE_TRACELOGGING
@@ -3646,17 +3657,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(opts.compGCPollType == GCPOLL_NONE);
         opts.compGCPollType = GCPOLL_INLINE;
     }
+
+#ifdef PROFILING_SUPPORTED
+#ifdef UNIX_AMD64_ABI
+    if (compIsProfilerHookNeeded())
+    {
+        opts.compNeedToAlignFrame = true;
+    }
+#endif // UNIX_AMD64_ABI
+#endif
 }
 
 #ifdef DEBUG
-
-void JitDump(const char* pcFormat, ...)
-{
-    va_list lst;
-    va_start(lst, pcFormat);
-    vflogf(jitstdout, pcFormat, lst);
-    va_end(lst);
-}
 
 bool Compiler::compJitHaltMethod()
 {
@@ -3844,8 +3856,7 @@ void Compiler::compInitDebuggingInfo()
 
         fgInsertStmtAtEnd(fgFirstBB, gtNewNothingNode());
 
-        JITDUMP("Debuggable code - Add new BB%02u to perform initialization of variables [%08X]\n", fgFirstBB->bbNum,
-                dspPtr(fgFirstBB));
+        JITDUMP("Debuggable code - Add new %s to perform initialization of variables\n", fgFirstBB->dspToString());
     }
 
     /*-------------------------------------------------------------------------
@@ -4815,8 +4826,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLinearScan = getLinearScanAllocator(this);
 
     /* Lower */
-    Lowering lower(this, m_pLinearScan); // PHASE_LOWERING
-    lower.Run();
+    m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
+    m_pLowering->Run();
 
     assert(lvaSortAgain == false); // We should have re-run fgLocalVarLiveness() in lower.Run()
     lvaTrackedFixed = true;        // We can not add any new tracked variables after this point.
@@ -4866,6 +4877,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 #endif // defined(DEBUG)
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
+    JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
 
 #if FUNC_INFO_LOGGING
     if (compJitFuncInfoFile != nullptr)
@@ -5017,6 +5029,29 @@ bool Compiler::compQuirkForPPP()
         // This fixes the PPP backward compat issue
         varDscExposedStruct->lvExactSize += 32;
 
+        // Update the GC info to indicate that the padding area does
+        // not contain any GC pointers.
+        //
+        // The struct is now 64 bytes.
+        //
+        // We're on x64 so this should be 8 pointer slots.
+        assert((varDscExposedStruct->lvExactSize / TARGET_POINTER_SIZE) == 8);
+
+        BYTE* oldGCPtrs = varDscExposedStruct->lvGcLayout;
+        BYTE* newGCPtrs = (BYTE*)compGetMemA(8, CMK_LvaTable);
+
+        for (int i = 0; i < 4; i++)
+        {
+            newGCPtrs[i] = oldGCPtrs[i];
+        }
+
+        for (int i = 4; i < 8; i++)
+        {
+            newGCPtrs[i] = TYPE_GC_NONE;
+        }
+
+        varDscExposedStruct->lvGcLayout = newGCPtrs;
+
         return true;
     }
     return false;
@@ -5153,6 +5188,8 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     info.compCompHnd    = compHnd;
     info.compMethodHnd  = methodHnd;
     info.compMethodInfo = methodInfo;
+
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
     // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
     // with an ARM-targeting "altjit").
@@ -5793,8 +5830,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     compCurBB = nullptr;
     lvaTable  = nullptr;
 
-    // Reset node ID counter
-    compGenTreeID = 0;
+    // Reset node and block ID counter
+    compGenTreeID    = 0;
+    compBasicBlockID = 0;
 #endif
 
     /* Initialize emitter */
@@ -5837,6 +5875,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     {
         compInitDebuggingInfo();
     }
+
+#ifdef DEBUG
+    if (compIsForInlining())
+    {
+        compBasicBlockID = impInlineInfo->InlinerCompiler->compBasicBlockID;
+    }
+#endif
 
     const bool forceInline = !!(info.compFlags & CORINFO_FLG_FORCEINLINE);
 
@@ -5970,7 +6015,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 #ifdef DEBUG
     if (compIsForInlining())
     {
-        impInlineInfo->InlinerCompiler->compGenTreeID = compGenTreeID;
+        impInlineInfo->InlinerCompiler->compGenTreeID    = compGenTreeID;
+        impInlineInfo->InlinerCompiler->compBasicBlockID = compBasicBlockID;
     }
 #endif
 
@@ -6160,12 +6206,12 @@ void Compiler::compInitVarScopeMap()
     }
 }
 
-static int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
+int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
 {
     return (*((VarScopeDsc**)elem1))->vsdLifeBeg - (*((VarScopeDsc**)elem2))->vsdLifeBeg;
 }
 
-static int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
+int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
 {
     return (*((VarScopeDsc**)elem1))->vsdLifeEnd - (*((VarScopeDsc**)elem2))->vsdLifeEnd;
 }
@@ -6839,6 +6885,29 @@ void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSIN
         *type1 = GetEightByteType(structDesc, 1);
     }
 }
+
+//------------------------------------------------------------------------------------------------------
+// GetStructTypeOffset: Gets the type, size and offset of the eightbytes of a struct for System V systems.
+//
+// Arguments:
+//    'typeHnd'    -  type handle
+//    'type0'      -  out param; returns the type of the first eightbyte.
+//    'type1'      -  out param; returns the type of the second eightbyte.
+//    'offset0'    -  out param; returns the offset of the first eightbyte.
+//    'offset1'    -  out param; returns the offset of the second eightbyte.
+//
+void Compiler::GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
+                                   var_types*           type0,
+                                   var_types*           type1,
+                                   unsigned __int8*     offset0,
+                                   unsigned __int8*     offset1)
+{
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
+    assert(structDesc.passedInRegisters);
+    GetStructTypeOffset(structDesc, type0, type1, offset0, offset1);
+}
+
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 /*****************************************************************************/
@@ -7986,16 +8055,16 @@ void JitTimer::PrintCsvHeader()
         if (ftell(fp) == 0)
         {
             fprintf(fp, "\"Method Name\",");
-            fprintf(fp, "\"Method Index\",");
+            fprintf(fp, "\"Assembly or SPMI Index\",");
             fprintf(fp, "\"IL Bytes\",");
             fprintf(fp, "\"Basic Blocks\",");
-            fprintf(fp, "\"Opt Level\",");
+            fprintf(fp, "\"Min Opts\",");
             fprintf(fp, "\"Loops Cloned\",");
 
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
                 fprintf(fp, "\"%s\",", PhaseNames[i]);
-                if (PhaseReportsIRSize[i])
+                if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
                 {
                     fprintf(fp, "\"Node Count After %s\",", PhaseNames[i]);
                 }
@@ -8039,7 +8108,16 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 
     FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
     fprintf(fp, "\"%s\",", methName);
-    fprintf(fp, "%d,", index);
+    if (index != 0)
+    {
+        fprintf(fp, "%d,", index);
+    }
+    else
+    {
+        const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
+            comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
+        fprintf(fp, "\"%s\",", methodAssemblyName);
+    }
     fprintf(fp, "%u,", comp->info.compILCodeSize);
     fprintf(fp, "%u,", comp->fgBBcount);
     fprintf(fp, "%u,", comp->opts.MinOpts());
@@ -8053,7 +8131,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         }
         fprintf(fp, "%I64u,", m_info.m_cyclesByPhase[i]);
 
-        if (PhaseReportsIRSize[i])
+        if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
             fprintf(fp, "%u,", m_info.m_nodeCountAfterPhase[i]);
         }
@@ -8273,7 +8351,7 @@ FILE* Compiler::compJitFuncInfoFile = nullptr;
 
 #ifdef DEBUG
 
-// dumpConvertedVarSet() is just like dumpVarSet(), except we assume the varset bits are tracked
+// dumpConvertedVarSet() dumps the varset bits that are tracked
 // variable indices, and we convert them to variable numbers, sort the variable numbers, and
 // print them as variable numbers. To do this, we use a temporary set indexed by
 // variable number. We can't use the "all varset" type because it is still size-limited, and might
@@ -8286,8 +8364,9 @@ void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars)
     pVarNumSet            = (BYTE*)_alloca(varNumSetBytes);
     memset(pVarNumSet, 0, varNumSetBytes); // empty the set
 
-    VARSET_ITER_INIT(comp, iter, vars, varIndex);
-    while (iter.NextElem(comp, &varIndex))
+    VarSetOps::Iter iter(comp, vars);
+    unsigned        varIndex = 0;
+    while (iter.NextElem(&varIndex))
     {
         unsigned varNum = comp->lvaTrackedToVarNum[varIndex];
         assert(varNum < comp->lvaCount);
@@ -8371,7 +8450,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *
  *
  * The following don't require a Compiler* to work:
- *      dVarSet                     : Display a VARSET_TP (call dumpVarSet()).
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
  */
 
@@ -9184,10 +9262,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_USEASG]");
                 }
-                if (tree->gtFlags & GTF_VAR_USEDEF)
-                {
-                    chars += printf("[VAR_USEDEF]");
-                }
                 if (tree->gtFlags & GTF_VAR_CAST)
                 {
                     chars += printf("[VAR_CAST]");
@@ -9232,11 +9306,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_NO_OP:
-
-                if (tree->gtFlags & GTF_NO_OP_NO)
-                {
-                    chars += printf("[NO_OP_NO]");
-                }
                 break;
 
             case GT_FIELD:
@@ -9273,10 +9342,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
                     chars += printf("[IND_VOLATILE]");
-                }
-                if (tree->gtFlags & GTF_IND_REFARR_LAYOUT)
-                {
-                    chars += printf("[IND_REFARR_LAYOUT]");
                 }
                 if (tree->gtFlags & GTF_IND_TGTANYWHERE)
                 {
@@ -9321,7 +9386,7 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_MUL:
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
             case GT_MUL_LONG:
 #endif
 
@@ -9354,10 +9419,13 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
             case GT_MOD:
             case GT_UMOD:
 
+#ifdef LEGACY_BACKEND
                 if (tree->gtFlags & GTF_MOD_INT_RESULT)
                 {
                     chars += printf("[MOD_INT_RESULT]");
                 }
+#endif // LEGACY_BACKEND
+
                 break;
 
             case GT_EQ:
@@ -9545,10 +9613,12 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[CALL_HOISTABLE]");
                 }
+#ifdef LEGACY_BACKEND
                 if (tree->gtFlags & GTF_CALL_REG_SAVE)
                 {
                     chars += printf("[CALL_REG_SAVE]");
                 }
+#endif // LEGACY_BACKEND
 
                 // More flags associated with calls.
 
@@ -9698,15 +9768,15 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 chars += printf("[REVERSE_OPS]");
             }
         }
-        if (tree->gtFlags & GTF_REG_VAL)
-        {
-            chars += printf("[REG_VAL]");
-        }
         if (tree->gtFlags & GTF_SPILLED)
         {
             chars += printf("[SPILLED_OPER]");
         }
 #if defined(LEGACY_BACKEND)
+        if (tree->InReg())
+        {
+            chars += printf("[REG_VAL]");
+        }
         if (tree->gtFlags & GTF_SPILLED_OP2)
         {
             chars += printf("[SPILLED_OP2]");
@@ -9727,7 +9797,7 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if ((op == GT_IND) || (op == GT_STOREIND))
+            if (tree->OperIsIndirOrArrLength())
             {
                 chars += printf("[IND_NONFAULTING]");
             }
@@ -9744,10 +9814,12 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
         {
             chars += printf("[BOOLEAN]");
         }
+#if CPU_HAS_BYTE_REGS && defined(LEGACY_BACKEND)
         if (tree->gtFlags & GTF_SMALL_OK)
         {
             chars += printf("[SMALL_OK]");
         }
+#endif
         if (tree->gtFlags & GTF_UNSIGNED)
         {
             chars += printf("[SMALL_UNSIGNED]");
@@ -9759,10 +9831,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_SPILL)
         {
             chars += printf("[SPILL]");
-        }
-        if (tree->gtFlags & GTF_SPILL_HIGH)
-        {
-            chars += printf("[SPILL_HIGH]");
         }
         if (tree->gtFlags & GTF_REUSE_REG_VAL)
         {
@@ -10930,7 +10998,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
             GenTree*         base   = lea->Base();
             GenTree*         index  = lea->Index();
             unsigned         scale  = lea->gtScale;
-            unsigned         offset = lea->gtOffset;
+            int              offset = lea->Offset();
 
             chars += printf(" [");
             if (base != nullptr)
@@ -10955,7 +11023,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("+");
                 }
-                chars += printf("%u", offset);
+                chars += printf("%d", offset);
             }
             chars += printf("]");
             break;

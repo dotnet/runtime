@@ -7,6 +7,7 @@
 #include "gcenv.h"
 #include "gchandletableimpl.h"
 #include "objecthandle.h"
+#include "handletablepriv.h"
 
 GCHandleStore* g_gcGlobalHandleStore;
 
@@ -25,19 +26,19 @@ bool GCHandleStore::ContainsHandle(OBJECTHANDLE handle)
     return _underlyingBucket.Contains(handle);
 }
 
-OBJECTHANDLE GCHandleStore::CreateHandleOfType(Object* object, int type)
+OBJECTHANDLE GCHandleStore::CreateHandleOfType(Object* object, HandleType type)
 {
     HHANDLETABLE handletable = _underlyingBucket.pTable[GetCurrentThreadHomeHeapNumber()];
     return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
 }
 
-OBJECTHANDLE GCHandleStore::CreateHandleOfType(Object* object, int type, int heapToAffinitizeTo)
+OBJECTHANDLE GCHandleStore::CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo)
 {
     HHANDLETABLE handletable = _underlyingBucket.pTable[heapToAffinitizeTo];
     return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
 }
 
-OBJECTHANDLE GCHandleStore::CreateHandleWithExtraInfo(Object* object, int type, void* pExtraInfo)
+OBJECTHANDLE GCHandleStore::CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo)
 {
     HHANDLETABLE handletable = _underlyingBucket.pTable[GetCurrentThreadHomeHeapNumber()];
     return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object), reinterpret_cast<uintptr_t>(pExtraInfo));
@@ -54,6 +55,18 @@ OBJECTHANDLE GCHandleStore::CreateDependentHandle(Object* primary, Object* secon
 
     ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(secondary));
     return handle;
+}
+
+void GCHandleStore::RelocateAsyncPinnedHandles(IGCHandleStore* pTarget)
+{
+    // assumption - the IGCHandleStore is an instance of GCHandleStore
+    GCHandleStore* other = static_cast<GCHandleStore*>(pTarget);
+    ::Ref_RelocateAsyncPinHandles(&_underlyingBucket, &other->_underlyingBucket);
+}
+
+bool GCHandleStore::EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context)
+{
+    return !!::Ref_HandleAsyncPinHandles(callback, context);
 }
 
 GCHandleStore::~GCHandleStore()
@@ -112,7 +125,7 @@ void* GCHandleManager::GetHandleContext(OBJECTHANDLE handle)
     return (void*)((uintptr_t)::HndGetHandleTableADIndex(::HndGetHandleTable(handle)).m_dwIndex);
 }
 
-OBJECTHANDLE GCHandleManager::CreateGlobalHandleOfType(Object* object, int type)
+OBJECTHANDLE GCHandleManager::CreateGlobalHandleOfType(Object* object, HandleType type)
 {
     return ::HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], type, ObjectToOBJECTREF(object)); 
 }
@@ -122,7 +135,7 @@ OBJECTHANDLE GCHandleManager::CreateDuplicateHandle(OBJECTHANDLE handle)
     return ::HndCreateHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, ::HndFetchHandle(handle));
 }
 
-void GCHandleManager::DestroyHandleOfType(OBJECTHANDLE handle, int type)
+void GCHandleManager::DestroyHandleOfType(OBJECTHANDLE handle, HandleType type)
 {
     ::HndDestroyHandle(::HndGetHandleTable(handle), type, handle);
 }
@@ -130,6 +143,11 @@ void GCHandleManager::DestroyHandleOfType(OBJECTHANDLE handle, int type)
 void GCHandleManager::DestroyHandleOfUnknownType(OBJECTHANDLE handle)
 {
     ::HndDestroyHandleOfUnknownType(::HndGetHandleTable(handle), handle);
+}
+
+void GCHandleManager::SetExtraInfoForHandle(OBJECTHANDLE  handle, HandleType type, void* pExtraInfo)
+{
+    ::HndSetHandleExtraInfo(handle, type, (uintptr_t)pExtraInfo);
 }
 
 void* GCHandleManager::GetExtraInfoFromHandle(OBJECTHANDLE handle)
@@ -147,7 +165,30 @@ bool GCHandleManager::StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* obj
     return !!::HndFirstAssignHandle(handle, ObjectToOBJECTREF(object));
 }
 
+void GCHandleManager::SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object)
+{
+    ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(object));
+}
+
+Object* GCHandleManager::GetDependentHandleSecondary(OBJECTHANDLE handle)
+{
+    return OBJECTREFToObject(::GetDependentHandleSecondary(handle));
+}
+
 Object* GCHandleManager::InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject)
 {
     return (Object*)::HndInterlockedCompareExchangeHandle(handle, ObjectToOBJECTREF(object), ObjectToOBJECTREF(comparandObject));
 }
+
+HandleType GCHandleManager::HandleFetchType(OBJECTHANDLE handle)
+{
+    uint32_t type = ::HandleFetchType(handle);
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_WINRT);
+    return static_cast<HandleType>(type);
+}
+
+void GCHandleManager::TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2)
+{
+    ::Ref_TraceRefCountHandles(callback, param1, param2);
+}
+

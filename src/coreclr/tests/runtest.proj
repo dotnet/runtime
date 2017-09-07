@@ -78,12 +78,12 @@ $(_XunitEpilog)
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <TargetFrameworkIdentifier Condition ="'$(BuildTestsAgainstPackages)' != 'true'">.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion Condition ="'$(BuildTestsAgainstPackages)' != 'true'">v4.5</TargetFrameworkVersion>
+    <TargetFrameworkIdentifier Condition ="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion Condition ="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">v4.5</TargetFrameworkVersion>
     <NugetTargetMonikerShort Condition ="'$(BuildTestsAgainstPackages)' != 'true'">net45</NugetTargetMonikerShort>
     <IsXunitWrapperProject>true</IsXunitWrapperProject>
     <SkipSigning>true</SkipSigning>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB}%3B{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>true</IsTestProject>
@@ -100,11 +100,11 @@ $(_XunitEpilog)
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
    <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' != 'true'">
+    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>coreclr</Name>
     </ProjectReference>
-    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' == 'true'">
+    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" Condition="('$(BuildTestsAgainstPackages)' == 'true') Or ('$(BuildOS)' != 'Windows_NT')">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>coreclr</Name>
     </ProjectReference>
@@ -152,8 +152,10 @@ $(_XunitEpilog)
     <PropertyGroup>
       <_CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</_CMDDIR_Parent>
       <_CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR_Parent)))</_CMDDIR_Grandparent>
-      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace($(_CMDDIR_Grandparent)\,''))</CategoryWithSlash>
-      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('\','.'))</Category>
+      <CategoryWithSlash Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('$(_CMDDIR)').Replace("$(_CMDDIR_Grandparent)\",""))</CategoryWithSlash>
+      <CategoryWithSlash Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(_CMDDIR)').Replace("$(_CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <Category Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('\','.'))</Category>
+      <Category Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
       <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
       <XunitWrapperOutputDir>$(XunitWrapperOutputIntermediatedDirBase)$(Category)</XunitWrapperOutputDir>
@@ -220,13 +222,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(RunningOnUnix)' != 'true'" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(RunningOnUnix)' == 'true'" />
       <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="$(HaveExcludes)"/>
       <AllCMDs Include="@(AllCMDsPresent)" Exclude="@(AllCMDExcludeFilter)"/>
 
       <AllCommands Include="@(AllCMDs)" >
-        <_FactName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))</_FactName>
-        <_ClassName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</_ClassName>
+        <_FactName Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))</_FactName>
+        <_ClassName Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</_ClassName>
+        <_FactName Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("/","_").Replace("-","_"))</_FactName>
+        <_ClassName Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("sh","").Replace(".","_").Replace("/","_").Replace("-","_"))</_ClassName>
 
         <_XunitFact >
           <![CDATA[
@@ -318,14 +323,22 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" />
     </ItemGroup>
-  </Target> 
+  </Target>
+
+  <!-- If we want to overwrite the desired CoreCLR package version, we need to get the new version from the generated props file in bin/obj -->
+  <Import Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'" Project="$(BuildVersionFile)" />
+
+  <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
+    <VersionToRestore Condition="'$(StableVersion)' != ''">$(StableVersion)</VersionToRestore>
+    <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionToRestore>
+    <DesiredPackageVersionArg>$(VersionToRestore)</DesiredPackageVersionArg>
+  </PropertyGroup> 
 
   <Import Project="tests.targets" />
   <Import Project="publishdependency.targets" />
 
   <PropertyGroup>
-    <TargetRid Condition="'$(RuntimeId)' != ''">$(RuntimeId)</TargetRid>
-    <TargetRid Condition="'$(RuntimeId)' == ''">$(TestNugetRuntimeId)</TargetRid>
+    <DesiredPackageVersionArg Condition="'$(DesiredPackageVersionArg)' == ''">$(CoreClrPackageVersion)</DesiredPackageVersionArg>
   </PropertyGroup>
 
   <Target Name="CreateTestOverlay">
@@ -350,47 +363,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
   </Target>
 
-  <!-- All the test projects need to add dependency to currently built runtime as they require that to run. 
-       In addition the version number of built runtime can change so all project.json needs to be dynamically generated.
-       Instead the following task creates a project.json with dependencies like  Microsoft.netcore.runtime.coreclr ..etc.
-        -->
-  <Target Name="CreateTestRuntimeJsonFile">
-    <ItemGroup>
-      <CoreclrPackage Include="$(CORE_ROOT)\.nuget\**\Microsoft.NETCore.Runtime.CoreCLR.*.nupkg"/>
-    </ItemGroup>
-    <PropertyGroup>
-      <CoreclrPackageFileName>%(CoreclrPackage.Filename)</CoreclrPackageFileName>
-      <!-- Get package version number from nuget package filename at core_root -->
-      <CoreClrPackageVersion Condition="'$(BuildTestsAgainstPackages)'!='true'">$([System.String]::Copy('$(CoreclrPackageFileName)').Replace('Microsoft.NETCore.Runtime.CoreCLR.',''))</CoreClrPackageVersion>
-      <TestRuntimeJsonContents>
-        <![CDATA[
-{
-  "dependencies": {
-    "Microsoft.NETCore.Runtime.CoreCLR": "$(CoreClrPackageVersion)",
-    "Microsoft.NETCore.TestHost": "1.0.0-rc3-24117-00"
-  },
-  "frameworks": {
-    "dnxcore50": {}
-  },
-  "runtimes": {
-    "$(TestNugetRuntimeId)":{}
-  }
-}
-
-        ]]>
-      </TestRuntimeJsonContents>
-    </PropertyGroup>
-
-    <MakeDir Directories="$(TestRuntimeProjectJsonDir)" Condition="!Exists('$(TestRuntimeProjectJsonDir)')" />
-
-    <!-- Write the file -->
-    <WriteLinesToFile
-      File="$(TestRuntimeProjectJson)"
-      Lines="$(TestRuntimeJsonContents)"
-      Overwrite="true" />
-
-  </Target>
-
   <Target Name="RunPerfTests" Condition="'$(Performance)'=='true'">  
     <Message Text="Executing steps for perf tests" Importance="High"/>  
     
@@ -407,11 +379,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
 
   <Target Name="Build">
-
-    <!-- generate project.json for runtime dependency -->
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateTestRuntimeJsonFile"
-             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="src\Common\test_dependencies\test_dependencies.csproj"

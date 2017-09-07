@@ -842,7 +842,7 @@ void RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
     /* The value must be sitting in a register */
 
     assert(tree);
-    assert(tree->gtFlags & GTF_REG_VAL);
+    assert(tree->InReg());
 
     type   = tree->TypeGet();
     regNum = tree->gtRegNum;
@@ -869,7 +869,7 @@ void RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
             else
                 printf(" / Constant(0x%X)", tree->gtIntCon.gtIconVal);
         }
-        printf("]\n");
+        printf("\n");
     }
 #endif // DEBUG
 
@@ -927,7 +927,7 @@ void RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promotedStructArg, re
             else
                 printf(" / Constant(0x%X)", promotedStructArg->gtIntCon.gtIconVal);
         }
-        printf("]\n");
+        printf("\n");
     }
 #endif
 
@@ -979,7 +979,7 @@ void RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 #else
     assert(tree->gtType == TYP_LONG || tree->gtType == TYP_DOUBLE);
 #endif
-    assert(tree->gtFlags & GTF_REG_VAL);
+    assert(tree->InReg());
 
     regPair = tree->gtRegPair;
     regMask = genRegPairMask(regPair);
@@ -990,10 +990,10 @@ void RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tThe register %s currently holds \n", m_rsCompiler->compRegVarName(regLo));
+        printf("\t\t\t\t\t\t\tThe register %s currently holds ", m_rsCompiler->compRegVarName(regLo));
         Compiler::printTreeID(tree);
         printf("/lo32\n");
-        printf("\t\t\t\t\t\t\tThe register %s currently holds \n", m_rsCompiler->compRegVarName(regHi));
+        printf("\t\t\t\t\t\t\tThe register %s currently holds ", m_rsCompiler->compRegVarName(regHi));
         Compiler::printTreeID(tree);
         printf("/hi32\n");
     }
@@ -1167,7 +1167,11 @@ void RegSet::rsMarkRegFree(regMaskTP regMask)
             {
                 printf("\t\t\t\t\t\t\tThe register %s no longer holds ", m_rsCompiler->compRegVarName(regNum));
                 Compiler::printTreeID(rsUsedTree[regNum]);
-                Compiler::printTreeID(rsUsedAddr[regNum]);
+                if (rsUsedAddr[regNum] != nullptr)
+                {
+                    Compiler::printTreeID(rsUsedAddr[regNum]);
+                }
+
                 printf("\n");
             }
 #endif
@@ -1527,6 +1531,10 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
 
     GenTreeCall* call = nullptr;
     var_types    treeType;
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    GenTreePutArgSplit* splitArg = nullptr;
+    GenTreeMultiRegOp*  multiReg = nullptr;
+#endif
 
 #ifndef LEGACY_BACKEND
     if (tree->IsMultiRegCall())
@@ -1535,8 +1543,20 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
         treeType                    = retTypeDesc->GetReturnRegType(regIdx);
     }
+#ifdef _TARGET_ARM_
+    else if (tree->OperIsPutArgSplit())
+    {
+        splitArg = tree->AsPutArgSplit();
+        treeType = splitArg->GetRegType(regIdx);
+    }
+    else if (tree->OperIsMultiRegOp())
+    {
+        multiReg = tree->AsMultiRegOp();
+        treeType = multiReg->GetRegType(regIdx);
+    }
+#endif // _TARGET_ARM_
     else
-#endif
+#endif // !LEGACY_BACKEND
     {
         treeType = tree->TypeGet();
     }
@@ -1584,6 +1604,20 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         assert((regFlags & GTF_SPILL) != 0);
         regFlags &= ~GTF_SPILL;
     }
+#ifdef _TARGET_ARM_
+    else if (splitArg != nullptr)
+    {
+        regFlags = splitArg->GetRegSpillFlagByIdx(regIdx);
+        assert((regFlags & GTF_SPILL) != 0);
+        regFlags &= ~GTF_SPILL;
+    }
+    else if (multiReg != nullptr)
+    {
+        regFlags = multiReg->GetRegSpillFlagByIdx(regIdx);
+        assert((regFlags & GTF_SPILL) != 0);
+        regFlags &= ~GTF_SPILL;
+    }
+#endif // _TARGET_ARM_
     else
     {
         assert(!varTypeIsMultiReg(tree));
@@ -1600,13 +1634,16 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     }
     else
     {
-        assert(tree->gtFlags & GTF_REG_VAL);
+        assert(tree->InReg());
         assert(tree->gtRegNum == reg);
     }
+#elif defined(_TARGET_ARM_)
+    assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg) ||
+           (splitArg != nullptr && splitArg->GetRegNumByIdx(regIdx) == reg) ||
+           (multiReg != nullptr && multiReg->GetRegNumByIdx(regIdx) == reg));
 #else
-    assert(tree->InReg());
     assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
-#endif // CPU_LONG_USES_REGPAIR
+#endif // !CPU_LONG_USES_REGPAIR && !_TARGET_ARM_
 
     // Are any registers free for spillage?
     SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
@@ -1628,8 +1665,10 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         printf("\t\t\t\t\t\t\tThe register %s spilled with    ", m_rsCompiler->compRegVarName(reg));
         Compiler::printTreeID(spill->spillTree);
 #ifdef LEGACY_BACKEND
-        printf("/");
-        Compiler::printTreeID(spill->spillAddr);
+        if (spill->spillAddr != nullptr)
+        {
+            Compiler::printTreeID(spill->spillAddr);
+        }
 #endif // LEGACY_BACKEND
     }
 #endif
@@ -1727,6 +1766,18 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         regFlags |= GTF_SPILLED;
         call->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
+#ifdef _TARGET_ARM_
+    else if (splitArg != nullptr)
+    {
+        regFlags |= GTF_SPILLED;
+        splitArg->SetRegSpillFlagByIdx(regFlags, regIdx);
+    }
+    else if (multiReg != nullptr)
+    {
+        regFlags |= GTF_SPILLED;
+        multiReg->SetRegSpillFlagByIdx(regFlags, regIdx);
+    }
+#endif // _TARGET_ARM_
 #endif //! LEGACY_BACKEND
 }
 
@@ -2309,9 +2360,13 @@ regNumber RegSet::rsUnspillOneReg(GenTreePtr tree, regNumber oldReg, KeepReg wil
             rsMaskMult |= genRegMask(newReg);
     }
 
-    /* Free the temp, it's no longer used */
-
-    m_rsCompiler->tmpRlsTemp(temp);
+    if (!multiUsed || (willKeepNewReg == KEEP_REG))
+    {
+        // Free the temp, it's no longer used.
+        // For multi-used regs that aren't (willKeepNewReg == KEEP_REG), we didn't unspill everything, so
+        // we need to leave the temp for future unspilling.
+        m_rsCompiler->tmpRlsTemp(temp);
+    }
 
     return newReg;
 }
@@ -2356,6 +2411,22 @@ TempDsc* RegSet::rsUnspillInPlace(GenTreePtr tree, regNumber oldReg, unsigned re
         flags &= ~GTF_SPILLED;
         call->SetRegSpillFlagByIdx(flags, regIdx);
     }
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    else if (tree->OperIsPutArgSplit())
+    {
+        GenTreePutArgSplit* splitArg = tree->AsPutArgSplit();
+        unsigned            flags    = splitArg->GetRegSpillFlagByIdx(regIdx);
+        flags &= ~GTF_SPILLED;
+        splitArg->SetRegSpillFlagByIdx(flags, regIdx);
+    }
+    else if (tree->OperIsMultiRegOp())
+    {
+        GenTreeMultiRegOp* multiReg = tree->AsMultiRegOp();
+        unsigned           flags    = multiReg->GetRegSpillFlagByIdx(regIdx);
+        flags &= ~GTF_SPILLED;
+        multiReg->SetRegSpillFlagByIdx(flags, regIdx);
+    }
+#endif // !LEGACY_BACKEND && _TARGET_ARM_
     else
     {
         tree->gtFlags &= ~GTF_SPILLED;
@@ -2429,7 +2500,9 @@ void RegSet::rsUnspillReg(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
 
 void RegSet::rsMarkSpill(GenTreePtr tree, regNumber reg)
 {
-    tree->gtFlags &= ~GTF_REG_VAL;
+#ifdef LEGACY_BACKEND
+    tree->SetInReg(false);
+#endif
     tree->gtFlags |= GTF_SPILLED;
 }
 
@@ -2441,9 +2514,9 @@ void RegSet::rsMarkUnspill(GenTreePtr tree, regNumber reg)
     assert(tree->gtType != TYP_LONG);
 #endif // _TARGET_AMD64_
 
-    tree->gtFlags |= GTF_REG_VAL;
     tree->gtFlags &= ~GTF_SPILLED;
     tree->gtRegNum = reg;
+    tree->SetInReg();
 }
 
 /*****************************************************************************
@@ -2628,17 +2701,24 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
 
         if (rsIsTreeInReg(regHi, tree))
         {
-            /* Temporarily lock the high part */
-
-            rsLockUsedReg(genRegMask(regHi));
+            // Temporarily lock the high part if necessary. If this register is a multi-use register that is shared
+            // with another tree, the register may already be locked.
+            const regMaskTP regHiMask = genRegMask(regHi);
+            const bool      lockReg   = (rsMaskLock & regHiMask) == 0;
+            if (lockReg)
+            {
+                rsLockUsedReg(regHiMask);
+            }
 
             /* Pick a new home for the lower half */
 
             regLo = rsUnspillOneReg(tree, regLo, keepReg, needReg);
 
             /* We can unlock the high part now */
-
-            rsUnlockUsedReg(genRegMask(regHi));
+            if (lockReg)
+            {
+                rsUnlockUsedReg(regHiMask);
+            }
         }
         else
         {
@@ -2660,19 +2740,26 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
 
         if (!rsIsTreeInReg(regHi, tree))
         {
-            regMaskTP regLoUsed;
+            regMaskTP regLoUsed = RBM_NONE;
 
-            /* Temporarily lock the low part so it doesnt get spilled */
-
-            rsLockReg(genRegMask(regLo), &regLoUsed);
+            // Temporarily lock the low part if necessary. If this register is a multi-use register that is shared
+            // with another tree, the register may already be locked.
+            const regMaskTP regLoMask = genRegMask(regLo);
+            const bool      lockReg   = (rsMaskLock & regLoMask) == 0;
+            if (lockReg)
+            {
+                rsLockReg(regLoMask, &regLoUsed);
+            }
 
             /* Pick a new home for the upper half */
 
             regHi = rsUnspillOneReg(tree, regHi, keepReg, needReg);
 
             /* We can unlock the low register now */
-
-            rsUnlockReg(genRegMask(regLo), regLoUsed);
+            if (lockReg)
+            {
+                rsUnlockReg(regLoMask, regLoUsed);
+            }
         }
         else
         {
@@ -2684,7 +2771,7 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
 
     /* The value is now residing in the new register */
 
-    tree->gtFlags |= GTF_REG_VAL;
+    tree->SetInReg();
     tree->gtFlags &= ~GTF_SPILLED;
     tree->gtRegPair = gen2regs2pair(regLo, regHi);
 
@@ -3320,6 +3407,15 @@ void Compiler::tmpPreAllocateTemps(var_types type, unsigned count)
         tmpCount++;
         tmpSize += size;
 
+#ifdef _TARGET_ARM_
+        if (type == TYP_DOUBLE)
+        {
+            // Adjust tmpSize to accommodate possible alignment padding.
+            // Note that at this point the offsets aren't yet finalized, so we don't yet know if it will be required.
+            tmpSize += TARGET_POINTER_SIZE;
+        }
+#endif // _TARGET_ARM_
+
         TempDsc* temp = new (this, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
 
 #ifdef DEBUG
@@ -3561,52 +3657,36 @@ bool genIsProperRegPair(regPairNo regPair)
 
 regNumber genRegArgNext(regNumber argReg)
 {
-    regNumber result = REG_NA;
+    assert(isValidIntArgReg(argReg) || isValidFloatArgReg(argReg));
 
-    if (isValidFloatArgReg(argReg))
+    switch (argReg)
     {
-        // We can iterate the floating point argument registers by using +1
-        result = REG_NEXT(argReg);
-    }
-    else
-    {
-        assert(isValidIntArgReg(argReg));
 
 #ifdef _TARGET_AMD64_
 #ifdef UNIX_AMD64_ABI
-        // Windows X64 ABI:
-        //     REG_EDI, REG_ESI, REG_ECX, REG_EDX, REG_R8, REG_R9
-        //
-        if (argReg == REG_ARG_1) // REG_ESI
-        {
-            result = REG_ARG_2; // REG_ECX
-        }
-        else if (argReg == REG_ARG_3) // REG_EDX
-        {
-            result = REG_ARG_4; // REG_R8
-        }
-#else  // Windows ABI
-        // Windows X64 ABI:
-        //     REG_ECX, REG_EDX, REG_R8, REG_R9
-        //
-        if (argReg == REG_ARG_1) // REG_EDX
-        {
-            result = REG_ARG_2; // REG_R8
-        }
-#endif // UNIX or Windows ABI
+
+        // Linux x64 ABI: REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9
+        case REG_ARG_0:       // REG_RDI
+            return REG_ARG_1; // REG_RSI
+        case REG_ARG_1:       // REG_RSI
+            return REG_ARG_2; // REG_RDX
+        case REG_ARG_2:       // REG_RDX
+            return REG_ARG_3; // REG_RCX
+        case REG_ARG_3:       // REG_RCX
+            return REG_ARG_4; // REG_R8
+
+#else // !UNIX_AMD64_ABI
+
+        // Windows x64 ABI: REG_RCX, REG_RDX, REG_R8, REG_R9
+        case REG_ARG_1:       // REG_RDX
+            return REG_ARG_2; // REG_R8
+
+#endif // !UNIX_AMD64_ABI
 #endif // _TARGET_AMD64_
 
-        // If we didn't set 'result' to valid register above
-        // then we will just iterate 'argReg' using REG_NEXT
-        //
-        if (result == REG_NA)
-        {
-            // Otherwise we just iterate the argument registers by using REG_NEXT
-            result = REG_NEXT(argReg);
-        }
+        default:
+            return REG_NEXT(argReg);
     }
-
-    return result;
 }
 
 /*****************************************************************************

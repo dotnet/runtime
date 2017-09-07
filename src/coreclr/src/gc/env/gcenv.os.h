@@ -7,6 +7,17 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
+#ifdef Sleep
+// This is a funny workaround for the fact that "common.h" defines Sleep to be
+// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
+//
+// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
+// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
+// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
+// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
+#undef Sleep
+#endif // Sleep
+
 // Critical section used by the GC
 class CLRCriticalSection
 {
@@ -158,6 +169,15 @@ public:
     //  flags     - flags to control special settings like write watching
     // Return:
     //  Starting virtual address of the reserved range
+    // Notes:
+    //  Previous uses of this API aligned the `size` parameter to the platform
+    //  allocation granularity. This is not required by POSIX or Windows. Windows will
+    //  round the size up to the nearest page boundary. POSIX does not specify what is done,
+    //  but Linux probably also rounds up. If an implementation of GCToOSInterface needs to
+    //  align to the allocation granularity, it will do so in its implementation.
+    //
+    //  Windows guarantees that the returned mapping will be aligned to the allocation
+    //  granularity.
     static void* VirtualReserve(size_t size, size_t alignment, uint32_t flags);
 
     // Release virtual memory range previously reserved using VirtualReserve
@@ -329,6 +349,9 @@ public:
     //  Any parameter can be null.
     static void GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
 
+    // Get size of an OS memory page
+    static uint32_t GetPageSize();
+
     //
     // Misc
     //
@@ -357,6 +380,12 @@ public:
     // Return:
     //  Time stamp in milliseconds
     static uint32_t GetLowPrecisionTimeStamp();
+
+    // Gets the total number of processors on the machine, not taking
+    // into account current process affinity.
+    // Return:
+    //  Number of processors on the machine
+    static uint32_t GetTotalProcessorCount();
 };
 
 #endif // __GCENV_OS_H__

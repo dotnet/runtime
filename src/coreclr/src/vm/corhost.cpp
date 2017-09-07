@@ -4227,9 +4227,9 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
                 //
                 // because the section following UEF will also be included in the region size
                 // if it has the same protection as the UEF section.
-                DWORD dwUEFSectionPageCount = ((pUEFSection->Misc.VirtualSize + OS_PAGE_SIZE - 1)/OS_PAGE_SIZE);
+                DWORD dwUEFSectionPageCount = ((pUEFSection->Misc.VirtualSize + GetOsPageSize() - 1)/GetOsPageSize());
 
-                BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (OS_PAGE_SIZE * dwUEFSectionPageCount);
+                BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (GetOsPageSize() * dwUEFSectionPageCount);
                 
                 // Ensure that the section following us is having different memory protection
                 MEMORY_BASIC_INFORMATION nextSectionInfo;
