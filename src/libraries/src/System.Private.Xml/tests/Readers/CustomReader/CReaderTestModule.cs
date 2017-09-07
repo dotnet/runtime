@@ -9,34 +9,21 @@ namespace System.Xml.Tests
 {
     public partial class CReaderTestModule : CGenericTestModule
     {
-        private static void RunTestCaseAsync(Func<CTestBase> testCaseGenerator)
+        [Theory]
+        [XmlTests(nameof(Create))]
+        public void RunTests(XunitTestCase testCase)
         {
-            CModInfo.CommandLine = "/async";
-            RunTestCase(testCaseGenerator);
+            testCase.Run();
         }
 
-        private static void RunTestCase(Func<CTestBase> testCaseGenerator)
+        public static CTestModule Create()
         {
             var module = new CReaderTestModule();
 
             module.Init(null);
-            module.AddChild(testCaseGenerator());
-            module.Execute();
+            module.AddChild(new TCReadReader() { Attribute = new TestCase() { Name = "Read", Desc = "CustomInheritedReader" } });
 
-            Assert.Equal(0, module.FailCount);
-        }
-
-        private static void RunTest(Func<CTestBase> testCaseGenerator)
-        {
-            RunTestCase(testCaseGenerator);
-            RunTestCaseAsync(testCaseGenerator);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunTests()
-        {
-            RunTest(() => new TCReadReader() { Attribute = new TestCase() { Name = "Read", Desc = "CustomInheritedReader" } });
+            return module;
         }
     }
 }
