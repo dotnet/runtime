@@ -2919,7 +2919,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             noway_assert(arg != nullptr);
 
             GenTree* newArg = new (this, GT_ADDR)
-                GenTreeAddrMode(TYP_REF, arg, nullptr, 0, eeGetEEInfo()->offsetOfSecureDelegateIndirectCell);
+                GenTreeAddrMode(TYP_BYREF, arg, nullptr, 0, eeGetEEInfo()->offsetOfSecureDelegateIndirectCell);
 
             // Append newArg as the last arg
             GenTreeArgList** insertionPoint = &call->gtCallArgs;
