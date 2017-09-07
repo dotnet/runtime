@@ -1,22 +1,18 @@
 # Mono Code Owners File
 #
-# GitHub uses this file to determine who to ping for reviews on pull requests.
-# If you're the primary maintainer of an area of Mono and you don't mind
-# reviewing pull requests, please add yourself to this file. You may want to
-# avoid adding entries for commonly changed or automatically generated files
-# (e.g. stuff in external/, or various generated *.csproj files) so as not to
-# get spammed with emails.
+# GitHub uses this file to determine who to assign for reviews
+# on pull requests. Please keep this file alphabetically sorted.
 #
-# Note that if two patterns match a file, the later pattern takes precedence.
-#
-# Please keep this file alphabetically sorted.
-#
-# Reference:
+# References:
 #
 # https://github.com/blog/2392-introducing-code-owners
 # https://help.github.com/articles/about-codeowners
 
-/ @luhenry @marek-safar
+
+# These owners will be the default owners for everything in the repo.
+* @luhenry @marek-safar
+
+# Order is important. The last matching pattern has the most precedence.
 
 /acceptance-tests @akoeplinger
 /acceptance-tests/profiler-stress* @alexrp
