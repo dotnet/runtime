@@ -23,6 +23,39 @@ namespace System.Net.Http
             _maxAutomaticRedirections = maxAutomaticRedirections;
         }
 
+        internal static bool RequestNeedsRedirect(HttpResponseMessage response)
+        {
+            bool needRedirect = false;
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.Moved:
+                case HttpStatusCode.Found:
+                case HttpStatusCode.SeeOther:
+                case HttpStatusCode.TemporaryRedirect:
+                    needRedirect = true;
+                    break;
+
+                case HttpStatusCode.MultipleChoices:
+                    needRedirect = response.Headers.Location != null; // Don't redirect if no Location specified
+                    break;
+            }
+
+            return needRedirect;
+        }
+
+        private static bool RequestRequiresForceGet(HttpStatusCode statusCode, HttpMethod requestMethod)
+        {
+            if (statusCode == HttpStatusCode.Moved ||
+                statusCode == HttpStatusCode.Found ||
+                statusCode == HttpStatusCode.SeeOther ||
+                statusCode == HttpStatusCode.MultipleChoices)
+            {
+                return requestMethod == HttpMethod.Post;
+            }
+
+            return false;
+        }
+
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             HttpResponseMessage response;
@@ -31,28 +64,7 @@ namespace System.Net.Http
             {
                 response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-                bool needRedirect = false;
-                bool forceGet = false;
-                switch (response.StatusCode)
-                {
-                    case HttpStatusCode.TemporaryRedirect:
-                        needRedirect = true;
-                        break;
-
-                    case HttpStatusCode.Moved:
-                    case HttpStatusCode.Found:
-                    case HttpStatusCode.SeeOther:
-                        needRedirect = true;
-                        forceGet = request.Method == HttpMethod.Post;
-                        break;
-
-                    case HttpStatusCode.MultipleChoices:
-                        needRedirect = response.Headers.Location != null; // Don't redirect if no Location specified
-                        forceGet = request.Method == HttpMethod.Post;
-                        break;
-                }
-
-                if (!needRedirect)
+                if (!RequestNeedsRedirect(response))
                 {
                     break;
                 }
@@ -86,7 +98,7 @@ namespace System.Net.Http
                 // Set up for the automatic redirect
                 request.RequestUri = location;
 
-                if (forceGet)
+                if (RequestRequiresForceGet(response.StatusCode, request.Method))
                 {
                     request.Method = HttpMethod.Get;
                     request.Content = null;
