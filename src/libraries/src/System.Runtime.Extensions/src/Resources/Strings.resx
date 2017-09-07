@@ -94,20 +94,11 @@
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>
-  <data name="Arg_PathIllegal" xml:space="preserve">
-    <value>The path is not of a legal form.</value>
-  </data>
-  <data name="Arg_PathIllegalUNC" xml:space="preserve">
-    <value>The UNC path should be of the form \\\\server\\share.</value>
-  </data>
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path.</value>
   </data>
   <data name="Argument_PathEmpty" xml:space="preserve">
     <value>Path cannot be the empty string or all whitespace.</value>
-  </data>
-  <data name="Argument_PathFormatNotSupported" xml:space="preserve">
-    <value>The given path's format is not supported.</value>
   </data>
   <data name="ArgumentOutOfRange_MustBePositive" xml:space="preserve">
     <value>'{0}' must be greater than zero.</value>
@@ -144,9 +135,6 @@
   </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
-  </data>
-  <data name="InvalidOperation_Cryptography" xml:space="preserve">
-    <value>Unable to use cryptographic functionality.</value>
   </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}</value>
@@ -273,9 +261,6 @@
   </data>
   <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
     <value>Collection is read-only.</value>
-  </data>
-  <data name="Serialization_InsufficientState" xml:space="preserve">
-    <value>Insufficient state to return the real object.</value>
   </data>
   <data name="Serialization_InvalidOnDeser" xml:space="preserve">
     <value>OnDeserialization method was called while the object was not being deserialized.</value>
