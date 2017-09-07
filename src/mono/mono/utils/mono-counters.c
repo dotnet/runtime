@@ -150,7 +150,7 @@ register_internal (const char *name, int type, void *addr, int size)
 
 	for (counter = counters; counter; counter = counter->next) {
 		if (counter->addr == addr) {
-			g_warning ("you are registering twice the same counter address");
+			g_warning ("you are registering the same counter address twice: %s at %p", name, addr);
 			mono_os_mutex_unlock (&counters_mutex);
 			return;
 		}

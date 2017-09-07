@@ -16,6 +16,8 @@
 #include <mono/metadata/method-builder.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/atomic.h>
+#include <mono/utils/unlocked.h>
 
 #include "mini.h"
 
@@ -32,10 +34,19 @@ static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
 
 /* Counters */
-static int num_templates_allocted;
-static int num_templates_bytes;
-static int num_oti_allocted;
-static int num_oti_bytes;
+static gint32 rgctx_template_num_allocated;
+static gint32 rgctx_template_bytes_allocated;
+static gint32 rgctx_oti_num_allocated;
+static gint32 rgctx_oti_bytes_allocated;
+static gint32 rgctx_oti_num_markers;
+static gint32 rgctx_oti_num_data;
+static gint32 rgctx_max_slot_number;
+static gint32 rgctx_num_allocated;
+static gint32 rgctx_num_arrays_allocated;
+static gint32 rgctx_bytes_allocated;
+static gint32 mrgctx_num_arrays_allocated;
+static gint32 mrgctx_bytes_allocated;
+static gint32 gsharedvt_num_trampolines;
 
 #define gshared_lock() mono_os_mutex_lock (&gshared_mutex)
 #define gshared_unlock() mono_os_mutex_unlock (&gshared_mutex)
@@ -354,10 +365,10 @@ mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_
 static MonoRuntimeGenericContextTemplate*
 alloc_template (MonoClass *klass)
 {
-	int size = sizeof (MonoRuntimeGenericContextTemplate);
+	gint32 size = sizeof (MonoRuntimeGenericContextTemplate);
 
-	num_templates_allocted++;
-	num_templates_bytes += size;
+	InterlockedIncrement (&rgctx_template_num_allocated);
+	InterlockedAdd(&rgctx_template_bytes_allocated, size);
 
 	return (MonoRuntimeGenericContextTemplate *)mono_image_alloc0 (klass->image, size);
 }
@@ -366,10 +377,10 @@ alloc_template (MonoClass *klass)
 static MonoRuntimeGenericContextInfoTemplate*
 alloc_oti (MonoImage *image)
 {
-	int size = sizeof (MonoRuntimeGenericContextInfoTemplate);
+	gint32 size = sizeof (MonoRuntimeGenericContextInfoTemplate);
 
-	num_oti_allocted++;
-	num_oti_bytes += size;
+	InterlockedIncrement (&rgctx_oti_num_allocated);
+	InterlockedAdd (&rgctx_oti_bytes_allocated, size);
 
 	return (MonoRuntimeGenericContextInfoTemplate *)mono_image_alloc0 (image, size);
 }
@@ -404,19 +415,9 @@ static void
 rgctx_template_set_slot (MonoImage *image, MonoRuntimeGenericContextTemplate *template_, int type_argc,
 	int slot, gpointer data, MonoRgctxInfoType info_type)
 {
-	static gboolean inited = FALSE;
-	static int num_markers = 0;
-	static int num_data = 0;
-
 	int i;
 	MonoRuntimeGenericContextInfoTemplate *list = get_info_templates (template_, type_argc);
 	MonoRuntimeGenericContextInfoTemplate **oti = &list;
-
-	if (!inited) {
-		mono_counters_register ("RGCTX oti num markers", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_markers);
-		mono_counters_register ("RGCTX oti num data", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_data);
-		inited = TRUE;
-	}
 
 	g_assert (slot >= 0);
 	g_assert (data);
@@ -436,10 +437,11 @@ rgctx_template_set_slot (MonoImage *image, MonoRuntimeGenericContextTemplate *te
 
 	set_info_templates (image, template_, type_argc, list);
 
+	/* interlocked by loader lock (by definition) */
 	if (data == MONO_RGCTX_SLOT_USED_MARKER)
-		++num_markers;
+		UnlockedIncrement (&rgctx_oti_num_markers);
 	else
-		++num_data;
+		UnlockedIncrement (&rgctx_oti_num_data);
 }
 
 /*
@@ -1616,19 +1618,12 @@ mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_re
 gpointer
 mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gint32 vcall_offset, gboolean calli)
 {
-	static gboolean inited = FALSE;
-	static int num_trampolines;
 	MonoError error;
 	gpointer res, info;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *domain_info;
 	GSharedVtTrampInfo *tramp_info;
 	GSharedVtTrampInfo tinfo;
-
-	if (!inited) {
-		mono_counters_register ("GSHAREDVT arg trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &num_trampolines);
-		inited = TRUE;
-	}
 
 	if (mono_llvm_only) {
 		MonoMethod *wrapper;
@@ -1696,7 +1691,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	else
 		addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
 
-	num_trampolines ++;
+	InterlockedIncrement (&gsharedvt_num_trampolines);
 
 	/* Cache it */
 	tramp_info = (GSharedVtTrampInfo *)mono_domain_alloc0 (domain, sizeof (GSharedVtTrampInfo));
@@ -2354,9 +2349,6 @@ static int
 lookup_or_register_info (MonoClass *klass, int type_argc, gpointer data, MonoRgctxInfoType info_type,
 	MonoGenericContext *generic_context)
 {
-	static gboolean inited = FALSE;
-	static int max_slot = 0;
-
 	MonoRuntimeGenericContextTemplate *rgctx_template =
 		mono_class_get_runtime_generic_context_template (klass);
 	MonoRuntimeGenericContextInfoTemplate *oti_list, *oti;
@@ -2389,14 +2381,11 @@ lookup_or_register_info (MonoClass *klass, int type_argc, gpointer data, MonoRgc
 	/* We haven't found the info */
 	i = register_info (klass, type_argc, data, info_type);
 
-	mono_loader_unlock ();
+	/* interlocked by loader lock */
+	if (i > UnlockedRead (&rgctx_max_slot_number))
+		UnlockedWrite (&rgctx_max_slot_number, i);
 
-	if (!inited) {
-		mono_counters_register ("RGCTX max slot number", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &max_slot);
-		inited = TRUE;
-	}
-	if (i > max_slot)
-		max_slot = i;
+	mono_loader_unlock ();
 
 	return i;
 }
@@ -2466,29 +2455,16 @@ mono_class_rgctx_get_array_size (int n, gboolean mrgctx)
 static gpointer*
 alloc_rgctx_array (MonoDomain *domain, int n, gboolean is_mrgctx)
 {
-	static gboolean inited = FALSE;
-	static int rgctx_num_alloced = 0;
-	static int rgctx_bytes_alloced = 0;
-	static int mrgctx_num_alloced = 0;
-	static int mrgctx_bytes_alloced = 0;
-
-	int size = mono_class_rgctx_get_array_size (n, is_mrgctx) * sizeof (gpointer);
+	gint32 size = mono_class_rgctx_get_array_size (n, is_mrgctx) * sizeof (gpointer);
 	gpointer *array = (gpointer *)mono_domain_alloc0 (domain, size);
 
-	if (!inited) {
-		mono_counters_register ("RGCTX num arrays alloced", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_alloced);
-		mono_counters_register ("RGCTX bytes alloced", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_bytes_alloced);
-		mono_counters_register ("MRGCTX num arrays alloced", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mrgctx_num_alloced);
-		mono_counters_register ("MRGCTX bytes alloced", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mrgctx_bytes_alloced);
-		inited = TRUE;
-	}
-
+	/* interlocked by domain lock (by definition) */
 	if (is_mrgctx) {
-		mrgctx_num_alloced++;
-		mrgctx_bytes_alloced += size;
+		UnlockedIncrement (&mrgctx_num_arrays_allocated);
+		UnlockedAdd (&mrgctx_bytes_allocated, size);
 	} else {
-		rgctx_num_alloced++;
-		rgctx_bytes_alloced += size;
+		UnlockedIncrement (&rgctx_num_arrays_allocated);
+		UnlockedAdd (&rgctx_bytes_allocated, size);
 	}
 
 	return array;
@@ -2589,9 +2565,6 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 gpointer
 mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot, MonoError *error)
 {
-	static gboolean inited = FALSE;
-	static int num_alloced = 0;
-
 	MonoDomain *domain = class_vtable->domain;
 	MonoRuntimeGenericContext *rgctx;
 	gpointer info;
@@ -2600,16 +2573,11 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 
 	mono_domain_lock (domain);
 
-	if (!inited) {
-		mono_counters_register ("RGCTX num alloced", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_alloced);
-		inited = TRUE;
-	}
-
 	rgctx = class_vtable->runtime_generic_context;
 	if (!rgctx) {
 		rgctx = alloc_rgctx_array (domain, 0, FALSE);
 		class_vtable->runtime_generic_context = rgctx;
-		num_alloced++;
+		UnlockedIncrement (&rgctx_num_allocated); /* interlocked by domain lock */
 	}
 
 	mono_domain_unlock (domain);
@@ -3326,10 +3294,19 @@ mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke)
 void
 mono_generic_sharing_init (void)
 {
-	mono_counters_register ("RGCTX template num allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_templates_allocted);
-	mono_counters_register ("RGCTX template bytes allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_templates_bytes);
-	mono_counters_register ("RGCTX oti num allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_oti_allocted);
-	mono_counters_register ("RGCTX oti bytes allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_oti_bytes);
+	mono_counters_register ("RGCTX template num allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_template_num_allocated);
+	mono_counters_register ("RGCTX template bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_template_bytes_allocated);
+	mono_counters_register ("RGCTX oti num allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_num_allocated);
+	mono_counters_register ("RGCTX oti bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_bytes_allocated);
+	mono_counters_register ("RGCTX oti num markers", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_num_markers);
+	mono_counters_register ("RGCTX oti num data", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_num_data);
+	mono_counters_register ("RGCTX max slot number", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_max_slot_number);
+	mono_counters_register ("RGCTX num allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_allocated);
+	mono_counters_register ("RGCTX num arrays allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_arrays_allocated);
+	mono_counters_register ("RGCTX bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_bytes_allocated);
+	mono_counters_register ("MRGCTX num arrays allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mrgctx_num_arrays_allocated);
+	mono_counters_register ("MRGCTX bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mrgctx_bytes_allocated);
+	mono_counters_register ("GSHAREDVT num trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &gsharedvt_num_trampolines);
 
 	mono_install_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
 
