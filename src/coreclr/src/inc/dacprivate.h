@@ -507,7 +507,8 @@ struct MSLAYOUT DacpReJitData : ZeroInit<DacpReJitData>
     Flags                           flags;
     CLRDATA_ADDRESS                 NativeCodeAddr;
 };
-    
+
+
 struct MSLAYOUT DacpMethodDescData : ZeroInit<DacpMethodDescData>
 {
     BOOL            bHasNativeCode;
@@ -552,6 +553,7 @@ struct MSLAYOUT DacpMethodDescData : ZeroInit<DacpMethodDescData>
     }
 };
 
+
 struct MSLAYOUT DacpMethodDescTransparencyData : ZeroInit<DacpMethodDescTransparencyData>
 {
     BOOL            bHasCriticalTransparentInfo;
@@ -562,6 +564,21 @@ struct MSLAYOUT DacpMethodDescTransparencyData : ZeroInit<DacpMethodDescTranspar
     {
         return sos->GetMethodDescTransparencyData(addr, this);
     }
+};
+
+struct MSLAYOUT DacpTieredVersionData
+{
+    enum TieredState 
+    {
+        NON_TIERED,
+        TIERED_0,
+        TIERED_1,
+        TIERED_UNKNOWN
+    };
+    
+    CLRDATA_ADDRESS NativeCodeAddr;
+    TieredState     TieredInfo;
+    CLRDATA_ADDRESS NativeCodeVersionNodePtr;
 };
 
 // for JITType
