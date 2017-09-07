@@ -991,6 +991,8 @@ public:
 #define GTF_RELOP_ZTT               0x08000000 // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                                //               with explicit "loop test" in the header block.
 
+#define GTF_RET_MERGED              0x80000000 // GT_RETURN -- This is a return generated during epilog merging.
+
 #define GTF_QMARK_CAST_INSTOF       0x80000000 // GT_QMARK -- Is this a top (not nested) level qmark created for
                                                //             castclass or instanceof?
 
