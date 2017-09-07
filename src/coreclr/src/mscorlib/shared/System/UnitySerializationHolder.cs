@@ -26,12 +26,12 @@ namespace System
         /// UnitySerializationHelper should return from a call to GetObjectData. It contains
         /// the unityType (defined above) and any optional data (used only for the reflection types).
         /// </summary>
-        public static void GetUnitySerializationInfo(SerializationInfo info, int unityType, string data, Assembly assembly)
+        internal static void GetUnitySerializationInfo(SerializationInfo info, int unityType)
         {
             info.SetType(typeof(UnitySerializationHolder));
-            info.AddValue("Data", data, typeof(string));
+            info.AddValue("Data", null, typeof(string));
             info.AddValue("UnityType", unityType);
-            info.AddValue("AssemblyName", assembly?.FullName ?? string.Empty);
+            info.AddValue("AssemblyName", string.Empty);
         }
 
         public UnitySerializationHolder(SerializationInfo info, StreamingContext context)
