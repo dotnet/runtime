@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,9 +21,11 @@ namespace System.Net.Http
         public HttpProxyConnectionHandler(HttpConnectionSettings settings, HttpMessageHandler innerHandler)
         {
             Debug.Assert(innerHandler != null);
+            Debug.Assert(settings._useProxy);
+            Debug.Assert(settings._proxy != null || s_proxyFromEnvironment.Value != null);
 
             _innerHandler = innerHandler;
-            _proxy = (settings._useProxy && settings._proxy != null) ? settings._proxy : new PassthroughWebProxy(s_proxyFromEnvironment.Value);
+            _proxy = settings._proxy ?? new PassthroughWebProxy(s_proxyFromEnvironment.Value);
             _defaultCredentials = settings._defaultProxyCredentials;
             _connectionPools = new HttpConnectionPools(settings._maxConnectionsPerServer);
         }
