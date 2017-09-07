@@ -45,11 +45,7 @@ namespace System.Net.Http
             HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // In case of redirection, ensure _credentials as CredentialCache
-            if (response.StatusCode == HttpStatusCode.MultipleChoices ||
-                response.StatusCode == HttpStatusCode.Moved ||
-                response.StatusCode == HttpStatusCode.Found ||
-                response.StatusCode == HttpStatusCode.SeeOther ||
-                response.StatusCode == HttpStatusCode.TemporaryRedirect)
+            if (AutoRedirectHandler.RequestNeedsRedirect(response))
             {
                 // Just as with WinHttpHandler and CurlHandler, for security reasons, we drop the server credential if it is
                 // anything other than a CredentialCache. We allow credentials in a CredentialCache since they
