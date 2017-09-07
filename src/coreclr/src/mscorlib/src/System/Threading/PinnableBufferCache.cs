@@ -393,7 +393,7 @@ namespace System
         private Func<object> m_factory;
 
         /// <summary>
-        /// Contains 'good' buffers to reuse.  They are guarenteed to be Gen 2 ENFORCED!
+        /// Contains 'good' buffers to reuse.  They are guaranteed to be Gen 2 ENFORCED!
         /// </summary>
         private ConcurrentStack<object> m_FreeList = new ConcurrentStack<object>();
         /// <summary>

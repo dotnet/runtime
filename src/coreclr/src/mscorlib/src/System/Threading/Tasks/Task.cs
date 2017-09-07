@@ -608,7 +608,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Handles everything needed for associating a CancellationToken with a task which is being constructed.
-        /// This method is meant to be be called either from the TaskConstructorCore or from ContinueWithCore.
+        /// This method is meant to be called either from the TaskConstructorCore or from ContinueWithCore.
         /// </summary>
         private void AssignCancellationToken(CancellationToken cancellationToken, Task antecedent, TaskContinuation continuation)
         {
