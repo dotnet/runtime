@@ -1148,6 +1148,85 @@ const char* MethodContext::repGetMethodName(CORINFO_METHOD_HANDLE ftn, const cha
     return result;
 }
 
+
+void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, 
+    char* methodName, const char** className, const char **namespaceName)
+{
+    if (GetMethodNameFromMetadata == nullptr)
+        GetMethodNameFromMetadata = new LightWeightMap<DLDD, DDD>();
+    DDD  value;
+    DLDD key;
+    key.A = (DWORDLONG)ftn;
+    key.B = (className != nullptr);
+    key.C = (namespaceName != nullptr);
+
+    if (methodName != nullptr)
+        value.A = GetMethodNameFromMetadata->AddBuffer((unsigned char*)methodName, (DWORD)strlen(methodName) + 1);
+    else
+        value.A = (DWORD)-1;
+
+    if (className != nullptr)
+        value.B = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*className, (DWORD)strlen(*className) + 1);
+    else
+        value.B = (DWORD)-1;
+
+    if (namespaceName != nullptr)
+        value.C = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
+    else
+        value.C = (DWORD)-1;
+
+    GetMethodNameFromMetadata->Add(key, value);
+    DEBUG_REC(dmpGetMethodNameFromMetadata(key, value));
+}
+
+void MethodContext::dmpGetMethodNameFromMetadata(DLDD key, DDD value)
+{
+    unsigned char* methodName = (unsigned char*)GetMethodName->GetBuffer(value.A);
+    unsigned char* className = (unsigned char*)GetMethodName->GetBuffer(value.B);
+    unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.C);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u, value meth-'%s', class-'%s', namespace-'%s'", 
+        key.A, key.B, key.C, methodName, className, namespaceName);
+    GetMethodNameFromMetadata->Unlock();
+}
+
+const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** moduleName, const char** namespaceName)
+{
+    const char* result = nullptr;
+    DDD         value;
+    DLDD        key;
+    key.A = (DWORDLONG)ftn;
+    key.B = (moduleName != nullptr);
+    key.C = (namespaceName != nullptr);
+
+    int itemIndex = -1;
+    if (GetMethodNameFromMetadata != nullptr)
+        itemIndex = GetMethodNameFromMetadata->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        if (moduleName != nullptr)
+        {
+            *moduleName = nullptr;
+        }
+    }
+    else
+    {
+        value = GetMethodNameFromMetadata->Get(key);
+        result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.A);
+
+        if (moduleName != nullptr)
+        {            
+            *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.B);
+        }
+
+        if (namespaceName != nullptr)
+        {            
+            *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.C);
+        }
+    }
+    DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
+    return result;
+}
+
 void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result)
 {
     if (GetJitFlags == nullptr)
