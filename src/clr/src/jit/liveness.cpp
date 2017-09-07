@@ -2125,11 +2125,16 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                         lvaDecRefCnts(block, node);
 
                         // If the store is marked as a late argument, it is referenced by a call. Instead of removing
-                        // it, bash
-                        // it to a NOP.
+                        // it, bash it to a NOP.
                         if ((node->gtFlags & GTF_LATE_ARG) != 0)
                         {
+                            JITDUMP("node is a late arg; replacing with NOP\n");
                             node->gtBashToNOP();
+
+                            // NOTE: this is a bit of a hack. We need to keep these nodes around as they are
+                            // referenced by the call, but they're considered side-effect-free non-value-producing
+                            // nodes, so they will be removed if we don't do this.
+                            node->gtFlags |= GTF_ORDER_SIDEEFF;
                         }
                         else
                         {
@@ -2202,6 +2207,15 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 // register.
                 // Properly modeling this would allow these nodes to be removed.
                 break;
+
+            case GT_NOP:
+                // NOTE: we need to keep some NOPs around because they are referenced by calls. See the dead store
+                // removal code above (case GT_STORE_LCL_VAR) for more explanation.
+                if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+                {
+                    break;
+                }
+                __fallthrough;
 
             default:
                 assert(!node->OperIsLocal());
