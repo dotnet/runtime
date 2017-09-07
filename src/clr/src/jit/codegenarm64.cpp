@@ -1506,14 +1506,14 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
     genConsumeOperands(treeNode);
 
-    regNumber   targetReg  = treeNode->gtRegNum;
-    var_types   targetType = treeNode->TypeGet();
-    emitter*    emit       = getEmitter();
-    emitAttr    attr       = emitTypeSize(treeNode);
-    bool        isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    regNumber targetReg  = treeNode->gtRegNum;
+    var_types targetType = treeNode->TypeGet();
+    emitter*  emit       = getEmitter();
+    emitAttr  attr       = emitTypeSize(treeNode);
+    bool      isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
 
-    GenTreePtr  op1 = treeNode->gtGetOp1();
-    GenTreePtr  op2 = treeNode->gtGetOp2();
+    GenTreePtr op1 = treeNode->gtGetOp1();
+    GenTreePtr op2 = treeNode->gtGetOp2();
 
     assert(!varTypeIsFloating(targetType));
 
