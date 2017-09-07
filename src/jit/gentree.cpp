@@ -7863,6 +7863,9 @@ DONE:
             copy->gtOp.gtOp1->gtFlags |= GTF_RELOP_QMARK;
         }
 
+        // Clear the copy's GTF_ASG and GTF_EXCEPT bits; these will instead be taken from the source.
+        copy->gtFlags &= ~(GTF_ASG | GTF_EXCEPT);
+
         copy->gtFlags |= addFlags;
     }
 
