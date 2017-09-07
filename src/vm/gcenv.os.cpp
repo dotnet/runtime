@@ -22,9 +22,14 @@
 #undef Sleep
 #endif // Sleep
 
-#include "env/gcenv.os.h"
+#include "../gc/env/gcenv.os.h"
 
 #define MAX_PTR ((uint8_t*)(~(ptrdiff_t)0))
+
+#ifdef FEATURE_PAL
+uint32_t g_pageSizeUnixInl = 0;
+#endif
+
 
 // Initialize the interface implementation
 // Return:
@@ -32,6 +37,11 @@
 bool GCToOSInterface::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_PAL
+    g_pageSizeUnixInl = GetOsPageSize();
+#endif
+
     return true;
 }
 
@@ -171,13 +181,18 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     LIMITED_METHOD_CONTRACT;
 
     DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
+
+    // This is not strictly necessary for a correctness standpoint. Windows already guarantees
+    // allocation granularity alignment when using MEM_RESERVE, so aligning the size here has no effect.
+    // However, ClrVirtualAlloc does expect the size to be aligned to the allocation granularity.
+    size_t aligned_size = (size + g_SystemInfo.dwAllocationGranularity - 1) & ~static_cast<size_t>(g_SystemInfo.dwAllocationGranularity - 1);
     if (alignment == 0)
     {
-        return ::ClrVirtualAlloc(0, size, memFlags, PAGE_READWRITE);
+        return ::ClrVirtualAlloc(0, aligned_size, memFlags, PAGE_READWRITE);
     }
     else
     {
-        return ::ClrVirtualAllocAligned(0, size, memFlags, PAGE_READWRITE, alignment);
+        return ::ClrVirtualAllocAligned(0, aligned_size, memFlags, PAGE_READWRITE, alignment);
     }
 }
 
@@ -294,7 +309,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     ULONG granularity;
 
     bool success = ::GetWriteWatch(flags, address, size, pageAddresses, (ULONG_PTR*)pageAddressesCount, &granularity) == 0;
-    _ASSERTE (granularity == OS_PAGE_SIZE);
+    _ASSERTE (granularity == GetOsPageSize());
 
     return success;
 }
@@ -644,7 +659,6 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
 
     SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
 
-#ifndef FEATURE_PAL
     if (affinity->Group != GCThreadAffinity::None)
     {
         _ASSERTE(affinity->Processor != GCThreadAffinity::None);
@@ -661,12 +675,18 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     {
         SetThreadAffinityMask(gc_thread, (DWORD_PTR)1 << affinity->Processor);
     }
-#endif // !FEATURE_PAL
 
     ResumeThread(gc_thread);
     CloseHandle(gc_thread);
 
     return true;
+}
+
+uint32_t GCToOSInterface::GetTotalProcessorCount()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return g_SystemInfo.dwNumberOfProcessors;
 }
 
 // Initialize the critical section

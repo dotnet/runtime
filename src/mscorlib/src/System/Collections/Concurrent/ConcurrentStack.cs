@@ -269,7 +269,7 @@ namespace System.Collections.Concurrent
         /// </param>
         /// <returns>true if an element was removed and returned from the top of the <see
         /// cref="ConcurrentStack{T}"/>
-        /// succesfully; otherwise, false.</returns>
+        /// successfully; otherwise, false.</returns>
         public bool TryPop(out T result)
         {
             Node head = m_head;

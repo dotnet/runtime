@@ -18,7 +18,7 @@ namespace System.Text
 
     internal class Normalization
     {
-        internal static bool IsNormalized(String strInput, NormalizationForm normForm)
+        internal static bool IsNormalized(String strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -32,7 +32,7 @@ namespace System.Text
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
             // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error 
             // to 0 (ERROR_SUCCESS) before executing the calls.
-            bool result = Interop.Normaliz.IsNormalizedString((int)normForm, strInput, strInput.Length);
+            bool result = Interop.Normaliz.IsNormalizedString((int)normalizationForm, strInput, strInput.Length);
 
             int lastError = Marshal.GetLastWin32Error();
             switch (lastError)
@@ -42,6 +42,11 @@ namespace System.Text
 
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                 case Interop.Errors.ERROR_NO_UNICODE_TRANSLATION:
+                    if (!Enum.IsDefined(typeof(NormalizationForm), normalizationForm))
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
+                    }
+
                     throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
 
                 case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
@@ -54,7 +59,7 @@ namespace System.Text
             return result;
         }
 
-        internal static String Normalize(String strInput, NormalizationForm normForm)
+        internal static String Normalize(String strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -70,14 +75,21 @@ namespace System.Text
             // to 0 (ERROR_SUCCESS) before executing the calls.
 
             // Guess our buffer size first
-            int iLength = Interop.Normaliz.NormalizeString((int)normForm, strInput, strInput.Length, null, 0);
+            int iLength = Interop.Normaliz.NormalizeString((int)normalizationForm, strInput, strInput.Length, null, 0);
 
             int lastError = Marshal.GetLastWin32Error();
             // Could have an error (actually it'd be quite hard to have an error here)
             if ((lastError != Interop.Errors.ERROR_SUCCESS) || iLength < 0)
             {
                 if (lastError == Interop.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    if (!Enum.IsDefined(typeof(NormalizationForm), normalizationForm))
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
+                    }
+
                     throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                }
 
                 // We shouldn't really be able to get here..., guessing length is
                 // a trivial math function...
@@ -102,7 +114,7 @@ namespace System.Text
 
                 // NormalizeString pinvoke has SetLastError attribute property which will set the last error 
                 // to 0 (ERROR_SUCCESS) before executing the calls.
-                iLength = Interop.Normaliz.NormalizeString((int)normForm, strInput, strInput.Length, cBuffer, cBuffer.Length);
+                iLength = Interop.Normaliz.NormalizeString((int)normalizationForm, strInput, strInput.Length, cBuffer, cBuffer.Length);
                 lastError = Marshal.GetLastWin32Error();
 
                 if (lastError == Interop.Errors.ERROR_SUCCESS)

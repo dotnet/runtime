@@ -9,7 +9,6 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public struct ArrayWithOffset
     {
         //private ArrayWithOffset()

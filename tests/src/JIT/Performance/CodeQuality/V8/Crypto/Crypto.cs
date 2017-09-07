@@ -44,7 +44,6 @@ using System.Collections.Generic;
 using System.Globalization;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace V8.Crypto
 {

@@ -9,16 +9,16 @@
 // of the execution engine. Everything that the GC does that requires the EE
 // to be informed or that requires EE action must go through this interface.
 //
-// When FEATURE_STANDALONE_GC is defined, this class is named IGCToCLR and is
+// When BUILD_AS_STANDALONE is defined, this class is named IGCToCLR and is
 // an abstract class. The EE will provide a class that fulfills this interface,
-// and the GC will dispatch virtually on it to call into the EE. When FEATURE_STANDALONE_GC
+// and the GC will dispatch virtually on it to call into the EE. When BUILD_AS_STANDALONE
 // is not defined, this class is named GCToEEInterface and the GC will dispatch statically on it.
 class IGCToCLR {
 public:
     // Suspends the EE for the given reason.
     virtual
     void SuspendEE(SUSPEND_REASON reason) = 0;
-    
+
     // Resumes all paused threads, with a boolean indicating
     // if the EE is being restarted because a GC is complete.
     virtual
@@ -76,6 +76,15 @@ public:
     // Disables preemptive GC on the given thread.
     virtual
     void DisablePreemptiveGC(Thread * pThread) = 0;
+
+    // Gets the Thread instance for the current thread, or null if no thread
+    // instance is associated with this thread.
+    virtual
+    Thread* GetThread() = 0;
+
+    // Returns whether or not a thread suspension is pending.
+    virtual
+    bool TrapReturningThreads() = 0;
 
     // Retrieves the alloc context associated with a given thread.
     virtual
@@ -166,6 +175,22 @@ public:
     // field to see how many bytes to skip before the next object on a heap segment begins.
     virtual
     MethodTable* GetFreeObjectMethodTable() = 0;
+
+    // Asks the EE for the value of a given configuration key. If the EE does not know or does not
+    // have a value for the requeested config key, false is returned and the value of the passed-in
+    // pointer is undefined. Otherwise, true is returned and the config key's value is written to
+    // the passed-in pointer.
+    virtual
+    bool GetBooleanConfigValue(const char* key, bool* value) = 0;
+
+    virtual
+    bool GetIntConfigValue(const char* key, int64_t* value) = 0;
+
+    virtual
+    bool GetStringConfigValue(const char* key, const char** value) = 0;
+
+    virtual
+    void FreeStringConfigValue(const char* value) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

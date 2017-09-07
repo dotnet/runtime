@@ -39,7 +39,7 @@ namespace System
             _baseUtcOffset = TimeSpan.Zero;
 
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
-            // NOTE: read the display strings from the the tzfile now in case they can't be loaded later
+            // NOTE: read the display strings from the tzfile now in case they can't be loaded later
             // from the globalization data.
             DateTime utcNow = DateTime.UtcNow;
             for (int i = 0; i < dts.Length && dts[i] <= utcNow; i++)
@@ -1115,10 +1115,6 @@ namespace System
         /// </returns>
         private static bool TZif_ParseMDateRule(string dateRule, out int month, out int week, out DayOfWeek dayOfWeek)
         {
-            month = 0;
-            week = 0;
-            dayOfWeek = default(DayOfWeek);
-
             if (dateRule[0] == 'M')
             {
                 int firstDotIndex = dateRule.IndexOf('.');
@@ -1127,26 +1123,20 @@ namespace System
                     int secondDotIndex = dateRule.IndexOf('.', firstDotIndex + 1);
                     if (secondDotIndex > 0)
                     {
-                        string monthString = dateRule.Substring(1, firstDotIndex - 1);
-                        string weekString = dateRule.Substring(firstDotIndex + 1, secondDotIndex - firstDotIndex - 1);
-                        string dayString = dateRule.Substring(secondDotIndex + 1);
-
-                        if (int.TryParse(monthString, out month))
+                        if (int.TryParse(dateRule.AsReadOnlySpan().Slice(1, firstDotIndex - 1), out month) &&
+                            int.TryParse(dateRule.AsReadOnlySpan().Slice(firstDotIndex + 1, secondDotIndex - firstDotIndex - 1), out week) &&
+                            int.TryParse(dateRule.AsReadOnlySpan().Slice(secondDotIndex + 1), out int day))
                         {
-                            if (int.TryParse(weekString, out week))
-                            {
-                                int day;
-                                if (int.TryParse(dayString, out day))
-                                {
-                                    dayOfWeek = (DayOfWeek)day;
-                                    return true;
-                                }
-                            }
+                            dayOfWeek = (DayOfWeek)day;
+                            return true;
                         }
                     }
                 }
             }
 
+            month = 0;
+            week = 0;
+            dayOfWeek = default(DayOfWeek);
             return false;
         }
 

@@ -50,6 +50,11 @@
     <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsToRun)' and '!$(_CLRTestBuildsExecutable)' ">true</_CLRTestNeedsProjectToRun>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Since bug in Roslyn for Linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
+    <DebugType Condition=" '$(DebugType)' == '' and '$(RunningOnUnix)' == 'true' ">None</DebugType>
+  </PropertyGroup>
+
   <!--
   If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
   -->
@@ -103,7 +108,6 @@
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
   </PropertyGroup>
   
-  <!-- TODO (#1122): import this from the ToolsDir once it becomes available --> 
   <Import Project="$(ProjectDir)src\IL.targets" Condition="'$(ProjectLanguage)' == 'IL' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'" />
 
 
@@ -147,12 +151,13 @@
           Condition="'@(NativeProjectReferenceNormalized)' != ''"
           BeforeTargets="Build" >
      <ItemGroup>
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\"/>
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
      </ItemGroup>
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
     <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
-   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
+   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != '' And '$(RunningOnUnix)' != 'true'" />
 
   </Target>
 

@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Security.Cryptography
 {
-    [Serializable]
     public class CryptographicException : SystemException
     {
         public CryptographicException()
@@ -39,6 +38,7 @@ namespace System.Security.Cryptography
         protected CryptographicException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

@@ -542,7 +542,7 @@ public:
 
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
-    void MergeEdgeAssertions(GenTreePtr phiArg, const ASSERT_VALARG_TP assertions, Range* pRange);
+    void MergeEdgeAssertions(GenTreePtr phiArg, ASSERT_VALARG_TP assertions, Range* pRange);
 
     // The maximum possible value of the given "limit." If such a value could not be determined
     // return "false." For example: ARRLEN_MAX for array length.

@@ -14,7 +14,6 @@
 #include "excep.h"
 #include "frames.h"
 #include "vars.hpp"
-#include "security.h"
 #include "olevariant.h"
 #include "comdatetime.h"
 #include "fieldmarshaler.h"
@@ -2563,12 +2562,6 @@ void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
             if (!pValueClass)
                 COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
 
-            Module* pModule = pValueClass->GetModule();
-            if (!Security::CanCallUnmanagedCode(pModule))
-            {
-                COMPlusThrow(kArgumentException, IDS_EE_VTRECORD_SECURITY);
-            }
-
             // Now that we have the value class, allocate an instance of the 
             // boxed value class and copy the contents of the record into it.
             BoxedValueClass = AllocateObject(pValueClass);
@@ -2597,12 +2590,6 @@ void OleVariant::MarshalRecordVariantComToOle(VariantData *pComVariant,
     GCPROTECT_BEGIN(BoxedValueClass)
     {
         _ASSERTE(BoxedValueClass != NULL);
-        Module* pModule = BoxedValueClass->GetMethodTable()->GetModule();
-        if (!Security::CanCallUnmanagedCode(pModule))
-        {
-            COMPlusThrow(kArgumentException, IDS_EE_VTRECORD_SECURITY);
-        }
-
         ConvertValueClassToVariant(&BoxedValueClass, pOleVariant);
     }
     GCPROTECT_END();
@@ -2632,12 +2619,6 @@ void OleVariant::MarshalRecordArrayOleToCom(void *oleArray, BASEARRAYREF *pComAr
         PRECONDITION(CheckPointer(pElementMT));
     }
     CONTRACTL_END;
-
-    Module* pModule = pElementMT->GetModule();
-    if (!Security::CanCallUnmanagedCode(pModule))
-    {
-        COMPlusThrow(kArgumentException, IDS_EE_VTRECORD_SECURITY);
-    }
 
     if (pElementMT->IsBlittable())
     {
@@ -2670,12 +2651,6 @@ void OleVariant::MarshalRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
         PRECONDITION(CheckPointer(pElementMT));
     }
     CONTRACTL_END;
-
-    Module* pModule = pElementMT->GetModule();
-    if (!Security::CanCallUnmanagedCode(pModule))
-    {
-        COMPlusThrow(kArgumentException, IDS_EE_VTRECORD_SECURITY);
-    }
 
     if (pElementMT->IsBlittable())
     {

@@ -155,15 +155,13 @@ FCIMPL4(Object *, COMString::StringInitCharPtrPartial, StringObject *stringThis,
 }
 FCIMPLEND
 
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-
 inline COMNlsHashProvider * GetCurrentNlsHashProvider()
 {
     LIMITED_METHOD_CONTRACT;
     return &COMNlsHashProvider::s_NlsHashProvider;
 }
 
-FCIMPL3(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE, INT32 strLen, INT64 additionalEntropy) {
+FCIMPL1(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE) {
     FCALL_CONTRACT;
 
     int iReturnHash = 0;
@@ -173,7 +171,7 @@ FCIMPL3(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE, INT32
     }
 
     BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), FCThrow(kStackOverflowException));
-    iReturnHash = GetCurrentNlsHashProvider()->HashString(thisRefUNSAFE->GetBuffer(), thisRefUNSAFE->GetStringLength(), TRUE, additionalEntropy);
+    iReturnHash = GetCurrentNlsHashProvider()->HashString(thisRefUNSAFE->GetBuffer(), thisRefUNSAFE->GetStringLength());
     END_SO_INTOLERANT_CODE;
 
     FC_GC_POLL_RET();
@@ -181,21 +179,6 @@ FCIMPL3(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE, INT32
     return iReturnHash;
 }
 FCIMPLEND
-
-BOOL QCALLTYPE COMString::UseRandomizedHashing() {
-    QCALL_CONTRACT;
-
-    BOOL bUseRandomizedHashing = FALSE;
-
-    BEGIN_QCALL;
-
-    bUseRandomizedHashing = GetCurrentNlsHashProvider()->GetUseRandomHashing();
-
-    END_QCALL;
-
-    return bUseRandomizedHashing;
-}
-#endif
 
 /*===============================IsFastSort===============================
 **Action: Call the helper to walk the string and see if we have any high chars.
@@ -327,8 +310,6 @@ FCIMPL4(INT32, COMString::IndexOfCharArray, StringObject* thisRef, CHARArray* va
 
     if (thisRef == NULL)
         FCThrow(kNullReferenceException);
-    if (valueRef == NULL)
-        FCThrowArgumentNull(W("anyOf"));
 
     WCHAR *thisChars;
     WCHAR *valueChars;
@@ -336,14 +317,6 @@ FCIMPL4(INT32, COMString::IndexOfCharArray, StringObject* thisRef, CHARArray* va
     int thisLength;
 
     thisRef->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
-
-    if (startIndex < 0 || startIndex > thisLength) {
-        FCThrowArgumentOutOfRange(W("startIndex"), W("ArgumentOutOfRange_Index"));
-    }
-
-    if (count < 0 || count > thisLength - startIndex) {
-        FCThrowArgumentOutOfRange(W("count"), W("ArgumentOutOfRange_Count"));
-    }
 
     int endIndex = startIndex + count;
 
@@ -494,19 +467,31 @@ void InitializeProbabilisticMap(int* charMap, __in_ecount(length) const WCHAR* c
     _ASSERTE(charArray != NULL);
     _ASSERTE(length >= 0);
 
+    bool hasAscii = false;
+
     for(int i = 0; i < length; ++i) {
         int hi,lo;
 
-        WCHAR c = charArray[i];
+        int c = charArray[i];
 
-        hi = (c >> 8) & 0xFF;
         lo = c & 0xFF;
+        hi = (c >> 8) & 0xFF;
 
         int* value = &charMap[lo & PROBABILISTICMAP_BLOCK_INDEX_MASK];
         SetBit(value, lo >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
 
-        value = &charMap[hi & PROBABILISTICMAP_BLOCK_INDEX_MASK];
-        SetBit(value, hi >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
+        if (hi > 0) {
+            value = &charMap[hi & PROBABILISTICMAP_BLOCK_INDEX_MASK];
+            SetBit(value, hi >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
+        }
+        else {
+            hasAscii = true;
+        }
+    }
+
+    if (hasAscii) {
+        // Common to search for ASCII symbols. Just the high value once.
+        charMap[0] |= 1;
     }
 }
 

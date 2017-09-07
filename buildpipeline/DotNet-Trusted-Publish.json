@@ -20,6 +20,24 @@
       }
     },
     {
+        "enabled": true,
+        "continueOnError": false,
+        "alwaysRun": false,
+        "displayName": "Install Signing Plugin",
+        "timeoutInMinutes": 0,
+        "task": {
+            "id": "30666190-6959-11e5-9f96-f56098202fef",
+            "versionSpec": "1.*",
+            "definitionType": "task"
+        },
+        "inputs": {
+            "signType": "real",
+            "zipSources": "true",
+            "version": "",
+            "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
+        }
+    },
+    {
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
@@ -77,6 +95,24 @@
         "inlineScript": "param($account, $token, $container)\nif ($env:UseLegacyBuildScripts -eq \"true\")\n{\n  .\\sync.cmd /ab /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}\nelse\n{\n#  .\\sync.cmd -ab \"-AzureAccount=$account\" \"-AzureToken=$token\" \"-Container=$container\"\n  .\\init-tools.cmd\n  msbuild src\\syncAzure.proj /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Inject signed symbol catalogs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "msbuild",
+        "arguments": "/t:InjectSignedSymbolCatalogIntoSymbolPackages /p:SymbolPackagesToPublishGlob=$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerSymbolPackageGlob) /p:SymbolCatalogCertificateId=$(PB_SymbolCatalogCertificateId)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "failOnStandardError": "true"
       }
     },
     {
@@ -151,9 +187,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey) $(ConfigurationGroup)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerPackageGlob $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(ConfigurationGroup) -PackagesGlob $(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerPackageGlob) -MyGetFeedUrl $(MyGetFeedUrl)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $PackagesGlob, $MyGetFeedUrl)\n\nif ($ConfigurationGroup -ne \"Release\") { exit }\n\nmsbuild /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob",
         "failOnStandardError": "true"
       }
     },
@@ -171,9 +207,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey) $(ConfigurationGroup)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup)\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(ConfigurationGroup) -PackagesGlob $(Build.StagingDirectory)\\IndexedSymbolPackages\\*.nupkg -MyGetFeedUrl $(MyGetFeedUrl)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $PackagesGlob, $MyGetFeedUrl)\n\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n\nmsbuild /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob",
         "failOnStandardError": "true"
       }
     },
@@ -321,6 +357,19 @@
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
       }
+    },
+    {
+        "enabled": true,
+        "continueOnError": false,
+        "alwaysRun": false,
+        "displayName": "Send Telemetry",
+        "timeoutInMinutes": 0,
+        "task": {
+            "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
+            "versionSpec": "1.*",
+            "definitionType": "task"
+        },
+        "inputs": {}
     }
   ],
   "options": [
@@ -494,11 +543,11 @@
       "allowOverride": true
     },
     "AzureContainerPackageGlob": {
-      "value": "*.nupkg",
+      "value": "pkg\\*.nupkg",
       "allowOverride": true
     },
     "AzureContainerSymbolPackageGlob": {
-      "value": "symbols\\*.nupkg",
+      "value": "symbolpkg\\*.nupkg",
       "allowOverride": true
     },
     "GitHubRepositoryName": {
@@ -508,6 +557,9 @@
     "UseLegacyBuildScripts": {
       "value": "false",
       "allowOverride": true
+    },
+    "PB_SymbolCatalogCertificateId": {
+      "value": "400"
     }
   },
   "retentionRules": [

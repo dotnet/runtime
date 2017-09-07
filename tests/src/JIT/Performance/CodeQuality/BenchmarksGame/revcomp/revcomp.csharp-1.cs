@@ -16,7 +16,6 @@ using System.Diagnostics;
 using System.IO;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace BenchmarksGame
 {

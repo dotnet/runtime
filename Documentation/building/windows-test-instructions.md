@@ -45,17 +45,19 @@ Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast
 
 **Running Tests**
 
-In a clean command prompt: `<repo_root>\tests\runtest.cmd`
-
 **runtest /?** will list supported parameters.
 
-This will generate the report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_x64__release.html`) in the current folder. It will also copy all the test dependencies to the folder passed at the command line.
+For example to run all of the tests using your checked build:
+
+`<repo_root>\tests\runtest.cmd checked`
+
+This will generate a report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT__x64__Checked.html`) in the subdirectory `<repo_root>\bin\Logs`. Any tests that failed will be listed in `TestRunResults_Windows_NT__x64__Checked.err`.
 
 **Investigating Test Failures**
 
 Upon completing a test run, you may find one or more tests have failed.
 
-The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\binaries\tests\x64\debug\Reports\Exceptions\Finalization`.
+The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.  
 
 There are 2 files of interest: 
 
@@ -66,17 +68,18 @@ There are 2 files of interest:
 
 If you wish to re-run a failed test, please follow the following steps:
 
-1. Set an environment variable, `CORE_ROOT`, pointing to the path to product binaries that was passed to runtest.cmd. The command to set this environment variable is also specified in the test report for a failed test.
-2. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd`.
+1. Set an environment variable, `CORE_ROOT`, pointing to the path to product binaries that was passed to runtest.cmd.
+For example using a checked build the location would be: `<repo_root>\bin\tests\Windows_NT.x64.Checked\Tests\Core_Root`
+
+2. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo_root>\bin\tests\Windows_NT.x64.Checked\Exceptions\Finalization\Finalizer.cmd`.
 
 If you wish to run the test under a debugger (e.g. [WinDbg](http://msdn.microsoft.com/en-us/library/windows/hardware/ff551063(v=vs.85).aspx)), append `-debug <debuggerFullPath>` to the test command. For example:
 
-
-     <repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
+     <repo_root>\bin\tests\Windows_NT.x64.Checked\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
     
 **Modifying a test**
 
-If test changes are needed, make the change and build the test project. This will binplace the binaries in test binaries folder (e.g. `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization`). At this point, follow the steps to re-run a failed test to re-run the modified test.
+If test changes are needed, make the change and build the test project. This will binplace the binaries in test binaries folder (e.g. `<repo_root>\bin\tests\Windows_NT.x64.Checked\Exceptions\Finalization`). At this point, follow the steps to re-run a failed test to re-run the modified test.
 
 **Authoring Tests (in VS)**
 
@@ -95,12 +98,12 @@ Note:
 
 1. You can disable building of a test per architecture or configuration by using DisableProjectBuild tag in the project. for example:
 
-  ``<PropertyGroup>``
+  ```xml
+  <PropertyGroup>
+    <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>
+  </PropertyGroup>
+  ```
 
-     ``<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>``
+2. To add Nuget/MyGet references use this (project file)[https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj].
 
-  ``</PropertyGroup>``
-
-2. To Add Nuget\MyGet Refernces use this (project.json)[https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/project.json]
-
-3. To Build against the mscorlib facade add  ``<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>`` to your project
+3. To build against the mscorlib facade add `<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>` to your project.

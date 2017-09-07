@@ -507,8 +507,8 @@ void Compiler::optValnumCSE_Init()
     optCSECandidateCount = 0;
     optDoCSE             = false; // Stays false until we find duplicate CSE tree
 
-    // optCseArrLenMap is unused in most functions, allocated only when used
-    optCseArrLenMap = nullptr;
+    // optCseCheckedBoundMap is unused in most functions, allocated only when used
+    optCseCheckedBoundMap = nullptr;
 }
 
 /*****************************************************************************
@@ -705,10 +705,10 @@ unsigned Compiler::optValnumCSE_Locate()
             {
                 if (tree->OperIsCompare() && stmtHasArrLenCandidate)
                 {
-                    // Check if this compare is a function of (one of) the arrary
-                    // length candidate(s); we may want to update its value number
+                    // Check if this compare is a function of (one of) the checked
+                    // bound candidate(s); we may want to update its value number.
                     // if the array length gets CSEd
-                    optCseUpdateArrLenMap(tree);
+                    optCseUpdateCheckedBoundMap(tree);
                 }
 
                 if (!optIsCSEcandidate(tree))
@@ -724,9 +724,14 @@ unsigned Compiler::optValnumCSE_Locate()
                 }
 
                 // Don't CSE constant values, instead let the Value Number
-                // based Assertion Prop phase handle them.
+                // based Assertion Prop phase handle them.  Here, unlike
+                // the rest of optCSE, we use the conservative value number
+                // rather than the liberal one, since the conservative one
+                // is what the Value Number based Assertion Prop will use
+                // and the point is to avoid optimizing cases that it will
+                // handle.
                 //
-                if (vnStore->IsVNConstant(vnlib))
+                if (vnStore->IsVNConstant(tree->GetVN(VNK_Conservative)))
                 {
                     continue;
                 }
@@ -763,16 +768,16 @@ unsigned Compiler::optValnumCSE_Locate()
 }
 
 //------------------------------------------------------------------------
-// optCseUpdateArrLenMap: Check if this compare is a tractable function of
-//                     an array length that is a CSE candidate, and insert
-//                     an entry in the optCseArrLenMap if so.  This facilitates
+// optCseUpdateCheckedBoundMap: Check if this compare is a tractable function of
+//                     a checked bound that is a CSE candidate, and insert
+//                     an entry in the optCseCheckedBoundMap if so.  This facilitates
 //                     subsequently updating the compare's value number if
-//                     the array length gets CSEd.
+//                     the bound gets CSEd.
 //
 // Arguments:
 //    compare - The compare node to check
 
-void Compiler::optCseUpdateArrLenMap(GenTreePtr compare)
+void Compiler::optCseUpdateCheckedBoundMap(GenTreePtr compare)
 {
     assert(compare->OperIsCompare());
 
@@ -787,73 +792,72 @@ void Compiler::optCseUpdateArrLenMap(GenTreePtr compare)
         return;
     }
 
-    // Now look for an array length feeding the compare
-    ValueNumStore::ArrLenArithBoundInfo info;
-    GenTreePtr                          arrLenParent = nullptr;
+    // Now look for a checked bound feeding the compare
+    ValueNumStore::CompareCheckedBoundArithInfo info;
 
-    if (vnStore->IsVNArrLenBound(compareVN))
+    GenTreePtr boundParent = nullptr;
+
+    if (vnStore->IsVNCompareCheckedBound(compareVN))
     {
-        // Simple compare of an array legnth against something else.
+        // Simple compare of an bound against something else.
 
-        vnStore->GetArrLenBoundInfo(compareVN, &info);
-        arrLenParent = compare;
+        vnStore->GetCompareCheckedBound(compareVN, &info);
+        boundParent = compare;
     }
-    else if (vnStore->IsVNArrLenArithBound(compareVN))
+    else if (vnStore->IsVNCompareCheckedBoundArith(compareVN))
     {
-        // Compare of an array length +/- some offset to something else.
+        // Compare of a bound +/- some offset to something else.
 
         GenTreePtr op1 = compare->gtGetOp1();
         GenTreePtr op2 = compare->gtGetOp2();
 
-        vnStore->GetArrLenArithBoundInfo(compareVN, &info);
+        vnStore->GetCompareCheckedBoundArithInfo(compareVN, &info);
         if (GetVNFuncForOper(op1->OperGet(), op1->IsUnsigned()) == (VNFunc)info.arrOper)
         {
-            // The arithmetic node is the array length's parent.
-            arrLenParent = op1;
+            // The arithmetic node is the bound's parent.
+            boundParent = op1;
         }
         else if (GetVNFuncForOper(op2->OperGet(), op2->IsUnsigned()) == (VNFunc)info.arrOper)
         {
-            // The arithmetic node is the array length's parent.
-            arrLenParent = op2;
+            // The arithmetic node is the bound's parent.
+            boundParent = op2;
         }
     }
 
-    if (arrLenParent != nullptr)
+    if (boundParent != nullptr)
     {
-        GenTreePtr arrLen = nullptr;
+        GenTreePtr bound = nullptr;
 
-        // Find which child of arrLenParent is the array length.  Abort if its
-        // conservative value number doesn't match the one from the compare VN.
+        // Find which child of boundParent is the bound.  Abort if neither
+        // conservative value number matches the one from the compare VN.
 
-        GenTreePtr child1 = arrLenParent->gtGetOp1();
-        if ((child1->OperGet() == GT_ARR_LENGTH) && IS_CSE_INDEX(child1->gtCSEnum) &&
-            (info.vnArray == child1->AsArrLen()->ArrRef()->gtVNPair.GetConservative()))
+        GenTreePtr child1 = boundParent->gtGetOp1();
+        if ((info.vnBound == child1->gtVNPair.GetConservative()) && IS_CSE_INDEX(child1->gtCSEnum))
         {
-            arrLen = child1;
+            bound = child1;
         }
         else
         {
-            GenTreePtr child2 = arrLenParent->gtGetOp2();
-            if ((child2->OperGet() == GT_ARR_LENGTH) && IS_CSE_INDEX(child2->gtCSEnum) &&
-                (info.vnArray == child2->AsArrLen()->ArrRef()->gtVNPair.GetConservative()))
+            GenTreePtr child2 = boundParent->gtGetOp2();
+            if ((info.vnBound == child2->gtVNPair.GetConservative()) && IS_CSE_INDEX(child2->gtCSEnum))
             {
-                arrLen = child2;
+                bound = child2;
             }
         }
 
-        if (arrLen != nullptr)
+        if (bound != nullptr)
         {
-            // Found an arrayLen feeding a compare that is a tracatable function of it;
-            // record this in the map so we can update the compare VN if the array length
+            // Found a checked bound feeding a compare that is a tractable function of it;
+            // record this in the map so we can update the compare VN if the bound
             // node gets CSEd.
 
-            if (optCseArrLenMap == nullptr)
+            if (optCseCheckedBoundMap == nullptr)
             {
                 // Allocate map on first use.
-                optCseArrLenMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+                optCseCheckedBoundMap = new (getAllocator()) NodeToNodeMap(getAllocator());
             }
 
-            optCseArrLenMap->Set(arrLen, compare);
+            optCseCheckedBoundMap->Set(bound, compare);
         }
     }
 }
@@ -1938,7 +1942,7 @@ public:
             lst                  = dsc->csdTreeList;
             GenTreePtr firstTree = lst->tslTree;
             printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", info.compFullName,
-                   GenTree::NodeName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
+                   GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
             while (lst != NULL)
             {
                 if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
@@ -2023,31 +2027,40 @@ public:
                     // conservative VN to this use.  This can help range check elimination later on.
                     cse->gtVNPair.SetConservative(defConservativeVN);
 
+                    // If the old VN was flagged as a checked bound, propagate that to the new VN
+                    // to make sure assertion prop will pay attention to this VN.
+                    ValueNumStore* vnStore = m_pCompiler->vnStore;
+                    ValueNum       oldVN   = exp->gtVNPair.GetConservative();
+                    if (!vnStore->IsVNConstant(defConservativeVN) && vnStore->IsVNCheckedBound(oldVN))
+                    {
+                        vnStore->SetVNIsCheckedBound(defConservativeVN);
+                    }
+
                     GenTreePtr cmp;
-                    if ((exp->OperGet() == GT_ARR_LENGTH) && (m_pCompiler->optCseArrLenMap != nullptr) &&
-                        (m_pCompiler->optCseArrLenMap->Lookup(exp, &cmp)))
+                    if ((m_pCompiler->optCseCheckedBoundMap != nullptr) &&
+                        (m_pCompiler->optCseCheckedBoundMap->Lookup(exp, &cmp)))
                     {
                         // Propagate the new value number to this compare node as well, since
                         // subsequent range check elimination will try to correlate it with
                         // the other appearances that are getting CSEd.
 
-                        ValueNumStore*                      vnStore  = m_pCompiler->vnStore;
-                        ValueNum                            oldCmpVN = cmp->gtVNPair.GetConservative();
-                        ValueNumStore::ArrLenArithBoundInfo info;
-                        ValueNum                            newCmpArgVN;
-                        if (vnStore->IsVNArrLenBound(oldCmpVN))
+                        ValueNum oldCmpVN = cmp->gtVNPair.GetConservative();
+                        ValueNum newCmpArgVN;
+
+                        ValueNumStore::CompareCheckedBoundArithInfo info;
+                        if (vnStore->IsVNCompareCheckedBound(oldCmpVN))
                         {
-                            // Comparison is against the array length directly.
+                            // Comparison is against the bound directly.
 
                             newCmpArgVN = defConservativeVN;
-                            vnStore->GetArrLenBoundInfo(oldCmpVN, &info);
+                            vnStore->GetCompareCheckedBound(oldCmpVN, &info);
                         }
                         else
                         {
-                            // Comparison is against the array length +/- some offset.
+                            // Comparison is against the bound +/- some offset.
 
-                            assert(vnStore->IsVNArrLenArithBound(oldCmpVN));
-                            vnStore->GetArrLenArithBoundInfo(oldCmpVN, &info);
+                            assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
+                            vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
                             newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
                                                              info.arrOp, defConservativeVN);
                         }

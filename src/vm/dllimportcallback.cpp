@@ -1111,13 +1111,8 @@ UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
 
     UMEntryThunk * p;
 
-#ifdef FEATURE_WINDOWSPHONE
     // On the phone, use loader heap to save memory commit of regular executable heap
     p = (UMEntryThunk *)(void *)SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunk)));
-#else
-    p = new (executable) UMEntryThunk;
-    memset (p, 0, sizeof(*p));
-#endif
 
     RETURN p;
 }
@@ -1126,11 +1121,10 @@ void UMEntryThunk::Terminate()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_WINDOWSPHONE
+    _ASSERTE(!SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->IsZeroInit());
+    m_code.Poison();
+
     SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->BackoutMem(this, sizeof(UMEntryThunk));
-#else
-    DeleteExecutable(this);
-#endif
 }
 
 VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
@@ -1382,9 +1376,9 @@ VOID UMThunkMarshInfo::RunTimeInit()
     UINT16 cbRetPop = 0;
 
     //
-    // m_cbStackArgSize represents the number of arg bytes for the MANAGED signature
+    // cbStackArgSize represents the number of arg bytes for the MANAGED signature
     //
-    m_cbStackArgSize = 0;
+    UINT32 cbStackArgSize = 0;
 
     int offs = 0;
 
@@ -1410,9 +1404,10 @@ VOID UMThunkMarshInfo::RunTimeInit()
         else
         {
             offs += StackElemSize(cbSize);
-            m_cbStackArgSize += StackElemSize(cbSize);
+            cbStackArgSize += StackElemSize(cbSize);
         }
     }
+    m_cbStackArgSize = cbStackArgSize;
     m_cbActualArgSize = (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : offs;
 
     PInvokeStaticSigInfo sigInfo;

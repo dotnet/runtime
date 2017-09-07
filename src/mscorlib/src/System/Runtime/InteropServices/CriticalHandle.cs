@@ -109,7 +109,7 @@ using System.IO;
           get { return handle == IntPtr.Zero; }
       }
 
-      [DllImport(Win32Native.KERNEL32), SuppressUnmanagedCodeSecurity, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+      [DllImport(Interop.Libraries.Kernel32), SuppressUnmanagedCodeSecurity, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       private static extern bool CloseHandle(IntPtr handle);
 
       override protected bool ReleaseHandle()
@@ -123,20 +123,14 @@ using System.IO;
   Note that when returning a CriticalHandle like this, P/Invoke will call your
   classes default constructor.
 
-      [DllImport(Win32Native.KERNEL32)]
+      [DllImport(Interop.Libraries.Kernel32)]
       private static extern MyCriticalHandleSubclass CreateHandle(int someState);
 
  */
 
 namespace System.Runtime.InteropServices
 {
-    // This class should not be serializable - it's a handle.  We require unmanaged
-    // code permission to subclass CriticalHandle to prevent people from writing a 
-    // subclass and suddenly being able to run arbitrary native code with the
-    // same signature as CloseHandle.  This is technically a little redundant, but
-    // we'll do this to ensure we've cut off all attack vectors.  Similarly, all
-    // methods have a link demand to ensure untrusted code cannot directly edit
-    // or alter a handle.
+    // This class should not be serializable - it's a handle
     public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.

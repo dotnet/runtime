@@ -2624,14 +2624,146 @@ FCIMPL6(INT32, ManagedLoggingHelper::GetRegistryLoggingValues, CLR_BOOL* bLoggin
 }
 FCIMPLEND
 
-// Return true if the valuetype does not contain pointer and is tightly packed
+static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_TOLERANT;
+    } CONTRACTL_END;
+
+    _ASSERTE(mt != NULL);
+    _ASSERTE(classMT != NULL);
+    _ASSERTE(methodSlot != 0);
+
+    PCODE actual = mt->GetRestoredSlot(methodSlot);
+    PCODE base = classMT->GetRestoredSlot(methodSlot);
+
+    if (actual == base)
+    {
+        return FALSE;
+    }
+
+    if (!classMT->IsZapped())
+    {
+        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+        // to detect match reliably
+        if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    _ASSERTE(mt != NULL);
+
+    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        return mt->CanCompareBitsOrUseFastGetHashCode();
+    }
+
+    if (mt->ContainsPointers()
+        || mt->IsNotTightlyPacked())
+    {
+        mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
+        return FALSE;
+    }
+
+    MethodTable* valueTypeMT = MscorlibBinder::GetClass(CLASS__VALUE_TYPE);
+    WORD slotEquals = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__EQUALS)->GetSlot();
+    WORD slotGetHashCode = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot();
+
+    // Check the input type.
+    if (HasOverriddenMethod(mt, valueTypeMT, slotEquals)
+        || HasOverriddenMethod(mt, valueTypeMT, slotGetHashCode))
+    {
+        mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
+
+        // If overridden Equals or GetHashCode found, stop searching further.
+        return FALSE;
+    }
+
+    BOOL canCompareBitsOrUseFastGetHashCode = TRUE;
+
+    // The type itself did not override Equals or GetHashCode, go for its fields.
+    ApproxFieldDescIterator iter = ApproxFieldDescIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* pField = iter.Next(); pField != NULL; pField = iter.Next())
+    {
+        if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            // Check current field type.
+            MethodTable* fieldMethodTable = pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+            if (!CanCompareBitsOrUseFastGetHashCode(fieldMethodTable))
+            {
+                canCompareBitsOrUseFastGetHashCode = FALSE;
+                break;
+            }
+        }
+        else if (pField->GetFieldType() == ELEMENT_TYPE_R8
+                || pField->GetFieldType() == ELEMENT_TYPE_R4)
+        {
+            // We have double/single field, cannot compare in fast path.
+            canCompareBitsOrUseFastGetHashCode = FALSE;
+            break;
+        }
+    }
+
+    // We've gone through all instance fields. It's time to cache the result.
+    // Note SetCanCompareBitsOrUseFastGetHashCode(BOOL) ensures the checked flag
+    // and canCompare flag being set atomically to avoid race.
+    mt->SetCanCompareBitsOrUseFastGetHashCode(canCompareBitsOrUseFastGetHashCode);
+
+    return canCompareBitsOrUseFastGetHashCode;
+}
+
+NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objRef)
+{
+    FC_INNER_PROLOG(ValueTypeHelper::CanCompareBits);
+
+    _ASSERTE(mt != NULL);
+    _ASSERTE(objRef != NULL);
+
+    BOOL ret = FALSE;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
+
+    ret = CanCompareBitsOrUseFastGetHashCode(mt);
+
+    HELPER_METHOD_FRAME_END();
+    FC_INNER_EPILOG();
+
+    FC_RETURN_BOOL(ret);
+}
+
+// Return true if the valuetype does not contain pointer, is tightly packed, 
+// does not have floating point number field and does not override Equals method.
 FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
 {
     FCALL_CONTRACT;
 
     _ASSERTE(obj != NULL);
     MethodTable* mt = obj->GetMethodTable();
-    FC_RETURN_BOOL(!mt->ContainsPointers() && !mt->IsNotTightlyPacked());
+
+    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        FC_RETURN_BOOL(mt->CanCompareBitsOrUseFastGetHashCode());
+    }
+
+    OBJECTREF objRef(obj);
+
+    FC_INNER_RETURN(FC_BOOL_RET, CanCompareBitsHelper(mt, objRef));
 }
 FCIMPLEND
 
@@ -2650,12 +2782,6 @@ FCIMPL2(FC_BOOL_RET, ValueTypeHelper::FastEqualsCheck, Object* obj1, Object* obj
 }
 FCIMPLEND
 
-static BOOL CanUseFastGetHashCodeHelper(MethodTable *mt)
-{
-    LIMITED_METHOD_CONTRACT;
-    return !mt->ContainsPointers() && !mt->IsNotTightlyPacked();
-}
-
 static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
 {
     CONTRACTL
@@ -2664,7 +2790,6 @@ static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         SO_TOLERANT;
-        PRECONDITION(CanUseFastGetHashCodeHelper(mt));
     } CONTRACTL_END;
 
     INT32 hashCode = 0;
@@ -2690,9 +2815,19 @@ static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
     INT32 hashCode = 0;
     INT32 *pObj = (INT32*)pObjRef;
 
+    BOOL canUseFastGetHashCodeHelper = FALSE;
+    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        canUseFastGetHashCodeHelper = mt->CanCompareBitsOrUseFastGetHashCode();
+    }
+    else
+    {
+        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
+    }
+
     // While we shouln't get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to 
     // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
-    if (CanUseFastGetHashCodeHelper(mt))
+    if (canUseFastGetHashCodeHelper)
     {
         return FastGetValueTypeHashCodeHelper(mt, pObjRef);
     }
@@ -2797,17 +2932,29 @@ FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
     // we munge the class index with two big prime numbers
     hashCode = typeID * 711650207 + 2506965631U;
 
-    if (CanUseFastGetHashCodeHelper(pMT))
+    BOOL canUseFastGetHashCodeHelper = FALSE;
+    if (pMT->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        canUseFastGetHashCodeHelper = pMT->CanCompareBitsOrUseFastGetHashCode();
+    }
+    else
+    {
+        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
+        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(pMT);
+        HELPER_METHOD_FRAME_END();
+    }
+
+    if (canUseFastGetHashCodeHelper)
     {
         hashCode ^= FastGetValueTypeHashCodeHelper(pMT, obj->UnBox());
     }
     else
     {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);        
+        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
         hashCode ^= RegularGetValueTypeHashCode(pMT, obj->UnBox());
         HELPER_METHOD_FRAME_END();
     }
-    
+
     return hashCode;
 }
 FCIMPLEND
@@ -2850,14 +2997,11 @@ COMNlsHashProvider::COMNlsHashProvider()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    bUseRandomHashing = FALSE;
     pEntropy = NULL;
     pDefaultSeed = NULL;
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
 }
 
-INT32 COMNlsHashProvider::HashString(LPCWSTR szStr, SIZE_T strLen, BOOL forceRandomHashing, INT64 additionalEntropy)
+INT32 COMNlsHashProvider::HashString(LPCWSTR szStr, SIZE_T strLen)
 {
     CONTRACTL {
         THROWS;
@@ -2866,40 +3010,15 @@ INT32 COMNlsHashProvider::HashString(LPCWSTR szStr, SIZE_T strLen, BOOL forceRan
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_RANDOMIZED_STRING_HASHING
-   _ASSERTE(forceRandomHashing == false);
-   _ASSERTE(additionalEntropy == 0);
-#endif
+    int marvinResult[SYMCRYPT_MARVIN32_RESULT_SIZE / sizeof(int)];
+    
+    SymCryptMarvin32(GetDefaultSeed(), (PCBYTE) szStr, strLen * sizeof(WCHAR), (PBYTE) &marvinResult);
 
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    if(bUseRandomHashing || forceRandomHashing)
-    {
-        int marvinResult[SYMCRYPT_MARVIN32_RESULT_SIZE / sizeof(int)];
-        
-        if(additionalEntropy == 0)
-        {
-            SymCryptMarvin32(GetDefaultSeed(), (PCBYTE) szStr, strLen * sizeof(WCHAR), (PBYTE) &marvinResult);
-        }
-        else
-        {
-            SYMCRYPT_MARVIN32_EXPANDED_SEED seed;
-            CreateMarvin32Seed(additionalEntropy, &seed);
-            SymCryptMarvin32(&seed, (PCBYTE) szStr, strLen * sizeof(WCHAR), (PBYTE) &marvinResult);
-        }
-
-        return marvinResult[0] ^ marvinResult[1];
-    }
-    else
-    {
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-        return ::HashString(szStr);
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
+    return marvinResult[0] ^ marvinResult[1];
 }
 
 
-INT32 COMNlsHashProvider::HashSortKey(PCBYTE pSrc, SIZE_T cbSrc, BOOL forceRandomHashing, INT64 additionalEntropy)
+INT32 COMNlsHashProvider::HashSortKey(PCBYTE pSrc, SIZE_T cbSrc)
 {
     CONTRACTL {
         THROWS;
@@ -2908,141 +3027,15 @@ INT32 COMNlsHashProvider::HashSortKey(PCBYTE pSrc, SIZE_T cbSrc, BOOL forceRando
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_RANDOMIZED_STRING_HASHING
-   _ASSERTE(forceRandomHashing == false);
-   _ASSERTE(additionalEntropy == 0);
-#endif
+    int marvinResult[SYMCRYPT_MARVIN32_RESULT_SIZE / sizeof(int)];
+    
+    // Sort Keys are terminated with a null byte which we didn't hash using the old algorithm, 
+    // so we don't have it with Marvin32 either.
+    SymCryptMarvin32(GetDefaultSeed(), pSrc, cbSrc - 1, (PBYTE) &marvinResult);
 
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    if(bUseRandomHashing || forceRandomHashing)
-    {
-        int marvinResult[SYMCRYPT_MARVIN32_RESULT_SIZE / sizeof(int)];
-        
-        // Sort Keys are terminated with a null byte which we didn't hash using the old algorithm, 
-        // so we don't have it with Marvin32 either.
-        if(additionalEntropy == 0)
-        {
-            SymCryptMarvin32(GetDefaultSeed(), pSrc, cbSrc - 1, (PBYTE) &marvinResult);
-        }
-        else
-        {
-            SYMCRYPT_MARVIN32_EXPANDED_SEED seed;       
-            CreateMarvin32Seed(additionalEntropy, &seed);
-            SymCryptMarvin32(&seed, pSrc, cbSrc - 1, (PBYTE) &marvinResult);
-        }
- 
-        return marvinResult[0] ^ marvinResult[1];
-    }
-    else
-    {
-#endif // FEATURE_RANDOMIZED_STRING_HASHING 
-        // Ok, lets build the hashcode -- mostly lifted from GetHashCode() in String.cs, for strings.
-        int hash1 = 5381;
-        int hash2 = hash1;
-        const BYTE *pB = pSrc;
-        BYTE    c;
-
-        while (pB != 0 && *pB != 0) {
-            hash1 = ((hash1 << 5) + hash1) ^ *pB;
-            c = pB[1];
-
-            //
-            // FUTURE: Update NewAPis::LCMapStringEx to perhaps use a different, bug free, Win32 API on Win2k3 to workaround the issue discussed below.
-            //
-            // On Win2k3 Server, LCMapStringEx(LCMAP_SORTKEY) output does not correspond to CompareString in all cases, breaking the .NET GetHashCode<->Equality Contract
-            // Due to a fluke in our GetHashCode method, we avoided this issue due to the break out of the loop on the binary-zero byte.
-            //
-            if (c == 0)
-                break;
-
-            hash2 = ((hash2 << 5) + hash2) ^ c;
-            pB += 2;
-        }
-
-        return hash1 + (hash2 * 1566083941);
-
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-
+    return marvinResult[0] ^ marvinResult[1];
 }
 
-INT32 COMNlsHashProvider::HashiStringKnownLower80(LPCWSTR szStr, INT32 strLen, BOOL forceRandomHashing, INT64 additionalEntropy)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef FEATURE_RANDOMIZED_STRING_HASHING
-   _ASSERTE(forceRandomHashing == false);
-   _ASSERTE(additionalEntropy == 0);
-#endif
-
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    if(bUseRandomHashing || forceRandomHashing)
-    {
-        WCHAR buf[SYMCRYPT_MARVIN32_INPUT_BLOCK_SIZE * 8];
-        SYMCRYPT_MARVIN32_STATE marvinState;
-        SYMCRYPT_MARVIN32_EXPANDED_SEED seed;
-
-        if(additionalEntropy == 0)
-        {
-            SymCryptMarvin32Init(&marvinState, GetDefaultSeed());
-        }
-        else
-        {
-            CreateMarvin32Seed(additionalEntropy, &seed);
-            SymCryptMarvin32Init(&marvinState, &seed);
-        }
-
-        LPCWSTR szEnd = szStr + strLen;
-
-        const UINT A_TO_Z_RANGE = (UINT)('z' - 'a');
-
-        while (szStr != szEnd)
-        {
-            size_t count = (sizeof(buf) / sizeof(buf[0]));
-
-            if ((size_t)(szEnd - szStr) < count)
-                count = (size_t)(szEnd - szStr);
-
-            for (size_t i = 0; i<count; i++)
-            {
-                WCHAR c = szStr[i];
-
-                if ((UINT)(c - 'a') <= A_TO_Z_RANGE)  // if (c >='a' && c <= 'z') 
-                {
-                   //If we have a lowercase character, ANDing off 0x20
-                   // will make it an uppercase character.
-                   c &= ~0x20;
-                }
-
-                buf[i] = c;
-            }
-
-            szStr += count;
-
-            SymCryptMarvin32Append(&marvinState, (PCBYTE) &buf, sizeof(WCHAR) * count);
-        }
-
-        int marvinResult[SYMCRYPT_MARVIN32_RESULT_SIZE / sizeof(int)];
-        SymCryptMarvin32Result(&marvinState, (PBYTE) &marvinResult);
-        return marvinResult[0] ^ marvinResult[1];
-    }
-    else
-    {
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-        return ::HashiStringKnownLower80(szStr);
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-}
-
-
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
 void COMNlsHashProvider::InitializeDefaultSeed()
 {
     CONTRACTL {
@@ -3110,27 +3103,8 @@ PCBYTE COMNlsHashProvider::GetEntropy()
     return (PCBYTE) pEntropy;
 }
 
-
-void COMNlsHashProvider::CreateMarvin32Seed(INT64 additionalEntropy, PSYMCRYPT_MARVIN32_EXPANDED_SEED pExpandedMarvinSeed)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    INT64 *pEntropy = (INT64*) GetEntropy();
-    INT64 entropy;
-
-    entropy = *pEntropy ^ additionalEntropy;
-
-    SymCryptMarvin32ExpandSeed(pExpandedMarvinSeed, (PCBYTE) &entropy, SYMCRYPT_MARVIN32_SEED_SIZE);
-}
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-
 #ifdef FEATURE_COREFX_GLOBALIZATION
-INT32 QCALLTYPE CoreFxGlobalization::HashSortKey(PCBYTE pSortKey, INT32 cbSortKey, BOOL forceRandomizedHashing, INT64 additionalEntropy)
+INT32 QCALLTYPE CoreFxGlobalization::HashSortKey(PCBYTE pSortKey, INT32 cbSortKey)
 {
     QCALL_CONTRACT;
 
@@ -3138,7 +3112,7 @@ INT32 QCALLTYPE CoreFxGlobalization::HashSortKey(PCBYTE pSortKey, INT32 cbSortKe
 
     BEGIN_QCALL;
 
-    retVal = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pSortKey, cbSortKey, forceRandomizedHashing, additionalEntropy);
+    retVal = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pSortKey, cbSortKey);
 
     END_QCALL;
 

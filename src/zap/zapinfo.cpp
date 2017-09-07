@@ -448,25 +448,6 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
-    if (!m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))
-    {
-        BOOL raiseVerificationException, unverifiableGenericCode;
-
-        m_jitFlags = GetCompileFlagsIfGenericInstantiation(
-                        m_currentMethodHandle,
-                        m_jitFlags,
-                        this,
-                        &raiseVerificationException,
-                        &unverifiableGenericCode);
-
-        // Instead of raising a VerificationException, we will leave the method
-        // uncompiled. If it gets called at runtime, we will raise the
-        // VerificationException at that time while trying to compile the method.
-        if (raiseVerificationException)
-            return;
-    }
-
-
     if (m_pImage->m_stats)
     {
         m_pImage->m_stats->m_methods++;
@@ -1411,11 +1392,6 @@ const void * ZapInfo::getInlinedCallFrameVptr(void **ppIndirection)
     return NULL;
 }
 
-SIZE_T* ZapInfo::getAddrModuleDomainID(CORINFO_MODULE_HANDLE   module)
-{
-    return m_pEEJitInfo->getAddrModuleDomainID(module);
-}
-
 LONG * ZapInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 {
     _ASSERTE(ppIndirection != NULL);
@@ -2136,7 +2112,6 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         if (pResult->thisTransform == CORINFO_BOX_THIS)
         {
             // READYTORUN: FUTURE: Optionally create boxing stub at runtime
-            m_zapper->Warning(W("ReadyToRun: Implicit boxing for calls to constrained methods not supported\n"));
             ThrowHR(E_NOTIMPL);
         }
     }
@@ -2481,7 +2456,25 @@ void ZapInfo::recordRelocation(void *location, void *target,
 
 #if defined(_TARGET_ARM_)
     case IMAGE_REL_BASED_THUMB_MOV32:
+    case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
     case IMAGE_REL_BASED_THUMB_BRANCH24:
+
+# ifdef _DEBUG
+    {
+        CORJIT_FLAGS jitFlags = m_zapper->m_pOpt->m_compilerFlags;
+
+        if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS))
+        {
+            _ASSERTE(fRelocType == IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL
+                     || fRelocType == IMAGE_REL_BASED_THUMB_BRANCH24);
+        }
+        else
+        {
+            _ASSERTE(fRelocType == IMAGE_REL_BASED_THUMB_MOV32
+                     || fRelocType == IMAGE_REL_BASED_THUMB_BRANCH24);
+        }
+    }
+# endif // _DEBUG
         break;
 #endif
 
@@ -2584,6 +2577,7 @@ void ZapInfo::recordRelocation(void *location, void *target,
 
 #if defined(_TARGET_ARM_)
     case IMAGE_REL_BASED_THUMB_MOV32:
+    case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
         PutThumb2Mov32((UINT16 *)location, targetOffset);
         break;
 
@@ -2656,41 +2650,6 @@ void ZapInfo::getModuleNativeEntryPointRange(void** pStart, void** pEnd)
     // Initialize outparams to default range of (0,0).
     *pStart = 0;
     *pEnd = 0;
-
-    // If this is ILONLY, there are no native entry points.
-    if (m_pImage->m_ModuleDecoder.IsILOnly())
-    {
-        return;
-    }
-
-    rvaStart = rvaEnd = 0;
-
-    // Walk the section table looking for a section named .nep.
-
-    IMAGE_SECTION_HEADER *section = m_pImage->m_ModuleDecoder.FindFirstSection();
-    IMAGE_SECTION_HEADER *sectionEnd = section + m_pImage->m_ModuleDecoder.GetNumberOfSections();
-    while (section < sectionEnd)
-    {
-        if (strncmp((const char *)(section->Name), ".nep", IMAGE_SIZEOF_SHORT_NAME) == 0)
-        {
-            rvaStart = VAL32(section->VirtualAddress);
-            rvaEnd = rvaStart + VAL32(section->Misc.VirtualSize);
-            if (rvaStart < rvaEnd)
-            {
-                // RVA will be fixed up to the actual address at runtime
-                CORCOMPILE_EE_INFO_TABLE * pEEInfoTable = (CORCOMPILE_EE_INFO_TABLE *)m_pImage->m_pEEInfoTable->GetData();
-                pEEInfoTable->nativeEntryPointStart = (BYTE*)((ULONG_PTR)rvaStart);
-                pEEInfoTable->nativeEntryPointEnd = (BYTE*)((ULONG_PTR)rvaEnd);
-
-                *pStart = m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
-                    offsetof(CORCOMPILE_EE_INFO_TABLE, nativeEntryPointStart));
-                *pEnd = m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
-                    offsetof(CORCOMPILE_EE_INFO_TABLE, nativeEntryPointEnd));
-            }
-            break;
-        }
-        section++;
-    }
 }
 
 DWORD ZapInfo::getExpectedTargetArchitecture()
@@ -3195,10 +3154,6 @@ void * ZapInfo::getArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD siz
     if (m_pEEJitInfo->getClassModule(m_pEEJitInfo->getFieldClass(field)) != m_pImage->m_hModule)
         return NULL;
 
-    // FieldDesc::SaveContents() does not save the RVA blob for IJW modules.
-    if (!m_pImage->m_ModuleDecoder.IsILOnly())
-        return NULL;
-
     void * arrayData = m_pEEJitInfo->getArrayInitializationData(field, size);
     if (!arrayData)
         return NULL;
@@ -3404,7 +3359,7 @@ CorInfoHelpFunc ZapInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
 CorInfoHelpFunc ZapInfo::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 {
 	if (IsReadyToRunCompilation())
-		return CORINFO_HELP_NEWARR_1_DIRECT;
+		return CORINFO_HELP_NEWARR_1_R2R_DIRECT;
 
 	return m_pEEJitInfo->getNewArrHelper(arrayCls);
 }
@@ -3612,7 +3567,7 @@ void ZapInfo::getMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO *sig,CORI
 
 bool ZapInfo::getMethodInfo(CORINFO_METHOD_HANDLE ftn,CORINFO_METHOD_INFO* info)
 {
-    bool result = m_pEEJitInfo->getMethodInfo(ftn, info);
+    bool result = m_pImage->m_pPreloader->GetMethodInfo(m_currentMethodToken, ftn, info);
     info->regionKind = m_pImage->GetCurrentRegionKind();
     return result;
 }
@@ -3728,10 +3683,11 @@ CORINFO_MODULE_HANDLE ZapInfo::getMethodModule(CORINFO_METHOD_HANDLE method)
 }
 
 void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
-                                                  unsigned * pOffsetOfIndirection,
-                                                  unsigned * pOffsetAfterIndirection)
+                                    unsigned * pOffsetOfIndirection,
+                                    unsigned * pOffsetAfterIndirection,
+                                    bool * isRelative)
 {
-    m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection);
+    m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection, isRelative);
 }
 
 CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
@@ -3741,6 +3697,13 @@ CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
         )
 {
     return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+}
+
+void ZapInfo::expandRawHandleIntrinsic(
+    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_GENERICHANDLE_RESULT *  pResult)
+{
+    m_pEEJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
@@ -3796,13 +3759,6 @@ BOOL ZapInfo::isCompatibleDelegate(
             BOOL* pfIsOpenDelegate)
 {
     return m_pEEJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-}
-
-BOOL ZapInfo::isDelegateCreationAllowed (
-        CORINFO_CLASS_HANDLE        delegateHnd,
-        CORINFO_METHOD_HANDLE       calleeHnd)
-{
-    return m_pEEJitInfo->isDelegateCreationAllowed(delegateHnd, calleeHnd);
 }
 
 //

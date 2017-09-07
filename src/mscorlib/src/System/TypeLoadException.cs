@@ -22,25 +22,24 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [Serializable]
     public class TypeLoadException : SystemException, ISerializable
     {
         public TypeLoadException()
             : base(SR.Arg_TypeLoadException)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public TypeLoadException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public TypeLoadException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public override String Message
@@ -92,7 +91,7 @@ namespace System
                                   int resourceId)
         : base(null)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
             ClassName = className;
             AssemblyName = assemblyName;
             MessageArg = messageArg;
@@ -105,33 +104,16 @@ namespace System
 
         protected TypeLoadException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            ClassName = info.GetString("TypeLoadClassName");
-            AssemblyName = info.GetString("TypeLoadAssemblyName");
-            MessageArg = info.GetString("TypeLoadMessageArg");
-            ResourceId = info.GetInt32("TypeLoadResourceID");
+            throw new PlatformNotSupportedException();
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
 
-        //We can rely on the serialization mechanism on Exception to handle most of our needs, but
-        //we need to add a few fields of our own.
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
             base.GetObjectData(info, context);
-            info.AddValue("TypeLoadClassName", ClassName, typeof(String));
-            info.AddValue("TypeLoadAssemblyName", AssemblyName, typeof(String));
-            info.AddValue("TypeLoadMessageArg", MessageArg, typeof(String));
-            info.AddValue("TypeLoadResourceID", ResourceId);
         }
 
         // If ClassName != null, GetMessage will construct on the fly using it

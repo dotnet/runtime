@@ -3,7 +3,7 @@
 
 // Method:  Simulate a bouncing ball based on the laws of physics.
 //          The general principles:
-//            The velocity of a falling ball is : (½) m v^2 = m g d è v = sqrt(2 * g * d)
+//            The velocity of a falling ball is : (Â½) m v^2 = m g d Ã¨ v = sqrt(2 * g * d)
 //            The non-ellastic collision will shoot the ball in 
 //              the opposite direction at       : v2 = e v = e * sqrt(2 * g * d)
 //              Where e is the coeficient of restitution

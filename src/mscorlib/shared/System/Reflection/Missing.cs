@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public sealed class Missing : ISerializable
     {
         public static readonly Missing Value = new Missing();
@@ -15,10 +14,7 @@ namespace System.Reflection
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info, this);
+            throw new PlatformNotSupportedException();
         }
     }
 }

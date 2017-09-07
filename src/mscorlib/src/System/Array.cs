@@ -26,6 +26,7 @@ namespace System
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
@@ -2415,16 +2416,16 @@ namespace System
             }
         }
 
-        [Serializable]
         private sealed class SZArrayEnumerator : IEnumerator, ICloneable
         {
-            private Array _array;
+            private readonly Array _array;
             private int _index;
-            private int _endIndex; // cache array length, since it's a little slow.
+            private int _endIndex; // Cache Array.Length, since it's a little slow.
 
             internal SZArrayEnumerator(Array array)
             {
                 Debug.Assert(array.Rank == 1 && array.GetLowerBound(0) == 0, "SZArrayEnumerator only works on single dimension arrays w/ a lower bound of zero.");
+
                 _array = array;
                 _index = -1;
                 _endIndex = array.Length;
@@ -2461,7 +2462,6 @@ namespace System
             }
         }
 
-        [Serializable]
         private sealed class ArrayEnumerator : IEnumerator, ICloneable
         {
             private Array array;
@@ -2613,8 +2613,7 @@ namespace System
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
-            int length = _this.Length;
-            return length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(_this, length);
+            return _this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(_this);
         }
 
         // -----------------------------------------------------------
@@ -2723,57 +2722,55 @@ namespace System
         // This is a normal generic Enumerator for SZ arrays. It doesn't have any of the "this" stuff
         // that SZArrayHelper does.
         //
-        [Serializable]
         private sealed class SZGenericArrayEnumerator<T> : IEnumerator<T>
         {
-            private T[] _array;
+            private readonly T[] _array;
             private int _index;
-            private int _endIndex; // cache array length, since it's a little slow.
 
-            // Passing -1 for endIndex so that MoveNext always returns false without mutating _index
-            internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(null, -1);
+            // Array.Empty is intentionally omitted here, since we don't want to pay for generic instantiations that
+            // wouldn't have otherwise been used.
+            internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(new T[0]);
 
-            internal SZGenericArrayEnumerator(T[] array, int endIndex)
+            internal SZGenericArrayEnumerator(T[] array)
             {
-                // We allow passing null array in case of empty enumerator. 
-                Debug.Assert(array != null || endIndex == -1, "endIndex should be -1 in the case of a null array (for the empty enumerator).");
+                Debug.Assert(array != null);
+
                 _array = array;
                 _index = -1;
-                _endIndex = endIndex;
             }
 
             public bool MoveNext()
             {
-                if (_index < _endIndex)
+                int index = _index + 1;
+                bool result = index < _array.Length;
+                
+                if (result)
                 {
-                    _index++;
-                    return (_index < _endIndex);
+                    _index = index;
                 }
-                return false;
-            }
 
+                return result;
+            }
+    
             public T Current
             {
                 get
                 {
-                    if (_index < 0) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
-                    if (_index >= _endIndex) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
-                    return _array[_index];
+                    int index = _index;
+                    T[] array = _array;
+
+                    if ((uint)index >= (uint)array.Length)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_EnumCurrent(index);
+                    }
+
+                    return array[index];
                 }
             }
+    
+            object IEnumerator.Current => Current;
 
-            object IEnumerator.Current
-            {
-                get
-                {
-                    return Current;
-                }
-            }
-
-            void IEnumerator.Reset()
-            {
-                _index = -1;
-            }
+            void IEnumerator.Reset() => _index = -1;
 
             public void Dispose()
             {

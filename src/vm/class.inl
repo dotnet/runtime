@@ -5,12 +5,6 @@
 // File: CLASS.INL
 //
 
-
-//
-
-//
-// ============================================================================
-
 #ifndef _CLASS_INL_
 #define _CLASS_INL_
 //***************************************************************************************
@@ -20,18 +14,6 @@ inline PTR_MethodDescChunk EEClass::GetChunks()
     return m_pChunks.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pChunks));
 }
 
-//***************************************************************************************
-inline DWORD EEClass::SomeMethodsRequireInheritanceCheck()
-{
-    return (m_VMFlags & VMFLAG_METHODS_REQUIRE_INHERITANCE_CHECKS);
-}
-
-//***************************************************************************************
-inline void EEClass::SetSomeMethodsRequireInheritanceCheck()
-{
-    m_VMFlags = m_VMFlags | VMFLAG_METHODS_REQUIRE_INHERITANCE_CHECKS;
-}
-
 //*******************************************************************************
 #ifndef DACCESS_COMPILE 
 // Set default values for optional fields.
@@ -39,7 +21,7 @@ inline void EEClassOptionalFields::Init()
 {
     LIMITED_METHOD_CONTRACT;
     m_pDictLayout = NULL;
-    m_pVarianceInfo = NULL;
+    m_pVarianceInfo.SetValueMaybeNull(NULL);
 #ifdef FEATURE_COMINTEROP
     m_pSparseVTableMap = NULL;
     m_pCoClassForIntf = TypeHandle();

@@ -14,14 +14,17 @@ namespace Functions
         private const float cosSingleDelta = 0.000628318531f;
         private const float cosSingleExpectedResult = -0.993487537f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = CosSingleIterations)]
         public static void CosSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    CosSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        CosSingleTest();
+                    }
                 }
             }
         }

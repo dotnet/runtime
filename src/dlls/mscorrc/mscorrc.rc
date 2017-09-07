@@ -851,6 +851,8 @@ BEGIN
     IDS_EE_PROC_NOT_FOUND                   "A procedure imported by '%1' could not be loaded."
     IDS_EE_SIMD_NGEN_DISALLOWED             "Target-dependent SIMD vector types may not be used with ngen."
     IDS_EE_SIMD_PARTIAL_TRUST_DISALLOWED    "SIMD intrinsics may not be used by partial trust applications."
+    IDS_IBC_MISSING_EXTERNAL_TYPE           "The generic type specified by the IBC data is not available to this assembly"
+    IDS_IBC_MISSING_EXTERNAL_METHOD         "The generic method specified by the IBC data is not available to this assembly"
 
     IDS_INET_E_CANNOT_CONNECT               "Cannot connect to URL for '%1'."
     IDS_INET_E_RESOURCE_NOT_FOUND           "The server or proxy was not found for '%1'."
@@ -2037,11 +2039,6 @@ BEGIN
         BFA_ONLY_VOID_PTR_IN_ARGS               "Only pointer to void allowed in function arguments."
         BFA_TYPEDBYREFCANNOTHAVEBYREF           "An ELEMENT_TYPE_TYPEDBYREF cannot have a ELEMENT_TYPE_BYREF modifier."
         BFA_REFERENCE_ASSEMBLY                  "Cannot load a reference assembly for execution."
-
-#ifdef FEATURE_PREJIT
-        BFA_MISSING_IBC_EXTERNAL_TYPE           "The type specified by the IBC data is no longer present in the assembly's metadata"
-        BFA_MISSING_IBC_EXTERNAL_METHOD         "The method specified by the IBC data is no longer present in the assembly's metadata"
-#endif
 
 #ifdef FEATURE_COMINTEROP
         BFA_WINRT_INVALID_NAMESPACE_FOR_TYPE    "Windows Runtime type '%1' has invalid namespace that does not begin with the file name in assembly '%2'."

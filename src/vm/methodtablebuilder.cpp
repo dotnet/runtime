@@ -21,7 +21,6 @@
 #include "encee.h"
 #include "mdaassistants.h"
 #include "ecmakey.h"
-#include "security.h"
 #include "customattribute.h"
 #include "typestring.h"
 
@@ -1813,7 +1812,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
             GetHalfBakedClass()->SetIsNotTightlyPacked();
 
 #ifdef FEATURE_HFA
-        CheckForHFA(pByValueClassCache);
+        GetHalfBakedClass()->CheckForHFA(pByValueClassCache);
 #endif
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 #ifdef FEATURE_HFA
@@ -1835,7 +1834,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #ifdef FEATURE_HFA
     if (HasLayout())
     {
-        CheckForNativeHFA();
+        GetHalfBakedClass()->CheckForNativeHFA();
     }
 #endif
 
@@ -4142,11 +4141,11 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             {
                 if (pwalk->m_MD == bmtMetaData->pFields[i])
                 {
-
                     pLayoutFieldInfo = pwalk;
-                    CopyMemory(pNextFieldMarshaler,
-                               &(pwalk->m_FieldMarshaler),
-                               MAXFIELDMARSHALERSIZE);
+
+                    const FieldMarshaler *pSrcFieldMarshaler = (const FieldMarshaler *) &pwalk->m_FieldMarshaler;
+
+                    pSrcFieldMarshaler->CopyTo(pNextFieldMarshaler, MAXFIELDMARSHALERSIZE);
 
                     pNextFieldMarshaler->SetFieldDesc(pFD);
                     pNextFieldMarshaler->SetExternalOffset(pwalk->m_offset);
@@ -4176,19 +4175,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                   fIsContextStatic,
                   pszFieldName
                   );
-
-        // Check if the ValueType field containing non-publics is overlapped
-        if (HasExplicitFieldOffsetLayout()
-            && pLayoutFieldInfo != NULL
-            && pLayoutFieldInfo->m_fIsOverlapped
-            && pByValueClass != NULL
-            && pByValueClass->GetClass()->HasNonPublicFields())
-        {
-            if (!Security::CanSkipVerification(GetAssembly()->GetDomainAssembly()))
-            {
-                BuildMethodTableThrowException(IDS_CLASSLOAD_BADOVERLAP);
-            }
-        }
 
         // We're using FieldDesc::m_pMTOfEnclosingClass to temporarily store the field's size.
         // 
@@ -4290,14 +4276,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BAD_FORMAT_NOTHROW_ASSERT(!"ObjectRef in an RVA field");
                             BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
                         }
-                        if (pByValueClass->GetClass()->HasNonPublicFields())
-                        {
-                            if (!Security::CanHaveRVA(GetAssembly()))
-                            {
-                                BAD_FORMAT_NOTHROW_ASSERT(!"ValueType with non-public fields as a type of an RVA field");
-                                BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-                            }
-                        }
                     }
                 }
                 
@@ -4329,14 +4307,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 else
                 {
                     fldSize = GetSizeForCorElementType(FieldDescElementType);
-                }
-                if (!GetModule()->CheckRvaField(rva, fldSize))
-                {
-                    if (!Security::CanHaveRVA(GetAssembly()))
-                    {
-                        BAD_FORMAT_NOTHROW_ASSERT(!"Illegal RVA of a mapped field");
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-                    }
                 }
                 
                 pFD->SetOffsetRVA(rva);
@@ -4376,14 +4346,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         {   // RVA fields are not allowed to have GC pointers.
             BAD_FORMAT_NOTHROW_ASSERT(!"ObjectRef in an RVA self-referencing static field");
             BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-        }
-        if (HasNonPublicFields())
-        {   // RVA ValueTypes with non-public fields must be checked against security
-            if (!Security::CanHaveRVA(GetAssembly()))
-            {
-                BAD_FORMAT_NOTHROW_ASSERT(!"ValueType with non-public fields as a type of an RVA self-referencing static field");
-                BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-            }
         }
     }
     
@@ -4473,15 +4435,6 @@ MethodTableBuilder::VerifySelfReferencingStaticValueTypeFields_WithRVA(
             {
                 DWORD rva;
                 IfFailThrow(GetMDImport()->GetFieldRVA(pFD->GetMemberDef(), &rva));
-                
-                if (!GetModule()->CheckRvaField(rva, bmtFP->NumInstanceFieldBytes))
-                {
-                    if (!Security::CanHaveRVA(GetAssembly()))
-                    {
-                        BAD_FORMAT_NOTHROW_ASSERT(!"Illegal RVA of a mapped self-referencing static field");
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-                    }
-                }
             }
         }
     }
@@ -5913,12 +5866,12 @@ MethodTableBuilder::InitMethodDesc(
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
 
             // Allocate writeable data
-            pNewNMD->ndirect.m_pWriteableData = (NDirectWriteableData*)
-                AllocateFromHighFrequencyHeap(S_SIZE_T(sizeof(NDirectWriteableData)));
+            pNewNMD->ndirect.m_pWriteableData.SetValue((NDirectWriteableData*)
+                AllocateFromHighFrequencyHeap(S_SIZE_T(sizeof(NDirectWriteableData))));
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE 
-            pNewNMD->ndirect.m_pImportThunkGlue = Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
-                GetLoaderAllocator(), GetMemTracker())->AsNDirectImportPrecode();
+            pNewNMD->ndirect.m_pImportThunkGlue.SetValue(Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
+                GetLoaderAllocator(), GetMemTracker())->AsNDirectImportPrecode());
 #else // !HAS_NDIRECT_IMPORT_PRECODE
             pNewNMD->GetNDirectImportThunkGlue()->Init(pNewNMD);
 #endif // !HAS_NDIRECT_IMPORT_PRECODE
@@ -5948,18 +5901,18 @@ MethodTableBuilder::InitMethodDesc(
 
         if (strcmp(pMethodName, "Invoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(NULL == ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod = pNewMD;
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod.IsNull());
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod.SetValue(pNewMD);
         }
         else if (strcmp(pMethodName, "BeginInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(NULL == ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod = pNewMD;
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod.IsNull());
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod.SetValue(pNewMD);
         }
         else if (strcmp(pMethodName, "EndInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(NULL == ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod = pNewMD;
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod.IsNull());
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod.SetValue(pNewMD);
         }
         else
         {
@@ -6163,7 +6116,7 @@ MethodTableBuilder::PlaceMethodImpls()
     // Allocate some temporary storage. The number of overrides for a single method impl
     // cannot be greater then the number of vtable slots.
     DWORD * slots = new (&GetThread()->m_MarshalAlloc) DWORD[bmtVT->cVirtualSlots];
-    MethodDesc ** replaced = new (&GetThread()->m_MarshalAlloc) MethodDesc*[bmtVT->cVirtualSlots];
+    RelativePointer<MethodDesc *> * replaced = new (&GetThread()->m_MarshalAlloc) RelativePointer<MethodDesc*>[bmtVT->cVirtualSlots];
 
     DWORD iEntry = 0;
     bmtMDMethod * pCurImplMethod = bmtMethodImpl->GetImplementationMethod(iEntry);
@@ -6250,7 +6203,7 @@ MethodTableBuilder::WriteMethodImplData(
     bmtMDMethod * pImplMethod, 
     DWORD         cSlots, 
     DWORD *       rgSlots, 
-    MethodDesc ** rgDeclMD)
+    RelativePointer<MethodDesc *> * rgDeclMD)
 {
     STANDARD_VM_CONTRACT;
     
@@ -6280,9 +6233,9 @@ MethodTableBuilder::WriteMethodImplData(
             {
                 if (rgSlots[j] < rgSlots[i])
                 {
-                    MethodDesc * mTmp = rgDeclMD[i];
-                    rgDeclMD[i] = rgDeclMD[j];
-                    rgDeclMD[j] = mTmp;
+                    MethodDesc * mTmp = rgDeclMD[i].GetValue();
+                    rgDeclMD[i].SetValue(rgDeclMD[j].GetValue());
+                    rgDeclMD[j].SetValue(mTmp);
 
                     DWORD sTmp = rgSlots[i];
                     rgSlots[i] = rgSlots[j];
@@ -6304,7 +6257,7 @@ MethodTableBuilder::PlaceLocalDeclaration(
     bmtMDMethod * pDecl, 
     bmtMDMethod * pImpl, 
     DWORD *       slots, 
-    MethodDesc ** replaced, 
+    RelativePointer<MethodDesc *> * replaced,
     DWORD *       pSlotIndex)
 {
     CONTRACTL
@@ -6361,7 +6314,7 @@ MethodTableBuilder::PlaceLocalDeclaration(
 
     // We implement this slot, record it
     slots[*pSlotIndex] = pDecl->GetSlotIndex();
-    replaced[*pSlotIndex] = pDecl->GetMethodDesc();
+    replaced[*pSlotIndex].SetValue(pDecl->GetMethodDesc());
 
     // increment the counter
     (*pSlotIndex)++;
@@ -6372,7 +6325,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclaration(
     bmtRTMethod *     pDecl,
     bmtMDMethod *     pImpl,
     DWORD*            slots,
-    MethodDesc**      replaced,
+    RelativePointer<MethodDesc *> *      replaced,
     DWORD*            pSlotIndex)
 {
     CONTRACTL {
@@ -6477,7 +6430,7 @@ MethodTableBuilder::PlaceParentDeclaration(
     bmtRTMethod * pDecl, 
     bmtMDMethod * pImpl, 
     DWORD *       slots, 
-    MethodDesc ** replaced, 
+    RelativePointer<MethodDesc *> * replaced,
     DWORD *       pSlotIndex)
 {
     CONTRACTL {
@@ -6522,7 +6475,7 @@ MethodTableBuilder::PlaceParentDeclaration(
 
     // We implement this slot, record it
     slots[*pSlotIndex] = pDeclMD->GetSlot();
-    replaced[*pSlotIndex] = pDeclMD;
+    replaced[*pSlotIndex].SetValue(pDeclMD);
 
     // increment the counter
     (*pSlotIndex)++;
@@ -6832,6 +6785,12 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
     {
         return TRUE;
     }
+#endif
+
+#if defined(FEATURE_JIT_PITCHING)
+    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchEnabled) != 0) &&
+        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMemThreshold) != 0))
+        return TRUE;
 #endif
 
     return GetModule()->IsEditAndContinueEnabled();
@@ -8113,188 +8072,6 @@ void MethodTableBuilder::StoreEightByteClassification(SystemVStructRegisterPassi
 
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-#ifdef FEATURE_HFA
-//---------------------------------------------------------------------------------------
-//
-VOID
-MethodTableBuilder::CheckForHFA(MethodTable ** pByValueClassCache)
-{
-    STANDARD_VM_CONTRACT;
-
-    // This method should be called for valuetypes only
-    _ASSERTE(IsValueClass());
-
-    // No HFAs with explicit layout. There may be cases where explicit layout may be still
-    // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
-    // unconditionally disable HFAs for explicit layout.
-    if (HasExplicitFieldOffsetLayout())
-        return;
-
-    CorElementType hfaType = ELEMENT_TYPE_END;
-
-    FieldDesc *pFieldDescList = GetHalfBakedClass()->GetFieldDescList();
-    for (UINT i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
-    {
-        FieldDesc *pFD = &pFieldDescList[i];
-        CorElementType fieldType = pFD->GetFieldType();
-
-        switch (fieldType)
-        {
-        case ELEMENT_TYPE_VALUETYPE:
-            fieldType = pByValueClassCache[i]->GetHFAType();
-            break;
-
-        case ELEMENT_TYPE_R4:
-        case ELEMENT_TYPE_R8:
-            break;
-
-        default:
-            // Not HFA
-            return;
-        }
-
-        // Field type should be a valid HFA type.
-        if (fieldType == ELEMENT_TYPE_END)
-        {
-            return;
-        }
-
-        // Initialize with a valid HFA type.
-        if (hfaType == ELEMENT_TYPE_END)
-        {
-            hfaType = fieldType;
-        }
-        // All field types should be equal.
-        else if (fieldType != hfaType)
-        {
-            return;
-        }
-    }
-
-    if (hfaType == ELEMENT_TYPE_END)
-        return;
-
-    int elemSize = (hfaType == ELEMENT_TYPE_R8) ? sizeof(double) : sizeof(float);
-
-    // Note that we check the total size, but do not perform any checks on number of fields:
-    // - Type of fields can be HFA valuetype itself
-    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
-    //   the valuetype is HFA and explicitly specified size
-
-    DWORD totalSize = bmtFP->NumInstanceFieldBytes;
-
-    if (totalSize % elemSize != 0)
-        return;
-
-    // On ARM, HFAs can have a maximum of four fields regardless of whether those are float or double.
-    if (totalSize / elemSize > 4)
-        return;
-
-    // All the above tests passed. It's HFA!
-    GetHalfBakedMethodTable()->SetIsHFA();
-}
-
-//
-// The managed and unmanaged views of the types can differ for non-blitable types. This method
-// mirrors the HFA type computation for the unmanaged view.
-//
-void MethodTableBuilder::CheckForNativeHFA()
-{
-    STANDARD_VM_CONTRACT;
-
-    // No HFAs with inheritance
-    if (!(IsValueClass() || (GetParentMethodTable() == g_pObjectClass)))
-        return;
-
-    // No HFAs with explicit layout. There may be cases where explicit layout may be still
-    // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
-    // unconditionally disable HFAs for explicit layout.
-    if (HasExplicitFieldOffsetLayout())
-        return;
-
-    const FieldMarshaler *pFieldMarshaler = GetLayoutInfo()->GetFieldMarshalers();
-    UINT  numReferenceFields              = GetLayoutInfo()->GetNumCTMFields();
-
-    CorElementType hfaType = ELEMENT_TYPE_END;
-
-    while (numReferenceFields--)
-    {
-        CorElementType fieldType = ELEMENT_TYPE_END;
-
-        switch (pFieldMarshaler->GetNStructFieldType())
-        {
-        case NFT_COPY4:
-        case NFT_COPY8:
-            fieldType = pFieldMarshaler->GetFieldDesc()->GetFieldType();
-            if (fieldType != ELEMENT_TYPE_R4 && fieldType != ELEMENT_TYPE_R8)
-                return;
-            break;
-
-        case NFT_NESTEDLAYOUTCLASS:
-            fieldType = ((FieldMarshaler_NestedLayoutClass *)pFieldMarshaler)->GetMethodTable()->GetNativeHFAType();
-            break;
-
-        case NFT_NESTEDVALUECLASS:
-            fieldType = ((FieldMarshaler_NestedValueClass *)pFieldMarshaler)->GetMethodTable()->GetNativeHFAType();
-            break;
-
-        case NFT_FIXEDARRAY:
-            fieldType = ((FieldMarshaler_FixedArray *)pFieldMarshaler)->GetElementTypeHandle().GetMethodTable()->GetNativeHFAType();
-            break;
-
-        case NFT_DATE:
-            fieldType = ELEMENT_TYPE_R8;
-            break;
-
-        default:
-            // Not HFA
-            return;
-        }
-
-        // Field type should be a valid HFA type.
-        if (fieldType == ELEMENT_TYPE_END)
-        {
-            return;
-        }
-
-        // Initialize with a valid HFA type.
-        if (hfaType == ELEMENT_TYPE_END)
-        {
-            hfaType = fieldType;
-        }
-        // All field types should be equal.
-        else if (fieldType != hfaType)
-        {
-            return;
-        }
-
-        ((BYTE*&)pFieldMarshaler) += MAXFIELDMARSHALERSIZE;
-    }
-
-    if (hfaType == ELEMENT_TYPE_END)
-        return;
-
-    int elemSize = (hfaType == ELEMENT_TYPE_R8) ? sizeof(double) : sizeof(float);
-
-    // Note that we check the total size, but do not perform any checks on number of fields:
-    // - Type of fields can be HFA valuetype itself
-    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
-    //   the valuetype is HFA and explicitly specified size
-
-    DWORD totalSize = GetHalfBakedClass()->GetNativeSize();
-
-    if (totalSize % elemSize != 0)
-        return;
-
-    // On ARM, HFAs can have a maximum of four fields regardless of whether those are float or double.
-    if (totalSize / elemSize > 4)
-        return;
-
-    // All the above tests passed. It's HFA!
-    GetLayoutInfo()->SetNativeHFAType(hfaType);
-}
-#endif // FEATURE_HFA
-
 //---------------------------------------------------------------------------------------
 //
 // make sure that no object fields are overlapped incorrectly and define the
@@ -8528,17 +8305,6 @@ MethodTableBuilder::HandleExplicitLayout(
                               GetModule(),
                               badOffset,
                               IDS_CLASSLOAD_EXPLICIT_LAYOUT);
-    }
-
-    if (!explicitClassTrust.IsVerifiable())
-    {
-        if (!Security::CanSkipVerification(GetAssembly()->GetDomainAssembly()))
-        {
-            ThrowFieldLayoutError(GetCl(),
-                                  GetModule(),
-                                  firstObjectOverlapOffset,
-                                  IDS_CLASSLOAD_UNVERIFIABLE_FIELD_LAYOUT);
-        }
     }
 
     if (!explicitClassTrust.IsNonOverLayed())
@@ -8903,7 +8669,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
         //
         // Non-canonical method tables either share everything or nothing so it is sufficient to check
         // just the first indirection to detect sharing.
-        if (pMT->GetVtableIndirections()[0] != pCanonMT->GetVtableIndirections()[0])
+        if (pMT->GetVtableIndirections()[0].GetValueMaybeNull() != pCanonMT->GetVtableIndirections()[0].GetValueMaybeNull())
         {
             for (DWORD i = 0; i < nParentVirtuals; i++)
             {
@@ -8930,7 +8696,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
             // We need to re-inherit this slot from the exact parent.
 
             DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(i);
-            if (pMT->GetVtableIndirections()[indirectionIndex] == pApproxParentMT->GetVtableIndirections()[indirectionIndex])
+            if (pMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == pApproxParentMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
             {
                 // The slot lives in a chunk shared from the approximate parent MT
                 // If so, we need to change to share the chunk from the exact parent MT
@@ -8941,7 +8707,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
                 _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule()));
 #endif
 
-                pMT->GetVtableIndirections()[indirectionIndex] = pParentMT->GetVtableIndirections()[indirectionIndex];
+                pMT->GetVtableIndirections()[indirectionIndex].SetValueMaybeNull(pParentMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull());
 
                 i = MethodTable::GetEndSlotForVtableIndirection(indirectionIndex, nParentVirtuals) - 1;
                 continue;
@@ -9798,7 +9564,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     S_SIZE_T cbTotalSize = S_SIZE_T(dwGCSize) + S_SIZE_T(sizeof(MethodTable));
 
     // vtable
-    cbTotalSize += MethodTable::GetNumVtableIndirections(dwVirtuals) * sizeof(PTR_PCODE);
+    cbTotalSize += MethodTable::GetNumVtableIndirections(dwVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
 
     DWORD dwMultipurposeSlotsMask = 0;
@@ -9842,7 +9608,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     if (dwNumDicts != 0)
     {
         cbTotalSize += sizeof(GenericsDictInfo);
-        cbTotalSize += S_SIZE_T(dwNumDicts) * S_SIZE_T(sizeof(TypeHandle*));
+        cbTotalSize += S_SIZE_T(dwNumDicts) * S_SIZE_T(sizeof(MethodTable::PerInstInfoElem_t));
         cbTotalSize += cbInstAndDict;
     }
 
@@ -9947,7 +9713,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
         {
             // Share the parent chunk
             _ASSERTE(it.GetEndSlot() <= pMTParent->GetNumVirtuals());
-            it.SetIndirectionSlot(pMTParent->GetVtableIndirections()[it.GetIndex()]);
+            it.SetIndirectionSlot(pMTParent->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
         }
         else
         {
@@ -9995,19 +9761,20 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     // the dictionary pointers follow the interface map
     if (dwNumDicts)
     {
-        Dictionary** pPerInstInfo = (Dictionary**)(pData + offsetOfInstAndDict.Value() + sizeof(GenericsDictInfo));
+        MethodTable::PerInstInfoElem_t *pPerInstInfo = (MethodTable::PerInstInfoElem_t *)(pData + offsetOfInstAndDict.Value() + sizeof(GenericsDictInfo));
 
         pMT->SetPerInstInfo ( pPerInstInfo);
 
         // Fill in the dictionary for this type, if it's instantiated
         if (cbInstAndDict)
         {
-            *(pPerInstInfo + (dwNumDicts-1)) = (Dictionary*) (pPerInstInfo + dwNumDicts);
+            MethodTable::PerInstInfoElem_t *pPInstInfo = (MethodTable::PerInstInfoElem_t *)(pPerInstInfo + (dwNumDicts-1));
+            pPInstInfo->SetValueMaybeNull((Dictionary*) (pPerInstInfo + dwNumDicts));
         }
     }
 
 #ifdef _DEBUG
-    pMT->m_pWriteableData->m_dwLastVerifedGCCnt = (DWORD)-1;
+    pMT->m_pWriteableData.GetValue()->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
     RETURN(pMT);
@@ -10124,7 +9891,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    GetMemTracker());
 
     pMT->SetClass(pClass);
-    pClass->m_pMethodTable = pMT;
+    pClass->m_pMethodTable.SetValue(pMT);
     m_pHalfBakedMT = pMT;
 
 #ifdef _DEBUG 
@@ -10496,7 +10263,7 @@ MethodTableBuilder::SetupMethodTable2(
                 // with code:MethodDesc::SetStableEntryPointInterlocked.
                 //
                 DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(iCurSlot);
-                if (GetParentMethodTable()->GetVtableIndirections()[indirectionIndex] != pMT->GetVtableIndirections()[indirectionIndex])
+                if (GetParentMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() != pMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
                     pMT->SetSlot(iCurSlot, pMD->GetMethodEntryPoint());
             }
             else

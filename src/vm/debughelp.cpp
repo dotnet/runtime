@@ -73,10 +73,10 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
     // Now we have to loop thru each and every page in between and touch them.
     //
     location = start;
-    while (len > PAGE_SIZE)
+    while (len > GetOsPageSize())
     {
-        location += PAGE_SIZE;
-        len -= PAGE_SIZE;
+        location += GetOsPageSize();
+        len -= GetOsPageSize();
 
 #ifdef DACCESS_COMPILE
         if (DacReadAll(location, &buff, 1, false) != S_OK)
@@ -318,7 +318,7 @@ MethodDesc* AsMethodDesc(size_t addr)
                 // extra indirection if the address is tagged (the low bit is set).
                 // That could AV if we don't check it first.
 
-                if (!ppMT->IsTagged((TADDR)ppMT) || isMemoryReadable((TADDR)ppMT->GetValuePtr((TADDR)ppMT), sizeof(MethodTable*)))
+                if (!ppMT->IsTagged((TADDR)ppMT) || isMemoryReadable((TADDR)ppMT->GetValuePtr(), sizeof(MethodTable*)))
                 {
                     if (AsMethodTable((size_t)RelativeFixupPointer<PTR_MethodTable>::GetValueAtPtr((TADDR)ppMT)) != 0)
                     {

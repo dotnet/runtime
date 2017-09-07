@@ -14,11 +14,17 @@ namespace System.Text
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe extern void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength);
 
-        // Copies the source StringBuilder to the destination IntPtr memory allocated with len bytes.
+        /// <summary>
+        /// Copies the contents of this builder to the specified buffer.
+        /// </summary>
+        /// <param name="dest">The destination buffer.</param>
+        /// <param name="len">The number of bytes in the destination buffer.</param>
         internal unsafe void InternalCopy(IntPtr dest, int len)
         {
             if (len == 0)
+            {
                 return;
+            }
 
             bool isLastChunk = true;
             byte* dstPtr = (byte*)dest.ToPointer();
@@ -42,7 +48,8 @@ namespace System.Text
                     }
                 }
                 currentSrc = currentSrc.m_ChunkPrevious;
-            } while (currentSrc != null);
+            }
+            while (currentSrc != null);
         }
     }
 }

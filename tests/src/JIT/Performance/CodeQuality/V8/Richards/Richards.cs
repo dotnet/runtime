@@ -15,7 +15,6 @@ using System;
 using System.Collections.Generic;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 // using System.Diagnostics;
 // using System.Text.RegularExpressions;

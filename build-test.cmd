@@ -86,9 +86,12 @@ if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
-  call set __UnprocessedBuildArgs=!__args!
+  set __UnprocessedBuildArgs=%__args%
 ) else (
-  call set __UnprocessedBuildArgs=%%__args:*!processedArgs!=%%
+  set __UnprocessedBuildArgs=%__args%
+  for %%t in (!processedArgs!) do (
+    set __UnprocessedBuildArgs=!__UnprocessedBuildArgs:*%%t=!
+  )
 )
 
 :ArgsDone
@@ -102,6 +105,7 @@ if defined __BuildAgainstPackagesArg (
 
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
+@if defined _echo @echo on
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 
@@ -144,6 +148,16 @@ REM === Restore Build Tools
 REM ===
 REM =========================================================================================
 call "%__ProjectDir%\init-tools.cmd"
+@if defined _echo @echo on
+
+REM =========================================================================================
+REM ===
+REM === Resolve runtime dependences
+REM ===
+REM =========================================================================================
+
+call "%__TestDir%\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
+@if defined _echo @echo on
 
 REM =========================================================================================
 REM ===
@@ -208,14 +222,6 @@ if errorlevel 1 (
 
 :skipnative
 
-set __BuildLogRootName=Restore_Product
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-
 set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
 if not defined __BuildAgainstPackagesArg goto SkipRestoreProduct
@@ -228,9 +234,23 @@ REM ============================================================================
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
 
+set __BuildLogRootName=Restore_Product
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
+
 call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -BatchRestorePackages -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
 call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\runtest.proj -BinPlaceRef -BinPlaceProduct -CopyCrossgenToProduct -RuntimeId="%__RuntimeId%" -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
 if errorlevel 1 (
@@ -244,14 +264,6 @@ echo %__MsgPrefix% Restored CoreCLR product from packages
 
 if defined __SkipManaged exit /b 0
 
-set __BuildLogRootName=Tests_Managed
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-
 REM =========================================================================================
 REM ===
 REM === Managed test build section
@@ -261,9 +273,17 @@ REM ============================================================================
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__MsgPrefix%Error: buildtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+    echo %__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1
 )
+
+set __BuildLogRootName=Tests_Managed
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
 call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
 if errorlevel 1 (
@@ -286,7 +306,7 @@ if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
 if exist "%CORE_ROOT_STAGE%" rd /s /q "%CORE_ROOT_STAGE%"
 md "%CORE_ROOT%"
 md "%CORE_ROOT_STAGE%"
-xcopy /s "%__BinDir%" "%CORE_ROOT_STAGE%"
+xcopy "%__BinDir%" "%CORE_ROOT_STAGE%"
 
 
 if defined __BuildAgainstPackagesArg ( 
@@ -436,8 +456,6 @@ echo -priority=^<N^> : specify a set of test that will be built and run, with pr
 echo     0: Build only priority 0 cases as essential testcases (default)
 echo     1: Build all tests with priority 0 and 1
 echo     666: Build all tests with priority 0, 1 ... 666
-echo -sequential: force a non-parallel build ^(default is to build in parallel
-echo     using all processors^).
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
 

@@ -360,7 +360,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Fired when the the work (method) associated with a TaskWaitEnd completes
+        /// Fired when the work (method) associated with a TaskWaitEnd completes
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>
@@ -375,7 +375,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Fired when the the work (method) associated with a TaskWaitEnd completes
+        /// Fired when the work (method) associated with a TaskWaitEnd completes
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>

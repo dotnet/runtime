@@ -718,4 +718,16 @@ private:
     CritSecHolder& operator=(const CritSecHolder&) = delete;
 };
 
+namespace MagicDivide
+{
+uint32_t GetUnsigned32Magic(uint32_t d, bool* add /*out*/, int* shift /*out*/);
+#ifdef _TARGET_64BIT_
+uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/);
+#endif
+int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
+#ifdef _TARGET_64BIT_
+int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
+#endif
+}
+
 #endif // _UTILS_H_

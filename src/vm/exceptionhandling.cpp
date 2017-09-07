@@ -1490,7 +1490,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
 #endif // ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
     }
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#ifdef ADJUST_PC_UNWOUND_TO_CALL
     // Further below, we will adjust the ControlPC based upon whether we are at a callsite or not.
     // We need to do this for "RegDisplay.ControlPC" field as well so that when data structures like
     // EECodeInfo initialize themselves using this field, they will have the correct absolute value
@@ -1509,12 +1509,12 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
         fAdjustRegdisplayControlPC = true;
 
     }
+#endif // ADJUST_PC_UNWOUND_TO_CALL
 
 #if defined(_TARGET_ARM_)
     // Remove the Thumb bit
     ControlPCForEHSearch = ThumbCodeToDataPointer<DWORD_PTR, DWORD_PTR>(ControlPCForEHSearch);
 #endif
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
 
 #ifdef ADJUST_PC_UNWOUND_TO_CALL
     // If the OS indicated that the IP is a callsite, then adjust the ControlPC by decrementing it
@@ -5186,6 +5186,38 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
         IsIPInMarkedJitHelper(controlPc));
 }
 
+#ifdef _TARGET_ARM_
+static inline BOOL HandleArmSingleStep(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord, Thread *pThread)
+{
+#ifdef __linux__
+    // On ARM Linux exception point to the break instruction,
+    // but the rest of the code expects that it points to an instruction after the break
+    if (pExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT)
+    {
+        SetIP(pContext, GetIP(pContext) + CORDbg_BREAK_INSTRUCTION_SIZE);
+        pExceptionRecord->ExceptionAddress = (void *)GetIP(pContext);
+    }
+#endif
+    // On ARM we don't have any reliable hardware support for single stepping so it is emulated in software.
+    // The implementation will end up throwing an EXCEPTION_BREAKPOINT rather than an EXCEPTION_SINGLE_STEP
+    // and leaves other aspects of the thread context in an invalid state. Therefore we use this opportunity
+    // to fixup the state before any other part of the system uses it (we do it here since only the debugger
+    // uses single step functionality).
+
+    // First ask the emulation itself whether this exception occurred while single stepping was enabled. If so
+    // it will fix up the context to be consistent again and return true. If so and the exception was
+    // EXCEPTION_BREAKPOINT then we translate it to EXCEPTION_SINGLE_STEP (otherwise we leave it be, e.g. the
+    // instruction stepped caused an access violation).
+    if (pThread->HandleSingleStep(pContext, pExceptionRecord->ExceptionCode) && (pExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT))
+    {
+        pExceptionRecord->ExceptionCode = EXCEPTION_SINGLE_STEP;
+        pExceptionRecord->ExceptionAddress = (void *)GetIP(pContext);
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif // _TARGET_ARM_
+
 BOOL HandleHardwareException(PAL_SEHException* ex)
 {
     _ASSERTE(IsSafeToHandleHardwareException(ex->GetContextRecord(), ex->GetExceptionRecord()));
@@ -5249,6 +5281,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         Thread *pThread = GetThread();
         if (pThread != NULL && g_pDebugInterface != NULL)
         {
+#ifdef _TARGET_ARM_
+            HandleArmSingleStep(ex->GetContextRecord(), ex->GetExceptionRecord(), pThread);
+#endif
             if (ex->GetExceptionRecord()->ExceptionCode == STATUS_BREAKPOINT)
             {
                 // If this is breakpoint context, it is set up to point to an instruction after the break instruction.

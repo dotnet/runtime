@@ -8,15 +8,6 @@
 #endif
 
 #ifndef LEGACY_BACKEND
-// state carried over the tree walk, to be used in making
-// a splitting decision.
-struct SplitData
-{
-    GenTree*      root; // root stmt of tree being processed
-    BasicBlock*   block;
-    Rationalizer* thisPhase;
-};
-
 // return op that is the store equivalent of the given load opcode
 genTreeOps storeForm(genTreeOps loadForm)
 {
@@ -147,21 +138,18 @@ void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
 //
 
 void Rationalizer::RewriteNodeAsCall(GenTree**             use,
-                                     Compiler::fgWalkData* data,
+                                     ArrayStack<GenTree*>& parents,
                                      CORINFO_METHOD_HANDLE callHnd,
 #ifdef FEATURE_READYTORUN_COMPILER
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif
                                      GenTreeArgList* args)
 {
-    GenTreePtr tree          = *use;
-    Compiler*  comp          = data->compiler;
-    SplitData* tmpState      = (SplitData*)data->pCallbackData;
-    GenTreePtr root          = tmpState->root;
-    GenTreePtr treeFirstNode = comp->fgGetFirstNode(tree);
-    GenTreePtr treeLastNode  = tree;
-    GenTreePtr treePrevNode  = treeFirstNode->gtPrev;
-    GenTreePtr treeNextNode  = treeLastNode->gtNext;
+    GenTree* const tree           = *use;
+    GenTree* const treeFirstNode  = comp->fgGetFirstNode(tree);
+    GenTree* const insertionPoint = treeFirstNode->gtPrev;
+
+    BlockRange().Remove(treeFirstNode, tree);
 
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
@@ -181,9 +169,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #endif
 
     // Replace "tree" with "call"
-    if (data->parentStack->Height() > 1)
+    if (parents.Height() > 1)
     {
-        data->parentStack->Index(1)->ReplaceOperand(use, call);
+        parents.Index(1)->ReplaceOperand(use, call);
     }
     else
     {
@@ -192,48 +180,21 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         *use = call;
     }
 
-    // Rebuild the evaluation order.
-    comp->gtSetStmtInfo(root);
-
-    // Rebuild the execution order.
-    comp->fgSetTreeSeq(call, treePrevNode);
-
-    // Restore linear-order Prev and Next for "call".
-    if (treePrevNode)
-    {
-        treeFirstNode         = comp->fgGetFirstNode(call);
-        treeFirstNode->gtPrev = treePrevNode;
-        treePrevNode->gtNext  = treeFirstNode;
-    }
-    else
-    {
-        // Update the linear oder start of "root" if treeFirstNode
-        // appears to have replaced the original first node.
-        assert(treeFirstNode == root->gtStmt.gtStmtList);
-        root->gtStmt.gtStmtList = comp->fgGetFirstNode(call);
-    }
-
-    if (treeNextNode)
-    {
-        treeLastNode         = call;
-        treeLastNode->gtNext = treeNextNode;
-        treeNextNode->gtPrev = treeLastNode;
-    }
+    comp->gtSetEvalOrder(call);
+    BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
 
     // Propagate flags of "call" to its parents.
     // 0 is current node, so start at 1
-    for (int i = 1; i < data->parentStack->Height(); i++)
+    for (int i = 1; i < parents.Height(); i++)
     {
-        GenTree* node = data->parentStack->Index(i);
-        node->gtFlags |= GTF_CALL;
-        node->gtFlags |= call->gtFlags & GTF_ALL_EFFECT;
+        parents.Index(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
     }
 
     // Since "tree" is replaced with "call", pop "tree" node (i.e the current node)
     // and replace it with "call" on parent stack.
-    assert(data->parentStack->Top() == tree);
-    (void)data->parentStack->Pop();
-    data->parentStack->Push(call);
+    assert(parents.Top() == tree);
+    (void)parents.Pop();
+    parents.Push(call);
 }
 
 // RewriteIntrinsicAsUserCall : Rewrite an intrinsic operator as a GT_CALL to the original method.
@@ -250,10 +211,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 // Conceptually, the lower is the right place to do the rewrite. Keeping it in rationalization is
 // mainly for throughput issue.
 
-void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, Compiler::fgWalkData* data)
+void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents)
 {
     GenTreeIntrinsic* intrinsic = (*use)->AsIntrinsic();
-    Compiler*         comp      = data->compiler;
 
     GenTreeArgList* args;
     if (intrinsic->gtOp.gtOp2 == nullptr)
@@ -265,7 +225,7 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, Compiler::fgWalkDat
         args = comp->gtNewArgList(intrinsic->gtGetOp1(), intrinsic->gtGetOp2());
     }
 
-    RewriteNodeAsCall(use, data, intrinsic->gtMethodHandle,
+    RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
 #ifdef FEATURE_READYTORUN_COMPILER
                       intrinsic->gtEntryPoint,
 #endif
@@ -401,7 +361,7 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
     genTreeOps storeOp = storeForm(locationOp);
 
 #ifdef DEBUG
-    JITDUMP("rewriting asg(%s, X) to %s(X)\n", GenTree::NodeName(locationOp), GenTree::NodeName(storeOp));
+    JITDUMP("rewriting asg(%s, X) to %s(X)\n", GenTree::OpName(locationOp), GenTree::OpName(storeOp));
 #endif // DEBUG
 
     assignment->SetOper(storeOp);
@@ -503,7 +463,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 {
                     storeBlk = new (comp, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, size);
                 }
-                storeBlk->gtFlags |= (GTF_REVERSE_OPS | GTF_ASG);
+                storeBlk->gtFlags |= GTF_ASG;
                 storeBlk->gtFlags |= ((location->gtFlags | value->gtFlags) & GTF_ALL_EFFECT);
 
                 GenTree* insertionPoint = location->gtNext;
@@ -540,11 +500,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             copyFlags(store, assignment, GTF_ALL_EFFECT);
             copyFlags(store, location, GTF_IND_FLAGS);
 
-            if (assignment->IsReverseOp())
-            {
-                store->gtFlags |= GTF_REVERSE_OPS;
-            }
-
             // TODO: JIT dump
 
             // Remove the GT_IND node and replace the assignment node with the store
@@ -561,6 +516,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
+            assignment->AsStoreInd()->SetRMWStatusDefault();
 
             // TODO: JIT dump
         }
@@ -582,17 +538,18 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     storeOper = GT_STORE_OBJ;
                     break;
                 case GT_DYN_BLK:
-                    storeOper = GT_STORE_DYN_BLK;
+                    storeOper                             = GT_STORE_DYN_BLK;
+                    storeBlk->AsDynBlk()->gtEvalSizeFirst = false;
                     break;
                 default:
                     unreached();
             }
-            JITDUMP("Rewriting GT_ASG(%s(X), Y) to %s(X,Y):\n", GenTree::NodeName(location->gtOper),
-                    GenTree::NodeName(storeOper));
+            JITDUMP("Rewriting GT_ASG(%s(X), Y) to %s(X,Y):\n", GenTree::OpName(location->gtOper),
+                    GenTree::OpName(storeOper));
             storeBlk->SetOperRaw(storeOper);
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
-            storeBlk->gtFlags |= (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_REVERSE_OPS | GTF_BLK_VOLATILE |
-                                                         GTF_BLK_UNALIGNED | GTF_DONT_CSE));
+            storeBlk->gtFlags |=
+                (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED | GTF_DONT_CSE));
             storeBlk->gtBlk.Data() = value;
 
             // Replace the assignment node with the store
@@ -683,8 +640,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
     for (GenTree* prev = node->gtPrev; prev != nullptr && prev->OperIsAnyList() && !(prev->OperIsFieldListHead());
          prev          = node->gtPrev)
     {
+        prev->gtFlags &= ~GTF_REVERSE_OPS;
         BlockRange().Remove(prev);
     }
+
+    // Now clear the REVERSE_OPS flag on the current node.
+    node->gtFlags &= ~GTF_REVERSE_OPS;
 
     // In addition, remove the current node if it is a GT_LIST node that is not an aggregate.
     if (node->OperIsAnyList())
@@ -771,52 +732,60 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             {
                 use.ReplaceWith(comp, node->gtGetOp1());
                 BlockRange().Remove(node);
+                node = node->gtGetOp1();
             }
             break;
 
         case GT_COMMA:
         {
-            GenTree* op1 = node->gtGetOp1();
-            if ((op1->gtFlags & GTF_ALL_EFFECT) == 0)
+            GenTree*           op1         = node->gtGetOp1();
+            bool               isClosed    = false;
+            unsigned           sideEffects = 0;
+            LIR::ReadOnlyRange lhsRange    = BlockRange().GetTreeRange(op1, &isClosed, &sideEffects);
+
+            if ((sideEffects & GTF_ALL_EFFECT) == 0)
             {
                 // The LHS has no side effects. Remove it.
-                bool               isClosed    = false;
-                unsigned           sideEffects = 0;
-                LIR::ReadOnlyRange lhsRange    = BlockRange().GetTreeRange(op1, &isClosed, &sideEffects);
-
-                // None of the transforms performed herein violate tree order, so these
+                // None of the transforms performed herein violate tree order, so isClosed
                 // should always be true.
                 assert(isClosed);
-                assert((sideEffects & GTF_ALL_EFFECT) == 0);
 
                 BlockRange().Delete(comp, m_block, std::move(lhsRange));
             }
+            else if (op1->IsValue())
+            {
+                op1->SetUnusedValue();
+            }
+
+            BlockRange().Remove(node);
 
             GenTree* replacement = node->gtGetOp2();
             if (!use.IsDummyUse())
             {
                 use.ReplaceWith(comp, replacement);
+                node = replacement;
             }
             else
             {
                 // This is a top-level comma. If the RHS has no side effects we can remove
                 // it as well.
-                if ((replacement->gtFlags & GTF_ALL_EFFECT) == 0)
-                {
-                    bool               isClosed    = false;
-                    unsigned           sideEffects = 0;
-                    LIR::ReadOnlyRange rhsRange    = BlockRange().GetTreeRange(replacement, &isClosed, &sideEffects);
+                bool               isClosed    = false;
+                unsigned           sideEffects = 0;
+                LIR::ReadOnlyRange rhsRange    = BlockRange().GetTreeRange(replacement, &isClosed, &sideEffects);
 
-                    // None of the transforms performed herein violate tree order, so these
+                if ((sideEffects & GTF_ALL_EFFECT) == 0)
+                {
+                    // None of the transforms performed herein violate tree order, so isClosed
                     // should always be true.
                     assert(isClosed);
-                    assert((sideEffects & GTF_ALL_EFFECT) == 0);
 
                     BlockRange().Delete(comp, m_block, std::move(rhsRange));
                 }
+                else
+                {
+                    node = replacement;
+                }
             }
-
-            BlockRange().Remove(node);
         }
         break;
 
@@ -953,8 +922,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 #endif // FEATURE_SIMD
 
         default:
-            // JCC nodes should not be present in HIR.
-            assert(node->OperGet() != GT_JCC);
+            // CMP, SETCC and JCC nodes should not be present in HIR.
+            assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC));
             break;
     }
 
@@ -972,6 +941,30 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             node->gtFlags &= ~GTF_ALL_EFFECT;
         }
     }
+    else
+    {
+        if (!node->OperIsStore())
+        {
+            // Clear the GTF_ASG flag for all nodes but stores
+            node->gtFlags &= ~GTF_ASG;
+        }
+
+        if (!node->IsCall())
+        {
+            // Clear the GTF_CALL flag for all nodes but calls
+            node->gtFlags &= ~GTF_CALL;
+        }
+
+        if (node->IsValue() && use.IsDummyUse())
+        {
+            node->SetUnusedValue();
+        }
+
+        if (node->TypeGet() == TYP_LONG)
+        {
+            comp->compLongUsed = true;
+        }
+    }
 
     assert(isLateArg == ((use.Def()->gtFlags & GTF_LATE_ARG) != 0));
 
@@ -980,83 +973,81 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 
 void Rationalizer::DoPhase()
 {
-    DBEXEC(TRUE, SanityCheck());
-
-    comp->compCurBB = nullptr;
-    comp->fgOrder   = Compiler::FGOrderLinear;
-
-    BasicBlock* firstBlock = comp->fgFirstBB;
-
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
     {
-        comp->compCurBB = block;
-        m_block         = block;
+        Rationalizer& m_rationalizer;
 
-        // Establish the first and last nodes for the block. This is necessary in order for the LIR
-        // utilities that hang off the BasicBlock type to work correctly.
-        GenTreeStmt* firstStatement = block->firstStmt();
-        if (firstStatement == nullptr)
+    public:
+        enum
         {
-            // No statements in this block; skip it.
-            block->MakeLIR(nullptr, nullptr);
-            continue;
-        }
+            ComputeStack      = true,
+            DoPreOrder        = true,
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
 
-        GenTreeStmt* lastStatement = block->lastStmt();
+        RationalizeVisitor(Rationalizer& rationalizer)
+            : GenTreeVisitor<RationalizeVisitor>(rationalizer.comp), m_rationalizer(rationalizer)
+        {
+        }
 
         // Rewrite intrinsics that are not supported by the target back into user calls.
         // This needs to be done before the transition to LIR because it relies on the use
         // of fgMorphArgs, which is designed to operate on HIR. Once this is done for a
         // particular statement, link that statement's nodes into the current basic block.
-        //
-        // This walk also clears the GTF_VAR_USEDEF bit on locals, which is not necessary
-        // in the backend.
-        GenTree* lastNodeInPreviousStatement = nullptr;
-        for (GenTreeStmt* statement = firstStatement; statement != nullptr; statement = statement->getNextStmt())
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const node = *use;
+            if (node->OperGet() == GT_INTRINSIC &&
+                Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
+            {
+                m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
+            }
+
+            return Compiler::WALK_CONTINUE;
+        }
+
+        // Rewrite HIR nodes into LIR nodes.
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            return m_rationalizer.RewriteNode(use, this->m_ancestors);
+        }
+    };
+
+    DBEXEC(TRUE, SanityCheck());
+
+    comp->compCurBB = nullptr;
+    comp->fgOrder   = Compiler::FGOrderLinear;
+
+    RationalizeVisitor visitor(*this);
+    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        comp->compCurBB = block;
+        m_block         = block;
+
+        GenTreeStmt* firstStatement = block->firstStmt();
+        block->MakeLIR(nullptr, nullptr);
+
+        // Establish the first and last nodes for the block. This is necessary in order for the LIR
+        // utilities that hang off the BasicBlock type to work correctly.
+        if (firstStatement == nullptr)
+        {
+            // No statements in this block; skip it.
+            continue;
+        }
+
+        for (GenTreeStmt *statement = firstStatement, *nextStatement; statement != nullptr; statement = nextStatement)
         {
             assert(statement->gtStmtList != nullptr);
             assert(statement->gtStmtList->gtPrev == nullptr);
             assert(statement->gtStmtExpr != nullptr);
             assert(statement->gtStmtExpr->gtNext == nullptr);
 
-            SplitData splitData;
-            splitData.root      = statement;
-            splitData.block     = block;
-            splitData.thisPhase = this;
+            BlockRange().InsertAtEnd(LIR::Range(statement->gtStmtList, statement->gtStmtExpr));
 
-            comp->fgWalkTreePost(&statement->gtStmtExpr,
-                                 [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
-                                     GenTree* node = *use;
-                                     if (node->OperGet() == GT_INTRINSIC &&
-                                         Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
-                                     {
-                                         RewriteIntrinsicAsUserCall(use, walkData);
-                                     }
-                                     else if (node->OperIsLocal())
-                                     {
-                                         node->gtFlags &= ~GTF_VAR_USEDEF;
-                                     }
-
-                                     return Compiler::WALK_CONTINUE;
-                                 },
-                                 &splitData, true);
-
-            GenTree* firstNodeInStatement = statement->gtStmtList;
-            if (lastNodeInPreviousStatement != nullptr)
-            {
-                lastNodeInPreviousStatement->gtNext = firstNodeInStatement;
-            }
-
-            firstNodeInStatement->gtPrev = lastNodeInPreviousStatement;
-            lastNodeInPreviousStatement  = statement->gtStmtExpr;
-        }
-
-        block->MakeLIR(firstStatement->gtStmtList, lastStatement->gtStmtExpr);
-
-        // Rewrite HIR nodes into LIR nodes.
-        for (GenTreeStmt *statement = firstStatement, *nextStatement; statement != nullptr; statement = nextStatement)
-        {
-            nextStatement = statement->getNextStmt();
+            nextStatement     = statement->getNextStmt();
+            statement->gtNext = nullptr;
+            statement->gtPrev = nullptr;
 
             // If this statement has correct offset information, change it into an IL offset
             // node and insert it into the LIR.
@@ -1064,22 +1055,15 @@ void Rationalizer::DoPhase()
             {
                 assert(!statement->IsPhiDefnStmt());
                 statement->SetOper(GT_IL_OFFSET);
-                statement->gtNext = nullptr;
-                statement->gtPrev = nullptr;
 
                 BlockRange().InsertBefore(statement->gtStmtList, statement);
             }
 
-            m_statement = statement;
-            comp->fgWalkTreePost(&statement->gtStmtExpr,
-                                 [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
-                                     return reinterpret_cast<Rationalizer*>(walkData->pCallbackData)
-                                         ->RewriteNode(use, *walkData->parentStack);
-                                 },
-                                 this, true);
+            m_block = block;
+            visitor.WalkTree(&statement->gtStmtExpr, nullptr);
         }
 
-        assert(BlockRange().CheckLIR(comp));
+        assert(BlockRange().CheckLIR(comp, true));
     }
 
     comp->compRationalIRForm = true;

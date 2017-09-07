@@ -37,7 +37,7 @@ public:
         DWORD     sigInst_methInstCount;
         DWORD     sigInst_methInst_Index;
         DWORDLONG args;
-        DWORD     pSig;
+        DWORD     pSig_Index;
         DWORD     cbSig;
         DWORDLONG scope;
         DWORD     token;
@@ -105,17 +105,26 @@ public:
         DWORD     cbTypeSpec;
         DWORD     pMethodSpec_Index;
         DWORD     cbMethodSpec;
-        DWORD     exceptionCode;
     };
-    struct Agnostic_GetArgType
+    struct GetArgTypeValue
     {
-        Agnostic_CORINFO_SIG_INFO sig;
-        DWORDLONG                 args;
+        DWORD     flags;
+        DWORD     numArgs;
+        DWORD     sigInst_classInstCount;
+        DWORD     sigInst_classInst_Index;
+        DWORD     sigInst_methInstCount;
+        DWORD     sigInst_methInst_Index;
+        DWORDLONG scope;
+        DWORDLONG args;
     };
-    struct Agnostic_GetArgClass
+    struct GetArgClassValue
     {
-        Agnostic_CORINFO_SIG_INFO sig;
-        DWORDLONG                 args;
+        DWORD     sigInst_classInstCount;
+        DWORD     sigInst_classInst_Index;
+        DWORD     sigInst_methInstCount;
+        DWORD     sigInst_methInst_Index;
+        DWORDLONG scope;
+        DWORDLONG args;
     };
     struct Agnostic_GetBoundaries
     {
@@ -161,17 +170,9 @@ public:
     };
     struct Agnostic_CORINFO_RESOLVED_TOKEN
     {
-        DWORDLONG tokenContext;
-        DWORDLONG tokenScope;
-        DWORD     token;
-        DWORD     tokenType;
-        DWORDLONG hClass;
-        DWORDLONG hMethod;
-        DWORDLONG hField;
-        DWORD     typeSpec_Index;
-        DWORD     cbTypeSpec;
-        DWORD     methodSpec_Index;
-        DWORD     cbMethodSpec;
+        Agnostic_CORINFO_RESOLVED_TOKENin inValue;
+
+        Agnostic_CORINFO_RESOLVED_TOKENout outValue;
     };
     struct Agnostic_GetFieldInfo
     {
@@ -190,21 +191,57 @@ public:
         DWORD                       numArgs;
         Agnostic_CORINFO_HELPER_ARG args[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
     };
+    struct Agnostic_CORINFO_CONST_LOOKUP
+    {
+        DWORD     accessType;
+        DWORDLONG handle; // actually a union of two pointer sized things
+    };
+    struct Agnostic_CORINFO_LOOKUP_KIND
+    {
+        DWORD needsRuntimeLookup;
+        DWORD runtimeLookupKind;
+        WORD  runtimeLookupFlags;
+    };
+    struct Agnostic_CORINFO_RUNTIME_LOOKUP
+    {
+        DWORDLONG signature;
+        DWORD     helper;
+        DWORD     indirections;
+        DWORD     testForNull;
+        DWORD     testForFixup;
+        DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
+        DWORD     indirectFirstOffset;
+        DWORD     indirectSecondOffset;
+    };
+    struct Agnostic_CORINFO_LOOKUP
+    {
+        Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
+        Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
+                                                       // layouts.. :-| copy the right one based on lookupKinds value
+        Agnostic_CORINFO_CONST_LOOKUP constLookup;
+    };
     struct Agnostic_CORINFO_FIELD_INFO
     {
-        DWORD                        fieldAccessor;
-        DWORD                        fieldFlags;
-        DWORD                        helper;
-        DWORD                        offset;
-        DWORD                        fieldType;
-        DWORDLONG                    structType;
-        DWORD                        accessAllowed;
-        Agnostic_CORINFO_HELPER_DESC accessCalloutHelper;
+        DWORD                         fieldAccessor;
+        DWORD                         fieldFlags;
+        DWORD                         helper;
+        DWORD                         offset;
+        DWORD                         fieldType;
+        DWORDLONG                     structType;
+        DWORD                         accessAllowed;
+        Agnostic_CORINFO_HELPER_DESC  accessCalloutHelper;
+        Agnostic_CORINFO_CONST_LOOKUP fieldLookup;
     };
     struct DD
     {
         DWORD A;
         DWORD B;
+    };
+    struct DDD
+    {
+        DWORD A;
+        DWORD B;
+        bool C;
     };
     struct Agnostic_CanTailCall
     {
@@ -226,33 +263,7 @@ public:
         DWORDLONG                       callerHandle;
         DWORD                           flags;
     };
-    struct Agnostic_CORINFO_LOOKUP_KIND
-    {
-        DWORD needsRuntimeLookup;
-        DWORD runtimeLookupKind;
-        WORD  runtimeLookupFlags;
-    };
-    struct Agnostic_CORINFO_RUNTIME_LOOKUP
-    {
-        DWORDLONG signature;
-        DWORD     helper;
-        DWORD     indirections;
-        DWORD     testForNull;
-        DWORD     testForFixup;
-        DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
-    };
-    struct Agnostic_CORINFO_CONST_LOOKUP
-    {
-        DWORD     accessType;
-        DWORDLONG handle; // actually a union of two pointer sized things
-    };
-    struct Agnostic_CORINFO_LOOKUP
-    {
-        Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
-        Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
-                                                       // layouts.. :-| copy the right one based on lookupKinds value
-        Agnostic_CORINFO_CONST_LOOKUP constLookup;
-    };
+
     struct Agnostic_CORINFO_CALL_INFO
     {
         DWORDLONG                     hMethod;
@@ -285,10 +296,12 @@ public:
         DWORD     sigTOK;
         DWORDLONG context;
     };
-    struct Agnostic_PInvokeMarshalingRequired
+    struct PInvokeMarshalingRequiredValue
     {
-        DWORDLONG                 method;
-        Agnostic_CORINFO_SIG_INFO callSiteSig;
+        DWORDLONG method;
+        DWORD     pSig_Index;
+        DWORD     cbSig;
+        DWORDLONG scope;
     };
     struct Agnostic_CORINFO_EH_CLAUSE
     {
@@ -366,13 +379,13 @@ public:
     };
     struct Agnostic_GetNewHelper
     {
-        Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
-        DWORDLONG                       callerHandle;
+        DWORDLONG hClass;
+        DWORDLONG callerHandle;
     };
     struct Agnostic_GetCastingHelper
     {
-        Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
-        DWORD                           fThrowing;
+        DWORDLONG hClass;
+        DWORD     fThrowing;
     };
     struct Agnostic_GetClassModuleIdForStatics
     {
@@ -447,6 +460,71 @@ public:
         DWORDLONG virtualMethod;
         DWORDLONG implementingClass;
         DWORDLONG ownerType;
+    };
+
+    struct ResolveTokenValue
+    {
+        Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
+        DWORD                              exceptionCode;
+    };
+
+    struct TryResolveTokenValue
+    {
+        Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
+        DWORD                              success;
+    };
+
+    struct GetTokenTypeAsHandleValue
+    {
+        DWORDLONG hMethod;
+        DWORDLONG hField;
+    };
+
+    struct GetVarArgsHandleValue
+    {
+        DWORD     cbSig;
+        DWORD     pSig_Index;
+        DWORDLONG scope;
+        DWORD     token;
+    };
+
+    struct CanGetVarArgsHandleValue
+    {
+        DWORDLONG scope;
+        DWORD     token;
+    };
+
+    struct GetCookieForPInvokeCalliSigValue
+    {
+        DWORD     cbSig;
+        DWORD     pSig_Index;
+        DWORDLONG scope;
+        DWORD     token;
+    };
+
+    struct CanGetCookieForPInvokeCalliSigValue
+    {
+        DWORDLONG scope;
+        DWORD     token;
+    };
+
+    struct GetReadyToRunHelper_TOKENin
+    {
+        Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
+        Agnostic_CORINFO_LOOKUP_KIND    GenericLookupKind;
+        DWORD                           id;
+    };
+
+    struct GetReadyToRunHelper_TOKENout
+    {
+        Agnostic_CORINFO_CONST_LOOKUP Lookup;
+        bool                          result;
+    };
+
+    struct GetReadyToRunDelegateCtorHelper_TOKENIn
+    {
+        Agnostic_CORINFO_RESOLVED_TOKEN TargetMethod;
+        DWORDLONG                       delegateType;
     };
 
 #pragma pack(pop)
@@ -558,12 +636,11 @@ public:
                                DWORD*                exceptionCode);
 
     void recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD exceptionCode);
-    void dmpResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const Agnostic_CORINFO_RESOLVED_TOKENout& value);
+    void dmpResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const ResolveTokenValue& value);
     void repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD* exceptionCode);
 
     void recTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool success);
-    void dmpTryResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin&  key,
-                            const Agnostic_CORINFO_RESOLVED_TOKENout& value);
+    void dmpTryResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const TryResolveTokenValue& value);
     bool repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -674,7 +751,7 @@ public:
                                 CorInfoHelpFunc         id,
                                 CORINFO_CONST_LOOKUP*   pLookup,
                                 bool                    result);
-    void dmpGetReadyToRunHelper(DWORDLONG key, DWORD value);
+    void dmpGetReadyToRunHelper(GetReadyToRunHelper_TOKENin key, GetReadyToRunHelper_TOKENout value);
     bool repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                 CorInfoHelpFunc         id,
@@ -683,7 +760,8 @@ public:
     void recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
-    void dmpGetReadyToRunDelegateCtorHelper(DWORDLONG key, DWORD value);
+    void dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
+                                            Agnostic_CORINFO_LOOKUP                 pLookup);
     void repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
@@ -722,7 +800,7 @@ public:
                        CORINFO_CLASS_HANDLE*   vcTypeRet,
                        CorInfoTypeWithMod      result,
                        DWORD                   exception);
-    void dmpGetArgType(const Agnostic_GetArgType& key, const Agnostic_GetArgType_Value& value);
+    void dmpGetArgType(const GetArgTypeValue& key, const Agnostic_GetArgType_Value& value);
     CorInfoTypeWithMod repGetArgType(CORINFO_SIG_INFO*       sig,
                                      CORINFO_ARG_LIST_HANDLE args,
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
@@ -740,7 +818,7 @@ public:
                         CORINFO_ARG_LIST_HANDLE args,
                         CORINFO_CLASS_HANDLE    result,
                         DWORD                   exceptionCode);
-    void dmpGetArgClass(const Agnostic_GetArgClass& key, const Agnostic_GetArgClass_Value& value);
+    void dmpGetArgClass(const GetArgClassValue& key, const Agnostic_GetArgClass_Value& value);
     CORINFO_CLASS_HANDLE repGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, DWORD* exceptionCode);
 
     void recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType result);
@@ -772,11 +850,13 @@ public:
 
     void recGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                   unsigned*             offsetOfIndirection,
-                                  unsigned*             offsetAfterIndirection);
-    void dmpGetMethodVTableOffset(DWORDLONG key, DD value);
+                                  unsigned*             offsetAfterIndirection,
+                                  bool*                 isRelative);
+    void dmpGetMethodVTableOffset(DWORDLONG key, DDD value);
     void repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                   unsigned*             offsetOfIndirection,
-                                  unsigned*             offsetAfterIndirection);
+                                  unsigned*             offsetAfterIndirection,
+                                  bool*                 isRelative);
 
     void recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
                                  CORINFO_CLASS_HANDLE   implClass,
@@ -788,7 +868,7 @@ public:
                                                   CORINFO_CONTEXT_HANDLE ownerType);
 
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result);
-    void dmpGetTokenTypeAsHandle(const Agnostic_CORINFO_RESOLVED_TOKEN& key, DWORDLONG value);
+    void dmpGetTokenTypeAsHandle(const GetTokenTypeAsHandleValue& key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void recGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -839,7 +919,7 @@ public:
     CORINFO_CLASS_HANDLE repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection);
 
     void recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, BOOL result);
-    void dmpPInvokeMarshalingRequired(const Agnostic_PInvokeMarshalingRequired& key, DWORD value);
+    void dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value);
     BOOL repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
 
     void recFindSig(CORINFO_MODULE_HANDLE  module,
@@ -1033,11 +1113,11 @@ public:
     void* repGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
 
     void recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection, CORINFO_VARARGS_HANDLE result);
-    void dmpGetVarArgsHandle(const Agnostic_CORINFO_SIG_INFO& key, DLDL value);
+    void dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value);
     CORINFO_VARARGS_HANDLE repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection);
 
     void recCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig, bool result);
-    void dmpCanGetVarArgsHandle(const Agnostic_CORINFO_SIG_INFO& key, DWORD value);
+    void dmpCanGetVarArgsHandle(const CanGetVarArgsHandleValue& key, DWORD value);
     bool repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig);
 
     void recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result);
@@ -1060,11 +1140,11 @@ public:
     CORINFO_CLASS_HANDLE repMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
     void recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result);
-    void dmpGetCookieForPInvokeCalliSig(const Agnostic_CORINFO_SIG_INFO& key, DLDL value);
+    void dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value);
     LPVOID repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
 
     void recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result);
-    void dmpCanGetCookieForPInvokeCalliSig(const Agnostic_CORINFO_SIG_INFO& key, DWORD value);
+    void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
     bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
     void recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, BOOL result);
@@ -1153,6 +1233,9 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const wchar_t* repGetStringConfigValue(const wchar_t* name);
 
+    bool wasEnviromentChanged();
+    static DenseLightWeightMap<Agnostic_Environment>* prevEnviroment;
+
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;
@@ -1168,149 +1251,149 @@ private:
 // *************************************************************************************
 enum mcPackets
 {
-    Packet_AppendClassName                    = 149, // Added 8/6/2014 - needed for SIMD
-    Packet_AreTypesEquivalent                 = 1,
-    Packet_AsCorInfoType                      = 2,
-    Packet_CanAccessClass                     = 3,
-    Packet_CanAccessFamily                    = 4,
-    Packet_CanCast                            = 5,
-    Retired8                                  = 6,
-    Packet_GetLazyStringLiteralHelper         = 147, // Added 12/20/2013 - as a replacement for CanEmbedModuleHandleForHelper
-    Packet_CanGetCookieForPInvokeCalliSig     = 7,
-    Packet_CanGetVarArgsHandle                = 8,
-    Packet_CanInline                          = 9,
-    Packet_CanInlineTypeCheckWithObjectVTable = 10,
-    Packet_CanSkipMethodVerification          = 11,
-    Packet_CanTailCall                        = 12,
-    Retired4                                  = 13,
-    Packet_CheckMethodModifier                = 142, // retired as 13 on 2013/07/04
-    Retired3                                  = 14,
-    Retired5                                  = 141, // retired as 14 on 2013/07/03
-    Packet_CompileMethod                      = 143, // retired as 141 on 2013/07/09
-    Packet_ConstructStringLiteral             = 15,
-    Packet_EmbedClassHandle                   = 16,
-    Packet_EmbedFieldHandle                   = 17,
-    Packet_EmbedGenericHandle                 = 18,
-    Packet_EmbedMethodHandle                  = 19,
-    Packet_EmbedModuleHandle                  = 20,
-    Packet_EmptyStringLiteral                 = 21,
-    Packet_Environment                        = 136, // Added 4/3/2013
-    Packet_ErrorList                          = 22,
-    Packet_FilterException                    = 134,
-    Packet_FindCallSiteSig                    = 23,
-    Retired7                                  = 24,
-    Packet_FindNameOfToken = 145,                               // Added 7/19/2013 - adjusted members to proper types
+    Packet_AppendClassName            = 149, // Added 8/6/2014 - needed for SIMD
+    Packet_AreTypesEquivalent         = 1,
+    Packet_AsCorInfoType              = 2,
+    Packet_CanAccessClass             = 3,
+    Packet_CanAccessFamily            = 4,
+    Packet_CanCast                    = 5,
+    Retired8                          = 6,
+    Packet_GetLazyStringLiteralHelper = 147, // Added 12/20/2013 - as a replacement for CanEmbedModuleHandleForHelper
+    Packet_CanGetCookieForPInvokeCalliSig                = 7,
+    Packet_CanGetVarArgsHandle                           = 8,
+    Packet_CanInline                                     = 9,
+    Packet_CanInlineTypeCheckWithObjectVTable            = 10,
+    Packet_CanSkipMethodVerification                     = 11,
+    Packet_CanTailCall                                   = 12,
+    Retired4                                             = 13,
+    Packet_CheckMethodModifier                           = 142, // retired as 13 on 2013/07/04
+    Retired3                                             = 14,
+    Retired5                                             = 141, // retired as 14 on 2013/07/03
+    Packet_CompileMethod                                 = 143, // retired as 141 on 2013/07/09
+    Packet_ConstructStringLiteral                        = 15,
+    Packet_EmbedClassHandle                              = 16,
+    Packet_EmbedFieldHandle                              = 17,
+    Packet_EmbedGenericHandle                            = 18,
+    Packet_EmbedMethodHandle                             = 19,
+    Packet_EmbedModuleHandle                             = 20,
+    Packet_EmptyStringLiteral                            = 21,
+    Packet_Environment                                   = 136, // Added 4/3/2013
+    Packet_ErrorList                                     = 22,
+    Packet_FilterException                               = 134,
+    Packet_FindCallSiteSig                               = 23,
+    Retired7                                             = 24,
+    Packet_FindNameOfToken                               = 145, // Added 7/19/2013 - adjusted members to proper types
     Packet_GetSystemVAmd64PassStructInRegisterDescriptor = 156, // Added 2/17/2016
     Packet_FindSig                                       = 25,
     Packet_GetAddressOfPInvokeFixup                      = 26,
     Packet_GetAddressOfPInvokeTarget                     = 153, // Added 2/3/2016
     Packet_GetAddrOfCaptureThreadGlobal                  = 27,
     Retired1                                             = 28,
-    Packet_GetArgClass                     = 139, // retired as 28 on 2013/07/03
-    Packet_GetHFAType                      = 159,
-    Packet_GetArgNext                      = 29,
-    Retired2                               = 30,
-    Packet_GetArgType                      = 140, // retired as 30 on 2013/07/03
-    Packet_GetArrayInitializationData      = 31,
-    Packet_GetArrayRank                    = 32,
-    Packet_GetBBProfileData                = 33,
-    Packet_GetBoundaries                   = 34,
-    Packet_GetBoxHelper                    = 35,
-    Packet_GetBuiltinClass                 = 36,
-    Packet_GetCallInfo                     = 37,
-    Packet_GetCastingHelper                = 38,
-    Packet_GetChildType                    = 39,
-    Packet_GetClassAlignmentRequirement    = 40,
-    Packet_GetClassAttribs                 = 41,
-    Packet_GetClassDomainID                = 42,
-    Packet_GetClassGClayout                = 43,
-    Packet_GetClassModuleIdForStatics      = 44,
-    Packet_GetClassName                    = 45,
-    Packet_GetClassNumInstanceFields       = 46,
-    Packet_GetClassSize                    = 47,
-    Packet_GetIntConfigValue               = 151, // Added 2/12/2015
-    Packet_GetStringConfigValue            = 152, // Added 2/12/2015
-    Packet_GetCookieForPInvokeCalliSig     = 48,
-    Packet_GetDelegateCtor                 = 49,
-    Packet_GetEEInfo                       = 50,
-    Packet_GetEHinfo                       = 51,
-    Packet_GetFieldAddress                 = 52,
-    Packet_GetFieldClass                   = 53,
-    Packet_GetFieldInClass                 = 54,
-    Packet_GetFieldInfo                    = 55,
-    Packet_GetFieldName                    = 56,
-    Packet_GetFieldOffset                  = 57,
-    Packet_GetFieldThreadLocalStoreID      = 58,
-    Packet_GetFieldType                    = 59,
-    Packet_GetFunctionEntryPoint           = 60,
-    Packet_GetFunctionFixedEntryPoint      = 61,
-    Packet_GetGSCookie                     = 62,
-    Packet_GetHelperFtn                    = 63,
-    Packet_GetHelperName                   = 64,
-    Packet_GetInlinedCallFrameVptr         = 65,
-    Packet_GetIntrinsicID                  = 66,
-    Packet_GetJitFlags                     = 154, // Added 2/3/2016
-    Packet_GetJitTimeLogFilename           = 67,
-    Packet_GetJustMyCodeHandle             = 68,
-    Packet_GetLocationOfThisType           = 69,
-    Packet_GetMethodAttribs                = 70,
-    Packet_GetMethodClass                  = 71,
-    Packet_GetMethodDefFromMethod          = 72,
-    Packet_GetMethodHash                   = 73,
-    Packet_GetMethodInfo                   = 74,
-    Packet_GetMethodName                   = 75,
-    Packet_GetMethodSig                    = 76,
-    Packet_GetMethodSync                   = 77,
-    Packet_GetMethodVTableOffset           = 78,
-    Packet_GetNewArrHelper                 = 79,
-    Packet_GetNewHelper                    = 80,
-    Packet_GetParentType                   = 81,
-    Packet_GetPInvokeUnmanagedTarget       = 82,
-    Packet_GetProfilingHandle              = 83,
-    Packet_GetRelocTypeHint                = 84,
-    Packet_GetSecurityPrologHelper         = 85,
-    Packet_GetSharedCCtorHelper            = 86,
-    Packet_GetTailCallCopyArgsThunk        = 87,
-    Packet_GetThreadTLSIndex               = 88,
-    Packet_GetTokenTypeAsHandle            = 89,
-    Packet_GetTypeForBox                   = 90,
-    Packet_GetTypeForPrimitiveValueClass   = 91,
-    Packet_GetUnBoxHelper                  = 92,
-    Packet_GetReadyToRunHelper             = 150, // Added 10/10/2014
-    Packet_GetReadyToRunDelegateCtorHelper = 157, // Added 3/30/2016
-    Packet_GetUnmanagedCallConv            = 94,
-    Packet_GetVarArgsHandle                = 95,
-    Packet_GetVars                         = 96,
-    Packet_HandleException                 = 135,
-    Packet_InitClass                       = 97,
-    Packet_InitConstraintsForVerification  = 98,
-    Packet_IsCompatibleDelegate            = 99,
-    Packet_IsDelegateCreationAllowed       = 155,
-    Packet_IsFieldStatic                   = 137, // Added 4/9/2013 - needed for 4.5.1
-    Packet_IsInSIMDModule                  = 148, // Added 6/18/2014 - SIMD support
-    Packet_IsInstantiationOfVerifiedGeneric  = 100,
-    Packet_IsSDArray                         = 101,
-    Packet_IsStructRequiringStackAllocRetBuf = 102,
-    Packet_IsValidStringRef                  = 103,
-    Retired6                                 = 104,
-    Packet_IsValidToken = 144, // Added 7/19/2013 - adjusted members to proper types
-    Packet_IsValueClass                     = 105,
-    Packet_IsWriteBarrierHelperRequired     = 106,
-    Packet_MergeClasses                     = 107,
-    Packet_PInvokeMarshalingRequired        = 108,
-    Packet_ResolveToken                     = 109,
-    Packet_ResolveVirtualMethod             = 160, // Added 2/13/17
-    Packet_TryResolveToken                  = 158, // Added 4/26/2016
-    Packet_SatisfiesClassConstraints        = 110,
-    Packet_SatisfiesMethodConstraints       = 111,
-    Packet_ShouldEnforceCallvirtRestriction = 112,
+    Packet_GetArgClass                                   = 139, // retired as 28 on 2013/07/03
+    Packet_GetHFAType                                    = 159,
+    Packet_GetArgNext                                    = 29,
+    Retired2                                             = 30,
+    Packet_GetArgType                                    = 140, // retired as 30 on 2013/07/03
+    Packet_GetArrayInitializationData                    = 31,
+    Packet_GetArrayRank                                  = 32,
+    Packet_GetBBProfileData                              = 33,
+    Packet_GetBoundaries                                 = 34,
+    Packet_GetBoxHelper                                  = 35,
+    Packet_GetBuiltinClass                               = 36,
+    Packet_GetCallInfo                                   = 37,
+    Packet_GetCastingHelper                              = 38,
+    Packet_GetChildType                                  = 39,
+    Packet_GetClassAlignmentRequirement                  = 40,
+    Packet_GetClassAttribs                               = 41,
+    Packet_GetClassDomainID                              = 42,
+    Packet_GetClassGClayout                              = 43,
+    Packet_GetClassModuleIdForStatics                    = 44,
+    Packet_GetClassName                                  = 45,
+    Packet_GetClassNumInstanceFields                     = 46,
+    Packet_GetClassSize                                  = 47,
+    Packet_GetIntConfigValue                             = 151, // Added 2/12/2015
+    Packet_GetStringConfigValue                          = 152, // Added 2/12/2015
+    Packet_GetCookieForPInvokeCalliSig                   = 48,
+    Packet_GetDelegateCtor                               = 49,
+    Packet_GetEEInfo                                     = 50,
+    Packet_GetEHinfo                                     = 51,
+    Packet_GetFieldAddress                               = 52,
+    Packet_GetFieldClass                                 = 53,
+    Packet_GetFieldInClass                               = 54,
+    Packet_GetFieldInfo                                  = 55,
+    Packet_GetFieldName                                  = 56,
+    Packet_GetFieldOffset                                = 57,
+    Packet_GetFieldThreadLocalStoreID                    = 58,
+    Packet_GetFieldType                                  = 59,
+    Packet_GetFunctionEntryPoint                         = 60,
+    Packet_GetFunctionFixedEntryPoint                    = 61,
+    Packet_GetGSCookie                                   = 62,
+    Packet_GetHelperFtn                                  = 63,
+    Packet_GetHelperName                                 = 64,
+    Packet_GetInlinedCallFrameVptr                       = 65,
+    Packet_GetIntrinsicID                                = 66,
+    Packet_GetJitFlags                                   = 154, // Added 2/3/2016
+    Packet_GetJitTimeLogFilename                         = 67,
+    Packet_GetJustMyCodeHandle                           = 68,
+    Packet_GetLocationOfThisType                         = 69,
+    Packet_GetMethodAttribs                              = 70,
+    Packet_GetMethodClass                                = 71,
+    Packet_GetMethodDefFromMethod                        = 72,
+    Packet_GetMethodHash                                 = 73,
+    Packet_GetMethodInfo                                 = 74,
+    Packet_GetMethodName                                 = 75,
+    Packet_GetMethodSig                                  = 76,
+    Packet_GetMethodSync                                 = 77,
+    Packet_GetMethodVTableOffset                         = 78,
+    Packet_GetNewArrHelper                               = 79,
+    Packet_GetNewHelper                                  = 80,
+    Packet_GetParentType                                 = 81,
+    Packet_GetPInvokeUnmanagedTarget                     = 82,
+    Packet_GetProfilingHandle                            = 83,
+    Packet_GetRelocTypeHint                              = 84,
+    Packet_GetSecurityPrologHelper                       = 85,
+    Packet_GetSharedCCtorHelper                          = 86,
+    Packet_GetTailCallCopyArgsThunk                      = 87,
+    Packet_GetThreadTLSIndex                             = 88,
+    Packet_GetTokenTypeAsHandle                          = 89,
+    Packet_GetTypeForBox                                 = 90,
+    Packet_GetTypeForPrimitiveValueClass                 = 91,
+    Packet_GetUnBoxHelper                                = 92,
+    Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014
+    Packet_GetReadyToRunDelegateCtorHelper               = 157, // Added 3/30/2016
+    Packet_GetUnmanagedCallConv                          = 94,
+    Packet_GetVarArgsHandle                              = 95,
+    Packet_GetVars                                       = 96,
+    Packet_HandleException                               = 135,
+    Packet_InitClass                                     = 97,
+    Packet_InitConstraintsForVerification                = 98,
+    Packet_IsCompatibleDelegate                          = 99,
+    Packet_IsDelegateCreationAllowed                     = 155,
+    Packet_IsFieldStatic                                 = 137, // Added 4/9/2013 - needed for 4.5.1
+    Packet_IsInSIMDModule                                = 148, // Added 6/18/2014 - SIMD support
+    Packet_IsInstantiationOfVerifiedGeneric              = 100,
+    Packet_IsSDArray                                     = 101,
+    Packet_IsStructRequiringStackAllocRetBuf             = 102,
+    Packet_IsValidStringRef                              = 103,
+    Retired6                                             = 104,
+    Packet_IsValidToken                                  = 144, // Added 7/19/2013 - adjusted members to proper types
+    Packet_IsValueClass                                  = 105,
+    Packet_IsWriteBarrierHelperRequired                  = 106,
+    Packet_MergeClasses                                  = 107,
+    Packet_PInvokeMarshalingRequired                     = 108,
+    Packet_ResolveToken                                  = 109,
+    Packet_ResolveVirtualMethod                          = 160, // Added 2/13/17
+    Packet_TryResolveToken                               = 158, // Added 4/26/2016
+    Packet_SatisfiesClassConstraints                     = 110,
+    Packet_SatisfiesMethodConstraints                    = 111,
+    Packet_ShouldEnforceCallvirtRestriction              = 112,
 
-    PacketCR_AddressMap           = 113,
-    PacketCR_AllocBBProfileBuffer = 131,
-    PacketCR_AllocGCInfo          = 114,
-    PacketCR_AllocMem             = 115,
-    PacketCR_AllocUnwindInfo      = 132,
-    PacketCR_AssertLog = 138, // Added 6/10/2013 - added to nicely support ilgen
+    PacketCR_AddressMap                        = 113,
+    PacketCR_AllocBBProfileBuffer              = 131,
+    PacketCR_AllocGCInfo                       = 114,
+    PacketCR_AllocMem                          = 115,
+    PacketCR_AllocUnwindInfo                   = 132,
+    PacketCR_AssertLog                         = 138, // Added 6/10/2013 - added to nicely support ilgen
     PacketCR_CallLog                           = 116,
     PacketCR_ClassMustBeLoadedBeforeCodeIsRun  = 117,
     PacketCR_CompileMethod                     = 118,
@@ -1327,7 +1410,7 @@ enum mcPackets
     PacketCR_SetEHinfo                         = 128,
     PacketCR_SetMethodAttribs                  = 129,
     PacketCR_SetVars                           = 130,
-    PacketCR_RecordCallSite = 146, // Added 10/28/2013 - to support indirect calls
+    PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
 };
 
 #endif

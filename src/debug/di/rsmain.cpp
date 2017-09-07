@@ -583,9 +583,9 @@ namespace
     public:
         DefaultManagedCallback2(ICorDebug* pDebug);
         virtual ~DefaultManagedCallback2() { }
-        virtual HRESULT __stdcall QueryInterface(REFIID iid, void** pInterface);
-        virtual ULONG __stdcall AddRef();
-        virtual ULONG __stdcall Release();
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** pInterface);
+        virtual ULONG STDMETHODCALLTYPE AddRef();
+        virtual ULONG STDMETHODCALLTYPE Release();
         COM_METHOD FunctionRemapOpportunity(ICorDebugAppDomain* pAppDomain,
                                                  ICorDebugThread* pThread,
                                                  ICorDebugFunction* pOldFunction,
@@ -787,9 +787,9 @@ namespace
     public:
         DefaultManagedCallback3(ICorDebug* pDebug);
         virtual ~DefaultManagedCallback3() { }
-        virtual HRESULT __stdcall QueryInterface(REFIID iid, void** pInterface);
-        virtual ULONG __stdcall AddRef();
-        virtual ULONG __stdcall Release();
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** pInterface);
+        virtual ULONG STDMETHODCALLTYPE AddRef();
+        virtual ULONG STDMETHODCALLTYPE Release();
         COM_METHOD CustomNotification(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain);
     private:
         // not implemented

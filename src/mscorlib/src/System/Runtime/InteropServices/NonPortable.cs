@@ -153,7 +153,12 @@ namespace System.Runtime.InteropServices
         }
 
         public static bool IsComObject(object o)
-        { 
+        {
+            if (o == null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
             return false;
         }
 

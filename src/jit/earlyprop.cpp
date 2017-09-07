@@ -79,6 +79,7 @@ GenTreePtr Compiler::getArrayLengthFromAllocation(GenTreePtr tree)
         if (call->gtCallType == CT_HELPER)
         {
             if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
+                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_R2R_DIRECT) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
@@ -116,6 +117,7 @@ GenTreePtr Compiler::getObjectHandleNodeFromAllocation(GenTreePtr tree)
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
+                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_R2R_DIRECT) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
@@ -194,11 +196,12 @@ void Compiler::optEarlyProp()
             {
                 if (optEarlyPropRewriteTree(tree))
                 {
+                    gtUpdateSideEffects(stmt, tree);
                     isRewritten = true;
                 }
             }
 
-            // Morph the stmt and update the evaluation order if the stmt has been rewritten.
+            // Update the evaluation order and the statement info if the stmt has been rewritten.
             if (isRewritten)
             {
                 gtSetStmtInfo(stmt);
@@ -325,7 +328,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             actualValCopy = gtNewLargeOperNode(GT_ADD, TYP_INT);
         }
 
-        fgWalkTreePre(&tree, Compiler::lvaDecRefCntsCB, (void*)this, true);
+        DecLclVarRefCountsVisitor::WalkTree(this, tree);
 
         actualValCopy->CopyFrom(actualVal, this);
         actualValCopy->gtType = origType;
@@ -334,7 +337,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             actualValCopy->LabelIndex(this);
         }
 
-        fgWalkTreePre(&actualValCopy, Compiler::lvaIncRefCntsCB, (void*)this, true);
+        IncLclVarRefCountsVisitor::WalkTree(this, actualValCopy);
 
         if (actualValCopy != tree)
         {
@@ -609,6 +612,7 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
 
                                                     // Set this flag to prevent reordering
                                                     nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
+                                                    nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
 
                                                     defRHS->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
                                                     defRHS->gtFlags |=

@@ -265,11 +265,12 @@ RET:
     return reg;
 }
 
+#ifdef LEGACY_BACKEND
 void RegSet::SetUsedRegFloat(GenTreePtr tree, bool bValue)
 {
     /* The value must be sitting in a register */
     assert(tree);
-    assert(tree->gtFlags & GTF_REG_VAL);
+    assert(tree->InReg());
 
     var_types type = tree->TypeGet();
 #ifdef _TARGET_ARM_
@@ -344,6 +345,7 @@ void RegSet::SetUsedRegFloat(GenTreePtr tree, bool bValue)
         rsFreeUsedTree(regNum, tree);
     }
 }
+#endif // LEGACY_BACKEND
 
 void RegSet::SetLockedRegFloat(GenTree* tree, bool bValue)
 {
@@ -376,7 +378,7 @@ bool RegSet::IsLockedRegFloat(GenTreePtr tree)
 {
     /* The value must be sitting in a register */
     assert(tree);
-    assert(tree->gtFlags & GTF_REG_VAL);
+    assert(tree->InReg());
     assert(varTypeIsFloating(tree->TypeGet()));
 
     regMaskTP regMask = genRegMaskFloat(tree->gtRegNum, tree->TypeGet());

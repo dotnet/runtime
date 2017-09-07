@@ -16,7 +16,6 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace Benchstone.BenchI
 {

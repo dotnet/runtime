@@ -19,7 +19,6 @@ using System.Threading;
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     public struct TypeToken
     {
         public static readonly TypeToken Empty = new TypeToken();

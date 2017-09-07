@@ -566,7 +566,11 @@ public:
         // a reasonable breakpoint substitute (it's what DebugBreak uses). Bkpt #0, on the other hand, always
         // seems to flow directly to the kernel debugger (even if we ignore it there it doesn't seem to be
         // picked up by the user mode debugger).
+#ifdef __linux__
+        Emit16(0xde01);
+#else
         Emit16(0xdefe);
+#endif
     }
 
     void ThumbEmitMovConstant(ThumbReg dest, int constant)
@@ -988,6 +992,7 @@ struct DECLSPEC_ALIGN(4) UMEntryThunkCode
     TADDR       m_pvSecretParam;
 
     void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Poison();
 
     LPCBYTE GetEntryPoint() const
     {

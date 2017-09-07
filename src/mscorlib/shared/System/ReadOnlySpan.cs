@@ -15,6 +15,7 @@ namespace System
     /// ReadOnlySpan represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
+    [IsByRefLike]
     public struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -39,29 +40,6 @@ namespace System
 
             _pointer = new ByReference<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()));
             _length = array.Length;
-        }
-
-        /// <summary>
-        /// Creates a new read-only span over the portion of the target array beginning
-        /// at 'start' index and covering the remainder of the array.
-        /// </summary>
-        /// <param name="array">The target array.</param>
-        /// <param name="start">The index at which to begin the read-only span.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
-        /// reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> is not in the range (&lt;0 or &gt;=Length).
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlySpan(T[] array, int start)
-        {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if ((uint)start > (uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            _pointer = new ByReference<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), start));
-            _length = array.Length - start;
         }
 
         /// <summary>
@@ -174,6 +152,9 @@ namespace System
                 return Unsafe.Add(ref _pointer.Value, index);
             }
 #else
+#if CORERT
+            [Intrinsic]
+#endif
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {

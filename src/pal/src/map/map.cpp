@@ -46,11 +46,6 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL);
 
 #include "pal/utils.h"
 
-// This is temporary until #10981 merges.
-// There will be an equivalent but opposite temporary fix in #10981 which
-// will trigger a merge conflict to be sure both of these workarounds are removed
-#define GetVirtualPageSize() VIRTUAL_PAGE_SIZE
-
 //
 // The mapping critical section guards access to the list
 // of currently mapped views. If a thread needs to access
@@ -131,12 +126,26 @@ FileMappingInitializationRoutine(
     void *pProcessLocalData
     );
 
+void
+CFileMappingImmutableDataCopyRoutine(
+    void *pImmData,
+    void *pImmDataTarget
+    );
+
+void
+CFileMappingImmutableDataCleanupRoutine(
+    void *pImmData
+    );
+
 CObjectType CorUnix::otFileMapping(
                 otiFileMapping,
                 FileMappingCleanupRoutine,
                 FileMappingInitializationRoutine,
                 sizeof(CFileMappingImmutableData),
+                CFileMappingImmutableDataCopyRoutine,
+                CFileMappingImmutableDataCleanupRoutine,
                 sizeof(CFileMappingProcessLocalData),
+                NULL,   // No process local data cleanup routine
                 0,
                 PAGE_READWRITE | PAGE_READONLY | PAGE_WRITECOPY,
                 CObjectType::SecuritySupported,
@@ -150,6 +159,33 @@ CObjectType CorUnix::otFileMapping(
                 );
 
 CAllowedObjectTypes aotFileMapping(otiFileMapping);
+
+void
+CFileMappingImmutableDataCopyRoutine(
+    void *pImmData,
+    void *pImmDataTarget
+    )
+{
+    PAL_ERROR palError = NO_ERROR;
+    CFileMappingImmutableData *pImmutableData = (CFileMappingImmutableData *) pImmData;
+    CFileMappingImmutableData *pImmutableDataTarget = (CFileMappingImmutableData *) pImmDataTarget;
+
+    if (NULL != pImmutableData->lpFileName)
+    {
+        pImmutableDataTarget->lpFileName = strdup(pImmutableData->lpFileName);
+    }
+}
+
+void
+CFileMappingImmutableDataCleanupRoutine(
+    void *pImmData
+    )
+{
+    PAL_ERROR palError = NO_ERROR;
+    CFileMappingImmutableData *pImmutableData = (CFileMappingImmutableData *) pImmData;
+
+    free(pImmutableData->lpFileName);
+}
 
 void
 FileMappingCleanupRoutine(
@@ -184,7 +220,7 @@ FileMappingCleanupRoutine(
 
         if (pImmutableData->bPALCreatedTempFile)
         {
-            unlink(pImmutableData->szFileName);
+            unlink(pImmutableData->lpFileName);
         }
     }
 
@@ -245,8 +281,8 @@ FileMappingInitializationRoutine(
         reinterpret_cast<CFileMappingProcessLocalData *>(pvProcessLocalData);
 
     pProcessLocalData->UnixFd = InternalOpen(
-        pImmutableData->szFileName,
-        MAPProtectionToFileOpenFlags(pImmutableData->flProtect)
+        pImmutableData->lpFileName,
+        MAPProtectionToFileOpenFlags(pImmutableData->flProtect) | O_CLOEXEC
         );
 
     if (-1 == pProcessLocalData->UnixFd)
@@ -501,16 +537,18 @@ CorUnix::InternalCreateFileMapping(
         //
         
         /* Anonymous mapped files. */
-        if (strcpy_s(pImmutableData->szFileName, sizeof(pImmutableData->szFileName), "/dev/zero") != SAFECRT_SUCCESS)
+        _ASSERTE(pImmutableData->lpFileName == NULL);
+        pImmutableData->lpFileName = strdup("/dev/zero");
+        if (pImmutableData->lpFileName == NULL)
         {
-            ERROR( "strcpy_s failed!\n" );
+            ASSERT("Unable to copy string\n");
             palError = ERROR_INTERNAL_ERROR;
             goto ExitInternalCreateFileMapping;
         }
 
 #if HAVE_MMAP_DEV_ZERO
 
-        UnixFd = InternalOpen(pImmutableData->szFileName, O_RDWR);
+        UnixFd = InternalOpen(pImmutableData->lpFileName, O_RDWR | O_CLOEXEC);
         if ( -1 == UnixFd )
         {
             ERROR( "Unable to open the file.\n");
@@ -587,7 +625,7 @@ CorUnix::InternalCreateFileMapping(
             // information, though...
             //
             
-            UnixFd = dup(pFileLocalData->unix_fd);
+            UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
             if (-1 == UnixFd)
             {
                 ERROR( "Unable to duplicate the Unix file descriptor!\n" );
@@ -598,10 +636,12 @@ CorUnix::InternalCreateFileMapping(
                 }
                 goto ExitInternalCreateFileMapping;
             }
-  
-            if (strcpy_s(pImmutableData->szFileName, sizeof(pImmutableData->szFileName), pFileLocalData->unix_filename) != SAFECRT_SUCCESS)
+
+            _ASSERTE(pImmutableData->lpFileName == NULL);
+            pImmutableData->lpFileName = strdup(pFileLocalData->unix_filename);
+            if (pImmutableData->lpFileName == NULL)
             {
-                ERROR( "strcpy_s failed!\n" );
+                ASSERT("Unable to copy string\n");
                 palError = ERROR_INTERNAL_ERROR;
                 if (NULL != pFileLocalDataLock)
                 {
@@ -623,7 +663,7 @@ CorUnix::InternalCreateFileMapping(
 
             /* Create a temporary file on the filesystem in order to be 
                shared across processes. */
-            palError = MAPCreateTempFile(pThread, &UnixFd, pImmutableData->szFileName);
+            palError = MAPCreateTempFile(pThread, &UnixFd, pImmutableData->lpFileName);
             if (NO_ERROR != palError)
             {
                 ERROR("Unable to create the temporary file.\n");
@@ -771,7 +811,7 @@ ExitInternalCreateFileMapping:
 
         if (bPALCreatedTempFile)
         {
-            unlink(pImmutableData->szFileName);
+            unlink(pImmutableData->lpFileName);
         }
 
         if (-1 != UnixFd)
@@ -879,63 +919,6 @@ OpenFileMappingW(
     LOGEXIT("OpenFileMappingW returning %p.\n", hFileMapping);
     PERF_EXIT(OpenFileMappingW);
     return hFileMapping;
-}
-
-PAL_ERROR
-CorUnix::InternalOpenFileMapping(
-    CPalThread *pThread,
-    DWORD dwDesiredAccess,
-    BOOL bInheritHandle,
-    LPCWSTR lpName,
-    HANDLE *phMapping
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pFileMapping = NULL;
-    CPalString sObjectName(lpName);
-
-    if ( MAPContainsInvalidFlags( dwDesiredAccess ) ) 
-    {
-        ASSERT( "dwDesiredAccess can be one or more of FILE_MAP_READ, " 
-               "FILE_MAP_WRITE, FILE_MAP_COPY or FILE_MAP_ALL_ACCESS.\n" );
-        palError = ERROR_INVALID_PARAMETER;
-        goto ExitInternalOpenFileMapping;
-    }
-
-    palError = g_pObjectManager->LocateObject(
-        pThread,
-        &sObjectName,
-        &aotFileMapping, 
-        &pFileMapping
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto ExitInternalOpenFileMapping;
-    }
-
-    palError = g_pObjectManager->ObtainHandleForObject(
-        pThread,
-        pFileMapping,
-        dwDesiredAccess,
-        bInheritHandle,
-        NULL,
-        phMapping
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto ExitInternalOpenFileMapping;
-    }
-
-ExitInternalOpenFileMapping:
-
-    if (NULL != pFileMapping)
-    {
-        pFileMapping->ReleaseReference(pThread);
-    }
-    
-    return palError;
 }
 
 /*++
@@ -1056,79 +1039,6 @@ MapViewOfFileEx(
     LOGEXIT( "MapViewOfFileEx returning %p.\n", pvMappedBaseAddress );
     PERF_EXIT(MapViewOfFileEx);
     return pvMappedBaseAddress;
-}
-
-/*++
-Function:
-  FlushViewOfFile
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-FlushViewOfFile(
-    IN LPVOID lpBaseAddress,
-    IN SIZE_T dwNumberOfBytesToFlush)
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pThread = NULL;
-    PMAPPED_VIEW_LIST pView = NULL;
-    BOOL fResult = TRUE;
-
-    PERF_ENTRY(FlushViewOfFile);
-    ENTRY("FlushViewOfFile(lpBaseAddress=%p, dwNumberOfBytesToFlush=%u)\n",
-          lpBaseAddress, dwNumberOfBytesToFlush);
-
-    pThread = InternalGetCurrentThread();
-
-    InternalEnterCriticalSection(pThread, &mapping_critsec);
-
-    pView = MAPGetViewForAddress(lpBaseAddress);
-    if (NULL == pView)
-    {
-        ERROR("lpBaseAddress has to be the address returned by MapViewOfFile[Ex]");
-        palError = ERROR_INVALID_HANDLE;
-        goto Exit;
-    }
-
-    if (dwNumberOfBytesToFlush == 0)
-    {
-        dwNumberOfBytesToFlush = pView->NumberOfBytesToMap;
-    }
-
-    // <ROTORTODO>we should only use MS_SYNC if the file has been opened
-    // with FILE_FLAG_WRITE_THROUGH
-    if (msync(lpBaseAddress, dwNumberOfBytesToFlush, MS_SYNC) == -1)
-    {
-        if (errno == EINVAL)
-        {
-            WARN("msync failed; %s\n", strerror(errno));
-            palError = ERROR_INVALID_PARAMETER;
-        }
-        else if (errno == EIO)
-        {
-            WARN("msync failed; %s\n", strerror(errno));
-            palError = ERROR_WRITE_FAULT;
-        }
-        else
-        {
-            ERROR("msync failed; %s\n", strerror(errno));
-            palError = ERROR_INTERNAL_ERROR;
-        }
-    }
-
-Exit:
-    InternalLeaveCriticalSection(pThread, &mapping_critsec);
-
-    if (NO_ERROR != palError)
-    {
-        fResult = FALSE;
-        pThread->SetLastError(palError);
-    }
-
-    LOGEXIT("FlushViewOfFile returning %d.\n", fResult);
-    PERF_EXIT(FlushViewOfFile);
-    return fResult;
 }
 
 

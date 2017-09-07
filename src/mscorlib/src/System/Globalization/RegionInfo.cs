@@ -20,7 +20,6 @@ using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
-    [Serializable]
     public class RegionInfo
     {
         //--------------------------------------------------------------------//

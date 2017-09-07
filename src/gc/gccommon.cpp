@@ -17,9 +17,9 @@
 IGCHeapInternal* g_theGCHeap;
 IGCHandleManager* g_theGCHandleManager;
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
 IGCToCLR* g_theGCToCLR;
-#endif // FEATURE_STANDALONE_GC
+#endif // BUILD_AS_STANDALONE
 
 #ifdef GC_CONFIG_DRIVEN
 size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
@@ -44,6 +44,7 @@ uint8_t* g_gc_highest_address = 0;
 GCHeapType g_gc_heap_type = GC_HEAP_INVALID;
 uint32_t g_max_generation = max_generation;
 MethodTable* g_gc_pFreeObjectMethodTable = nullptr;
+uint32_t g_num_processors = 0;
 
 #ifdef GC_CONFIG_DRIVEN
 void record_global_mechanism (int mech_index)
@@ -113,26 +114,6 @@ void record_changed_seg (uint8_t* start, uint8_t* end,
     }
 }
 
-// The runtime needs to know whether we're using workstation or server GC 
-// long before the GCHeap is created.
-void InitializeHeapType(bool bServerHeap)
-{
-    LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_SVR_GC
-    g_gc_heap_type = bServerHeap ? GC_HEAP_SVR : GC_HEAP_WKS;
-#ifdef WRITE_BARRIER_CHECK
-    if (g_gc_heap_type == GC_HEAP_SVR)
-    {
-        g_GCShadow = 0;
-        g_GCShadowEnd = 0;
-    }
-#endif // WRITE_BARRIER_CHECK
-#else // FEATURE_SVR_GC
-    UNREFERENCED_PARAMETER(bServerHeap);
-    CONSISTENCY_CHECK(bServerHeap == false);
-#endif // FEATURE_SVR_GC
-}
-
 namespace WKS 
 {
     extern void PopulateDacVars(GcDacVars* dacVars);
@@ -143,7 +124,32 @@ namespace SVR
     extern void PopulateDacVars(GcDacVars* dacVars);
 }
 
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars)
+extern void PopulateHandleTableDacVars(GcDacVars* dacVars);
+
+//------------------------------------------------------------------
+// Externally-facing GC symbols, used to initialize the GC
+// -----------------------------------------------------------------
+
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+
+#ifdef BUILD_AS_STANDALONE
+#define GC_API extern "C" DLLEXPORT
+#else
+#define GC_API extern "C"
+#endif // BUILD_AS_STANDALONE
+
+GC_API
+bool
+InitializeGarbageCollector(
+    /* In */  IGCToCLR* clrToGC,
+    /* Out */ IGCHeap** gcHeap,
+    /* Out */ IGCHandleManager** gcHandleManager,
+    /* Out */ GcDacVars* gcDacVars
+    )
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -153,38 +159,7 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleMa
     assert(gcHeap != nullptr);
     assert(gcHandleManager != nullptr);
 
-    IGCHandleManager* handleManager = CreateGCHandleManager();
-    if (handleManager == nullptr)
-    {
-        return false;
-    }
-
-#ifdef FEATURE_SVR_GC
-    assert(g_gc_heap_type != GC_HEAP_INVALID);
-
-    if (g_gc_heap_type == GC_HEAP_SVR)
-    {
-        heap = SVR::CreateGCHeap();
-        SVR::PopulateDacVars(gcDacVars);
-    }
-    else
-    {
-        heap = WKS::CreateGCHeap();
-        WKS::PopulateDacVars(gcDacVars);
-    }
-#else
-    heap = WKS::CreateGCHeap();
-    WKS::PopulateDacVars(gcDacVars);
-#endif
-
-    if (heap == nullptr)
-    {
-        return false;
-    }
-
-    g_theGCHeap = heap;
-
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
     assert(clrToGC != nullptr);
     g_theGCToCLR = clrToGC;
 #else
@@ -192,6 +167,51 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleMa
     assert(clrToGC == nullptr);
 #endif
 
+    // Initialize GCConfig before anything else - initialization of our
+    // various components may want to query the current configuration.
+    GCConfig::Initialize();
+    if (!GCToOSInterface::Initialize())
+    {
+        return false;
+    }
+
+    IGCHandleManager* handleManager = CreateGCHandleManager();
+    if (handleManager == nullptr)
+    {
+        return false;
+    }
+
+#ifdef FEATURE_SVR_GC
+    if (GCConfig::GetServerGC())
+    {
+#ifdef WRITE_BARRIER_CHECK
+        g_GCShadow = 0;
+        g_GCShadowEnd = 0;
+#endif // WRITE_BARRIER_CHECK
+
+        g_gc_heap_type = GC_HEAP_SVR;
+        heap = SVR::CreateGCHeap();
+        SVR::PopulateDacVars(gcDacVars);
+    }
+    else
+    {
+        g_gc_heap_type = GC_HEAP_WKS;
+        heap = WKS::CreateGCHeap();
+        WKS::PopulateDacVars(gcDacVars);
+    }
+#else
+    g_gc_heap_type = GC_HEAP_WKS;
+    heap = WKS::CreateGCHeap();
+    WKS::PopulateDacVars(gcDacVars);
+#endif
+
+    PopulateHandleTableDacVars(gcDacVars);
+    if (heap == nullptr)
+    {
+        return false;
+    }
+
+    g_theGCHeap = heap;
     *gcHandleManager = handleManager;
     *gcHeap = heap;
     return true;

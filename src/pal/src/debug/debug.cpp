@@ -41,6 +41,7 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
 #include "pal/virtual.h"
+#include "pal/utils.h"
 
 #include <signal.h>
 #include <unistd.h>
@@ -609,7 +610,7 @@ PAL_ProbeMemory(
         }
 
         // Round to the beginning of the next page
-        pBuffer = (PVOID)(((SIZE_T)pBuffer & ~VIRTUAL_PAGE_MASK) + VIRTUAL_PAGE_SIZE);
+        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, GetVirtualPageSize()) + GetVirtualPageSize());
     }
 
     close(fds[0]);

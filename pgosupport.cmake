@@ -11,13 +11,16 @@ function(add_pgo TargetName)
     if(WIN32)
         set(ProfileFileName "${TargetName}.pgd")
     else(WIN32)
-        # Clang/LLVM uses one profdata file for the entire repo
-        set(ProfileFileName "coreclr.profdata")
+        set(ProfileFileName "${TargetName}.profdata")
     endif(WIN32)
 
     set(CLR_CMAKE_OPTDATA_PACKAGEWITHRID "optimization.${CLR_CMAKE_TARGET_OS}-${CLR_CMAKE_TARGET_ARCH}.PGO.CoreCLR")
+
+    # On case-sensitive file systems, NuGet packages are restored to lowercase paths
+    string(TOLOWER "${CLR_CMAKE_OPTDATA_PACKAGEWITHRID}/${CLR_CMAKE_OPTDATA_VERSION}" OptDataVersionedSubPath)
+
     file(TO_NATIVE_PATH
-        "${CLR_CMAKE_PACKAGES_DIR}/${CLR_CMAKE_OPTDATA_PACKAGEWITHRID}/${CLR_CMAKE_OPTDATA_VERSION}/data/${ProfileFileName}"
+        "${CLR_CMAKE_PACKAGES_DIR}/${OptDataVersionedSubPath}/data/${ProfileFileName}"
         ProfilePath
     )
 
@@ -31,7 +34,7 @@ function(add_pgo TargetName)
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS " -flto -fuse-ld=gold -fprofile-instr-generate")
             endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
         endif(WIN32)
-    else(CLR_CMAKE_PGO_INSTRUMENT)
+    elseif(CLR_CMAKE_PGO_OPTIMIZE)
         # If we don't have profile data availble, gracefully fall back to a non-PGO opt build
         if(EXISTS ${ProfilePath})
             if(WIN32)
@@ -39,10 +42,16 @@ function(add_pgo TargetName)
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /LTCG /USEPROFILE:PGD=${ProfilePath}")
             else(WIN32)
                 if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
-                    if(HAVE_LTO)
-                        target_compile_options(${TargetName} PRIVATE -flto -fprofile-instr-use=${ProfilePath})
-                        set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS " -flto -fuse-ld=gold -fprofile-instr-use=${ProfilePath}")
-                    endif(HAVE_LTO)
+                    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6)
+                        if(HAVE_LTO)
+                            target_compile_options(${TargetName} PRIVATE -flto -fprofile-instr-use=${ProfilePath} -Wno-profile-instr-out-of-date)
+                            set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS " -flto -fuse-ld=gold -fprofile-instr-use=${ProfilePath}")
+                        else(HAVE_LTO)
+                            message(WARNING "LTO is not supported, skipping profile guided optimizations")
+                        endif(HAVE_LTO)
+                    else(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6)
+                        message(WARNING "PGO is not supported; Clang 3.6 or later is required for profile guided optimizations")
+                    endif(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6)
                 endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
             endif(WIN32)
         endif(EXISTS ${ProfilePath})

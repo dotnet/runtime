@@ -4,7 +4,6 @@
 
 namespace System.Diagnostics
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
     public sealed class ConditionalAttribute : Attribute
     {

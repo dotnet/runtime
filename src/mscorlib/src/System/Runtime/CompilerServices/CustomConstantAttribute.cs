@@ -7,7 +7,6 @@ using System.Collections.Generic;
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public abstract class CustomConstantAttribute : Attribute
     {

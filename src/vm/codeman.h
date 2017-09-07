@@ -91,10 +91,8 @@ typedef struct
 } EH_CLAUSE_ENUMERATOR;
 class EECodeInfo;
 
-#define PAGE_MASK               (PAGE_SIZE-1)
-#define PAGE_ALIGN              ~(PAGE_MASK)
-#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)              & PAGE_ALIGN)
-#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + PAGE_MASK) & PAGE_ALIGN)
+#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
+#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
 
 enum StubCodeBlockKind : int
 {
@@ -371,6 +369,8 @@ struct CodeHeapRequestInfo
     bool         m_isCollectible;
     
     bool   IsDynamicDomain()                    { return m_isDynamicDomain;    }
+    void   SetDynamicDomain()                   { m_isDynamicDomain = true;    }
+
     bool   IsCollectible()                      { return m_isCollectible;      }
     
     size_t getRequestSize()                     { return m_requestSize;        }
@@ -463,7 +463,7 @@ typedef struct _HeapList
     TADDR               startAddress;
     TADDR               endAddress;     // the current end of the used portion of the Heap
 
-    TADDR               mapBase;        // "startAddress" rounded down to PAGE_SIZE. pHdrMap is relative to this address
+    TADDR               mapBase;        // "startAddress" rounded down to GetOsPageSize(). pHdrMap is relative to this address
     PTR_DWORD           pHdrMap;        // bit array used to find the start of methods
 
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
@@ -1097,7 +1097,7 @@ private :
                              size_t header, size_t blockSize, unsigned align,
                              HeapList ** ppCodeHeap /* Writeback, Can be null */ );
 
-    DomainCodeHeapList *GetCodeHeapList(MethodDesc *pMD, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
+    DomainCodeHeapList *GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
     DomainCodeHeapList *CreateCodeHeapList(CodeHeapRequestInfo *pInfo);
     LoaderHeap* GetJitMetaHeap(MethodDesc *pMD);
 #endif // !CROSSGEN_COMPILE

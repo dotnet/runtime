@@ -160,6 +160,17 @@ VOID PROCNotifyProcessShutdown();
 
 /*++
 Function:
+  PROCCreateCrashDumpIfEnabled
+
+  Creates crash dump of the process (if enabled). Can be
+  called from the unhandled native exception handler.
+
+(no return value)
+--*/
+VOID PROCCreateCrashDumpIfEnabled();
+
+/*++
+Function:
   InitializeFlushProcessWriteBuffers
 
 Abstract

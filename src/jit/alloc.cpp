@@ -308,60 +308,6 @@ void ArenaAllocator::freeHostMemory(void* block)
 #endif // !defined(DEBUG)
 }
 
-#if defined(DEBUG)
-//------------------------------------------------------------------------
-// ArenaAllocator::alloateMemory:
-//    Allocates memory using an `ArenaAllocator`.
-//
-// Arguments:
-//    size - The number of bytes to allocate.
-//
-// Return Value:
-//    A pointer to the allocated memory.
-//
-// Note:
-//    This is the DEBUG-only version of `allocateMemory`; the release
-//    version of this method is defined in the corresponding header file.
-//    This version of the method has some abilities that the release
-//    version does not: it may inject faults into the allocator and
-//    seeds all allocations with a specified pattern to help catch
-//    use-before-init problems.
-void* ArenaAllocator::allocateMemory(size_t size)
-{
-    assert(isInitialized());
-    assert(size != 0 && (size & (sizeof(int) - 1)) == 0);
-
-    // Ensure that we always allocate in pointer sized increments.
-    size = (size_t)roundUp(size, sizeof(size_t));
-
-    if (JitConfig.ShouldInjectFault() != 0)
-    {
-        // Force the underlying memory allocator (either the OS or the CLR hoster)
-        // to allocate the memory. Any fault injection will kick in.
-        void* p = ClrAllocInProcessHeap(0, S_SIZE_T(1));
-        if (p != nullptr)
-        {
-            ClrFreeInProcessHeap(0, p);
-        }
-        else
-        {
-            NOMEM(); // Throw!
-        }
-    }
-
-    void* block = m_nextFreeByte;
-    m_nextFreeByte += size;
-
-    if (m_nextFreeByte > m_lastFreeByte)
-    {
-        block = allocateNewPage(size, true);
-    }
-
-    memset(block, UninitializedWord<char>(), size);
-    return block;
-}
-#endif // defined(DEBUG)
-
 //------------------------------------------------------------------------
 // ArenaAllocator::getTotalBytesAllocated:
 //    Gets the total number of bytes allocated for all of the arena pages

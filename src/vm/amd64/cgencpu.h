@@ -263,9 +263,15 @@ struct CalleeSavedRegistersPointers {
 #ifdef UNIX_AMD64_ABI
 #define THIS_REG RDI
 #define THIS_kREG kRDI
+
+#define ARGUMENT_kREG1 kRDI
+#define ARGUMENT_kREG2 kRSI
 #else
 #define THIS_REG RCX
 #define THIS_kREG kRCX
+
+#define ARGUMENT_kREG1 kRCX
+#define ARGUMENT_kREG2 kRDX
 #endif
 
 #ifdef UNIX_AMD64_ABI
@@ -466,6 +472,7 @@ struct DECLSPEC_ALIGN(8) UMEntryThunkCode
     BYTE            m_padding2[5];
 
     void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Poison();
 
     LPCBYTE GetEntryPoint() const
     {

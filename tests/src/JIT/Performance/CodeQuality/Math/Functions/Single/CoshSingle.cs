@@ -14,14 +14,17 @@ namespace Functions
         private const float coshSingleDelta = 0.0004f;
         private const float coshSingleExpectedResult = 5876.02588f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = CoshSingleIterations)]
         public static void CoshSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    CoshSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        CoshSingleTest();
+                    }
                 }
             }
         }

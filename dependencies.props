@@ -1,19 +1,36 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- Central place to set the versions of all nuget packages produced in the repo -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">2.1.0</PackageVersion>
+    
+    <!-- Set the boolean below to true to generate packages with stabilized versions -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+
+    <PreReleaseLabel>preview2</PreReleaseLabel>
+  </PropertyGroup>
+  
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>a8f14145c38a5ead3de0442da2e789537802a8ec</CoreFxCurrentRef>
-    <CoreClrCurrentRef>fcd99ed86a703a16698fcd0027707739c8ef3501</CoreClrCurrentRef>
+    <CoreFxCurrentRef>063b06d0342b9e575e852d0c52b590f1bdd85606</CoreFxCurrentRef>
+    <CoreClrCurrentRef>063b06d0342b9e575e852d0c52b590f1bdd85606</CoreClrCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview2-25316-01</CoreFxExpectedPrerelease>
+    <CoreFxPackageVersion>4.5.0-preview2-25706-01</CoreFxPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview2-25706-01</PlatformPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <CoreClrPackageVersion>2.0.0-preview2-25316-03</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview2-25706-01</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
+    <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
+    <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
+    <MicrosoftDiagnosticsTracingLibraryVersion>1.0.3-alpha-experimental</MicrosoftDiagnosticsTracingLibraryVersion>
+    <VCRuntimeVersion>1.2.0</VCRuntimeVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -32,15 +49,20 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    
+
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
 
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreFxExpectedPrerelease</ElementName>
-      <BuildInfoName>CoreFx</BuildInfoName>
+      <ElementName>CoreFxPackageVersion</ElementName>
+      <PackageId>Microsoft.Private.CoreFx.NETCoreApp</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>PlatformPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.Platforms</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreClr">
       <Path>$(MSBuildThisFileFullPath)</Path>
@@ -72,8 +94,16 @@
       <Version>1.0.0-alpha-build0040</Version>
     </StaticDependency>
 
+    <XUnitPerformanceApiDependency Include="xunit.performance.api" />
+    <XUnitPerformanceApiDependency Include="xunit.performance.core" />
+    <XUnitPerformanceApiDependency Include="xunit.performance.execution" />
+    <XUnitPerformanceApiDependency Include="xunit.performance.metrics" />
+    <StaticDependency Include="@(XUnitPerformanceApiDependency)">
+      <Version>$(XUnitPerformanceApiVersion)</Version>
+    </StaticDependency>
+
     <StaticDependency Include="xunit.console.netcore">
-      <Version>1.0.2-prerelease-00177</Version>
+      <Version>$(XUnitConsoleNetCoreVersion)</Version>
     </StaticDependency>
 
     <DependencyBuildInfo Include="@(StaticDependency)">

@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -19,11 +18,9 @@ namespace System.Text
     // Note: IsAlwaysNormalized remains false because 1/2 the code points are unassigned, so they'd
     //       use fallbacks, and we cannot guarantee that fallbacks are normalized.
 
-    [Serializable]
     public class ASCIIEncoding : Encoding
     {
         // Allow for devirtualization (see https://github.com/dotnet/coreclr/pull/9230)
-        [Serializable]
         internal sealed class ASCIIEncodingSealed : ASCIIEncoding { }
 
         // Used by Encoding.ASCII for lazy initialization
@@ -373,7 +370,7 @@ namespace System.Text
 
             if (encoder != null)
             {
-                charLeftOver = encoder.charLeftOver;
+                charLeftOver = encoder._charLeftOver;
                 Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[ASCIIEncoding.GetByteCount]leftover character should be high surrogate");
 
@@ -384,7 +381,7 @@ namespace System.Text
                 {
                     // We always need the fallback buffer in get bytes so we can flush any remaining ones if necessary
                     fallbackBuffer = encoder.FallbackBuffer;
-                    if (fallbackBuffer.Remaining > 0 && encoder.m_throwOnOverflow)
+                    if (fallbackBuffer.Remaining > 0 && encoder._throwOnOverflow)
                         throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
 
                     // Set our internal fallback interesting things.
@@ -392,7 +389,7 @@ namespace System.Text
                 }
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert
-                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder._throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetByteCount]Expected empty fallback buffer");
             }
@@ -513,7 +510,7 @@ namespace System.Text
 
             if (encoder != null)
             {
-                charLeftOver = encoder.charLeftOver;
+                charLeftOver = encoder._charLeftOver;
                 fallback = encoder.Fallback as EncoderReplacementFallback;
 
                 // We mustn't have left over fallback data when counting
@@ -521,7 +518,7 @@ namespace System.Text
                 {
                     // We always need the fallback buffer in get bytes so we can flush any remaining ones if necessary
                     fallbackBuffer = encoder.FallbackBuffer;
-                    if (fallbackBuffer.Remaining > 0 && encoder.m_throwOnOverflow)
+                    if (fallbackBuffer.Remaining > 0 && encoder._throwOnOverflow)
                         throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
 
                     // Set our internal fallback interesting things.
@@ -532,7 +529,7 @@ namespace System.Text
                     "[ASCIIEncoding.GetBytes]leftover character should be high surrogate");
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert
-                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder._throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetBytes]Expected empty fallback buffer");
             }
@@ -590,8 +587,8 @@ namespace System.Text
                     // Clear encoder
                     if (encoder != null)
                     {
-                        encoder.charLeftOver = (char)0;
-                        encoder.m_charsUsed = (int)(chars - charStart);
+                        encoder._charLeftOver = (char)0;
+                        encoder._charsUsed = (int)(chars - charStart);
                     }
 
                     return (int)(bytes - byteStart);
@@ -688,14 +685,14 @@ namespace System.Text
                 // Fallback stuck it in encoder if necessary, but we have to clear MustFlush cases
                 if (fallbackBuffer != null && !fallbackBuffer.bUsedEncoder)
                     // Clear it in case of MustFlush
-                    encoder.charLeftOver = (char)0;
+                    encoder._charLeftOver = (char)0;
 
                 // Set our chars used count
-                encoder.m_charsUsed = (int)(chars - charStart);
+                encoder._charsUsed = (int)(chars - charStart);
             }
 
             Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0 ||
-                (encoder != null && !encoder.m_throwOnOverflow),
+                (encoder != null && !encoder._throwOnOverflow),
                 "[ASCIIEncoding.GetBytes]Expected Empty fallback buffer at end");
 
             return (int)(bytes - byteStart);
@@ -716,7 +713,7 @@ namespace System.Text
             else
             {
                 fallback = decoder.Fallback as DecoderReplacementFallback;
-                Debug.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!decoder._throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
                     decoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetCharCount]Expected empty fallback buffer");
             }
@@ -799,7 +796,7 @@ namespace System.Text
             else
             {
                 fallback = decoder.Fallback as DecoderReplacementFallback;
-                Debug.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!decoder._throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
                     decoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetChars]Expected empty fallback buffer");
             }
@@ -832,7 +829,7 @@ namespace System.Text
 
                 // bytes & chars used are the same
                 if (decoder != null)
-                    decoder.m_bytesUsed = (int)(bytes - byteStart);
+                    decoder._bytesUsed = (int)(bytes - byteStart);
                 return (int)(chars - charStart);
             }
 
@@ -898,7 +895,7 @@ namespace System.Text
 
             // Might have had decoder fallback stuff.
             if (decoder != null)
-                decoder.m_bytesUsed = (int)(bytes - byteStart);
+                decoder._bytesUsed = (int)(bytes - byteStart);
 
             // Expect Empty fallback buffer for GetChars
             Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,

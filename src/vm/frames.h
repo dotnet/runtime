@@ -276,7 +276,6 @@ FRAME_TYPE_NAME(AssumeByrefFromJITStack)
 #include "vars.hpp"
 #include "regdisp.h"
 #include "object.h"
-#include "objecthandle.h"
 #include <stddef.h>
 #include "siginfo.hpp"
 // context headers

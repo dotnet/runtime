@@ -214,12 +214,13 @@ CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE me
 // vtable of it's owning class or interface.
 void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                              unsigned*             offsetOfIndirection,   /* OUT */
-                                             unsigned*             offsetAfterIndirection /* OUT */
+                                             unsigned*             offsetAfterIndirection,/* OUT */
+                                             bool*                 isRelative             /* OUT */
                                              )
 {
     mc->cr->AddCall("getMethodVTableOffset");
-    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
-    mc->recGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
+    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
+    mc->recGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
@@ -233,6 +234,14 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HAND
         original_ICorJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
     mc->recResolveVirtualMethod(virtualMethod, implementingClass, ownerType, result);
     return result;
+}
+
+void interceptor_ICJI::expandRawHandleIntrinsic(
+    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_GENERICHANDLE_RESULT *  pResult)
+{
+    mc->cr->AddCall("expandRawHandleIntrinsic");
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
@@ -300,15 +309,6 @@ BOOL interceptor_ICJI::isCompatibleDelegate(
     BOOL temp =
         original_ICorJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
     mc->recIsCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate, temp);
-    return temp;
-}
-
-// Determines whether the delegate creation obeys security transparency rules
-BOOL interceptor_ICJI::isDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd)
-{
-    mc->cr->AddCall("isDelegateCreationAllowed");
-    BOOL temp = original_ICorJitInfo->isDelegateCreationAllowed(delegateHnd, calleeHnd);
-    mc->recIsDelegateCreationAllowed(delegateHnd, calleeHnd, temp);
     return temp;
 }
 
@@ -1426,12 +1426,6 @@ LONG* interceptor_ICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
     LONG* temp = original_ICorJitInfo->getAddrOfCaptureThreadGlobal(ppIndirection);
     mc->recGetAddrOfCaptureThreadGlobal(ppIndirection, temp);
     return temp;
-}
-
-SIZE_T* interceptor_ICJI::getAddrModuleDomainID(CORINFO_MODULE_HANDLE module)
-{
-    mc->cr->AddCall("getAddrModuleDomainID");
-    return original_ICorJitInfo->getAddrModuleDomainID(module);
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)

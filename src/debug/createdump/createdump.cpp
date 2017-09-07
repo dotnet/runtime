@@ -15,8 +15,8 @@ CreateDumpCommon(const char* programPath, const char* dumpPathTemplate, MINIDUMP
     ReleaseHolder<DumpWriter> dumpWriter = new DumpWriter(*crashInfo);
     bool result = false;
 
-    ArrayHolder<char> dumpPath = new char[MAX_LONGPATH];
-    snprintf(dumpPath, MAX_LONGPATH, dumpPathTemplate, crashInfo->Pid());
+    ArrayHolder<char> dumpPath = new char[PATH_MAX];
+    snprintf(dumpPath, PATH_MAX, dumpPathTemplate, crashInfo->Pid());
 
     const char* dumpType = "minidump";
     switch (minidumpType)

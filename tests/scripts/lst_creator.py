@@ -31,7 +31,8 @@ PARSER = argparse.ArgumentParser(description=DESCRIPTION)
 
 PARSER.add_argument("--test", dest="testing", action="store_true", default=False)
 PARSER.add_argument("-lst_file", dest="old_list_file", nargs='?', default=None)
-PARSER.add_argument("-test_dir", dest="test_dir", nargs='?', default=None)
+PARSER.add_argument("-pri0_test_dir", dest="pri0_test_dir", nargs='?', default=None)
+PARSER.add_argument("-pri1_test_dir", dest="pri1_test_dir", nargs='?', default=None)
 PARSER.add_argument("-commit_hash", dest="commit_hash", nargs='?', default=None)
 PARSER.add_argument("-failures_csv", dest="failures_csv", nargs='?', default=None)
 PARSER.add_argument("--unset_new", dest="unset_new", action="store_true", default=False)
@@ -62,12 +63,12 @@ def create_list_file(file_name, metadata):
     old_metadata = [item for item in metadata if item[1] != -1]
 
     with open(file_name, "w") as file_handle:
-        file_handle.write("## This list file has been produced automatically. Any changes" + os.pathsep)
-        file_handle.write("## are subject to being overwritten when reproducing this file." + os.pathsep))
-        file_handle.write("## " + os.pathsep))
-        file_handle.write("## Last Updated: %s%s" % (current_time_str, os.pathsep))
-        file_handle.write("## Commit: %s%s" % (ARGS.commit_hash, os.pathsep))
-        file_handle.write("## " + os.pathsep))
+        file_handle.write("## This list file has been produced automatically. Any changes\n")
+        file_handle.write("## are subject to being overwritten when reproducing this file.\n")
+        file_handle.write("## \n")
+        file_handle.write("## Last Updated: %s\n" % current_time_str)
+        file_handle.write("## Commit: %s\n" % ARGS.commit_hash)
+        file_handle.write("## \n")
 
         order = ["RelativePath", "WorkingDir", "Expected", 
                 "MaxAllowedDurationSeconds", "Categories", "HostStyle"]
@@ -88,18 +89,28 @@ def create_list_file(file_name, metadata):
 
                 attribute_str = ""
                 for key in order:
-                    attribute_str += "%s=%s%s" % (key, item[key], os.pathsep))
+                    attribute_str += "%s=%s\n" % (key, item[key])
 
-                file_handle.write(attribute_str + os.pathsep))
+                file_handle.write(attribute_str + "\n")
 
         write_metadata(old_metadata)
-        write_metadata(new_metadata, old_metadata[-1][1] + 1)
+
+        old_number = 0
+        try:
+            old_number = old_metadata[-1][1] + 1
+
+        except:
+            # New lstFile
+            pass
+
+        write_metadata(new_metadata, old_number + 1)
 
 def create_metadata(tests):
     """ Given a set of tests create the metadata around them
 
     Args:
-        tests ([str]): List of tests for which to determine metadata
+        tests ({str : int}): List of tests for which to determine metadata
+                           : int represents the priority
 
     Returns:
         test_metadata ({ str: { str: str } }): Dictionary mapping test name to
@@ -131,12 +142,20 @@ def create_metadata(tests):
             raise Exception("Error. CSV format expects: relativepath,category")
 
     for test in tests:
-        working_directory = os.path.dirname(test).replace("/", "\\")
+        test_name = test
+        priority = tests[test]
+
+        working_directory = os.path.dirname(test_name).replace("/", "\\")
 
         # Make sure the tests use the windows \ seperator.
-        relative_path = test.replace("/", "\\")
+        relative_path = test_name.replace("/", "\\")
         max_duration = "600"
-        categories = "EXPECTED_PASS"
+        
+        if priority == 0:
+            categories = "EXPECTED_PASS"
+        else:
+            categories = "EXPECTED_PASS;Pri%d" % priority
+        
         expected = "0"
         host_style = "0"
 
@@ -184,7 +203,6 @@ def get_all_tests(base_dir):
         items = [os.path.join(working_dir, item) for item in items]
         dirs = [item for item in items if os.path.isdir(item)]
         tests = [item for item in items if ".cmd" in item]
-
 
         for item in dirs:
             tests += get_all_tests_helper(item)
@@ -271,7 +289,8 @@ def main(args):
     """
 
     # Assign all of the passed variables.
-    test_dir = args.test_dir
+    pri0_test_dir = args.pri0_test_dir
+    pri1_test_dir = args.pri1_test_dir
     old_list_file = args.old_list_file
     commit_hash = args.commit_hash
     unset_new = args.unset_new
@@ -280,13 +299,27 @@ def main(args):
         print "Error please provide a commit hash."
         sys.exit(1)
 
-    if test_dir is None or not os.path.isdir(test_dir):
-        print "Error the test directory passed is not a valid directory."
+    if pri0_test_dir is None or not os.path.isdir(pri0_test_dir):
+        print "Error the Pri1 test directory passed is not a valid directory."
         sys.exit(1)
 
-    tests = get_all_tests(test_dir)
-    print "Found %d tests in the test directory." % (len(tests))
+    if pri1_test_dir is None or not os.path.isdir(pri1_test_dir):
+        print "Error the Pri1 test directory passed is not a valid directory."
+        sys.exit(1)
+
+    pri0_tests = get_all_tests(pri0_test_dir)
+    print "Found %d tests in the pri0 test directory." % (len(pri0_tests))
+
+    pri1_tests = get_all_tests(pri1_test_dir)
+    print "Found %d tests in the pri1 test directory." % (len(pri1_tests))
     print
+
+    priority_marked_tests = defaultdict(lambda: None)
+    
+    for test in pri1_tests:
+        priority_marked_tests[test] = 1
+    for test in pri0_tests:
+        priority_marked_tests[test] = 0
 
     old_test_metadata = None
     # If we are updating an old lstFile. Get all of the tests from that
@@ -295,8 +328,13 @@ def main(args):
         old_test_metadata = parse_lst_file(old_list_file)
 
         print "Found %d tests in the old lstFile." % (len(old_test_metadata))
+        print
 
-    test_metadata = create_metadata(tests)
+    test_metadata = create_metadata(priority_marked_tests)
+
+    # Make sure the tuples are set up correctly.
+    for item in test_metadata:
+        test_metadata[item] = (test_metadata[item], -1)
 
     if old_test_metadata is not None:
         # If the new information has been changed, we will need to update
@@ -311,13 +349,13 @@ def main(args):
             attributes = None
             if old_test_metadata[test_name] is None:
                 new_test_count += 1
-                new_metadata["Categories"] += ";NEW"
-                old_test_metadata[test_name] = (new_metadata, -1)
+                new_metadata[0]["Categories"] += ";NEW"
+                old_test_metadata[test_name] = (new_metadata[0], -1)
 
             else:
                 index = old_metadata[1]
                 old_metadata = old_metadata[0]
-                attributes = set(old_metadata.keys() + new_metadata.keys())
+                attributes = set(old_metadata.keys() + new_metadata[0].keys())
 
                 # Make sure we go through all attributes of both sets.
                 # If an attribute exists in one set but not the other it will
@@ -331,7 +369,7 @@ def main(args):
                     if attribute == "MaxAllowedDurationSeconds":
                             continue
                     if attribute == "Categories":
-                        new_split = new_metadata["Categories"].split(";")
+                        new_split = new_metadata[0]["Categories"].split(";")
                         old_split = old_metadata["Categories"].split(";")
 
                         if unset_new:
@@ -350,24 +388,27 @@ def main(args):
 
                         joined_categories = set(old_split + new_split)
 
-                        overwritten = True
+                        if (old_split != new_split):
+                            overwritten = True
                         ordered_categories = []
                         for item in old_split:
                             if item in joined_categories:
                                 ordered_categories.append(item)
                                 joined_categories.remove(item)
 
+                        ordered_categories = [item for item in ordered_categories if item != ""]
+
                         old_metadata[attribute] = ";".join(ordered_categories)
                         old_metadata[attribute] = old_metadata[attribute] + ";" + ";".join(joined_categories) if len(joined_categories) > 0 else old_metadata[attribute]
                         old_test_metadata[test_name] = (old_metadata, index)
 
-                    elif new_metadata[attribute] != old_metadata[attribute]:
+                    elif new_metadata[0][attribute] != old_metadata[attribute]:
                             # If the old information is not the same as the new
                             # information, keep the new information. overwrite the old
                             # metadata.
-                            if new_metadata[attribute] is not None:
+                            if new_metadata[0][attribute] is not None:
                                 overwritten = True
-                                old_metadata[attribute] = new_metadata[attribute]
+                                old_metadata[attribute] = new_metadata[0][attribute]
 
                                 old_test_metadata[test_name] = (old_metadata, index)
 

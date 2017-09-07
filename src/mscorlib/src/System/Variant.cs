@@ -23,7 +23,6 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct Variant
     {

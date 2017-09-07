@@ -205,7 +205,7 @@ void Interpreter::StLoc(int locNum)
 
     m_curStackHt = ind;
 
-#ifdef _DEBUG
+#if INTERP_TRACING
     // The value of the locals has changed; print them.
     if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
     {

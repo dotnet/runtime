@@ -15,14 +15,17 @@ namespace Functions
         private const float atan2SingleDeltaY = 0.0004f;
         private const float atan2SingleExpectedResult = 3930.14282f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = Atan2SingleIterations)]
         public static void Atan2SingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Atan2SingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Atan2SingleTest();
+                    }
                 }
             }
         }

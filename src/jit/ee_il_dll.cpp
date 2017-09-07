@@ -58,6 +58,20 @@ extern "C" void __stdcall jitStartup(ICorJitHost* jitHost)
 {
     if (g_jitInitialized)
     {
+        if (jitHost != g_jitHost)
+        {
+            // We normally don't expect jitStartup() to be invoked more than once.
+            // (We check whether it has been called once due to an abundance of caution.)
+            // However, during SuperPMI playback of MCH file, we need to JIT many different methods.
+            // Each one carries its own environment configuration state.
+            // So, we need the JIT to reload the JitConfig state for each change in the environment state of the
+            // replayed compilations.
+            // We do this by calling jitStartup with a different ICorJitHost,
+            // and have the JIT re-initialize its JitConfig state when this happens.
+            JitConfig.destroy(g_jitHost);
+            JitConfig.initialize(jitHost);
+            g_jitHost = jitHost;
+        }
         return;
     }
 
@@ -126,6 +140,8 @@ void jitShutdown()
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessDetach();
 #endif
+
+    g_jitInitialized = false;
 }
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
@@ -345,9 +361,7 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
         // Continue, by shutting down this JIT as well.
     }
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
     jitShutdown();
-#endif
 
     Compiler::ProcessShutdownWork(statInfo);
 }

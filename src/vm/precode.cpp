@@ -15,6 +15,10 @@
 #include "compile.h"
 #endif
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 //==========================================================================================
 // class Precode
 //==========================================================================================
@@ -556,6 +560,9 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
             pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
         }
 
+#ifdef FEATURE_PERFMAP
+        PerfMap::LogStubs(__FUNCTION__, "PRECODE_FIXUP", (PCODE)temporaryEntryPoints, count * sizeof(FixupPrecode));
+#endif
         ClrFlushInstructionCache((LPVOID)temporaryEntryPoints, count * sizeof(FixupPrecode));
 
         return temporaryEntryPoints;
@@ -574,6 +581,10 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 
         pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
     }
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "PRECODE_STUB", (PCODE)temporaryEntryPoints, count * oneSize);
+#endif
 
     ClrFlushInstructionCache((LPVOID)temporaryEntryPoints, count * oneSize);
 

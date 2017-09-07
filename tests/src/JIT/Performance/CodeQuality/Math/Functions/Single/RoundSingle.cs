@@ -14,14 +14,17 @@ namespace Functions
         private const float roundSingleDelta = 0.000628318531f;
         private const float roundSingleExpectedResult = 2.0f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = RoundSingleIterations)]
         public static void RoundSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    RoundSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        RoundSingleTest();
+                    }
                 }
             }
         }

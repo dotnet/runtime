@@ -44,7 +44,7 @@ namespace System.Reflection.Emit
     // This InternalAssemblyBuilder can be retrieved via a call to Assembly.GetAssemblies() by untrusted code.
     // In the past, when InternalAssemblyBuilder was AssemblyBuilder, the untrusted user could down cast the
     // Assembly to an AssemblyBuilder and emit code with the elevated permissions of the trusted code which 
-    // origionally created the AssemblyBuilder via DefineDynamicAssembly. Today, this can no longer happen
+    // originally created the AssemblyBuilder via DefineDynamicAssembly. Today, this can no longer happen
     // because the Assembly returned via AssemblyGetAssemblies() will be an InternalAssemblyBuilder.
 
     // Only the caller of DefineDynamicAssembly will get an AssemblyBuilder. 

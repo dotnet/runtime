@@ -184,9 +184,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
             <Issue>6707</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\CheckProjects\CheckProjects\*">
-            <Issue></Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
@@ -213,8 +210,16 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255294\DevDiv_255294\DevDiv_255294.cmd">
             <Issue>11469, The test causes OutOfMemory exception in crossgen mode.</Issue> 
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_278523\DevDiv_278523\DevDiv_278523.cmd">
-            <Issue>11476, fails on both jit32 and RyuJit x86</Issue>
+    </ItemGroup>
+
+    <!-- The following are ARM32 failures -->
+
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm'">
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\hijacking\hijacking.cmd">
+            <Issue>6217</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
+            <Issue>2420</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -474,9 +479,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHFragmentation\lohfragmentation\lohfragmentation.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\SustainedLowLatency\scenario\scenario.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\collect.cmd">
@@ -1008,33 +1010,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relpointer_i\_il_relpointer_i.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\gc_ctor_il_d\gc_ctor_il_d.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\gc_ctor_il_r\gc_ctor_il_r.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\val_ctor_il_d\val_ctor_il_d.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\val_ctor_il_r\val_ctor_il_r.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\misc\Dev10_615402\Dev10_615402.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_d\fault_il_d.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_r\fault_il_r.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\filter_il_d\filter_il_d.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\filter_il_r\filter_il_r.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_dbglocalloc\_il_dbglocalloc.cmd">

@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
@@ -71,9 +70,8 @@ namespace System
         FullName,
     }
 
-    [Serializable]
     internal class RuntimeType :
-        System.Reflection.TypeInfo, ISerializable, ICloneable
+        System.Reflection.TypeInfo, ICloneable
     {
         #region Definitions
 
@@ -620,7 +618,11 @@ namespace System
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType();
 
-                        bool* overrides = stackalloc bool[RuntimeTypeHandle.GetNumVirtuals(declaringType)];
+                        int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
+
+                        bool* overrides = stackalloc bool[numVirtuals];
+                        new Span<bool>(overrides, numVirtuals).Clear();
+
                         bool isValueType = declaringType.IsValueType;
 
                         do
@@ -2405,7 +2407,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if ((object)argumentTypes[i] != null && !Object.ReferenceEquals(parameterInfos[i].ParameterType, argumentTypes[i]))
+                                if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -2487,8 +2489,11 @@ namespace System
         #region Type Overrides
 
         #region Get XXXInfo Candidates
+
+        private const int GenericParameterCountAny = -1;
+
         private ListBuilder<MethodInfo> GetMethodCandidates(
-            String name, BindingFlags bindingAttr, CallingConventions callConv,
+            String name, int genericParameterCount, BindingFlags bindingAttr, CallingConventions callConv,
             Type[] types, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
@@ -2501,6 +2506,9 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeMethodInfo methodInfo = cache[i];
+                if (genericParameterCount != GenericParameterCountAny && genericParameterCount != methodInfo.GenericParameterCount)
+                    continue;
+
                 if (FilterApplyMethodInfo(methodInfo, bindingAttr, callConv, types) &&
                     (!prefixLookup || RuntimeType.FilterApplyPrefixLookup(methodInfo, name, ignoreCase)))
                 {
@@ -2638,7 +2646,7 @@ namespace System
         #region Get All XXXInfos
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
-            return GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
+            return GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false).ToArray();
         }
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
@@ -2678,7 +2686,7 @@ namespace System
 
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            ListBuilder<MethodInfo> methods = GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, false);
+            ListBuilder<MethodInfo> methods = GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false);
             ListBuilder<ConstructorInfo> constructors = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false);
             ListBuilder<PropertyInfo> properties = GetPropertyCandidates(null, bindingAttr, null, false);
             ListBuilder<EventInfo> events = GetEventCandidates(null, bindingAttr, false);
@@ -2767,11 +2775,26 @@ namespace System
         #endregion
 
         #region Find XXXInfo
+
         protected override MethodInfo GetMethodImpl(
             String name, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
             Type[] types, ParameterModifier[] modifiers)
         {
-            ListBuilder<MethodInfo> candidates = GetMethodCandidates(name, bindingAttr, callConv, types, false);
+            return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConv, types, modifiers);
+        }
+
+        protected override MethodInfo GetMethodImpl(
+            String name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
+            Type[] types, ParameterModifier[] modifiers)
+        {
+            return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConv, types, modifiers);
+        }
+
+        private MethodInfo GetMethodImplCommon(
+            String name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
+            Type[] types, ParameterModifier[] modifiers)
+        {
+            ListBuilder<MethodInfo> candidates = GetMethodCandidates(name, genericParameterCount, bindingAttr, callConv, types, false);
 
             if (candidates.Count == 0)
                 return null;
@@ -3031,7 +3054,7 @@ namespace System
             // Methods
             if ((type & MemberTypes.Method) != 0)
             {
-                methods = GetMethodCandidates(name, bindingAttr, CallingConventions.Any, null, true);
+                methods = GetMethodCandidates(name, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, true);
                 if (type == MemberTypes.Method)
                     return methods.ToArray();
                 totalCount += methods.Count;
@@ -3449,6 +3472,8 @@ namespace System
             return RuntimeTypeHandle.IsComObject(this, false);
         }
 
+        public sealed override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
+
 #if FEATURE_COMINTEROP
         internal override bool IsWindowsRuntimeObjectImpl()
         {
@@ -3689,6 +3714,8 @@ namespace System
             if (GetGenericArguments().Length != instantiation.Length)
                 throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
 
+            bool foundSigType = false;
+            bool foundNonRuntimeType = false;
             for (int i = 0; i < instantiation.Length; i++)
             {
                 Type instantiationElem = instantiation[i];
@@ -3699,14 +3726,22 @@ namespace System
 
                 if (rtInstantiationElem == null)
                 {
-                    Type[] instantiationCopy = new Type[instantiation.Length];
-                    for (int iCopy = 0; iCopy < instantiation.Length; iCopy++)
-                        instantiationCopy[iCopy] = instantiation[iCopy];
-                    instantiation = instantiationCopy;
-                    return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, instantiation);
+                    foundNonRuntimeType = true;
+                    if (instantiationElem.IsSignatureType)
+                    {
+                        foundSigType = true;
+                    }
                 }
 
                 instantiationRuntimeType[i] = rtInstantiationElem;
+            }
+
+            if (foundNonRuntimeType)
+            {
+                if (foundSigType)
+                    return new SignatureConstructedGenericType(this, instantiation);
+
+                return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
             }
 
             RuntimeType[] genericParameters = GetGenericArgumentsInternal();
@@ -3789,6 +3824,8 @@ namespace System
         #endregion
 
         #region Misc
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
+
         public override bool IsTypeDefinition
         {
             get { return RuntimeTypeHandle.IsTypeDefinition(this); }
@@ -4045,7 +4082,7 @@ namespace System
 #endif // FEATURE_COMINTEROP && FEATURE_USE_LCID
             #endregion
 
-            #region Check that any named paramters are not null
+            #region Check that any named parameters are not null
             if (namedParams != null && Array.IndexOf(namedParams, null) != -1)
                 // "Named parameter value must not be null."
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
@@ -4443,17 +4480,6 @@ namespace System
         }
         #endregion
 
-        #region ISerializable
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info, this);
-        }
-        #endregion
-
         #region ICustomAttributeProvider
         public override Object[] GetCustomAttributes(bool inherit)
         {
@@ -4603,7 +4629,7 @@ namespace System
         }
 
         internal Object CreateInstanceImpl(
-            BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture, Object[] activationAttributes, ref StackCrawlMark stackMark)
+            BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture, Object[] activationAttributes)
         {
             CreateInstanceCheckThis();
 
@@ -4620,10 +4646,12 @@ namespace System
 
             // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
             // so a call to GetMemberCons would fail
+            bool publicOnly = (bindingAttr & BindingFlags.NonPublic) == 0;
+            bool wrapExceptions = (bindingAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                server = CreateInstanceDefaultCtor((bindingAttr & BindingFlags.NonPublic) == 0, false, true, ref stackMark);
+                server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
             }
             else
             {
@@ -4681,7 +4709,7 @@ namespace System
                     }
 
                     // fast path??
-                    server = Activator.CreateInstance(this, true);
+                    server = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
                 }
                 else
                 {
@@ -4765,7 +4793,7 @@ namespace System
 
             internal void SetEntry(ActivatorCacheEntry ace)
             {
-                // fill the the array backwards to hit the most recently filled entries first in GetEntry
+                // fill the array backwards to hit the most recently filled entries first in GetEntry
                 int index = (hash_counter - 1) & (ActivatorCache.CACHE_SIZE - 1);
                 hash_counter = index;
                 Volatile.Write(ref cache[index], ace);
@@ -4775,7 +4803,7 @@ namespace System
         private static volatile ActivatorCache s_ActivatorCache;
 
         // the slow path of CreateInstanceDefaultCtor
-        internal Object CreateInstanceSlow(bool publicOnly, bool skipCheckThis, bool fillCache, ref StackCrawlMark stackMark)
+        internal Object CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
         {
             RuntimeMethodHandleInternal runtime_ctor = default(RuntimeMethodHandleInternal);
             bool bCanBeCached = false;
@@ -4783,7 +4811,7 @@ namespace System
             if (!skipCheckThis)
                 CreateInstanceCheckThis();
 
-            Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, ref bCanBeCached, ref runtime_ctor);
+            Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref bCanBeCached, ref runtime_ctor);
 
             if (bCanBeCached && fillCache)
             {
@@ -4807,7 +4835,7 @@ namespace System
         // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal Object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, ref StackCrawlMark stackMark)
+        internal Object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             if (GetType() == typeof(ReflectionOnlyType))
                 throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
@@ -4840,7 +4868,7 @@ namespace System
                         {
                             ace.m_ctor(instance);
                         }
-                        catch (Exception e)
+                        catch (Exception e) when (wrapExceptions)
                         {
                             throw new TargetInvocationException(e);
                         }
@@ -4848,7 +4876,7 @@ namespace System
                     return instance;
                 }
             }
-            return CreateInstanceSlow(publicOnly, skipCheckThis, fillCache, ref stackMark);
+            return CreateInstanceSlow(publicOnly, wrapExceptions, skipCheckThis, fillCache);
         }
 
         internal void InvalidateCachedNestedType()
@@ -4910,7 +4938,6 @@ namespace System
     // method (RuntimeType) and an instance of this type will work around the reason to have this type in the 
     // first place. However given RuntimeType is not public all its methods are protected and require full trust
     // to be accessed
-    [Serializable]
     internal class ReflectionOnlyType : RuntimeType
     {
         private ReflectionOnlyType() { }

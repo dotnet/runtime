@@ -7,6 +7,7 @@
     <ContainerName Condition="'$(__Container)' == '' and '$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
     <ContainerName Condition="'$(__Container)' != ''">$(__Container)</ContainerName>
     <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
+    <BlobNamePrefix>$(__BlobNamePrefix)</BlobNamePrefix>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' != 'true'">$(PackagesDir)AzureTransfer</DownloadDirectory>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' == 'true'">$(PackagesDir)TestNativeBins\$(RuntimeId)</DownloadDirectory>
   </PropertyGroup>
@@ -20,5 +21,6 @@
     <Error Condition="'$(RuntimeId)' == '' and '$(PublishTestNativeBins)' == 'true'" Text="Missing property RuntimeId." />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="ValidateRequiredProperties;DownloadBlobsFromAzureTargets" />
+  <!-- We don't want to run sync on test native binaries for Windows, since those don't get published -->
+  <Target Name="Build" DependsOnTargets="ValidateRequiredProperties;DownloadBlobsFromAzureTargets" Condition="'$(PublishTestNativeBins)' != 'true' or !$(RuntimeId.ToLower().StartsWith('win'))"/>
 </Project>

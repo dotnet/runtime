@@ -1318,7 +1318,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
 
     pEEClassLayoutInfoOut->m_numCTMFields        = fHasNonTrivialParent ? pParentMT->GetLayoutInfo()->m_numCTMFields : 0;
-    pEEClassLayoutInfoOut->m_pFieldMarshalers    = NULL;
+    pEEClassLayoutInfoOut->SetFieldMarshalers(NULL);
     pEEClassLayoutInfoOut->SetIsBlittable(TRUE);
     if (fHasNonTrivialParent)
         pEEClassLayoutInfoOut->SetIsBlittable(pParentMT->IsBlittable());
@@ -1599,18 +1599,26 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
 
     if (pEEClassLayoutInfoOut->m_numCTMFields)
     {
-        pEEClassLayoutInfoOut->m_pFieldMarshalers = (FieldMarshaler*)(pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(MAXFIELDMARSHALERSIZE) * S_SIZE_T(pEEClassLayoutInfoOut->m_numCTMFields))));
+        pEEClassLayoutInfoOut->SetFieldMarshalers((FieldMarshaler*)(pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(MAXFIELDMARSHALERSIZE) * S_SIZE_T(pEEClassLayoutInfoOut->m_numCTMFields)))));
 
         // Bring in the parent's fieldmarshalers
         if (fHasNonTrivialParent)
         {
             CONSISTENCY_CHECK(fParentHasLayout);
             PREFAST_ASSUME(pParentLayoutInfo != NULL);  // See if (fParentHasLayout) branch above
-            
+
             UINT numChildCTMFields = pEEClassLayoutInfoOut->m_numCTMFields - pParentLayoutInfo->m_numCTMFields;
-            memcpyNoGCRefs( ((BYTE*)pEEClassLayoutInfoOut->m_pFieldMarshalers) + MAXFIELDMARSHALERSIZE*numChildCTMFields,
-                            pParentLayoutInfo->m_pFieldMarshalers,
-                            MAXFIELDMARSHALERSIZE * (pParentLayoutInfo->m_numCTMFields) );
+
+            BYTE *pParentCTMFieldSrcArray = (BYTE*)pParentLayoutInfo->GetFieldMarshalers();
+            BYTE *pParentCTMFieldDestArray = ((BYTE*)pEEClassLayoutInfoOut->GetFieldMarshalers()) + MAXFIELDMARSHALERSIZE*numChildCTMFields;
+
+            for (UINT parentCTMFieldIndex = 0; parentCTMFieldIndex < pParentLayoutInfo->m_numCTMFields; parentCTMFieldIndex++)
+            {
+                FieldMarshaler *pParentCTMFieldSrc = (FieldMarshaler *)(pParentCTMFieldSrcArray + MAXFIELDMARSHALERSIZE*parentCTMFieldIndex);
+                FieldMarshaler *pParentCTMFieldDest = (FieldMarshaler *)(pParentCTMFieldDestArray + MAXFIELDMARSHALERSIZE*parentCTMFieldIndex);
+
+                pParentCTMFieldSrc->CopyTo(pParentCTMFieldDest, MAXFIELDMARSHALERSIZE);
+            }
         }
 
     }
@@ -3726,7 +3734,7 @@ VOID FieldMarshaler_SafeArray::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pNa
     pSafeArray = (LPSAFEARRAY*)pNativeValue;
 
     VARTYPE vt = m_vt;
-    MethodTable* pMT = m_pMT.GetValue();
+    MethodTable* pMT = m_pMT.GetValueMaybeNull();
 
     GCPROTECT_BEGIN(pArray)
     {
@@ -3771,7 +3779,7 @@ VOID FieldMarshaler_SafeArray::UpdateCLRImpl(const VOID *pNativeValue, OBJECTREF
     }
 
     VARTYPE vt = m_vt;
-    MethodTable* pMT = m_pMT.GetValue();
+    MethodTable* pMT = m_pMT.GetValueMaybeNull();
 
     // If we have an empty vartype, get it from the safearray vartype
     if (vt == VT_EMPTY)
@@ -4868,3 +4876,10 @@ IMPLEMENT_FieldMarshaler_METHOD(void, Restore,
     (),
     ,
     ())
+
+#ifndef DACCESS_COMPILE
+IMPLEMENT_FieldMarshaler_METHOD(VOID, CopyTo,
+    (VOID *pDest, SIZE_T destSize) const,
+    ,
+    (pDest, destSize))
+#endif // !DACCESS_COMPILE

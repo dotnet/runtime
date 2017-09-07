@@ -53,6 +53,8 @@ int verbMerge::AppendFile(HANDLE hFileOut, LPCWSTR fileName, unsigned char* buff
                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hFileIn == INVALID_HANDLE_VALUE)
     {
+        // If you use a relative path, you can get GetLastError()==3, if the absolute path is longer
+        // than MAX_PATH.
         LogError("Failed to open input file '%s'. GetLastError()=%u", fileNameAsChar, GetLastError());
         return -1;
     }
@@ -312,7 +314,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
         const _WIN32_FIND_DATAW& findData     = fileArray[i];
         LPWSTR                   fileFullPath = MergePathStrings(dir, findData.cFileName);
 
-        if (wcslen(fileFullPath) > MAX_PATH) // It is too long path, use \\?\ to access it.
+        if (wcslen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
             assert(wcscmp(dir, W(".")) != 0 && "can't access the relative path with UNC");
             LPWSTR newBuffer = new WCHAR[wcslen(fileFullPath) + 30];
@@ -449,7 +451,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
         // The user may have passed a relative path without a slash, or the current directory.
         // If there is a wildcard, we use it as the file pattern. If there isn't, we assume it's a relative directory
         // name and use it as a directory, with "*" as the file pattern.
-        LPCWSTR wildcard = wcschr(dir, '*');
+        LPCWSTR wildcard = wcschr(patternAsWchar, '*');
         if (wildcard == NULL)
         {
             file = W("*");
@@ -504,7 +506,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
 
 CLEAN_UP:
 
-    free((void*)dir);
+    delete[] patternAsWchar;
     delete[] buffer;
 
     if (CloseHandle(hFileOut) == 0)
@@ -522,6 +524,7 @@ CLEAN_UP:
             LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());
         }
     }
+    delete[] nameOfOutputFileAsWchar;
 
     return result;
 }

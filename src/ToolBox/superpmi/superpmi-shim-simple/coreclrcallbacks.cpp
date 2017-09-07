@@ -11,7 +11,7 @@ CoreClrCallbacks*           original_CoreClrCallbacks         = nullptr;
 pfnEEHeapAllocInProcessHeap original_EEHeapAllocInProcessHeap = nullptr;
 pfnEEHeapFreeInProcessHeap  original_EEHeapFreeInProcessHeap  = nullptr;
 
-IExecutionEngine* IEE_t()
+IExecutionEngine* STDMETHODCALLTYPE IEE_t()
 {
     interceptor_IEE* iee = new interceptor_IEE();
     iee->original_IEE    = original_CoreClrCallbacks->m_pfnIEE();
@@ -26,17 +26,17 @@ HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer,
 }
 */
 
-LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
+LPVOID STDMETHODCALLTYPE EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
 {
     return original_EEHeapAllocInProcessHeap(dwFlags, dwBytes);
 }
 
-BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
+BOOL STDMETHODCALLTYPE EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
 {
     return original_EEHeapFreeInProcessHeap(dwFlags, lpMem);
 }
 
-void* GetCLRFunction(LPCSTR functionName)
+void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName)
 {
     if (strcmp(functionName, "EEHeapAllocInProcessHeap") == 0)
     {

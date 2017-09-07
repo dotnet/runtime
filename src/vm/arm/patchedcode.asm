@@ -63,17 +63,6 @@ $label
     TEXTAREA
 
 
-    MACRO
-    FIX_INDIRECTION $Reg, $label
-#ifdef FEATURE_PREJIT
-        tst    $Reg, #1
-        beq     $label
-        ldr    $Reg, [$Reg, #-1]
-$label
-#endif
-    MEND
-
-
 ; ------------------------------------------------------------------
 ; Start of the writeable code region
     LEAF_ENTRY JIT_PatchedCodeStart
@@ -336,11 +325,11 @@ AllocFailed3
     LEAF_END
 
 
-; HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
+; HCIMPL2(Object*, JIT_NewArr1VC_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 ;---------------------------------------------------------------------------
-; IN: r0: type descriptor which contains the (shared) array method table and the element type.
+; IN: r0: a (shared) array method table, which contains the element type.
 ; IN: r1: number of array elements 
-;; OUT: r0: address of newly allocated string
+;; OUT: r0: address of newly allocated object
 
     LEAF_ENTRY JIT_NewArr1VC_MP_InlineGetThread
 
@@ -358,13 +347,8 @@ AllocFailed3
     cmp r1, #MAX_FAST_ALLOCATE_ARRAY_VC_SIZE
     bhs OverSizedArray3
 
-    ;load MethodTable from ArrayTypeDesc
-    ldr r3, [r0, #ArrayTypeDesc__m_TemplateMT - 2]
-
-    FIX_INDIRECTION r3, label1
-
     ;get element size - stored in low 16bits of m_dwFlags
-    ldrh r12, [r3, #MethodTable__m_dwFlags]
+    ldrh r12, [r0, #MethodTable__m_dwFlags]
 
     ; getting size of object to allocate
 
@@ -398,11 +382,7 @@ AllocFailed3
     str r1, [r2, #ArrayBase__m_NumComponents]
 
     ;store methodtable
-    ldr r3, [r0, #ArrayTypeDesc__m_TemplateMT - 2]
-
-    FIX_INDIRECTION r3, label2
-
-    str r3, [r2]
+    str r0, [r2]
 
     ;copy return value
     mov r0, r2
@@ -426,11 +406,11 @@ OverSizedArray3
 
 
 
-; HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
+; HCIMPL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 ;---------------------------------------------------------------------------
-; IN: r0: type descriptor which contains the (shared) array method table and the element type.
+; IN: r0: a (shared) array method table, which contains the element type.
 ; IN: r1: number of array elements 
-;; OUT: r0: address of newly allocated string
+;; OUT: r0: address of newly allocated object
 
     LEAF_ENTRY JIT_NewArr1OBJ_MP_InlineGetThread
 
@@ -466,11 +446,7 @@ OverSizedArray3
     str r1, [r2, #ArrayBase__m_NumComponents]
 
     ;store methodtable
-    ldr r3, [r0, #ArrayTypeDesc__m_TemplateMT - 2]
-
-    FIX_INDIRECTION r3, label3
-
-    str r3, [r2]
+    str r0, [r2]
 
     ;copy return value
     mov r0, r2

@@ -4,7 +4,6 @@
 
 namespace System.Reflection
 {
-    [Serializable]
     public struct ParameterModifier
     {
         private readonly bool[] _byRef;

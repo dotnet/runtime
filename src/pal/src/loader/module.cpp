@@ -285,7 +285,7 @@ GetProcAddress(
        because of the address range reserved for ordinals contain can
        be a valid string address on non-Windows systems
     */
-    if ((DWORD_PTR)lpProcName < VIRTUAL_PAGE_SIZE)
+    if ((DWORD_PTR)lpProcName < GetVirtualPageSize())
     {
         ASSERT("Attempt to locate symbol by ordinal?!\n");
     }

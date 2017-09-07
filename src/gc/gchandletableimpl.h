@@ -15,13 +15,17 @@ public:
 
     virtual bool ContainsHandle(OBJECTHANDLE handle);
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type);
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type);
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type, int heapToAffinitizeTo);
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo);
 
-    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, int type, void* pExtraInfo);
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo);
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary);
+
+    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget);
+
+    virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context);
 
     virtual ~GCHandleStore();
 
@@ -45,13 +49,15 @@ public:
 
     virtual void DestroyHandleStore(IGCHandleStore* store);
 
-    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type);
+    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, HandleType type);
 
     virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle);
 
-    virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type);
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type);
 
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle);
+
+    virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo);
 
     virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle);
 
@@ -59,7 +65,15 @@ public:
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object);
 
+    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object);
+
+    virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle);
+
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
+
+    virtual HandleType HandleFetchType(OBJECTHANDLE handle);
+
+    virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2);
 };
 
 #endif  // GCHANDLETABLE_H_

@@ -56,6 +56,12 @@ InternalSetFilePointerForUnixFd(
     );
 
 void
+CFileProcessLocalDataCleanupRoutine(
+    CPalThread *pThread,
+    IPalObject *pObjectToCleanup
+    );
+
+void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
@@ -68,7 +74,10 @@ CObjectType CorUnix::otFile(
                 FileCleanupRoutine,
                 NULL,   // No initialization routine
                 0,      // No immutable data
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
+                CFileProcessLocalDataCleanupRoutine,
                 0,      // No shared data
                 GENERIC_READ|GENERIC_WRITE,  // Ignored -- no Win32 object security support
                 CObjectType::SecuritySupported,
@@ -84,6 +93,34 @@ CObjectType CorUnix::otFile(
 CAllowedObjectTypes CorUnix::aotFile(otiFile);
 static CSharedMemoryFileLockMgr _FileLockManager;
 IFileLockManager *CorUnix::g_pFileLockManager = &_FileLockManager;
+
+void
+CFileProcessLocalDataCleanupRoutine(
+    CPalThread *pThread,
+    IPalObject *pObjectToCleanup
+    )
+{
+    PAL_ERROR palError;
+    CFileProcessLocalData *pLocalData = NULL;
+    IDataLock *pLocalDataLock = NULL;
+
+    palError = pObjectToCleanup->GetProcessLocalData(
+        pThread,
+        ReadLock,
+        &pLocalDataLock,
+        reinterpret_cast<void**>(&pLocalData)
+        );
+
+    if (NO_ERROR != palError)
+    {
+        ASSERT("Unable to obtain data to cleanup file object");
+        return;
+    }
+
+    free(pLocalData->unix_filename);
+
+    pLocalDataLock->ReleaseLock(pThread, FALSE);
+}
 
 void
 FileCleanupRoutine(
@@ -738,10 +775,12 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    if (strcpy_s(pLocalData->unix_filename, sizeof(pLocalData->unix_filename), lpUnixPath) != SAFECRT_SUCCESS)
+    _ASSERTE(pLocalData->unix_filename == NULL);
+    pLocalData->unix_filename = strdup(lpUnixPath);
+    if (pLocalData->unix_filename == NULL)
     {
-        palError = ERROR_INSUFFICIENT_BUFFER;
-        TRACE("strcpy_s failed!\n");
+        ASSERT("Unable to copy string\n");
+        palError = ERROR_INTERNAL_ERROR;
         goto done;
     }
 
@@ -1208,67 +1247,6 @@ done:
     return bRet;
 }
 
-
-/*++
-Function:
-  MoveFileA
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-MoveFileA(
-     IN LPCSTR lpExistingFileName,
-     IN LPCSTR lpNewFileName)
-{
-    BOOL bRet;
-
-    PERF_ENTRY(MoveFileA);
-    ENTRY("MoveFileA(lpExistingFileName=%p (%s), lpNewFileName=%p (%s))\n",
-          lpExistingFileName?lpExistingFileName:"NULL",
-          lpExistingFileName?lpExistingFileName:"NULL",
-          lpNewFileName?lpNewFileName:"NULL",
-          lpNewFileName?lpNewFileName:"NULL");
-
-    bRet = MoveFileExA( lpExistingFileName,
-            lpNewFileName,
-            MOVEFILE_COPY_ALLOWED );
-
-    LOGEXIT("MoveFileA returns BOOL %d\n", bRet);
-    PERF_EXIT(MoveFileA);
-    return bRet;
-}
-
-
-/*++
-Function:
-  MoveFileW
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-MoveFileW(
-     IN LPCWSTR lpExistingFileName,
-     IN LPCWSTR lpNewFileName)
-{
-    BOOL bRet;
-
-    PERF_ENTRY(MoveFileW);
-    ENTRY("MoveFileW(lpExistingFileName=%p (%S), lpNewFileName=%p (%S))\n",
-          lpExistingFileName?lpExistingFileName:W16_NULLSTRING,
-          lpExistingFileName?lpExistingFileName:W16_NULLSTRING,
-          lpNewFileName?lpNewFileName:W16_NULLSTRING,
-          lpNewFileName?lpNewFileName:W16_NULLSTRING);
-
-    bRet = MoveFileExW( lpExistingFileName,
-            lpNewFileName,
-            MOVEFILE_COPY_ALLOWED );
-
-    LOGEXIT("MoveFileW returns BOOL %d\n", bRet);
-    PERF_EXIT(MoveFileW);
-    return bRet;
-}
 
 /*++
 Function:
@@ -3152,145 +3130,6 @@ FlushFileBuffers(
     return NO_ERROR == palError;
 }
 
-PAL_ERROR
-CorUnix::InternalGetFileType(
-    CPalThread *pThread,
-    HANDLE hFile,
-    DWORD *pdwFileType
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pFileObject = NULL;
-    CFileProcessLocalData *pLocalData = NULL;
-    IDataLock *pLocalDataLock = NULL;
-
-    struct stat stat_data;
-
-    if (INVALID_HANDLE_VALUE == hFile)
-    {
-        ERROR( "Invalid file handle\n" );
-        palError = ERROR_INVALID_HANDLE;
-        goto InternalGetFileTypeExit;
-    }
-
-    palError = g_pObjectManager->ReferenceObjectByHandle(
-        pThread,
-        hFile,
-        &aotFile,
-        GENERIC_READ,
-        &pFileObject
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalGetFileTypeExit;
-    }
-    
-    palError = pFileObject->GetProcessLocalData(
-        pThread,
-        ReadLock, 
-        &pLocalDataLock,
-        reinterpret_cast<void**>(&pLocalData)
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalGetFileTypeExit;
-    }
-
-    if (pLocalData->open_flags_deviceaccessonly == TRUE)
-    {
-        ERROR("File open for device access only\n");
-        palError = ERROR_ACCESS_DENIED;
-        goto InternalGetFileTypeExit;
-    }
-
-    if (fstat(pLocalData->unix_fd, &stat_data) != 0)
-    {
-        ERROR("fstat failed of file descriptor %d\n", pLocalData->unix_fd);
-        palError = FILEGetLastErrorFromErrno();
-        goto InternalGetFileTypeExit;
-    }
-
-    TRACE("st_mode & S_IFMT = %#x\n", stat_data.st_mode & S_IFMT);
-    if (S_ISREG(stat_data.st_mode) || S_ISDIR(stat_data.st_mode))
-    {
-        *pdwFileType = FILE_TYPE_DISK;
-    }
-    else if (S_ISCHR(stat_data.st_mode))
-    {
-        *pdwFileType = FILE_TYPE_CHAR;
-    }
-    else if (S_ISFIFO(stat_data.st_mode))
-    {
-        *pdwFileType = FILE_TYPE_PIPE;
-    }
-    else
-    {
-        *pdwFileType = FILE_TYPE_UNKNOWN;
-    }
-    
-
-InternalGetFileTypeExit:
-
-    if (NULL != pLocalDataLock)
-    {
-        pLocalDataLock->ReleaseLock(pThread, FALSE);
-    }
-
-    if (NULL != pFileObject)
-    {
-        pFileObject->ReleaseReference(pThread);
-    }
-
-    return palError;
-
-}
-
-
-/*++
-Function:
-  GetFileType
-
-See MSDN doc.
-
---*/
-DWORD
-PALAPI
-GetFileType(
-        IN HANDLE hFile)
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pThread;
-    DWORD dwFileType;
-
-    PERF_ENTRY(GetFileType);
-    ENTRY("GetFileType(hFile=%p)\n", hFile);
-
-    pThread = InternalGetCurrentThread();
-
-    palError = InternalGetFileType(
-        pThread,
-        hFile,
-        &dwFileType
-        );
-
-    if (NO_ERROR != palError)
-    {
-        dwFileType = FILE_TYPE_UNKNOWN;
-        pThread->SetLastError(palError);
-    }
-    else if (FILE_TYPE_UNKNOWN == dwFileType)
-    {
-        pThread->SetLastError(palError);
-    }
-
-
-    LOGEXIT("GetFileType returns DWORD %#x\n", dwFileType);
-    PERF_EXIT(GetFileType);
-    return dwFileType;
-}
-
 #define ENSURE_UNIQUE_NOT_ZERO \
     if ( uUniqueSeed == 0 ) \
     {\
@@ -4056,14 +3895,14 @@ CorUnix::InternalCreatePipe(
 
     /* enable close-on-exec for both pipes; if one gets passed to CreateProcess
        it will be "uncloseonexeced" in order to be inherited */
-    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,1))
+    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,FD_CLOEXEC))
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
         palError = ERROR_INTERNAL_ERROR;
         goto InternalCreatePipeExit;
     }
-    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,1))
+    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC))
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
@@ -4280,261 +4119,6 @@ CreatePipe(
     return NO_ERROR == palError;
 }
 
-PAL_ERROR
-CorUnix::InternalLockFile(
-    CPalThread *pThread,
-    HANDLE hFile,
-    DWORD dwFileOffsetLow,
-    DWORD dwFileOffsetHigh,
-    DWORD nNumberOfBytesToLockLow,
-    DWORD nNumberOfBytesToLockHigh
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pFileObject = NULL;
-    CFileProcessLocalData *pLocalData = NULL;
-    IDataLock *pLocalDataLock = NULL;
-
-    if (INVALID_HANDLE_VALUE == hFile)
-    {
-        ERROR( "Invalid file handle\n" );
-        palError = ERROR_INVALID_HANDLE;
-        goto InternalLockFileExit;
-    }
-
-    palError = g_pObjectManager->ReferenceObjectByHandle(
-        pThread,
-        hFile,
-        &aotFile,
-        GENERIC_READ,
-        &pFileObject
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalLockFileExit;
-    }
-
-    palError = pFileObject->GetProcessLocalData(
-        pThread,
-        ReadLock, 
-        &pLocalDataLock,
-        reinterpret_cast<void**>(&pLocalData)
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalLockFileExit;
-    }
-    
-    if (NULL != pLocalData->pLockController)
-    {
-        palError = pLocalData->pLockController->CreateFileLock(
-            pThread,
-            dwFileOffsetLow,
-            dwFileOffsetHigh,
-            nNumberOfBytesToLockLow,
-            nNumberOfBytesToLockHigh,
-            IFileLockController::ExclusiveFileLock,
-            IFileLockController::FailImmediately
-            );
-    }
-    else
-    {
-        //
-        // This isn't a lockable file (e.g., it may be a pipe)
-        //
-        
-        palError = ERROR_ACCESS_DENIED;
-        goto InternalLockFileExit;
-    }
-
-InternalLockFileExit:
-
-    if (NULL != pLocalDataLock)
-    {
-        pLocalDataLock->ReleaseLock(pThread, FALSE);
-    }
-
-    if (NULL != pFileObject)
-    {
-        pFileObject->ReleaseReference(pThread);
-    }
-
-    return palError;
-}
-
-
-/*++
-Function:
-  LockFile
-
-See MSDN doc.
---*/
-PALIMPORT
-BOOL
-PALAPI
-LockFile(HANDLE hFile,
-         DWORD dwFileOffsetLow,
-         DWORD dwFileOffsetHigh,
-         DWORD nNumberOfBytesToLockLow,
-         DWORD nNumberOfBytesToLockHigh)
-{
-    CPalThread *pThread;
-    PAL_ERROR palError = NO_ERROR;
-
-    PERF_ENTRY(LockFile);
-    ENTRY("LockFile(hFile:%p, offsetLow:%u, offsetHigh:%u, nbBytesLow:%u,"
-           " nbBytesHigh:%u\n", hFile, dwFileOffsetLow, dwFileOffsetHigh, 
-          nNumberOfBytesToLockLow, nNumberOfBytesToLockHigh);
-
-    pThread = InternalGetCurrentThread();
-
-    palError = InternalLockFile(
-        pThread,
-        hFile,
-        dwFileOffsetLow,
-        dwFileOffsetHigh,
-        nNumberOfBytesToLockLow,
-        nNumberOfBytesToLockHigh
-        );
-
-    if (NO_ERROR != palError)
-    {
-        pThread->SetLastError(palError);
-    }
-
-    LOGEXIT("LockFile returns %s\n", NO_ERROR == palError ? "TRUE":"FALSE");
-    PERF_EXIT(LockFile);
-    return NO_ERROR == palError;
-}
-
-PAL_ERROR
-CorUnix::InternalUnlockFile(
-    CPalThread *pThread,
-    HANDLE hFile,
-    DWORD dwFileOffsetLow,
-    DWORD dwFileOffsetHigh,
-    DWORD nNumberOfBytesToUnlockLow,
-    DWORD nNumberOfBytesToUnlockHigh
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pFileObject = NULL;
-    CFileProcessLocalData *pLocalData = NULL;
-    IDataLock *pLocalDataLock = NULL;
-
-    if (INVALID_HANDLE_VALUE == hFile)
-    {
-        ERROR( "Invalid file handle\n" );
-        palError = ERROR_INVALID_HANDLE;
-        goto InternalUnlockFileExit;
-    }
-
-    palError = g_pObjectManager->ReferenceObjectByHandle(
-        pThread,
-        hFile,
-        &aotFile,
-        GENERIC_READ,
-        &pFileObject
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalUnlockFileExit;
-    }
-
-    palError = pFileObject->GetProcessLocalData(
-        pThread,
-        ReadLock, 
-        &pLocalDataLock,
-        reinterpret_cast<void**>(&pLocalData)
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalUnlockFileExit;
-    }
-    
-    if (NULL != pLocalData->pLockController)
-    {
-        palError = pLocalData->pLockController->ReleaseFileLock(
-            pThread,
-            dwFileOffsetLow,
-            dwFileOffsetHigh,
-            nNumberOfBytesToUnlockLow,
-            nNumberOfBytesToUnlockHigh
-            );
-    }
-    else
-    {
-        //
-        // This isn't a lockable file (e.g., it may be a pipe)
-        //
-        
-        palError = ERROR_ACCESS_DENIED;
-        goto InternalUnlockFileExit;
-    }
-
-InternalUnlockFileExit:
-
-    if (NULL != pLocalDataLock)
-    {
-        pLocalDataLock->ReleaseLock(pThread, FALSE);
-    }
-
-    if (NULL != pFileObject)
-    {
-        pFileObject->ReleaseReference(pThread);
-    }
-
-    return palError;
-}
-
-/*++
-Function:
-  UnlockFile
-
-See MSDN doc.
---*/
-PALIMPORT
-BOOL
-PALAPI
-UnlockFile(HANDLE hFile,
-           DWORD dwFileOffsetLow,
-           DWORD dwFileOffsetHigh,
-           DWORD nNumberOfBytesToUnlockLow,
-           DWORD nNumberOfBytesToUnlockHigh)
-{
-    CPalThread *pThread;
-    PAL_ERROR palError = NO_ERROR;
-
-    PERF_ENTRY(UnlockFile);
-    ENTRY("UnlockFile(hFile:%p, offsetLow:%u, offsetHigh:%u, nbBytesLow:%u,"
-          "nbBytesHigh:%u\n", hFile, dwFileOffsetLow, dwFileOffsetHigh, 
-          nNumberOfBytesToUnlockLow, nNumberOfBytesToUnlockHigh);
-
-    pThread = InternalGetCurrentThread();
-
-    palError = InternalUnlockFile(
-        pThread,
-        hFile,
-        dwFileOffsetLow,
-        dwFileOffsetHigh,
-        nNumberOfBytesToUnlockLow,
-        nNumberOfBytesToUnlockHigh
-        );
-
-    if (NO_ERROR != palError)
-    {
-        pThread->SetLastError(palError);
-    }
-
-    LOGEXIT("UnlockFile returns %s\n", NO_ERROR == palError ? "TRUE" : "FALSE");
-    PERF_EXIT(UnlockFile);
-    return NO_ERROR == palError;
-}
-
 /*++
 init_std_handle [static]
 
@@ -4564,7 +4148,7 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
-    new_fd = dup(fileno(stream));
+    new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));

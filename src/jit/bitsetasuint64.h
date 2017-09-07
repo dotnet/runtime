@@ -75,6 +75,11 @@ public:
         return BitSetSupport::CountBitsInIntegral(bs);
     }
 
+    static bool IsEmptyUnion(Env env, UINT64 bs1, UINT64 bs2)
+    {
+        return (bs1 | bs2) == 0;
+    }
+
     static void UnionD(Env env, UINT64& bs1, UINT64 bs2)
     {
         bs1 |= bs2;
@@ -139,6 +144,11 @@ public:
         return (bs1 & bs2) == 0;
     }
 
+    static void LivenessD(Env env, UINT64& in, const UINT64 def, const UINT64 use, const UINT64 out)
+    {
+        in = use | (out & ~def);
+    }
+
     static bool IsSubset(Env env, UINT64 bs1, UINT64 bs2)
     {
         return ((bs1 & bs2) == bs1);
@@ -170,14 +180,13 @@ public:
 #ifdef DEBUG
     static const char* ToString(Env env, UINT64 bs)
     {
-        IAllocator* alloc          = BitSetTraits::GetDebugOnlyAllocator(env);
-        const int   CharsForUINT64 = sizeof(UINT64) * 2;
-        char*       res            = nullptr;
-        const int   AllocSize      = CharsForUINT64 + 4;
-        res                        = (char*)alloc->Alloc(AllocSize);
-        UINT64   bits              = bs;
-        unsigned remaining         = AllocSize;
-        char*    ptr               = res;
+        const int CharsForUINT64 = sizeof(UINT64) * 2;
+        char*     res            = nullptr;
+        const int AllocSize      = CharsForUINT64 + 4;
+        res                      = (char*)BitSetTraits::DebugAlloc(env, AllocSize);
+        UINT64   bits            = bs;
+        unsigned remaining       = AllocSize;
+        char*    ptr             = res;
         for (unsigned bytesDone = 0; bytesDone < sizeof(UINT64); bytesDone += sizeof(unsigned))
         {
             unsigned bits0 = (unsigned)bits;
@@ -208,23 +217,28 @@ public:
     {
         UINT64 m_bits;
 
+        // The number of bits that have already been iterated over (set or clear).
+        unsigned m_bitNum;
+
     public:
-        Iter(Env env, const UINT64& bits) : m_bits(bits)
+        Iter(Env env, const UINT64& bits) : m_bits(bits), m_bitNum(0)
         {
         }
 
-        bool NextElem(Env env, unsigned* pElem)
+        bool NextElem(unsigned* pElem)
         {
+            // TODO-Throughtput: use BitScanForward64() intrinsic (see short/long implementation).
             if (m_bits)
             {
-                unsigned bitNum = *pElem;
+                unsigned bitNum = m_bitNum;
                 while ((m_bits & 0x1) == 0)
                 {
                     bitNum++;
                     m_bits >>= 1;
                 }
-                *pElem = bitNum;
-                m_bits &= ~0x1;
+                *pElem   = bitNum;
+                m_bitNum = bitNum + 1;
+                m_bits >>= 1;
                 return true;
             }
             else
@@ -234,8 +248,8 @@ public:
         }
     };
 
-    typedef UINT64 ValArgType;
-    typedef UINT64 RetValType;
+    typedef const UINT64 ValArgType;
+    typedef UINT64       RetValType;
 };
 
 #endif // bitSetAsUint64_DEFINED

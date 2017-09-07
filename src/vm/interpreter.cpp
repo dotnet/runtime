@@ -38,7 +38,6 @@ static CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE clsHnd)
 InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO* methInfo)
     : m_method(methInfo->ftn),
       m_module(methInfo->scope),
-      m_jittedCode(0),
       m_ILCode(methInfo->ILCode),
       m_ILCodeEnd(methInfo->ILCode + methInfo->ILCodeSize),
       m_maxStack(methInfo->maxStack),
@@ -798,12 +797,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     // So the structure of the code will look like this (in the non-ILstub case):
     // 
 #if defined(_X86_) || defined(_AMD64_)
-    // First do "short-circuiting" if the method has JITted code, and we couldn't find/update the call site:
-    //   eax = &interpMethInfo
-    //   eax = [eax + offsetof(m_jittedCode)]
-    //   if (eax == zero) goto doInterpret:
-    //   /*else*/ jmp [eax]
-    // doInterpret:
     // push ebp
     // mov ebp, esp
     // [if there are register arguments in ecx or edx, push them]
@@ -816,41 +809,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined (_ARM_)
     // TODO.
 #endif
-
-    // The IL stub case is hard.  The portion of the interpreter stub that short-circuits
-    // to JITted code requires an extra "scratch" volatile register, not an argument register;
-    // in the IL stub case, it too is using such a register, as an extra argument, to hold the stub context.  
-    // On x86 and ARM, there is only one such extra volatile register, and we've got a conundrum.
-    // The cases where this short-circuiting is important is when the address of an interpreter stub
-    // becomes "embedded" in other code.  The examples I know of are VSD stubs and delegates.
-    // The first of these is not a problem for IL stubs -- methods invoked via p/Invoke (the ones that
-    // [I think!] use IL stubs) are static, and cannot be invoked via VSD stubs.  Delegates, on the other
-    // remain a problem [I believe].
-    // For the short term, we'll ignore this issue, and never do short-circuiting for IL stubs.
-    // So interpreter stubs embedded in delegates will continue to interpret the IL stub, even after
-    // the stub has been JITted.
-    // The long-term intention is that when we JIT a method with an interpreter stub, we keep a mapping
-    // from interpreter stub address to corresponding native code address.  If this mapping is non-empty,
-    // at GC time we would visit the locations in which interpreter stub addresses might be located, like
-    // VSD stubs and delegate objects, and update them to point to new addresses.  This would be a necessary
-    // part of any scheme to GC interpreter stubs, and InterpreterMethodInfos.
-
-    // If we *really* wanted to make short-circuiting work for the IL stub case, we would have to
-    // (in the x86 case, which should be sufficiently illustrative):
-    //    push eax
-    //    <get the address of JITted code, if any, into eax>
-    //    if there is JITted code in eax, we'd have to
-    //        push 2 non-volatile registers, say esi and edi.
-    //        copy the JITted code address from eax into esi.
-    //        copy the method arguments (without the return address) down the stack, using edi
-    //           as a scratch register.
-    //        restore the original stub context value into eax from the stack
-    //        call (not jmp) to the JITted code address in esi
-    //        pop esi and edi from the stack.
-    //        now the stack has original args, followed by original return address.  Do a "ret"
-    //          that returns to the return address, and also pops the original args from the stack.
-    // If we did this, we'd have to give this portion of the stub proper unwind info.
-    // Also, we'd have to adjust the rest of the stub to pop eax from the stack.
 
     // TODO: much of the interpreter stub code should be is shareable.  In the non-IL stub case,
     // at least, we could have a small per-method stub that puts the address of the method-specific
@@ -868,24 +826,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     {
         sl.Init();
 #if defined(_X86_) || defined(_AMD64_)
-        // First we do "short-circuiting" if the method has JITted code.
-#if INTERP_ILSTUBS
-        if (!pMD->IsILStub()) // As discussed above, we don't do short-circuiting for IL stubs.
-#endif
-        {
-            // First read the m_jittedCode field.
-            sl.X86EmitRegLoad(kEAX, UINT_PTR(interpMethInfo));
-            sl.X86EmitOffsetModRM(0x8b, kEAX, kEAX, offsetof(InterpreterMethodInfo, m_jittedCode));
-            // If it is still zero, then go on to do the interpretation.
-            sl.X86EmitCmpRegImm32(kEAX, 0);
-            CodeLabel* doInterpret = sl.NewCodeLabel();
-            sl.X86EmitCondJump(doInterpret, X86CondCode::kJE);
-            // Otherwise...
-            sl.X86EmitJumpReg(kEAX);  // tail call to JITted code.
-            sl.EmitLabel(doInterpret);
-        }
 #if defined(_X86_)
-        // Start regular interpretation
         sl.X86EmitPushReg(kEBP);
         sl.X86EmitMovRegReg(kEBP, static_cast<X86Reg>(kESP_Unsafe));
 #endif
@@ -895,43 +836,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         ThumbReg r11 = ThumbReg(11);
         ThumbReg r12 = ThumbReg(12);
 
-#if INTERP_ILSTUBS
-        if (!pMD->IsILStub()) // As discussed above, we don't do short-circuiting for IL stubs.
-#endif
-        {
-            // But we also have to use r4, because ThumbEmitCondRegJump below requires a low register.
-            sl.ThumbEmitMovConstant(r11, 0);
-            sl.ThumbEmitMovConstant(r12, UINT_PTR(interpMethInfo));
-            sl.ThumbEmitLoadRegIndirect(r12, r12, offsetof(InterpreterMethodInfo, m_jittedCode));
-            sl.ThumbEmitCmpReg(r12, r11); // Set condition codes.
-            // If r12 is zero, then go on to do the interpretation.
-            CodeLabel* doInterpret = sl.NewCodeLabel();
-            sl.ThumbEmitCondFlagJump(doInterpret, thumbCondEq.cond);
-            sl.ThumbEmitJumpRegister(r12);  // If non-zero, tail call to JITted code.
-            sl.EmitLabel(doInterpret); 
-        }
-
-        // Start regular interpretation
-
 #elif defined(_ARM64_)
         // x8 through x15 are scratch registers on ARM64. 
         IntReg x8 = IntReg(8);
         IntReg x9 = IntReg(9);
-
-#if INTERP_ILSTUBS
-        if (!pMD->IsILStub()) // As discussed above, we don't do short-circuiting for IL stubs.
-#endif
-        {
-            sl.EmitMovConstant(x8, UINT64(interpMethInfo));
-            sl.EmitLoadStoreRegImm(StubLinkerCPU::eLOAD, x9, x8, offsetof(InterpreterMethodInfo, m_jittedCode));
-            sl.EmitCmpImm(x9, 0);
-            CodeLabel* doInterpret = sl.NewCodeLabel();
-            sl.EmitCondFlagJump(doInterpret, CondEq.cond);
-            sl.EmitJumpRegister(x9);
-            sl.EmitLabel(doInterpret);
-        }
-
-        // Start regular interpretation
 #else
 #error unsupported platform
 #endif
@@ -1431,8 +1339,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         sl.X86EmitPopReg(kEBP);
         sl.X86EmitReturn(static_cast<WORD>(argState.callerArgStackSlots * sizeof(void*)));
 #elif defined(_AMD64_)
-        // EDX has "ilArgs" i.e., just the point where registers have been homed.
-        sl.X86EmitIndexLeaRSP(kEDX, static_cast<X86Reg>(kESP_Unsafe), 8);
+        // Pass "ilArgs", i.e. just the point where registers have been homed, as 2nd arg
+        sl.X86EmitIndexLeaRSP(ARGUMENT_kREG2, static_cast<X86Reg>(kESP_Unsafe), 8);
 
         // Allocate space for homing callee's (InterpretMethod's) arguments.
         // Calling convention requires a default allocation space of 4,
@@ -1450,10 +1358,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #endif
         {
             // For a non-ILStub method, push NULL as the StubContext argument.
-            sl.X86EmitZeroOutReg(kRCX);
-            sl.X86EmitMovRegReg(kR8, kRCX);
+            sl.X86EmitZeroOutReg(ARGUMENT_kREG1);
+            sl.X86EmitMovRegReg(kR8, ARGUMENT_kREG1);
         }
-        sl.X86EmitRegLoad(kRCX, reinterpret_cast<UINT_PTR>(interpMethInfo));
+        sl.X86EmitRegLoad(ARGUMENT_kREG1, reinterpret_cast<UINT_PTR>(interpMethInfo));
         sl.X86EmitCall(sl.NewExternalCodeLabel(interpretMethodFunc), 0);
         sl.X86EmitAddEsp(interpMethodArgSize);
         sl.X86EmitReturn(0);
@@ -1728,12 +1636,12 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 
         if (InterpretationStubToMethodInfo(stub) == md)
         {
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterJITTransitionFlag.val(CLRConfig::INTERNAL_TraceInterpreterJITTransition))
             {
                 fprintf(GetLogFile(), "JITting method %s:%s.\n", md->m_pszDebugClassName, md->m_pszDebugMethodName);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
             NewHolder<COR_ILMETHOD_DECODER> pDecoder(NULL);
             // Dynamic methods (e.g., IL stubs) do not have an IL decoder but may
@@ -1749,8 +1657,16 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
                                                     md->GetMDImport(),
                                                     &status);
             }
-            PCODE res = md->MakeJitWorker(pDecoder, jitFlags);
-            interpMethInfo->m_jittedCode = res;
+            // This used to be a synchronous jit and could be made so again if desired,
+            // but using ASP.Net MusicStore as an example scenario the performance is
+            // better doing the JIT asynchronously. Given the not-on-by-default nature of the
+            // interpreter I didn't wring my hands too much trying to determine the ideal
+            // policy.
+#ifdef FEATURE_TIERED_COMPILATION
+            GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteMethodToTier1(md);
+#else
+#error FEATURE_INTERPRETER depends on FEATURE_TIERED_COMPILATION now
+#endif
         }
     }
 }
@@ -2242,22 +2158,22 @@ EvalLoop:
 
         case CEE_CALL:
             DoCall(/*virtualCall*/false);
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
             {
                 fprintf(GetLogFile(), "  Returning to method %s, stub num %d.\n", methName, m_methInfo->m_stubNum);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             continue;
 
         case CEE_CALLVIRT:
             DoCall(/*virtualCall*/true);
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
             {
                 fprintf(GetLogFile(), "  Returning to method %s, stub num %d.\n", methName, m_methInfo->m_stubNum);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             continue;
 
             // HARD
@@ -2626,8 +2542,10 @@ EvalLoop:
             {
                 assert(m_curStackHt > 0);
                 m_curStackHt--;
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(_AMD64_)
                 CorInfoType cit = OpStackTypeGet(m_curStackHt).ToCorInfoType();
+#endif // _DEBUG || _AMD64_
+#ifdef _DEBUG
                 assert(cit == CORINFO_TYPE_INT || cit == CORINFO_TYPE_UINT || cit == CORINFO_TYPE_NATIVEINT);
 #endif // _DEBUG
 #if defined(_AMD64_)
@@ -2786,12 +2704,12 @@ EvalLoop:
             continue;
         case CEE_NEWOBJ:
             NewObj();
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
             {
                 fprintf(GetLogFile(), "  Returning to method %s, stub num %d.\n", methName, m_methInfo->m_stubNum);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             continue;
         case CEE_CASTCLASS:
             CastClass();
@@ -4316,13 +4234,13 @@ void Interpreter::StInd()
     *ptr = val;
     m_curStackHt -= 2;
 
-#ifdef _DEBUG
+#if INTERP_TRACING
     if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL) &&
         IsInLocalArea(ptr))
     {
         PrintLocals();
     }
-#endif // _DEBUG
+#endif // INTERP_TRACING
 }
 
 void Interpreter::StInd_Ref()
@@ -4338,13 +4256,13 @@ void Interpreter::StInd_Ref()
     SetObjectReferenceUnchecked(ptr, val);
     m_curStackHt -= 2;
 
-#ifdef _DEBUG
+#if INTERP_TRACING
     if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL) &&
         IsInLocalArea(ptr))
     {
         PrintLocals();
     }
-#endif // _DEBUG
+#endif // INTERP_TRACING
 }
 
 
@@ -6068,13 +5986,12 @@ void Interpreter::NewArr()
         }
 #endif
 
-        TypeHandle typeHnd(elemClsHnd);
-        ArrayTypeDesc* pArrayClassRef = typeHnd.AsArray();
+        MethodTable *pArrayMT = (MethodTable *) elemClsHnd;
 
-        pArrayClassRef->GetMethodTable()->CheckRunClassInitThrowing();
+        pArrayMT->CheckRunClassInitThrowing();
 
         INT32 size32 = (INT32)sz;
-        Object* newarray = OBJECTREFToObject(AllocateArrayEx(typeHnd, &size32, 1));
+        Object* newarray = OBJECTREFToObject(AllocateArrayEx(pArrayMT, &size32, 1));
 
         GCX_FORBID();
         OpStackTypeSet(stkInd, InterpreterType(CORINFO_TYPE_CLASS));
@@ -9558,7 +9475,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     // This is the argument slot that will be used to hold the return value.
     ARG_SLOT retVal = 0;
-#ifndef _ARM_
+#if !defined(_ARM_) && !defined(UNIX_AMD64_ABI)
     _ASSERTE (NUMBER_RETURNVALUE_SLOTS == 1);
 #endif
 
@@ -10293,7 +10210,7 @@ void Interpreter::CallI()
             MethodDesc* pMD;
             if (mSig.HasThis())
             {
-                pMD = g_pObjectCtorMD;
+                pMD = g_pObjectFinalizerMD;
             }
             else
             {
@@ -11895,7 +11812,7 @@ void Interpreter::PrintPostMortemData()
 
     // Otherwise...
 
-#ifdef _DEBUG
+#if INTERP_TRACING
     // Let's print two things: the number of methods that are 0-10, or more, and
     // For each 10% of methods, cumulative % of invocations they represent.  By 1% for last 10%.
 

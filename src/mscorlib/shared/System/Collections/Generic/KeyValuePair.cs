@@ -46,10 +46,11 @@ namespace System.Collections.Generic
     // It is used by the IEnumerable<T> implementation for both IDictionary<TKey, TValue>
     // and IReadOnlyDictionary<TKey, TValue>.
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct KeyValuePair<TKey, TValue>
     {
-        private TKey key;       // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
-        private TValue value;   // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private TKey key; // Do not rename (binary serialization)
+        private TValue value; // Do not rename (binary serialization)
 
         public KeyValuePair(TKey key, TValue value)
         {

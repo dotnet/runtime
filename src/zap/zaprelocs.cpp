@@ -84,6 +84,22 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
             break;
         }
 
+    case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
+        {
+            TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
+
+            // For details about how the value is calculated, see
+            // description of IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL
+            const UINT32 offsetCorrection = 12;
+
+            UINT32 imm32 = pActualTarget - (pSite + offsetCorrection);
+
+            PutThumb2Mov32((UINT16 *)pLocation, imm32);
+
+            // IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL does not need base reloc entry
+            return;
+        }
+
     case IMAGE_REL_BASED_THUMB_BRANCH24:
         {
             TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
@@ -282,6 +298,7 @@ void ZapBlobWithRelocs::Save(ZapWriter * pZapWriter)
 
 #if defined(_TARGET_ARM_)
             case IMAGE_REL_BASED_THUMB_MOV32:
+            case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
                 targetOffset = (int)GetThumb2Mov32((UINT16 *)pLocation);
                 break;
 

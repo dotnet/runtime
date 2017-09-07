@@ -30,6 +30,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "__BlobNamePrefix": {
+      "description": "Blob Prefix for Azure download.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
     "MsBuildFileLogging": {
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
@@ -45,7 +51,7 @@
     "FilterToOSGroup": {
       "description": "Specifies the OSGroup.",
       "valueType": "property",
-      "values": [ "Windows_NT", "Linux", "Unix", "OSX" ],
+      "values": [ "Windows_NT", "Linux", "Unix", "OSX", "Android" ],
       "defaultValue": "${OSName}"
     },
     "RestoreNETCorePlatforms": {
@@ -87,7 +93,7 @@
     "__BuildOS": {
       "description": "Specifies the OS to publish packages.",
       "valueType": "property",
-      "values": [ "Linux", "OSX", "FreeBSD", "OpenBSD", "NetBSD", "SunOS", "Windows_NT" ],
+      "values": [ "Linux", "OSX", "FreeBSD", "OpenBSD", "NetBSD", "SunOS", "Windows_NT", "Android" ],
       "defaultValue": "${OSName}"
     },
     "__DistroRid": {
@@ -174,6 +180,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "OverwriteCoreClrPackageVersion": {
+      "description": "Sets the property specifying to overwrite CoreClr Package version using OfficialBuildId",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
     "OfficialBuildId": {
       "description": "Official Build Id.",
       "valueType": "property",
@@ -225,8 +237,8 @@
     "PortableBuild": {
       "description": "Indicates if this is a portable build.",
       "valueType": "property",
-      "values": [ "0", "1"],
-      "defaultValue": "0"
+      "values": [ "false", "true"],
+      "defaultValue": "true"
     },
     "Rebuild": {
       "description": "Specifies rebuild target.",
@@ -345,7 +357,7 @@
     "RuntimeId": {
       "description": "Specifies the OS to build Core_Root for",
       "valueType": "property",
-      "values": [ "debian.8-x64", "fedora.24-x64", "fedora.25-x64", "opensuse.42.1-x64", "osx.10.12-x64", "rhel.7-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "ubuntu.16.10-x64" ],
+      "values": [ "debian.8-x64", "fedora.24-x64", "fedora.25-x64", "opensuse.42.1-x64", "osx.10.12-x64", "rhel.7-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "ubuntu.16.10-x64", "android.21-arm64" ],
       "defaultValue": "${__RuntimeId}"
     },
     "BatchRestorePackages": {
@@ -462,12 +474,6 @@
             "RestoreDuringBuild": false
           }
         },
-        "portable": {
-          "description": "Triggers a portable build.",
-          "settings": {
-            "PortableBuild": "1"
-          }
-        },
         "BuildTarget": {
           "description": "Runs the build target.",
           "settings": {
@@ -483,6 +489,7 @@
           "MsBuildErr": "default",
           "MsBuildEventLogging": "default",
           "RestoreDefaultOptimizationDataPackage": "false",
+          "PortableBuild": "true",
           "UsePartialNGENOptimization": "false"
         }
       }
@@ -534,6 +541,12 @@
           "description": "Container name to download from in Azure Blob storage.",
           "settings": {
             "__Container": "default"
+          }
+        },
+        "blobNamePrefix": {
+          "description": "Blob Prefix to download from in Azure container.",
+          "settings": {
+            "__BlobNamePrefix": "default"
           }
         },
         "runtimeId": {
@@ -622,6 +635,7 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
+          "__BuildOS": "default",
           "Project": "./src/publish.proj",
           "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log"
         }
@@ -633,12 +647,6 @@
           "description": "Specifies architecture to publish, can be x64, x86, arm or arm64",
           "settings": {
             "__BuildArch": "default"
-          }
-        },
-        "portable": {
-          "description": "Triggers a portable build.",
-          "settings": {
-            "PortableBuild": "1"
           }
         },
         "buildType": {
@@ -660,6 +668,7 @@
           "__BuildOS": "default",
           "MsBuildFileLogging": "/flp:v=detailed;Append;LogFile=build-packages.log",
           "MsBuildEventLogging": "default",
+          "PortableBuild": "true",
           "Project": "src/.nuget/packages.builds"
         }
       }

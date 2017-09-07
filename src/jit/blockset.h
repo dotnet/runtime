@@ -58,20 +58,4 @@ typedef BitSetShortLongRep BlockSet;
 typedef BlockSetOps::ValArgType BlockSet_ValArg_T;
 typedef BlockSetOps::RetValType BlockSet_ValRet_T;
 
-// Initialize "_varName" to "_initVal."  Copies contents, not references; if "_varName" is uninitialized, allocates a
-// var set for it (using "_comp" for any necessary allocation), and copies the contents of "_initVal" into it.
-#define BLOCKSET_INIT(_comp, _varName, _initVal) _varName(BlockSetOps::MakeCopy(_comp, _initVal))
-
-// Initializes "_varName" to "_initVal", without copying: if "_initVal" is an indirect representation, copies its
-// pointer into "_varName".
-#define BLOCKSET_INIT_NOCOPY(_varName, _initVal) _varName(_initVal)
-
-// The iterator pattern.
-
-// Use this to initialize an iterator "_iterName" to iterate over a BlockSet "_blockSet".
-// "_blockNum" will be an unsigned variable to which we assign the elements of "_blockSet".
-#define BLOCKSET_ITER_INIT(_comp, _iterName, _blockSet, _blockNum)                                                     \
-    unsigned          _blockNum = 0;                                                                                   \
-    BlockSetOps::Iter _iterName(_comp, _blockSet)
-
 #endif // _BLOCKSET_INCLUDED_

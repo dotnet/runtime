@@ -33,7 +33,6 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    [Serializable]
     public struct TYPELIBATTR
     {
         public Guid guid;

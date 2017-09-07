@@ -986,7 +986,7 @@ HRESULT AllowObjectInspection()
 
 #endif // PROFILING_SUPPORTED
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_EVENT_TRACE)
 
 //---------------------------------------------------------------------------------------
 //
@@ -2117,7 +2117,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP2(LPCBYTE ip, FunctionID * pFunc
     if (pReJitId != NULL)
     {
         MethodDesc * pMD = codeInfo.GetMethodDesc();
-        *pReJitId = pMD->GetReJitManager()->GetReJitId(pMD, codeInfo.GetStartAddress());
+        *pReJitId = ReJitManager::GetReJitId(pMD, codeInfo.GetStartAddress());
     }
 
     return S_OK;
@@ -2592,13 +2592,24 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         hr = ValidateParametersForGetCodeInfo(pMethodDesc, cCodeInfos, codeInfos);
         if (SUCCEEDED(hr))
         {
-            hr = GetCodeInfoFromCodeStart(
-                // Note here that we must consult the rejit manager to determine the code
-                // start address
-                pMethodDesc->GetReJitManager()->GetCodeStart(pMethodDesc, reJitId),
-                cCodeInfos,
-                pcCodeInfos,
-                codeInfos);
+            CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
+            ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
+
+            // Now that tiered compilation can create more than one jitted code version for the same rejit id
+            // we are arbitrarily choosing the first one to return. To return all of them we'd presumably need
+            // a new profiler API.
+            NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMethodDesc);
+            for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
+            {
+                PCODE pCodeStart = iter->GetNativeCode();
+                hr = GetCodeInfoFromCodeStart(
+                    pCodeStart,
+                    cCodeInfos,
+                    pcCodeInfos,
+                    codeInfos);
+                break;
+            }
+            
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -6425,7 +6436,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP3(LPCBYTE ip, FunctionID * pFunc
     if (pReJitId != NULL)
     {
         MethodDesc * pMD = codeInfo.GetMethodDesc();
-        *pReJitId = pMD->GetReJitManager()->GetReJitId(pMD, codeInfo.GetStartAddress());
+        *pReJitId = ReJitManager::GetReJitId(pMD, codeInfo.GetStartAddress());
     }
 
     return S_OK;
@@ -6832,7 +6843,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
     // running into - attempting to get the class layout for all types at module load time.
     // If we don't detect this the runtime will AV during the field iteration below. Feel
     // free to eliminate this check when a more complete solution is available.
-    if (CORCOMPILE_IS_POINTER_TAGGED(*(typeHandle.AsMethodTable()->GetParentMethodTablePtr())))
+    if (typeHandle.AsMethodTable()->GetParentMethodTablePlainOrRelativePointerPtr()->IsTagged())
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -8239,7 +8250,7 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
 
     MethodDesc * pMD = FunctionIdToMethodDesc(functionId);
 
-    return pMD->GetReJitManager()->GetReJITIDs(pMD, cReJitIds, pcReJitIds, reJitIds);
+    return ReJitManager::GetReJITIDs(pMD, cReJitIds, pcReJitIds, reJitIds);
 }
 
 HRESULT ProfToEEInterfaceImpl::RequestReJIT(ULONG       cFunctions,   // in

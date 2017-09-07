@@ -26,6 +26,8 @@ echo                 -BuildMajor
 echo                 -BuildMinor
 echo              To download from a specific container, specify:
 echo                 -Container="container name"
+echo              To download blobs starting with a specific prefix, specify:
+echo                 -BlobNamePrefix="Blob name prefix"
 echo     -n     - Downloads test native binaries from the specified container
 echo              The following properties are required:
 echo                 -AzureAccount="Account name"

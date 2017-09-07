@@ -10,12 +10,14 @@ using System.Security;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Diagnostics.Contracts;
 
 namespace System.Collections.Generic
 {
     [Serializable]
     [TypeDependencyAttribute("System.Collections.Generic.ObjectEqualityComparer`1")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     public abstract class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
@@ -68,6 +70,7 @@ namespace System.Collections.Generic
     // The methods in this class look identical to the inherited methods, but the calls
     // to Equal bind to IEquatable<T>.Equals(T) instead of Object.Equals(Object)
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
     {
         [Pure]
@@ -136,6 +139,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct, IEquatable<T>
     {
         [Pure]
@@ -202,6 +206,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
     {
         [Pure]
@@ -267,13 +272,11 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
-    // NonRandomizedStringEqualityComparer is the comparer used by default with the Dictionary<string,...> 
-    // As the randomized string hashing is turned on by default on coreclr, we need to keep the performance not affected 
-    // as much as possible in the main stream scenarios like Dictionary<string,>
     // We use NonRandomizedStringEqualityComparer as default comparer as it doesnt use the randomized string hashing which 
-    // keep the perofrmance not affected till we hit collision threshold and then we switch to the comparer which is using 
+    // keeps the performance unaffected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing GenericEqualityComparer<string>
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class NonRandomizedStringEqualityComparer : GenericEqualityComparer<string>
     {
         private static IEqualityComparer<string> s_nonRandomizedComparer;
@@ -301,6 +304,7 @@ namespace System.Collections.Generic
     // Performance of IndexOf on byte array is very important for some scenarios.
     // We will call the C runtime function memchr, which is optimized.
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class ByteEqualityComparer : EqualityComparer<byte>
     {
         [Pure]
@@ -352,7 +356,8 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal class EnumEqualityComparer<T> : EqualityComparer<T> where T : struct
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    internal class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]
         public override bool Equals(T x, T y)
@@ -370,6 +375,9 @@ namespace System.Collections.Generic
         }
 
         public EnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        protected EnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
         // Equals method for the comparer itself.
         public override bool Equals(Object obj) =>
@@ -401,12 +409,24 @@ namespace System.Collections.Generic
             }
             return -1;
         }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // For back-compat we need to serialize the comparers for enums with underlying types other than int as ObjectEqualityComparer 
+            if (Type.GetTypeCode(Enum.GetUnderlyingType(typeof(T))) != TypeCode.Int32) {
+                info.SetType(typeof(ObjectEqualityComparer<T>));
+            }
+        }
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class SByteEnumEqualityComparer<T> : EnumEqualityComparer<T> where T : struct
     {
         public SByteEnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        public SByteEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
         [Pure]
         public override int GetHashCode(T obj)
@@ -417,9 +437,13 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal sealed class ShortEnumEqualityComparer<T> : EnumEqualityComparer<T> where T : struct
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    internal sealed class ShortEnumEqualityComparer<T> : EnumEqualityComparer<T>, ISerializable where T : struct
     {
         public ShortEnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        public ShortEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
         [Pure]
         public override int GetHashCode(T obj)
@@ -430,7 +454,8 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T> where T : struct
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]
         public override bool Equals(T x, T y)
@@ -478,6 +503,16 @@ namespace System.Collections.Generic
                 if (toFind == current) return i;
             }
             return -1;
+        }
+
+        // This is used by the serialization engine.
+        public LongEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // The LongEnumEqualityComparer does not exist on 4.0 so we need to serialize this comparer as ObjectEqualityComparer
+            // to allow for roundtrip between 4.0 and 4.5.
+            info.SetType(typeof(ObjectEqualityComparer<T>));
         }
     }
 }

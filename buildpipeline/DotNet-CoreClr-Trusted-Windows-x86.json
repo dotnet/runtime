@@ -86,7 +86,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority) $(portableBuild) -- /p:\"ConfigurationGroup=Release\"",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -131,7 +131,7 @@
       },
       "inputs": {
         "filename": "build-packages.cmd",
-        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) $(portableBuild)",
+        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) -- /p:OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -295,8 +295,9 @@
       "value": null,
       "isSecret": true
     },
-    "portableBuild": {
-      "value": ""
+    "PB_EnforcePGO": {
+      "value": "",
+      "allowOverride": true
     }
   },
   "retentionRules": [

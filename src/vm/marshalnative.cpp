@@ -28,14 +28,11 @@
 #include "fieldmarshaler.h"
 #include "cgensys.h"
 #include "gcheaputilities.h"
-#include "security.h"
 #include "dbginterface.h"
-#include "objecthandle.h"
 #include "marshalnative.h"
 #include "fcall.h"
 #include "dllimportcallback.h"
 #include "comdelegate.h"
-#include "handletablepriv.h"
 #include "mdaassistants.h"
 #include "typestring.h"
 #include "appdomain.inl"
@@ -593,7 +590,7 @@ FCIMPLEND
 
  // Check that the supplied object is valid to put in a pinned handle.
 // Throw an exception if not.
-void GCHandleValidatePinnedObject(OBJECTREF obj)
+void ValidatePinnedObject(OBJECTREF obj)
 {
     CONTRACTL
     {
@@ -640,13 +637,14 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
     OBJECTHANDLE hnd = 0;
 
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-    
+
     // If it is a pinned handle, check the object type.
     if (type == HNDTYPE_PINNED)
-        GCHandleValidatePinnedObject(objRef);
+        ValidatePinnedObject(objRef);
 
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_WINRT);
     // Create the handle.
-    hnd = GetAppDomain()->CreateTypedHandle(objRef, type);
+    hnd = GetAppDomain()->CreateTypedHandle(objRef, static_cast<HandleType>(type));
 
     HELPER_METHOD_FRAME_END_POLL();
     return (LPVOID) hnd;
@@ -701,7 +699,7 @@ FCIMPL3(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *o
     //<TODO>@todo: If the handle is pinned check the object type.</TODO>
     if (isPinned)
     {
-        GCHandleValidatePinnedObject(objRef);
+        ValidatePinnedObject(objRef);
     }
 
     // Update the stored object reference.
@@ -722,7 +720,7 @@ FCIMPL4(Object*, MarshalNative::GCHandleInternalCompareExchange, OBJECTHANDLE ha
 
     //<TODO>@todo: If the handle is pinned check the object type.</TODO>
     if (isPinned)
-        GCHandleValidatePinnedObject(newObjref);
+        ValidatePinnedObject(newObjref);
 
     // Update the stored object reference.
     ret = InterlockedCompareExchangeObjectInHandle(handle, newObjref, oldObjref);
@@ -764,7 +762,7 @@ FCIMPL1(INT32, MarshalNative::GCHandleInternalGetHandleType, OBJECTHANDLE handle
 {
     FCALL_CONTRACT;
 
-    return HandleFetchType(handle);
+    return GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handle);
 }
 FCIMPLEND
 
@@ -785,7 +783,7 @@ FCIMPL1(INT32, MarshalNative::CalculateCount, ArrayWithOffsetData* pArrayWithOff
         if (arrayObj->GetMethodTable()->IsMultiDimArray())
             COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
 
-        GCHandleValidatePinnedObject(arrayObj);
+        ValidatePinnedObject(arrayObj);
     }
 
     if (arrayObj == NULL)

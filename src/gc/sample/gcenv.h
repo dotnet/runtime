@@ -4,9 +4,9 @@
 
 // The sample is to be kept simple, so building the sample
 // in tandem with a standalone GC is currently not supported.
-#ifdef FEATURE_STANDALONE_GC
-#undef FEATURE_STANDALONE_GC
-#endif // FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
+#undef BUILD_AS_STANDALONE
+#endif // BUILD_AS_STANDALONE
 
 #if defined(_DEBUG)
 #ifndef _DEBUG_IMPL
@@ -29,6 +29,13 @@
 #include "gcenv.object.h"
 #include "gcenv.sync.h"
 #include "gcenv.ee.h"
+#include "volatile.h"
+
+#ifdef PLATFORM_UNIX
+#include "gcenv.unix.inl"
+#else
+#include "gcenv.windows.inl"
+#endif
 
 #define MAX_LONGPATH 1024
 

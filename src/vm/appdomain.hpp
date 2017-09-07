@@ -49,6 +49,8 @@
 #include "callcounter.h"
 #endif
 
+#include "codeversion.h"
+
 class BaseDomain;
 class SystemDomain;
 class SharedDomain;
@@ -808,14 +810,14 @@ private:
 // set) and being able to specify specific versions.
 //
 
-#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * PAGE_SIZE)
-#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * PAGE_SIZE)
+#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * GetOsPageSize())
+#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * GetOsPageSize())
 
-#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (10 * PAGE_SIZE)
-#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * PAGE_SIZE)
+#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (10 * GetOsPageSize())
+#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * GetOsPageSize())
 
-#define STUB_HEAP_RESERVE_SIZE                 (3 * PAGE_SIZE)
-#define STUB_HEAP_COMMIT_SIZE                  (1 * PAGE_SIZE)
+#define STUB_HEAP_RESERVE_SIZE                 (3 * GetOsPageSize())
+#define STUB_HEAP_COMMIT_SIZE                  (1 * GetOsPageSize())
 
 // --------------------------------------------------------------------------------
 // PE File List lock - for creating list locks on PE files
@@ -839,7 +841,7 @@ public:
              pEntry != NULL;
              pEntry = pEntry->m_pNext)
         {
-            if (((PEFile *)pEntry->m_pData)->Equals(pFile))
+            if (((PEFile *)pEntry->m_data)->Equals(pFile))
             {
                 return pEntry;
             }
@@ -948,6 +950,9 @@ typedef FileLoadLock::Holder FileLoadLockHolder;
 #ifndef DACCESS_COMPILE
     typedef ReleaseHolder<FileLoadLock> FileLoadLockRefHolder;
 #endif // DACCESS_COMPILE
+
+    typedef ListLockBase<NativeCodeVersion> JitListLock;
+    typedef ListLockEntryBase<NativeCodeVersion> JitListLockEntry;
 
 
 #ifdef _MSC_VER
@@ -1204,7 +1209,7 @@ public:
         return &m_ClassInitLock;
     }
 
-    ListLock* GetJitLock()
+    JitListLock* GetJitLock()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_JITLock;
@@ -1237,7 +1242,7 @@ public:
     // Handles
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    OBJECTHANDLE CreateTypedHandle(OBJECTREF object, int type)
+    OBJECTHANDLE CreateTypedHandle(OBJECTREF object, HandleType type)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -1398,7 +1403,7 @@ protected:
     CrstExplicitInit m_crstAssemblyList;
     BOOL             m_fDisableInterfaceCache;  // RCW COM interface cache
     ListLock         m_ClassInitLock;
-    ListLock         m_JITLock;
+    JitListLock      m_JITLock;
     ListLock         m_ILStubGenLock;
 
     // Fusion context, used for adding assemblies to the is domain. It defines
@@ -1547,12 +1552,21 @@ public:
         return m_dwSizedRefHandles;
     }
 
-    // Profiler rejit
+#ifdef FEATURE_CODE_VERSIONING
 private:
-    ReJitManager m_reJitMgr;
+    CodeVersionManager m_codeVersionManager;
 
 public:
-    ReJitManager * GetReJitManager() { return &m_reJitMgr; }
+    CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
+#endif //FEATURE_CODE_VERSIONING
+
+#ifdef FEATURE_TIERED_COMPILATION
+private:
+    CallCounter m_callCounter;
+
+public:
+    CallCounter* GetCallCounter() { return &m_callCounter; }
+#endif
 
 #ifdef DACCESS_COMPILE
 public:
@@ -3823,15 +3837,6 @@ public:
 private:
     TieredCompilationManager m_tieredCompilationManager;
 
-public:
-    CallCounter * GetCallCounter()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_callCounter;
-    }
-
-private:
-    CallCounter m_callCounter;
 #endif
 
 #ifdef FEATURE_COMINTEROP

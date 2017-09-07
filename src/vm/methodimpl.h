@@ -24,8 +24,8 @@ class MethodImpl
     friend class NativeImageDumper;
 #endif
 
-    PTR_DWORD            pdwSlots;       // Maintains the slots in sorted order, the first entry is the size
-    DPTR(PTR_MethodDesc) pImplementedMD;
+    RelativePointer<PTR_DWORD>            pdwSlots;       // Maintains the slots in sorted order, the first entry is the size
+    RelativePointer<DPTR( RelativePointer<PTR_MethodDesc> )> pImplementedMD;
 
 public:
 
@@ -49,18 +49,19 @@ public:
         inline MethodDesc *GetMethodDesc()
             { WRAPPER_NO_CONTRACT; return m_pImpl->FindMethodDesc(GetSlot(), (PTR_MethodDesc) m_pMD); }
     };
-
-    ///////////////////////////////////////////////////////////////////////////////////////
-    inline MethodDesc** GetImplementedMDs()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-            PRECONDITION(CheckPointer(this));
-        } CONTRACTL_END;
-        return pImplementedMD;
-    }
 #endif // !DACCESS_COMPILE
+
+    inline DPTR(RelativePointer<PTR_MethodDesc>) GetImpMDs()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return RelativePointer<DPTR(RelativePointer<PTR_MethodDesc>)>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(MethodImpl, this, pImplementedMD));
+    }
+
+    inline DPTR(RelativePointer<PTR_MethodDesc>) GetImpMDsNonNull()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return RelativePointer<DPTR(RelativePointer<PTR_MethodDesc>)>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(MethodImpl, this, pImplementedMD));
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////
     inline DWORD GetSize()
@@ -71,10 +72,10 @@ public:
             PRECONDITION(CheckPointer(this));
         } CONTRACTL_END;
 
-        if(pdwSlots == NULL)
+        if(pdwSlots.IsNull())
             return 0;
         else
-            return *pdwSlots;
+            return *GetSlotsRawNonNull();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -87,10 +88,22 @@ public:
             SUPPORTS_DAC;
         } CONTRACTL_END;
 
-        if(pdwSlots == NULL)
+        if(pdwSlots.IsNull())
             return NULL;
         else
-            return pdwSlots + 1;
+            return GetSlotsRawNonNull() + 1;
+    }
+
+    inline PTR_DWORD GetSlotsRaw()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return RelativePointer<PTR_DWORD>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(MethodImpl, this, pdwSlots));
+    }
+
+    inline PTR_DWORD GetSlotsRawNonNull()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return RelativePointer<PTR_DWORD>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(MethodImpl, this, pdwSlots));
     }
 
 #ifndef DACCESS_COMPILE 
@@ -99,7 +112,7 @@ public:
     void SetSize(LoaderHeap *pHeap, AllocMemTracker *pamTracker, DWORD size);
 
     ///////////////////////////////////////////////////////////////////////////////////////
-    void SetData(DWORD* slots, MethodDesc** md);
+    void SetData(DWORD* slots, RelativePointer<MethodDesc*> * md);
 
 #endif // !DACCESS_COMPILE
 

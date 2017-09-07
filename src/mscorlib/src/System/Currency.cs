@@ -10,7 +10,6 @@ using System.Runtime.Versioning;
 
 namespace System
 {
-    [Serializable]
     internal struct Currency
     {
         internal long m_value;

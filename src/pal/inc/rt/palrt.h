@@ -249,7 +249,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #define interface struct
 
-#define STDMETHODCALLTYPE    __stdcall
+#define STDMETHODCALLTYPE    __cdecl
 #define STDMETHODVCALLTYPE   __cdecl
 
 #define STDAPICALLTYPE       __cdecl

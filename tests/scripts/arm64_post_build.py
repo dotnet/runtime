@@ -33,8 +33,8 @@ from collections import defaultdict
 ################################################################################
 
 g_arm64ci_path = os.path.join(os.environ["USERPROFILE"], "bin")
-g_dotnet_url = "https://go.microsoft.com/fwlink/?LinkID=831469"
-g_x64_client_url = "https://clrjit.blob.core.windows.net/arm64ci/x64_client_live_tests.zip"
+g_dotnet_url = "https://clrjit.blob.core.windows.net/arm64ci/dotnet-sdk.zip"
+g_x64_client_url = "https://clrjit.blob.core.windows.net/arm64ci/x64_client_2_0_update.zip"
 
 ################################################################################
 # Argument Parser
@@ -226,7 +226,7 @@ def validate_args(args):
    build_type = args.build_type
    scenario = args.scenario
    key_location = args.key_location
-   force_update = args.force_update
+   force_update = True
 
    def validate_arg(arg, check):
       """ Validate an individual arg
@@ -246,8 +246,45 @@ def validate_args(args):
 
    valid_arches = ["arm", "arm64"]
    valid_build_types = ["debug", "checked", "release"]
-   valid_scenarios = ["default", "pri1r2r", "gcstress0x3", "gcstress0xc"]
 
+   valid_jit_stress_regs_numbers = ["1", "2", "3", "4", "8", "10", "80"]
+
+   jit_stress_scenarios = ["jitstress1", "jitstress2"]
+   jitstressregs_scenarios = ["jitstressregs" + item for item in valid_jit_stress_regs_numbers]
+   gc_stress_scenarios = ["gcstress0x3", "gcstress0xc"]
+   
+   combo_scenarios = []
+
+   # GCStress 3 + JitStressX
+   combo_scenarios += [gc_stress_scenarios[0] + "_" + item for item in jit_stress_scenarios]
+
+   # GCStress C + JitStressX
+   combo_scenarios += [gc_stress_scenarios[1] + "_" + item for item in jit_stress_scenarios]
+   
+   # GCStress 3 + JitStressRegsX
+   combo_scenarios += [gc_stress_scenarios[0] + "_" + item for item in jitstressregs_scenarios]
+
+   # GCStress C + JitStressRegsX
+   combo_scenarios += [gc_stress_scenarios[1] + "_" + item for item in jitstressregs_scenarios]
+
+   combo_scenarios.append("minopts_zapdisable")
+   combo_scenarios.append("tailcallstress_zapdisable")
+
+   valid_scenarios = ["default",
+                      "pri1r2r",
+                      "minopts",
+                      "zapdisable",
+                      "tailcallstress",
+                      "zapdisable"]
+
+   valid_scenarios += jitstressregs_scenarios
+   valid_scenarios += jit_stress_scenarios
+   valid_scenarios += gc_stress_scenarios
+   valid_scenarios += combo_scenarios
+
+   # Add the ryujit scenarios
+   valid_scenarios += ["ryujit_" + item for item in valid_scenarios]
+   
    validate_arg(repo_root, lambda item: os.path.isdir(item))
    validate_arg(arch, lambda item: item.lower() in valid_arches)
    validate_arg(build_type, lambda item: item.lower() in valid_build_types)

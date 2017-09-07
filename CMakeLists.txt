@@ -31,7 +31,8 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-OPTION(CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
+OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
+OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure that python is present
 find_program(PYTHON python)
@@ -51,11 +52,15 @@ if (WIN32)
       endif()
 
       # Explicitly specify the assembler to be used for Arm32 compile
-      file(TO_CMAKE_PATH "$ENV{VCINSTALLDIR}\\bin\\x86_arm\\armasm.exe" CMAKE_ASM_COMPILER)
-
+      if($ENV{__VSVersion} STREQUAL "vs2015")
+        file(TO_CMAKE_PATH "$ENV{VCINSTALLDIR}\\bin\\x86_arm\\armasm.exe" CMAKE_ASM_COMPILER)
+      else()
+        file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)
+      endif()
+      
       set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
       message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}") 
-      
+
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
@@ -312,8 +317,8 @@ if (WIN32)
     endforeach (Definition)
   endforeach (Config)
 
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /guard:cf")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /GUARD:CF")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /GUARD:CF")
 
   # Linker flags
   #
@@ -570,6 +575,13 @@ if(WIN32)
   add_compile_options(/Zl) # omit default library name in .OBJ
 endif(WIN32)
 
+#--------------------------------
+# Definition directives
+#  - all clr specific compile definitions should be included in this file
+#  - all clr specific feature variable should also be added in this file
+#----------------------------------
+include(clrdefinitions.cmake)
+
 #-------------------------------------
 # Include directory directives
 #-------------------------------------
@@ -579,24 +591,18 @@ include_directories("bin/obj")
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
-
-  if(CLR_CMAKE_PLATFORM_UNIX)
-    add_subdirectory(src/gc/unix)
-  endif(CLR_CMAKE_PLATFORM_UNIX)
+  add_subdirectory(src/gc)
 endif(FEATURE_STANDALONE_GC)
+
+if(FEATURE_STANDALONE_GC_ONLY)
+  add_definitions(-DFEATURE_STANDALONE_GC_ONLY)
+endif(FEATURE_STANDALONE_GC_ONLY)
 
 if (CLR_CMAKE_PLATFORM_UNIX)
   include_directories("src/pal/inc")
   include_directories("src/pal/inc/rt")
   include_directories("src/pal/src/safecrt")
 endif (CLR_CMAKE_PLATFORM_UNIX)
-
-#--------------------------------
-# Definition directives
-#  - all clr specific compile definitions should be included in this file
-#  - all clr specific feature variable should also be added in this file
-#----------------------------------
-include(clrdefinitions.cmake)
 
 # Microsoft.Dotnet.BuildTools.Coreclr version
 set(BuildToolsVersion "1.0.4-prerelease")
