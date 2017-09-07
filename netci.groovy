@@ -1090,6 +1090,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'Ubuntu':
                 case 'Ubuntu16.04':
                     assert scenario == 'default'
+                    job.with {
+                        publishers {
+                            azureVMAgentPostBuildAction {
+                                agentPostBuildAction('Delete agent after build execution (when idle).')
+                            }
+                        }
+                    }
                     if ((os == 'Ubuntu' && configuration == 'Release') || (os == 'Ubuntu16.04' && configuration == 'Debug')) {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
                     }
@@ -1099,6 +1106,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break;
                 case 'Tizen':
                     architecture='armel'
+                    job.with {
+                        publishers {
+                            azureVMAgentPostBuildAction {
+                                agentPostBuildAction('Delete agent after build execution (when idle).')
+                            }
+                        }
+                    }
                     // Removing the regex will cause this to run on each PR.
                     if (configuration == 'Release' || configuration == 'Debug') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
