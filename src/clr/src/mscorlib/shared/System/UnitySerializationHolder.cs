@@ -11,7 +11,12 @@ namespace System
     /// Holds Null class for which we guarantee that there is only ever one instance of.
     /// This only exists for backwarts compatibility with 
     /// </summary>
-    internal sealed class UnitySerializationHolder : ISerializable, IObjectReference
+#if CORECLR
+    internal
+#else
+    public  // On CoreRT this must be public.
+#endif
+    sealed class UnitySerializationHolder : ISerializable, IObjectReference
     {
         internal const int NullUnity = 0x0002;
 
