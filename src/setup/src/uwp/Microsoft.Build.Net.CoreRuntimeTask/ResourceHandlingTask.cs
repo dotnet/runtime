@@ -404,7 +404,7 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                 {
                     foreach (DictionaryEntry dict in rr)
                     {
-                        rw.AddResource((string)dict.Key, (string)dict.Value);
+                        rw.AddResource((string)dict.Key, dict.Value);
                     }
                 }
             }
