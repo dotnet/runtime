@@ -14,7 +14,7 @@ namespace System.Net.Http
     {
         private readonly HttpMessageHandler _innerHandler;
         private readonly bool _preAuthenticate;
-        private readonly ICredentials _credentials;
+        private ICredentials _credentials;
         private AuthenticationHelper.DigestResponse _digestResponse;
 
         public AuthenticationHandler(bool preAuthenticate, ICredentials credentials, HttpMessageHandler innerHandler)
@@ -44,7 +44,15 @@ namespace System.Net.Http
 
             HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-            if (!_preAuthenticate && response.StatusCode == HttpStatusCode.Unauthorized)
+            // In case of redirection, ensure _credentials as CredentialCache
+            if (AutoRedirectHandler.RequestNeedsRedirect(response))
+            {
+                // Just as with WinHttpHandler and CurlHandler, for security reasons, we drop the server credential if it is
+                // anything other than a CredentialCache. We allow credentials in a CredentialCache since they
+                // are specifically tied to URIs.
+                _credentials = _credentials as CredentialCache;
+            }
+            else if (_credentials != null && !_preAuthenticate && response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 HttpHeaderValueCollection<AuthenticationHeaderValue> authenticateValues = response.Headers.WwwAuthenticate;
 
