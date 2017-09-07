@@ -1630,6 +1630,29 @@ namespace System
         public MemberAccessException(string message, System.Exception inner) { }
         protected MemberAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
+    public struct Memory<T>
+    {
+        public static Memory<T> Empty { get { throw null; } }
+        public Memory(T[] array) { throw null;}
+        public Memory(T[] array, int start, int length) { throw null;}
+        internal Memory(Buffers.OwnedMemory<T> owner, int index, int length) { throw null;}
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(Memory<T> other) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+        public static implicit operator Memory<T>(T[] array) { throw null; }
+        public static implicit operator Memory<T>(ArraySegment<T> arraySegment) { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory) { throw null; }
+        public Memory<T> Slice(int start) { throw null; }
+        public Memory<T> Slice(int start, int length) { throw null; }
+        public Span<T> Span { get { throw null; } }
+        public unsafe Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
+        public T[] ToArray() { throw null; }
+        public bool TryGetArray(out ArraySegment<T> arraySegment) { throw null; }
+    }
     public partial class MethodAccessException : System.MemberAccessException
     {
         public MethodAccessException() { }
@@ -1830,6 +1853,29 @@ namespace System
         public RankException(string message) { }
         public RankException(string message, System.Exception innerException) { }
         protected RankException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+    public struct ReadOnlyMemory<T>
+    {
+        public static ReadOnlyMemory<T> Empty { get { throw null; } }
+        public ReadOnlyMemory(T[] array) { throw null;}
+        public ReadOnlyMemory(T[] array, int start, int length) { throw null;}
+        internal ReadOnlyMemory(Buffers.OwnedMemory<T> owner, int index, int length) { throw null;}
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(ReadOnlyMemory<T> other) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(T[] array) { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(ArraySegment<T> arraySegment) { throw null; }
+        public ReadOnlyMemory<T> Slice(int start) { throw null; }
+        public ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
+        public ReadOnlySpan<T> Span { get { throw null; } }
+        public unsafe Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
+        public T[] ToArray() { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool DangerousTryGetArray(out ArraySegment<T> arraySegment) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ReadOnlySpan<T>
@@ -3759,6 +3805,38 @@ namespace System.Runtime.CompilerServices
             [System.Security.SecurityCriticalAttribute]
             public void UnsafeOnCompleted(System.Action continuation) { }
         }
+    }
+}
+namespace System.Buffers
+{
+    public unsafe struct MemoryHandle : IDisposable 
+    {
+        [System.CLSCompliantAttribute(false)]
+        public MemoryHandle(IRetainable owner, void* pinnedPointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public void* PinnedPointer { get { throw null; } }
+        public void Dispose()  { throw null; }
+    }
+
+    public interface IRetainable 
+    {
+        bool Release();
+        void Retain();
+    }
+    
+    public abstract class OwnedMemory<T> : IDisposable, IRetainable 
+    {
+        public Memory<T> AsMemory { get { throw null; } }
+        public abstract bool IsDisposed { get; }
+        protected abstract bool IsRetained { get; }
+        public abstract int Length { get; }
+        public abstract Span<T> AsSpan();
+        public void Dispose() { throw null; }
+        protected abstract void Dispose(bool disposing);
+        public abstract MemoryHandle Pin();
+        public abstract bool Release();
+        public abstract void Retain();
+        protected internal abstract bool TryGetArray(out ArraySegment<T> arraySegment);
     }
 }
 namespace System.Collections
