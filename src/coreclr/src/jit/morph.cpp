@@ -11876,7 +11876,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 //
                 // a % b = a - (a / b) * b;
                 //
-                // Use the suggested transform unless the special case tranform works:
+                // Use the suggested transform unless the special case transform works:
                 //
                 // a % b = a & (b - 1);
                 //
