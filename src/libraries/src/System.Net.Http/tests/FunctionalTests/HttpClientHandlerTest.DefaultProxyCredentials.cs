@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -76,12 +77,23 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // proxies set via the http_proxy environment variable are specific to Unix
-        public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed(bool useProxy)
         {
-            int port;
-            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: true, expectCreds: true);
+            bool envVarsSupported = ManagedHandlerTestHelpers.IsEnabled || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            if (!envVarsSupported)
+            {
+                return;
+            }
+
+            int port = 0;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = null;
+            if (useProxy)
+            {
+                proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: true, expectCreds: true);
+            }
 
             const string ExpectedUsername = "rightusername";
             const string ExpectedPassword = "rightpassword";
@@ -91,13 +103,14 @@ namespace System.Net.Http.Functional.Tests
             // test in another process.
             var psi = new ProcessStartInfo();
             psi.Environment.Add("http_proxy", $"http://localhost:{port}");
-            RemoteInvoke(() =>
+            RemoteInvoke(useProxyString =>
             {
                 using (var handler = new HttpClientHandler())
                 using (var client = new HttpClient(handler))
                 {
                     var creds = new NetworkCredential(ExpectedUsername, ExpectedPassword);
                     handler.DefaultProxyCredentials = creds;
+                    handler.UseProxy = bool.Parse(useProxyString);
 
                     Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
                     Task<string> responseStringTask = responseTask.ContinueWith(t =>
@@ -109,9 +122,12 @@ namespace System.Net.Http.Functional.Tests
                     TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
                 }
                 return SuccessExitCode;
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, useProxy.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
-            Assert.Equal($"{ExpectedUsername}:{ExpectedPassword}", proxyTask.Result.AuthenticationHeaderValue);
+            if (useProxy)
+            {
+                Assert.Equal($"{ExpectedUsername}:{ExpectedPassword}", proxyTask.Result.AuthenticationHeaderValue);
+            }
         }
 
         // The purpose of this test is mainly to validate the .NET Framework OOB System.Net.Http implementation
