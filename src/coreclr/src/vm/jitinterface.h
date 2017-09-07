@@ -649,6 +649,7 @@ public:
 
     // ICorMethodInfo stuff
     const char* getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName);
+    const char* getMethodNameFromMetadata (CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName);
     unsigned getMethodHash (CORINFO_METHOD_HANDLE ftnHnd);
 
     DWORD getMethodAttribs (CORINFO_METHOD_HANDLE ftnHnd);
