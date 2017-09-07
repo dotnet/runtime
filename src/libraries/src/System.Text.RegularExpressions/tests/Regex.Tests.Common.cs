@@ -6,6 +6,8 @@ namespace System.Text.RegularExpressions.Tests
 {
     public static class RegexHelpers
     {
+        public const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
+
         public static bool IsDefaultCount(string input, RegexOptions options, int count)
         {
             if ((options & RegexOptions.RightToLeft) != 0)
