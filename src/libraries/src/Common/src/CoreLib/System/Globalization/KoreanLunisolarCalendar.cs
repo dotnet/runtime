@@ -14,7 +14,6 @@ namespace System.Globalization
     **      KoreanLunisolar    918/01/01          2050/13/29
     */
 
-    [Serializable]
     public class KoreanLunisolarCalendar : EastAsianLunisolarCalendar
     {
         //

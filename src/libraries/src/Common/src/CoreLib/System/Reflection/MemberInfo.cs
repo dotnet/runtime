@@ -30,6 +30,8 @@ namespace System.Reflection
             }
         }
 
+        public virtual bool HasSameMetadataDefinitionAs(MemberInfo other) { throw NotImplemented.ByDesign; }
+
         public abstract bool IsDefined(Type attributeType, bool inherit);
         public abstract object[] GetCustomAttributes(bool inherit);
         public abstract object[] GetCustomAttributes(Type attributeType, bool inherit);

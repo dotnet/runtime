@@ -12,25 +12,24 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class InvalidCastException : SystemException
     {
         public InvalidCastException()
             : base(SR.Arg_InvalidCastException)
         {
-            HResult = __HResults.COR_E_INVALIDCAST;
+            HResult = HResults.COR_E_INVALIDCAST;
         }
 
         public InvalidCastException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_INVALIDCAST;
+            HResult = HResults.COR_E_INVALIDCAST;
         }
 
         public InvalidCastException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_INVALIDCAST;
+            HResult = HResults.COR_E_INVALIDCAST;
         }
 
         public InvalidCastException(String message, int errorCode)
@@ -39,6 +38,9 @@ namespace System
             HResult = errorCode;
         }
 
-        protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

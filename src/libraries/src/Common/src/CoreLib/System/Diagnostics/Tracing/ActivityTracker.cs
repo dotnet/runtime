@@ -510,7 +510,8 @@ namespace System.Diagnostics.Tracing
                 // Compute the checksum 
                 uint* sumPtr = (uint*)outPtr;
                 // We set the last DWORD the sum of the first 3 DWORDS in the GUID.   This 
-                sumPtr[3] = sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD;                        // This last number is a random number (it identifies us as us)
+                // This last number is a random number (it identifies us as us)  the process ID to make it unique per process. 
+                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ EventSource.s_currentPid;
 
                 return (int)(ptr - ((byte*)outPtr));
             }

@@ -62,7 +62,6 @@ namespace System.Globalization
     // Gregorian to Hebrew Lunar from 1583 to 2239.
 
 
-    [Serializable]
     public class HebrewCalendar : Calendar
     {
         public static readonly int HebrewEra = 1;
@@ -537,9 +536,7 @@ namespace System.Globalization
             //
             //  Save the Gregorian date values.
             //
-            gregorianYear = time.Year;
-            gregorianMonth = time.Month;
-            gregorianDay = time.Day;
+            time.GetDatePart(out gregorianYear, out gregorianMonth, out gregorianDay);
 
             __DateBuffer lunarDate = new __DateBuffer();    // lunar month and day for Jan 1
 

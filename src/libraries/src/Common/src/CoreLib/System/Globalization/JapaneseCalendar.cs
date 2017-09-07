@@ -36,7 +36,6 @@ namespace System.Globalization
     ============================================================================*/
 
 
-    [Serializable]
     public partial class JapaneseCalendar : Calendar
     {
         internal static readonly DateTime calendarMinValue = new DateTime(1868, 9, 8);

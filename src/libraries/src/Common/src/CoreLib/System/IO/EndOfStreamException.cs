@@ -6,30 +6,30 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
-    [Serializable]
     public class EndOfStreamException : IOException
     {
         public EndOfStreamException()
             : base(SR.Arg_EndOfStreamException)
         {
-            HResult = __HResults.COR_E_ENDOFSTREAM;
+            HResult = HResults.COR_E_ENDOFSTREAM;
         }
 
         public EndOfStreamException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_ENDOFSTREAM;
+            HResult = HResults.COR_E_ENDOFSTREAM;
         }
 
         public EndOfStreamException(string message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ENDOFSTREAM;
+            HResult = HResults.COR_E_ENDOFSTREAM;
         }
 
         protected EndOfStreamException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

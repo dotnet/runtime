@@ -10,7 +10,6 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection
 {
-    [Serializable]
     public class TypeDelegator : TypeInfo
     {
         public override bool IsAssignableFrom(TypeInfo typeInfo)
@@ -109,6 +108,7 @@ namespace System.Reflection
         protected override bool IsPointerImpl() => typeImpl.IsPointer;
         protected override bool IsValueTypeImpl() => typeImpl.IsValueType;
         protected override bool IsCOMObjectImpl() => typeImpl.IsCOMObject;
+        public override bool IsByRefLike => typeImpl.IsByRefLike;
         public override bool IsConstructedGenericType => typeImpl.IsConstructedGenericType;
         public override Type GetElementType() => typeImpl.GetElementType();
         protected override bool HasElementTypeImpl() => typeImpl.HasElementType;

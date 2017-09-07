@@ -118,7 +118,7 @@ namespace System
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsSpan(this string text)
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text)
         {
             if (text == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
@@ -165,7 +165,7 @@ namespace System
             if (byteLength == 0)
                 return;
             
-#if AMD64 && CORECLR
+#if CORECLR && (AMD64 || ARM64)
             if (byteLength > 4096) goto PInvoke;
             Unsafe.InitBlockUnaligned(ref b, 0, (uint)byteLength);
             return;

@@ -56,14 +56,12 @@ namespace System.IO
 
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
-        internal const int MaxLongPath = short.MaxValue;
         // \\?\, \\.\, \??\
         internal const int DevicePrefixLength = 4;
         // \\
         internal const int UncPrefixLength = 2;
         // \\?\UNC\, \\.\UNC\
         internal const int UncExtendedPrefixLength = 8;
-        internal const int MaxComponentLength = 255;
 
         /// <summary>
         /// Returns true if the given character is a valid drive letter
@@ -437,6 +435,24 @@ namespace System.IO
         internal static bool IsDirectoryOrVolumeSeparator(char ch)
         {
             return IsDirectorySeparator(ch) || VolumeSeparatorChar == ch;
+        }
+
+        /// <summary>
+        /// Returns true if the path is effectively empty for the current OS.
+        /// For unix, this is empty or null. For Windows, this is empty, null, or 
+        /// just spaces ((char)32).
+        /// </summary>
+        internal static bool IsEffectivelyEmpty(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return true;
+
+            foreach (char c in path)
+            {
+                if (c != ' ')
+                    return false;
+            }
+            return true;
         }
     }
 }

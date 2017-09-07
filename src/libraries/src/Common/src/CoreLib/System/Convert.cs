@@ -84,7 +84,7 @@ namespace System
     // of the conversion method.
 
     // Constant representing the database null value. This value is used in
-    // database applications to indicate the absense of a known value. Note
+    // database applications to indicate the absence of a known value. Note
     // that Value.DBNull is NOT the same as a null object reference, which is
     // represented by Value.Empty.
     //
@@ -2670,7 +2670,7 @@ namespace System
         /// Converts the specified string, which encodes binary data as Base64 digits, to the equivalent byte array.
         /// </summary>
         /// <param name="s">The string to convert</param>
-        /// <returns>The array of bytes represented by the specifed Base64 string.</returns>
+        /// <returns>The array of bytes represented by the specified Base64 string.</returns>
         public static Byte[] FromBase64String(String s)
         {
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.

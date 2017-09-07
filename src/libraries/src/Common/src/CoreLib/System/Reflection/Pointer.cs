@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     [CLSCompliant(false)]
     public sealed unsafe class Pointer : ISerializable
     {
@@ -20,14 +19,6 @@ namespace System.Reflection
             Debug.Assert(ptrType.IsRuntimeImplemented()); // CoreCLR: For CoreRT's sake, _ptrType has to be declared as "Type", but in fact, it is always a RuntimeType. Code on CoreCLR expects this.
             _ptr = ptr;
             _ptrType = ptrType;
-        }
-
-        private Pointer(SerializationInfo info, StreamingContext context)
-        {
-            _ptr = ((IntPtr)(info.GetValue("_ptr", typeof(IntPtr)))).ToPointer();
-            _ptrType = (Type)info.GetValue("_ptrType", typeof(Type));
-            if (!_ptrType.IsRuntimeImplemented())
-                throw new SerializationException(SR.Arg_MustBeType);
         }
 
         public static object Box(void* ptr, Type type)
@@ -51,11 +42,10 @@ namespace System.Reflection
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("_ptr", new IntPtr(_ptr));
-            info.AddValue("_ptrType", _ptrType);
+            throw new PlatformNotSupportedException();
         }
 
         internal Type GetPointerType() => _ptrType;
-        internal object GetPointerValue() => (IntPtr)_ptr;
+        internal IntPtr GetPointerValue() => (IntPtr)_ptr;
     }
 }

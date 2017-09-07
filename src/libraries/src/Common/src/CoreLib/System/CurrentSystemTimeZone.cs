@@ -28,7 +28,6 @@ using System.Runtime.Versioning;
 namespace System
 {
     [Obsolete("System.CurrentSystemTimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo.Local instead.")]
-    [Serializable]
     internal partial class CurrentSystemTimeZone : TimeZone
     {
         // Standard offset in ticks to the Universal time if

@@ -7,7 +7,6 @@ using System.Text;
 
 namespace System.Text
 {
-    [Serializable]
     public sealed class EncodingInfo
     {
         private int iCodePage;          // Code Page #
