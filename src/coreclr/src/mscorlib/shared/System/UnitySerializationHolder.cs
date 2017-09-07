@@ -11,12 +11,7 @@ namespace System
     /// Holds Null class for which we guarantee that there is only ever one instance of.
     /// This only exists for backwarts compatibility with 
     /// </summary>
-#if CORECLR
-    internal
-#else
-    public  // On CoreRT, this must be public because of the Reflection.Core/CoreLib divide and the need to whitelist past the ReflectionBlock.
-#endif
-    sealed class UnitySerializationHolder : ISerializable, IObjectReference
+    internal sealed class UnitySerializationHolder : ISerializable, IObjectReference
     {
         internal const int NullUnity = 0x0002;
 
@@ -39,6 +34,8 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(info));
             }
+
+            // We are ignoring any serialization input as we are only concerned about DBNull.
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context) =>
