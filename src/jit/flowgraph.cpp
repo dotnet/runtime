@@ -8115,7 +8115,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     assert(genReturnBB != nullptr);
 
-    fgInsertStmtAtEnd(genReturnBB, tree);
+    fgInsertStmtNearEnd(genReturnBB, tree);
 
 #ifdef DEBUG
     if (verbose)
@@ -8152,10 +8152,455 @@ bool Compiler::fgMoreThanOneReturnBlock()
     return false;
 }
 
+namespace
+{
+// Define a helper class for merging return blocks (which we do when the input has
+// more than the limit for this configuration).
+//
+// Notes: sets fgReturnCount, genReturnBB, and genReturnLocal.
+class MergedReturns
+{
+public:
+#ifdef JIT32_GCENCODER
+
+    // X86 GC encoding has a hard limit of SET_EPILOGCNT_MAX epilogs.
+    const static unsigned ReturnCountHardLimit = SET_EPILOGCNT_MAX;
+#else  // JIT32_GCENCODER
+
+    // We currently apply a hard limit of '4' to all other targets (see
+    // the other uses of SET_EPILOGCNT_MAX), though it would be good
+    // to revisit that decision based on CQ analysis.
+    const static unsigned ReturnCountHardLimit = 4;
+#endif // JIT32_GCENCODER
+
+private:
+    Compiler* comp;
+
+    // As we discover returns, we'll record them in `returnBlocks`, until
+    // the limit is reached, at which point we'll keep track of the merged
+    // return blocks in `returnBlocks`.
+    BasicBlock* returnBlocks[ReturnCountHardLimit];
+
+    // Each constant value returned gets its own merged return block that
+    // returns that constant (up to the limit on number of returns); in
+    // `returnConstants` we track the constant values returned by these
+    // merged constant return blocks.
+    ssize_t returnConstants[ReturnCountHardLimit];
+
+    // Number of return blocks allowed
+    PhasedVar<unsigned> maxReturns;
+
+    // Flag to keep track of when we've hit the limit of returns and are
+    // actively merging returns together.
+    bool mergingReturns = false;
+
+public:
+    MergedReturns(Compiler* comp) : comp(comp)
+    {
+        comp->fgReturnCount = 0;
+    }
+
+    void SetMaxReturns(unsigned value)
+    {
+        maxReturns = value;
+        maxReturns.MarkAsReadOnly();
+    }
+
+    //------------------------------------------------------------------------
+    // Record: Make note of a return block in the input program.
+    //
+    // Arguments:
+    //    returnBlock - Block in the input that has jump kind BBJ_RETURN
+    //
+    // Notes:
+    //    Updates fgReturnCount appropriately, and generates a merged return
+    //    block if necessary.  If a constant merged return block is used,
+    //    `returnBlock` is rewritten to jump to it.  If a non-constant return
+    //    block is used, `genReturnBB` is set to that block, and `genReturnLocal`
+    //    is set to the lclvar that it returns; morph will need to rewrite
+    //    `returnBlock` to set the local and jump to the return block in such
+    //    cases, which it will do after some key transformations like rewriting
+    //    tail calls and calls that return to hidden buffers.  In either of these
+    //    cases, `fgReturnCount` and the merged return block's profile information
+    //    will be updated to reflect or anticipate the rewrite of `returnBlock`.
+    //
+    void Record(BasicBlock* returnBlock)
+    {
+        // Add this return to our tally
+        unsigned oldReturnCount = comp->fgReturnCount++;
+
+        if (!mergingReturns)
+        {
+            if (oldReturnCount < maxReturns)
+            {
+                // No need to merge just yet; simply record this return.
+                returnBlocks[oldReturnCount] = returnBlock;
+                return;
+            }
+
+            // We'e reached our threshold
+            mergingReturns = true;
+
+            // Merge any returns we've already identified
+            for (unsigned i = 0, searchLimit = 0; i < oldReturnCount; ++i)
+            {
+                BasicBlock* mergedReturnBlock = Merge(returnBlocks[i], searchLimit);
+                if (returnBlocks[searchLimit] == mergedReturnBlock)
+                {
+                    // We've added a new block to the searchable set
+                    ++searchLimit;
+                }
+            }
+        }
+
+        // We have too many returns, so merge this one in.
+        // Search limit is new return count minus one (to exclude this block).
+        unsigned searchLimit = comp->fgReturnCount - 1;
+        Merge(returnBlock, searchLimit);
+    }
+
+    //------------------------------------------------------------------------
+    // EagerCreate: Force creation of a non-constant merged return block `genReturnBB`.
+    //
+    // Return Value:
+    //    The newly-created block which returns `genReturnLocal`.
+    //
+    BasicBlock* EagerCreate()
+    {
+        mergingReturns = true;
+        return Merge(nullptr, 0);
+    }
+
+private:
+    //------------------------------------------------------------------------
+    // CreateReturnBB: Create a basic block to serve as a merged return point, stored to
+    //    `returnBlocks` at the given index, and optionally returning the given constant.
+    //
+    // Arguments:
+    //    index - Index into `returnBlocks` to store the new block into.
+    //    returnConst - Constant that the new block should return; may be nullptr to
+    //      indicate that the new merged return is for the non-constant case, in which
+    //      case, if the method's return type is non-void, `comp->genReturnLocal` will
+    //      be initialized to a new local of the appropriate type, and the new block will
+    //      return it.
+    //
+    // Return Value:
+    //    The new merged return block.
+    //
+    BasicBlock* CreateReturnBB(unsigned index, GenTreeIntConCommon* returnConst = nullptr)
+    {
+        BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
+        newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
+        comp->fgReturnCount++;
+
+        newReturnBB->bbFlags |= (BBF_INTERNAL | BBF_DONT_REMOVE);
+
+        noway_assert(newReturnBB->bbNext == nullptr);
+
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("\n newReturnBB [BB%02u] created\n", newReturnBB->bbNum);
+        }
+#endif
+
+        // We have profile weight, the weight is zero, and the block is run rarely,
+        // until we prove otherwise by merging other returns into this one.
+        newReturnBB->bbFlags |= (BBF_PROF_WEIGHT | BBF_RUN_RARELY);
+        newReturnBB->bbWeight = 0;
+
+        GenTreePtr returnExpr;
+
+        if (returnConst != nullptr)
+        {
+            returnExpr             = comp->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
+            returnConstants[index] = returnConst->IconValue();
+        }
+        else if (comp->compMethodHasRetVal())
+        {
+            // There is a return value, so create a temp for it.  Real returns will store the value in there and
+            // it'll be reloaded by the single return.
+            unsigned returnLocalNum   = comp->lvaGrabTemp(true DEBUGARG("Single return block return value"));
+            comp->genReturnLocal      = returnLocalNum;
+            LclVarDsc& returnLocalDsc = comp->lvaTable[returnLocalNum];
+
+            if (comp->compMethodReturnsNativeScalarType())
+            {
+                returnLocalDsc.lvType = genActualType(comp->info.compRetNativeType);
+            }
+            else if (comp->compMethodReturnsRetBufAddr())
+            {
+                returnLocalDsc.lvType = TYP_BYREF;
+            }
+            else if (comp->compMethodReturnsMultiRegRetType())
+            {
+                returnLocalDsc.lvType = TYP_STRUCT;
+                comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, true);
+                returnLocalDsc.lvIsMultiRegRet = true;
+            }
+            else
+            {
+                assert(!"unreached");
+            }
+
+            if (varTypeIsFloating(returnLocalDsc.lvType))
+            {
+                comp->compFloatingPointUsed = true;
+            }
+
+            if (!varTypeIsFloating(comp->info.compRetType))
+            {
+                returnLocalDsc.setPrefReg(REG_INTRET, comp);
+            }
+#ifdef REG_FLOATRET
+            else
+            {
+                returnLocalDsc.setPrefReg(REG_FLOATRET, comp);
+            }
+#endif
+
+#ifdef DEBUG
+            // This temporary should not be converted to a double in stress mode,
+            // because we introduce assigns to it after the stress conversion
+            returnLocalDsc.lvKeepType = 1;
+#endif
+
+            GenTreePtr retTemp = comp->gtNewLclvNode(returnLocalNum, returnLocalDsc.TypeGet());
+
+            // make sure copy prop ignores this node (make sure it always does a reload from the temp).
+            retTemp->gtFlags |= GTF_DONT_CSE;
+            returnExpr = comp->gtNewOperNode(GT_RETURN, retTemp->gtType, retTemp);
+        }
+        else
+        {
+            // return void
+            noway_assert(comp->info.compRetType == TYP_VOID || varTypeIsStruct(comp->info.compRetType));
+            comp->genReturnLocal = BAD_VAR_NUM;
+
+            returnExpr = new (comp, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
+        }
+
+        // Add 'return' expression to the return block
+        comp->fgInsertStmtAtEnd(newReturnBB, returnExpr);
+        // Flag that this 'return' was generated by return merging so that subsequent
+        // return block morhping will know to leave it alone.
+        returnExpr->gtFlags |= GTF_RET_MERGED;
+
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("\nmergeReturns statement tree ");
+            Compiler::printTreeID(returnExpr);
+            printf(" added to genReturnBB %s\n", newReturnBB->dspToString());
+            comp->gtDispTree(returnExpr);
+            printf("\n");
+        }
+#endif
+        assert(index < maxReturns);
+        returnBlocks[index] = newReturnBB;
+        return newReturnBB;
+    }
+
+    //------------------------------------------------------------------------
+    // Merge: Find or create an appropriate merged return block for the given input block.
+    //
+    // Arguments:
+    //    returnBlock - Return block from the input program to find a merged return for.
+    //                  May be nullptr to indicate that new block suitable for non-constant
+    //                  returns should be generated but no existing block modified.
+    //    searchLimit - Blocks in `returnBlocks` up to but not including index `searchLimit`
+    //                  will be checked to see if we already have an appropriate merged return
+    //                  block for this case.  If a new block must be created, it will be stored
+    //                  to `returnBlocks` at index `searchLimit`.
+    //
+    // Return Value:
+    //    Merged return block suitable for handling this return value.  May be newly-created
+    //    or pre-existing.
+    //
+    // Notes:
+    //    If a constant-valued merged return block is used, `returnBlock` will be rewritten to
+    //    jump to the merged return block and its `GT_RETURN` statement will be removed.  If
+    //    a non-constant-valued merged return block is used, `genReturnBB` and `genReturnLocal`
+    //    will be set so that Morph can perform that rewrite, which it will do after some key
+    //    transformations like rewriting tail calls and calls that return to hidden buffers.
+    //    In either of these cases, `fgReturnCount` and the merged return block's profile
+    //    information will be updated to reflect or anticipate the rewrite of `returnBlock`.
+    //
+    BasicBlock* Merge(BasicBlock* returnBlock, unsigned searchLimit)
+    {
+        assert(mergingReturns);
+
+        BasicBlock* mergedReturnBlock = nullptr;
+        if ((returnBlock != nullptr) && (maxReturns > 1))
+        {
+            // Check to see if this is a constant return so that we can search
+            // for and/or create a constant return block for it.
+
+            GenTreeIntConCommon* retConst = GetReturnConst(returnBlock);
+            if (retConst != nullptr)
+            {
+                // We have a constant.  Now find or create a corresponding return block.
+
+                BasicBlock* constReturnBlock = FindConstReturnBlock(retConst, searchLimit);
+
+                if (constReturnBlock == nullptr)
+                {
+                    // We didn't find a const return block.  See if we have space left
+                    // to make one.
+
+                    // We have already allocated `searchLimit` slots.
+                    unsigned slotsReserved = searchLimit;
+                    if (comp->genReturnBB == nullptr)
+                    {
+                        // We haven't made a non-const return yet, so we have to reserve
+                        // a slot for one.
+                        ++slotsReserved;
+                    }
+
+                    if (slotsReserved < maxReturns)
+                    {
+                        // We have enough space to allocate a slot for this constant.
+                        constReturnBlock = CreateReturnBB(searchLimit, retConst);
+                    }
+                }
+
+                if (constReturnBlock != nullptr)
+                {
+                    // Found a constant merged return block.
+                    mergedReturnBlock = constReturnBlock;
+
+                    // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
+                    assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
+                    returnBlock->bbJumpKind = BBJ_ALWAYS;
+                    returnBlock->bbJumpDest = constReturnBlock;
+
+                    // Remove GT_RETURN since constReturnBlock returns the constant.
+                    assert(returnBlock->lastStmt()->gtStmtExpr->OperIs(GT_RETURN));
+                    assert(returnBlock->lastStmt()->gtStmtExpr->gtGetOp1()->IsIntegralConst());
+                    comp->fgRemoveStmt(returnBlock, returnBlock->lastStmt());
+                }
+            }
+        }
+
+        if (mergedReturnBlock == nullptr)
+        {
+            // No constant return block for this return; use the general one.
+            mergedReturnBlock = comp->genReturnBB;
+            if (mergedReturnBlock == nullptr)
+            {
+                // No general merged return for this function yet; create one.
+                // There had better still be room left in the array.
+                assert(searchLimit < maxReturns);
+                mergedReturnBlock = CreateReturnBB(searchLimit);
+                comp->genReturnBB = mergedReturnBlock;
+            }
+        }
+
+        if (returnBlock != nullptr)
+        {
+            // Propagate profile weight and related annotations to the merged block.
+            // Return weight should never exceed entry weight, so cap it to avoid nonsensical
+            // hot returns in synthetic profile settings.
+            mergedReturnBlock->bbWeight =
+                min(mergedReturnBlock->bbWeight + returnBlock->bbWeight, comp->fgFirstBB->bbWeight);
+            if (!returnBlock->hasProfileWeight())
+            {
+                mergedReturnBlock->bbFlags &= ~BBF_PROF_WEIGHT;
+            }
+            if (mergedReturnBlock->bbWeight > 0)
+            {
+                mergedReturnBlock->bbFlags &= ~BBF_RUN_RARELY;
+            }
+
+            // Update fgReturnCount to reflect or anticipate that `returnBlock` will no longer
+            // be a return point.
+            comp->fgReturnCount--;
+        }
+
+        return mergedReturnBlock;
+    }
+
+    //------------------------------------------------------------------------
+    // GetReturnConst: If the given block returns an integral constant, return the
+    //     GenTreeIntConCommon that represents the constant.
+    //
+    // Arguments:
+    //    returnBlock - Block whose return value is to be inspected.
+    //
+    // Return Value:
+    //    GenTreeIntCommon that is the argument of `returnBlock`'s `GT_RETURN` if
+    //    such exists; nullptr otherwise.
+    //
+    static GenTreeIntConCommon* GetReturnConst(BasicBlock* returnBlock)
+    {
+        GenTreeStmt* lastStmt = returnBlock->lastStmt();
+        if (lastStmt == nullptr)
+        {
+            return nullptr;
+        }
+
+        GenTreePtr lastExpr = lastStmt->gtStmtExpr;
+        if (!lastExpr->OperIs(GT_RETURN))
+        {
+            return nullptr;
+        }
+
+        GenTreePtr retExpr = lastExpr->gtGetOp1();
+        if ((retExpr == nullptr) || !retExpr->IsIntegralConst())
+        {
+            return nullptr;
+        }
+
+        return retExpr->AsIntConCommon();
+    }
+
+    //------------------------------------------------------------------------
+    // FindConstReturnBlock: Scan the already-created merged return blocks, up to `searchLimit`,
+    //     and return the one corresponding to the given const expression if it exists.
+    //
+    // Arguments:
+    //    constExpr - GenTreeIntCommon representing the constant return value we're
+    //        searching for.
+    //    searchLimit - Check `returnBlocks`/`returnConstants` up to but not including
+    //        this index.
+    //
+    // Return Value:
+    //    A block that returns the same constant, if one is found; otherwise nullptr.
+    //
+    BasicBlock* FindConstReturnBlock(GenTreeIntConCommon* constExpr, unsigned searchLimit)
+    {
+        ssize_t constVal = constExpr->IconValue();
+
+        for (unsigned i = 0; i < searchLimit; ++i)
+        {
+            // Need to check both for matching const val and for genReturnBB
+            // because genReturnBB is used for non-constant returns and its
+            // corresponding entry in the returnConstants array is garbage.
+            if (returnConstants[i] == constVal)
+            {
+                BasicBlock* returnBlock = returnBlocks[i];
+
+                if (returnBlock == comp->genReturnBB)
+                {
+                    // This is the block used for non-constant returns, so
+                    // its returnConstants entry is just garbage; don't be
+                    // fooled.
+                    continue;
+                }
+
+                return returnBlock;
+            }
+        }
+
+        return nullptr;
+    }
+};
+}
+
 /*****************************************************************************
- *
- *  Add any internal blocks/trees we may need
- */
+*
+*  Add any internal blocks/trees we may need
+*/
 
 void Compiler::fgAddInternal()
 {
@@ -8172,17 +8617,17 @@ void Compiler::fgAddInternal()
 #endif // !LEGACY_BACKEND
 
     /*
-        <BUGNUM> VSW441487 </BUGNUM>
+    <BUGNUM> VSW441487 </BUGNUM>
 
-        The "this" pointer is implicitly used in the following cases:
-            1. Locking of synchronized methods
-            2. Dictionary access of shared generics code
-            3. If a method has "catch(FooException<T>)", the EH code accesses "this" to determine T.
-            4. Initializing the type from generic methods which require precise cctor semantics
-            5. Verifier does special handling of "this" in the .ctor
+    The "this" pointer is implicitly used in the following cases:
+    1. Locking of synchronized methods
+    2. Dictionary access of shared generics code
+    3. If a method has "catch(FooException<T>)", the EH code accesses "this" to determine T.
+    4. Initializing the type from generic methods which require precise cctor semantics
+    5. Verifier does special handling of "this" in the .ctor
 
-        However, we might overwrite it with a "starg 0".
-        In this case, we will redirect all "ldarg(a)/starg(a) 0" to a temp lvaTable[lvaArg0Var]
+    However, we might overwrite it with a "starg 0".
+    In this case, we will redirect all "ldarg(a)/starg(a) 0" to a temp lvaTable[lvaArg0Var]
     */
 
     if (!info.compIsStatic)
@@ -8196,7 +8641,7 @@ void Compiler::fgAddInternal()
 #ifndef JIT32_GCENCODER
             lva0CopiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-            lva0CopiedForGenericsCtxt = false;
+            lva0CopiedForGenericsCtxt          = false;
 #endif // JIT32_GCENCODER
             noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].lvAddrExposed);
             noway_assert(!lvaTable[info.compThisArg].lvHasILStoreOp);
@@ -8241,90 +8686,8 @@ void Compiler::fgAddInternal()
         lvaTable[lvaSecurityObject].lvType = TYP_REF;
     }
 
-    /* Assume we will generate a single shared return sequence */
-
-    ULONG returnWeight = 0;
-    bool  oneReturn;
-    bool  allProfWeight;
-
-    //
-    //  We will generate just one epilog (return block)
-    //   when we are asked to generate enter/leave callbacks
-    //   or for methods with PInvoke
-    //   or for methods calling into unmanaged code
-    //   or for synchronized methods.
-    //
-    if (compIsProfilerHookNeeded() || (info.compCallUnmanaged != 0) || opts.IsReversePInvoke() ||
-        ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
-    {
-        // We will generate only one return block
-        // We will transform the BBJ_RETURN blocks
-        //  into jumps to the one return block
-        //
-        oneReturn     = true;
-        allProfWeight = false;
-    }
-    else
-    {
-        //
-        // We are allowed to have multiple individual exits
-        // However we can still decide to have a single return
-        //
-        oneReturn     = false;
-        allProfWeight = true;
-
-        // Count the BBJ_RETURN blocks and set the returnWeight to the
-        // sum of all these blocks.
-        //
-        fgReturnCount = 0;
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
-        {
-            if (block->bbJumpKind == BBJ_RETURN)
-            {
-                //
-                // returnCount is the count of BBJ_RETURN blocks in this method
-                //
-                fgReturnCount++;
-                //
-                // If all BBJ_RETURN blocks have a valid profiled weights
-                // then allProfWeight will be true, else it is false
-                //
-                if (!block->hasProfileWeight())
-                {
-                    allProfWeight = false;
-                }
-                //
-                // returnWeight is the sum of the weights of all BBJ_RETURN blocks
-                returnWeight += block->bbWeight;
-            }
-        }
-
-        //
-        // If we only have one (or zero) return blocks then
-        // we do not need a special one return block
-        //
-        if (fgReturnCount > 1)
-        {
-            //
-            // should we generate a single return block?
-            //
-            if (fgReturnCount > 4)
-            {
-                // Our epilog encoding only supports up to 4 epilogs
-                // TODO-CQ: support >4 return points for ARM/AMD64, which presumably support any number of epilogs?
-                //
-                oneReturn = true;
-            }
-            else if (compCodeOpt() == SMALL_CODE)
-            {
-                // For the Small_Code case we always generate a
-                // single return block when we have multiple
-                // return points
-                //
-                oneReturn = true;
-            }
-        }
-    }
+    // Merge return points if required or beneficial
+    MergedReturns merger(this);
 
 #if FEATURE_EH_FUNCLETS
     // Add the synchronized method enter/exit calls and try/finally protection. Note
@@ -8338,119 +8701,63 @@ void Compiler::fgAddInternal()
     }
 #endif // FEATURE_EH_FUNCLETS
 
-    if (oneReturn)
+    //
+    //  We will generate just one epilog (return block)
+    //   when we are asked to generate enter/leave callbacks
+    //   or for methods with PInvoke
+    //   or for methods calling into unmanaged code
+    //   or for synchronized methods.
+    //
+    BasicBlock* lastBlockBeforeGenReturns = fgLastBB;
+    if (compIsProfilerHookNeeded() || (info.compCallUnmanaged != 0) || opts.IsReversePInvoke() ||
+        ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
     {
-        genReturnBB         = fgNewBBinRegion(BBJ_RETURN);
-        genReturnBB->bbRefs = 1; // bbRefs gets update later, for now it should be 1
-        fgReturnCount++;
-
-        if (allProfWeight)
-        {
-            //
-            // if we have profile data for all BBJ_RETURN blocks
-            // then we can set BBF_PROF_WEIGHT for genReturnBB
-            //
-            genReturnBB->bbFlags |= BBF_PROF_WEIGHT;
-        }
-        else
-        {
-            //
-            // We can't rely upon the calculated returnWeight unless
-            // all of the BBJ_RETURN blocks had valid profile weights
-            // So we will use the weight of the first block instead
-            //
-            returnWeight = fgFirstBB->bbWeight;
-        }
-
+        // We will generate only one return block
+        // We will transform the BBJ_RETURN blocks
+        //  into jumps to the one return block
         //
-        // Set the weight of the oneReturn block
-        //
-        genReturnBB->bbWeight = min(returnWeight, BB_MAX_WEIGHT);
+        merger.SetMaxReturns(1);
 
-        if (returnWeight == 0)
+        // Eagerly create the genReturnBB since the lowering of these constructs
+        // will expect to find it.
+        BasicBlock* mergedReturn = merger.EagerCreate();
+        assert(mergedReturn == genReturnBB);
+        // Assume weight equal to entry weight for this BB.
+        mergedReturn->bbFlags &= ~BBF_PROF_WEIGHT;
+        mergedReturn->bbWeight = fgFirstBB->bbWeight;
+        if (mergedReturn->bbWeight > 0)
         {
-            //
-            // If necessary set the Run Rarely flag
-            //
-            genReturnBB->bbFlags |= BBF_RUN_RARELY;
+            mergedReturn->bbFlags &= ~BBF_RUN_RARELY;
         }
-        else
-        {
-            // Make sure that the RunRarely flag is clear
-            // because fgNewBBinRegion will set it to true
-            //
-            genReturnBB->bbFlags &= ~BBF_RUN_RARELY;
-        }
-
-        genReturnBB->bbFlags |= (BBF_INTERNAL | BBF_DONT_REMOVE);
-
-        noway_assert(genReturnBB->bbNext == nullptr);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\n genReturnBB [BB%02u] created\n", genReturnBB->bbNum);
-        }
-#endif
     }
     else
     {
         //
-        // We don't have a oneReturn block for this method
+        // We are allowed to have multiple individual exits
+        // However we can still decide to have a single return
         //
-        genReturnBB = nullptr;
-    }
-
-    // If there is a return value, then create a temp for it.  Real returns will store the value in there and
-    // it'll be reloaded by the single return.
-    if (genReturnBB && compMethodHasRetVal())
-    {
-        genReturnLocal = lvaGrabTemp(true DEBUGARG("Single return block return value"));
-
-        if (compMethodReturnsNativeScalarType())
+        if (compCodeOpt() == SMALL_CODE)
         {
-            lvaTable[genReturnLocal].lvType = genActualType(info.compRetNativeType);
-        }
-        else if (compMethodReturnsRetBufAddr())
-        {
-            lvaTable[genReturnLocal].lvType = TYP_BYREF;
-        }
-        else if (compMethodReturnsMultiRegRetType())
-        {
-            lvaTable[genReturnLocal].lvType = TYP_STRUCT;
-            lvaSetStruct(genReturnLocal, info.compMethodInfo->args.retTypeClass, true);
-            lvaTable[genReturnLocal].lvIsMultiRegRet = true;
+            // For the Small_Code case we always generate a
+            // single return block when we have multiple
+            // return points
+            //
+            merger.SetMaxReturns(1);
         }
         else
         {
-            assert(!"unreached");
+            merger.SetMaxReturns(MergedReturns::ReturnCountHardLimit);
         }
-
-        if (varTypeIsFloating(lvaTable[genReturnLocal].lvType))
-        {
-            this->compFloatingPointUsed = true;
-        }
-
-        if (!varTypeIsFloating(info.compRetType))
-        {
-            lvaTable[genReturnLocal].setPrefReg(REG_INTRET, this);
-        }
-#ifdef REG_FLOATRET
-        else
-        {
-            lvaTable[genReturnLocal].setPrefReg(REG_FLOATRET, this);
-        }
-#endif
-
-#ifdef DEBUG
-        // This temporary should not be converted to a double in stress mode,
-        // because we introduce assigns to it after the stress conversion
-        lvaTable[genReturnLocal].lvKeepType = 1;
-#endif
     }
-    else
+
+    // Visit the BBJ_RETURN blocks and merge as necessary.
+
+    for (BasicBlock* block = fgFirstBB; block != lastBlockBeforeGenReturns->bbNext; block = block->bbNext)
     {
-        genReturnLocal = BAD_VAR_NUM;
+        if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        {
+            merger.Record(block);
+        }
     }
 
     if (info.compCallUnmanaged != 0)
@@ -8598,8 +8905,7 @@ void Compiler::fgAddInternal()
 
         /* We must be generating a single exit point for this to work */
 
-        noway_assert(oneReturn);
-        noway_assert(genReturnBB);
+        noway_assert(genReturnBB != nullptr);
 
         /* Create the expression "exitCrit(this)" or "exitCrit(handle)" */
 
@@ -8616,7 +8922,7 @@ void Compiler::fgAddInternal()
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, gtNewArgList(tree));
         }
 
-        fgInsertStmtAtEnd(genReturnBB, tree);
+        fgInsertStmtNearEnd(genReturnBB, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -8666,53 +8972,6 @@ void Compiler::fgAddInternal()
     if (opts.IsReversePInvoke())
     {
         fgAddReversePInvokeEnterExit();
-    }
-
-    //
-    //  Add 'return' expression to the return block if we made it as "oneReturn" before.
-    //
-    if (oneReturn)
-    {
-        GenTreePtr tree;
-
-        //
-        // Make the 'return' expression.
-        //
-
-        // make sure to reload the return value as part of the return (it is saved by the "real return").
-        if (genReturnLocal != BAD_VAR_NUM)
-        {
-            noway_assert(compMethodHasRetVal());
-
-            GenTreePtr retTemp = gtNewLclvNode(genReturnLocal, lvaTable[genReturnLocal].TypeGet());
-
-            // make sure copy prop ignores this node (make sure it always does a reload from the temp).
-            retTemp->gtFlags |= GTF_DONT_CSE;
-            tree = gtNewOperNode(GT_RETURN, retTemp->gtType, retTemp);
-        }
-        else
-        {
-            noway_assert(info.compRetType == TYP_VOID || varTypeIsStruct(info.compRetType));
-            // return void
-            tree = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
-        }
-
-        /* Add 'return' expression to the return block */
-
-        noway_assert(genReturnBB);
-
-        fgInsertStmtAtEnd(genReturnBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\noneReturn statement tree ");
-            printTreeID(tree);
-            printf(" added to genReturnBB %s\n", genReturnBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
     }
 
 #ifdef DEBUG
@@ -9150,7 +9409,8 @@ void Compiler::fgSimpleLowering()
             for (GenTreePtr tree = stmt->gtStmtList; tree; tree = tree->gtNext)
             {
 #else
-        LIR::Range& range             = LIR::AsRange(block);
+
+        LIR::Range& range = LIR::AsRange(block);
         for (GenTree* tree : range)
         {
             {
