@@ -202,12 +202,15 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), "IsNotRedHat69")]
+        [Fact]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NotFoundDirectory_ReadOnlyVolume()
         {
+            if (PlatformDetection.IsRedHat69)
+                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
+
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(readOnlyDirectory, "DoesNotExist")));
