@@ -749,13 +749,16 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             RSSmartPtr<CordbReJitILCode> pReJitCode;
             EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
             {
-                VMPTR_ReJitInfo reJitInfo = VMPTR_ReJitInfo::NullPtr();
-                IfFailThrow(GetProcess()->GetDAC()->GetReJitInfo(pJITFuncData->vmNativeCodeMethodDescToken, pJITFuncData->nativeStartAddressPtr, &reJitInfo));
-                if (!reJitInfo.IsNull())
+                VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode = VMPTR_NativeCodeVersionNode::NullPtr();
+                IfFailThrow(GetProcess()->GetDAC()->GetNativeCodeVersionNode(pJITFuncData->vmNativeCodeMethodDescToken, pJITFuncData->nativeStartAddressPtr, &vmNativeCodeVersionNode));
+                if (!vmNativeCodeVersionNode.IsNull())
                 {
-                    VMPTR_SharedReJitInfo sharedReJitInfo = VMPTR_SharedReJitInfo::NullPtr();
-                    IfFailThrow(GetProcess()->GetDAC()->GetSharedReJitInfo(reJitInfo, &sharedReJitInfo));
-                    IfFailThrow(pFunction->LookupOrCreateReJitILCode(sharedReJitInfo, &pReJitCode));
+                    VMPTR_ILCodeVersionNode vmILCodeVersionNode = VMPTR_ILCodeVersionNode::NullPtr();
+                    IfFailThrow(GetProcess()->GetDAC()->GetILCodeVersionNode(vmNativeCodeVersionNode, &vmILCodeVersionNode));
+                    if (!vmILCodeVersionNode.IsNull())
+                    {
+                        IfFailThrow(pFunction->LookupOrCreateReJitILCode(vmILCodeVersionNode, &pReJitCode));
+                    }
                 }
             }
             EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY                                

@@ -225,7 +225,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>Initiatites scheduler shutdown due to a worker task faulting..</summary>
+        /// <summary>Initiatites scheduler shutdown due to a worker task faulting.</summary>
         /// <param name="faultedTask">The faulted worker task that's initiating the shutdown.</param>
         private void FaultWithTask(Task faultedTask)
         {

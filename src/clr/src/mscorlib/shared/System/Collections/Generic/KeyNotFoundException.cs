@@ -7,27 +7,29 @@ using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
-    [Serializable]
     public class KeyNotFoundException : SystemException
     {
         public KeyNotFoundException()
             : base(SR.Arg_KeyNotFound)
         {
-            HResult = __HResults.COR_E_KEYNOTFOUND;
+            HResult = HResults.COR_E_KEYNOTFOUND;
         }
 
         public KeyNotFoundException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_KEYNOTFOUND;
+            HResult = HResults.COR_E_KEYNOTFOUND;
         }
 
         public KeyNotFoundException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_KEYNOTFOUND;
+            HResult = HResults.COR_E_KEYNOTFOUND;
         }
 
-        protected KeyNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected KeyNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

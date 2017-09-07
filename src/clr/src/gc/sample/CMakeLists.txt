@@ -8,6 +8,7 @@ include_directories(../env)
 set(SOURCES
     GCSample.cpp
     gcenv.ee.cpp
+    ../gcconfig.cpp
     ../gccommon.cpp
     ../gceewks.cpp
     ../gchandletable.cpp

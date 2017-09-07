@@ -59,6 +59,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
@@ -132,7 +133,8 @@ namespace System
         // positive and 1 meaning negative.
         //
         // NOTE: Do not change the order in which these fields are declared. The
-        // native methods in this class rely on this particular order.
+        // native methods in this class rely on this particular order. 
+        // Do not rename (binary serialization).
         private int flags;
         private int hi;
         private int lo;
@@ -508,21 +510,31 @@ namespace System
         //
         public static Decimal Parse(String s)
         {
-            return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo);
         }
 
         public static Decimal Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseDecimal(s, style, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         public static Decimal Parse(String s, IFormatProvider provider)
         {
-            return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Decimal Parse(String s, NumberStyles style, IFormatProvider provider)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
@@ -530,10 +542,29 @@ namespace System
 
         public static Boolean TryParse(String s, out Decimal result)
         {
-            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, out decimal result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result);
@@ -802,6 +833,8 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallRound(ref Decimal d, int decimals);
+
+        internal static int Sign(ref decimal d) => (d.lo | d.mid | d.hi) == 0 ? 0 : (d.flags >> 31) | 1;
 
         // Subtracts two Decimal values.
         //

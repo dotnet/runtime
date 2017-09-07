@@ -15,14 +15,17 @@ namespace Functions
         private const float powSingleDeltaY = 0.0004f;
         private const float powSingleExpectedResult = 4659.30762f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = PowSingleIterations)]
         public static void PowSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    PowSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        PowSingleTest();
+                    }
                 }
             }
         }

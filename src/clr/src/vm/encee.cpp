@@ -1139,7 +1139,8 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
         FieldDesc *pHelperField = MscorlibBinder::GetField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
 
         // store the empty boxed object into the helper object
-        OBJECTREF pHelperObj = GetDependentHandleSecondary(pEntry->m_FieldData);
+        IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+        OBJECTREF pHelperObj = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(pEntry->m_FieldData));
         OBJECTREF *pHelperRef = (OBJECTREF *)pHelperField->GetAddress( pHelperObj->GetAddress() );
         SetObjectReference( pHelperRef, obj, pDomain );
 
@@ -1244,7 +1245,8 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     // we found a matching entry in the list of EnCAddedFields
     // Get the EnC helper object (see the detailed description in Allocate above)
-    OBJECTREF pHelper = GetDependentHandleSecondary(pEntry->m_FieldData);           
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+    OBJECTREF pHelper = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(pEntry->m_FieldData));
     _ASSERTE(pHelper != NULL);
 
     FieldDesc *pHelperFieldDesc = NULL;
@@ -1333,7 +1335,8 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
 
     // we found a matching entry in the list of EnCAddedFields
     // Get the EnC helper object (see the detailed description in Allocate above)
-    OBJECTREF pHelper = GetDependentHandleSecondary(pEntry->m_FieldData);           
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+    OBJECTREF pHelper = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(pEntry->m_FieldData));           
     _ASSERTE(pHelper != NULL);
 
     FieldDesc * pHelperField = NULL;

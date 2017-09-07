@@ -49,7 +49,10 @@ CObjectType CorUnix::otMutex(
                 NULL,   // No cleanup routine
                 NULL,   // No initialization routine
                 0,      // No immutable data
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 0,      // No process local data
+                NULL,   // No process local data cleanup routine
                 0,      // No shared data
                 0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
@@ -69,7 +72,10 @@ CObjectType CorUnix::otNamedMutex(
                 &SharedMemoryProcessDataHeader::PalObject_Close, // Cleanup routine
                 NULL,   // No initialization routine
                 sizeof(SharedMemoryProcessDataHeader *), // Immutable data
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 0,      // No process local data
+                NULL,   // No process local data cleanup routine
                 0,      // No shared data
                 0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
@@ -211,6 +217,30 @@ CreateMutexWExit:
     LOGEXIT("CreateMutexW returns HANDLE %p\n", hMutex);
     PERF_EXIT(CreateMutexW);
     return hMutex;
+}
+
+/*++
+Function:
+CreateMutexW
+
+Note:
+lpMutexAttributes currentely ignored:
+-- Win32 object security not supported
+-- handles to mutex objects are not inheritable
+
+Parameters:
+See MSDN doc.
+--*/
+
+HANDLE
+PALAPI
+CreateMutexExW(
+    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
+    IN LPCWSTR lpName,
+    IN DWORD dwFlags,
+    IN DWORD dwDesiredAccess)
+{
+    return CreateMutexW(lpMutexAttributes, (dwFlags & CREATE_MUTEX_INITIAL_OWNER) != 0, lpName);
 }
 
 /*++

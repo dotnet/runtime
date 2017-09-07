@@ -14,11 +14,13 @@ as part of the application (if desired), and thus can be updated quickly to fix 
 
 ## If You Just Want to Use .NET Core
 
-Most users don't need to build .NET Core from source since there is already an built and tested version for any supported platform.
+Most users don't need to build .NET Core from source since there is already a built and tested version for any supported platform.
 You can get the latest **released** version of the .NET Core SDK by following the instructions on 
 the [.NET Core Getting Started](http://dotnet.github.io/getting-started/) page.
 If you need the most up to date (daily) version of this .NET Core installer you can get it from the
 [latest Installers of .NET Core and .NET Core SDK](https://github.com/dotnet/cli#installers-and-binaries).
+If you want one of our official releases, you can get the download from the 
+[download archive page](https://github.com/dotnet/core/blob/master/release-notes/download-archive.md).  
 
 ## Are you Here for Something Besides the Source Code?  
 
@@ -66,7 +68,7 @@ It also contains the source code for the following closely related support packa
 By itself, the `Microsoft.NETCore.Runtime.CoreCLR` package is actually not enough to do much.
 One reason for this is that the CoreCLR package tries to minimize the amount of the class library that it implements.
 Only types that have a strong dependency on the internal workings of the runtime are included (e.g, 
-`System.Object`, `System.String`, `System.Thread`, `System.Threading.Tasks.Task` and most foundational interfaces).
+`System.Object`, `System.String`, `System.Threading.Thread`, `System.Threading.Tasks.Task` and most foundational interfaces).
 Instead most of the class library is implemented as independent Nuget packages that simply use the .NET Core 
 runtime as a dependency.    Many of the most familiar classes (`System.Collections`, `System.IO`, `System.Xml` and 
 so on), live in packages defined in the [dotnet/corefx](https://github.com/dotnet/corefx) repository.
@@ -90,7 +92,7 @@ you use `dotnet.exe` for this).
 
 These extra pieces are not defined here, however you don't need to build them in order to use the CoreCLR 
 Nuget package you create here.   There are already versions of the CoreFX packages published on 
-https://www.nuget.org/ so you can have your test application's project.json specify the CoreCLR you 
+https://www.nuget.org/ so you can have your test application's project file specify the CoreCLR you 
 built and it will naturally pull anything else it needs from the official location https://www.nuget.org/ to 
 make a complete application.  More on this in the [Using Your Build](Documentation/workflow/UsingYourBuild.md) page.
 
@@ -99,7 +101,7 @@ make a complete application.  More on this in the [Using Your Build](Documentati
 
 The first step in making a build of the CoreCLR Repository is to clone it locally.   If you already know
 how to do this, just skip this section.  Otherwise if you are developing on windows you can see
-[Setting Up A Git Repository In Visual Studio 2015](https://github.com/Microsoft/perfview/blob/master/documentation/SettingUpRepoInVS2015.md)
+[Setting Up A Git Repository In Visual Studio 2017](https://github.com/Microsoft/perfview/blob/master/documentation/SettingUpRepoInVS.md)
 for for instructions on setting up.  This link uses a different repository as an example, but the issues (do you fork or not) and
 the procedure are equally applicable to this repository.  
 
@@ -125,12 +127,12 @@ The build has two main 'buildTypes'
  * Debug (default)- This compiles the runtime with additional runtime checks (asserts).  These checks slow 
    runtime execution but are really valuable for debugging, and is recommended for normal development and testing.  
  * Release - This compiles without any development time runtime checks.  This is what end users will use but 
-   can be difficult to debug.   Passing 'release' to the build script select this.  
+   can be difficult to debug.   Pass 'release' to the build script to select this.  
 
 In addition, by default the build will not only create the runtime executables, but it will also 
 build all the tests.   There are quite a few tests so this does take a significant amount of time
-that is not necessary if you want to experiment with changes.   You can submit the building
-of the tests with the 'skiptests' argument to the build script.
+that is not necessary if you want to experiment with changes.   You can skip building
+the tests by passing the 'skiptests' argument to the build script.
 
 Thus to get a build as quickly as possible type the following (using `\` as the directory separator, use `/` on Unix machines)
 ```bat
@@ -162,14 +164,14 @@ There are two basic techniques for using your new runtime.
 
  1. **Use dotnet.exe and Nuget to compose an application**.   See [Using Your Build](Documentation/workflow/UsingYourBuild.md) for 
  instructions on creating a program that uses 
- your new runtime by using the NuGet packages you just created and the'dotnet' command line interface.  This
+ your new runtime by using the NuGet packages you just created and the 'dotnet' command line interface.  This
  is the expected way non-runtime developers are likely to consume your new runtime.    
 
  2. **Use corerun.exe to run an application using unpackaged Dlls**. This repository also defines a simple host called
  corerun.exe that does NOT take any dependency on NuGet.   Basically it has to be told where to get all the
  necessary DLLs you actually use, and you have to gather them together 'by hand'.   This is the technique that
  all the tests in the repo use, and is useful for quick local 'edit-compile-debug' loop (e.g. preliminary unit testsing).
- See [Executing .NET Core Apps with CoreRun.exe](Documentation/workflow/UsingCoreRun.md) for details on using 
+ See [Using corerun To Run .NET Core Application](Documentation/workflow/UsingCoreRun.md) for details on using 
  this technique.  
 
 ## Editing and Debugging
@@ -184,7 +186,7 @@ make modifications and debug any issues those modifications might cause.   See t
 ## Running Tests 
 
 After you have your modification basically working, and want to determine if you have broken anything it is 
-time to runt tests.  See [Running .NET Core Tests](Documentation/workflow/RunningTests.md) for more. 
+time to run tests.  See [Running .NET Core Tests](Documentation/workflow/RunningTests.md) for more. 
 
 ## Contributing to Repository 
 

@@ -17,7 +17,6 @@
 
 #include "common.h"
 
-#include "objecthandle.h"
 #include "rcwrefcache.h"
 #include "comcallablewrapper.h"
 #include "runtimecallablewrapper.h"
@@ -176,8 +175,9 @@ void RCWRefCache::ShrinkDependentHandles()
     {
         OBJECTHANDLE depHnd = m_depHndList[i];
         
-        HndAssignHandle(depHnd, NULL);
-        SetDependentHandleSecondary(depHnd, NULL);        
+        IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+        mgr->StoreObjectInHandle(depHnd, NULL);
+        mgr->SetDependentHandleSecondary(depHnd, NULL);
             
         LOG((LF_INTEROP, LL_INFO1000, "\t[RCWRefCache 0x%p] DependentHandle 0x%p cleared @ index %d\n", this, depHnd, (ULONG) i));
     }
@@ -266,8 +266,9 @@ HRESULT RCWRefCache::AddReferenceUsingDependentHandle(RCW *pRCW, ComCallWrapper 
         // Yes, there is a valid DependentHandle entry on the list, use that
         OBJECTHANDLE depHnd = (OBJECTHANDLE) m_depHndList[m_dwDepHndListFreeIndex];
 
-        HndAssignHandle(depHnd, pRCW->GetExposedObject());
-        SetDependentHandleSecondary(depHnd, pCCW->GetObjectRef());
+        IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+        mgr->StoreObjectInHandle(depHnd, OBJECTREFToObject(pRCW->GetExposedObject()));
+        mgr->SetDependentHandleSecondary(depHnd, OBJECTREFToObject(pCCW->GetObjectRef()));
 
         STRESS_LOG3(
             LF_INTEROP, LL_INFO1000, 

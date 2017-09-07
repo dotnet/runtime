@@ -702,6 +702,7 @@ DWORD CorUnix::InternalSleepEx (
     }
     else
     {
+        sched_yield();
         dwRet = 0;
     }
 

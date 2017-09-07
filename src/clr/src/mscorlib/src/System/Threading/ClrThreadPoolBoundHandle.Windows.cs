@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -27,10 +28,10 @@ namespace System.Threading
                 // We do not let either of these leak and convert them to ArgumentException to 
                 // indicate that the specified handles are invalid.
 
-                if (ex.HResult == System.HResults.E_HANDLE)         // Bad handle
+                if (ex.HResult == HResults.E_HANDLE)         // Bad handle
                     throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
-                if (ex.HResult == System.HResults.E_INVALIDARG)     // Handle already bound or sync handle
+                if (ex.HResult == HResults.E_INVALIDARG)     // Handle already bound or sync handle
                     throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, nameof(handle));
 
                 throw;

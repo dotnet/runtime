@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: gdbjit.h
-// 
+//
 
 //
 // Header file for GDB JIT interface implemenation.
@@ -15,6 +15,8 @@
 #define __GDBJIT_H__
 
 #include <stdint.h>
+#include "typekey.h"
+#include "typestring.h"
 #include "method.hpp"
 #include "dbginterface.h"
 #include "../inc/llvm/ELF.h"
@@ -25,7 +27,7 @@
     typedef Elf32_Shdr  Elf_Shdr;
     typedef Elf32_Sym   Elf_Sym;
     const uint16_t DW_FORM_size = DW_FORM_data4;
-#define ADDRESS_SIZE 4    
+#define ADDRESS_SIZE 4
 #elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     typedef Elf64_Ehdr  Elf_Ehdr;
     typedef Elf64_Shdr  Elf_Shdr;
@@ -37,7 +39,7 @@
 #endif
 
 
-static constexpr const int CorElementTypeToDWEncoding[] = 
+static constexpr const int CorElementTypeToDWEncoding[] =
 {
 /* ELEMENT_TYPE_END */          0,
 /* ELEMENT_TYPE_VOID */         DW_ATE_address,
@@ -138,7 +140,7 @@ public:
     NewArrayHolder< NewArrayHolder<char> > localsName;
     NewArrayHolder<Scope> localsScope;
     ULONG32 countVars;
-    ICorDebugInfo::NativeVarInfo *pVars;
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> vars;
 };
 
 class TypeMember;
@@ -146,7 +148,7 @@ class TypeMember;
 class TypeInfoBase : public DwarfDumpable
 {
 public:
-    TypeInfoBase(TypeHandle typeHandle) 
+    TypeInfoBase(TypeHandle typeHandle)
         : m_type_name(nullptr),
           m_type_name_offset(0),
           m_type_size(0),
@@ -324,12 +326,13 @@ public:
 };
 
 struct Elf_Symbol;
+class Elf_Builder;
 
 class NotifyGdb
 {
 public:
-    static void MethodCompiled(MethodDesc* methodDescPtr);
-    static void MethodDropped(MethodDesc* methodDescPtr);
+    static void MethodPrepared(MethodDesc* methodDescPtr);
+    static void MethodPitched(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
     {
@@ -345,7 +348,7 @@ public:
     class TypeKeyHashTraits : public DefaultSHashTraits< KeyValuePair<TypeKey*,VALUE> >
     {
     public:
-        // explicitly declare local typedefs for these traits types, otherwise 
+        // explicitly declare local typedefs for these traits types, otherwise
         // the compiler may get confused
         typedef typename DefaultSHashTraits< KeyValuePair<TypeKey*,VALUE> >::element_t element_t;
         typedef typename DefaultSHashTraits< KeyValuePair<TypeKey*,VALUE> >::count_t count_t;
@@ -402,14 +405,16 @@ private:
         }
     };
 
-    static void OnMethodCompiled(MethodDesc* methodDescPtr);
+    static void OnMethodPrepared(MethodDesc* methodDescPtr);
 
-    static int GetSectionIndex(const char *sectName);
-    static bool BuildELFHeader(MemBuf& buf);
-    static void BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
-                                   int symbolCount);
+#ifdef FEATURE_GDBJIT_FRAME
+    static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
+#endif // FEATURE_GDBJIT_FRAME
+    static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile);
+
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
-                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
+                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
+                                        unsigned int thunkIndexBase);
     static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
     static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
     static bool BuildDebugAbbrev(MemBuf& buf);
@@ -425,9 +430,6 @@ private:
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
     static bool CollectCalledMethods(CalledMethod* pCM, TADDR nativeCode, FunctionMemberPtrArrayHolder &method,
                                      NewArrayHolder<Elf_Symbol> &symbolNames, int &symbolCount);
-#ifdef _DEBUG
-    static void DumpElf(const char* methodName, const MemBuf& buf);
-#endif
 };
 
 class FunctionMember: public TypeMember

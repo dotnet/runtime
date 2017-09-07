@@ -25,5 +25,47 @@ namespace Functions
         // of the perf testing as it ensures we get the expected value and that it is at least as precise
         // as we would have computed with the half-precision version of the function (without aggregation).
         private const float singleEpsilon = 9.77e-04f;
+
+        // While iterations covers the domain of inputs, the full span of results doesn't run long enough
+        // to meet our siginificance criteria. So each test is repeated many times, using the factors below.
+        private const int AbsDoubleIterations = 200000;
+        private const int AcosDoubleIterations = 10000;
+        private const int AsinDoubleIterations = 10000;
+        private const int Atan2DoubleIterations = 6500;
+        private const int AtanDoubleIterations = 13000;
+        private const int CeilingDoubleIterations = 80000;
+        private const int CosDoubleIterations = 16000;
+        private const int CoshDoubleIterations = 8000;
+        private const int ExpDoubleIterations = 16000;
+        private const int FloorDoubleIterations = 80000;
+        private const int Log10DoubleIterations = 16000;
+        private const int LogDoubleIterations = 20000;
+        private const int PowDoubleIterations = 4000;
+        private const int RoundDoubleIterations = 35000;
+        private const int SinDoubleIterations = 16000;
+        private const int SinhDoubleIterations = 8000;
+        private const int SqrtDoubleIterations = 40000;
+        private const int TanDoubleIterations = 16000;
+        private const int TanhDoubleIterations = 17000;
+
+        private const int AbsSingleIterations = 200000;
+        private const int AcosSingleIterations = 15000;
+        private const int AsinSingleIterations = 15000;
+        private const int Atan2SingleIterations = 9000;
+        private const int AtanSingleIterations = 17000;
+        private const int CeilingSingleIterations = 80000;
+        private const int CosSingleIterations = 20000;
+        private const int CoshSingleIterations = 10000;
+        private const int ExpSingleIterations = 24000;
+        private const int FloorSingleIterations = 80000;
+        private const int Log10SingleIterations = 20000;
+        private const int LogSingleIterations = 30000;
+        private const int PowSingleIterations = 10000;
+        private const int RoundSingleIterations = 35000;
+        private const int SinSingleIterations = 20000;
+        private const int SinhSingleIterations = 10000;
+        private const int SqrtSingleIterations = 80000;
+        private const int TanSingleIterations = 25000;
+        private const int TanhSingleIterations = 20000;
     }
 }

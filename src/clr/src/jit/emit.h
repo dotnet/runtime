@@ -220,15 +220,15 @@ private:
 /*          The following describes an instruction group                */
 /************************************************************************/
 
-DECLARE_TYPED_ENUM(insGroupPlaceholderType, unsigned char)
+enum insGroupPlaceholderType : unsigned char
 {
     IGPT_PROLOG, // currently unused
-        IGPT_EPILOG,
+    IGPT_EPILOG,
 #if FEATURE_EH_FUNCLETS
-        IGPT_FUNCLET_PROLOG, IGPT_FUNCLET_EPILOG,
+    IGPT_FUNCLET_PROLOG,
+    IGPT_FUNCLET_EPILOG,
 #endif // FEATURE_EH_FUNCLETS
-}
-END_DECLARE_TYPED_ENUM(insGroupPlaceholderType, unsigned char)
+};
 
 #if defined(_MSC_VER) && defined(_TARGET_ARM_)
 // ARM aligns structures that contain 64-bit ints or doubles on 64-bit boundaries. This causes unwanted
@@ -452,16 +452,21 @@ protected:
 
     void* emitGetMem(size_t sz);
 
-    DECLARE_TYPED_ENUM(opSize, unsigned)
+    enum opSize : unsigned
     {
-        OPSZ1 = 0, OPSZ2 = 1, OPSZ4 = 2, OPSZ8 = 3, OPSZ16 = 4, OPSZ32 = 5, OPSZ_COUNT = 6,
+        OPSZ1      = 0,
+        OPSZ2      = 1,
+        OPSZ4      = 2,
+        OPSZ8      = 3,
+        OPSZ16     = 4,
+        OPSZ32     = 5,
+        OPSZ_COUNT = 6,
 #ifdef _TARGET_AMD64_
         OPSZP = OPSZ8,
 #else
         OPSZP = OPSZ4,
 #endif
-    }
-    END_DECLARE_TYPED_ENUM(opSize, unsigned)
+    };
 
 #define OPSIZE_INVALID ((opSize)0xffff)
 
@@ -507,14 +512,13 @@ protected:
     /*          The following describes a single instruction                */
     /************************************************************************/
 
-    DECLARE_TYPED_ENUM(insFormat, unsigned)
+    enum insFormat : unsigned
     {
 #define IF_DEF(en, op1, op2) IF_##en,
 #include "emitfmts.h"
 
         IF_COUNT
-    }
-    END_DECLARE_TYPED_ENUM(insFormat, unsigned)
+    };
 
 #define AM_DISP_BITS ((sizeof(unsigned) * 8) - 2 * (REGNUM_BITS + 1) - 2)
 #define AM_DISP_BIG_VAL (-(1 << (AM_DISP_BITS - 1)))
@@ -553,12 +557,13 @@ protected:
 #ifdef _TARGET_ARM_
     unsigned insEncodeSetFlags(insFlags sf);
 
-    DECLARE_TYPED_ENUM(insSize, unsigned)
+    enum insSize : unsigned
     {
-        ISZ_16BIT, ISZ_32BIT, ISZ_48BIT // pseudo-instruction for conditional branch with imm24 range,
-                                        // encoded as IT of condition followed by an unconditional branch
-    }
-    END_DECLARE_TYPED_ENUM(insSize, unsigned)
+        ISZ_16BIT,
+        ISZ_32BIT,
+        ISZ_48BIT // pseudo-instruction for conditional branch with imm24 range,
+                  // encoded as IT of condition followed by an unconditional branch
+    };
 
     unsigned insEncodeShiftOpts(insOpts opt);
     unsigned insEncodePUW_G0(insOpts opt, int imm);
@@ -827,6 +832,8 @@ protected:
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
+
+#define ID_EXTRA_RELOC_BITS (2)
 
 #define ID_EXTRA_REG_BITS (0)
 
@@ -1711,7 +1718,9 @@ private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(GenTreeDblCon* tree, emitAttr attr = EA_UNKNOWN);
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
-    void emitInsMov(instruction ins, emitAttr attr, GenTree* node);
+    void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
+    void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
+    void emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
     insFormat emitMapFmtForIns(insFormat fmt, instruction ins);
     insFormat emitMapFmtAtoM(insFormat fmt);
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
@@ -2182,6 +2191,11 @@ public:
                               WORD  fRelocType,     /* IN */
                               WORD  slotNum   = 0,  /* IN */
                               INT32 addlDelta = 0); /* IN */
+
+#ifdef _TARGET_ARM_
+    void emitHandlePCRelativeMov32(void* location, /* IN */
+                                   void* target);  /* IN */
+#endif
 
     void emitRecordCallSite(ULONG                 instrOffset,   /* IN */
                             CORINFO_SIG_INFO*     callSig,       /* IN */

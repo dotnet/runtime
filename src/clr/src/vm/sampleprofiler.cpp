@@ -13,9 +13,11 @@
 
 Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
 Thread* SampleProfiler::s_pSamplingThread = NULL;
-const GUID SampleProfiler::s_providerID = {0x3c530d44,0x97ae,0x513a,{0x1e,0x6d,0x78,0x3e,0x8f,0x8e,0x03,0xa9}}; // {3c530d44-97ae-513a-1e6d-783e8f8e03a9}
+const WCHAR* SampleProfiler::s_providerName = W("Microsoft-DotNETCore-SampleProfiler");
 EventPipeProvider* SampleProfiler::s_pEventPipeProvider = NULL;
 EventPipeEvent* SampleProfiler::s_pThreadTimeEvent = NULL;
+BYTE* SampleProfiler::s_pPayloadExternal = NULL;
+BYTE* SampleProfiler::s_pPayloadManaged = NULL;
 CLREventStatic SampleProfiler::s_threadShutdownEvent;
 long SampleProfiler::s_samplingRateInNs = 1000000; // 1ms
 
@@ -34,13 +36,22 @@ void SampleProfiler::Enable()
 
     if(s_pEventPipeProvider == NULL)
     {
-        s_pEventPipeProvider = EventPipe::CreateProvider(s_providerID);
+        s_pEventPipeProvider = EventPipe::CreateProvider(SL(s_providerName));
         s_pThreadTimeEvent = s_pEventPipeProvider->AddEvent(
             0, /* eventID */
             0, /* keywords */
             0, /* eventVersion */
             EventPipeEventLevel::Informational,
             false /* NeedStack */);
+    }
+
+    if(s_pPayloadExternal == NULL)
+    {
+        s_pPayloadExternal = new BYTE[sizeof(unsigned int)];
+        *((unsigned int *)s_pPayloadExternal) = static_cast<unsigned int>(SampleProfilerSampleType::External);
+
+        s_pPayloadManaged = new BYTE[sizeof(unsigned int)];
+        *((unsigned int *)s_pPayloadManaged) = static_cast<unsigned int>(SampleProfilerSampleType::Managed);
     }
 
     s_profilingEnabled = true;
@@ -166,8 +177,21 @@ void SampleProfiler::WalkManagedThreads()
         // Walk the stack and write it out as an event.
         if(EventPipe::WalkManagedStackForThread(pTargetThread, stackContents) && !stackContents.IsEmpty())
         {
-            EventPipe::WriteSampleProfileEvent(s_pSamplingThread, pTargetThread, stackContents);
+            // Set the payload.  If the GC mode on suspension > 0, then the thread was in cooperative mode.
+            // Even though there are some cases where this is not managed code, we assume it is managed code here.
+            // If the GC mode on suspension == 0 then the thread was in preemptive mode, which we qualify as external here.
+            BYTE *pPayload = s_pPayloadExternal;
+            if(pTargetThread->GetGCModeOnSuspension())
+            {
+                pPayload = s_pPayloadManaged;
+            }
+
+            // Write the sample.
+            EventPipe::WriteSampleProfileEvent(s_pSamplingThread, s_pThreadTimeEvent, pTargetThread, stackContents, pPayload, c_payloadSize);
         }
+
+        // Reset the GC mode.
+        pTargetThread->ClearGCModeOnSuspension();
     }
 }
 

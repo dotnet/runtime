@@ -14,14 +14,17 @@ namespace Functions
         private const float sinSingleDelta = 0.000628318531f;
         private const float sinSingleExpectedResult = 1.03592682f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = SinSingleIterations)]
         public static void SinSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SinSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        SinSingleTest();
+                    }
                 }
             }
         }

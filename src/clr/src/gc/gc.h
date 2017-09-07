@@ -14,29 +14,20 @@ Module Name:
 #ifndef __GC_H
 #define __GC_H
 
-#ifdef Sleep
-// This is a funny workaround for the fact that "common.h" defines Sleep to be
-// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
-//
-// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
-// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
-// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
-// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
-#undef Sleep
-#endif // Sleep
-
 #include "gcinterface.h"
 #include "env/gcenv.os.h"
-#include "env/gcenv.ee.h"
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
 #include "gcenv.ee.standalone.inl"
 
 // GCStress does not currently work with Standalone GC
 #ifdef STRESS_HEAP
  #undef STRESS_HEAP
 #endif // STRESS_HEAP
-#endif // FEATURE_STANDALONE_GC
+#else
+#include "env/gcenv.ee.h"
+#endif // BUILD_AS_STANDALONE
+#include "gcconfig.h"
 
 /*
  * Promotion Function Prototypes
@@ -114,6 +105,7 @@ extern "C" uint8_t* g_gc_highest_address;
 extern "C" GCHeapType g_gc_heap_type;
 extern "C" uint32_t g_max_generation;
 extern "C" MethodTable* g_gc_pFreeObjectMethodTable;
+extern "C" uint32_t g_num_processors;
 
 ::IGCHandleManager*  CreateGCHandleManager();
 
@@ -205,11 +197,6 @@ struct alloc_context : gc_alloc_context
 };
 
 class IGCHeapInternal : public IGCHeap {
-    friend struct ::_DacGlobals;
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
-    
 public:
 
     virtual ~IGCHeapInternal() {}
@@ -257,11 +244,13 @@ void TouchPages(void * pStart, size_t cb);
 void updateGCShadow(Object** ptr, Object* val);
 #endif
 
+#ifndef DACCESS_COMPILE
 // The single GC heap instance, shared with the VM.
 extern IGCHeapInternal* g_theGCHeap;
 
 // The single GC handle manager instance, shared with the VM.
 extern IGCHandleManager* g_theGCHandleManager;
+#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 inline bool IsGCInProgress(bool bConsiderGCStart = false)

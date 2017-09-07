@@ -3,11 +3,22 @@
 // See the LICENSE file in the project root for more information.
 
 #include "createdump.h"
+#include <asm/ptrace.h>
+
+#ifndef THUMB_CODE
+#define THUMB_CODE 1
+#endif
+
+#ifndef __GLIBC__
+typedef int __ptrace_request;
+#endif
 
 #define FPREG_ErrorOffset(fpregs) *(DWORD*)&((fpregs).rip)
 #define FPREG_ErrorSelector(fpregs) *(((WORD*)&((fpregs).rip)) + 2)
 #define FPREG_DataOffset(fpregs) *(DWORD*)&((fpregs).rdp)
 #define FPREG_DataSelector(fpregs) *(((WORD*)&((fpregs).rdp)) + 2)
+
+extern CrashInfo* g_crashInfo;
 
 ThreadInfo::ThreadInfo(pid_t tid) :
     m_tid(tid)
@@ -19,15 +30,15 @@ ThreadInfo::~ThreadInfo()
 }
 
 bool
-ThreadInfo::Initialize(ICLRDataTarget* dataTarget)
+ThreadInfo::Initialize(ICLRDataTarget* pDataTarget)
 {
     if (!CrashInfo::GetStatus(m_tid, &m_ppid, &m_tgid, nullptr)) 
     {
         return false;
     }
-    if (dataTarget != nullptr)
+    if (pDataTarget != nullptr)
     {
-        if (!GetRegistersWithDataTarget(dataTarget))
+        if (!GetRegistersWithDataTarget(pDataTarget))
         {
             return false;
         }
@@ -38,7 +49,12 @@ ThreadInfo::Initialize(ICLRDataTarget* dataTarget)
             return false;
         }
     }
+
+#if defined(__arm__)
+    TRACE("Thread %04x PC %08lx SP %08lx\n", m_tid, (unsigned long)m_gpRegisters.ARM_pc, (unsigned long)m_gpRegisters.ARM_sp);
+#else
     TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.rip, (unsigned long long)m_gpRegisters.rsp);
+#endif
     return true;
 }
 
@@ -50,6 +66,108 @@ ThreadInfo::ResumeThread()
         int waitStatus;
         waitpid(m_tid, &waitStatus, __WALL);
     }
+}
+
+// Helper for UnwindNativeFrames
+static void
+GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
+{
+#if defined(__x86_64__)
+    *ip = pContext->Rip;
+    *sp = pContext->Rsp;
+#elif defined(__i386__)
+    *ip = pContext->Eip;
+    *sp = pContext->Esp;
+#elif defined(__arm__)
+    *ip = pContext->Pc & ~THUMB_CODE;
+    *sp = pContext->Sp;
+#endif
+}
+
+// Helper for UnwindNativeFrames
+static BOOL 
+ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    return g_crashInfo->ReadMemory(address, buffer, size);
+}
+
+void
+ThreadInfo::UnwindNativeFrames(CrashInfo& crashInfo, CONTEXT* pContext)
+{
+    // For each native frame
+    while (true)
+    {
+        uint64_t ip = 0, sp = 0;
+        GetFrameLocation(pContext, &ip, &sp);
+
+        TRACE("Unwind: sp %" PRIA PRIx64 " ip %" PRIA PRIx64 "\n", sp, ip);
+        if (ip == 0) {
+            break;
+        }
+        // Add two pages around the instruction pointer to the core dump
+        crashInfo.InsertMemoryRegion(ip - PAGE_SIZE, PAGE_SIZE * 2);
+
+        // Look up the ip address to get the module base address
+        uint64_t baseAddress = crashInfo.GetBaseAddress(ip);
+        if (baseAddress == 0) {
+            TRACE("Unwind: module base not found ip %" PRIA PRIx64 "\n", ip);
+            break;
+        }
+
+        // Unwind the native frame adding all the memory accessed to the 
+        // core dump via the read memory adapter.
+        if (!PAL_VirtualUnwindOutOfProc(pContext, nullptr, baseAddress, ReadMemoryAdapter)) {
+            TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
+            break;
+        }
+    }
+}
+
+bool
+ThreadInfo::UnwindThread(CrashInfo& crashInfo, IXCLRDataProcess* pClrDataProcess)
+{
+    ReleaseHolder<IXCLRDataTask> pTask;
+    ReleaseHolder<IXCLRDataStackWalk> pStackwalk;
+
+    TRACE("Unwind: thread %04x\n", Tid());
+
+    // Get starting native context for the thread
+    CONTEXT context;
+    GetThreadContext(CONTEXT_ALL, &context);
+
+    // Unwind the native frames at the top of the stack
+    UnwindNativeFrames(crashInfo, &context);
+
+    // Get the managed stack walker for this thread
+    if (SUCCEEDED(pClrDataProcess->GetTaskByOSThreadID(Tid(), &pTask)))
+    {
+        pTask->CreateStackWalk(
+            CLRDATA_SIMPFRAME_UNRECOGNIZED |
+            CLRDATA_SIMPFRAME_MANAGED_METHOD |
+            CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE |
+            CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE,
+            &pStackwalk);
+    }
+
+    // For each managed frame (if any)
+    if (pStackwalk != nullptr) 
+    {
+        TRACE("Unwind: managed frames\n");
+        do
+        {
+            // Get the managed stack frame context
+            if (pStackwalk->GetContext(CONTEXT_ALL, sizeof(context), nullptr, (BYTE *)&context) != S_OK) {
+                TRACE("Unwind: stack walker GetContext FAILED\n");
+                break;
+            }
+
+            // Unwind all the native frames after the managed frame
+            UnwindNativeFrames(crashInfo, &context);
+
+        } while (pStackwalk->Next() == S_OK);
+    }
+
+    return true;
 }
 
 bool 
@@ -71,16 +189,27 @@ ThreadInfo::GetRegistersWithPTrace()
         fprintf(stderr, "ptrace(GETFPXREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
         return false;
     }
+#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+
+#if defined(ARM_VFPREGS_SIZE)
+    assert(sizeof(m_vfpRegisters) == ARM_VFPREGS_SIZE);
+#endif
+
+    if (ptrace((__ptrace_request)PTRACE_GETVFPREGS, m_tid, nullptr, &m_vfpRegisters) == -1)
+    {
+        fprintf(stderr, "ptrace(PTRACE_GETVFPREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        return false;
+    }
 #endif
     return true;
 }
 
 bool 
-ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* dataTarget)
+ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* pDataTarget)
 {
     CONTEXT context;
     context.ContextFlags = CONTEXT_ALL;
-    if (dataTarget->GetThreadContext(m_tid, context.ContextFlags, sizeof(context), reinterpret_cast<PBYTE>(&context)) != S_OK)
+    if (pDataTarget->GetThreadContext(m_tid, context.ContextFlags, sizeof(context), reinterpret_cast<PBYTE>(&context)) != S_OK)
     {
         return false;
     }
@@ -133,6 +262,33 @@ ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* dataTarget)
 
     assert(sizeof(context.FltSave.XmmRegisters) == sizeof(m_fpRegisters.xmm_space));
     memcpy(m_fpRegisters.xmm_space, context.FltSave.XmmRegisters, sizeof(m_fpRegisters.xmm_space));
+#elif defined(__arm__)
+    m_gpRegisters.ARM_sp = context.Sp;
+    m_gpRegisters.ARM_lr = context.Lr;
+    m_gpRegisters.ARM_pc = context.Pc;
+    m_gpRegisters.ARM_cpsr = context.Cpsr;
+
+    m_gpRegisters.ARM_r0 = context.R0;
+    m_gpRegisters.ARM_ORIG_r0 = context.R0;
+    m_gpRegisters.ARM_r1 = context.R1;
+    m_gpRegisters.ARM_r2 = context.R2;
+    m_gpRegisters.ARM_r3 = context.R3;
+    m_gpRegisters.ARM_r4 = context.R4;
+    m_gpRegisters.ARM_r5 = context.R5;
+    m_gpRegisters.ARM_r6 = context.R6;
+    m_gpRegisters.ARM_r7 = context.R7;
+    m_gpRegisters.ARM_r8 = context.R8;
+    m_gpRegisters.ARM_r9 = context.R9;
+    m_gpRegisters.ARM_r10 = context.R10;
+    m_gpRegisters.ARM_fp = context.R11;
+    m_gpRegisters.ARM_ip = context.R12;
+
+#if defined(__VFP_FP__) && !defined(__SOFTFP__)
+    m_vfpRegisters.fpscr = context.Fpscr;
+
+    assert(sizeof(context.D) == sizeof(m_vfpRegisters.fpregs));
+    memcpy(m_vfpRegisters.fpregs, context.D, sizeof(context.D));
+#endif
 #else 
 #error Platform not supported
 #endif
@@ -140,33 +296,32 @@ ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* dataTarget)
 }
 
 void
-ThreadInfo::GetThreadStack(const CrashInfo& crashInfo, uint64_t* startAddress, size_t* size) const
+ThreadInfo::GetThreadStack(CrashInfo& crashInfo)
 {
-    *startAddress = m_gpRegisters.rsp & PAGE_MASK;
-    *size = 4 * PAGE_SIZE;
+    uint64_t startAddress;
+    size_t size;
 
-    for (const MemoryRegion& mapping : crashInfo.OtherMappings())
-    {
-        if (*startAddress >= mapping.StartAddress() && *startAddress < mapping.EndAddress())
+#if defined(__arm__)
+    startAddress = m_gpRegisters.ARM_sp & PAGE_MASK;
+#else
+    startAddress = m_gpRegisters.rsp & PAGE_MASK;
+#endif
+    size = 4 * PAGE_SIZE;
+
+    MemoryRegion search(0, startAddress, startAddress + PAGE_SIZE);
+    const MemoryRegion* region = CrashInfo::SearchMemoryRegions(crashInfo.OtherMappings(), search);
+    if (region != nullptr) {
+
+        // Use the mapping found for the size of the thread's stack
+        size = region->EndAddress() - startAddress;
+
+        if (g_diagnostics)
         {
-            // Use the mapping found for the size of the thread's stack
-            *size = mapping.EndAddress() - *startAddress;
-
-            if (g_diagnostics)
-            {
-                TRACE("Thread %04x stack found in other mapping (size %08lx): ", m_tid, *size);
-                mapping.Print();
-            }
-            break;
+            TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, size);
+            region->Trace();
         }
     }
-}
-
-void
-ThreadInfo::GetThreadCode(uint64_t* startAddress, size_t* size) const
-{
-    *startAddress = m_gpRegisters.rip & PAGE_MASK;
-    *size = PAGE_SIZE;
+    crashInfo.InsertMemoryRegion(startAddress, size);
 }
 
 void 
@@ -229,7 +384,41 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         memcpy(context->FltSave.XmmRegisters, m_fpRegisters.xmm_space, sizeof(context->FltSave.XmmRegisters));
     }
     // TODO: debug registers?
-#else 
+#elif defined(__arm__)
+    if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        context->Sp = m_gpRegisters.ARM_sp;
+        context->Lr = m_gpRegisters.ARM_lr;
+        context->Pc = m_gpRegisters.ARM_pc;
+        context->Cpsr = m_gpRegisters.ARM_cpsr;
+
+    }
+    if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        context->R0 = m_gpRegisters.ARM_r0;
+        context->R1 = m_gpRegisters.ARM_r1;
+        context->R2 = m_gpRegisters.ARM_r2;
+        context->R3 = m_gpRegisters.ARM_r3;
+        context->R4 = m_gpRegisters.ARM_r4;
+        context->R5 = m_gpRegisters.ARM_r5;
+        context->R6 = m_gpRegisters.ARM_r6;
+        context->R7 = m_gpRegisters.ARM_r7;
+        context->R8 = m_gpRegisters.ARM_r8;
+        context->R9 = m_gpRegisters.ARM_r9;
+        context->R10 = m_gpRegisters.ARM_r10;
+        context->R11 = m_gpRegisters.ARM_fp;
+        context->R12 = m_gpRegisters.ARM_ip;
+    }
+    if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+#if defined(__VFP_FP__) && !defined(__SOFTFP__)
+        context->Fpscr = m_vfpRegisters.fpscr;
+
+        assert(sizeof(context->D) == sizeof(m_vfpRegisters.fpregs));
+        memcpy(context->D, m_vfpRegisters.fpregs, sizeof(context->D));
+#endif
+    }
+#else
 #error Platform not supported
 #endif
 }

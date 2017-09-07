@@ -249,7 +249,12 @@ public:
 
     virtual DWORD GetSize()
     {
+#if defined(NO_NGENPDB)
+        return sizeof(IMAGE_DEBUG_DIRECTORY) * m_nDebugDirectory;
+#else
+        // Add one for NGen PDB debug directory entry
         return sizeof(IMAGE_DEBUG_DIRECTORY) * (m_nDebugDirectory + 1);
+#endif // NO_NGENPDB
     }
 
     virtual UINT GetAlignment()

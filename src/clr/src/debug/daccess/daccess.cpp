@@ -29,6 +29,7 @@
 #endif
 
 #include "dwbucketmanager.hpp"
+#include "gcinterface.dac.h"
 
 // To include definiton of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
@@ -7932,8 +7933,6 @@ STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(__in PDWORD pContext,
 
 // DacHandleEnum
 
-// TODO(Local GC) - The DAC should not include GC headers
-#include "../../gc/handletablepriv.h"
 #include "comcallablewrapper.h"
 
 DacHandleWalker::DacHandleWalker()
@@ -7987,7 +7986,7 @@ HRESULT DacHandleWalker::Init(UINT32 typemask)
 {
     SUPPORTS_DAC;
     
-    mMap = &g_HandleTableMap;
+    mMap = g_gcDacGlobals->handle_table_map;
     mTypeMask = typemask;
     
     return S_OK;
@@ -8065,7 +8064,7 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
         {
             for (int i = 0; i < max_slots; ++i)
             {
-                HHANDLETABLE hTable = mMap->pBuckets[mIndex]->pTable[i];
+                DPTR(dac_handle_table) hTable = mMap->pBuckets[mIndex]->pTable[i];
                 if (hTable)
                 {
                     // Yikes!  The handle table callbacks don't produce the handle type or 
@@ -8079,8 +8078,8 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
                     {
                         if (mask & 1)
                         {
-                            HandleTable *pTable = (HandleTable *)hTable;
-                            PTR_AppDomain pDomain = SystemDomain::GetAppDomainAtIndex(pTable->uADIndex);
+                            dac_handle_table *pTable = hTable;
+                            PTR_AppDomain pDomain = SystemDomain::GetAppDomainAtIndex(ADIndex(pTable->uADIndex));
                             param.AppDomain = TO_CDADDR(pDomain.GetAddr());
                             param.Type = handleType;
                             

@@ -20,7 +20,6 @@ namespace System.Reflection.Emit
 {
     // The ParameterToken class is an opaque representation of the Token returned
     // by the Metadata to represent the parameter. 
-    [Serializable]
     public struct ParameterToken
     {
         public static readonly ParameterToken Empty = new ParameterToken();

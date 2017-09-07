@@ -14,14 +14,17 @@ namespace Functions
         private const float ceilingSingleDelta = 0.0004f;
         private const float ceilingSingleExpectedResult = 2502.0f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = CeilingSingleIterations)]
         public static void CeilingSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    CeilingSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        CeilingSingleTest();
+                    }
                 }
             }
         }

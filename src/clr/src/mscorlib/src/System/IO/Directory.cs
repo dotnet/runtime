@@ -84,12 +84,6 @@ namespace System.IO
                                                                         includeFiles, includeDirs, searchOption, true);
         }
 #endif // PLATFORM_UNIX        
-
-        internal static String InternalGetDirectoryRoot(String path)
-        {
-            if (path == null) return null;
-            return path.Substring(0, PathInternal.GetRootLength(path));
-        }
     }
 }
 

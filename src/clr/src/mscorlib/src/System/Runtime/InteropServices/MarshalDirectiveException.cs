@@ -17,29 +17,29 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public class MarshalDirectiveException : SystemException
     {
         public MarshalDirectiveException()
             : base(SR.Arg_MarshalDirectiveException)
         {
-            HResult = __HResults.COR_E_MARSHALDIRECTIVE;
+            HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }
 
         public MarshalDirectiveException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_MARSHALDIRECTIVE;
+            HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }
 
         public MarshalDirectiveException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_MARSHALDIRECTIVE;
+            HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }
 
         protected MarshalDirectiveException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

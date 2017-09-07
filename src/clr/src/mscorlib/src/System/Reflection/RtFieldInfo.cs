@@ -11,14 +11,8 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal unsafe sealed class RtFieldInfo : RuntimeFieldInfo, IRuntimeFieldInfo
     {
-        #region FCalls
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static private extern void PerformVisibilityCheckOnField(IntPtr field, Object target, RuntimeType declaringType, FieldAttributes attr, uint invocationFlags);
-        #endregion
-
         #region Private Data Members
         // agressive caching
         private IntPtr m_fieldHandle;
@@ -58,13 +52,6 @@ namespace System.Reflection
 
                         if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != (FieldAttributes)0)
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD;
-
-                        // A public field is inaccesible to Transparent code if the field is Critical.
-                        bool needsTransparencySecurityCheck = IsSecurityCritical && !IsSecuritySafeCritical;
-                        bool needsVisibilitySecurityCheck = ((m_fieldAttributes & FieldAttributes.FieldAccessMask) != FieldAttributes.Public) ||
-                                                            (declaringType != null && declaringType.NeedsReflectionSecurityCheck);
-                        if (needsTransparencySecurityCheck || needsVisibilitySecurityCheck)
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
 
                         // find out if the field type is one of the following: Primitive, Enum or Pointer
                         Type fieldType = FieldType;
@@ -159,11 +146,6 @@ namespace System.Reflection
             RuntimeType fieldType = (RuntimeType)FieldType;
             value = fieldType.CheckValue(value, binder, culture, invokeAttr);
 
-            #region Security Check
-            if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD | INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY)) != 0)
-                PerformVisibilityCheckOnField(m_fieldHandle, obj, m_declaringType, m_fieldAttributes, (uint)m_invocationFlags);
-            #endregion
-
             bool domainInitialized = false;
             if (declaringType == null)
             {
@@ -223,10 +205,6 @@ namespace System.Reflection
             }
 
             CheckConsistency(obj);
-
-            RuntimeType fieldType = (RuntimeType)FieldType;
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) != 0)
-                PerformVisibilityCheckOnField(m_fieldHandle, obj, m_declaringType, m_fieldAttributes, (uint)(m_invocationFlags & ~INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD));
 
             return UnsafeGetValue(obj);
         }

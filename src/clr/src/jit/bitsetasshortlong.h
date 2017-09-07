@@ -457,34 +457,45 @@ public:
 
     class Iter
     {
-        BitSetShortLongRep m_bs;   // The BitSet that we're iterating over.
-        size_t             m_bits; // The "current" bits remaining to be iterated over.
+        // The BitSet that we're iterating over. This is updated to point at the current
+        // size_t set of bits.
+        BitSetShortLongRep m_bs;
+
+        // The end of the iteration.
+        BitSetShortLongRep m_bsEnd;
+
+        // The remaining bits to be iterated over in the current size_t set of bits.
         // In the "short" case, these are all the remaining bits.
-        // In the "long" case, these are remaining bits in element "m_index";
+        // In the "long" case, these are remaining bits in the current element;
         // these and the bits in the remaining elements comprise the remaining bits.
-        unsigned m_index; // If "m_bs" uses the long (indirect) representation, the current index in the array.
-        // the index of the element in A(bs) that is currently being iterated.
-        unsigned m_bitNum; // The number of bits that have already been iterated over (set or clear).  If you
+        size_t m_bits;
+
+        // The number of bits that have already been iterated over (set or clear). If you
         // add this to the bit number of the next bit in "m_bits", you get the proper bit number of that
-        // bit in "m_bs".
+        // bit in "m_bs". This is only updated when we increment m_bs.
+        unsigned m_bitNum;
 
     public:
         Iter(Env env, const BitSetShortLongRep& bs) : m_bs(bs), m_bitNum(0)
         {
             if (BitSetOps::IsShort(env))
             {
-                m_index = 0;
-                m_bits  = (size_t)bs;
+                m_bits = (size_t)bs;
+
+                // Set the iteration end condition, valid even though this is not a pointer in the short case.
+                m_bsEnd = bs + 1;
             }
             else
             {
                 assert(bs != BitSetOps::UninitVal());
-                m_index = 0;
-                m_bits  = bs[0];
+                m_bits = bs[0];
+
+                unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+                m_bsEnd      = bs + len;
             }
         }
 
-        bool NextElem(Env env, unsigned* pElem)
+        bool NextElem(unsigned* pElem)
         {
 #if BITSET_TRACK_OPCOUNTS
             BitSetStaticsImpl::RecordOp(BitSetStaticsImpl::BSOP_NextBit);
@@ -505,40 +516,29 @@ public:
                 if (hasBit)
                 {
                     *pElem = m_bitNum + nextBit;
-                    m_bitNum += nextBit + 1;
-                    m_bits >>= nextBit;
-                    m_bits >>= 1; // Have to do these separately -- if we have 0x80000000, nextBit == 31, and shifting
-                                  // by 32 bits does nothing.
+                    m_bits &= ~(((size_t)1) << nextBit); // clear bit we just found so we don't find it again
                     return true;
                 }
                 else
                 {
-                    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
-                    if (len <= 1)
+                    // Go to the next size_t bit element. For short bitsets, this will hit the end condition
+                    // and exit.
+                    ++m_bs;
+                    if (m_bs == m_bsEnd)
                     {
                         return false;
                     }
-                    else
-                    {
-                        m_index++;
-                        if (m_index == len)
-                        {
-                            return false;
-                        }
-                        // Otherwise...
-                        m_bitNum = m_index * sizeof(size_t) * BitSetSupport::BitsInByte;
-                        m_bits   = m_bs[m_index];
-                        continue;
-                    }
+
+                    // If we get here, it's not a short type, so get the next size_t element.
+                    m_bitNum += sizeof(size_t) * BitSetSupport::BitsInByte;
+                    m_bits = *m_bs;
                 }
             }
         }
     };
 
-    friend class Iter;
-
-    typedef size_t* ValArgType;
-    typedef size_t* RetValType;
+    typedef const BitSetShortLongRep& ValArgType;
+    typedef BitSetShortLongRep        RetValType;
 };
 
 template <typename Env, typename BitSetTraits>

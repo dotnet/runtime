@@ -19,7 +19,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace BenchmarksGame
 {

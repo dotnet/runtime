@@ -88,7 +88,7 @@ void PrintAsHResult(int val) {
     case 0x80131416: str = W("CORSEC_E_POLICY_EXCEPTION"); break;
     case 0x80131417: str = W("CORSEC_E_MIN_GRANT_FAIL"); break;
     case 0x80131418: str = W("CORSEC_E_NO_EXEC_PERM"); break;
-        //case 0x80131418: str = W("CORSEC_E_XMLSYNTAX"); break;
+        //case 0x80131419: str = W("CORSEC_E_XMLSYNTAX"); break;
     case 0x80131430: str = W("CORSEC_E_CRYPTO"); break;
     case 0x80131431: str = W("CORSEC_E_CRYPTO_UNEX_OPER"); break;
     case 0x80131500: str = W("COR_E_EXCEPTION"); break;

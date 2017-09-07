@@ -365,7 +365,7 @@ namespace GCSimulator
 
     /// <summary>
     /// we might want to implement a different strategy that decide the life time of the object based on the time 
-    /// elabsed since the last object acceess.
+    /// elapsed since the last object access.
     /// 
     /// </summary>
     internal class TimeBasedLifeTimeStrategy : LifeTimeStrategy

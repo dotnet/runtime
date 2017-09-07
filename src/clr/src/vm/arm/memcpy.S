@@ -22,8 +22,8 @@
         PROLOG_PUSH  "{r7, lr}"
         PROLOG_STACK_SAVE r7
         
-        ldr r3, [r0]
-        ldr r3, [r1]
+        ldrb r3, [r0]
+        ldrb r3, [r1]
         
         blx C_FUNC(memcpy)
 

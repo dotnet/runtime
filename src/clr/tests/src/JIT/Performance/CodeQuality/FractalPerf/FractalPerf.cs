@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Xunit;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace FractalPerf
 {
@@ -103,11 +102,11 @@ namespace FractalPerf
 
             // set the Julia Set constant
             complex seed = new complex(Real, Imaginary);
-            // run through every point on the screen, setting 
+            // run through every point on the screen, setting
             // m and n to the coordinates
             for (double m = XB; m < XE; m += XS) {
                 for (double n = YB; n < YE; n += YS) {
-                    // the initial z value is the current pixel,  
+                    // the initial z value is the current pixel,
                     // so x and y have to be set to m and n
                     complex accum = new complex(m, n);
                     // perform the iteration
@@ -120,8 +119,8 @@ namespace FractalPerf
                         accum = accum.square() + seed;
                     }
                     // determine the color using the number of
-                    // iterations it took for the number to become too big 
-                    // char color = num % number_of_colors; 
+                    // iterations it took for the number to become too big
+                    // char color = num % number_of_colors;
                     // plot the point
                     result += num;
                 }
@@ -168,7 +167,7 @@ namespace FractalPerf
             }
             return result;
         }
-    
+
         public static int Main() {
             bool result = TestBase();
             return (result ? 100 : -1);

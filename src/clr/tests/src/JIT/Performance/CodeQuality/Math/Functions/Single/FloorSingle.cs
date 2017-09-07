@@ -14,14 +14,17 @@ namespace Functions
         private const float floorSingleDelta = 0.0004f;
         private const float floorSingleExpectedResult = -2498.0f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = FloorSingleIterations)]
         public static void FloorSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    FloorSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        FloorSingleTest();
+                    }
                 }
             }
         }

@@ -223,7 +223,6 @@ private:
     BOOL IsDelegate() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsDelegate(); } 
     BOOL IsNested() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsNested(); } 
     BOOL HasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasFieldsWhichMustBeInited(); } 
-    BOOL HasRemotingProxyAttribute() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasRemotingProxyAttribute(); } 
     BOOL IsBlittable() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsBlittable(); } 
     PTR_MethodDescChunk GetChunks() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetChunks(); } 
     BOOL HasExplicitFieldOffsetLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasExplicitFieldOffsetLayout(); } 
@@ -258,7 +257,6 @@ private:
     void SetNumBoxedRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedRegularStatics(x); } 
     void SetNumBoxedThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedThreadStatics(x); } 
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); } 
-    void SetHasRemotingProxyAttribute() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasRemotingProxyAttribute(); } 
     void SetHasOverLayedFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasOverLayedFields(); } 
     void SetNonGCRegularStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCRegularStaticFieldBytes(x); } 
     void SetNonGCThreadStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCThreadStaticFieldBytes(x); } 
@@ -2734,7 +2732,7 @@ private:
         bmtMDMethod *       pImplMethod,
         DWORD               cSlots,
         DWORD *             rgSlots,
-        MethodDesc **       rgDeclMD);
+        RelativePointer<MethodDesc *> *       rgDeclMD);
 
     // --------------------------------------------------------------------------------------------
     // Places a methodImpl pair where the decl is declared by the type being built.
@@ -2743,7 +2741,7 @@ private:
         bmtMDMethod *    pDecl,
         bmtMDMethod *    pImpl,
         DWORD*           slots,
-        MethodDesc**     replaced,
+        RelativePointer<MethodDesc *> *     replaced,
         DWORD*           pSlotIndex);
 
     // --------------------------------------------------------------------------------------------
@@ -2753,7 +2751,7 @@ private:
         bmtRTMethod *     pDecl,
         bmtMDMethod *     pImpl,
         DWORD*            slots,
-        MethodDesc**      replaced,
+        RelativePointer<MethodDesc *> *      replaced,
         DWORD*            pSlotIndex);
 
     // --------------------------------------------------------------------------------------------
@@ -2763,7 +2761,7 @@ private:
         bmtRTMethod *     pDecl,
         bmtMDMethod *     pImpl,
         DWORD*            slots,
-        MethodDesc**      replaced,
+        RelativePointer<MethodDesc *> *      replaced,
         DWORD*            pSlotIndex);
 
     // --------------------------------------------------------------------------------------------

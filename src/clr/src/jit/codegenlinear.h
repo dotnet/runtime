@@ -19,9 +19,18 @@ void genCodeForLongUMod(GenTreeOp* node);
 #endif // _TARGET_X86_
 
 void genCodeForDivMod(GenTreeOp* treeNode);
+void genCodeForMul(GenTreeOp* treeNode);
 void genCodeForMulHi(GenTreeOp* treeNode);
 void genLeaInstruction(GenTreeAddrMode* lea);
 void genSetRegToCond(regNumber dstReg, GenTreePtr tree);
+
+#if defined(_TARGET_ARMARCH_)
+void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+#endif // _TARGET_ARMARCH_
+
+#if defined(_TARGET_ARM_)
+void genCodeForMulLong(GenTreeMultiRegOp* treeNode);
+#endif // _TARGET_ARM_
 
 #if !defined(_TARGET_64BIT_)
 void genLongToIntCast(GenTreePtr treeNode);
@@ -36,6 +45,9 @@ void genCodeForCompare(GenTreeOp* tree);
 void genIntrinsic(GenTreePtr treeNode);
 void genPutArgStk(GenTreePutArgStk* treeNode);
 void genPutArgReg(GenTreeOp* tree);
+#ifdef _TARGET_ARM_
+void genPutArgSplit(GenTreePutArgSplit* treeNode);
+#endif
 
 #if defined(_TARGET_XARCH_)
 unsigned getBaseVarForPutArgStk(GenTreePtr treeNode);
@@ -47,14 +59,6 @@ unsigned getFirstArgWithStackSlot();
 
 void genCompareFloat(GenTreePtr treeNode);
 void genCompareInt(GenTreePtr treeNode);
-
-#if !defined(_TARGET_64BIT_)
-void genCompareLong(GenTreePtr treeNode);
-#if defined(_TARGET_ARM_)
-void genJccLongHi(genTreeOps cmp, BasicBlock* jumpTrue, BasicBlock* jumpFalse, bool isUnsigned = false);
-void genJccLongLo(genTreeOps cmp, BasicBlock* jumpTrue, BasicBlock* jumpFalse);
-#endif // defined(_TARGET_ARM_)
-#endif
 
 #ifdef FEATURE_SIMD
 enum SIMDScalarMoveType
@@ -80,6 +84,17 @@ void genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode);
 void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
 void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
 void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
+void genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
+                           var_types       simdType,
+                           var_types       baseType,
+                           regNumber       tmpReg,
+                           regNumber       tmpIntReg,
+                           regNumber       targetReg);
+void genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode);
+void genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode);
+void genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode);
+void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
+void genSIMDIntrinsicWiden(GenTreeSIMD* simdNode);
 void genSIMDIntrinsic(GenTreeSIMD* simdNode);
 void genSIMDCheck(GenTree* treeNode);
 
@@ -132,6 +147,9 @@ void genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
+#ifdef _TARGET_ARM_
+void genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode);
+#endif
 
 void genConsumeRegs(GenTree* tree);
 void genConsumeOperands(GenTreeOp* tree);
@@ -149,6 +167,7 @@ void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
 
 void genCodeForCast(GenTreeOp* tree);
 void genCodeForLclAddr(GenTree* tree);
+void genCodeForIndexAddr(GenTreeIndexAddr* tree);
 void genCodeForIndir(GenTreeIndir* tree);
 void genCodeForNegNot(GenTree* tree);
 void genCodeForLclVar(GenTreeLclVar* tree);
@@ -156,7 +175,8 @@ void genCodeForLclFld(GenTreeLclFld* tree);
 void genCodeForStoreLclFld(GenTreeLclFld* tree);
 void genCodeForStoreLclVar(GenTreeLclVar* tree);
 void genCodeForReturnTrap(GenTreeOp* tree);
-void genCodeForJcc(GenTreeJumpCC* tree);
+void genCodeForJcc(GenTreeCC* tree);
+void genCodeForSetcc(GenTreeCC* setcc);
 void genCodeForStoreInd(GenTreeStoreInd* tree);
 void genCodeForSwap(GenTreeOp* tree);
 void genCodeForCpObj(GenTreeObj* cpObjNode);
@@ -165,6 +185,7 @@ void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
 void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 void genCodeForPhysReg(GenTreePhysReg* tree);
 void genCodeForNullCheck(GenTreeOp* tree);
+void genCodeForCmpXchg(GenTreeCmpXchg* tree);
 
 void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
 void genAlignStackBeforeCall(GenTreeCall* call);
@@ -239,7 +260,6 @@ void genTableBasedSwitch(GenTree* tree);
 void genCodeForArrIndex(GenTreeArrIndex* treeNode);
 void genCodeForArrOffset(GenTreeArrOffs* treeNode);
 instruction genGetInsForOper(genTreeOps oper, var_types type);
-void genStoreInd(GenTreePtr node);
 bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
 void genCallInstruction(GenTreeCall* call);
 void genJmpMethod(GenTreePtr jmp);

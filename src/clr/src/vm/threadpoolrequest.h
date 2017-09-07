@@ -20,6 +20,8 @@
 #ifndef _THREADPOOL_REQUEST_H
 #define _THREADPOOL_REQUEST_H
 
+#include "util.hpp"
+
 #define TP_QUANTUM 2
 #define UNUSED_THREADPOOL_INDEX (DWORD)-1
 
@@ -181,11 +183,11 @@ public:
 private:
     ADID m_id;
     TPIndex m_index;
-    DECLSPEC_ALIGN(64) struct {
-        BYTE m_padding1[64 - sizeof(LONG)];
+    DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) struct {
+        BYTE m_padding1[MAX_CACHE_LINE_SIZE - sizeof(LONG)];
         // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
         LONG m_numRequestsPending;
-        BYTE m_padding2[64];
+        BYTE m_padding2[MAX_CACHE_LINE_SIZE];
     };
 };
 
@@ -286,11 +288,11 @@ public:
 private:
     SpinLock m_lock;
     ULONG m_NumRequests;
-    DECLSPEC_ALIGN(64) struct {
-        BYTE m_padding1[64 - sizeof(LONG)];
+    DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) struct {
+        BYTE m_padding1[MAX_CACHE_LINE_SIZE - sizeof(LONG)];
         // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
         LONG m_outstandingThreadRequestCount;
-        BYTE m_padding2[64];
+        BYTE m_padding2[MAX_CACHE_LINE_SIZE];
     };
 };
 
@@ -351,9 +353,9 @@ public:
 private:
     static DWORD FindFirstFreeTpEntry();
 
-    static BYTE s_padding[64 - sizeof(LONG)];
-    DECLSPEC_ALIGN(64) static LONG s_ADHint;
-    DECLSPEC_ALIGN(64) static UnManagedPerAppDomainTPCount s_unmanagedTPCount;
+    static BYTE s_padding[MAX_CACHE_LINE_SIZE - sizeof(LONG)];
+    DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static LONG s_ADHint;
+    DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static UnManagedPerAppDomainTPCount s_unmanagedTPCount;
 
     //The list of all per-appdomain work-request counts.
     static ArrayListStatic s_appDomainIndexList;

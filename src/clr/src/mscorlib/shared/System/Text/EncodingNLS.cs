@@ -23,7 +23,6 @@ namespace System.Text
     // So if you change the wrappers in this class, you must change the wrappers in the other classes
     // as well because they should have the same behavior.
 
-    [Serializable]
     internal abstract class EncodingNLS : Encoding
     {
         protected EncodingNLS(int codePage) : base(codePage)

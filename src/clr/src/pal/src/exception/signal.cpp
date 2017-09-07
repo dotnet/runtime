@@ -119,7 +119,7 @@ struct sigaction g_previous_sigquit;
 struct sigaction g_previous_activation;
 #endif
 
-// Offset of the local variable containing native context in the common_signal_handler function.
+// Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
 // This offset is relative to the frame pointer.
 int g_common_signal_handler_context_locvar_offset = 0;
 #endif // !HAVE_MACH_EXCEPTIONS
@@ -152,13 +152,13 @@ BOOL EnsureSignalAlternateStack()
 
         // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the 
         // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
-        int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + VIRTUAL_PAGE_SIZE;
+        int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + GetVirtualPageSize();
         void* altStack;
-        int st = posix_memalign(&altStack, VIRTUAL_PAGE_SIZE, altStackSize);
+        int st = posix_memalign(&altStack, GetVirtualPageSize(), altStackSize);
         if (st == 0)
         {
             // create a guard page for the alternate stack
-            st = mprotect(altStack, VIRTUAL_PAGE_SIZE, PROT_NONE);
+            st = mprotect(altStack, GetVirtualPageSize(), PROT_NONE);
             if (st == 0)
             {
                 stack_t ss;
@@ -169,7 +169,7 @@ BOOL EnsureSignalAlternateStack()
                 if (st != 0)
                 {
                     // Installation of the alternate stack failed, so revert the guard page protection
-                    int st2 = mprotect(altStack, VIRTUAL_PAGE_SIZE, PROT_READ | PROT_WRITE);
+                    int st2 = mprotect(altStack, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
                     _ASSERTE(st2 == 0);
                 }
             }
@@ -203,7 +203,7 @@ void FreeSignalAlternateStack()
     int st = sigaltstack(&ss, &oss);
     if ((st == 0) && (oss.ss_flags != SS_DISABLE))
     {
-        int st = mprotect(oss.ss_sp, VIRTUAL_PAGE_SIZE, PROT_READ | PROT_WRITE);
+        int st = mprotect(oss.ss_sp, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
         _ASSERTE(st == 0);
         free(oss.ss_sp);
     }
@@ -357,6 +357,7 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -391,6 +392,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -411,7 +413,27 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     // TODO: First variable parameter says whether a read (0) or write (non-0) caused the
     // fault. We must disassemble the instruction at record.ExceptionAddress
     // to correctly fill in this value.
+
+    // Unmask the activation signal now that we are running on the original stack of the thread
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
+
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
+
+    // We are going to return to the alternate stack, so block the activation signal again
+    sigmaskRet = pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
+
     RtlRestoreContext(&returnPoint->context, NULL);
 }
 
@@ -436,7 +458,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         // If the failure address is at most one page above or below the stack pointer, 
         // we have a stack overflow. 
-        if ((failureAddress - (sp - VIRTUAL_PAGE_SIZE)) < 2 * VIRTUAL_PAGE_SIZE)
+        if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
         {
             (void)write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
             PROCAbort();
@@ -478,6 +500,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -513,6 +536,7 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -550,6 +574,7 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -697,6 +722,42 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 
 /*++
 Function :
+    signal_ignore_handler
+
+    Simple signal handler which does nothing
+
+Parameters :
+    POSIX signal handler parameter list ("man sigaction" for details)
+
+(no return value)
+--*/
+static void signal_ignore_handler(int code, siginfo_t *siginfo, void *context)
+{
+}
+
+
+void PAL_IgnoreProfileSignal(int signalNum)
+{
+#if !HAVE_MACH_EXCEPTIONS
+    // Add a signal handler which will ignore signals
+    // This will allow signal to be used as a marker in perf recording.
+    // This will be used as an aid to synchronize recorded profile with
+    // test cases
+    //
+    // signal(signalNum, SGN_IGN) can not be used here.  It will ignore
+    // the signal in kernel space and therefore generate no recordable
+    // event for profiling. Preventing it being used for profile
+    // synchronization
+    //
+    // Since this is only used in rare circumstances no attempt to
+    // restore the old handler will be made
+    handle_signal(signalNum, signal_ignore_handler, 0);
+#endif
+}
+
+
+/*++
+Function :
     SEHSetSafeState
 
     specify whether the current thread is in a state where exception handling 
@@ -761,12 +822,13 @@ __attribute__((noinline))
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...)
 {
     sigset_t signal_set;
+    CONTEXT signalContextRecord;
     CONTEXT *contextRecord;
     EXCEPTION_RECORD *exceptionRecord;
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
-    g_common_signal_handler_context_locvar_offset = (int)((char*)&ucontext - (char*)__builtin_frame_address(0));
+    g_common_signal_handler_context_locvar_offset = (int)((char*)&signalContextRecord - (char*)__builtin_frame_address(0));
 
     AllocateExceptionRecords(&exceptionRecord, &contextRecord);
 
@@ -809,6 +871,9 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     }
 
     contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+
+    memcpy_s(&signalContextRecord, sizeof(CONTEXT), contextRecord, sizeof(CONTEXT));
+
     // The exception object takes ownership of the exceptionRecord and contextRecord
     PAL_SEHException exception(exceptionRecord, contextRecord);
 
@@ -851,6 +916,16 @@ void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAct
     newAction.sa_handler = SIG_DFL;
 #endif  /* HAVE_SIGINFO_T */
     sigemptyset(&newAction.sa_mask);
+
+#ifdef INJECT_ACTIVATION_SIGNAL
+    if ((additionalFlags & SA_ONSTACK) != 0)
+    {
+        // A handler that runs on a separate stack should not be interrupted by the activation signal
+        // until it switches back to the regular stack, since that signal's handler would run on the
+        // limited separate stack and likely run into a stack overflow.
+        sigaddset(&newAction.sa_mask, INJECT_ACTIVATION_SIGNAL);
+    }
+#endif
 
     if (-1 == sigaction(signal_id, &newAction, previousAction))
     {

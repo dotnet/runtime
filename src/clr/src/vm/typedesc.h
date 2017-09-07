@@ -254,7 +254,7 @@ public:
 
         LIMITED_METHOD_CONTRACT;
 
-        m_TemplateMT.SetValue(pMT);
+        m_TemplateMT.SetValueMaybeNull(pMT);
 
         // ParamTypeDescs start out life not fully loaded
         m_typeAndFlags |= TypeDesc::enum_flag_IsNotFullyLoaded;
@@ -323,8 +323,13 @@ public:
     friend class ArrayOpLinker;
 #endif
 protected:
+    PTR_MethodTable GetTemplateMethodTableInternal() {
+        WRAPPER_NO_CONTRACT;
+        return ReadPointerMaybeNull(this, &ParamTypeDesc::m_TemplateMT);
+    }
+
     // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have
-    FixupPointer<PTR_MethodTable> m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
+    RelativeFixupPointer<PTR_MethodTable> m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
     TypeHandle      m_Arg;              // The type that is being modified
     LOADERHANDLE    m_hExposedClassObject;  // handle back to the internal reflection Type object
 };
@@ -380,8 +385,8 @@ public:
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(!m_TemplateMT.IsNull());
-        _ASSERTE(m_TemplateMT.GetValue()->IsArray());
-        _ASSERTE(m_TemplateMT.GetValue()->ParentEquals(g_pArrayClass));
+        _ASSERTE(GetTemplateMethodTableInternal()->IsArray());
+        _ASSERTE(GetTemplateMethodTableInternal()->ParentEquals(g_pArrayClass));
 
         return g_pArrayClass;
     }
@@ -416,16 +421,16 @@ public:
     void Fixup(DataImage *image);
 #endif
 
-    MethodTable * GetTemplateMethodTable() {
+    PTR_MethodTable GetTemplateMethodTable() {
         WRAPPER_NO_CONTRACT;
-        MethodTable * pTemplateMT = m_TemplateMT.GetValue();
-        _ASSERTE(pTemplateMT->IsArray());
-        return pTemplateMT;
+        PTR_MethodTable ptrTemplateMT = GetTemplateMethodTableInternal();
+        _ASSERTE(ptrTemplateMT->IsArray());
+        return ptrTemplateMT;
     }
 
     TADDR GetTemplateMethodTableMaybeTagged() {
         WRAPPER_NO_CONTRACT;
-        return m_TemplateMT.GetValueMaybeTagged();
+        return m_TemplateMT.GetValueMaybeTagged(dac_cast<TADDR>(this) + offsetof(ArrayTypeDesc, m_TemplateMT));
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -462,7 +467,7 @@ public:
         }
         CONTRACTL_END;
 
-        m_pModule = pModule;
+        m_pModule.SetValue(pModule);
         m_typeOrMethodDef = typeOrMethodDef;
         m_token = token;
         m_index = index;
@@ -479,7 +484,8 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_pModule;
+
+        return ReadPointer(this, &TypeVarTypeDesc::m_pModule);
     }
 
     unsigned int GetIndex() 
@@ -567,7 +573,7 @@ protected:
     BOOL ConstrainedAsObjRefHelper();
 
     // Module containing the generic definition, also the loader module for this type desc
-    PTR_Module m_pModule;
+    RelativePointer<PTR_Module> m_pModule;
 
     // Declaring type or method
     mdToken m_typeOrMethodDef;

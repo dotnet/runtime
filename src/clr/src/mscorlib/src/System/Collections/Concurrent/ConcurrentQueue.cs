@@ -20,7 +20,6 @@ namespace System.Collections.Concurrent
     /// </remarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
-    [Serializable]
     internal class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         // This implementation provides an unbounded, multi-producer multi-consumer queue
@@ -116,7 +115,7 @@ namespace System.Collections.Concurrent
                 int count = c.Count;
                 if (count > length)
                 {
-                    length = RoundUpToPowerOf2(count);
+                    length = Math.Min(RoundUpToPowerOf2(count), MaxSegmentLength);
                 }
             }
 
@@ -647,7 +646,7 @@ namespace System.Collections.Concurrent
                         // initial segment length; if these observations are happening frequently,
                         // this will help to avoid wasted memory, and if they're not, we'll
                         // relatively quickly grow again to a larger size.
-                        int nextSize = tail._preservedForObservation ? InitialSegmentLength : tail.Capacity * 2;
+                        int nextSize = tail._preservedForObservation ? InitialSegmentLength : Math.Min(tail.Capacity * 2, MaxSegmentLength);
                         var newTail = new Segment(nextSize);
 
                         // Hook up the new tail.
@@ -738,7 +737,7 @@ namespace System.Collections.Concurrent
 
         /// <summary>Attempts to retrieve the value for the first element in the queue.</summary>
         /// <param name="result">The value of the first element, if found.</param>
-        /// <param name="resultUsed">true if the result is neede; otherwise false if only the true/false outcome is needed.</param>
+        /// <param name="resultUsed">true if the result is needed; otherwise false if only the true/false outcome is needed.</param>
         /// <returns>true if an element was found; otherwise, false.</returns>
         private bool TryPeek(out T result, bool resultUsed)
         {
@@ -1112,10 +1111,10 @@ namespace System.Collections.Concurrent
 
     /// <summary>Padded head and tail indices, to avoid false sharing between producers and consumers.</summary>
     [DebuggerDisplay("Head = {Head}, Tail = {Tail}")]
-    [StructLayout(LayoutKind.Explicit, Size = 192)] // padding before/between/after fields based on typical cache line size of 64
+    [StructLayout(LayoutKind.Explicit, Size = 3*Internal.PaddingHelpers.CACHE_LINE_SIZE)] // padding before/between/after fields
     internal struct PaddedHeadAndTail
     {
-        [FieldOffset(64)] public int Head;
-        [FieldOffset(128)] public int Tail;
+        [FieldOffset(1*Internal.PaddingHelpers.CACHE_LINE_SIZE)] public int Head;
+        [FieldOffset(2*Internal.PaddingHelpers.CACHE_LINE_SIZE)] public int Tail;
     }
 }

@@ -83,7 +83,6 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
-    gc_wks
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
@@ -128,12 +127,6 @@ else()
         palrt
     )
 endif(WIN32)
-
-if(CLR_CMAKE_PLATFORM_UNIX AND FEATURE_STANDALONE_GC)
-    list(APPEND CORECLR_LIBRARIES
-        gc_unix
-    )
-endif(CLR_CMAKE_PLATFORM_UNIX AND FEATURE_STANDALONE_GC)
 
 if(CLR_CMAKE_PLATFORM_UNIX AND FEATURE_EVENT_TRACE)
     list(APPEND CORECLR_LIBRARIES

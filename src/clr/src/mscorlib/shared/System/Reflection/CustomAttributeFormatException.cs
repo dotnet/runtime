@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public class CustomAttributeFormatException : FormatException
     {
         public CustomAttributeFormatException()
@@ -22,12 +21,13 @@ namespace System.Reflection
         public CustomAttributeFormatException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_CUSTOMATTRIBUTEFORMAT;
+            HResult = HResults.COR_E_CUSTOMATTRIBUTEFORMAT;
         }
 
         protected CustomAttributeFormatException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

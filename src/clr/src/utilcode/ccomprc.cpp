@@ -852,9 +852,8 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
 
     return hr;
 #else // !FEATURE_PAL
-    LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME), iResourceID,
+    return LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME), iResourceID,
       szBuffer, iMax, pcwchUsed);
-    return S_OK;
 #endif // !FEATURE_PAL
 }
 

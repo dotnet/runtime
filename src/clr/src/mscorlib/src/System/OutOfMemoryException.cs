@@ -17,29 +17,29 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class OutOfMemoryException : SystemException
     {
         public OutOfMemoryException()
             : base(GetMessageFromNativeResources(ExceptionMessageKind.OutOfMemory))
         {
-            HResult = __HResults.COR_E_OUTOFMEMORY;
+            HResult = HResults.COR_E_OUTOFMEMORY;
         }
 
         public OutOfMemoryException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_OUTOFMEMORY;
+            HResult = HResults.COR_E_OUTOFMEMORY;
         }
 
         public OutOfMemoryException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_OUTOFMEMORY;
+            HResult = HResults.COR_E_OUTOFMEMORY;
         }
 
         protected OutOfMemoryException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

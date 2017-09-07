@@ -22,25 +22,24 @@ namespace System.Runtime.InteropServices
 {
     // Exception for COM Interop errors where we don't recognize the HResult.
     // 
-    [Serializable]
     public class COMException : ExternalException
     {
         public COMException()
             : base(SR.Arg_COMException)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public COMException(String message)
             : base(message)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public COMException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public COMException(String message, int errorCode)
@@ -51,6 +50,7 @@ namespace System.Runtime.InteropServices
 
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public override String ToString()

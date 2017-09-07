@@ -13,7 +13,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 public static class CscBench
 {

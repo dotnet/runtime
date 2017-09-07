@@ -983,7 +983,7 @@ void ZapMethodEntryPoint::Resolve(ZapImage * pImage)
     {
         mdMethodDef token;
         pImage->GetCompileInfo()->GetMethodDef(GetHandle(), &token);
-        pImage->Error(token, S_OK, W("MapMethodEntryPoint failed"));
+        pImage->Error(token, S_OK, 0, W("MapMethodEntryPoint failed"));
     }
     else
 #endif

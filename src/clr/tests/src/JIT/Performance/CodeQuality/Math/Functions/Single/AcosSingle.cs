@@ -14,14 +14,17 @@ namespace Functions
         private const float acosSingleDelta = 0.0004f;
         private const float acosSingleExpectedResult = 7852.41084f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = AcosSingleIterations)]
         public static void AcosSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    AcosSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        AcosSingleTest();
+                    }
                 }
             }
         }

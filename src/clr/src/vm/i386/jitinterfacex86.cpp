@@ -34,6 +34,37 @@
 #define MON_DEBUG 1
 #endif
 
+class JIT_TrialAlloc
+{
+public:
+    enum Flags
+    {
+        NORMAL       = 0x0,
+        MP_ALLOCATOR = 0x1,
+        SIZE_IN_EAX  = 0x2,
+        OBJ_ARRAY    = 0x4,
+        ALIGN8       = 0x8,     // insert a dummy object to insure 8 byte alignment (until the next GC)
+        ALIGN8OBJ    = 0x10,
+        NO_FRAME     = 0x20,    // call is from unmanaged code - don't try to put up a frame
+    };
+
+    static void *GenAllocSFast(Flags flags);
+    static void *GenBox(Flags flags);
+    static void *GenAllocArray(Flags flags);
+    static void *GenAllocString(Flags flags);
+
+private:
+    static void EmitAlignmentRoundup(CPUSTUBLINKER *psl,X86Reg regTestAlign, X86Reg regToAdj, Flags flags);
+    static void EmitDummyObject(CPUSTUBLINKER *psl, X86Reg regTestAlign, Flags flags);
+    static void EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *noAlloc, Flags flags);
+    static void EmitNoAllocCode(CPUSTUBLINKER *psl, Flags flags);
+
+#if CHECK_APP_DOMAIN_LEAKS
+    static void EmitSetAppDomain(CPUSTUBLINKER *psl);
+    static void EmitCheckRestore(CPUSTUBLINKER *psl);
+#endif
+};
+
 extern "C" LONG g_global_alloc_lock;
 
 extern "C" void STDCALL JIT_WriteBarrierReg_PreGrow();// JIThelp.asm/JIThelp.s
@@ -855,7 +886,7 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 }
 
 
-HCIMPL2_RAW(Object*, UnframedAllocateObjectArray, /*TypeHandle*/PVOID ArrayType, DWORD cElements)
+HCIMPL2_RAW(Object*, UnframedAllocateObjectArray, MethodTable *pArrayMT, DWORD cElements)
 {
     // This isn't _really_ an FCALL and therefore shouldn't have the 
     // SO_TOLERANT part of the FCALL_CONTRACT b/c it is not entered
@@ -867,7 +898,7 @@ HCIMPL2_RAW(Object*, UnframedAllocateObjectArray, /*TypeHandle*/PVOID ArrayType,
         SO_INTOLERANT;
     } CONTRACTL_END;
 
-    return OBJECTREFToObject(AllocateArrayEx(TypeHandle::FromPtr(ArrayType),
+    return OBJECTREFToObject(AllocateArrayEx(pArrayMT,
                            (INT32 *)(&cElements),
                            1,
                            FALSE
@@ -892,6 +923,11 @@ HCIMPL2_RAW(Object*, UnframedAllocatePrimitiveArray, CorElementType type, DWORD 
 }
 HCIMPLEND_RAW
 
+HCIMPL1_RAW(PTR_MethodTable, UnframedGetTemplateMethodTable, ArrayTypeDesc *arrayDesc)
+{
+    return arrayDesc->GetTemplateMethodTable();
+}
+HCIMPLEND_RAW
 
 void *JIT_TrialAlloc::GenAllocArray(Flags flags)
 {
@@ -902,8 +938,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     CodeLabel *noLock  = sl.NewCodeLabel();
     CodeLabel *noAlloc = sl.NewCodeLabel();
 
-    // We were passed a type descriptor in ECX, which contains the (shared)
-    // array method table and the element type.
+    // We were passed a (shared) method table in RCX, which contains the element type.
 
     // If this is the allocator for use from unmanaged code, ECX contains the
     // element type descriptor, or the CorElementType.
@@ -920,12 +955,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
 
     if (flags & NO_FRAME)
     {
-        if (flags & OBJ_ARRAY)
-        {
-            // we need to load the true method table from the type desc
-            sl.X86EmitIndexRegLoad(kECX, kECX, offsetof(ArrayTypeDesc,m_TemplateMT)-2);
-        }
-        else
+        if ((flags & OBJ_ARRAY) == 0)
         {
             // mov ecx,[g_pPredefinedArrayTypes+ecx*4]
             sl.Emit8(0x8b);
@@ -938,30 +968,12 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
             // je noLock
             sl.X86EmitCondJump(noLock, X86CondCode::kJZ);
 
-            // we need to load the true method table from the type desc
-            sl.X86EmitIndexRegLoad(kECX, kECX, offsetof(ArrayTypeDesc,m_TemplateMT));
+            sl.X86EmitPushReg(kEDX);
+            sl.X86EmitCall(sl.NewExternalCodeLabel((LPVOID)UnframedGetTemplateMethodTable), 0);
+            sl.X86EmitPopReg(kEDX);
+
+            sl.X86EmitMovRegReg(kECX, kEAX);
         }
-    }
-    else
-    {
-        // we need to load the true method table from the type desc
-        sl.X86EmitIndexRegLoad(kECX, kECX, offsetof(ArrayTypeDesc,m_TemplateMT)-2);
-
-#ifdef FEATURE_PREJIT
-        CodeLabel *indir = sl.NewCodeLabel();
-
-        // test cl,1
-        sl.Emit16(0xC1F6);
-        sl.Emit8(0x01);
-
-        // je indir
-        sl.X86EmitCondJump(indir, X86CondCode::kJZ);
-
-        // mov ecx, [ecx-1]
-        sl.X86EmitIndexRegLoad(kECX, kECX, -1);
-
-        sl.EmitLabel(indir);
-#endif
     }
 
     // Do a conservative check here.  This is to avoid doing overflow checks within this function.  We'll
@@ -1064,7 +1076,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     // pop edx - element count
     sl.X86EmitPopReg(kEDX);
 
-    // pop ecx - array type descriptor
+    // pop ecx - array method table
     sl.X86EmitPopReg(kECX);
 
     // mov             dword ptr [eax]ArrayBase.m_NumComponents, edx
@@ -1089,7 +1101,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     // pop edx - element count
     sl.X86EmitPopReg(kEDX);
 
-    // pop ecx - array type descriptor
+    // pop ecx - array method table
     sl.X86EmitPopReg(kECX);
 
     CodeLabel * target;
@@ -1530,8 +1542,8 @@ void InitJITHelpers1()
 
     // All write barrier helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < PAGE_SIZE);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < PAGE_SIZE);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
 
     // Copy the write barriers to their final resting place.
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)

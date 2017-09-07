@@ -9,6 +9,9 @@
 
 #ifdef FEATURE_STANDALONE_GC
 
+namespace standalone
+{
+
 class GCToEEInterface : public IGCToCLR {
 public:
     GCToEEInterface() = default;
@@ -28,6 +31,8 @@ public:
     bool IsPreemptiveGCDisabled(Thread * pThread);
     void EnablePreemptiveGC(Thread * pThread);
     void DisablePreemptiveGC(Thread * pThread);
+    Thread* GetThread();
+    bool TrapReturningThreads();
     gc_alloc_context * GetAllocContext(Thread * pThread);
     bool CatchAtSafePoint(Thread * pThread);
     void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param);
@@ -49,7 +54,13 @@ public:
     bool ForceFullGCToBeBlocking();
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();
+    bool GetBooleanConfigValue(const char* key, bool* value);
+    bool GetIntConfigValue(const char* key, int64_t* value);
+    bool GetStringConfigValue(const char* key, const char** value);
+    void FreeStringConfigValue(const char* value);
 };
+
+} // namespace standalone
 
 #endif // FEATURE_STANDALONE_GC
 

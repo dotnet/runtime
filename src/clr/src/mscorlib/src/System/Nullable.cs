@@ -23,10 +23,11 @@ namespace System
     // 
     [Serializable]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Nullable<T> where T : struct
     {
-        private bool hasValue;
-        internal T value;
+        private bool hasValue; // Do not rename (binary serialization)
+        internal T value; // Do not rename (binary serialization)
 
         [System.Runtime.Versioning.NonVersionable]
         public Nullable(T value)

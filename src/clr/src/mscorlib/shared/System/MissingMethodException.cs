@@ -15,25 +15,24 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class MissingMethodException : MissingMemberException
     {
         public MissingMethodException()
             : base(SR.Arg_MissingMethodException)
         {
-            HResult = __HResults.COR_E_MISSINGMETHOD;
+            HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_MISSINGMETHOD;
+            HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_MISSINGMETHOD;
+            HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(string className, string methodName)
@@ -45,6 +44,7 @@ namespace System
         protected MissingMethodException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public override string Message

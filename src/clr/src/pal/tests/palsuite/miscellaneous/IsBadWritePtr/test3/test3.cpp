@@ -14,8 +14,6 @@
 
 #include <palsuite.h>
 
-#define PAGE_SIZE 4096
-
 int __cdecl main(int argc, char *argv[]) {
     
     LPVOID PageOne;
@@ -30,7 +28,7 @@ int __cdecl main(int argc, char *argv[]) {
     */
     
     PageOne = VirtualAlloc(NULL, 
-			   PAGE_SIZE, 
+			   GetOsPageSize(), 
 			   MEM_COMMIT, 
 			   PAGE_READONLY);
 
@@ -39,7 +37,7 @@ int __cdecl main(int argc, char *argv[]) {
 	Fail("ERROR: VirtualAlloc failed to commit the required memory.\n");
     }
 
-    if(IsBadWritePtr(PageOne,PAGE_SIZE) == 0)
+    if(IsBadWritePtr(PageOne,GetOsPageSize()) == 0)
     {
 	VirtualFree(PageOne,0,MEM_RELEASE);
 

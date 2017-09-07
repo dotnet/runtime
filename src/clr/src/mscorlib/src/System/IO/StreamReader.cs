@@ -16,7 +16,6 @@ namespace System.IO
     // This is designed for character input in a particular Encoding, 
     // whereas the Stream class is designed for byte input and output.  
     // 
-    [Serializable]
     internal class StreamReader : TextReader
     {
         // StreamReader.Null is threadsafe.

@@ -22,17 +22,19 @@
 //     true.
 
 // clang-format off
+//                 enumName                      stringName                        shortName hasChildren measureIR
+//                                                                                                   parent
 CompPhaseNameMacro(PHASE_PRE_IMPORT,             "Pre-import",                     "PRE-IMP",  false, -1, false)
 CompPhaseNameMacro(PHASE_IMPORTATION,            "Importation",                    "IMPORT",   false, -1, true)
 CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                    "POST-IMP", false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INIT,             "Morph - Init",                   "MOR-INIT" ,false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,           "Morph - Inlining",               "MOR-INL",  false, -1, true)
-CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,         "Morph - ByRefs",                 "MOR-BYREF",false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY,              "Remove empty try",               "EMPTYTRY", false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY,          "Remove empty finally",           "EMPTYFIN", false, -1, false)
 CompPhaseNameMacro(PHASE_MERGE_FINALLY_CHAINS,   "Merge callfinally chains",       "MRGCFCHN", false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_FINALLY,          "Clone finally",                  "CLONEFIN", false, -1, false)
 CompPhaseNameMacro(PHASE_STR_ADRLCL,             "Morph - Structs/AddrExp",        "MOR-STRAL",false, -1, false)
+CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,         "Morph - ByRefs",                 "MOR-BYREF",false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_GLOBAL,           "Morph - Global",                 "MOR-GLOB", false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_END,              "Morph - Finish",                 "MOR-END",  false, -1, true)
 CompPhaseNameMacro(PHASE_GS_COOKIE,              "GS Cookie",                      "GS-COOK",  false, -1, false)

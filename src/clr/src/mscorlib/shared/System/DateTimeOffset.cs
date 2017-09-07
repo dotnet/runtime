@@ -30,6 +30,7 @@ namespace System
 
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     public struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback
     {
         // Constants
@@ -128,11 +129,7 @@ namespace System
         }
 
         // Returns a DateTimeOffset representing the current date and time. The
-        // resolution of the returned value depends on the system timer. For
-        // Windows NT 3.5 and later the timer resolution is approximately 10ms,
-        // for Windows NT 3.1 it is approximately 16ms, and for Windows 95 and 98
-        // it is approximately 55ms.
-        //
+        // resolution of the returned value depends on the system timer.
         public static DateTimeOffset Now
         {
             get
@@ -573,8 +570,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            info.AddValue("DateTime", _dateTime);
-            info.AddValue("OffsetMinutes", _offsetMinutes);
+            info.AddValue("DateTime", _dateTime); // Do not rename (binary serialization)
+            info.AddValue("OffsetMinutes", _offsetMinutes); // Do not rename (binary serialization)
         }
 
 
@@ -585,8 +582,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime));
-            _offsetMinutes = (Int16)info.GetValue("OffsetMinutes", typeof(Int16));
+            _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime)); // Do not rename (binary serialization)
+            _offsetMinutes = (Int16)info.GetValue("OffsetMinutes", typeof(Int16)); // Do not rename (binary serialization)
         }
 
         // Returns the hash code for this DateTimeOffset.

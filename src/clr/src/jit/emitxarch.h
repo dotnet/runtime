@@ -360,6 +360,8 @@ void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg
 
 #ifdef FEATURE_AVX_SUPPORT
 void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3);
+
+void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, int ival);
 #endif
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);

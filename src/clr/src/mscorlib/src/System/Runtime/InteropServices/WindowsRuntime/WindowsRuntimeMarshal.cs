@@ -105,7 +105,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 lock (ManagedEventRegistrationImpl.s_eventRegistrations)
                 {
-                    count += ManagedEventRegistrationImpl.s_eventRegistrations.Keys.Count;
+                    foreach (var item in ManagedEventRegistrationImpl.s_eventRegistrations)
+                        count++;
                 }
             }
 
@@ -537,6 +538,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return (object)Marshal.GetRawIUnknownForComObjectNoAddRef(target);
             }
 
+            private static object FindEquivalentKeyUnsafe(ConditionalWeakTable<object, EventRegistrationTokenListWithCount> registrationTable, object handler, out EventRegistrationTokenListWithCount tokens)
+            {
+                foreach (KeyValuePair<object, EventRegistrationTokenListWithCount> item in registrationTable)
+                {
+                    if (Object.Equals(item.Key, handler))
+                    {
+                        tokens = item.Value;
+                        return item.Key;
+                    }
+                }
+                tokens = null;
+                return null;
+            }
+
             internal static void AddEventHandler<T>(Func<T, EventRegistrationToken> addMethod,
                                                   Action<EventRegistrationToken> removeMethod,
                                                   T handler)
@@ -581,7 +596,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             // will be added into B's token list, but once we unsubscribe B, we might end up removing
                             // the last token in C, and that may lead to crash.
                             //
-                            object key = registrationTokens.FindEquivalentKeyUnsafe(handler, out tokens);
+                            object key = FindEquivalentKeyUnsafe(registrationTokens, handler, out tokens);
                             if (key == null)
                             {
                                 tokens = new EventRegistrationTokenListWithCount(tokenListCount, token);
@@ -705,7 +720,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         // It actually doesn't matter which delegate - as long as it matches
                         // Note that inside TryGetValueWithValueEquality we assumes that any delegate 
                         // with the same value equality would have the same hash code
-                        object key = registrationTokens.FindEquivalentKeyUnsafe(handler, out tokens);
+                        object key = FindEquivalentKeyUnsafe(registrationTokens, handler, out tokens);
                         Debug.Assert((key != null && tokens != null) || (key == null && tokens == null),
                                         "key and tokens must be both null or non-null");
                         if (tokens == null)
@@ -773,9 +788,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     {
                         // Copy all tokens to tokensToRemove array which later we'll call removeMethod on
                         // outside this lock
-                        foreach (EventRegistrationTokenListWithCount tokens in registrationTokens.Values)
+                        foreach (KeyValuePair<object, EventRegistrationTokenListWithCount> item in registrationTokens)
                         {
-                            tokens.CopyTo(tokensToRemove);
+                            item.Value.CopyTo(tokensToRemove);
                         }
 
                         // Clear the table - at this point all event handlers are no longer in the cache
@@ -811,7 +826,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             /// for more than a few instructions (in particular, we never call event APIs
             /// or in fact any non-trivial API while holding the spin lock).   
             /// 
-            /// Currently this ReaderWriterLock does not support recurision, however it is 
+            /// Currently this ReaderWriterLock does not support recursion, however it is 
             /// not hard to add 
             /// </summary>
             internal class MyReaderWriterLock

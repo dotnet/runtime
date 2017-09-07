@@ -95,8 +95,6 @@ you wish to update the DLLs. For example typically when you update CoreCLR you e
 * coreclr.dll - Most modifications (with the exception of the JIT compiler and tools) that are C++ code update
   this DLL.
 * System.Private.CoreLib.dll - If you modified C# it will end up here.
-* System.Private.CoreLib.ni.dll - the native image (code) for System.Private.Corelib.   If you modify C# code
-you will want to update both of these together in the target installation.
 
 Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
 directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp2.0\win7-x64\publish`) to quickly
@@ -107,8 +105,7 @@ You can build just the .NET Library part of the build by doing (debug, for relea
 ```bat
     .\build skiptests skipnative
 ```
-Which builds System.Private.CoreLib.dll AND System.Private.CoreLib.ni.dll (you will always want both) if you modify
-C# code. If you wish to only compile the coreclr.dll you can do
+Which builds System.Private.CoreLib.dll if you modify C# code. If you wish to only compile the coreclr.dll you can do
  ```bat
     .\build skiptests skipmscorlib
 ```
@@ -119,6 +116,8 @@ build was put when you did a 'dotnet restore' and had a dependency on your parti
 could update these locations in place, but that is not recommended since they are shared more widely.
 
 ## Update CoreCLR using runtime nuget package
+
+### WARNING: TODO: This section has been broken when Microsoft.Netcore.App included the CoreCLR binaries.  We need to update this. 
 
 Updating CoreCLR from raw binary output is easier for quick one-off testing but using the nuget package is better
 for referencing your CoreCLR build in your actual application because of it does not require manual copying of files

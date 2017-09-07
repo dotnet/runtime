@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using Xunit;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 public static class SeekUnroll
 {

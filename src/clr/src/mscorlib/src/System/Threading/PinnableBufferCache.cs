@@ -210,7 +210,7 @@ namespace System
         }
 
         /// <summary>
-        /// See if we can promote the buffers to the free list.  Returns true if sucessful. 
+        /// See if we can promote the buffers to the free list.  Returns true if successful. 
         /// </summary>
         private bool AgePendingBuffers()
         {
@@ -403,7 +403,7 @@ namespace System
         /// </summary>
         private List<object> m_NotGen2;
         /// <summary>
-        /// What whas the gen 1 count the last time re restocked?  If it is now greater, then
+        /// What was the gen 1 count the last time re restocked?  If it is now greater, then
         /// we know that all objects are in Gen 2 so we don't have to check.  Should be updated
         /// every time something gets added to the m_NotGen2 list.
         /// </summary>

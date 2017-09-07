@@ -15,6 +15,7 @@ using System.Diagnostics.Contracts;
 namespace System
 {
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         #region Private Constants
@@ -424,7 +425,7 @@ namespace System
             }
             if (firstNonWhitespaceIndex == -1)
             {
-                parseResult.SetFailure(ParseFailureKind.Argument, "Arg_MustContainEnumInfo", null);
+                parseResult.SetFailure(ParseFailureKind.Argument, nameof(SR.Arg_MustContainEnumInfo), null);
                 return false;
             }
 
@@ -505,7 +506,7 @@ namespace System
                 if (!success)
                 {
                     // Not found, throw an argument exception.
-                    parseResult.SetFailure(ParseFailureKind.ArgumentWithParameter, "Arg_EnumValueNotFound", value);
+                    parseResult.SetFailure(ParseFailureKind.ArgumentWithParameter, nameof(SR.Arg_EnumValueNotFound), value);
                     return false;
                 }
 

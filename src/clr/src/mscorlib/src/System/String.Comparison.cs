@@ -25,7 +25,7 @@ namespace System
             Contract.EndContractBlock();
             int length = Math.Min(strA.Length, strB.Length);
 
-            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            fixed (char* ap = &strA._firstChar) fixed (char* bp = &strB._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
@@ -44,7 +44,7 @@ namespace System
 
                     //Return the (case-insensitive) difference between them.
                     if (charA != charB)
-                        goto ReturnCharAMinusCharB; // TODO: Workaround for https://github.com/dotnet/coreclr/issues/9692
+                        return charA - charB;
 
                     // Next char
                     a++; b++;
@@ -52,9 +52,6 @@ namespace System
                 }
 
                 return strA.Length - strB.Length;
-
-                ReturnCharAMinusCharB:
-                return charA - charB;
             }
         }
 
@@ -85,7 +82,7 @@ namespace System
 
             int length = strA.Length;
 
-            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            fixed (char* ap = &strA._firstChar) fixed (char* bp = &strB._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
@@ -145,7 +142,7 @@ namespace System
             Contract.EndContractBlock();
             int length = strA.Length;
 
-            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            fixed (char* ap = &strA._firstChar) fixed (char* bp = &strB._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
@@ -168,14 +165,11 @@ namespace System
                     }
                     else
                     {
-                        goto ReturnFalse;
+                        return false;
                     }
                 }
 
                 return true;
-
-            ReturnFalse:
-                return false;
             }
         }
 
@@ -187,7 +181,7 @@ namespace System
 
             int length = startsWith.Length;
 
-            fixed (char* ap = &str.m_firstChar) fixed (char* bp = &startsWith.m_firstChar)
+            fixed (char* ap = &str._firstChar) fixed (char* bp = &startsWith._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
@@ -241,19 +235,19 @@ namespace System
 
             // NOTE: This may be subject to change if eliminating the check
             // in the callers makes them small enough to be inlined by the JIT
-            Debug.Assert(strA.m_firstChar == strB.m_firstChar,
+            Debug.Assert(strA._firstChar == strB._firstChar,
                 "For performance reasons, callers of this method should " +
                 "check/short-circuit beforehand if the first char is the same.");
 
             int length = Math.Min(strA.Length, strB.Length);
 
-            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            fixed (char* ap = &strA._firstChar) fixed (char* bp = &strB._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
 
                 // Check if the second chars are different here
-                // The reason we check if m_firstChar is different is because
+                // The reason we check if _firstChar is different is because
                 // it's the most common case and allows us to avoid a method call
                 // to here.
                 // The reason we check if the second char is different is because
@@ -422,9 +416,9 @@ namespace System
                 case StringComparison.Ordinal:
                     // Most common case: first character is different.
                     // Returns false for empty strings.
-                    if (strA.m_firstChar != strB.m_firstChar)
+                    if (strA._firstChar != strB._firstChar)
                     {
-                        return strA.m_firstChar - strB.m_firstChar;
+                        return strA._firstChar - strB._firstChar;
                     }
 
                     return CompareOrdinalHelper(strA, strB);
@@ -659,9 +653,9 @@ namespace System
 
             // Most common case, first character is different.
             // This will return false for empty strings.
-            if (strA.m_firstChar != strB.m_firstChar)
+            if (strA._firstChar != strB._firstChar)
             {
-                return strA.m_firstChar - strB.m_firstChar;
+                return strA._firstChar - strB._firstChar;
             }
 
             return CompareOrdinalHelper(strA, strB);
@@ -745,7 +739,7 @@ namespace System
             return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
-        // Determines whether a specified string is a suffix of the the current instance.
+        // Determines whether a specified string is a suffix of the current instance.
         //
         // The case-sensitive and culture-sensitive option is set by options,
         // and the default culture is used.
@@ -1008,34 +1002,14 @@ namespace System
             return !String.Equals(a, b);
         }
 
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        // Do not remove!
-        // This method is called by reflection in System.Xml
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int InternalMarvin32HashString(string s, int strLen, long additionalEntropy);
-
-        internal static bool UseRandomizedHashing()
-        {
-            return InternalUseRandomizedHashing();
-        }
-
-        [System.Security.SuppressUnmanagedCodeSecurity]
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool InternalUseRandomizedHashing();
-#endif
+        private static extern int InternalMarvin32HashString(string s);
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
         public override int GetHashCode()
         {
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            if (HashHelpers.s_UseRandomizedStringHashing)
-            {
-                return InternalMarvin32HashString(this, this.Length, 0);
-            }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-
-            return GetLegacyNonRandomizedHashCode();
+            return InternalMarvin32HashString(this);
         }
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparition C are such
@@ -1048,7 +1022,7 @@ namespace System
         {
             unsafe
             {
-                fixed (char* src = &m_firstChar)
+                fixed (char* src = &_firstChar)
                 {
                     Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
@@ -1152,7 +1126,7 @@ namespace System
                     return CultureInfo.InvariantCulture.CompareInfo.IsPrefix(this, value, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
-                    if (this.Length < value.Length || m_firstChar != value.m_firstChar)
+                    if (this.Length < value.Length || _firstChar != value._firstChar)
                     {
                         return false;
                     }
@@ -1197,6 +1171,6 @@ namespace System
         }
 
         [Pure]
-        public bool StartsWith(char value) => Length != 0 && m_firstChar == value;
+        public bool StartsWith(char value) => Length != 0 && _firstChar == value;
     }
 }

@@ -4,7 +4,6 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module | AttributeTargets.Class | AttributeTargets.Method)]
     public class CompilationRelaxationsAttribute : Attribute
     {

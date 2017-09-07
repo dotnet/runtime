@@ -24,12 +24,9 @@
     <Delete Files="$(BinDir)System.Private.CoreLib.*" />
   </Target>
 
-  <PropertyGroup>
-    <OptDataProjectJson>$(SourceDir).nuget/optdata/project.json</OptDataProjectJson>
-    <OptDataPackageFeed>https://dotnet.myget.org/F/dotnet-core-optimization-data/api/v3/index.json</OptDataPackageFeed>
-  </PropertyGroup>
   <Target Name="RestoreOptData">
-    <Exec Condition="Exists('$(OptDataProjectJson)')" Command="$(DnuRestoreCommand) &quot;$(OptDataProjectJson)&quot; --source &quot;$(OptDataPackageFeed)&quot;" />
+    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj"
+          StandardOutputImportance="Low" />
   </Target>
 
   <!--
@@ -40,7 +37,7 @@
   <Target Name="Sync" BeforeTargets="Build" />
 
   <Target Name="RestoreNETCorePlatforms" AfterTargets="Build" Condition="'$(RestoreDuringBuild)'=='true'">
-    <Exec Command="$(DnuRestoreCommand) $(SourceDir).nuget/init/init.csproj"
+    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/init/init.csproj"
           StandardOutputImportance="Low" />
   </Target>
   

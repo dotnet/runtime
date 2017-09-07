@@ -14,6 +14,8 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
+#include "gcinterface.dac.h"
+
 #if defined(_TARGET_ARM_) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
@@ -123,6 +125,7 @@ enum DAC_USAGE_TYPE
     DAC_VPTR,
     DAC_STRA,
     DAC_STRW,
+    DAC_PAL,
 };
 
 // mscordacwks's module handle 
@@ -2237,7 +2240,7 @@ private:
     ULONG32 m_instanceAge;
     
     // Handle table walking variables.
-    HandleTableMap *mMap;
+    dac_handle_table_map *mMap;
     int mIndex;
     UINT32 mTypeMask;
     int mGenerationFilter;

@@ -28,6 +28,7 @@ namespace System
     using System.Diagnostics.Contracts;
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Exception : ISerializable
     {
         private void Init()
@@ -35,7 +36,7 @@ namespace System
             _message = null;
             _stackTrace = null;
             _dynamicMethods = null;
-            HResult = __HResults.COR_E_EXCEPTION;
+            HResult = HResults.COR_E_EXCEPTION;
             _xcode = _COMPlusExceptionCode;
             _xptrs = (IntPtr)0;
 
@@ -75,18 +76,17 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
-            _className = info.GetString("ClassName");
-            _message = info.GetString("Message");
-            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary)));
-            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception)));
-            _helpURL = info.GetString("HelpURL");
-            _stackTraceString = info.GetString("StackTraceString");
-            _remoteStackTraceString = info.GetString("RemoteStackTraceString");
-            _remoteStackIndex = info.GetInt32("RemoteStackIndex");
+            _className = info.GetString("ClassName"); // Do not rename (binary serialization)
+            _message = info.GetString("Message"); // Do not rename (binary serialization)
+            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
+            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
+            _helpURL = info.GetString("HelpURL"); // Do not rename (binary serialization)
+            _stackTraceString = info.GetString("StackTraceString"); // Do not rename (binary serialization)
+            _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
+            _remoteStackIndex = info.GetInt32("RemoteStackIndex"); // Do not rename (binary serialization)
 
-            _exceptionMethodString = (String)(info.GetValue("ExceptionMethod", typeof(String)));
-            HResult = info.GetInt32("HResult");
-            _source = info.GetString("Source");
+            HResult = info.GetInt32("HResult"); // Do not rename (binary serialization)
+            _source = info.GetString("Source"); // Do not rename (binary serialization)
 
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
@@ -94,7 +94,7 @@ namespace System
             // We use the no throw version since we could be deserializing a pre-V4
             // exception object that may not have this entry. In such a case, we would
             // get null.
-            _watsonBuckets = (Object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[]));
+            _watsonBuckets = (Object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
 
 
             if (_className == null || HResult == 0)
@@ -293,15 +293,8 @@ namespace System
             {
                 return null;
             }
-
-            if (_exceptionMethodString != null)
-            {
-                _exceptionMethod = GetExceptionMethodFromString();
-            }
-            else
-            {
-                _exceptionMethod = GetExceptionMethodFromStackTrace();
-            }
+            
+            _exceptionMethod = GetExceptionMethodFromStackTrace();
             return _exceptionMethod;
         }
 
@@ -434,90 +427,6 @@ namespace System
             return s;
         }
 
-        private String GetExceptionMethodString()
-        {
-            MethodBase methBase = GetTargetSiteInternal();
-            if (methBase == null)
-            {
-                return null;
-            }
-            if (methBase is System.Reflection.Emit.DynamicMethod.RTDynamicMethod)
-            {
-                // DynamicMethods cannot be serialized
-                return null;
-            }
-
-            // Note that the newline separator is only a separator, chosen such that
-            //  it won't (generally) occur in a method name.  This string is used 
-            //  only for serialization of the Exception Method.
-            char separator = '\n';
-            StringBuilder result = new StringBuilder();
-            if (methBase is ConstructorInfo)
-            {
-                RuntimeConstructorInfo rci = (RuntimeConstructorInfo)methBase;
-                Type t = rci.ReflectedType;
-                result.Append((int)MemberTypes.Constructor);
-                result.Append(separator);
-                result.Append(rci.Name);
-                if (t != null)
-                {
-                    result.Append(separator);
-                    result.Append(t.Assembly.FullName);
-                    result.Append(separator);
-                    result.Append(t.FullName);
-                }
-                result.Append(separator);
-                result.Append(rci.ToString());
-            }
-            else
-            {
-                Debug.Assert(methBase is MethodInfo, "[Exception.GetExceptionMethodString]methBase is MethodInfo");
-                RuntimeMethodInfo rmi = (RuntimeMethodInfo)methBase;
-                Type t = rmi.DeclaringType;
-                result.Append((int)MemberTypes.Method);
-                result.Append(separator);
-                result.Append(rmi.Name);
-                result.Append(separator);
-                result.Append(rmi.Module.Assembly.FullName);
-                result.Append(separator);
-                if (t != null)
-                {
-                    result.Append(t.FullName);
-                    result.Append(separator);
-                }
-                result.Append(rmi.ToString());
-            }
-
-            return result.ToString();
-        }
-
-        private MethodBase GetExceptionMethodFromString()
-        {
-            Debug.Assert(_exceptionMethodString != null, "Method string cannot be NULL!");
-            String[] args = _exceptionMethodString.Split(new char[] { '\0', '\n' });
-            if (args.Length != 5)
-            {
-                throw new SerializationException();
-            }
-            SerializationInfo si = new SerializationInfo(typeof(MemberInfoSerializationHolder), new FormatterConverter());
-            si.AddValue("MemberType", (int)Int32.Parse(args[0], CultureInfo.InvariantCulture), typeof(Int32));
-            si.AddValue("Name", args[1], typeof(String));
-            si.AddValue("AssemblyName", args[2], typeof(String));
-            si.AddValue("ClassName", args[3]);
-            si.AddValue("Signature", args[4]);
-            MethodBase result;
-            StreamingContext sc = new StreamingContext(StreamingContextStates.All);
-            try
-            {
-                result = (MethodBase)new MemberInfoSerializationHolder(si, sc).GetRealObject(sc);
-            }
-            catch (SerializationException)
-            {
-                result = null;
-            }
-            return result;
-        }
-
         protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
         {
             add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
@@ -551,24 +460,24 @@ namespace System
                 _source = Source; // Set the Source information correctly before serialization
             }
 
-            info.AddValue("ClassName", GetClassName(), typeof(String));
-            info.AddValue("Message", _message, typeof(String));
-            info.AddValue("Data", _data, typeof(IDictionary));
-            info.AddValue("InnerException", _innerException, typeof(Exception));
-            info.AddValue("HelpURL", _helpURL, typeof(String));
-            info.AddValue("StackTraceString", tempStackTraceString, typeof(String));
-            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(String));
-            info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(Int32));
-            info.AddValue("ExceptionMethod", GetExceptionMethodString(), typeof(String));
-            info.AddValue("HResult", HResult);
-            info.AddValue("Source", _source, typeof(String));
+            info.AddValue("ClassName", GetClassName(), typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Message", _message, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Data", _data, typeof(IDictionary)); // Do not rename (binary serialization)
+            info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
+            info.AddValue("HelpURL", _helpURL, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("StackTraceString", tempStackTraceString, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(Int32)); // Do not rename (binary serialization)
+            info.AddValue("ExceptionMethod", null, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("HResult", HResult); // Do not rename (binary serialization)
+            info.AddValue("Source", _source, typeof(String)); // Do not rename (binary serialization)
 
             // Serialize the Watson bucket details as well
-            info.AddValue("WatsonBuckets", _watsonBuckets, typeof(byte[]));
+            info.AddValue("WatsonBuckets", _watsonBuckets, typeof(byte[])); // Do not rename (binary serialization)
         }
 
         // This method will clear the _stackTrace of the exception object upon deserialization
-        // to ensure that references from another AD/Process dont get accidently used.
+        // to ensure that references from another AD/Process dont get accidentally used.
         [OnDeserialized]
         private void OnDeserialized(StreamingContext context)
         {
@@ -748,7 +657,7 @@ namespace System
 
         private String _className;  //Needed for serialization.  
         private MethodBase _exceptionMethod;  //Needed for serialization.  
-        private String _exceptionMethodString; //Needed for serialization. 
+        private String _exceptionMethodString; //Needed for serialization.
         internal String _message;
         private IDictionary _data;
         private Exception _innerException;

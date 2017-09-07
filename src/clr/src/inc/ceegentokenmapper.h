@@ -55,10 +55,10 @@ public:
 //*****************************************************************************
 // IUnknown implementation.  
 //*****************************************************************************
-    virtual ULONG __stdcall AddRef()
+    virtual ULONG STDMETHODCALLTYPE AddRef()
     {LIMITED_METHOD_CONTRACT;  return ++m_cRefs; }
 
-    virtual ULONG __stdcall Release()
+    virtual ULONG STDMETHODCALLTYPE Release()
     {   
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
@@ -78,14 +78,14 @@ public:
         return cRefs;
     }
 
-    virtual HRESULT __stdcall QueryInterface(REFIID iid, PVOID *ppIUnk);
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, PVOID *ppIUnk);
 
 //*****************************************************************************
 // Called by the meta data engine when a token is remapped to a new location.
 // This value is recorded in the m_rgMap array based on type and rid of the
 // from token value.
 //*****************************************************************************
-    virtual HRESULT __stdcall Map(mdToken tkImp, mdToken tkEmit);
+    virtual HRESULT STDMETHODCALLTYPE Map(mdToken tkImp, mdToken tkEmit);
 
 //*****************************************************************************
 // Check the given token to see if it has moved to a new location.  If so,

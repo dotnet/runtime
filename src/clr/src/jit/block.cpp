@@ -583,6 +583,17 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     printf("\n");
 }
 
+const char* BasicBlock::dspToString(int blockNumPadding /* = 2*/)
+{
+    static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
+    static int  nextBufferIndex = 0;
+
+    auto& buffer    = buffers[nextBufferIndex];
+    nextBufferIndex = (nextBufferIndex + 1) % _countof(buffers);
+    _snprintf_s(buffer, _countof(buffer), _countof(buffer), "BB%02u%*s [%04u]", bbNum, blockNumPadding, "", bbID);
+    return buffer;
+}
+
 #endif // DEBUG
 
 // Allocation function for MemoryPhiArg.
@@ -1283,6 +1294,10 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     block->bbCodeOffs    = BAD_IL_OFFSET;
     block->bbCodeOffsEnd = BAD_IL_OFFSET;
 
+#ifdef DEBUG
+    block->bbID = compBasicBlockID++;
+#endif
+
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
@@ -1323,7 +1338,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("New Basic Block BB%02u [%p] created.\n", block->bbNum, dspPtr(block));
+        printf("New Basic Block %s created.\n", block->dspToString());
     }
 #endif
 

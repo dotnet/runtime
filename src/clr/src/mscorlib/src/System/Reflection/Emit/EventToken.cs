@@ -18,7 +18,6 @@ using System.Reflection;
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     public struct EventToken
     {
         public static readonly EventToken Empty = new EventToken();

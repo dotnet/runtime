@@ -286,6 +286,21 @@ public:
     bool          TieredCompilation(void)           const {LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
 #endif
 
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    inline bool ShouldDumpElfOnMethod(LPCUTF8 methodName) const
+    {
+        CONTRACTL {
+            NOTHROW;
+            GC_NOTRIGGER;
+            PRECONDITION(CheckPointer(methodName, NULL_OK));
+        } CONTRACTL_END
+        return RegexOrExactMatch(pszGDBJitElfDump, methodName);
+    }
+#endif // FEATURE_GDBJIT && _DEBUG
+
+#if defined(FEATURE_GDBJIT_FRAME)
+    inline bool ShouldEmitDebugFrame(void) const {LIMITED_METHOD_CONTRACT; return fGDBJitEmitDebugFrame;}
+#endif // FEATURE_GDBJIT_FRAME
     BOOL PInvokeRestoreEsp(BOOL fDefault) const
     {
         LIMITED_METHOD_CONTRACT;
@@ -474,7 +489,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    bool VerifyModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fVerifyAllOnLoad; }
 #ifdef _DEBUG
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
@@ -534,7 +548,12 @@ public:
 
 #ifdef _DEBUG
     inline bool AppDomainLeaks() const
-    {LIMITED_METHOD_DAC_CONTRACT;  return fAppDomainLeaks; }
+    {
+        // Workaround for CoreCLR bug #12075, until this configuration option is removed
+        // (CoreCLR Bug #12094)
+        LIMITED_METHOD_DAC_CONTRACT;
+        return false;
+    }
 #endif
 
     inline bool DeveloperInstallation() const
@@ -614,15 +633,6 @@ public:
     };
 
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }
-#endif
-
-#ifdef _DEBUG // TRACE_GC
-
-    int     GetGCtraceStart()               const {LIMITED_METHOD_CONTRACT; return iGCtraceStart;  }
-    int     GetGCtraceEnd  ()               const {LIMITED_METHOD_CONTRACT;  return iGCtraceEnd;   }
-    int     GetGCtraceFac  ()               const {LIMITED_METHOD_CONTRACT;  return iGCtraceFac;   }
-    int     GetGCprnLvl    ()               const {LIMITED_METHOD_CONTRACT;  return iGCprnLvl;     }
-    
 #endif
 
 #ifdef STRESS_HEAP
@@ -938,8 +948,6 @@ private: //----------------------------------------------------------------
     bool   m_fDeveloperInstallation;      // We are on a developers machine
     bool   fAppDomainUnload;            // Enable appdomain unloading
     
-    bool fVerifyAllOnLoad;              // True if we want to verify all methods in an assembly at load time.
-
     DWORD  dwADURetryCount;
 
 #ifdef _DEBUG
@@ -975,15 +983,6 @@ private: //----------------------------------------------------------------
 
 #ifdef VERIFY_HEAP
     int  iGCHeapVerify;
-#endif
-
-#ifdef _DEBUG // TRACE_GC
-
-    int  iGCtraceStart;
-    int  iGCtraceEnd;
-    int  iGCtraceFac;
-    int  iGCprnLvl;
-    
 #endif
 
 #if defined(STRESS_HEAP) || defined(_DEBUG)
@@ -1114,6 +1113,13 @@ private: //----------------------------------------------------------------
     bool fTieredCompilation;
 #endif
 
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    LPCUTF8 pszGDBJitElfDump;
+#endif // FEATURE_GDBJIT && _DEBUG
+
+#if defined(FEATURE_GDBJIT_FRAME)
+    bool fGDBJitEmitDebugFrame;
+#endif
 public:
 
     HRESULT GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* value);

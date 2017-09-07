@@ -909,71 +909,138 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
     {
         _ASSERTE(HasID());
 
-        if (imageLayoutMask&PEImageLayout::LAYOUT_MAPPED)
+        BOOL bIsMappedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_MAPPED) != 0);
+        BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
+
+#if !defined(PLATFORM_UNIX)
+        if (bIsMappedLayoutSuitable)
         {
-            PEImageLayout * pLoadLayout = NULL;
-
-            if (m_bIsTrustedNativeImage || IsFile())
-            {
-                // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
-                // regular mapping - but not for native images.
-                pLoadLayout = PEImageLayout::Load(this, TRUE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
-            }
-
-            if (pLoadLayout != NULL)
-            {
-                SetLayout(IMAGE_MAPPED,pLoadLayout);
-                pLoadLayout->AddRef();
-                SetLayout(IMAGE_LOADED,pLoadLayout);
-                pRetVal=pLoadLayout;
-            }
-            else
-            if (IsFile())
-            {
-                PEImageLayoutHolder pLayout(PEImageLayout::Map(GetFileHandle(),this));
-
-                bool fMarkAnyCpuImageAsLoaded = false;
-                // Avoid mapping another image if we can.   We can only do this for IL-ONLY images
-                // since LoadLibrary is needed if we are to actually load code.  
-                if (pLayout->HasCorHeader() && pLayout->IsILOnly())
-                {    
-                    // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
-                    // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
-                    fMarkAnyCpuImageAsLoaded = true;
-                }
-
-                pLayout.SuppressRelease();
-
-                SetLayout(IMAGE_MAPPED,pLayout);
-                if (fMarkAnyCpuImageAsLoaded)
-                {
-                    pLayout->AddRef();
-                    SetLayout(IMAGE_LOADED, pLayout);
-                }
-                pRetVal=pLayout;
-            }
-            else
-            {
-                PEImageLayoutHolder flatPE(GetLayoutInternal(PEImageLayout::LAYOUT_FLAT,LAYOUT_CREATEIFNEEDED));
-                if (!flatPE->CheckFormat())
-                    ThrowFormat(COR_E_BADIMAGEFORMAT);
-                pRetVal=PEImageLayout::LoadFromFlat(flatPE);
-                SetLayout(IMAGE_MAPPED,pRetVal);
-            }
+            bIsFlatLayoutSuitable = FALSE;
         }
-        else
-        if (imageLayoutMask&PEImageLayout::LAYOUT_FLAT)
+#endif // !PLATFORM_UNIX
+
+        _ASSERTE(bIsMappedLayoutSuitable || bIsFlatLayoutSuitable);
+
+        BOOL bIsMappedLayoutRequired = !bIsFlatLayoutSuitable;
+        BOOL bIsFlatLayoutRequired = !bIsMappedLayoutSuitable;
+
+        if (bIsFlatLayoutRequired
+            || (bIsFlatLayoutSuitable && !m_bIsTrustedNativeImage))
         {
-            pRetVal=PEImageLayout::LoadFlat(GetFileHandle(),this);
-            m_pLayouts[IMAGE_FLAT]=pRetVal;
+          _ASSERTE(bIsFlatLayoutSuitable);
+
+          BOOL bPermitWriteableSections = bIsFlatLayoutRequired;
+
+          pRetVal = PEImage::CreateLayoutFlat(bPermitWriteableSections);
         }
-        
+
+        if (pRetVal == NULL)
+        {
+          _ASSERTE(bIsMappedLayoutSuitable);
+
+          pRetVal = PEImage::CreateLayoutMapped();
+        }
     }
-    if (pRetVal)
+
+    if (pRetVal != NULL)
     {
         pRetVal->AddRef();
     }
+
     return pRetVal;
+}
+
+PTR_PEImageLayout PEImage::CreateLayoutMapped()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(m_pLayoutLock->IsWriterLock());
+    }
+    CONTRACTL_END;
+
+    PTR_PEImageLayout pRetVal;
+
+    PEImageLayout * pLoadLayout = NULL;
+
+    if (m_bIsTrustedNativeImage || IsFile())
+    {
+        // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
+        // regular mapping - but not for native images.
+        pLoadLayout = PEImageLayout::Load(this, TRUE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
+    }
+
+    if (pLoadLayout != NULL)
+    {
+        SetLayout(IMAGE_MAPPED,pLoadLayout);
+        pLoadLayout->AddRef();
+        SetLayout(IMAGE_LOADED,pLoadLayout);
+        pRetVal=pLoadLayout;
+    }
+    else if (IsFile())
+    {
+        PEImageLayoutHolder pLayout(PEImageLayout::Map(GetFileHandle(),this));
+
+        bool fMarkAnyCpuImageAsLoaded = false;
+        // Avoid mapping another image if we can. We can only do this for IL-ONLY images
+        // since LoadLibrary is needed if we are to actually load code
+        if (pLayout->HasCorHeader() && pLayout->IsILOnly())
+        {
+            // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
+            // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
+            fMarkAnyCpuImageAsLoaded = true;
+        }
+
+        pLayout.SuppressRelease();
+
+        SetLayout(IMAGE_MAPPED,pLayout);
+        if (fMarkAnyCpuImageAsLoaded)
+        {
+            pLayout->AddRef();
+            SetLayout(IMAGE_LOADED, pLayout);
+        }
+        pRetVal=pLayout;
+    }
+    else
+    {
+        PEImageLayoutHolder flatPE(GetLayoutInternal(PEImageLayout::LAYOUT_FLAT,LAYOUT_CREATEIFNEEDED));
+        if (!flatPE->CheckFormat())
+            ThrowFormat(COR_E_BADIMAGEFORMAT);
+        pRetVal=PEImageLayout::LoadFromFlat(flatPE);
+        SetLayout(IMAGE_MAPPED,pRetVal);
+    }
+
+    return pRetVal;
+}
+
+PTR_PEImageLayout PEImage::CreateLayoutFlat(BOOL bPermitWriteableSections)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(m_pLayoutLock->IsWriterLock());
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(m_pLayouts[IMAGE_FLAT] == NULL);
+
+    PTR_PEImageLayout pFlatLayout = PEImageLayout::LoadFlat(GetFileHandle(),this);
+
+    if (!bPermitWriteableSections && pFlatLayout->HasWriteableSections())
+    {
+        pFlatLayout->Release();
+
+        return NULL;
+    }
+    else
+    {
+        m_pLayouts[IMAGE_FLAT] = pFlatLayout;
+
+        return pFlatLayout;
+    }
 }
 
 /* static */
@@ -1029,6 +1096,7 @@ void PEImage::Load()
 {
     STANDARD_VM_CONTRACT;
 
+    // Performance optimization to avoid lock acquisition
     if (HasLoadedLayout())
     {
         _ASSERTE(GetLoadedLayout()->IsMapped()||GetLoadedLayout()->IsILOnly());
@@ -1036,17 +1104,49 @@ void PEImage::Load()
     }
 
     SimpleWriteLockHolder lock(m_pLayoutLock);
-    if(!IsFile())
+
+    // Re-check after lock is acquired as HasLoadedLayout here and the above line
+    // may return a different value in multi-threading environment.
+    if (HasLoadedLayout())
     {
-        if (!m_pLayouts[IMAGE_FLAT]->CheckILOnly())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        if(m_pLayouts[IMAGE_LOADED]==NULL)
-            SetLayout(IMAGE_LOADED,PEImageLayout::LoadFromFlat(m_pLayouts[IMAGE_FLAT]));
+        return;
+    }
+
+#ifdef PLATFORM_UNIX
+    if (m_pLayouts[IMAGE_FLAT] != NULL
+        && m_pLayouts[IMAGE_FLAT]->CheckFormat()
+        && m_pLayouts[IMAGE_FLAT]->IsILOnly()
+        && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
+    {
+        // IL-only images with writeable sections are mapped in general way,
+        // because the writeable sections should always be page-aligned
+        // to make possible setting another protection bits exactly for these sections
+        _ASSERTE(!m_pLayouts[IMAGE_FLAT]->HasWriteableSections());
+
+        // As the image is IL-only, there should no be native code to execute
+        _ASSERTE(!m_pLayouts[IMAGE_FLAT]->HasNativeEntryPoint());
+
+        m_pLayouts[IMAGE_FLAT]->AddRef();
+
+        SetLayout(IMAGE_LOADED, m_pLayouts[IMAGE_FLAT]);
     }
     else
+#endif // PLATFORM_UNIX
     {
-        if(m_pLayouts[IMAGE_LOADED]==NULL)
-            SetLayout(IMAGE_LOADED,PEImageLayout::Load(this,TRUE));
+        if(!IsFile())
+        {
+            _ASSERTE(m_pLayouts[IMAGE_FLAT] != NULL);
+
+            if (!m_pLayouts[IMAGE_FLAT]->CheckILOnly())
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            if(m_pLayouts[IMAGE_LOADED]==NULL)
+                SetLayout(IMAGE_LOADED,PEImageLayout::LoadFromFlat(m_pLayouts[IMAGE_FLAT]));
+        }
+        else
+        {
+            if(m_pLayouts[IMAGE_LOADED]==NULL)
+                SetLayout(IMAGE_LOADED,PEImageLayout::Load(this,TRUE));
+        }
     }
 }
 

@@ -20,6 +20,7 @@
 #include "mdaassistants.h"
 #include "comsynchronizable.h"
 #include "comthreadpool.h"
+#include "marshalnative.h"
 
 LONG OverlappedDataObject::s_CleanupRequestCount = 0;
 BOOL OverlappedDataObject::s_CleanupInProgress = FALSE;
@@ -137,7 +138,7 @@ FCIMPL1(void*, AllocateNativeOverlapped, OverlappedDataObject* overlappedUNSAFE)
             SIZE_T i;
             for (i = 0; i < num; i ++)
             {
-                GCHandleValidatePinnedObject(pObj[i]);
+                ValidatePinnedObject(pObj[i]);
             }
             for (i = 0; i < num; i ++)
             {
@@ -147,7 +148,7 @@ FCIMPL1(void*, AllocateNativeOverlapped, OverlappedDataObject* overlappedUNSAFE)
         }
         else
         {
-            GCHandleValidatePinnedObject(userObject);
+            ValidatePinnedObject(userObject);
             AddMTForPinHandle(userObject);
         }
         
@@ -211,6 +212,33 @@ FCIMPL1(OverlappedDataObject*, GetOverlappedFromNative, LPOVERLAPPED lpOverlappe
 }
 FCIMPLEND
 
+namespace
+{
+
+// Sets up an enumeration of all async pinned handles, such that all enumerated
+// async pinned handles are processed by calling HandleAsyncPinHandle on the
+// underlying overlapped instance.
+BOOL HandleAsyncPinHandles()
+{
+    auto callback = [](Object* value, void*) 
+    {
+        _ASSERTE (value->GetMethodTable() == g_pOverlappedDataClass);
+        OVERLAPPEDDATAREF overlapped = (OVERLAPPEDDATAREF)(ObjectToOBJECTREF(value));
+        if (overlapped->GetAppDomainId() != DefaultADID && overlapped->HasCompleted())
+        {
+            overlapped->HandleAsyncPinHandle();
+            return true;
+        }
+
+        return false;
+    };
+
+    IGCHandleManager* mgr = GCHandleUtilities::GetGCHandleManager();
+    return mgr->GetGlobalHandleStore()->EnumerateAsyncPinnedHandles(callback, nullptr);
+}
+
+} // anonymous namespace
+
 void OverlappedDataObject::FreeAsyncPinHandles()
 {
     CONTRACTL
@@ -262,7 +290,7 @@ void OverlappedDataObject::StartCleanup()
     if (FastInterlockExchange((LONG*)&s_CleanupInProgress, TRUE) == FALSE)
     {
         {
-            BOOL HasJob = Ref_HandleAsyncPinHandles();
+            BOOL HasJob = HandleAsyncPinHandles();
             if (!HasJob)
             {
                 s_CleanupInProgress = FALSE;
@@ -292,7 +320,7 @@ void OverlappedDataObject::FinishCleanup(bool wasDrained)
         GCX_COOP();
 
         s_CleanupFreeHandle = TRUE;
-        Ref_HandleAsyncPinHandles();
+        HandleAsyncPinHandles();
         s_CleanupFreeHandle = FALSE;
 
         s_CleanupInProgress = FALSE;

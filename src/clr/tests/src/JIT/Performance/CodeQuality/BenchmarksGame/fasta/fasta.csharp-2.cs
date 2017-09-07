@@ -16,7 +16,6 @@ using System.IO;
 using System.Text;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace BenchmarksGame
 {

@@ -18,6 +18,7 @@
 #include "sigparser.h"
 #include "cor.h"
 #include "corinfo.h"
+#include "volatile.h"
 
 
 const char g_RTMVersion[]= "v1.0.3705";
@@ -437,7 +438,7 @@ void InitCodeAllocHint(SIZE_T base, SIZE_T size, int randomPageOffset)
     }
 
     // Randomize the adddress space
-    pStart += PAGE_SIZE * randomPageOffset;
+    pStart += GetOsPageSize() * randomPageOffset;
 
     s_CodeAllocStart = pStart;
     s_CodeAllocHint = pStart;
@@ -550,6 +551,8 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
     return ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 
 #else // !FEATURE_PAL
+
+    if(alignment < GetOsPageSize()) alignment = GetOsPageSize();
 
     // UNIXTODO: Add a specialized function to PAL so that we don't have to waste memory
     dwSize += alignment;
@@ -867,7 +870,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
 #ifndef FEATURE_PAL    
     HMODULE hMod = GetModuleHandleW(WINDOWS_KERNEL32_DLLNAME_W);
 #else
@@ -904,7 +907,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 #endif
 }
 
-#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
 // Calculate greatest common divisor
 DWORD GCD(DWORD u, DWORD v)
 {
@@ -935,7 +938,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
     BYTE *bBuffer = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
@@ -1010,7 +1013,7 @@ DWORD LCM(DWORD u, DWORD v)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
     WORD begin   = 0;
     WORD nr_proc = 0;
 
@@ -1037,7 +1040,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
     BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
     BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
 
@@ -1062,7 +1065,7 @@ DWORD LCM(DWORD u, DWORD v)
 	BOOL hasMultipleGroups = m_nGroups > 1;
 	m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
 	m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
-#endif // _TARGET_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_ARM64_
 }
 
 /*static*/ BOOL CPUGroupInfo::IsInitialized()
@@ -1120,7 +1123,7 @@ retry:
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -1151,7 +1154,7 @@ retry:
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
     // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
@@ -1183,7 +1186,7 @@ retry:
     }
     CONTRACTL_END;
 
-#if defined(_TARGET_AMD64_)
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
@@ -1226,7 +1229,7 @@ found:
 /*static*/ void CPUGroupInfo::ClearCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
     LIMITED_METHOD_CONTRACT;
-#if defined(_TARGET_AMD64_)
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
     // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
@@ -1251,9 +1254,6 @@ found:
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
 //******************************************************************************
-//******************************************************************************
-// Returns the number of processors that a process has been configured to run on
-//******************************************************************************
 int GetCurrentProcessCpuCount()
 {
     CONTRACTL
@@ -1269,49 +1269,44 @@ int GetCurrentProcessCpuCount()
     if (cCPUs != 0)
         return cCPUs;
 
-#ifndef FEATURE_PAL
-
+    int count = 0;
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-        return 1;
-
-    if (pmask == 1)
-        return 1;
-
-    pmask &= smask;
-        
-    int count = 0;
-    while (pmask)
     {
-        if (pmask & 1)
-            count++;
-                
-        pmask >>= 1;
+        count = 1;
     }
-        
-    // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-    // than 64 processors, which would leave us with a count of 0.  Since the GC
-    // expects there to be at least one processor to run on (and thus at least one
-    // heap), we'll return 64 here if count is 0, since there are likely a ton of
-    // processors available in that case.  The GC also cannot (currently) handle
-    // the case where there are more than 64 processors, so we will return a
-    // maximum of 64 here.
-    if (count == 0 || count > 64)
-        count = 64;
+    else
+    {
+        pmask &= smask;
+
+        while (pmask)
+        {
+            pmask &= (pmask - 1);
+            count++;
+        }
+
+        // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+        // than 64 processors, which would leave us with a count of 0.  Since the GC
+        // expects there to be at least one processor to run on (and thus at least one
+        // heap), we'll return 64 here if count is 0, since there are likely a ton of
+        // processors available in that case.  The GC also cannot (currently) handle
+        // the case where there are more than 64 processors, so we will return a
+        // maximum of 64 here.
+        if (count == 0 || count > 64)
+            count = 64;
+    }
+
+#ifdef FEATURE_PAL
+    uint32_t cpuLimit;
+
+    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        count = cpuLimit;
+#endif
 
     cCPUs = count;
-            
+
     return count;
-
-#else // !FEATURE_PAL
-
-    SYSTEM_INFO sysInfo;
-    ::GetSystemInfo(&sysInfo);
-    cCPUs = sysInfo.dwNumberOfProcessors;
-    return sysInfo.dwNumberOfProcessors;
-
-#endif // !FEATURE_PAL
 }
 
 DWORD_PTR GetCurrentProcessCpuMask()
@@ -1334,6 +1329,36 @@ DWORD_PTR GetCurrentProcessCpuMask()
     return pmask;
 #else
     return 0;
+#endif
+}
+
+uint32_t GetOsPageSizeUncached()
+{
+    SYSTEM_INFO sysInfo;
+    ::GetSystemInfo(&sysInfo);
+    return sysInfo.dwAllocationGranularity ? sysInfo.dwAllocationGranularity : 0x1000;
+}
+
+namespace
+{
+    Volatile<uint32_t> g_pageSize = 0;
+}
+
+uint32_t GetOsPageSize()
+{
+#ifdef FEATURE_PAL
+    size_t result = g_pageSize.LoadWithoutBarrier();
+
+    if(!result)
+    {
+        result = GetOsPageSizeUncached();
+
+        g_pageSize.StoreWithoutBarrier(result);
+    }
+
+    return result;
+#else
+    return 0x1000;
 #endif
 }
 

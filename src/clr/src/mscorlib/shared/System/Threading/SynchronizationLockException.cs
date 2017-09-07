@@ -16,29 +16,29 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class SynchronizationLockException : SystemException
     {
         public SynchronizationLockException()
             : base(SR.Arg_SynchronizationLockException)
         {
-            HResult = __HResults.COR_E_SYNCHRONIZATIONLOCK;
+            HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }
 
         public SynchronizationLockException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_SYNCHRONIZATIONLOCK;
+            HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }
 
         public SynchronizationLockException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_SYNCHRONIZATIONLOCK;
+            HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }
 
         protected SynchronizationLockException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

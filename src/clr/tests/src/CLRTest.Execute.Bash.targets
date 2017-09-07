@@ -83,9 +83,9 @@ fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ \( ! -z "$COMPlus_JitStress" \) -o \( ! -z "$COMPlus_JitStressRegs" \) -o \( ! -z "$COMPlus_JITMinOpts" \) -o \( ! -z "$COMPlus_TailcallStress" \) ]
+if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) || ( ! -z "$COMPlus_EXPERIMENTAL_TieredCompilation" ) ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET"
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress, COMPlus_EXPERIMENTAL_TieredCompilation) IS SET"
   exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
@@ -133,7 +133,7 @@ fi
         <Command><![CDATA[        export _DebuggerFullPath="${i#*=}"
         if [ ! -f "$_DebuggerFullPath" ]
         then
-            echo The Debugger FullPath \"$_DebuggerFullPath\" doesn\'t exist
+            echo "The Debugger FullPath %5C%22${_DebuggerFullPath}%5C%22 does not exist"
             usage
         fi]]></Command>
         <Description>Run testcases under debugger.</Description>
@@ -255,9 +255,15 @@ fi
 ExePath=$(InputAssemblyName)
 $(BashLinkerTestLaunchCmds)
 $(BashCLRTestLaunchCmds)
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  TakeLock
+fi
 echo $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
 $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
 CLRTestExitCode=$?
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  ReleaseLock
+fi
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
@@ -290,10 +296,6 @@ CLRTestExpectedExitCode=0
     <!-- Raise an error if any value in _RequiredProperties is missing  -->
     <Error Condition=" '%(_RequiredProperties.Value)'=='' "
       Text="Missing required test property [%(_RequiredProperties.Identity)]. Something isn't plumbed through correctly.  Contact $(_CLRTestBuildSystemOwner)." />
-      <!-- TODO: this is weird.  Consider eliminating it. -->
-    <GenerateParamList ArgumentItems="@(BashCLRTestExecutionScriptArgument)">
-      <Output TaskParameter="ParamList" PropertyName="_CLRTestParamList"/>
-    </GenerateParamList>
     <PropertyGroup>
       <!--
       This generates the script portion to parse all of the command line arguments.

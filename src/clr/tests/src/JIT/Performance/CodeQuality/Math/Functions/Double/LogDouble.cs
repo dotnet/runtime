@@ -14,14 +14,17 @@ namespace Functions
         private const double logDoubleDelta = 0.0004;
         private const double logDoubleExpectedResult = -1529.0865454048721;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = LogDoubleIterations)]
         public static void LogDoubleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    LogDoubleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        LogDoubleTest();
+                    }
                 }
             }
         }

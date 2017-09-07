@@ -322,7 +322,7 @@ ShimLocalDataTarget::ReadVirtual(
     {
         // Calculate bytes to read and don't let read cross
         // a page boundary.
-        readSize = OS_PAGE_SIZE - (ULONG32)(address & (OS_PAGE_SIZE - 1));
+        readSize = GetOsPageSize() - (ULONG32)(address & (GetOsPageSize() - 1));
         readSize = min(cbRequestSize, readSize);
 
         if (!ReadProcessMemory(m_hProcess, (PVOID)(ULONG_PTR)address,

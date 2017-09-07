@@ -32,12 +32,20 @@
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
+  
+  <!-- Setup target platform pointer size in bit-->
+  <PropertyGroup>
+    <PointerSize Condition="'$(Platform)'=='x64'">64</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='arm64'">64</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='x86'">32</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='arm'">32</PointerSize>
+  </PropertyGroup>
 
 <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(BuildOS).$(Platform).$(Configuration)</OSPlatformConfig>
     <BaseOutputPath>$(ProjectDir)\..\bin\tests</BaseOutputPath>
-    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)\</BaseOutputPath>
+    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
     <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
     <BinDir>$(BaseOutputPathWithConfig)</BinDir>
     <BaseIntermediateOutputPath>$(ProjectDir)\..\bin\tests\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
@@ -50,14 +58,6 @@
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BaseOutputPath)\testStagingDir\</TestWorkingDir>
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)/</TestPath>
   </PropertyGroup>
-
-  <!-- Setup the output location for the project.json generated for the local CoreCLR build. -->
-  <PropertyGroup>
-    <TestRuntimeProjectJsonDir>$(BaseOutputPath)\test_runtime</TestRuntimeProjectJsonDir>
-    <TestRuntimeProjectJson>$(TestRuntimeProjectJsonDir)\project.json</TestRuntimeProjectJson>
-    <TestRuntimeProjectLockJson>$(TestRuntimeProjectJsonDir)\project.lock.json</TestRuntimeProjectLockJson>
-  </PropertyGroup>
-
 
 </Project>
 

@@ -22,14 +22,12 @@
 #include "stackprobe.h"
 #include "eeconfig.h"
 #include "eehash.h"
-#include "objecthandle.h"
 #include "interoputil.h"
 #include "typedesc.h"
 #include "virtualcallstub.h"
 #include "contractimpl.h"
 #include "dynamicmethod.h"
 #include "peimagelayout.inl"
-#include "security.h"
 #include "eventtrace.h"
 #include "invokeutil.h"
 
@@ -136,9 +134,7 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         dwAttr,
         pCACtor,
         NULL,
-        *AccessCheckOptions::s_pNormalAccessChecks,
-        FALSE,
-        FALSE);
+        *AccessCheckOptions::s_pNormalAccessChecks);
 }
 
 BOOL QCALLTYPE RuntimeMethodHandle::IsCAVisibleFromDecoratedType(
@@ -971,6 +967,24 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsInterface, ReflectClassBaseObject *pTy
 }
 FCIMPLEND;
 
+
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsByRefLike, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+    
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+
+    _ASSERTE(refType != NULL);
+
+    TypeHandle typeHandle = refType->GetType();
+
+    FC_RETURN_BOOL(typeHandle.IsByRefLike());
+}
+FCIMPLEND
+
 BOOL 
 QCALLTYPE 
 RuntimeTypeHandle::IsVisible(
@@ -996,37 +1010,6 @@ RuntimeTypeHandle::IsVisible(
     
     return fIsExternallyVisible;
 } // RuntimeTypeHandle::IsVisible
-
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::HasProxyAttribute, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-    
-    // TODO: Justify this
-    if (typeHandle.IsGenericVariable())
-        FC_RETURN_BOOL(FALSE);
-        
-    if (typeHandle.IsTypeDesc()) {
-        if (!typeHandle.IsArray()) 
-            FC_RETURN_BOOL(FALSE);
-    }  
-    
-    MethodTable* pMT= typeHandle.GetMethodTable();
-    
-    if (!pMT) 
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    FC_RETURN_BOOL(pMT->GetClass()->HasRemotingProxyAttribute());
-}
-FCIMPLEND
 
 FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL isGenericCOM) {
 #ifdef FEATURE_COMINTEROP
@@ -1152,7 +1135,8 @@ PVOID QCALLTYPE RuntimeTypeHandle::GetGCHandle(EnregisteredTypeHandle pTypeHandl
     GCX_COOP();
 
     TypeHandle th = TypeHandle::FromPtr(pTypeHandle);
-    objHandle = th.GetDomain()->CreateTypedHandle(NULL, handleType);
+    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_WINRT);
+    objHandle = th.GetDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
     th.GetLoaderAllocator()->RegisterHandleForCleanup(objHandle);
 
     END_QCALL;
@@ -2216,6 +2200,14 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsGenericMethodDefinition, MethodDesc 
 }
 FCIMPLEND
 
+FCIMPL1(INT32, RuntimeMethodHandle::GetGenericParameterCount, MethodDesc * pMethod)
+{
+    FCALL_CONTRACT;
+
+    return pMethod->GetNumGenericMethodArgs();
+}
+FCIMPLEND
+
 FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsDynamicMethod, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
@@ -3115,3 +3107,4 @@ void QCALLTYPE RuntimeMethodHandle::GetCallerType(QCall::StackCrawlMarkHandle pS
 
     return;
 }
+

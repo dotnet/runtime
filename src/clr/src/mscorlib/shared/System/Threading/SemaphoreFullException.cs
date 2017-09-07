@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class SemaphoreFullException : SystemException
     {
         public SemaphoreFullException() : base(SR.Threading_SemaphoreFullException)
@@ -24,6 +23,7 @@ namespace System.Threading
 
         protected SemaphoreFullException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }
