@@ -11,7 +11,6 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        [NonSerialized]
         private Tristate _needsTurkishCasing = Tristate.NotInitialized;
 
         private void FinishInitialization(string textInfoName)
