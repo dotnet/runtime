@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -742,7 +742,7 @@ namespace System.Drawing
                 }
                 else if (DashStyle == DashStyle.Solid && !this.dashStyleWasChanged)
                 {
-                    // Most likely we're replicating an existing System.Drawing bug here, it doesn't make much sense t�
+                    // Most likely we're replicating an existing System.Drawing bug here, it doesn't make much sense tó
                     // ask for a dash pattern when using a solid dash.
                     throw new OutOfMemoryException();
                 }
