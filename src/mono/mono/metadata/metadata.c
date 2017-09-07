@@ -31,9 +31,10 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/unlocked.h>
 #include <mono/utils/mono-counters.h>
 
-static int img_set_cache_hit, img_set_cache_miss, img_set_count;
+static gint32 img_set_cache_hit, img_set_cache_miss, img_set_count;
 
 
 /* Auxiliary structure used for caching inflated signatures */
@@ -2478,10 +2479,10 @@ img_set_cache_get (MonoImage **images, int nimages)
 	int index = hash_code % HASH_TABLE_SIZE;
 	MonoImageSet *img = img_set_cache [index];
 	if (!img || !compare_img_set (img, images, nimages)) {
-		++img_set_cache_miss;
+		UnlockedIncrement (&img_set_cache_miss);
 		return NULL;
 	}
-	++img_set_cache_hit;
+	UnlockedIncrement (&img_set_cache_hit);
 	return img;
 }
 
@@ -2566,7 +2567,7 @@ get_image_set (MonoImage **images, int nimages)
 		l = l->next;
 	}
 
-	// If we iterated all the way through l without breaking, the imageset does not already exist and we shuold create it
+	// If we iterated all the way through l without breaking, the imageset does not already exist and we should create it
 	if (!l) {
 		set = g_new0 (MonoImageSet, 1);
 		set->nimages = nimages;
@@ -2583,7 +2584,7 @@ get_image_set (MonoImage **images, int nimages)
 			set->images [i]->image_sets = g_slist_prepend (set->images [i]->image_sets, set);
 
 		g_ptr_array_add (image_sets, set);
-		++img_set_count;
+		UnlockedIncrement (&img_set_count); /* locked by image_sets_lock () */
 	}
 
 	/* Cache the set. If there was a cache collision, the previously cached value will be replaced. */
