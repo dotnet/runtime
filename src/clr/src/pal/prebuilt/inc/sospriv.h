@@ -2186,6 +2186,92 @@ EXTERN_C const IID IID_ISOSDacInterface4;
 #endif 	/* __ISOSDacInterface4_INTERFACE_DEFINED__ */
 
 
+#ifndef __ISOSDacInterface5_INTERFACE_DEFINED__
+#define __ISOSDacInterface5_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface5 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface5;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("127d6abe-6c86-4e48-8e7b-220781c58101")
+    ISOSDacInterface5 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetTieredVersions( 
+            CLRDATA_ADDRESS methodDesc,
+            int rejitId,
+            struct DacpTieredVersionData *nativeCodeAddrs,
+            int cNativeCodeAddrs,
+            int *pcNativeCodeAddrs) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface5Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface5 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface5 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface5 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetTieredVersions )( 
+            ISOSDacInterface5 * This,
+            CLRDATA_ADDRESS methodDesc,
+            int rejitId,
+            CLRDATA_ADDRESS *nativeCodeAddrs,
+            int cNativeCodeAddrs);
+        
+        END_INTERFACE
+    } ISOSDacInterface5Vtbl;
+
+    interface ISOSDacInterface5
+    {
+        CONST_VTBL struct ISOSDacInterface5Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface5_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface5_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface5_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface5_GetTieredVersions(This,methodDesc,rejitId,nativeCodeAddrs,cNativeCodeAddrs)	\
+    ( (This)->lpVtbl -> GetTieredVersions(This,methodDesc,rejitId,nativeCodeAddrs,cNativeCodeAddrs) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface5_INTERFACE_DEFINED__ */
+
 /* Additional Prototypes for ALL interfaces */
 
 /* end of Additional Prototypes */
