@@ -32,6 +32,9 @@
     <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
     <Compile Include="System\MarshalByRefObjectTest.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="System\Random.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
     <Compile Include="System\BitConverterSpan.cs" />
     <Compile Include="System\BitConverter.netcoreapp.cs" />
