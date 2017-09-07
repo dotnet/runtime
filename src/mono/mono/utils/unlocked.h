@@ -95,6 +95,13 @@ UnlockedWrite64 (gint64 *dest, gint64 val)
 }
 
 MONO_UNLOCKED_ATTRS
+void
+UnlockedWriteBool (gboolean *dest, gboolean val)
+{
+	*dest = val;
+}
+
+MONO_UNLOCKED_ATTRS
 gint32
 UnlockedRead (gint32 *src)
 {
@@ -104,6 +111,13 @@ UnlockedRead (gint32 *src)
 MONO_UNLOCKED_ATTRS
 gint64
 UnlockedRead64 (gint64 *src)
+{
+	return *src;
+}
+
+MONO_UNLOCKED_ATTRS
+gboolean
+UnlockedReadBool (gboolean *src)
 {
 	return *src;
 }
