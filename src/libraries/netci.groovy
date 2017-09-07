@@ -317,6 +317,14 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 // Add archival for the built binaries
                 def archiveContents = "bin/build.tar.gz"
                 Utilities.addArchival(newJob, archiveContents)
+                
+                newJob.with {
+                    publishers {
+                        azureVMAgentPostBuildAction {
+                            agentPostBuildAction('Delete agent after build execution (when idle).')
+                        }
+                    }
+                }
 
                 // Set up triggers
                 if (isPR) {
