@@ -1120,7 +1120,7 @@ namespace System.Runtime.CompilerServices
         }
 
         ///<summary>
-        /// Given an action, see if it is a contiunation wrapper and has a Task associated with it.  If so return it (null otherwise)
+        /// Given an action, see if it is a continuation wrapper and has a Task associated with it.  If so return it (null otherwise)
         ///</summary>
         internal static Task TryGetContinuationTask(Action action)
         {
