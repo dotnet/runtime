@@ -17,6 +17,7 @@
     <Compile Include="TCUserNameTable.cs" />
     <Compile Include="TestFiles.cs" />
     <Compile Include="XmlNameTable.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
