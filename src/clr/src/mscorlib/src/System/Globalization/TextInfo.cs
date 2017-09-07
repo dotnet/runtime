@@ -21,10 +21,6 @@ namespace System.Globalization
 {
     public partial class TextInfo : ICloneable, IDeserializationCallback
     {
-        ////--------------------------------------------------------------------//
-        ////                        Internal Information                        //
-        ////--------------------------------------------------------------------//
-
         private enum Tristate : byte
         {
             NotInitialized,
@@ -32,36 +28,22 @@ namespace System.Globalization
             False,
         }
 
-        ////
-        ////  Variables.
-        ////
-
-        [OptionalField(VersionAdded = 2)]
-        private String _listSeparator;
-        [OptionalField(VersionAdded = 2)]
+        private string _listSeparator;
         private bool _isReadOnly = false;
 
-        ////      _cultureName is the name of the creating culture.  Note that we consider this authoritative,
-        ////              if the culture's textinfo changes when deserializing, then behavior may change.
-        ////              (ala Whidbey behavior).  This is the only string Arrowhead needs to serialize.
-        ////      _cultureData is the data that backs this class.
-        ////      _textInfoName is the actual name of the textInfo (from cultureData.STEXTINFO)
-        ////              this can be the same as _cultureName on Silverlight since the OS knows
-        ////              how to do the sorting. However in the desktop, when we call the sorting dll, it doesn't
-        ////              know how to resolve custom locale names to sort ids so we have to have already resolved this.
-        ////      
+        /*    _cultureName is the name of the creating culture.
+              _cultureData is the data that backs this class.
+              _textInfoName is the actual name of the textInfo (from cultureData.STEXTINFO)
+                      In the desktop, when we call the sorting dll, it doesn't
+                      know how to resolve custom locle names to sort ids so we have to have already resolved this.
+        */
 
-        [OptionalField(VersionAdded = 3)]
         private String _cultureName;      // Name of the culture that created this text info
-        [NonSerialized]
         private CultureData _cultureData;      // Data record for the culture that made us, not for this textinfo
-        [NonSerialized]
         private String _textInfoName;     // Name of the text info we're using (ie: _cultureData.STEXTINFO)
-        [NonSerialized]
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // _invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
-        [NonSerialized] 
         private readonly bool _invariantMode = GlobalizationMode.Invariant;
 
         // Invariant text info
