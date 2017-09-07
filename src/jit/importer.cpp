@@ -3281,11 +3281,20 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
                                   int                   memberRef,
                                   bool                  readonlyCall,
                                   bool                  tailCall,
+                                  bool                  isJitIntrinsic,
                                   CorInfoIntrinsics*    pIntrinsicID)
 {
     bool              mustExpand  = false;
     CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
     *pIntrinsicID                 = intrinsicID;
+
+    // Jit intrinsics are always optional to expand, and won't have an
+    // Intrinsic ID.
+    if (isJitIntrinsic)
+    {
+        assert(!mustExpand);
+        assert(intrinsicID == CORINFO_INTRINSIC_Illegal);
+    }
 
 #ifndef _TARGET_ARM_
     genTreeOps interlockedOperator;
@@ -3754,6 +3763,29 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             /* Unknown intrinsic */
             break;
     }
+
+#ifdef DEBUG
+    // Sample code showing how to use the new intrinsic mechansim.
+    if (isJitIntrinsic)
+    {
+        assert(retNode == nullptr);
+        const char* className     = nullptr;
+        const char* namespaceName = nullptr;
+        const char* methodName    = info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName);
+
+        if ((namespaceName != nullptr) && strcmp(namespaceName, "System") == 0)
+        {
+            if ((className != nullptr) && strcmp(className, "Enum") == 0)
+            {
+                if ((methodName != nullptr) && strcmp(methodName, "HasFlag") == 0)
+                {
+                    // Todo: plug in the intrinsic expansion
+                    JITDUMP("Found Intrinsic call to Enum.HasFlag\n");
+                }
+            }
+        }
+    }
+#endif
 
     if (mustExpand)
     {
@@ -6776,10 +6808,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // DEBUG
 
         // <NICE> Factor this into getCallInfo </NICE>
-        if ((mflags & CORINFO_FLG_INTRINSIC) && !pConstrainedResolvedToken)
+        const bool isIntrinsic    = (mflags & CORINFO_FLG_INTRINSIC) != 0;
+        const bool isJitIntrinsic = (mflags & CORINFO_FLG_JIT_INTRINSIC) != 0;
+        if ((isIntrinsic || isJitIntrinsic) && !pConstrainedResolvedToken)
         {
             call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall,
-                                (canTailCall && (tailCall != 0)), &intrinsicID);
+                                (canTailCall && (tailCall != 0)), isJitIntrinsic, &intrinsicID);
 
             if (compIsForInlining() && compInlineResult->IsFailure())
             {
