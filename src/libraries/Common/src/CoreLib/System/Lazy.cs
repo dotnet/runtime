@@ -182,7 +182,6 @@ namespace System
     /// using parameters to the type's constructors.
     /// </para>
     /// </remarks>
-    [Serializable]
     [DebuggerTypeProxy(typeof(System_LazyDebugView<>))]
     [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
     public class Lazy<T>
@@ -202,7 +201,7 @@ namespace System
         private Func<T> _factory;
 
         // _value eventually stores the lazily created value. It is valid when _state = null.
-        private T _value;
+        private T m_value; // Do not rename (binary serialization)
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that 
@@ -226,7 +225,7 @@ namespace System
         /// </remarks>
         public Lazy(T value)
         {
-            _value = value;
+            m_value = value;
         }
 
         /// <summary>
@@ -262,7 +261,7 @@ namespace System
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/>
         /// class that uses <typeparamref name="T"/>'s default constructor and a specified thread-safety mode.
         /// </summary>
-        /// <param name="mode">The lazy thread-safety mode mode</param>
+        /// <param name="mode">The lazy thread-safety mode</param>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
         public Lazy(LazyThreadSafetyMode mode) :
             this(null, mode, useDefaultConstructor:true)
@@ -312,7 +311,7 @@ namespace System
 
         private void ViaConstructor()
         {
-            _value = CreateViaDefaultConstructor();
+            m_value = CreateViaDefaultConstructor();
             _state = null; // volatile write, must occur after setting _value
         }
 
@@ -325,7 +324,7 @@ namespace System
                     throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
                 _factory = null;
 
-                _value = factory();
+                m_value = factory();
                 _state = null; // volatile write, must occur after setting _value
             }
             catch (Exception exception)
@@ -361,7 +360,7 @@ namespace System
             if (previous == publicationOnly)
             {
                 _factory = null;
-                _value = possibleValue;
+                m_value = possibleValue;
                 _state = null; // volatile write, must occur after setting _value
             }
         }
@@ -469,7 +468,7 @@ namespace System
                 {
                     return default(T);
                 }
-                return _value;
+                return m_value;
             }
         }
 
@@ -516,7 +515,7 @@ namespace System
         /// from initialization delegate.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public T Value => _state == null ? _value : CreateValue();
+        public T Value => _state == null ? m_value : CreateValue();
     }
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and 

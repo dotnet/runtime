@@ -19,27 +19,29 @@ namespace System
 {
     // The UnauthorizedAccessException is thrown when access errors 
     // occur from IO or other OS methods.  
-    [Serializable]
     public class UnauthorizedAccessException : SystemException
     {
         public UnauthorizedAccessException()
             : base(SR.Arg_UnauthorizedAccessException)
         {
-            HResult = __HResults.COR_E_UNAUTHORIZEDACCESS;
+            HResult = HResults.COR_E_UNAUTHORIZEDACCESS;
         }
 
         public UnauthorizedAccessException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_UNAUTHORIZEDACCESS;
+            HResult = HResults.COR_E_UNAUTHORIZEDACCESS;
         }
 
         public UnauthorizedAccessException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_UNAUTHORIZEDACCESS;
+            HResult = HResults.COR_E_UNAUTHORIZEDACCESS;
         }
 
-        protected UnauthorizedAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected UnauthorizedAccessException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

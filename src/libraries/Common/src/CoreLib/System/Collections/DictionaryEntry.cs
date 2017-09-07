@@ -9,10 +9,11 @@ namespace System.Collections
     // A DictionaryEntry holds a key and a value from a dictionary.
     // It is returned by IDictionaryEnumerator::GetEntry().
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct DictionaryEntry
     {
-        private Object _key;
-        private Object _value;
+        private Object _key; // Do not rename (binary serialization)
+        private Object _value; // Do not rename (binary serialization)
 
         // Constructs a new DictionaryEnumerator by setting the Key
         // and Value fields appropriately.

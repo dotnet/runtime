@@ -6,23 +6,17 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public sealed class DBNull : ISerializable, IConvertible
     {
         private DBNull()
         {
         }
-
-        private DBNull(SerializationInfo info, StreamingContext context)
-        {
-            throw new NotSupportedException(SR.NotSupported_DBNullSerial);
-        }
-
+        
         public static readonly DBNull Value = new DBNull();
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.NullUnity, null, null);
+            throw new PlatformNotSupportedException();
         }
 
         public override string ToString()

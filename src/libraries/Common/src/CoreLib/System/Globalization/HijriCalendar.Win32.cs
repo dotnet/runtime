@@ -45,7 +45,6 @@ namespace System.Globalization
             try
             {
                 // Open in read-only mode.
-                // Use InternalOpenSubKey so that we avoid the security check.
                 key = RegistryKey.GetBaseKey(RegistryKey.HKEY_CURRENT_USER).OpenSubKey(InternationalRegKey, false);
             }
             //If this fails for any reason, we'll just return 0.
@@ -68,10 +67,9 @@ namespace System.Globalization
                             hijriAdvance = -1;
                         else
                         {
-                            str = str.Substring(HijriAdvanceRegKeyEntry.Length);
                             try
                             {
-                                int advance = Int32.Parse(str.ToString(), CultureInfo.InvariantCulture);
+                                int advance = Int32.Parse(str.AsReadOnlySpan().Slice(HijriAdvanceRegKeyEntry.Length), provider:CultureInfo.InvariantCulture);
                                 if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri))
                                 {
                                     hijriAdvance = advance;

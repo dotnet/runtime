@@ -4,7 +4,6 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class DependencyAttribute : Attribute
     {

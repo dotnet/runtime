@@ -19,7 +19,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
-    [Serializable]
     public partial class SortKey
     {
         //--------------------------------------------------------------------//

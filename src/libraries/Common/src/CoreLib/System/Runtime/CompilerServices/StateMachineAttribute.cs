@@ -6,7 +6,6 @@ using System;
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public class StateMachineAttribute : Attribute
     {

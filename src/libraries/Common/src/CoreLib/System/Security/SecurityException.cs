@@ -7,38 +7,37 @@ using System.Runtime.Serialization;
 
 namespace System.Security
 {
-    [Serializable]
     public class SecurityException : SystemException
     {
         public SecurityException()
             : base(SR.Arg_SecurityException)
         {
-            HResult = __HResults.COR_E_SECURITY;
+            HResult = HResults.COR_E_SECURITY;
         }
 
         public SecurityException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_SECURITY;
+            HResult = HResults.COR_E_SECURITY;
         }
 
         public SecurityException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_SECURITY;
+            HResult = HResults.COR_E_SECURITY;
         }
 
         public SecurityException(string message, Type type)
             : base(message)
         {
-            HResult = __HResults.COR_E_SECURITY;
+            HResult = HResults.COR_E_SECURITY;
             PermissionType = type;
         }
 
         public SecurityException(string message, Type type, string state)
             : base(message)
         {
-            HResult = __HResults.COR_E_SECURITY;
+            HResult = HResults.COR_E_SECURITY;
             PermissionType = type;
             PermissionState = state;
         }
@@ -46,6 +45,7 @@ namespace System.Security
         protected SecurityException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public override string ToString() => base.ToString();

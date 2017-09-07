@@ -23,7 +23,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
-                throw new ArgumentException(SR.Arg_PathIllegal, nameof(path));
+                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             PathInternal.CheckInvalidPathChars(path);
 
@@ -39,11 +39,6 @@ namespace System.IO
 
             Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,
                 "Either we've removed characters, or the string should be unmodified from the input path.");
-
-            if (collapsedString.Length > Interop.Sys.MaxPath)
-            {
-                throw new PathTooLongException(SR.IO_PathTooLong);
-            }
 
             string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
 
@@ -67,15 +62,12 @@ namespace System.IO
                 sb.Append(path, 0, skip);
             }
 
-            int componentCharCount = 0;
             for (int i = skip; i < path.Length; i++)
             {
                 char c = path[i];
 
                 if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
                 {
-                    componentCharCount = 0;
-
                     // Skip this character if it's a directory separator and if the next character is, too,
                     // e.g. "parent//child" => "parent/child"
                     if (PathInternal.IsDirectorySeparator(path[i + 1]))
@@ -116,11 +108,6 @@ namespace System.IO
                         i += 2;
                         continue;
                     }
-                }
-
-                if (++componentCharCount > Interop.Sys.MaxName)
-                {
-                    throw new PathTooLongException(SR.IO_PathTooLong);
                 }
 
                 // Normalize the directory separator if needed
@@ -198,10 +185,10 @@ namespace System.IO
         public static string GetPathRoot(string path)
         {
             if (path == null) return null;
-			if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException(SR.Arg_PathIllegal, nameof(path));
+            if (PathInternal.IsEffectivelyEmpty(path))
+                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-			return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : String.Empty;
+            return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : String.Empty;
         }
 
         /// <summary>Gets whether the system is case-sensitive.</summary>

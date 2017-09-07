@@ -2,32 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** Purpose: A random number generator.
-**
-** 
-===========================================================*/
-
-using System;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Globalization;
-using System.Diagnostics.Contracts;
-
 namespace System
 {
-    [Serializable]
     public class Random
     {
         //
         // Private Constants 
         //
-        private const int MBIG = Int32.MaxValue;
+        private const int MBIG = int.MaxValue;
         private const int MSEED = 161803398;
         private const int MZ = 0;
-
 
         //
         // Member Variables
@@ -65,7 +49,7 @@ namespace System
             int mj, mk;
 
             //Initialize our Seed array.
-            int subtraction = (Seed == Int32.MinValue) ? Int32.MaxValue : Math.Abs(Seed);
+            int subtraction = (Seed == int.MinValue) ? int.MaxValue : Math.Abs(Seed);
             mj = MSEED - subtraction;
             _seedArray[55] = mj;
             mk = 1;
@@ -196,8 +180,8 @@ namespace System
                 result = -result;
             }
             double d = result;
-            d += (Int32.MaxValue - 1); // get a number in range [0 .. 2 * Int32MaxValue - 1)
-            d /= 2 * (uint)Int32.MaxValue - 1;
+            d += (int.MaxValue - 1); // get a number in range [0 .. 2 * Int32MaxValue - 1)
+            d /= 2 * (uint)int.MaxValue - 1;
             return d;
         }
 
@@ -214,10 +198,9 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, nameof(minValue), nameof(maxValue)));
             }
-            Contract.EndContractBlock();
 
             long range = (long)maxValue - minValue;
-            if (range <= (long)Int32.MaxValue)
+            if (range <= int.MaxValue)
             {
                 return ((int)(Sample() * range) + minValue);
             }
@@ -239,7 +222,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(maxValue)));
             }
-            Contract.EndContractBlock();
             return (int)(Sample() * maxValue);
         }
 
@@ -264,10 +246,17 @@ namespace System
         public virtual void NextBytes(byte[] buffer)
         {
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-            Contract.EndContractBlock();
             for (int i = 0; i < buffer.Length; i++)
             {
-                buffer[i] = (byte)(InternalSample() % (Byte.MaxValue + 1));
+                buffer[i] = (byte)InternalSample();
+            }
+        }
+
+        public virtual void NextBytes(Span<byte> buffer)
+        {
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = (byte)Next();
             }
         }
     }

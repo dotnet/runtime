@@ -442,7 +442,10 @@ namespace System.Diagnostics.Tracing
             var pinCount = eventTypes.pinCount;
             var scratch = stackalloc byte[eventTypes.scratchSize];
             var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
+
             var pins = stackalloc GCHandle[pinCount];
+            for (int i = 0; i < pinCount; i++)
+                pins[i] = default(GCHandle);
 
             fixed (byte*
                 pMetadata0 = this.providerMetadata,
@@ -562,7 +565,7 @@ namespace System.Diagnostics.Tracing
                         if (eventTypes.typeInfos[i].DataType == typeof(string))
                         {
                             // Write out the size of the string 
-                            descriptors[numDescrs].m_Ptr = (long)&descriptors[numDescrs + 1].m_Size;
+                            descriptors[numDescrs].DataPointer = (IntPtr) (&descriptors[numDescrs + 1].m_Size);
                             descriptors[numDescrs].m_Size = 2;
                             numDescrs++;
 
@@ -619,7 +622,10 @@ namespace System.Diagnostics.Tracing
                     var pinCount = eventTypes.pinCount;
                     var scratch = stackalloc byte[eventTypes.scratchSize];
                     var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
+
                     var pins = stackalloc GCHandle[pinCount];
+                    for (int i = 0; i < pinCount; i++)
+                        pins[i] = default(GCHandle);
 
                     fixed (byte*
                         pMetadata0 = this.providerMetadata,
@@ -744,9 +750,9 @@ namespace System.Diagnostics.Tracing
         {
             DataCollector.ThreadInstance.Disable();
 
-            for (int i = 0; i != cPins; i++)
+            for (int i = 0; i < cPins; i++)
             {
-                if (IntPtr.Zero != (IntPtr)pPins[i])
+                if (pPins[i].IsAllocated)
                 {
                     pPins[i].Free();
                 }

@@ -265,7 +265,7 @@ namespace System.Diagnostics.Tracing
         public Guid Guid { get { return m_guid; } }
 
         /// <summary>
-        /// Returns true if the eventSource has been enabled at all. This is the prefered test
+        /// Returns true if the eventSource has been enabled at all. This is the preferred test
         /// to be performed before a relatively expensive EventSource operation.
         /// </summary>
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
@@ -1134,7 +1134,8 @@ namespace System.Diagnostics.Tracing
             /// Address where the one argument lives (if this points to managed memory you must ensure the
             /// managed object is pinned.
             /// </summary>
-            public IntPtr DataPointer { get { return (IntPtr)m_Ptr; } set { m_Ptr = unchecked((long)value); } }
+            public unsafe IntPtr DataPointer { get { return (IntPtr)(void*)m_Ptr; } set { m_Ptr = unchecked((ulong)(void*)value); } }
+
             /// <summary>
             /// Size of the argument referenced by DataPointer
             /// </summary>
@@ -1150,14 +1151,14 @@ namespace System.Diagnostics.Tracing
             /// <param name="reserved">Value for reserved: 2 for per-provider metadata, 1 for per-event metadata</param>
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
-                this.m_Ptr = (long)(ulong)(UIntPtr)pointer;
+                this.m_Ptr = (ulong)pointer;
                 this.m_Size = size;
                 this.m_Reserved = reserved; // Mark this descriptor as containing tracelogging-compatible metadata.
             }
 
             //Important, we pass this structure directly to the Win32 EventWrite API, so this structure must be layed out exactly
             // the way EventWrite wants it.  
-            internal long m_Ptr;
+            internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
             internal int m_Reserved;       // Used to pad the size to match the Win32 API
@@ -1559,7 +1560,7 @@ namespace System.Diagnostics.Tracing
 
                 // Register the provider with ETW
                 var provider = new OverideEventProvider(this);
-                provider.Register(eventSourceGuid);
+                provider.Register(this);
 #endif
                 // Add the eventSource to the global (weak) list.  
                 // This also sets m_id, which is the index in the list. 
@@ -3270,7 +3271,11 @@ namespace System.Diagnostics.Tracing
         // When that is the case, we have the build the custom assemblies on a member by hand.         
         internal static Attribute GetCustomAttributeHelper(MemberInfo member, Type attributeType, EventManifestOptions flags = EventManifestOptions.None)
         {
+#if !ES_BUILD_PN
+            // On ProjectN, ReflectionOnly() always equals false.  AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
+            // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
             if (!member.Module.Assembly.ReflectionOnly() && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
+#endif // !ES_BUILD_PN
             {
                 // Let the runtime to the work for us, since we can execute code in this context.
                 Attribute firstAttribute = null;
@@ -4937,10 +4942,10 @@ namespace System.Diagnostics.Tracing
             get
             {
                 // For contract based events we create the list lazily.
-                if (m_payloadNames == null)
+                // You can have m_payloadNames be null in the TraceLogging case (EventID < 0) so only
+                // do the lazy init if you know it is contract based (EventID >= 0)
+                if (EventId >= 0 && m_payloadNames == null)
                 {
-                    // Self described events are identified by id -1.
-                    Debug.Assert(EventId != -1);
 
                     var names = new List<string>();
                     foreach (var parameter in m_eventSource.m_eventData[EventId].Parameters)
@@ -5617,7 +5622,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// For the EventListener/EtwSession associated with 'filterList', add 'childActivityid'
         /// to list of active activities IF 'currentActivityId' is also active. Passing in a null
-        /// value for  'currentActivityid' is an indication tha caller has already verified
+        /// value for  'currentActivityid' is an indication the caller has already verified
         /// that the current activity is active.
         /// </summary>
         unsafe public static void FlowActivityIfNeeded(ActivityFilter filterList, Guid* currentActivityId, Guid* childActivityID)
@@ -5637,7 +5642,7 @@ namespace System.Diagnostics.Tracing
                 // make sure current activity is still in the set:
                 activeActivities[EventSource.InternalCurrentThreadActivityId] = Environment.TickCount;
             }
-            // add child activity to list of actives
+            // add child activity to list of activities
             activeActivities[*childActivityID] = Environment.TickCount;
 
         }

@@ -44,7 +44,6 @@ namespace System.Threading
         }
     }
 
-    [Serializable]
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext();
@@ -71,15 +70,7 @@ namespace System.Threading
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            Contract.EndContractBlock();
-        }
-
-        private ExecutionContext(SerializationInfo info, StreamingContext context)
-        {
+            throw new PlatformNotSupportedException();
         }
 
         public static ExecutionContext Capture()

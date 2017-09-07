@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class LockRecursionException : System.Exception
     {
         public LockRecursionException()
@@ -24,6 +23,9 @@ namespace System.Threading
         {
         }
 
-        protected LockRecursionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected LockRecursionException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.Serialization
 {
-    [Serializable]
     public class SerializationException : SystemException
     {
         private static String s_nullMessage = SR.SerializationException;
@@ -16,24 +15,25 @@ namespace System.Runtime.Serialization
         public SerializationException()
             : base(s_nullMessage)
         {
-            HResult = __HResults.COR_E_SERIALIZATION;
+            HResult = HResults.COR_E_SERIALIZATION;
         }
 
         public SerializationException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_SERIALIZATION;
+            HResult = HResults.COR_E_SERIALIZATION;
         }
 
         public SerializationException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_SERIALIZATION;
+            HResult = HResults.COR_E_SERIALIZATION;
         }
 
         protected SerializationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

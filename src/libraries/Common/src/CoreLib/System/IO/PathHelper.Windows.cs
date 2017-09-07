@@ -23,7 +23,7 @@ namespace System.IO
         /// Normalize the given path.
         /// </summary>
         /// <remarks>
-        /// Normalizes via Win32 GetFullPathName(). It will also trim all "typical" whitespace at the end of the path (see s_trimEndChars). Will also trim initial
+        /// Normalizes via Win32 GetFullPathName(). Will also trim initial
         /// spaces if the path is determined to be rooted.
         /// 
         /// Note that invalid characters will be checked after the path is normalized, which could remove bad characters. (C:\|\..\a.txt -- C:\a.txt)
@@ -47,15 +47,6 @@ namespace System.IO
             {
                 GetFullPathName(path, ref fullPath);
 
-                // Trim whitespace off the end of the string. Win32 normalization trims only U+0020.
-                fullPath.TrimEnd(PathInternal.s_trimEndChars);
-
-                if (fullPath.Length >= PathInternal.MaxLongPath)
-                {
-                    // Fullpath is genuinely too long
-                    throw new PathTooLongException(SR.IO_PathTooLong);
-                }
-
                 // Checking path validity used to happen before getting the full path name. To avoid additional input allocation
                 // (to trim trailing whitespace) we now do it after the Win32 call. This will allow legitimate paths through that
                 // used to get kicked back (notably segments with invalid characters might get removed via "..").
@@ -67,7 +58,6 @@ namespace System.IO
                 //
                 //  - Illegal path characters.
                 //  - Invalid UNC paths like \\, \\server, \\server\.
-                //  - Segments that are too long (over MaxComponentLength)
 
                 // As the path could be > 30K, we'll combine the validity scan. None of these checks are performed by the Win32
                 // GetFullPathName() API.
@@ -108,8 +98,6 @@ namespace System.IO
                                 break;
                             case '\\':
                                 segmentLength = index - lastSeparator - 1;
-                                if (segmentLength > PathInternal.MaxComponentLength)
-                                    throw new PathTooLongException(SR.IO_PathTooLong + fullPath.ToString());
                                 lastSeparator = index;
 
                                 if (foundTilde)
@@ -128,7 +116,7 @@ namespace System.IO
                                     // If we're at the end of the path and this is the first separator, we're missing the share.
                                     // Otherwise we're good, so ignore UNC tracking from here.
                                     if (index == fullPath.Length - 1)
-                                        throw new ArgumentException(SR.Arg_PathIllegalUNC);
+                                        throw new ArgumentException(SR.Format(SR.Arg_PathIllegalUNC_Path, fullPath.ToString()));
                                     else
                                         possibleBadUnc = false;
                                 }
@@ -145,11 +133,9 @@ namespace System.IO
                 }
 
                 if (possibleBadUnc)
-                    throw new ArgumentException(SR.Arg_PathIllegalUNC);
+                    throw new ArgumentException(SR.Format(SR.Arg_PathIllegalUNC_Path, fullPath.ToString()));
 
                 segmentLength = fullPath.Length - lastSeparator - 1;
-                if (segmentLength > PathInternal.MaxComponentLength)
-                    throw new PathTooLongException(SR.IO_PathTooLong);
 
                 if (foundTilde && segmentLength <= MaxShortName)
                     possibleShortPath = true;
