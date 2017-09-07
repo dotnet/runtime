@@ -110,7 +110,15 @@ namespace System.Drawing.Tests
                 FontFamily[] families = FontFamily.Families;
                 FontFamily[] familiesWithGraphics = FontFamily.GetFamilies(graphics);
 
-                Assert.Equal(families, familiesWithGraphics);
+                // FontFamily.Equals uses the native handle to determine equality. However, GDI+ does not always
+                // cache handles, so we cannot just Assert.Equal(families, familiesWithGraphics); 
+                Assert.Equal(families.Length, familiesWithGraphics.Length);
+
+                for (int i = 0; i < families.Length; i++)
+                {
+                    Assert.Equal(families[i].Name, familiesWithGraphics[i].Name);
+                }
+
                 foreach (FontFamily fontFamily in families)
                 {
                     using (FontFamily copy = new FontFamily(fontFamily.Name))

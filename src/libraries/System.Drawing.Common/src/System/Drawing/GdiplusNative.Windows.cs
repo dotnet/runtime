@@ -277,17 +277,6 @@ namespace System.Drawing
                 GdipRecordMetafileStream2_ptr = LoadFunction<GdipRecordMetafileStream2_delegate>("GdipRecordMetafileStream");
                 GdipRecordMetafileStreamI_ptr = LoadFunction<GdipRecordMetafileStreamI_delegate>("GdipRecordMetafileStreamI");
                 GdipComment_ptr = LoadFunction<GdipComment_delegate>("GdipComment");
-                GdipCreateFontFamilyFromName_ptr = LoadFunction<GdipCreateFontFamilyFromName_delegate>("GdipCreateFontFamilyFromName");
-                GdipGetGenericFontFamilySansSerif_ptr = LoadFunction<GdipGetGenericFontFamilySansSerif_delegate>("GdipGetGenericFontFamilySansSerif");
-                GdipGetGenericFontFamilySerif_ptr = LoadFunction<GdipGetGenericFontFamilySerif_delegate>("GdipGetGenericFontFamilySerif");
-                GdipGetGenericFontFamilyMonospace_ptr = LoadFunction<GdipGetGenericFontFamilyMonospace_delegate>("GdipGetGenericFontFamilyMonospace");
-                GdipDeleteFontFamily_ptr = LoadFunction<GdipDeleteFontFamily_delegate>("GdipDeleteFontFamily");
-                GdipGetFamilyName_ptr = LoadFunction<GdipGetFamilyName_delegate>("GdipGetFamilyName");
-                GdipIsStyleAvailable_ptr = LoadFunction<GdipIsStyleAvailable_delegate>("GdipIsStyleAvailable");
-                GdipGetEmHeight_ptr = LoadFunction<GdipGetEmHeight_delegate>("GdipGetEmHeight");
-                GdipGetCellAscent_ptr = LoadFunction<GdipGetCellAscent_delegate>("GdipGetCellAscent");
-                GdipGetCellDescent_ptr = LoadFunction<GdipGetCellDescent_delegate>("GdipGetCellDescent");
-                GdipGetLineSpacing_ptr = LoadFunction<GdipGetLineSpacing_delegate>("GdipGetLineSpacing");
                 GdipCreateFontFromDC_ptr = LoadFunction<GdipCreateFontFromDC_delegate>("GdipCreateFontFromDC");
                 GdipCreateFontFromLogfontW_ptr = LoadFunction<GdipCreateFontFromLogfontW_delegate>("GdipCreateFontFromLogfontW");
                 GdipCreateFont_ptr = LoadFunction<GdipCreateFont_delegate>("GdipCreateFont");
@@ -1300,59 +1289,6 @@ namespace System.Drawing
             private delegate int GdipComment_delegate(HandleRef graphics, int sizeData, byte[] data);
             private static FunctionWrapper<GdipComment_delegate> GdipComment_ptr;
             internal static int GdipComment(HandleRef graphics, int sizeData, byte[] data) => GdipComment_ptr.Delegate(graphics, sizeData, data);
-
-            private delegate int GdipCreateFontFamilyFromName_delegate([MarshalAs(UnmanagedType.LPWStr)]string name, HandleRef fontCollection, out IntPtr FontFamily);
-            private static FunctionWrapper<GdipCreateFontFamilyFromName_delegate> GdipCreateFontFamilyFromName_ptr;
-            internal static int GdipCreateFontFamilyFromName(string name, HandleRef fontCollection, out IntPtr FontFamily) => GdipCreateFontFamilyFromName_ptr.Delegate(name, fontCollection, out FontFamily);
-
-            private delegate int GdipGetGenericFontFamilySansSerif_delegate(out IntPtr fontfamily);
-            private static FunctionWrapper<GdipGetGenericFontFamilySansSerif_delegate> GdipGetGenericFontFamilySansSerif_ptr;
-            internal static int GdipGetGenericFontFamilySansSerif(out IntPtr fontfamily) => GdipGetGenericFontFamilySansSerif_ptr.Delegate(out fontfamily);
-
-            private delegate int GdipGetGenericFontFamilySerif_delegate(out IntPtr fontfamily);
-            private static FunctionWrapper<GdipGetGenericFontFamilySerif_delegate> GdipGetGenericFontFamilySerif_ptr;
-            internal static int GdipGetGenericFontFamilySerif(out IntPtr fontfamily) => GdipGetGenericFontFamilySerif_ptr.Delegate(out fontfamily);
-
-            private delegate int GdipGetGenericFontFamilyMonospace_delegate(out IntPtr fontfamily);
-            private static FunctionWrapper<GdipGetGenericFontFamilyMonospace_delegate> GdipGetGenericFontFamilyMonospace_ptr;
-            internal static int GdipGetGenericFontFamilyMonospace(out IntPtr fontfamily) => GdipGetGenericFontFamilyMonospace_ptr.Delegate(out fontfamily);
-
-            private delegate int GdipDeleteFontFamily_delegate(HandleRef fontFamily);
-            private static FunctionWrapper<GdipDeleteFontFamily_delegate> GdipDeleteFontFamily_ptr;
-            internal static int IntGdipDeleteFontFamily(HandleRef fontFamily) => GdipDeleteFontFamily_ptr.Delegate(fontFamily);
-
-            private delegate int GdipGetFamilyName_delegate(HandleRef family, IntPtr name, int language);
-            private static FunctionWrapper<GdipGetFamilyName_delegate> GdipGetFamilyName_ptr;
-            internal static int GdipGetFamilyName(HandleRef family, IntPtr name, int language) => GdipGetFamilyName_ptr.Delegate(family, name, language);
-            internal static unsafe int GdipGetFamilyName(HandleRef family, StringBuilder nameBuilder, int language)
-            {
-                const int LF_FACESIZE = 32;
-                char* namePtr = stackalloc char[LF_FACESIZE];
-                int ret = GdipGetFamilyName(family, (IntPtr)namePtr, language);
-                string name = Marshal.PtrToStringUni((IntPtr)namePtr);
-                nameBuilder.Append(name);
-                return ret;
-            }
-
-            private delegate int GdipIsStyleAvailable_delegate(HandleRef family, FontStyle style, out int isStyleAvailable);
-            private static FunctionWrapper<GdipIsStyleAvailable_delegate> GdipIsStyleAvailable_ptr;
-            internal static int GdipIsStyleAvailable(HandleRef family, FontStyle style, out int isStyleAvailable) => GdipIsStyleAvailable_ptr.Delegate(family, style, out isStyleAvailable);
-
-            private delegate int GdipGetEmHeight_delegate(HandleRef family, FontStyle style, out int EmHeight);
-            private static FunctionWrapper<GdipGetEmHeight_delegate> GdipGetEmHeight_ptr;
-            internal static int GdipGetEmHeight(HandleRef family, FontStyle style, out int EmHeight) => GdipGetEmHeight_ptr.Delegate(family, style, out EmHeight);
-
-            private delegate int GdipGetCellAscent_delegate(HandleRef family, FontStyle style, out int CellAscent);
-            private static FunctionWrapper<GdipGetCellAscent_delegate> GdipGetCellAscent_ptr;
-            internal static int GdipGetCellAscent(HandleRef family, FontStyle style, out int CellAscent) => GdipGetCellAscent_ptr.Delegate(family, style, out CellAscent);
-
-            private delegate int GdipGetCellDescent_delegate(HandleRef family, FontStyle style, out int CellDescent);
-            private static FunctionWrapper<GdipGetCellDescent_delegate> GdipGetCellDescent_ptr;
-            internal static int GdipGetCellDescent(HandleRef family, FontStyle style, out int CellDescent) => GdipGetCellDescent_ptr.Delegate(family, style, out CellDescent);
-
-            private delegate int GdipGetLineSpacing_delegate(HandleRef family, FontStyle style, out int LineSpaceing);
-            private static FunctionWrapper<GdipGetLineSpacing_delegate> GdipGetLineSpacing_ptr;
-            internal static int GdipGetLineSpacing(HandleRef family, FontStyle style, out int LineSpaceing) => GdipGetLineSpacing_ptr.Delegate(family, style, out LineSpaceing);
 
             private delegate int GdipCreateFontFromDC_delegate(HandleRef hdc, ref IntPtr font);
             private static FunctionWrapper<GdipCreateFontFromDC_delegate> GdipCreateFontFromDC_ptr;
