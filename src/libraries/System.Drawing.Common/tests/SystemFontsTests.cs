@@ -29,7 +29,9 @@ namespace System.Drawing.Tests
                 Assert.NotNull(font);
                 Assert.NotNull(otherFont);
                 Assert.NotSame(font, otherFont);
-                Assert.Equal(font, otherFont);
+
+                // Assert.Equal on a font will use the native handle to assert equality, which is not always guaranteed.
+                Assert.Equal(font.Name, otherFont.Name);
             }
         }
 
