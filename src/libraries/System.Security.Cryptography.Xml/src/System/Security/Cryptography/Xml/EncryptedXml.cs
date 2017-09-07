@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.IO;
 using System.Net;
-using System.Security;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Policy;
 using System.Text;
 using System.Xml;
 
@@ -63,6 +61,7 @@ namespace System.Security.Cryptography.Xml
         //
 
         private XmlDocument _document;
+        private Evidence _evidence;
         private XmlResolver _xmlResolver;
         // hash table defining the key name mapping
         private const int _capacity = 4; // 4 is a reasonable capacity for
@@ -80,9 +79,12 @@ namespace System.Security.Cryptography.Xml
         //
         public EncryptedXml() : this(new XmlDocument()) { }
 
-        public EncryptedXml(XmlDocument document)
+        public EncryptedXml(XmlDocument document) : this(document, null) { }
+
+        public EncryptedXml(XmlDocument document, Evidence evidence)
         {
             _document = document;
+            _evidence = evidence;
             _xmlResolver = null;
             // set the default padding to ISO-10126
             _padding = PaddingMode.ISO10126;
@@ -121,6 +123,13 @@ namespace System.Security.Cryptography.Xml
             {
                 _xmlDsigSearchDepth = value;
             }
+        }
+
+        // The evidence of the document being loaded: will be used to resolve external URIs
+        public Evidence DocumentEvidence
+        {
+            get { return _evidence; }
+            set { _evidence = value; }
         }
 
         // The resolver to use for external entities
@@ -207,7 +216,7 @@ namespace System.Security.Cryptography.Xml
                 }
                 else
                 {
-                     throw new CryptographicException(SR.Cryptography_Xml_UriNotResolved, cipherData.CipherReference.Uri);
+                    throw new CryptographicException(SR.Cryptography_Xml_UriNotResolved, cipherData.CipherReference.Uri);
                 }
                 // read the output stream into a memory stream
                 byte[] cipherValue = null;
