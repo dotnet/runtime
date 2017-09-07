@@ -16934,21 +16934,6 @@ void Compiler::fgMorphBlocks()
         {
             if ((genReturnBB != nullptr) && (genReturnBB != block) && ((block->bbFlags & BBF_HAS_JMP) == 0))
             {
-                /* We'll jump to the genReturnBB */
-                CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(_TARGET_X86_)
-                if (info.compFlags & CORINFO_FLG_SYNCH)
-                {
-                    fgConvertSyncReturnToLeave(block);
-                }
-                else
-#endif // !_TARGET_X86_
-                {
-                    block->bbJumpKind = BBJ_ALWAYS;
-                    block->bbJumpDest = genReturnBB;
-                    fgReturnCount--;
-                }
 
                 // Note 1: A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
                 // For example a method returning void could have an empty block with jump kind BBJ_RETURN.
@@ -16964,54 +16949,76 @@ void Compiler::fgMorphBlocks()
                 GenTreePtr last = (block->bbTreeList != nullptr) ? block->bbTreeList->gtPrev : nullptr;
                 GenTreePtr ret  = (last != nullptr) ? last->gtStmt.gtStmtExpr : nullptr;
 
-                // replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
-                if (genReturnLocal != BAD_VAR_NUM)
+                if ((ret != nullptr) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
                 {
-                    // Method must be returning a value other than TYP_VOID.
-                    noway_assert(compMethodHasRetVal());
-
-                    // This block must be ending with a GT_RETURN
-                    noway_assert(last != nullptr);
-                    noway_assert(last->gtOper == GT_STMT);
-                    noway_assert(last->gtNext == nullptr);
-                    noway_assert(ret != nullptr);
-
-                    // GT_RETURN must have non-null operand as the method is returning the value assigned to
-                    // genReturnLocal
-                    noway_assert(ret->OperGet() == GT_RETURN);
-                    noway_assert(ret->gtGetOp1() != nullptr);
-
-                    GenTreePtr tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1());
-
-                    last->gtStmt.gtStmtExpr = (tree->OperIsCopyBlkOp()) ? fgMorphCopyBlock(tree) : tree;
-
-                    // make sure that copy-prop ignores this assignment.
-                    last->gtStmt.gtStmtExpr->gtFlags |= GTF_DONT_CSE;
+                    // This return was generated during epilog merging, so leave it alone
                 }
-                else if (ret != nullptr && ret->OperGet() == GT_RETURN)
+                else
                 {
-                    // This block ends with a GT_RETURN
-                    noway_assert(last != nullptr);
-                    noway_assert(last->gtOper == GT_STMT);
-                    noway_assert(last->gtNext == nullptr);
+                    /* We'll jump to the genReturnBB */
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 
-                    // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn block
-                    noway_assert(ret->TypeGet() == TYP_VOID);
-                    noway_assert(ret->gtGetOp1() == nullptr);
+#if !defined(_TARGET_X86_)
+                    if (info.compFlags & CORINFO_FLG_SYNCH)
+                    {
+                        fgConvertSyncReturnToLeave(block);
+                    }
+                    else
+#endif // !_TARGET_X86_
+                    {
+                        block->bbJumpKind = BBJ_ALWAYS;
+                        block->bbJumpDest = genReturnBB;
+                        fgReturnCount--;
+                    }
+                    if (genReturnLocal != BAD_VAR_NUM)
+                    {
+                        // replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
 
-                    fgRemoveStmt(block, last);
-                }
+                        // Method must be returning a value other than TYP_VOID.
+                        noway_assert(compMethodHasRetVal());
 
+                        // This block must be ending with a GT_RETURN
+                        noway_assert(last != nullptr);
+                        noway_assert(last->gtOper == GT_STMT);
+                        noway_assert(last->gtNext == nullptr);
+                        noway_assert(ret != nullptr);
+
+                        // GT_RETURN must have non-null operand as the method is returning the value assigned to
+                        // genReturnLocal
+                        noway_assert(ret->OperGet() == GT_RETURN);
+                        noway_assert(ret->gtGetOp1() != nullptr);
+
+                        GenTreePtr tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1());
+
+                        last->gtStmt.gtStmtExpr = (tree->OperIsCopyBlkOp()) ? fgMorphCopyBlock(tree) : tree;
+
+                        // make sure that copy-prop ignores this assignment.
+                        last->gtStmt.gtStmtExpr->gtFlags |= GTF_DONT_CSE;
+                    }
+                    else if (ret != nullptr && ret->OperGet() == GT_RETURN)
+                    {
+                        // This block ends with a GT_RETURN
+                        noway_assert(last != nullptr);
+                        noway_assert(last->gtOper == GT_STMT);
+                        noway_assert(last->gtNext == nullptr);
+
+                        // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
+                        // block
+                        noway_assert(ret->TypeGet() == TYP_VOID);
+                        noway_assert(ret->gtGetOp1() == nullptr);
+
+                        fgRemoveStmt(block, last);
+                    }
 #ifdef DEBUG
-                if (verbose)
-                {
-                    printf("morph BB%02u to point at onereturn.  New block is\n", block->bbNum);
-                    fgTableDispBasicBlock(block);
-                }
+                    if (verbose)
+                    {
+                        printf("morph BB%02u to point at onereturn.  New block is\n", block->bbNum);
+                        fgTableDispBasicBlock(block);
+                    }
 #endif
+                }
             }
         }
-
         block = block->bbNext;
     } while (block);
 
