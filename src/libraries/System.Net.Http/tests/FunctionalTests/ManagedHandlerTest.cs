@@ -122,12 +122,11 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
-    // TODO #23140:
-    //public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
-    //{
-    //    public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
+    {
+        public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
     public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest, IDisposable
     {
