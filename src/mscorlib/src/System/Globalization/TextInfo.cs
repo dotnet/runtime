@@ -41,14 +41,14 @@ namespace System.Globalization
         [OptionalField(VersionAdded = 2)]
         private bool _isReadOnly = false;
 
-        ////      _cultureName is the name of the creating culture.  Note that we consider this authoratative,
+        ////      _cultureName is the name of the creating culture.  Note that we consider this authoritative,
         ////              if the culture's textinfo changes when deserializing, then behavior may change.
         ////              (ala Whidbey behavior).  This is the only string Arrowhead needs to serialize.
         ////      _cultureData is the data that backs this class.
         ////      _textInfoName is the actual name of the textInfo (from cultureData.STEXTINFO)
         ////              this can be the same as _cultureName on Silverlight since the OS knows
         ////              how to do the sorting. However in the desktop, when we call the sorting dll, it doesn't
-        ////              know how to resolve custom locle names to sort ids so we have to have alredy resolved this.
+        ////              know how to resolve custom locale names to sort ids so we have to have already resolved this.
         ////      
 
         [OptionalField(VersionAdded = 3)]
