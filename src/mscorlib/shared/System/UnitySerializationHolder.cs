@@ -19,14 +19,15 @@ namespace System
     sealed class UnitySerializationHolder : ISerializable, IObjectReference
     {
         internal const int NullUnity = 0x0002;
+        private readonly int _unityType;
 
+        /// <summary>
+        /// A helper method that returns the SerializationInfo that a class utilizing 
+        /// UnitySerializationHelper should return from a call to GetObjectData. It contains
+        /// the unityType (defined above) and any optional data (used only for the reflection types).
+        /// </summary>
         public static void GetUnitySerializationInfo(SerializationInfo info, int unityType, string data, Assembly assembly)
         {
-            // A helper method that returns the SerializationInfo that a class utilizing 
-            // UnitySerializationHelper should return from a call to GetObjectData.  It contains
-            // the unityType (defined above) and any optional data (used only for the reflection
-            // types.)
-
             info.SetType(typeof(UnitySerializationHolder));
             info.AddValue("Data", data, typeof(string));
             info.AddValue("UnityType", unityType);
@@ -40,7 +41,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            // We are ignoring any serialization input as we are only concerned about DBNull.
+            // We are ignoring any other serialization input as we are only concerned about DBNull.
+            _unityType = info.GetInt32("UnityType");
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context) =>
@@ -48,8 +50,13 @@ namespace System
 
         public object GetRealObject(StreamingContext context)
         {
-            // We are always returning the same DBNull instance and ignoring serialization input.
+            // We are only support deserializing DBNull and throwing for everything else.
+            if (_unityType != NullUnity)
+            {
+                throw new ArgumentException(SR.Argument_InvalidUnity);
+            }
 
+            // We are always returning the same DBNull instance.
             return DBNull.Value;
         }
     }
