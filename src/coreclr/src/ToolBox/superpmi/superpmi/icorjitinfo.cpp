@@ -165,11 +165,12 @@ CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 // vtable of it's owning class or interface.
 void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                    unsigned*             offsetOfIndirection,   /* OUT */
-                                   unsigned*             offsetAfterIndirection /* OUT */
+                                   unsigned*             offsetAfterIndirection,/* OUT */
+                                   bool*                 isRelative             /* OUT */
                                    )
 {
     jitInstance->mc->cr->AddCall("getMethodVTableOffset");
-    jitInstance->mc->repGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
+    jitInstance->mc->repGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
@@ -182,6 +183,15 @@ CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtua
     CORINFO_METHOD_HANDLE result =
         jitInstance->mc->repResolveVirtualMethod(virtualMethod, implementingClass, ownerType);
     return result;
+}
+
+void MyICJI::expandRawHandleIntrinsic(
+    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_GENERICHANDLE_RESULT *  pResult)
+{
+    jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
+    LogError("Hit unimplemented expandRawHandleIntrinsic");
+    DebugBreakorAV(129);
 }
 
 // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
@@ -236,13 +246,6 @@ BOOL MyICJI::isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type
 {
     jitInstance->mc->cr->AddCall("isCompatibleDelegate");
     return jitInstance->mc->repIsCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-}
-
-// Determines whether the delegate creation obeys security transparency rules
-BOOL MyICJI::isDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd)
-{
-    jitInstance->mc->cr->AddCall("isDelegateCreationAllowed");
-    return jitInstance->mc->repIsDelegateCreationAllowed(delegateHnd, calleeHnd);
 }
 
 // Indicates if the method is an instance of the generic
@@ -1226,14 +1229,6 @@ LONG* MyICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getAddrOfCaptureThreadGlobal");
     return jitInstance->mc->repGetAddrOfCaptureThreadGlobal(ppIndirection);
-}
-
-SIZE_T* MyICJI::getAddrModuleDomainID(CORINFO_MODULE_HANDLE module)
-{
-    jitInstance->mc->cr->AddCall("getAddrModuleDomainID");
-    LogError("Hit unimplemented getAddrModuleDomainID");
-    DebugBreakorAV(88);
-    return 0;
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)

@@ -52,6 +52,7 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(Mscorlib_DictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
     {
         private struct Entry
@@ -74,10 +75,10 @@ namespace System.Collections.Generic
         private Object _syncRoot;
 
         // constants for serialization
-        private const String VersionName = "Version";
-        private const String HashSizeName = "HashSize";  // Must save buckets.Length
-        private const String KeyValuePairsName = "KeyValuePairs";
-        private const String ComparerName = "Comparer";
+        private const String VersionName = "Version"; // Do not rename (binary serialization)
+        private const String HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
+        private const String KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
+        private const String ComparerName = "Comparer"; // Do not rename (binary serialization)
 
         public Dictionary() : this(0, null) { }
 
@@ -91,12 +92,10 @@ namespace System.Collections.Generic
             if (capacity > 0) Initialize(capacity);
             this.comparer = comparer ?? EqualityComparer<TKey>.Default;
 
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            if (HashHelpers.s_UseRandomizedStringHashing && this.comparer == EqualityComparer<string>.Default)
+            if (this.comparer == EqualityComparer<string>.Default)
             {
                 this.comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.Default;
             }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
         }
 
         public Dictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
@@ -407,9 +406,7 @@ namespace System.Collections.Generic
             if (buckets == null) Initialize(0);
             int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
             int targetBucket = hashCode % buckets.Length;            
-#if FEATURE_RANDOMIZED_STRING_HASHING
             int collisionCount = 0;
-#endif
 
             for (int i = buckets[targetBucket]; i >= 0; i = entries[i].next)
             {
@@ -429,9 +426,8 @@ namespace System.Collections.Generic
 
                     return false;
                 }
-#if FEATURE_RANDOMIZED_STRING_HASHING
+
                 collisionCount++;
-#endif
             }
             int index;
             if (freeCount > 0)
@@ -458,18 +454,14 @@ namespace System.Collections.Generic
             buckets[targetBucket] = index;
             version++;
 
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            // In case we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-            // in this case will be EqualityComparer<string>.Default.
-            // Note, randomized string hashing is turned on by default on coreclr so EqualityComparer<string>.Default will 
-            // be using randomized string hashing
+            // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
+            // i.e. EqualityComparer<string>.Default.
 
             if (collisionCount > HashHelpers.HashCollisionThreshold && comparer == NonRandomizedStringEqualityComparer.Default)
             {
                 comparer = (IEqualityComparer<TKey>)EqualityComparer<string>.Default;
                 Resize(entries.Length, true);
             }
-#endif
 
             return true;
         }
@@ -908,7 +900,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [Serializable]
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>,
             IDictionaryEnumerator
         {
@@ -1037,7 +1028,6 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(Mscorlib_DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-        [Serializable]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private Dictionary<TKey, TValue> dictionary;
@@ -1188,7 +1178,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
-            [Serializable]
             public struct Enumerator : IEnumerator<TKey>, System.Collections.IEnumerator
             {
                 private Dictionary<TKey, TValue> dictionary;
@@ -1267,7 +1256,6 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(Mscorlib_DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-        [Serializable]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private Dictionary<TKey, TValue> dictionary;
@@ -1416,7 +1404,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
-            [Serializable]
             public struct Enumerator : IEnumerator<TValue>, System.Collections.IEnumerator
             {
                 private Dictionary<TKey, TValue> dictionary;

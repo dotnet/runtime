@@ -15,6 +15,7 @@ usage()
     echo.
     echo "By default, the NDK will be downloaded into the cross/android-rootfs/android-ndk-$__NDK_Version directory. If you already have an NDK installation,"
     echo "you can set the NDK_DIR environment variable to have this script use that installation of the NDK."
+    echo "By default, this script will generate a file, android_platform, in the root of the ROOTFS_DIR directory that contains the RID for the supported and tested Android build: android.21-arm64. This file is to replace '/etc/os-release', which is not available for Android."
     exit 1
 }
 
@@ -100,8 +101,8 @@ rm -rf $__Android_Cross_Dir/tmp
 
 mkdir -p $__Android_Cross_Dir/deb/
 mkdir -p $__Android_Cross_Dir/tmp/$arch/
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu_58.2_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu_58.2_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu-dev_58.2_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu-dev_58.2_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu_59.1-1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu_59.1-1_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu-dev_59.1-1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu-dev_59.1-1_$__AndroidArch.deb
 
 if [ "$__AndroidArch" == "arm" ]; then
     wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-dev-1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid-dev_1.0.3_$__AndroidArch.deb
@@ -111,24 +112,24 @@ else
     wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid_1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid_1.0.3_$__AndroidArch.deb
 fi
 
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob-dev_0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob-dev_0.3_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob_0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob_0.3_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support-dev_14_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support-dev_14_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support_14_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support_14_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob-dev_0.4_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob-dev_0.4_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob_0.4_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob_0.4_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support-dev_20_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support-dev_20_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support_20_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support_20_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/liblzma-dev_5.2.3_$__AndroidArch.deb  -O $__Android_Cross_Dir/deb/liblzma-dev_5.2.3_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/liblzma_5.2.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/liblzma_5.2.3_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libunwind-dev_1.2.20170304_$__AndroidArch.deb  -O $__Android_Cross_Dir/deb/libunwind-dev_1.2.20170304_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libunwind_1.2.20170304_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libunwind_1.2.20170304_$__AndroidArch.deb
 
 echo Unpacking Termux packages
-dpkg -x $__Android_Cross_Dir/deb/libicu_58.2_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libicu-dev_58.2_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libicu_59.1-1_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libicu-dev_59.1-1_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libuuid-dev_1.0.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libuuid_1.0.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libandroid-glob-dev_0.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libandroid-glob_0.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libandroid-support-dev_14_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libandroid-support_14_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libandroid-glob-dev_0.4_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libandroid-glob_0.4_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libandroid-support-dev_20_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libandroid-support_20_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/liblzma-dev_5.2.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/liblzma_5.2.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libunwind-dev_1.2.20170304_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
@@ -136,7 +137,10 @@ dpkg -x $__Android_Cross_Dir/deb/libunwind_1.2.20170304_$__AndroidArch.deb $__An
 
 cp -R $__Android_Cross_Dir/tmp/$__AndroidArch/data/data/com.termux/files/usr/* $__ToolchainDir/sysroot/usr/
 
+# Generate platform file for build.sh script to assign to __DistroRid
+echo "Generating platform file..."
 
+echo "RID=android.21-arm64" > $__ToolchainDir/sysroot/android_platform
 echo Now run:
 echo CONFIG_DIR=\`realpath cross/android/$__BuildArch\` ROOTFS_DIR=\`realpath $__ToolchainDir/sysroot\` ./build.sh cross $__BuildArch skipgenerateversion skipnuget cmakeargs -DENABLE_LLDBPLUGIN=0
 

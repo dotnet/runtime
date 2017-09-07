@@ -1,5 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -88,9 +147,6 @@
   <data name="Acc_ReadOnly" xml:space="preserve">
     <value>Cannot set a constant field.</value>
   </data>
-  <data name="Acc_RvaStatic" xml:space="preserve">
-    <value>SkipVerification permission is needed to modify an image-based (RVA) static field.</value>
-  </data>
   <data name="Access_Void" xml:space="preserve">
     <value>Cannot create an instance of void.</value>
   </data>
@@ -103,8 +159,9 @@
   <data name="AggregateException_DeserializationFailure" xml:space="preserve">
     <value>The serialization stream contains no inner exceptions.</value>
   </data>
-  <data name="AggregateException_ToString" xml:space="preserve">
-    <value>{0}{1}---&gt; (Inner Exception #{2}) {3}{4}{5}</value>
+  <data name="AggregateException_InnerException" xml:space="preserve">
+    <value>(Inner Exception #{0}) </value>
+    <comment>This text is prepended to each inner exception description during aggregate exception formatting</comment>
   </data>
   <data name="AppDomain_AppBaseNotSet" xml:space="preserve">
     <value>The ApplicationBase must be set before retrieving this property.</value>
@@ -353,7 +410,7 @@
     <value>Operation is not valid due to the current state of the object.</value>
   </data>
   <data name="Arg_InvalidSearchPattern" xml:space="preserve">
-    <value>Search pattern cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
+    <value>Search pattern '{0}' cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
   </data>
   <data name="Arg_InvalidTypeInRetType" xml:space="preserve">
     <value>The return Type contains some invalid type (i.e. null, ByRef)</value>
@@ -589,11 +646,11 @@
   <data name="Arg_ParmCnt" xml:space="preserve">
     <value>Parameter count mismatch.</value>
   </data>
-  <data name="Arg_PathIllegal" xml:space="preserve">
-    <value>The path is not of a legal form.</value>
+  <data name="Arg_PathEmpty" xml:space="preserve">
+    <value>The path is empty.</value>
   </data>
-  <data name="Arg_PathIllegalUNC" xml:space="preserve">
-    <value>The UNC path should be of the form \\\\server\\share.</value>
+  <data name="Arg_PathIllegalUNC_Path" xml:space="preserve">
+    <value>The UNC path '{0}' should be of the form \\\\server\\share.</value>
   </data>
   <data name="Arg_PlatformNotSupported" xml:space="preserve">
     <value>Operation is not supported on this platform.</value>
@@ -867,9 +924,6 @@
   </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>
-  </data>
-  <data name="Argument_CantCallSecObjFunc" xml:space="preserve">
-    <value>Cannot evaluate a security function.</value>
   </data>
   <data name="Argument_CodepageNotSupported" xml:space="preserve">
     <value>{0} is not a supported code page.</value>
@@ -1384,8 +1438,8 @@
   <data name="Argument_PathEmpty" xml:space="preserve">
     <value>Path cannot be the empty string or all whitespace.</value>
   </data>
-  <data name="Argument_PathFormatNotSupported" xml:space="preserve">
-    <value>The given path's format is not supported.</value>
+  <data name="Argument_PathFormatNotSupported_Path" xml:space="preserve">
+    <value>The format of the path '{0}' is not supported.</value>
   </data>
   <data name="Argument_PreAllocatedAlreadyAllocated" xml:space="preserve">
     <value>'preAllocated' is already in use.</value>
@@ -1497,7 +1551,6 @@
   </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>
-
   </data>
   <data name="Argument_Unexpected_TypeSource" xml:space="preserve">
     <value>Unexpected TypeKind when marshaling Windows.Foundation.TypeName.</value>
@@ -2703,7 +2756,7 @@
     <value>Could not find file '{0}'.</value>
   </data>
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
-    <value>Cannot create "{0}" because a file or directory with the same name already exists.</value>
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
   </data>
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
@@ -2725,9 +2778,6 @@
   </data>
   <data name="IO_InvalidStringLen_Len" xml:space="preserve">
     <value>BinaryReader encountered an invalid string length of {0} characters.</value>
-  </data>
-  <data name="IO_NoPermissionToDirectoryName" xml:space="preserve">
-    <value>&lt;Path discovery permission to the specified directory was denied.&gt;</value>
   </data>
   <data name="IO_SeekAppendOverwrite" xml:space="preserve">
     <value>Unable seek backward to overwrite data that previously existed in a file opened in Append mode.</value>
@@ -2755,6 +2805,9 @@
   </data>
   <data name="IO_PathTooLong" xml:space="preserve">
     <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
@@ -3172,7 +3225,7 @@
   </data>
   <data name="PlatformNotSupported_Remoting" xml:space="preserve">
     <value>Remoting is not supported on this platform.</value>
-  </data>   
+  </data>
   <data name="PlatformNotSupported_SecureBinarySerialization" xml:space="preserve">
     <value>Secure binary serialization is not supported on this platform.</value>
   </data>
@@ -3286,6 +3339,9 @@
   </data>
   <data name="Serialization_DateTimeTicksOutOfRange" xml:space="preserve">
     <value>Invalid serialized DateTime data. Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
+  </data>
+  <data name="Serialization_DelegatesNotSupported" xml:space="preserve">
+    <value>Serializing delegates is not supported on this platform.</value>
   </data>
   <data name="Serialization_InsufficientDeserializationState" xml:space="preserve">
     <value>Insufficient state to deserialize the object. Missing field '{0}'. More information is needed.</value>
@@ -3595,5 +3651,14 @@
   </data>
   <data name="SynchronizationLockException_MisMatchedWrite" xml:space="preserve">
     <value>The write lock is being released without being held.</value>
+  </data>
+  <data name="NotSupported_SignatureType" xml:space="preserve">
+    <value>This method is not supported on signature types.</value>
+  </data>
+    <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+    <value>Memory&lt;T&gt; has been disposed.</value>
+  </data>
+  <data name="Memory_OutstandingReferences" xml:space="preserve">
+    <value>Release all references before disposing this instance.</value>
   </data>
 </root>

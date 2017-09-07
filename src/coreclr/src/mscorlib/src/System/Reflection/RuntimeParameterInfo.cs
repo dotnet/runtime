@@ -5,14 +5,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using MdToken = System.Reflection.MetadataToken;
 
 namespace System.Reflection
 {
-    [Serializable]
-    internal unsafe sealed class RuntimeParameterInfo : ParameterInfo, ISerializable
+    internal unsafe sealed class RuntimeParameterInfo : ParameterInfo
     {
         #region Static Members
         internal unsafe static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
@@ -158,41 +156,6 @@ namespace System.Reflection
         internal void SetAttributes(ParameterAttributes attributes)
         {
             AttrsImpl = attributes;
-        }
-        #endregion
-
-        #region VTS magic to serialize/deserialized to/from pre-Whidbey endpoints.
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            // We could be serializing for consumption by a pre-Whidbey
-            // endpoint. Therefore we set up all the serialized fields to look
-            // just like a v1.0/v1.1 instance.
-
-            // Need to set the type to ParameterInfo so that pre-Whidbey and Whidbey code
-            // can deserialize this. This is also why we cannot simply use [OnSerializing].
-            info.SetType(typeof(ParameterInfo));
-
-            // Use the properties intead of the fields in case the fields haven't been et
-            // _importer, bExtraConstChecked, and m_cachedData don't need to be set
-
-            // Now set the legacy fields that the current implementation doesn't
-            // use any more. Note that _importer is a raw pointer that should
-            // never have been serialized in V1. We set it to zero here; if the
-            // deserializer uses it (by calling GetCustomAttributes() on this
-            // instance) they'll AV, but at least it will be a well defined
-            // exception and not a random AV.
-
-            info.AddValue("AttrsImpl", Attributes);
-            info.AddValue("ClassImpl", ParameterType);
-            info.AddValue("DefaultValueImpl", DefaultValue);
-            info.AddValue("MemberImpl", Member);
-            info.AddValue("NameImpl", Name);
-            info.AddValue("PositionImpl", Position);
-            info.AddValue("_token", m_tkParamDef);
         }
         #endregion
 

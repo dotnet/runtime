@@ -1490,6 +1490,9 @@ public:
 int GetCurrentProcessCpuCount();
 DWORD_PTR GetCurrentProcessCpuMask();
 
+uint32_t GetOsPageSize();
+
+
 //*****************************************************************************
 // Return != 0 if the bit at the specified index in the array is on and 0 if
 // it is off.
@@ -4683,6 +4686,8 @@ inline void ClrFlsClearThreadType (TlsThreadTypeFlag flag)
 #define SET_THREAD_TYPE_STACKWALKER(pThread)   ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, pThread)
 #define CLEAR_THREAD_TYPE_STACKWALKER() ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, NULL)
 #endif  // DACCESS_COMPILE
+
+HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription);
 
 inline BOOL IsStackWalkerThread()
 {

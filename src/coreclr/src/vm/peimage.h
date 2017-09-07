@@ -257,6 +257,12 @@ private:
 #ifndef DACCESS_COMPILE
     // Get or create the layout corresponding to the mask, with an AddRef
     PTR_PEImageLayout GetLayoutInternal(DWORD imageLayoutMask, DWORD flags); 
+
+    // Create the mapped layout
+    PTR_PEImageLayout CreateLayoutMapped();
+
+    // Create the flat layout
+    PTR_PEImageLayout CreateLayoutFlat(BOOL bPermitWriteableSections);
 #endif
     // Get an existing layout corresponding to the mask, no AddRef
     PTR_PEImageLayout GetExistingLayoutInternal(DWORD imageLayoutMask);

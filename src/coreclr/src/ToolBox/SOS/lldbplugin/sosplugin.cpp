@@ -11,9 +11,6 @@ namespace lldb {
 bool
 lldb::PluginInitialize (lldb::SBDebugger debugger)
 {
-#ifdef _DEBUG
-    corerunCommandInitialize(debugger);
-#endif
     sosCommandInitialize(debugger);
     setclrpathCommandInitialize(debugger);
     setsostidCommandInitialize(debugger);

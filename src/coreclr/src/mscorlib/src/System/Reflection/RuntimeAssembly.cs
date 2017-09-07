@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using CultureInfo = System.Globalization.CultureInfo;
 using System.Security;
 using System.IO;
@@ -17,23 +18,8 @@ using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal class RuntimeAssembly : Assembly
     {
-#if FEATURE_APPX
-        // The highest byte is the flags and the lowest 3 bytes are 
-        // the cached ctor token of [DynamicallyInvocableAttribute].
-        private enum ASSEMBLY_FLAGS : uint
-        {
-            ASSEMBLY_FLAGS_UNKNOWN = 0x00000000,
-            ASSEMBLY_FLAGS_INITIALIZED = 0x01000000,
-            ASSEMBLY_FLAGS_FRAMEWORK = 0x02000000,
-            ASSEMBLY_FLAGS_TOKEN_MASK = 0x00FFFFFF,
-        }
-#endif // FEATURE_APPX
-
-        private const uint COR_E_LOADING_REFERENCE_ASSEMBLY = 0x80131058U;
-
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
         #region private data members
@@ -42,28 +28,7 @@ namespace System.Reflection
         private object m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit
         private IntPtr m_assembly;    // slack for ptr datum on unmanaged side
 
-#if FEATURE_APPX
-        private ASSEMBLY_FLAGS m_flags;
-#endif
         #endregion
-
-#if FEATURE_APPX
-        private ASSEMBLY_FLAGS Flags
-        {
-            get
-            {
-                if ((m_flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED) == 0)
-                {
-                    ASSEMBLY_FLAGS flags = ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_UNKNOWN
-                        | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK;
-
-                    m_flags = flags | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED;
-                }
-
-                return m_flags;
-            }
-        }
-#endif // FEATURE_APPX
 
         internal object SyncRoot
         {
@@ -260,15 +225,7 @@ namespace System.Reflection
         // ISerializable implementation
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            Contract.EndContractBlock();
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info,
-                                                               UnitySerializationHolder.AssemblyUnity,
-                                                               this.FullName,
-                                                               this);
+            throw new PlatformNotSupportedException();
         }
 
         public override Module ManifestModule
@@ -407,14 +364,6 @@ namespace System.Reflection
                 pPrivHostBinder,
                 throwOnFileNotFound, ptrLoadContextBinder);
         }
-
-#if FEATURE_APPX
-        internal bool IsFrameworkAssembly()
-        {
-            ASSEMBLY_FLAGS flags = Flags;
-            return (flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK) != 0;
-        }
-#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern RuntimeAssembly nLoad(AssemblyName fileName,
@@ -852,5 +801,78 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeAssembly assembly);
+
+        public sealed override Type[] GetForwardedTypes()
+        {
+            List<Type> types = new List<Type>();
+            List<Exception> exceptions = new List<Exception>();
+
+            MetadataImport scope = GetManifestModule(GetNativeHandle()).MetadataImport;
+            scope.Enum(MetadataTokenType.ExportedType, 0, out MetadataEnumResult enumResult);
+            for (int i = 0; i < enumResult.Length; i++)
+            {
+                MetadataToken mdtExternalType = enumResult[i];
+                Type type = null;
+                Exception exception = null;
+                ObjectHandleOnStack pType = JitHelpers.GetObjectHandleOnStack(ref type);
+                try
+                {
+                    GetForwardedType(this, mdtExternalType, pType);
+                    if (type == null)
+                        continue;  // mdtExternalType was not a forwarder entry.
+                }
+                catch (Exception e)
+                {
+                    type = null;
+                    exception = e;
+                }
+
+                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
+
+                if (type != null)
+                {
+                    types.Add(type);
+                    AddPublicNestedTypes(type, types, exceptions);
+                }
+                else
+                {
+                    exceptions.Add(exception);
+                }
+            }
+
+            if (exceptions.Count != 0)
+            {
+                int numTypes = types.Count;
+                int numExceptions = exceptions.Count;
+                types.AddRange(new Type[numExceptions]); // add one null Type for each exception.
+                exceptions.InsertRange(0, new Exception[numTypes]); // align the Exceptions with the null Types.
+                throw new ReflectionTypeLoadException(types.ToArray(), exceptions.ToArray());
+            }
+
+            return types.ToArray();
+        }
+
+        private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
+        {
+            Type[] nestedTypes;
+            try
+            {
+                nestedTypes = type.GetNestedTypes(BindingFlags.Public);
+            }
+            catch (Exception e)
+            {
+                exceptions.Add(e);
+                return;
+            }
+            foreach (Type nestedType in nestedTypes)
+            {
+                types.Add(nestedType);
+                AddPublicNestedTypes(nestedType, types, exceptions);
+            }
+        }
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [SuppressUnmanagedCodeSecurity]
+        private static extern void GetForwardedType(RuntimeAssembly assembly, MetadataToken mdtExternalType, ObjectHandleOnStack type);
     }
 }

@@ -14,14 +14,17 @@ namespace Functions
         private const float tanhSingleDelta = 0.0004f;
         private const float tanhSingleExpectedResult = 0.816701353f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = TanhSingleIterations)]
         public static void TanhSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    TanhSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        TanhSingleTest();
+                    }
                 }
             }
         }

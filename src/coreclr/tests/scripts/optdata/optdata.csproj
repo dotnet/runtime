@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard</TargetFramework>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PgoDataPackageVersion>99.99.99-test</PgoDataPackageVersion>
+    <IbcDataPackageVersion>99.99.99-test</IbcDataPackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="optimization.PGO.CoreCLR" Version="$(PgoDataPackageVersion)" Condition="'$(PgoDataPackageVersion)'!=''" />
+    <PackageReference Include="optimization.IBC.CoreCLR" Version="$(IbcDataPackageVersion)" Condition="'$(IbcDataPackageVersion)'!=''" />
+  </ItemGroup>
+
+  <Target Name="DumpPgoDataPackageVersion">
+    <Message Importance="high" Text="$(PgoDataPackageVersion)" />
+  </Target>
+
+  <Target Name="DumpIbcDataPackageVersion">
+    <Message Importance="high" Text="$(IbcDataPackageVersion)" />
+  </Target>
+
+</Project>

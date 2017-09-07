@@ -22,29 +22,24 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public sealed class InsufficientMemoryException : OutOfMemoryException
     {
         public InsufficientMemoryException()
             : base(GetMessageFromNativeResources(ExceptionMessageKind.OutOfMemory))
         {
-            HResult = __HResults.COR_E_INSUFFICIENTMEMORY;
+            HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }
 
         public InsufficientMemoryException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_INSUFFICIENTMEMORY;
+            HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }
 
         public InsufficientMemoryException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_INSUFFICIENTMEMORY;
-        }
-
-        private InsufficientMemoryException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
+            HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }
     }
 }

@@ -77,7 +77,7 @@ Logical representation of the managed heap
 
 The CLR GC is a generational collector which means objects are
 logically divided into generations. When a generation _N_ is collected,
-the survived objects are now marked as belong to generation _N+1_. This
+the survived objects are now marked as belonging to generation _N+1_. This
 process is called promotion. There are exceptions to this when we
 decide to demote or not promote.
 
@@ -126,7 +126,7 @@ The allocation budget
 
 The allocation budget is a logical concept associated with each
 generation. It is a size limit that triggers a GC for that
-generation when it exceeded.
+generation when exceeded.
 
 The budget is a property set on the generation mostly based on the
 survival rate of that generation. If the survival rate is high, the budget is made larger with the expectation that there will be a better ratio of dead to live objects next time there is a GC for that generation.
@@ -170,7 +170,7 @@ Relocate phase
 --------------
 
 If the GC decides to compact, which will result in moving objects, then  references to these objects must be updated. The relocate phase needs to find all references that point to objects that are in the
-generations being collected. In contrast, the mark phase only consults live objects so doesn’t need to consider weak references.
+generations being collected. In contrast, the mark phase only consults live objects so it doesn’t need to consider weak references.
 
 Compact phase
 -------------
@@ -213,7 +213,7 @@ This illustrates how a background GC is done.
 1. User thread runs out of allocation budget and triggers a GC.
 2. GC calls SuspendEE to suspend managed threads.
 3. GC decides if background GC should be run.
-4. If so background GC thread is woken up, to do a background
+4. If so background GC thread is woken up to do a background
    GC. Background GC thread calls RestartEE to resume managed threads.
 5. Managed threads continue allocating while the background GC does its work.
 6. User thread may run out of allocation budget and trigger an
@@ -227,7 +227,7 @@ This illustrates how a background GC is done.
 ### SVR GC with concurrent GC off
 
 1. User thread runs out of allocation budget and triggers a GC.
-2. Server GC threads are woken up and calls SuspendEE to suspend
+2. Server GC threads are woken up and call SuspendEE to suspend
    managed threads.
 3. Server GC threads do the GC work (same phases as in workstation GC
    without concurrent GC).

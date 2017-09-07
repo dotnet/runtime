@@ -42,7 +42,6 @@ namespace System.Globalization
     **      Hijri       0001/01/01   9666/04/03
     */
 
-    [Serializable]
     public partial class HijriCalendar : Calendar
     {
         public static readonly int HijriEra = 1;
@@ -188,7 +187,7 @@ namespace System.Globalization
 
             set
             {
-                // NOTE: Check the value of Min/MaxAdavncedHijri with Arabic speakers to see if the assumption is good.
+                // NOTE: Check the value of Min/MaxAdvancedHijri with Arabic speakers to see if the assumption is good.
                 if (value < MinAdvancedHijri || value > MaxAdvancedHijri)
                 {
                     throw new ArgumentOutOfRangeException(
@@ -304,7 +303,7 @@ namespace System.Globalization
             //
             HijriYear = (int)(((NumDays - 227013) * 30) / 10631) + 1;
 
-            long daysToHijriYear = DaysUpToHijriYear(HijriYear);            // The absoulte date for HijriYear
+            long daysToHijriYear = DaysUpToHijriYear(HijriYear);            // The absolute date for HijriYear
             long daysOfHijriYear = GetDaysInYear(HijriYear, CurrentEra);    // The number of days for (HijriYear+1) year.
 
             if (NumDays < daysToHijriYear)

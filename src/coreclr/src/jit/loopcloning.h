@@ -473,7 +473,7 @@ struct LC_Condition
     void Print()
     {
         op1.Print();
-        printf(" %s ", GenTree::NodeName(oper));
+        printf(" %s ", GenTree::OpName(oper));
         op2.Print();
     }
 #endif

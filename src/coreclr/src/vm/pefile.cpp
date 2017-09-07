@@ -17,7 +17,6 @@
 #include "eeconfig.h"
 #include "product_version.h"
 #include "eventtrace.h"
-#include "security.h"
 #include "corperm.h"
 #include "dbginterface.h"
 #include "peimagelayout.inl"
@@ -354,9 +353,22 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
 #endif
         {
             if (GetILimage()->IsFile())
-                GetILimage()->LoadFromMapped();
+            {
+#ifdef PLATFORM_UNIX
+                if (GetILimage()->IsILOnly())
+                {
+                    GetILimage()->Load();
+                }
+                else
+#endif // PLATFORM_UNIX
+                {
+                    GetILimage()->LoadFromMapped();
+                }
+            }
             else
+            {
                 GetILimage()->LoadNoFile();
+            }
         }
     }
 
@@ -1218,17 +1230,6 @@ BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
     }
 
     CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
-
-    if (IsSystem())
-    {
-        // Require instrumented flags for mscorlib when collecting IBC data
-        CorCompileConfigFlags instrumentationConfigFlags = (CorCompileConfigFlags) (configFlags & CORCOMPILE_CONFIG_INSTRUMENTATION);
-        if ((info->wConfigFlags & instrumentationConfigFlags) != instrumentationConfigFlags)
-        {
-            ExternalLog(LL_ERROR, "Instrumented native image for System.Private.CoreLib.dll expected.");
-            ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
-        }
-    }
 
     // Otherwise, match regardless of the instrumentation flags
     configFlags = (CorCompileConfigFlags) (configFlags & ~(CORCOMPILE_CONFIG_INSTRUMENTATION_NONE | CORCOMPILE_CONFIG_INSTRUMENTATION));

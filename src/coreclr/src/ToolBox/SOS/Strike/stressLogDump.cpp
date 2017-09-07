@@ -505,7 +505,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
                 else 
                 {
                     args = latestMsg->args;
-                    formatOutput(memCallBack, file, format, latestLog->threadId, deltaTime, latestMsg->facility, args);
+                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg->facility, args);
                 }
             }
             msgCtr++;

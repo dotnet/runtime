@@ -16,27 +16,29 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class RankException : SystemException
     {
         public RankException()
             : base(SR.Arg_RankException)
         {
-            HResult = __HResults.COR_E_RANK;
+            HResult = HResults.COR_E_RANK;
         }
 
         public RankException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_RANK;
+            HResult = HResults.COR_E_RANK;
         }
 
         public RankException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_RANK;
+            HResult = HResults.COR_E_RANK;
         }
 
-        protected RankException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected RankException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

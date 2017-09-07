@@ -14,7 +14,6 @@ using Xunit;
 using Microsoft.Xunit.Performance;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace Span
 {
@@ -268,7 +267,7 @@ namespace Span
             {
                 Span<byte> s = new Span<byte>(a);
                 byte result = 0;
-                int inner = Math.Max(1, (innerIterationCount / 10));
+                int inner = Math.Max(1, innerIterationCount);
                 for (int i = 0; i < inner ; ++i)
                 {
                     result = TestIndexer4(s, 10);
@@ -526,7 +525,7 @@ namespace Span
             Invoke((int innerIterationCount) =>
             {
                 byte result = TestKnownSizeArray(innerIterationCount);
-                return result; 
+                return result;
             },
             "KnownSizeArray({0})", length);
         }
@@ -1014,7 +1013,7 @@ namespace Span
                 Console.WriteLine("Some tests failed validation");
                 return -1;
             }
-            
+
             return 100;
         }
     }

@@ -44,7 +44,7 @@ namespace CorUnix
                                   In Windows we can open a file for writing only */
         int  open_flags;       /* stores Unix file creation flags */
         BOOL open_flags_deviceaccessonly;
-        char unix_filename[MAXPATHLEN];
+        CHAR *unix_filename;
         BOOL inheritable;
     };
 
@@ -102,39 +102,12 @@ namespace CorUnix
         );
 
     PAL_ERROR
-    InternalGetFileType(
-        CPalThread *pThread,
-        HANDLE hFile,
-        DWORD *pdwFileType
-        );
-
-    PAL_ERROR
     InternalCreatePipe(
         CPalThread *pThread,
         HANDLE *phReadPipe,
         HANDLE *phWritePipe,
         LPSECURITY_ATTRIBUTES lpPipeAttributes,
         DWORD nSize
-        );
-
-    PAL_ERROR
-    InternalLockFile(
-        CPalThread *pThread,
-        HANDLE hFile,
-        DWORD dwFileOffsetLow,
-        DWORD dwFileOffsetHigh,
-        DWORD nNumberOfBytesToLockLow,
-        DWORD nNumberOfBytesToLockHigh
-        );
-
-    PAL_ERROR
-    InternalUnlockFile(
-        CPalThread *pThread,
-        HANDLE hFile,
-        DWORD dwFileOffsetLow,
-        DWORD dwFileOffsetHigh,
-        DWORD nNumberOfBytesToUnlockLow,
-        DWORD nNumberOfBytesToUnlockHigh
         );
 
     PAL_ERROR
@@ -145,24 +118,6 @@ namespace CorUnix
         PLONG lpDistanceToMoveHigh,
         DWORD dwMoveMethod,
         PLONG lpNewFilePointerLow
-        );
-
-    PAL_ERROR
-    InternalSetFileTime(
-        CPalThread *pThread,
-        IN HANDLE hFile,
-        IN CONST FILETIME *lpCreationTime,
-        IN CONST FILETIME *lpLastAccessTime,
-        IN CONST FILETIME *lpLastWriteTime
-        );
-
-    PAL_ERROR
-    InternalGetFileTime(
-        CPalThread *pThread,
-        IN HANDLE hFile,
-        OUT LPFILETIME lpCreationTime,
-        OUT LPFILETIME lpLastAccessTime,
-        OUT LPFILETIME lpLastWriteTime
         );
 
     BOOL

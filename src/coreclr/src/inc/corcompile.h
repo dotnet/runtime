@@ -468,15 +468,6 @@ struct CORCOMPILE_EE_INFO_TABLE
     DWORD                      threadTlsIndex;
 
     DWORD                      rvaStaticTlsIndex;
-
-// These are used by the 64-bit JITs to detect calls to thunks in the .nep section
-// and conditionally eliminate double-thunking (managed-to-native-to-managed).
-// During prejit these are set to the RVAs of the .nep section. When the prejitted
-// image is actually loaded, these are fixed up to point to the actual .nep section
-// of the ijw image (not the native image).
-
-    BYTE *                     nativeEntryPointStart;
-    BYTE *                     nativeEntryPointEnd;
 };
 
 /*********************************************************************************/
@@ -1165,11 +1156,11 @@ class ICorCompilePreloader
     // If the class or method is generic, instantiate all parameters with <object>
     virtual CORINFO_METHOD_HANDLE LookupMethodDef(mdMethodDef token) = 0;
 
+    // For the given ftnHnd fill in the methInfo structure and return true if successful.
+    virtual bool GetMethodInfo(mdMethodDef token, CORINFO_METHOD_HANDLE ftnHnd, CORINFO_METHOD_INFO * methInfo) = 0;
+
     // Returns region that the IL should be emitted in
     virtual CorCompileILRegion GetILRegion(mdMethodDef token) = 0;
-
-    // Find the (parameterized) type for the given blob from the profile data
-    virtual CORINFO_CLASS_HANDLE FindTypeForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry) = 0;
 
     // Find the (parameterized) method for the given blob from the profile data
     virtual CORINFO_METHOD_HANDLE FindMethodForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry) = 0;
@@ -1304,11 +1295,13 @@ class ICorCompilePreloader
             CORINFO_METHOD_HANDLE method, 
             CORINFO_METHOD_HANDLE duplicateMethod) = 0;
 
+#ifdef FEATURE_READYTORUN_COMPILER
     // Returns a compressed encoding of the inline tracking map 
     // for this compilation
     virtual void GetSerializedInlineTrackingMap(
             IN OUT SBuffer    * pSerializedInlineTrackingMap
             ) = 0;
+#endif
 
     //
     // Release frees the preloader
@@ -1338,6 +1331,7 @@ class ICorCompilePreloader
     CORCOMPILE_SECTION(READONLY_HOT) \
     CORCOMPILE_SECTION(READONLY_WARM) \
     CORCOMPILE_SECTION(READONLY_COLD) \
+    CORCOMPILE_SECTION(READONLY_VCHUNKS_AND_DICTIONARY) \
     CORCOMPILE_SECTION(CLASS_COLD) \
     CORCOMPILE_SECTION(CROSS_DOMAIN_INFO) \
     CORCOMPILE_SECTION(METHOD_PRECODE_COLD) \
@@ -1385,9 +1379,12 @@ class ICorCompileDataStore
     // Returns ZapImage
     virtual ZapImage * GetZapImage() = 0;
 
-    // Reports an error during preloading.  Return the error code to propagate,
-    // or S_OK to ignore the error
-    virtual void Error(mdToken token, HRESULT hr, LPCWSTR description) = 0;
+    // Report an error during preloading:
+    // 'token' is the metadata token that triggered the error
+    // hr is the HRESULT from the thrown Exception, or S_OK if we don't have an thrown exception
+    // resID is the resourceID with additional information from the thrown Exception, or 0
+    //
+    virtual void Error(mdToken token, HRESULT hr, UINT _resID, LPCWSTR description) = 0;
 };
 
 

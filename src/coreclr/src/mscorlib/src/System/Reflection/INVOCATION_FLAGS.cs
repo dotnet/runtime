@@ -15,7 +15,7 @@ namespace System.Reflection
         INVOCATION_FLAGS_INITIALIZED = 0x00000001,
         // it's used for both method and field to signify that no access is allowed
         INVOCATION_FLAGS_NO_INVOKE = 0x00000002,
-        INVOCATION_FLAGS_NEED_SECURITY = 0x00000004,
+        /* unused 0x00000004 */
         // Set for static ctors and ctors on abstract types, which
         // can be invoked only if the "this" object is provided (even if it's null).
         INVOCATION_FLAGS_NO_CTOR_INVOKE = 0x00000008,

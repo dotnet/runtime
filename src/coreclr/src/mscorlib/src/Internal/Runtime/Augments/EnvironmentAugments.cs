@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -21,8 +22,14 @@ namespace Internal.Runtime.Augments
         public static int TickCount => Environment.TickCount;
         public static string GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
         public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(variable, target);
-        public static IDictionary GetEnvironmentVariables() => Environment.GetEnvironmentVariables();
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => Environment.GetEnvironmentVariables(target);
+        // TODO Perf: Once CoreCLR gets EnumerateEnvironmentVariables(), get rid of GetEnvironmentVariables() and have 
+        // corefx call EnumerateEnvironmentVariables() instead so we don't have to create a dictionary just to copy it into
+        // another dictionary.
+        public static IDictionary GetEnvironmentVariables() => new Dictionary<string, string>(EnumerateEnvironmentVariables());
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => new Dictionary<string, string>(EnumerateEnvironmentVariables(target));
+        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables() => Environment.EnumerateEnvironmentVariables();
+        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target) => Environment.EnumerateEnvironmentVariables(target);
+
         public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
         public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => Environment.SetEnvironmentVariable(variable, value, target);
 

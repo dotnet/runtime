@@ -15,7 +15,6 @@ namespace System
     using CultureInfo = System.Globalization.CultureInfo;
 
     // Made serializable in anticipation of this class eventually having state.
-    [Serializable]
     internal class OleAutBinder : DefaultBinder
     {
         // ChangeType

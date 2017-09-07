@@ -3019,12 +3019,12 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
         return (SKIP_PUSH_REG(base, offset));
     }
 
-    if (size >= OS_PAGE_SIZE)
+    if (size >= (int)GetOsPageSize())
     {
-        if (size < (3 * OS_PAGE_SIZE))
+        if (size < int(3 * GetOsPageSize()))
         {
-            // add 7 bytes for one or two TEST EAX, [ESP+OS_PAGE_SIZE]
-            offset += (size / OS_PAGE_SIZE) * 7;
+            // add 7 bytes for one or two TEST EAX, [ESP+GetOsPageSize()]
+            offset += (size / GetOsPageSize()) * 7;
         }
         else
         {
@@ -4796,7 +4796,12 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                 if (dspPtr) {
                     printf("    Frame %s%s local at [E",
                            (lowBits & byref_OFFSET_FLAG) ? "byref "   : "",
+#ifndef WIN64EXCEPTIONS
                            (lowBits & this_OFFSET_FLAG)  ? "this-ptr" : "");
+#else
+                           (lowBits & pinned_OFFSET_FLAG)  ? "pinned" : "");
+#endif
+
                     
                     int  dspOffs = ptrAddr;
                     char frameType;
@@ -4816,8 +4821,22 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                         printf("%cP+%02XH]: ", frameType, +dspOffs);
                 }
 #endif
+
+                unsigned flags = CHECK_APP_DOMAIN;
+#ifndef WIN64EXCEPTIONS
+                // First  Bit : byref
+                // Second Bit : this
+                // The second bit means `this` not `pinned`. So we ignore it.
+                flags |= lowBits & byref_OFFSET_FLAG;
+#else
+                // First  Bit : byref
+                // Second Bit : pinned
+                // Both bits are valid
+                flags |= lowBits;
+#endif
+
                 _ASSERTE(byref_OFFSET_FLAG == GC_CALL_INTERIOR);
-                pCallBack(hCallBack, (OBJECTREF*)(size_t)ptrAddr, (lowBits & byref_OFFSET_FLAG) | CHECK_APP_DOMAIN
+                pCallBack(hCallBack, (OBJECTREF*)(size_t)ptrAddr, flags
                           DAC_ARG(DacSlotLocation(info.ebpFrame ? REGI_EBP : REGI_ESP,
                                           info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
                                           true)));
@@ -5310,6 +5329,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
 
+#ifndef WIN64EXCEPTIONS
     /* Parse the untracked frame variable table */
 
     /* The 'this' pointer can never be located in the untracked table */
@@ -5355,6 +5375,19 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 #if VERIFY_GC_TABLES
     _ASSERTE(*castto(table, unsigned short *) == 0xBABE);
 #endif
+
+#else // WIN64EXCEPTIONS
+    if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()) // Generic Context is "this"
+    {
+        // Untracked table must have at least one entry - this pointer
+        _ASSERTE(info.untrackedCnt > 0);
+
+        // The first entry must be "this" pointer
+        int stkOffs = fastDecodeSigned(table);
+        taArgBase -= stkOffs & ~OFFSET_MASK;
+        return (OBJECTREF)(size_t)(*PTR_DWORD(taArgBase));
+    }
+#endif // WIN64EXCEPTIONS
 
     return NULL;
 #else // !USE_GC_INFO_DECODER

@@ -1415,7 +1415,7 @@ bool TypeString::ContainsReservedChar(LPCWSTR pTypeName)
     return false;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::QueryInterface(REFIID riid, void **ppUnk)
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::QueryInterface(REFIID riid, void **ppUnk)
 {
     CONTRACTL
     {
@@ -1439,7 +1439,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::QueryInterface(REFIID riid, void **ppU
     return S_OK;
 }
 
-ULONG __stdcall TypeNameBuilderWrapper::AddRef()
+ULONG STDMETHODCALLTYPE TypeNameBuilderWrapper::AddRef()
 {
     CONTRACTL
     {
@@ -1453,7 +1453,7 @@ ULONG __stdcall TypeNameBuilderWrapper::AddRef()
     return InterlockedIncrement(&m_ref);
 }
 
-ULONG __stdcall TypeNameBuilderWrapper::Release()
+ULONG STDMETHODCALLTYPE TypeNameBuilderWrapper::Release()
 {
     CONTRACTL
     {
@@ -1479,7 +1479,7 @@ ULONG __stdcall TypeNameBuilderWrapper::Release()
 }
 
 
-HRESULT __stdcall TypeNameBuilderWrapper::OpenGenericArguments()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::OpenGenericArguments()
 {
     CONTRACTL
     {
@@ -1496,7 +1496,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::OpenGenericArguments()
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::CloseGenericArguments()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::CloseGenericArguments()
 {
     CONTRACTL
     {
@@ -1513,7 +1513,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::CloseGenericArguments()
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::OpenGenericArgument()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::OpenGenericArgument()
 {
     CONTRACTL
     {
@@ -1530,7 +1530,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::OpenGenericArgument()
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::CloseGenericArgument()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::CloseGenericArgument()
 {
     CONTRACTL
     {
@@ -1547,7 +1547,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::CloseGenericArgument()
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::AddName(LPCWSTR szName)
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::AddName(LPCWSTR szName)
 {
     CONTRACTL
     {
@@ -1564,7 +1564,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::AddName(LPCWSTR szName)
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::AddPointer()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::AddPointer()
 {
     CONTRACTL
     {
@@ -1581,7 +1581,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::AddPointer()
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::AddByRef()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::AddByRef()
 {
     CONTRACTL
     {
@@ -1598,7 +1598,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::AddByRef()
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::AddSzArray()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::AddSzArray()
 {
     CONTRACTL
     {
@@ -1615,7 +1615,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::AddSzArray()
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::AddArray(DWORD rank)
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::AddArray(DWORD rank)
 {
     CONTRACTL
     {
@@ -1632,7 +1632,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::AddArray(DWORD rank)
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::AddAssemblySpec(LPCWSTR szAssemblySpec)
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::AddAssemblySpec(LPCWSTR szAssemblySpec)
 {
     CONTRACTL
     {
@@ -1649,7 +1649,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::AddAssemblySpec(LPCWSTR szAssemblySpec
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::ToString(BSTR* pszStringRepresentation)
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::ToString(BSTR* pszStringRepresentation)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1660,7 +1660,7 @@ HRESULT __stdcall TypeNameBuilderWrapper::ToString(BSTR* pszStringRepresentation
     return hr;
 }
 
-HRESULT __stdcall TypeNameBuilderWrapper::Clear()
+HRESULT STDMETHODCALLTYPE TypeNameBuilderWrapper::Clear()
 {
     CONTRACTL
     {

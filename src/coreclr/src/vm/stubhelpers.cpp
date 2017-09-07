@@ -16,7 +16,6 @@
 #include "dllimport.h"
 #include "fieldmarshaler.h"
 #include "comdelegate.h"
-#include "security.h"
 #include "eventtrace.h"
 #include "comdatetime.h"
 #include "gcheaputilities.h"
@@ -96,7 +95,7 @@ MethodDesc *StubHelpers::ResolveInteropMethod(Object *pThisUNSAFE, MethodDesc *p
         MethodTable *pMT = pThisUNSAFE->GetMethodTable();
 
         _ASSERTE(pMT->IsDelegate());
-        return ((DelegateEEClass *)pMT->GetClass())->m_pInvokeMethod;
+        return ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod();
     }
     return pMD;
 }
@@ -1551,7 +1550,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
             _ASSERTE(pMT->IsDelegate());
 
             EEClass * pClass = pMT->GetClass();
-            pRealMD = ((DelegateEEClass*)pClass)->m_pInvokeMethod;
+            pRealMD = ((DelegateEEClass*)pClass)->GetInvokeMethod();
             _ASSERTE(pRealMD);
         }
     }
@@ -1691,7 +1690,7 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
             }
         }
 
-        GetExceptionForHR(hr, pErrInfo, fForWinRT, &oThrowable, pResErrorInfo, bHasNonCLRLanguageErrorObject);
+        GetExceptionForHR(hr, pErrInfo, !fForWinRT, &oThrowable, pResErrorInfo, bHasNonCLRLanguageErrorObject);
     }
     HELPER_METHOD_FRAME_END();    
 

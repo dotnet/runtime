@@ -14,7 +14,7 @@ System.Threading.ThreadPool.MaxThreads|Override MaxThreads for the ThreadPool wo
 
 ## Environment/Registry Configuration Knobs
 
-This table is machine-generated from commit 82ed770 on 05/31/16. It might be out of date.
+This table is machine-generated from commit 456b418 on 08/22/17. It might be out of date.
 
 When using these configurations from environment variables, the variables need to have the `COMPlus_` prefix in their names. e.g. To set DumpJittedMethods to 1, add the environment variable `COMPlus_DumpJittedMethods=1`.
 
@@ -44,6 +44,13 @@ Name | Description | Type | Class | Default Value | Flags
 `AppContextSwitchOverrides` | Allows default switch values defined in AppContext to be overwritten by values in the Config | STRING | INTERNAL | | IgnoreEnv / IgnoreHKLM / IgnoreHKCU / IgnoreWindowsQuirkDB / ConfigFile_ApplicationFirst
 `FinalizeOnShutdown` | When enabled, on shutdown, blocks all user threads and calls finalizers for all finalizable objects, including live objects | DWORD | EXTERNAL | DEFAULT_FinalizeOnShutdown | 
 `ARMEnabled` | Set it to 1 to enable ARM | DWORD | UNSUPPORTED | (DWORD)0 | 
+`JitPitchEnabled` | Set it to 1 to enable Jit Pitching | DWORD | INTERNAL | (DWORD)0 | 
+`JitPitchMemThreshold` | Do Jit Pitching when code heap usage is larger than this (in bytes) | DWORD | INTERNAL | (DWORD)0 | 
+`JitPitchMethodSizeThreshold` | Do Jit Pitching for methods whose native code size larger than this (in bytes) | DWORD | INTERNAL | (DWORD)0 | 
+`JitPitchTimeInterval` | Time interval between Jit Pitchings in ms | DWORD | INTERNAL | (DWORD)0 | 
+`JitPitchPrintStat` | Print statistics about Jit Pitching | DWORD | INTERNAL | (DWORD)0 | 
+`JitPitchMinVal` | Do Jit Pitching if the value of the inner counter greater than this value (for debugging purpose only) | DWORD | INTERNAL | (DWORD)0 | 
+`JitPitchMaxVal` | Do Jit Pitching the value of the inner counter less then this value (for debuggin purpose only) | DWORD | INTERNAL | (DWORD)0xffffffff | 
 `designerNamespaceResolution` | Set it to 1 to enable DesignerNamespaceResolve event for WinRT types | DWORD | EXTERNAL | FALSE | IgnoreEnv / IgnoreHKLM / IgnoreHKCU / FavorConfigFile
 `GetAssemblyIfLoadedIgnoreRidMap` | Used to force loader to ignore assemblies cached in the rid-map | DWORD | INTERNAL | 0 | REGUTIL_default
 `BCLCorrectnessWarnings` | Flag a few common correctness bugs in the library with additional runtime checks. | DWORD | INTERNAL | | 
@@ -58,7 +65,6 @@ Name | Description | Type | Class | Default Value | Flags
 `ThrowUnobservedTaskExceptions` | Flag to propagate unobserved task exceptions on the finalizer thread. | DWORD | EXTERNAL | 0 | 
 `EnableAmPmParseAdjustment` | Flag to enable the .NET 4.0 DateTimeParse to correctly parse AM/PM cases | DWORD | EXTERNAL | 0 | 
 `UseRandomizedStringHashAlgorithm` | Flag to use a string hashing algorithm who's behavior differs between AppDomains | DWORD | EXTERNAL | 0 | 
-`Windows8ProfileAPICheckFlag` | Windows 8 Profile API check behavior (non-W8P framework APIs cannot be accessed through Reflection and RefEmit). 0: normal (only check in non-dev-mode APPX). 1: always check. 2: never check. | DWORD | INTERNAL | 0 | 
 `BreakOnBadExit` |  | DWORD | UNSUPPORTED | 0 | REGUTIL_default
 `BreakOnClassBuild` | Very useful for debugging class layout code. | STRING | INTERNAL | | 
 `BreakOnClassLoad` | Very useful for debugging class loading code. | STRING | INTERNAL | | 
@@ -193,18 +199,14 @@ Name | Description | Type | Class | Default Value | Flags
 `GCCompactRatio` | Specifies the ratio compacting GCs vs sweeping  | DWORD | UNSUPPORTED | 0 | 
 `GCPollType` |  | DWORD | EXTERNAL | | 
 `NewGCCalc` |  | STRING | EXTERNAL | | REGUTIL_default
-`GCprnLvl` | Specifies the maximum level of GC logging | DWORD | UNSUPPORTED | | 
 `GCRetainVM` | When set we put the segments that should be deleted on a standby list (instead of releasing them back to the OS) which will be considered to satisfy new segment requests (note that the same thing can be specified via API which is the supported way) | DWORD | UNSUPPORTED | 0 | 
 `GCSegmentSize` | Specifies the managed heap segment size | DWORD | UNSUPPORTED | | 
 `GCLOHCompact` | Specifies the LOH compaction mode | DWORD | UNSUPPORTED | | 
-`gcAllowVeryLargeObjects` | allow allocation of 2GB+ objects on GC heap | DWORD | EXTERNAL | 0 | 
+`gcAllowVeryLargeObjects` | allow allocation of 2GB+ objects on GC heap | DWORD | EXTERNAL | 1 | 
 `GCStress` | trigger GCs at regular intervals | DWORD | EXTERNAL | 0 | REGUTIL_default
 `GcStressOnDirectCalls` | whether to trigger a GC on direct calls | DWORD | INTERNAL | 0 | REGUTIL_default
 `GCStressStart` | start GCStress after N stress GCs have been attempted | DWORD | EXTERNAL | 0 | 
 `GCStressStartAtJit` | start GCStress after N items are jitted | DWORD | INTERNAL | 0 | 
-`GCtraceEnd` | Specifies the index of the GC when the logging should end | DWORD | UNSUPPORTED | | 
-`GCtraceFacility` | Specifies where to log to (this allows you to log to console, the stress log or a normal CLR log (good when you need to correlate the GC activities with other CLR activities) | DWORD | INTERNAL | | 
-`GCtraceStart` | Specifies the index of the GC when the logging should start | DWORD | UNSUPPORTED | | 
 `gcTrimCommitOnLowMemory` | When set we trim the committed space more aggressively for the ephemeral seg. This is used for running many instances of server processes where they want to keep as little memory committed as possible | DWORD | EXTERNAL | | 
 `BGCSpinCount` | Specifies the bgc spin count | DWORD | UNSUPPORTED | 140 | 
 `BGCSpin` | Specifies the bgc spin time | DWORD | UNSUPPORTED | 2 | 
@@ -212,6 +214,10 @@ Name | Description | Type | Class | Default Value | Flags
 `SetupGcCoverage` | This doesn't appear to be a config flag | STRING | EXTERNAL | | REGUTIL_default
 `GCNumaAware` | Specifies if to enable GC NUMA aware | DWORD | UNSUPPORTED | 1 | 
 `GCCpuGroup` | Specifies if to enable GC to support CPU groups | DWORD | EXTERNAL | 0 | 
+`GCHeapCount` |  | DWORD | UNSUPPORTED | 0 | 
+`GCNoAffinitize` |  | DWORD | UNSUPPORTED | 0 | 
+`GCUseStandalone` |  | DWORD | EXTERNAL | 0 | 
+`GCStandaloneLocation` |  | STRING | EXTERNAL | | 
 `IBCPrint` |  | STRING | INTERNAL | | REGUTIL_default
 `IBCPrint3` |  | STRING | INTERNAL | | REGUTIL_default
 `ConvertIbcData` | Converts between v1 and v2 IBC data | DWORD | UNSUPPORTED | 1 | REGUTIL_default
@@ -316,7 +322,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitNoStructPromotion` | Disables struct promotion in Jit32 | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitNoUnroll` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitNoMemoryBarriers` | If 1, don't generate memory barriers | DWORD | INTERNAL | 0 | REGUTIL_default
-`JitNoRngChks` | If 1, don't generate range checks | DWORD | PRIVATE | 0 | 
+`JitNoRngChks` | If 1, don't generate range checks | DWORD | PRIVATE | 0 | REGUTIL_default
 `JitOptimizeType` |  | DWORD | EXTERNAL | | 
 `JitOrder` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitDiffableDasm` | Make the disassembly diff-able | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -440,7 +446,6 @@ Name | Description | Type | Class | Default Value | Flags
 `MD_RegMetaDump` | ? Dump MD in 4 functions? | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_TlbImp_BreakOnErr` | ASSERT when importing TLB into MD | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_TlbImp_BreakOnTypeImport` | ASSERT when importing a type from TLB | STRING | INTERNAL | | (LookupOptions) (REGUTIL_default / DontPrependCOMPlus_)
-`MD_UseMinimalDeltas` | ? Some MD modifications when applying EnC? | DWORD | INTERNAL | 1 | REGUTIL_default
 `MD_WinMD_Disable` | Never activate the WinMD import adapter | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_WinMD_AssertOnIllegalUsage` | ASSERT if a WinMD import adapter detects a tool incompatibility | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_PreserveDebuggerMetadataMemory` | Save all versions of metadata memory in the debugger when debuggee metadata is updated | DWORD | EXTERNAL | 0 | REGUTIL_default
@@ -518,7 +523,6 @@ Name | Description | Type | Class | Default Value | Flags
 `NicPath` | Redirects NIC access to a specified alternative | STRING | UNSUPPORTED | | REGUTIL_default
 `NGenTaskDelayStart` | Use NGen Task delay start trigger, instead of critical idle task | DWORD | INTERNAL | 0 | 
 `Ningen` | Enable no-impact ngen | DWORD | INTERNAL | 1 | 
-`Ningen` | Enable no-impact ngen | DWORD | INTERNAL | 0 | 
 `NoASLRForNgen` | Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run. | DWORD | INTERNAL | 0 | 
 `NgenAllowOutput` | If set to 1, the NGEN worker will bind to the parent console, thus allowing stdout output to work | DWORD | EXTERNAL | 0 | REGUTIL_default
 `CrossGenAssumeInputSigned` | CrossGen should assume that its input assemblies will be signed before deployment | DWORD | INTERNAL | 1 | 
@@ -581,6 +585,7 @@ Name | Description | Type | Class | Default Value | Flags
 `ETW_ObjectAllocationEventsPerTypePerSec` | Desired number of GCSampledObjectAllocation ETW events to be logged per type per second.  If 0, then the default built in to the implementation for the enabled event (e.g., High, Low), will be used. | STRING | UNSUPPORTED | | REGUTIL_default
 `ProfAPI_ValidateNGENInstrumentation` | This flag enables additional validations when using the IMetaDataEmit APIs for NGEN'ed images to ensure only supported edits are made. | DWORD | UNSUPPORTED | 0 | 
 `PerfMapEnabled` | This flag is used on Linux to enable writing /tmp/perf-$pid.map. It is disabled by default | DWORD | EXTERNAL | 0 | REGUTIL_default
+`PerfMapIgnoreSignal` | When perf map is enabled, this option will configure the specified signal to be accepeted and ignored as a marker in the perf logs.  It is disabled by default | DWORD | EXTERNAL | 0 | REGUTIL_default
 `EnableIEHosting` | Allow activation of IE hosting | DWORD | UNSUPPORTED | | 
 `NoGuiFromShim` | Turn off GUI in shim | DWORD | UNSUPPORTED | | 
 `OnlyUseLatestCLR` | Big red switch for loading CLR | DWORD | UNSUPPORTED | | 
@@ -638,11 +643,14 @@ Name | Description | Type | Class | Default Value | Flags
 `SuspendDeadlockTimeout` |  | DWORD | INTERNAL | 40000 | 
 `SuspendThreadDeadlockTimeoutMs` |  | DWORD | INTERNAL | 2000 | 
 `INTERNAL_ThreadSuspendInjection` | Specifies whether to inject activations for thread suspension on Unix | DWORD | INTERNAL | 1 | 
+`Thread_DeadThreadCountThresholdForGCTrigger` | In the heuristics to clean up dead threads, this threshold must be reached before triggering a GC will be considered. Set to 0 to disable triggering a GC based on dead threads. | DWORD | INTERNAL | 75 | 
+`Thread_DeadThreadGCTriggerPeriodMilliseconds` | In the heuristics to clean up dead threads, this much time must have elapsed since the previous max-generation GC before triggering another GC will be considered | DWORD | INTERNAL | 1000 * 60 * 30 | 
 `ThreadPool_ForceMinWorkerThreads` | Overrides the MinThreads setting for the ThreadPool worker pool | DWORD | INTERNAL | 0 | 
 `ThreadPool_ForceMaxWorkerThreads` | Overrides the MaxThreads setting for the ThreadPool worker pool | DWORD | INTERNAL | 0 | 
 `ThreadPool_DisableStarvationDetection` | Disables the ThreadPool feature that forces new threads to be added when workitems run for too long | DWORD | INTERNAL | 0 | 
 `ThreadPool_DebugBreakOnWorkerStarvation` | Breaks into the debugger if the ThreadPool detects work queue starvation | DWORD | INTERNAL | 0 | 
 `ThreadPool_EnableWorkerTracking` | Enables extra expensive tracking of how many workers threads are working simultaneously | DWORD | INTERNAL | 0 | 
+`ThreadPool_UnfairSemaphoreSpinLimit` | Per processor limit used when calculating spin duration in UnfairSemaphore::Wait | DWORD | INTERNAL | 50 | 
 `Thread_UseAllCpuGroups` | Specifies if to automatically distribute thread across CPU Groups | DWORD | EXTERNAL | 0 | 
 `ThreadpoolTickCountAdjustment` |  | DWORD | INTERNAL | 0 | 
 `HillClimbing_WavePeriod` |  | DWORD | INTERNAL | 4 | 
@@ -658,6 +666,7 @@ Name | Description | Type | Class | Default Value | Flags
 `HillClimbing_SampleIntervalLow` |  | DWORD | INTERNAL | 10 | 
 `HillClimbing_SampleIntervalHigh` |  | DWORD | INTERNAL | 200 | 
 `HillClimbing_GainExponent` | The exponent to apply to the gain, times 100.  100 means to use linear gain, higher values will enhance large moves and damp small ones. | DWORD | INTERNAL | 200 | 
+`EXPERIMENTAL_TieredCompilation` | Enables tiered compilation | DWORD | UNSUPPORTED | 0 | 
 `INTERNAL_TypeLoader_InjectInterfaceDuplicates` | Injects duplicates in interface map for all types. | DWORD | INTERNAL | 0 | 
 `VirtualCallStubCollideMonoPct` | Used only when STUB_LOGGING is defined, which by default is not. | DWORD | INTERNAL | 0 | REGUTIL_default
 `VirtualCallStubCollideWritePct` | Used only when STUB_LOGGING is defined, which by default is not. | DWORD | INTERNAL | 100 | REGUTIL_default
@@ -681,8 +690,11 @@ Name | Description | Type | Class | Default Value | Flags
 `ZapLazyCOWPagesEnabled` |  | DWORD | INTERNAL | 0 | 
 `DebugAssertOnMissedCOWPage` |  | DWORD | INTERNAL | 1 | 
 `ReadyToRun` | Enable/disable use of ReadyToRun native code | DWORD | EXTERNAL | 1 |  // On by default for CoreCLR
-`ReadyToRun` | Enable/disable use of ReadyToRun native code | DWORD | EXTERNAL | 0 |  // Off by default for desktop
+`ReadyToRunExcludeList` | List of assemblies that cannot use Ready to Run images | STRING | EXTERNAL | | 
+`ReadyToRunLogFile` | Name of file to log success/failure of using Ready to Run images | STRING | EXTERNAL | | 
 `EnableEventLog` | Enable/disable use of EnableEventLogging mechanism  | DWORD | EXTERNAL | 0 |  // Off by default 
+`EventSourceFilter` |  | STRING | INTERNAL | | 
+`EventNameFilter` |  | STRING | INTERNAL | | 
 `ExposeExceptionsInCOM` |  | DWORD | INTERNAL | | 
 `PreferComInsteadOfManagedRemoting` | When communicating with a cross app domain CCW, use COM instead of managed remoting. | DWORD | EXTERNAL | 0 | 
 `GenerateStubForHost` | Forces the host hook stub to be built for all unmanaged calls, even when not running hosted. | DWORD | INTERNAL | 0 | 
@@ -697,6 +709,8 @@ Name | Description | Type | Class | Default Value | Flags
 `EnableRCWCleanupOnSTAShutdown` | Performs RCW cleanup when STA shutdown is detected using IInitializeSpy in classic processes. | DWORD | INTERNAL | 0 | 
 `LocalWinMDPath` | Additional path to probe for WinMD files in if a WinRT type is not resolved using the standard paths. | STRING | INTERNAL | | 
 `AllowDComReflection` | Allows out of process DCOM clients to marshal blocked reflection types. | DWORD | EXTERNAL | 0 | 
+`PerformanceTracing` | Enable/disable performance tracing.  Non-zero values enable tracing. | DWORD | INTERNAL | 0 | 
+`GDBJitElfDump` | Dump ELF for specified method | STRING | INTERNAL | | 
 `3gbEatMem` | Testhook: Size of memory (in 64K chunks) to be reserved before CLR starts | DWORD | UNSUPPORTED | 0 | REGUTIL_default
 `ActivatePatchSkip` | allows an assert when ActivatePatchSkip is called | DWORD | INTERNAL | 0 | REGUTIL_default
 `AlwaysCallInstantiatingStub` | Forces the Jit to use the instantiating stub for generics | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -705,7 +719,6 @@ Name | Description | Type | Class | Default Value | Flags
 `AssertOnUnneededThis` | While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites. | DWORD | INTERNAL | 0 | 
 `AssertStacktrace` |  | DWORD | INTERNAL | 1 | REGUTIL_default
 `BuildFlavor` | Choice of build flavor (wks or svr) of CLR | STRING | UNSUPPORTED | | 
-`CerLogging` | In vm\\ConstrainedExecutionRegion.cpp.  Debug-only logging when we prepare methods, find reliability contract problems, restore stuff from ngen images, etc. | DWORD | INTERNAL | 0 | 
 `clearNativeImageStress` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `CLRLoadLogDir` | Enable logging of CLR selection | STRING | INTERNAL | | 
 `CONFIG` | Used to specify an XML config file for EEConfig | STRING | EXTERNAL | | REGUTIL_default
@@ -804,3 +817,13 @@ Name | Description | Type | Class | Default Value | Flags
 `VerifyAllOnLoad` |  | DWORD | EXTERNAL | | 
 `Version` | Version of CLR to load. | STRING | INTERNAL | | 
 `ShimHookLibrary` | Path to a DLL that should be notified when shim loads the runtime DLL. | STRING | INTERNAL | | 
+## PAL Configuration Knobs
+All the names below need to be prefixed by `COMPlus_`.
+
+Name | Description | Type | Default Value
+-----|-------------|------|---------------
+`DefaultStackSize` | Overrides the default stack size for secondary threads | STRING | 0
+`DbgEnableMiniDump` | If set to 1, enables this core dump generation. The default is NOT to generate a dump | DWORD | 0
+`DbgMiniDumpName` | If set, use as the template to create the dump path and file name. The pid can be placed in the name with %d. | STRING | _/tmp/coredump.%d_
+`DbgMiniDumpType` | If set to 1 generates _MiniDumpNormal_, 2 _MiniDumpWithPrivateReadWriteMemory_, 3 _MiniDumpFilterTriage_, 4 _MiniDumpWithFullMemory_ | DWORD | 1
+`CreateDumpDiagnostics` | If set to 1, enables the _createdump_ utilities diagnostic messages (TRACE macro) | DWORD | 0

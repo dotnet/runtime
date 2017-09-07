@@ -23,13 +23,35 @@
 // There are several flavors of conversions from/to RelativePointer:
 //  - GetValue/SetValue: The most common version. Assumes that the pointer is not NULL.
 //  - GetValueMaybeNull/SetValueMaybeNull: Pointer can be NULL.
-//  - GetValueAtPtr/SetValueAtPtr: Static version of GetValue/SetValue. It is 
+//  - GetValueAtPtr: Static version of GetValue. It is
 //    meant to simplify access to arrays of RelativePointers.
-//  - GetValueMaybeNullAtPtr/SetValueMaybeNullAtPtr
+//  - GetValueMaybeNullAtPtr
 template<typename PTR_TYPE>
 class RelativePointer
 {
 public:
+
+    static constexpr bool isRelative = true;
+    typedef PTR_TYPE type;
+
+#ifndef DACCESS_COMPILE
+    RelativePointer()
+    {
+        m_delta = (TADDR)NULL;
+
+        _ASSERTE (IsNull());
+    }
+#else // DACCESS_COMPILE
+    RelativePointer() =delete;
+#endif // DACCESS_COMPILE
+
+    // Implicit copy/move is not allowed
+    // Bitwise copy is implemented by BitwiseCopyTo method
+    RelativePointer<PTR_TYPE>(const RelativePointer<PTR_TYPE> &) =delete;
+    RelativePointer<PTR_TYPE>(RelativePointer<PTR_TYPE> &&) =delete;
+    RelativePointer<PTR_TYPE>& operator = (const RelativePointer<PTR_TYPE> &) =delete;
+    RelativePointer<PTR_TYPE>& operator = (RelativePointer<PTR_TYPE> &&) =delete;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -94,54 +116,45 @@ public:
         return dac_cast<DPTR(RelativePointer<PTR_TYPE>)>(base)->GetValueMaybeNull(base);
     }
 
-    // Set encoded value of the pointer. Assumes that the value is not NULL.
-    void SetValue(TADDR base, PTR_TYPE addr)
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(addr != NULL);
-        m_delta = dac_cast<TADDR>(addr) - base;
-    }
-
 #ifndef DACCESS_COMPILE
     // Set encoded value of the pointer. Assumes that the value is not NULL.
-    // Does not need explicit base and thus can be used in non-DAC builds only.
     FORCEINLINE void SetValue(PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
-        return SetValue((TADDR)this, addr);
-    }
-#endif
-
-    // Static version of SetValue. It is meant to simplify access to arrays of pointers.
-    FORCEINLINE static void SetValueAtPtr(TADDR base, PTR_TYPE addr)
-    {
-        LIMITED_METHOD_CONTRACT;
-        dac_cast<DPTR(RelativePointer<PTR_TYPE>)>(base)->SetValue(base, addr);
+        PRECONDITION(addr != NULL);
+        m_delta = (TADDR)addr - (TADDR)this;
     }
 
     // Set encoded value of the pointer. The value can be NULL.
     void SetValueMaybeNull(TADDR base, PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
-        if (addr == NULL) m_delta = NULL; else SetValue(base, addr);
+        if (addr == NULL)
+            m_delta = NULL;
+        else
+            m_delta = (TADDR)addr - (TADDR)base;
     }
 
-#ifndef DACCESS_COMPILE
     // Set encoded value of the pointer. The value can be NULL.
-    // Does not need explicit base and thus can be used in non-DAC builds only.
     FORCEINLINE void SetValueMaybeNull(PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
-        return SetValueMaybeNull((TADDR)this, addr);
+        SetValueMaybeNull((TADDR)this, addr);
+    }
+
+    FORCEINLINE void SetValueVolatile(PTR_TYPE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetValue(addr);
     }
 #endif
 
-    // Static version of SetValueMaybeNull. It is meant to simplify access to arrays of pointers.
-    FORCEINLINE static void SetValueMaybeNullAtPtr(TADDR base, PTR_TYPE addr)
+#ifndef DACCESS_COMPILE
+    void BitwiseCopyTo(RelativePointer<PTR_TYPE> &dest) const
     {
-        LIMITED_METHOD_CONTRACT;
-        dac_cast<DPTR(RelativePointer<PTR_TYPE>)>(base)->SetValueMaybeNull(base, addr);
+        dest.m_delta = m_delta;
     }
+#endif // DACCESS_COMPILE
 
 private:
 #ifndef DACCESS_COMPILE
@@ -170,6 +183,10 @@ template<typename PTR_TYPE>
 class FixupPointer
 {
 public:
+
+    static constexpr bool isRelative = false;
+    typedef PTR_TYPE type;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -197,14 +214,37 @@ public:
         return dac_cast<PTR_TYPE>(addr);
     }
 
+    // Returns value of the encoded pointer.
+    FORCEINLINE PTR_TYPE GetValueMaybeNull() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetValue();
+    }
+
+#ifndef DACCESS_COMPILE
     // Returns the pointer to the indirection cell.
     PTR_TYPE * GetValuePtr() const
     {
-        LIMITED_METHOD_DAC_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
         TADDR addr = m_addr;
         if ((addr & FIXUP_POINTER_INDIRECTION) != 0)
-            return dac_cast<DPTR(PTR_TYPE)>(addr - FIXUP_POINTER_INDIRECTION);
+            return (PTR_TYPE *)(addr - FIXUP_POINTER_INDIRECTION);
         return (PTR_TYPE *)&m_addr;
+    }
+#endif // !DACCESS_COMPILE
+
+    // Static version of GetValue. It is meant to simplify access to arrays of pointers.
+    FORCEINLINE static PTR_TYPE GetValueAtPtr(TADDR base)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<DPTR(FixupPointer<PTR_TYPE>)>(base)->GetValue();
+    }
+
+    // Static version of GetValueMaybeNull. It is meant to simplify access to arrays of pointers.
+    FORCEINLINE static PTR_TYPE GetValueMaybeNullAtPtr(TADDR base)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<DPTR(FixupPointer<PTR_TYPE>)>(base)->GetValueMaybeNull();
     }
 
     // Returns value of the encoded pointer.
@@ -218,11 +258,19 @@ public:
         return addr;
     }
 
+#ifndef DACCESS_COMPILE
     void SetValue(PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
         m_addr = dac_cast<TADDR>(addr);
     }
+
+    void SetValueMaybeNull(PTR_TYPE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetValue(addr);
+    }
+#endif // !DACCESS_COMPILE
 
 private:
     TADDR m_addr;
@@ -234,6 +282,25 @@ template<typename PTR_TYPE>
 class RelativeFixupPointer
 {
 public:
+
+    static constexpr bool isRelative = true;
+    typedef PTR_TYPE type;
+
+#ifndef DACCESS_COMPILE
+    RelativeFixupPointer()
+    {
+        SetValueMaybeNull(NULL);
+    }
+#else // DACCESS_COMPILE
+    RelativeFixupPointer() =delete;
+#endif // DACCESS_COMPILE
+
+    // Implicit copy/move is not allowed
+    RelativeFixupPointer<PTR_TYPE>(const RelativeFixupPointer<PTR_TYPE> &) =delete;
+    RelativeFixupPointer<PTR_TYPE>(RelativeFixupPointer<PTR_TYPE> &&) =delete;
+    RelativeFixupPointer<PTR_TYPE>& operator = (const RelativeFixupPointer<PTR_TYPE> &) =delete;
+    RelativeFixupPointer<PTR_TYPE>& operator = (RelativeFixupPointer<PTR_TYPE> &&) =delete;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -251,6 +318,16 @@ public:
              return (*PTR_TADDR(addr - FIXUP_POINTER_INDIRECTION) & 1) != 0;
         return FALSE;
     }
+
+#ifndef DACCESS_COMPILE
+    // Returns whether the indirection cell contain fixup that has not been converted to real pointer yet.
+    // Does not need explicit base and thus can be used in non-DAC builds only.
+    FORCEINLINE BOOL IsTagged() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsTagged((TADDR)this);
+    }
+#endif // !DACCESS_COMPILE
 
     // Returns value of the encoded pointer. Assumes that the pointer is not NULL.
     FORCEINLINE PTR_TYPE GetValue(TADDR base) const
@@ -316,63 +393,43 @@ public:
         return dac_cast<DPTR(RelativeFixupPointer<PTR_TYPE>)>(base)->GetValueMaybeNull(base);
     }
 
-    // Set encoded value of the pointer. Assumes that the value is not NULL.
-    void SetValue(TADDR base, PTR_TYPE addr)
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(addr != NULL);
-        m_delta = dac_cast<TADDR>(addr) - base;
-    }
-
 #ifndef DACCESS_COMPILE
     // Set encoded value of the pointer. Assumes that the value is not NULL.
-    // Does not need explicit base and thus can be used in non-DAC builds only.
     FORCEINLINE void SetValue(PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
-        return SetValue((TADDR)this, addr);
-    }
-#endif
-
-    // Static version of SetValue. It is meant to simplify access to arrays of pointers.
-    FORCEINLINE static void SetValueAtPtr(TADDR base, PTR_TYPE addr)
-    {
-        LIMITED_METHOD_CONTRACT;
-        dac_cast<DPTR(RelativeFixupPointer<PTR_TYPE>)>(base)->SetValue(base, addr);
+        PRECONDITION(addr != NULL);
+        m_delta = dac_cast<TADDR>(addr) - (TADDR)this;
     }
 
     // Set encoded value of the pointer. The value can be NULL.
     void SetValueMaybeNull(TADDR base, PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
-        if (addr == NULL) m_delta = NULL; else SetValue(base, addr);
+        if (addr == NULL)
+            m_delta = NULL;
+        else
+            m_delta = dac_cast<TADDR>(addr) - (TADDR)base;
     }
 
-#ifndef DACCESS_COMPILE
     // Set encoded value of the pointer. The value can be NULL.
-    // Does not need explicit base and thus can be used in non-DAC builds only.
     FORCEINLINE void SetValueMaybeNull(PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
-        return SetValueMaybeNull((TADDR)this, addr);
+        SetValueMaybeNull((TADDR)this, addr);
     }
 #endif
 
-    // Static version of SetValueMaybeNull. It is meant to simplify access to arrays of pointers.
-    FORCEINLINE static void SetValueMaybeNullAtPtr(TADDR base, PTR_TYPE addr)
-    {
-        LIMITED_METHOD_CONTRACT;
-        dac_cast<DPTR(RelativeFixupPointer<PTR_TYPE>)>(base)->SetValueMaybeNull(base, addr);
-    }
-
+#ifndef DACCESS_COMPILE
     // Returns the pointer to the indirection cell.
-    PTR_TYPE * GetValuePtr(TADDR base) const
+    PTR_TYPE * GetValuePtr() const
     {
         LIMITED_METHOD_CONTRACT;
-        TADDR addr = base + m_delta;
+        TADDR addr = ((TADDR)this) + m_delta;
         _ASSERTE((addr & FIXUP_POINTER_INDIRECTION) != 0);
-        return dac_cast<DPTR(PTR_TYPE)>(addr - FIXUP_POINTER_INDIRECTION);
+        return (PTR_TYPE *)(addr - FIXUP_POINTER_INDIRECTION);
     }
+#endif // !DACCESS_COMPILE
 
     // Returns value of the encoded pointer. Assumes that the pointer is not NULL. 
     // Allows the value to be tagged.
@@ -386,6 +443,48 @@ public:
         return addr;
     }
 
+    // Returns whether pointer is indirect. Assumes that the value is not NULL.
+    bool IsIndirectPtr(TADDR base) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        PRECONDITION(!IsNull());
+
+        TADDR addr = base + m_delta;
+
+        return (addr & FIXUP_POINTER_INDIRECTION) != 0;
+    }
+
+#ifndef DACCESS_COMPILE
+    // Returns whether pointer is indirect. Assumes that the value is not NULL.
+    // Does not need explicit base and thus can be used in non-DAC builds only.
+    bool IsIndirectPtr() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsIndirectPtr((TADDR)this);
+    }
+#endif
+
+    // Returns whether pointer is indirect. The value can be NULL.
+    bool IsIndirectPtrMaybeNull(TADDR base) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        if (m_delta == 0)
+            return false;
+
+        return IsIndirectPtr(base);
+    }
+
+#ifndef DACCESS_COMPILE
+    // Returns whether pointer is indirect. The value can be NULL.
+    // Does not need explicit base and thus can be used in non-DAC builds only.
+    bool IsIndirectPtrMaybeNull() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsIndirectPtrMaybeNull((TADDR)this);
+    }
+#endif
+
 private:
 #ifndef DACCESS_COMPILE
     Volatile<TADDR> m_delta;
@@ -397,7 +496,7 @@ private:
 // Fixup used for RelativePointer
 #define IMAGE_REL_BASED_RelativePointer IMAGE_REL_BASED_RELPTR
 
-#else // FEATURE_PREJIT
+#endif // FEATURE_PREJIT
 
 //----------------------------------------------------------------------------
 // PlainPointer is simple pointer wrapper to support compilation without indirections
@@ -406,6 +505,10 @@ template<typename PTR_TYPE>
 class PlainPointer
 {
 public:
+
+    static constexpr bool isRelative = false;
+    typedef PTR_TYPE type;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -414,10 +517,20 @@ public:
     }
 
     // Returns whether the indirection cell contain fixup that has not been converted to real pointer yet.
+    BOOL IsTagged(TADDR base) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsTagged();
+    }
+
+    // Returns whether the indirection cell contain fixup that has not been converted to real pointer yet.
     BOOL IsTagged() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_ptr & 1;
+        TADDR addr = m_ptr;
+        if ((addr & FIXUP_POINTER_INDIRECTION) != 0)
+             return (*PTR_TADDR(addr - FIXUP_POINTER_INDIRECTION) & 1) != 0;
+        return FALSE;
     }
 
     // Returns value of the encoded pointer.
@@ -427,18 +540,22 @@ public:
         return dac_cast<PTR_TYPE>(m_ptr);
     }
 
+#ifndef DACCESS_COMPILE
     // Returns the pointer to the indirection cell.
     PTR_TYPE * GetValuePtr() const
     {
-        LIMITED_METHOD_DAC_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
+        TADDR addr = m_ptr;
+        if ((addr & FIXUP_POINTER_INDIRECTION) != 0)
+            return (PTR_TYPE *)(addr - FIXUP_POINTER_INDIRECTION);
         return (PTR_TYPE *)&m_ptr;
     }
+#endif // !DACCESS_COMPILE
 
     // Returns value of the encoded pointer. Assumes that the pointer is not NULL.
     PTR_TYPE GetValue(TADDR base) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        PRECONDITION(!IsNull());
         return dac_cast<PTR_TYPE>(m_ptr);
     }
 
@@ -447,6 +564,13 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return dac_cast<DPTR(PlainPointer<PTR_TYPE>)>(base)->GetValue(base);
+    }
+
+    // Returns value of the encoded pointer. The pointer can be NULL.
+    PTR_TYPE GetValueMaybeNull() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<PTR_TYPE>(m_ptr);
     }
 
     // Returns value of the encoded pointer. The pointer can be NULL.
@@ -463,6 +587,43 @@ public:
         return dac_cast<DPTR(PlainPointer<PTR_TYPE>)>(base)->GetValueMaybeNull(base);
     }
 
+    // Returns whether pointer is indirect. Assumes that the value is not NULL.
+    bool IsIndirectPtr(TADDR base) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_ptr & FIXUP_POINTER_INDIRECTION) != 0;
+    }
+
+#ifndef DACCESS_COMPILE
+    // Returns whether pointer is indirect. Assumes that the value is not NULL.
+    // Does not need explicit base and thus can be used in non-DAC builds only.
+    bool IsIndirectPtr() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsIndirectPtr((TADDR)this);
+    }
+#endif
+
+    // Returns whether pointer is indirect. The value can be NULL.
+    bool IsIndirectPtrMaybeNull(TADDR base) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return IsIndirectPtr(base);
+    }
+
+#ifndef DACCESS_COMPILE
+    // Returns whether pointer is indirect. The value can be NULL.
+    // Does not need explicit base and thus can be used in non-DAC builds only.
+    bool IsIndirectPtrMaybeNull() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsIndirectPtrMaybeNull((TADDR)this);
+    }
+#endif
+
+#ifndef DACCESS_COMPILE
     void SetValue(PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
@@ -473,7 +634,6 @@ public:
     void SetValue(TADDR base, PTR_TYPE addr)
     {
         LIMITED_METHOD_CONTRACT;
-        PRECONDITION(addr != NULL);
         m_ptr = dac_cast<TADDR>(addr);
     }
 
@@ -491,7 +651,6 @@ public:
         m_ptr = dac_cast<TADDR>(addr);
     }
 
-#ifndef DACCESS_COMPILE
     // Set encoded value of the pointer. The value can be NULL.
     // Does not need explicit base and thus can be used in non-DAC builds only.
     FORCEINLINE void SetValueMaybeNull(PTR_TYPE addr)
@@ -499,7 +658,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return SetValueMaybeNull((TADDR)this, addr);
     }
-#endif
 
     // Static version of SetValueMaybeNull. It is meant to simplify access to arrays of pointers.
     FORCEINLINE static void SetValueMaybeNullAtPtr(TADDR base, PTR_TYPE addr)
@@ -508,15 +666,24 @@ public:
         dac_cast<DPTR(PlainPointer<PTR_TYPE>)>(base)->SetValueMaybeNull(base, addr);
     }
 
+    FORCEINLINE void SetValueVolatile(PTR_TYPE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore((PTR_TYPE *)(&m_ptr), addr);
+    }
+#endif
+
 private:
     TADDR m_ptr;
 };
+
+#ifndef FEATURE_PREJIT
 
 #define FixupPointer PlainPointer
 #define RelativePointer PlainPointer
 #define RelativeFixupPointer PlainPointer
 
-#endif // FEATURE_PREJIT
+#endif // !FEATURE_PREJIT
 
 //----------------------------------------------------------------------------
 // RelativePointer32 is pointer encoded as relative 32-bit offset. It is used
@@ -526,6 +693,10 @@ template<typename PTR_TYPE>
 class RelativePointer32
 {
 public:
+
+    static constexpr bool isRelative = true;
+    typedef PTR_TYPE type;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -593,5 +764,78 @@ public:
 private:
     INT32 m_delta;
 };
+
+template<bool isMaybeNull, typename T, typename PT>
+typename PT::type
+ReadPointer(const T *base, const PT T::* pPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    uintptr_t offset = (uintptr_t) &(base->*pPointerFieldMember) - (uintptr_t) base;
+
+    if (isMaybeNull)
+    {
+        return PT::GetValueMaybeNullAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+    else
+    {
+        return PT::GetValueAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+}
+
+template<typename T, typename PT>
+typename PT::type
+ReadPointerMaybeNull(const T *base, const PT T::* pPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<true>(base, pPointerFieldMember);
+}
+
+template<typename T, typename PT>
+typename PT::type
+ReadPointer(const T *base, const PT T::* pPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<false>(base, pPointerFieldMember);
+}
+
+template<bool isMaybeNull, typename T, typename C, typename PT>
+typename PT::type
+ReadPointer(const T *base, const C T::* pFirstPointerFieldMember, const PT C::* pSecondPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    const PT *ptr = &(base->*pFirstPointerFieldMember.*pSecondPointerFieldMember);
+    uintptr_t offset = (uintptr_t) ptr - (uintptr_t) base;
+
+    if (isMaybeNull)
+    {
+        return PT::GetValueMaybeNullAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+    else
+    {
+        return PT::GetValueAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+}
+
+template<typename T, typename C, typename PT>
+typename PT::type
+ReadPointerMaybeNull(const T *base, const C T::* pFirstPointerFieldMember, const PT C::* pSecondPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<true>(base, pFirstPointerFieldMember, pSecondPointerFieldMember);
+}
+
+template<typename T, typename C, typename PT>
+typename PT::type
+ReadPointer(const T *base, const C T::* pFirstPointerFieldMember, const PT C::* pSecondPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<false>(base, pFirstPointerFieldMember, pSecondPointerFieldMember);
+}
 
 #endif //_FIXUPPOINTER_H

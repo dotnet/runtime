@@ -5,12 +5,6 @@
 // File: CLASS.CPP
 //
 
-
-//
-
-//
-// ============================================================================
-
 #include "common.h"
 
 #include "dllimport.h"
@@ -889,7 +883,15 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
             LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replaced approximate parent %s with exact parent %s from token %x\n", pParentMT->GetDebugClassName(), pNewParentMT->GetDebugClassName(), crExtends));
 
             // SetParentMethodTable is not used here since we want to update the indirection cell in the NGen case
-            *EnsureWritablePages(pMT->GetParentMethodTablePtr()) = pNewParentMT;
+            if (pMT->GetParentMethodTablePlainOrRelativePointerPtr()->IsIndirectPtrMaybeNull())
+            {
+                *EnsureWritablePages(pMT->GetParentMethodTablePlainOrRelativePointerPtr()->GetValuePtr()) = pNewParentMT;
+            }
+            else
+            {
+                EnsureWritablePages(pMT->GetParentMethodTablePlainOrRelativePointerPtr());
+                pMT->GetParentMethodTablePlainOrRelativePointerPtr()->SetValueMaybeNull(pNewParentMT);
+            }
 
             pParentMT = pNewParentMT;
         }
@@ -908,8 +910,11 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
         DWORD nDicts = pParentMT->GetNumDicts();
         for (DWORD iDict = 0; iDict < nDicts; iDict++)
         {
-            if (pMT->GetPerInstInfo()[iDict] != pParentMT->GetPerInstInfo()[iDict])
-                *EnsureWritablePages(&pMT->GetPerInstInfo()[iDict]) = pParentMT->GetPerInstInfo()[iDict];
+            if (pMT->GetPerInstInfo()[iDict].GetValueMaybeNull() != pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull())
+            {
+                EnsureWritablePages(&pMT->GetPerInstInfo()[iDict]);
+                pMT->GetPerInstInfo()[iDict].SetValueMaybeNull(pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull());
+            }
         }
     }
 
@@ -1626,9 +1631,21 @@ MethodDesc* MethodTable::GetExistingUnboxedEntryPointMD(MethodDesc *pMD)
                                                        );
 }
 
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE 
 
-#ifdef FEATURE_HFA
+//*******************************************************************************
+#if !defined(FEATURE_HFA)
+bool MethodTable::IsHFA()
+{
+    LIMITED_METHOD_CONTRACT;
+#ifdef DACCESS_COMPILE
+    return false;
+#else
+    return GetClass()->CheckForHFA();
+#endif
+}
+#endif // !FEATURE_HFA
+
 //*******************************************************************************
 CorElementType MethodTable::GetHFAType()
 {
@@ -1682,6 +1699,214 @@ CorElementType MethodTable::GetNativeHFAType()
 {
     LIMITED_METHOD_CONTRACT;
     return HasLayout() ? GetLayoutInfo()->GetNativeHFAType() : GetHFAType();
+}
+
+//---------------------------------------------------------------------------------------
+//
+// When FEATURE_HFA is defined, we cache the value; otherwise we recompute it with each
+// call. The latter is only for the armaltjit and the arm64altjit.
+bool
+#if defined(FEATURE_HFA)
+EEClass::CheckForHFA(MethodTable ** pByValueClassCache)
+#else
+EEClass::CheckForHFA()
+#endif
+{
+    STANDARD_VM_CONTRACT;
+
+    // This method should be called for valuetypes only
+    _ASSERTE(GetMethodTable()->IsValueType());
+
+    // No HFAs with explicit layout. There may be cases where explicit layout may be still
+    // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
+    // unconditionally disable HFAs for explicit layout.
+    if (HasExplicitFieldOffsetLayout())
+        return false;
+
+    CorElementType hfaType = ELEMENT_TYPE_END;
+
+    FieldDesc *pFieldDescList = GetFieldDescList();
+    for (UINT i = 0; i < GetNumInstanceFields(); i++)
+    {
+        FieldDesc *pFD = &pFieldDescList[i];
+        CorElementType fieldType = pFD->GetFieldType();
+
+        switch (fieldType)
+        {
+        case ELEMENT_TYPE_VALUETYPE:
+#if defined(FEATURE_HFA)
+            fieldType = pByValueClassCache[i]->GetHFAType();
+#else
+            fieldType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
+#endif
+            break;
+
+        case ELEMENT_TYPE_R4:
+        case ELEMENT_TYPE_R8:
+            break;
+
+        default:
+            // Not HFA
+            return false;
+        }
+
+        // Field type should be a valid HFA type.
+        if (fieldType == ELEMENT_TYPE_END)
+        {
+            return false;
+        }
+
+        // Initialize with a valid HFA type.
+        if (hfaType == ELEMENT_TYPE_END)
+        {
+            hfaType = fieldType;
+        }
+        // All field types should be equal.
+        else if (fieldType != hfaType)
+        {
+            return false;
+        }
+    }
+
+    if (hfaType == ELEMENT_TYPE_END)
+        return false;
+
+    int elemSize = (hfaType == ELEMENT_TYPE_R8) ? sizeof(double) : sizeof(float);
+
+    // Note that we check the total size, but do not perform any checks on number of fields:
+    // - Type of fields can be HFA valuetype itself
+    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
+    //   the valuetype is HFA and explicitly specified size
+
+    DWORD totalSize = GetMethodTable()->GetNumInstanceFieldBytes();
+
+    if (totalSize % elemSize != 0)
+        return false;
+
+    // On ARM, HFAs can have a maximum of four fields regardless of whether those are float or double.
+    if (totalSize / elemSize > 4)
+        return false;
+
+    // All the above tests passed. It's HFA!
+#if defined(FEATURE_HFA)
+    GetMethodTable()->SetIsHFA();
+#endif
+    return true;
+}
+
+CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
+{
+    UINT  numReferenceFields = GetNumCTMFields();
+
+    CorElementType hfaType = ELEMENT_TYPE_END;
+
+#ifndef DACCESS_COMPILE
+    const FieldMarshaler *pFieldMarshaler = GetFieldMarshalers();
+    while (numReferenceFields--)
+    {
+        CorElementType fieldType = ELEMENT_TYPE_END;
+
+        switch (pFieldMarshaler->GetNStructFieldType())
+        {
+        case NFT_COPY4:
+        case NFT_COPY8:
+            fieldType = pFieldMarshaler->GetFieldDesc()->GetFieldType();
+            if (fieldType != ELEMENT_TYPE_R4 && fieldType != ELEMENT_TYPE_R8)
+                return ELEMENT_TYPE_END;
+            break;
+
+        case NFT_NESTEDLAYOUTCLASS:
+            fieldType = ((FieldMarshaler_NestedLayoutClass *)pFieldMarshaler)->GetMethodTable()->GetNativeHFAType();
+            break;
+
+        case NFT_NESTEDVALUECLASS:
+            fieldType = ((FieldMarshaler_NestedValueClass *)pFieldMarshaler)->GetMethodTable()->GetNativeHFAType();
+            break;
+
+        case NFT_FIXEDARRAY:
+            fieldType = ((FieldMarshaler_FixedArray *)pFieldMarshaler)->GetElementTypeHandle().GetMethodTable()->GetNativeHFAType();
+            break;
+
+        case NFT_DATE:
+            fieldType = ELEMENT_TYPE_R8;
+            break;
+
+        default:
+            // Not HFA
+            return ELEMENT_TYPE_END;
+        }
+
+        // Field type should be a valid HFA type.
+        if (fieldType == ELEMENT_TYPE_END)
+        {
+            return ELEMENT_TYPE_END;
+        }
+
+        // Initialize with a valid HFA type.
+        if (hfaType == ELEMENT_TYPE_END)
+        {
+            hfaType = fieldType;
+        }
+        // All field types should be equal.
+        else if (fieldType != hfaType)
+        {
+            return ELEMENT_TYPE_END;
+        }
+
+        ((BYTE*&)pFieldMarshaler) += MAXFIELDMARSHALERSIZE;
+    }
+
+    if (hfaType == ELEMENT_TYPE_END)
+        return ELEMENT_TYPE_END;
+
+    int elemSize = (hfaType == ELEMENT_TYPE_R8) ? sizeof(double) : sizeof(float);
+
+    // Note that we check the total size, but do not perform any checks on number of fields:
+    // - Type of fields can be HFA valuetype itself
+    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
+    //   the valuetype is HFA and explicitly specified size
+
+    DWORD totalSize = GetNativeSize();
+
+    if (totalSize % elemSize != 0)
+        return ELEMENT_TYPE_END;
+
+    // On ARM, HFAs can have a maximum of four fields regardless of whether those are float or double.
+    if (totalSize / elemSize > 4)
+        return ELEMENT_TYPE_END;
+
+#endif // !DACCESS_COMPILE
+
+    return hfaType;
+}
+
+#ifdef FEATURE_HFA
+//
+// The managed and unmanaged views of the types can differ for non-blitable types. This method
+// mirrors the HFA type computation for the unmanaged view.
+//
+VOID EEClass::CheckForNativeHFA()
+{
+    STANDARD_VM_CONTRACT;
+
+    // No HFAs with inheritance
+    if (!(GetMethodTable()->IsValueType() || (GetMethodTable()->GetParentMethodTable() == g_pObjectClass)))
+        return;
+
+    // No HFAs with explicit layout. There may be cases where explicit layout may be still
+    // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
+    // unconditionally disable HFAs for explicit layout.
+    if (HasExplicitFieldOffsetLayout())
+        return;
+
+    CorElementType hfaType = GetLayoutInfo()->GetNativeHFATypeRaw();
+    if (hfaType == ELEMENT_TYPE_END)
+    {
+        return;
+    }
+
+    // All the above tests passed. It's HFA!
+    GetLayoutInfo()->SetNativeHFAType(hfaType);
 }
 #endif // FEATURE_HFA
 
@@ -2818,13 +3043,13 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
 
         if (pInfo->m_numCTMFields > 0)
         {
-            ZapStoredStructure * pNode = image->StoreStructure(pInfo->m_pFieldMarshalers,
+            ZapStoredStructure * pNode = image->StoreStructure(pInfo->GetFieldMarshalers(),
                                             pInfo->m_numCTMFields * MAXFIELDMARSHALERSIZE,
                                             DataImage::ITEM_FIELD_MARSHALERS);
 
             for (UINT iField = 0; iField < pInfo->m_numCTMFields; iField++)
             {
-                FieldMarshaler *pFM = (FieldMarshaler*)((BYTE *)pInfo->m_pFieldMarshalers + iField * MAXFIELDMARSHALERSIZE);
+                FieldMarshaler *pFM = (FieldMarshaler*)((BYTE *)pInfo->GetFieldMarshalers() + iField * MAXFIELDMARSHALERSIZE);
                 pFM->Save(image);
 
                 if (iField > 0)
@@ -2884,7 +3109,7 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
             {
                 // make sure we don't store a GUID_NULL guid in the NGEN image
                 // instead we'll compute the GUID at runtime, and throw, if appropriate
-                m_pGuidInfo = NULL;
+                m_pGuidInfo.SetValueMaybeNull(NULL);
             }
         }
     }
@@ -2961,14 +3186,14 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
     }
 
     if (HasOptionalFields())
-        image->FixupPointerField(GetOptionalFields(), offsetof(EEClassOptionalFields, m_pVarianceInfo));
+        image->FixupRelativePointerField(GetOptionalFields(), offsetof(EEClassOptionalFields, m_pVarianceInfo));
 
     //
     // We pass in the method table, because some classes (e.g. remoting proxy)
     // have fake method tables set up in them & we want to restore the regular
     // one.
     //
-    image->FixupField(this, offsetof(EEClass, m_pMethodTable), pMT);
+    image->FixupField(this, offsetof(EEClass, m_pMethodTable), pMT, 0, IMAGE_REL_BASED_RelativePointer);
 
     //
     // Fixup MethodDescChunk and MethodDescs
@@ -3029,11 +3254,11 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
 
     if (HasLayout())
     {
-        image->FixupPointerField(this, offsetof(LayoutEEClass, m_LayoutInfo.m_pFieldMarshalers));
+        image->FixupRelativePointerField(this, offsetof(LayoutEEClass, m_LayoutInfo.m_pFieldMarshalers));
 
         EEClassLayoutInfo *pInfo = &((LayoutEEClass*)this)->m_LayoutInfo;
 
-        FieldMarshaler *pFM = pInfo->m_pFieldMarshalers;
+        FieldMarshaler *pFM = pInfo->GetFieldMarshalers();
         FieldMarshaler *pFMEnd = (FieldMarshaler*) ((BYTE *)pFM + pInfo->m_numCTMFields*MAXFIELDMARSHALERSIZE);
         while (pFM < pFMEnd)
         {
@@ -3043,9 +3268,9 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
     }
     else if (IsDelegate())
     {
-        image->FixupPointerField(this, offsetof(DelegateEEClass, m_pInvokeMethod));
-        image->FixupPointerField(this, offsetof(DelegateEEClass, m_pBeginInvokeMethod));
-        image->FixupPointerField(this, offsetof(DelegateEEClass, m_pEndInvokeMethod));
+        image->FixupRelativePointerField(this, offsetof(DelegateEEClass, m_pInvokeMethod));
+        image->FixupRelativePointerField(this, offsetof(DelegateEEClass, m_pBeginInvokeMethod));
+        image->FixupRelativePointerField(this, offsetof(DelegateEEClass, m_pEndInvokeMethod));
 
         image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pUMThunkMarshInfo));
         image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pStaticCallStub));
@@ -3078,7 +3303,7 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
     //
 
     if (IsInterface() && GetGuidInfo() != NULL)
-        image->FixupPointerField(this, offsetof(EEClass, m_pGuidInfo));
+        image->FixupRelativePointerField(this, offsetof(EEClass, m_pGuidInfo));
     else
         image->ZeroPointerField(this, offsetof(EEClass, m_pGuidInfo));
 

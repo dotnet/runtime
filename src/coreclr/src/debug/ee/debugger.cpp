@@ -26,7 +26,6 @@
 #include "typeparse.h"
 #include "debuginfostore.h"
 #include "generics.h"
-#include "../../vm/security.h"
 #include "../../vm/methoditer.h"
 #include "../../vm/encee.h"
 #include "../../vm/dwreport.h"
@@ -1917,7 +1916,7 @@ HANDLE OpenStartupNotificationEvent()
     WCHAR szEventName[cchEventNameBufferSize];
     swprintf_s(szEventName, cchEventNameBufferSize, StartupNotifyEventNamePrefix W("%08x"), debuggeePID);
 
-    return WszOpenEvent(EVENT_ALL_ACCESS, FALSE, szEventName);
+    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, szEventName);
 }
 
 void NotifyDebuggerOfTelestoStartup()
@@ -10999,7 +10998,8 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             if(fValid)
             {
                 // Get the appdomain
-                ADIndex appDomainIndex = HndGetHandleADIndex(objectHandle);
+                IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+                ADIndex appDomainIndex = ADIndex(reinterpret_cast<DWORD>(mgr->GetHandleContext(objectHandle)));
                 pAppDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
 
                 _ASSERTE(pAppDomain != NULL);
@@ -15573,7 +15573,9 @@ HRESULT Debugger::SetReference(void *objectRefAddress,
             // fixup the handle.
             OBJECTHANDLE h = vmObjectHandle.GetRawPtr();
             OBJECTREF  src = *((OBJECTREF*)&newReference);
-            HndAssignHandle(h, src);
+
+            IGCHandleManager* mgr = GCHandleUtilities::GetGCHandleManager();
+            mgr->StoreObjectInHandle(h, OBJECTREFToObject(src));
         }
 
     return S_OK;

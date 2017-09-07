@@ -19,7 +19,6 @@
 #include "eeconfig.h"
 #include "cgensys.h"
 #include "asmconstants.h"
-#include "security.h"
 #include "virtualcallstub.h"
 #include "gcdump.h"
 #include "rtlfunctions.h"
@@ -2522,6 +2521,12 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
+void UMEntryThunkCode::Poison()
+{
+    // Insert 'udf 0xff' at the entry point
+    m_code[0] = 0xdeff;
+}
+
 ///////////////////////////// UNIMPLEMENTED //////////////////////////////////
 
 #ifndef DACCESS_COMPILE
@@ -2560,9 +2565,9 @@ static const LPVOID InlineGetThreadLocations[] = {
 
 //EXTERN_C Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
 Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C Object* JIT_NewArr1OBJ_MP(CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1OBJ_MP(CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* AllocateStringFastMP(CLR_I4 cch);
-EXTERN_C Object* JIT_NewArr1VC_MP(CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1VC_MP(CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_BoxFastMP(CORINFO_CLASS_HANDLE type, void* unboxedData);
 
 

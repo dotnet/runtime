@@ -474,7 +474,7 @@ void Compiler::raDispFPlifeInfo()
         dispLifeSet(this, optAllFloatVars, block->bbLiveIn);
         printf("]\n\n");
 
-        VARSET_TP VARSET_INIT(this, life, block->bbLiveIn);
+        VARSET_TP life(VarSetOps::MakeCopy(this, block->bbLiveIn));
         for (stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
             GenTreePtr tree;
@@ -979,14 +979,15 @@ bool Compiler::rpRecordRegIntf(regMaskTP regMask, VARSET_VALARG_TP life DEBUGARG
 
             if (regMask & regBit)
             {
-                VARSET_TP VARSET_INIT_NOCOPY(newIntf, VarSetOps::Diff(this, life, raLclRegIntf[regNum]));
+                VARSET_TP newIntf(VarSetOps::Diff(this, life, raLclRegIntf[regNum]));
                 if (!VarSetOps::IsEmpty(this, newIntf))
                 {
 #ifdef DEBUG
                     if (verbose)
                     {
-                        VARSET_ITER_INIT(this, newIntfIter, newIntf, varNum);
-                        while (newIntfIter.NextElem(this, &varNum))
+                        VarSetOps::Iter newIntfIter(this, newIntf);
+                        unsigned        varNum = 0;
+                        while (newIntfIter.NextElem(&varNum))
                         {
                             unsigned   lclNum = lvaTrackedToVarNum[varNum];
                             LclVarDsc* varDsc = &lvaTable[varNum];
@@ -1026,7 +1027,7 @@ bool Compiler::rpRecordVarIntf(unsigned varNum, VARSET_VALARG_TP intfVar DEBUGAR
     noway_assert((varNum >= 0) && (varNum < lvaTrackedCount));
     noway_assert(!VarSetOps::IsEmpty(this, intfVar));
 
-    VARSET_TP VARSET_INIT_NOCOPY(oneVar, VarSetOps::MakeEmpty(this));
+    VARSET_TP oneVar(VarSetOps::MakeEmpty(this));
     VarSetOps::AddElemD(this, oneVar, varNum);
 
     bool newIntf = fgMarkIntf(intfVar, oneVar);
@@ -1328,16 +1329,17 @@ RET:
     // Add a register interference to each of the last use variables
     if (!VarSetOps::IsEmpty(this, rpLastUseVars) || !VarSetOps::IsEmpty(this, rpUseInPlace))
     {
-        VARSET_TP VARSET_INIT_NOCOPY(lastUse, VarSetOps::MakeEmpty(this));
+        VARSET_TP lastUse(VarSetOps::MakeEmpty(this));
         VarSetOps::Assign(this, lastUse, rpLastUseVars);
-        VARSET_TP VARSET_INIT_NOCOPY(inPlaceUse, VarSetOps::MakeEmpty(this));
+        VARSET_TP inPlaceUse(VarSetOps::MakeEmpty(this));
         VarSetOps::Assign(this, inPlaceUse, rpUseInPlace);
         // While we still have any lastUse or inPlaceUse bits
-        VARSET_TP VARSET_INIT_NOCOPY(useUnion, VarSetOps::Union(this, lastUse, inPlaceUse));
+        VARSET_TP useUnion(VarSetOps::Union(this, lastUse, inPlaceUse));
 
-        VARSET_TP VARSET_INIT_NOCOPY(varAsSet, VarSetOps::MakeEmpty(this));
-        VARSET_ITER_INIT(this, iter, useUnion, varNum);
-        while (iter.NextElem(this, &varNum))
+        VARSET_TP       varAsSet(VarSetOps::MakeEmpty(this));
+        VarSetOps::Iter iter(this, useUnion);
+        unsigned        varNum = 0;
+        while (iter.NextElem(&varNum))
         {
             // We'll need this for one of the calls...
             VarSetOps::OldStyleClearD(this, varAsSet);
@@ -1398,7 +1400,7 @@ regMaskTP Compiler::rpPredictAddressMode(
     bool       rev;
     bool       hasTwoAddConst     = false;
     bool       restoreLastUseVars = false;
-    VARSET_TP  VARSET_INIT_NOCOPY(oldLastUseVars, VarSetOps::MakeEmpty(this));
+    VARSET_TP  oldLastUseVars(VarSetOps::MakeEmpty(this));
 
     /* do we need to save and restore the rpLastUseVars set ? */
     if ((rsvdRegs & RBM_LASTUSE) && (lenCSE == NULL))
@@ -1947,10 +1949,10 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
     rpPredictReg op1PredictReg;
     rpPredictReg op2PredictReg;
     LclVarDsc*   varDsc = NULL;
-    VARSET_TP    VARSET_INIT_NOCOPY(oldLastUseVars, VarSetOps::UninitVal());
+    VARSET_TP    oldLastUseVars(VarSetOps::UninitVal());
 
-    VARSET_TP VARSET_INIT_NOCOPY(varBits, VarSetOps::UninitVal());
-    VARSET_TP VARSET_INIT_NOCOPY(lastUseVarBits, VarSetOps::MakeEmpty(this));
+    VARSET_TP varBits(VarSetOps::UninitVal());
+    VARSET_TP lastUseVarBits(VarSetOps::MakeEmpty(this));
 
     bool      restoreLastUseVars = false;
     regMaskTP interferingRegs    = RBM_NONE;
@@ -2431,7 +2433,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                     LclVarDsc* fldVar = lvaTable + varNum;
                     if (fldVar->lvTracked)
                     {
-                        VARSET_TP VARSET_INIT_NOCOPY(fldBit, VarSetOps::MakeSingleton(this, fldVar->lvVarIndex));
+                        VARSET_TP fldBit(VarSetOps::MakeSingleton(this, fldVar->lvVarIndex));
                         rpRecordRegIntf(regMask, fldBit DEBUGARG(
                                                      "need scratch register when pushing a small field of a struct"));
                     }
@@ -2443,7 +2445,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
         if (lastUse)
         {
             VarSetOps::UnionD(this, rpLastUseVars, lastUseVarBits);
-            VARSET_TP VARSET_INIT(this, varAsSet, lastUseVarBits);
+            VARSET_TP varAsSet(VarSetOps::MakeCopy(this, lastUseVarBits));
 
             /*
              *  Add interference from any previously locked temps into this last use variable.
@@ -2483,7 +2485,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
         GenTreePtr opsPtr[3];
         regMaskTP  regsPtr[3];
 
-        VARSET_TP VARSET_INIT_NOCOPY(startAsgUseInPlaceVars, VarSetOps::UninitVal());
+        VARSET_TP startAsgUseInPlaceVars(VarSetOps::UninitVal());
 
         switch (oper)
         {
@@ -3216,7 +3218,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
             case GT_NULLCHECK: // At this point, nullcheck is just like an IND...
             {
                 bool      intoReg = true;
-                VARSET_TP VARSET_INIT(this, startIndUseInPlaceVars, rpUseInPlace);
+                VARSET_TP startIndUseInPlaceVars(VarSetOps::MakeCopy(this, rpUseInPlace));
 
                 if (fgIsIndirOfAddrOfLocal(tree) != NULL)
                 {
@@ -3961,7 +3963,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                         //     we add an interference with REG_SHIFT for any other LclVars alive at op2
                         if (REG_SHIFT != REG_NA)
                         {
-                            VARSET_TP VARSET_INIT(this, liveSet, compCurLife);
+                            VARSET_TP liveSet(VarSetOps::MakeCopy(this, compCurLife));
 
                             while (op2->gtOper == GT_COMMA)
                             {
@@ -4006,8 +4008,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                             varDsc = lvaTable + op1->gtLclVar.gtLclNum;
                             if (varDsc->lvTracked)
                             {
-                                VARSET_TP VARSET_INIT_NOCOPY(op1VarBit,
-                                                             VarSetOps::MakeSingleton(this, varDsc->lvVarIndex));
+                                VARSET_TP op1VarBit(VarSetOps::MakeSingleton(this, varDsc->lvVarIndex));
 
                                 // Ensure that we don't assign a Non-Byteable register for op1's LCL_VAR
                                 rpRecordRegIntf(RBM_NON_BYTE_REGS, op1VarBit DEBUGARG("Non Byte Register"));
@@ -4070,7 +4071,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
 
                     if (op2VarDsc->lvTracked)
                     {
-                        VARSET_TP VARSET_INIT_NOCOPY(op2VarBit, VarSetOps::MakeSingleton(this, op2VarDsc->lvVarIndex));
+                        VARSET_TP op2VarBit(VarSetOps::MakeSingleton(this, op2VarDsc->lvVarIndex));
                         rpRecordRegIntf(rsvdRegs, op2VarBit DEBUGARG("comma use"));
                     }
                 }
@@ -4112,7 +4113,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                     lockedRegs &= ~tmpMask;
                 }
                 {
-                    VARSET_TP VARSET_INIT(this, startQmarkCondUseInPlaceVars, rpUseInPlace);
+                    VARSET_TP startQmarkCondUseInPlaceVars(VarSetOps::MakeCopy(this, rpUseInPlace));
 
                     /* Evaluate the <cond> subtree */
                     rpPredictTreeRegUse(op1, PREDICT_NONE, lockedRegs, RBM_LASTUSE);
@@ -4172,7 +4173,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
-                    VARSET_TP VARSET_INIT(this, postThenLive, compCurLife);
+                    VARSET_TP postThenLive(VarSetOps::MakeCopy(this, compCurLife));
 #endif
 
                     VarSetOps::Assign(this, compCurLife, tree->gtQmark.gtElseLiveSet);
@@ -4544,7 +4545,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                     rpPredictTreeRegUse(args, PREDICT_NONE, lockedRegs, RBM_LASTUSE);
                 }
             }
-            VARSET_TP VARSET_INIT_NOCOPY(startArgUseInPlaceVars, VarSetOps::UninitVal());
+            VARSET_TP startArgUseInPlaceVars(VarSetOps::UninitVal());
             VarSetOps::Assign(this, startArgUseInPlaceVars, rpUseInPlace);
 
             /* process argument list */
@@ -4834,6 +4835,17 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
             }
             assert(list == NULL);
 
+#ifdef LEGACY_BACKEND
+#if CPU_LOAD_STORE_ARCH
+#ifdef FEATURE_READYTORUN_COMPILER
+            if (tree->gtCall.IsR2RRelativeIndir())
+            {
+                tree->gtUsedRegs |= RBM_R2R_INDIRECT_PARAM;
+            }
+#endif // FEATURE_READYTORUN_COMPILER
+#endif // CPU_LOAD_STORE_ARCH
+#endif // LEGACY_BACKEND
+
             regMaskTP callAddrMask;
             callAddrMask = RBM_NONE;
 #if CPU_LOAD_STORE_ARCH
@@ -4848,18 +4860,18 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
 
                     // We only want to record an interference between the virtual stub
                     // param reg and anything that's live AFTER the call, but we've not
-                    // yet processed the indirect target.  So add RBM_VIRTUAL_STUB_PARAM
+                    // yet processed the indirect target.  So add virtualStubParamInfo.regMask
                     // to interferingRegs.
-                    interferingRegs |= RBM_VIRTUAL_STUB_PARAM;
+                    interferingRegs |= virtualStubParamInfo->GetRegMask();
 #ifdef DEBUG
                     if (verbose)
                         printf("Adding interference with Virtual Stub Param\n");
 #endif
-                    codeGen->regSet.rsSetRegsModified(RBM_VIRTUAL_STUB_PARAM);
+                    codeGen->regSet.rsSetRegsModified(virtualStubParamInfo->GetRegMask());
 
                     if (tree->gtCall.gtCallType == CT_INDIRECT)
                     {
-                        predictReg = PREDICT_REG_VIRTUAL_STUB_PARAM;
+                        predictReg = virtualStubParamInfo->GetPredict();
                     }
                     break;
 
@@ -5425,7 +5437,7 @@ regMaskTP Compiler::rpPredictAssignRegVars(regMaskTP regAvail)
      *
      */
 
-    VARSET_TP VARSET_INIT_NOCOPY(unprocessedVars, VarSetOps::MakeFull(this));
+    VARSET_TP unprocessedVars(VarSetOps::MakeFull(this));
 
     unsigned FPRegVarLiveInCnt;
     FPRegVarLiveInCnt = 0; // How many enregistered doubles are live on entry to the method
@@ -5653,10 +5665,11 @@ regMaskTP Compiler::rpPredictAssignRegVars(regMaskTP regAvail)
                 unsigned int totalRefCntWtd = varDsc->lvRefCntWtd;
 
                 // psc is abbeviation for possibleSameColor
-                VARSET_TP VARSET_INIT_NOCOPY(pscVarSet, VarSetOps::Diff(this, unprocessedVars, lvaVarIntf[varIndex]));
+                VARSET_TP pscVarSet(VarSetOps::Diff(this, unprocessedVars, lvaVarIntf[varIndex]));
 
-                VARSET_ITER_INIT(this, pscIndexIter, pscVarSet, pscIndex);
-                while (pscIndexIter.NextElem(this, &pscIndex))
+                VarSetOps::Iter pscIndexIter(this, pscVarSet);
+                unsigned        pscIndex = 0;
+                while (pscIndexIter.NextElem(&pscIndex))
                 {
                     LclVarDsc* pscVar = lvaTable + lvaTrackedToVarNum[pscIndex];
                     totalRefCntWtd += pscVar->lvRefCntWtd;
@@ -5737,9 +5750,10 @@ regMaskTP Compiler::rpPredictAssignRegVars(regMaskTP regAvail)
 #ifdef _TARGET_ARM_
             if (isDouble)
             {
-                regNumber secondHalf = REG_NEXT(regNum);
-                VARSET_ITER_INIT(this, iter, lvaVarIntf[varIndex], intfIndex);
-                while (iter.NextElem(this, &intfIndex))
+                regNumber       secondHalf = REG_NEXT(regNum);
+                VarSetOps::Iter iter(this, lvaVarIntf[varIndex]);
+                unsigned        intfIndex = 0;
+                while (iter.NextElem(&intfIndex))
                 {
                     VarSetOps::AddElemD(this, raLclRegIntf[secondHalf], intfIndex);
                 }
@@ -6253,23 +6267,13 @@ void Compiler::rpPredictRegUse()
         mustPredict |= rpLostEnreg;
 
 #ifdef _TARGET_ARM_
-
         // See if we previously reserved REG_R10 and try to make it available if we have a small frame now
-        //
-        if ((rpPasses == 0) && (codeGen->regSet.rsMaskResvd & RBM_OPT_RSVD))
+        if ((rpPasses == 0) && ((codeGen->regSet.rsMaskResvd & RBM_OPT_RSVD) != 0) &&
+            !compRsvdRegCheck(REGALLOC_FRAME_LAYOUT))
         {
-            if (compRsvdRegCheck(REGALLOC_FRAME_LAYOUT))
-            {
-                // We must keep reserving R10 in this case
-                codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
-            }
-            else
-            {
-                // We can release our reservation on R10 and use it to color registers
-                //
-                codeGen->regSet.rsMaskResvd &= ~RBM_OPT_RSVD;
-                allAcceptableRegs |= RBM_OPT_RSVD;
-            }
+            // We can release our reservation on R10 and use it to color registers
+            codeGen->regSet.rsMaskResvd &= ~RBM_OPT_RSVD;
+            allAcceptableRegs |= RBM_OPT_RSVD;
         }
 #endif
 
@@ -6353,7 +6357,7 @@ void Compiler::rpPredictRegUse()
 
         // if there are PInvoke calls and compLvFrameListRoot is enregistered,
         // it must not be in a register trashed by the callee
-        if (info.compCallUnmanaged != 0)
+        if (info.compLvFrameListRoot != BAD_VAR_NUM)
         {
             assert(!opts.ShouldUsePInvokeHelpers());
             noway_assert(info.compLvFrameListRoot < lvaCount);
@@ -6466,6 +6470,21 @@ void Compiler::rpPredictRegUse()
 
         /* Decide whether we need to set mustPredict */
         mustPredict = false;
+
+#ifdef _TARGET_ARM_
+        // The spill count may be now high enough that we now need to reserve r10. If this is the case, we'll need to
+        // reserve r10, and if it was used, throw out the last prediction and repredict.
+        if (((codeGen->regSet.rsMaskResvd & RBM_OPT_RSVD) == 0) && compRsvdRegCheck(REGALLOC_FRAME_LAYOUT))
+        {
+            codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
+            allAcceptableRegs &= ~RBM_OPT_RSVD;
+            if ((regUsed & RBM_OPT_RSVD) != 0)
+            {
+                mustPredict              = true;
+                rpBestRecordedPrediction = nullptr;
+            }
+        }
+#endif
 
         if (rpAddedVarIntf)
         {

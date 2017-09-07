@@ -14,7 +14,6 @@ namespace System.Globalization
     **      JapaneseLunisolar      1960/01/01          2049/12/29
     */
 
-    [Serializable]
     public class JapaneseLunisolarCalendar : EastAsianLunisolarCalendar
     {
         //

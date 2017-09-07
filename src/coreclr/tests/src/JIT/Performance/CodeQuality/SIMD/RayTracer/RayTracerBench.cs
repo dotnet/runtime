@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace SIMD
 {

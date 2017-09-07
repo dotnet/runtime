@@ -223,8 +223,6 @@ struct ProfilingScanContext;
 // g_nClrInstanceId is defined in Utilcode\Util.cpp. The definition goes into Utilcode.lib.
 // This enables both the VM and Utilcode to raise ETW events.
 extern UINT32 g_nClrInstanceId;
-extern BOOL g_fEEManagedEXEStartup;
-extern BOOL g_fEEIJWStartup;
 
 #define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
 

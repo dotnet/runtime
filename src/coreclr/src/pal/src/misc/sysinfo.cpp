@@ -94,13 +94,10 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif
 #endif // __APPLE__
 
-/*++
-Function:
-    GetNumberOfProcessors
 
-Return number of processors available for the current process
---*/
-int GetNumberOfProcessors()
+DWORD
+PALAPI
+PAL_GetLogicalCpuCountFromOS()
 {
     int nrcpus = 0;
 
@@ -170,7 +167,7 @@ GetSystemInfo(
     lpSystemInfo->dwPageSize = pagesize;
     lpSystemInfo->dwActiveProcessorMask_PAL_Undefined = 0;
 
-    nrcpus = GetNumberOfProcessors();
+    nrcpus = PAL_GetLogicalCpuCountFromOS();
     TRACE("dwNumberOfProcessors=%d\n", nrcpus);
     lpSystemInfo->dwNumberOfProcessors = nrcpus;
 
@@ -387,17 +384,50 @@ PAL_HasGetCurrentProcessorNumber()
     return HAVE_SCHED_GETCPU;
 }
 
-DWORD
-PALAPI
-PAL_GetLogicalCpuCountFromOS()
+bool
+ReadMemoryValueFromFile(const char* filename, size_t* val)
 {
-    DWORD numLogicalCores = 0;
+    bool result = false;
+    char *line = nullptr;
+    size_t lineLen = 0;
+    char* endptr = nullptr;
+    size_t num = 0, l, multiplier;
 
-#if HAVE_SYSCONF
-    numLogicalCores = sysconf(_SC_NPROCESSORS_ONLN);
-#endif
+    if (val == nullptr)
+        return false;
 
-    return numLogicalCores;
+    FILE* file = fopen(filename, "r");
+    if (file == nullptr)
+        goto done;
+
+    if (getline(&line, &lineLen, file) == -1)
+        goto done;
+
+    errno = 0;
+    num = strtoull(line, &endptr, 0);
+    if (errno != 0)
+        goto done;
+
+    multiplier = 1;
+    switch(*endptr)
+    {
+        case 'g':
+        case 'G': multiplier = 1024;
+        case 'm':
+        case 'M': multiplier = multiplier*1024;
+        case 'k':
+        case 'K': multiplier = multiplier*1024;
+    }
+
+    *val = num * multiplier;
+    result = true;
+    if (*val/multiplier != num)
+        result = false;
+done:
+    if (file)
+        fclose(file);
+    free(line);
+    return result;
 }
 
 size_t
@@ -417,6 +447,49 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
+#endif
+
+#if defined(_ARM64_)
+    if(cacheSize == 0)
+    {
+        size_t size;
+
+        if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
+            cacheSize = max(cacheSize, size);
+        if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index1/size", &size))
+            cacheSize = max(cacheSize, size);
+        if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index2/size", &size))
+            cacheSize = max(cacheSize, size);
+        if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index3/size", &size))
+            cacheSize = max(cacheSize, size);
+        if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
+            cacheSize = max(cacheSize, size);
+    }
+
+    if(cacheSize == 0)
+    {
+        // It is currently expected to be missing cache size info
+        //
+        // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
+        //
+        // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
+        // Arm64 patch is in Linux kernel tip.
+        //
+        // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
+        // but without an exhaustive list of ARM64 processors any decode of midr_el1
+        // Would likely be incomplete
+
+        // Published information on ARM64 architectures is limited.
+        // If we use recent high core count chips as a guide for state of the art, we find
+        // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
+
+        // Estimate cache size based on CPU count
+        // Assume lower core count are lighter weight parts which are likely to have smaller caches
+        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
+        DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
+
+        cacheSize = logicalCPUs*min(1536, max(256, logicalCPUs*128))*1024;
+    }
 #endif
 
     return cacheSize;

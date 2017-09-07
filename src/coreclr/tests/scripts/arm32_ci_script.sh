@@ -289,9 +289,14 @@ function cross_build_coreclr_with_docker {
         sudo chown -R $(id -u -n) cross/rootfs
     fi
 
+    __extraArgs=""
+    if [[ "$__buildArch" == "armel" && "$__linuxCodeName" == "tizen" ]]; then
+        __extraArgs="cmakeargs -DFEATURE_GDBJIT=TRUE -PortableBuild=false"
+    fi
+
     # Cross building coreclr with rootfs in Docker
     (set +x; echo "Start cross build coreclr for $__buildArch $__linuxCodeName")
-    __buildCmd="./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib $__buildConfig -rebuild"
+    __buildCmd="./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib $__buildConfig $__extraArgs -rebuild"
     $__dockerCmd $__buildCmd
     sudo chown -R $(id -u -n) ./bin
 }

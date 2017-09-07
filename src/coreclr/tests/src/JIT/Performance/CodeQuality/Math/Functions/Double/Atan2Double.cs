@@ -15,14 +15,17 @@ namespace Functions
         private const double atan2DoubleDeltaY = 0.0004;
         private const double atan2DoubleExpectedResult = 3926.99081698702;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = Atan2DoubleIterations)]
         public static void Atan2DoubleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Atan2DoubleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Atan2DoubleTest();
+                    }
                 }
             }
         }

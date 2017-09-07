@@ -611,6 +611,8 @@
 
 #define IDS_EE_SIMD_NGEN_DISALLOWED             0x1ac3
 #define IDS_EE_SIMD_PARTIAL_TRUST_DISALLOWED    0x1ac4
+#define IDS_IBC_MISSING_EXTERNAL_TYPE           0x1ac5
+#define IDS_IBC_MISSING_EXTERNAL_METHOD         0x1ac6
 
 #define BFA_INVALID_FILE_TOKEN                  0x2000
 #define BFA_INVALID_TOKEN_TYPE                  0x2001
@@ -825,11 +827,6 @@
 #define IDS_ACCESS_EXCEPTION_CONTEXT_PT_TRANSPARENT     0x2203
 
 #define IDS_E_LOADFROM_REMOTE_SOURCE_MOTW       0x2204
-
-#ifdef FEATURE_PREJIT
-#define BFA_MISSING_IBC_EXTERNAL_TYPE           0x2400
-#define BFA_MISSING_IBC_EXTERNAL_METHOD         0x2401
-#endif
 
 // Profiler error messages for event log
 #define IDS_E_PROF_NO_CLSID                     0x2500

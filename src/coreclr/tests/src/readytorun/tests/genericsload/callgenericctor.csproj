@@ -12,12 +12,11 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
     <ZapRequire>1</ZapRequire>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'"></PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'"></PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
       <Visible>False</Visible>
@@ -25,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="genericslib.ilproj">
-       <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
+      <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -40,7 +39,7 @@ $(CLRTestBatchPreCommands)
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out genericslib.ni.dll genericslib.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out callgenericctor.ni.exe callgenericctor.exe
 ]]></CLRTestBatchPreCommands>
-  <BashCLRTestPreCommands><![CDATA[
+    <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out genericslib.ni.dll genericslib.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out callgenericctor.ni.exe callgenericctor.exe

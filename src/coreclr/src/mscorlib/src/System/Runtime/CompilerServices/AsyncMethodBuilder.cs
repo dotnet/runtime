@@ -395,7 +395,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <remarks>
         /// This property lazily instantiates the ID in a non-thread-safe manner.  
-        /// It must only be used by the debugger and tracing pruposes, and only in a single-threaded manner
+        /// It must only be used by the debugger and tracing purposes, and only in a single-threaded manner
         /// when no other threads are in the middle of accessing this property or this.Task.
         /// </remarks>
         private object ObjectIdForDebugger { get { return this.Task; } }
@@ -431,8 +431,9 @@ namespace System.Runtime.CompilerServices
         public static AsyncTaskMethodBuilder<TResult> Create()
         {
             return default(AsyncTaskMethodBuilder<TResult>);
-            // NOTE:  If this method is ever updated to perform more initialization,
-            //        ATMB.Create must also be updated to call this Create method.
+            // NOTE: If this method is ever updated to perform more initialization,
+            //       other Create methods like AsyncTaskMethodBuilder.Create and
+            //       AsyncValueTaskMethodBuilder.Create must be updated to call this.
         }
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>

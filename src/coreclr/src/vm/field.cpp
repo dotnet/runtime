@@ -738,7 +738,7 @@ void FieldDesc::SaveContents(DataImage *image)
     // image.
     // 
 
-    if (IsILOnlyRVAField())
+    if (IsRVA())
     {
         //
         // Move the RVA data into the prejit image.
@@ -888,12 +888,15 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
         GetSig(&pSig, &cSig);
         SigPointer sig(pSig, cSig);
 
+        ULONG callConv;
+        IfFailThrow(sig.GetCallingConv(&callConv));
+        _ASSERTE(callConv == IMAGE_CEE_CS_CALLCONV_FIELD);
+
         // Get the generics information
         SigTypeContext sigTypeContext(GetExactClassInstantiation(owner), Instantiation());
 
-        TypeHandle thApproxFieldType = GetApproxFieldTypeHandleThrowing();
         // Load the exact type
-        RETURN (sig.GetTypeHandleThrowing(thApproxFieldType.GetModule(), &sigTypeContext));
+        RETURN (sig.GetTypeHandleThrowing(GetModule(), &sigTypeContext));
     }
 }
 

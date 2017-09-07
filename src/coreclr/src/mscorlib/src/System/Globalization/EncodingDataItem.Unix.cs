@@ -4,7 +4,6 @@
 
 namespace System.Globalization
 {
-    [Serializable]
     internal class CodePageDataItem
     {
         private readonly int _codePage;

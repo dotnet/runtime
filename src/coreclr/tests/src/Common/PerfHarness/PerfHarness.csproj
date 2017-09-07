@@ -1,11 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\..\dependencies.props" />
+
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="xunit.performance.api">
-      <Version>1.0.0-beta-build0003</Version>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(MicrosoftDiagnosticsTracingLibraryVersion)">
+      <IncludeAssets>All</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="xunit.performance.api" Version="$(XUnitPerformanceApiVersion)" />
   </ItemGroup>
+
 </Project>

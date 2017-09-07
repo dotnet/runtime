@@ -109,7 +109,8 @@ CORINFO_MODULE_HANDLE getMethodModule(CORINFO_METHOD_HANDLE method);
 // vtable of it's owning class or interface.
 void getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                            unsigned*             offsetOfIndirection,   /* OUT */
-                           unsigned*             offsetAfterIndirection /* OUT */
+                           unsigned*             offsetAfterIndirection,/* OUT */
+                           bool*                 isRelative             /* OUT */
                            );
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
@@ -117,6 +118,10 @@ void getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
 CORINFO_METHOD_HANDLE resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtualMethod,
                                            CORINFO_CLASS_HANDLE   implementingClass,
                                            CORINFO_CONTEXT_HANDLE ownerType);
+
+void expandRawHandleIntrinsic(
+    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_GENERICHANDLE_RESULT *  pResult);
 
 // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
 // getIntrinsicID() returns the intrinsic ID.
@@ -149,9 +154,6 @@ BOOL isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type of the 
                           CORINFO_CLASS_HANDLE  delegateCls,     /* exact type of the delegate */
                           BOOL*                 pfIsOpenDelegate /* is the delegate open */
                           );
-
-// Determines whether the delegate creation obeys security transparency rules
-BOOL isDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd);
 
 // Indicates if the method is an instance of the generic
 // method that passes (or has passed) verification
@@ -719,8 +721,6 @@ DWORD getThreadTLSIndex(void** ppIndirection = NULL);
 const void* getInlinedCallFrameVptr(void** ppIndirection = NULL);
 
 LONG* getAddrOfCaptureThreadGlobal(void** ppIndirection = NULL);
-
-SIZE_T* getAddrModuleDomainID(CORINFO_MODULE_HANDLE module);
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
 void* getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection = NULL);

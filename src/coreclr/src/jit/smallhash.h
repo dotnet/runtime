@@ -5,6 +5,14 @@
 #ifndef _SMALLHASHTABLE_H_
 #define _SMALLHASHTABLE_H_
 
+// Since compiler depends on valuenum which depends on smallhash, forward declare
+// a wrapper for comp->compGetMem here (implemented in compiler.hpp) that can be used below.
+class Compiler;
+void* compGetMem(Compiler* comp, size_t sz);
+
+// genLog2 is defined in compiler.hpp
+unsigned genLog2(unsigned value);
+
 //------------------------------------------------------------------------
 // HashTableInfo: a concept that provides equality and hashing methods for
 //                a particular key type. Used by HashTableBase and its
@@ -34,6 +42,42 @@ struct HashTableInfo<TKey*>
 
         // Truncate and return the result
         return static_cast<unsigned>(keyval);
+    }
+};
+
+//------------------------------------------------------------------------
+// HashTableInfo<int>: specialized version of HashTableInfo for int-
+//                     typed keys.
+template <>
+struct HashTableInfo<int>
+{
+    static bool Equals(int x, int y)
+    {
+        return x == y;
+    }
+
+    static unsigned GetHashCode(int key)
+    {
+        // Cast and return the key
+        return static_cast<unsigned>(key);
+    }
+};
+
+//------------------------------------------------------------------------
+// HashTableInfo<unsigned>: specialized version of HashTableInfo for unsigned-
+//                          typed keys.
+template <>
+struct HashTableInfo<unsigned>
+{
+    static bool Equals(unsigned x, unsigned y)
+    {
+        return x == y;
+    }
+
+    static unsigned GetHashCode(unsigned key)
+    {
+        // Return the key itself
+        return key;
     }
 };
 
@@ -261,7 +305,7 @@ private:
         size_t   allocSize     = sizeof(Bucket) * newNumBuckets;
         assert((sizeof(Bucket) * m_numBuckets) < allocSize);
 
-        auto* newBuckets = reinterpret_cast<Bucket*>(m_compiler->compGetMem(allocSize));
+        auto* newBuckets = reinterpret_cast<Bucket*>(compGetMem(m_compiler, allocSize));
         memset(newBuckets, 0, allocSize);
 
         for (unsigned currentIndex = 0; currentIndex < m_numBuckets; currentIndex++)
@@ -535,6 +579,21 @@ public:
         *value = m_buckets[index].m_value;
         return true;
     }
+
+    //------------------------------------------------------------------------
+    // HashTableBase::Contains: returns true if a key exists in the table and
+    //                          false otherwise.
+    //
+    // Arguments:
+    //    key   - The key to find from the table.
+    //
+    // Returns:
+    //    True if the key was found in the table; false otherwise.
+    bool Contains(const TKey& key) const
+    {
+        unsigned unused, index;
+        return TryGetBucket(TKeyInfo::GetHashCode(key), key, &unused, &index);
+    }
 };
 
 //------------------------------------------------------------------------
@@ -558,7 +617,7 @@ public:
     HashTable(Compiler* compiler, unsigned initialSize)
         : TBase(compiler,
                 reinterpret_cast<typename TBase::Bucket*>(
-                    compiler->compGetMem(RoundUp(initialSize) * sizeof(typename TBase::Bucket))),
+                    compGetMem(compiler, RoundUp(initialSize) * sizeof(typename TBase::Bucket))),
                 RoundUp(initialSize))
     {
     }

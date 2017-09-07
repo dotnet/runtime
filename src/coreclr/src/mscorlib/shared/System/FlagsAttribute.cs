@@ -11,7 +11,6 @@ namespace System
     // should be treated as a bitfield (or set of flags).
     // An IDE may use this information to provide a richer
     // development experience.
-    [Serializable]
     [AttributeUsage(AttributeTargets.Enum, Inherited = false)]
     public class FlagsAttribute : Attribute
     {

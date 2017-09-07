@@ -411,8 +411,8 @@ void CodeGen::genCodeForPrologStackFP()
 
     if (pState && pState->m_uStackSize)
     {
-        VARSET_TP VARSET_INIT_NOCOPY(liveEnregIn, VarSetOps::Intersection(compiler, compiler->fgFirstBB->bbLiveIn,
-                                                                          compiler->optAllFPregVars));
+        VARSET_TP liveEnregIn(
+            VarSetOps::Intersection(compiler, compiler->fgFirstBB->bbLiveIn, compiler->optAllFPregVars));
         unsigned i;
 
 #ifdef DEBUG
@@ -1066,8 +1066,7 @@ void CodeGen::genSetupStateStackFP(BasicBlock* block)
     }
 
     // Update liveset and lock enregistered live vars on entry
-    VARSET_TP VARSET_INIT_NOCOPY(liveSet,
-                                 VarSetOps::Intersection(compiler, block->bbLiveIn, compiler->optAllFPregVars));
+    VARSET_TP liveSet(VarSetOps::Intersection(compiler, block->bbLiveIn, compiler->optAllFPregVars));
 
     if (!VarSetOps::IsEmpty(compiler, liveSet))
     {
@@ -2912,7 +2911,7 @@ void CodeGen::genCondJumpLngStackFP(GenTreePtr cond, BasicBlock* jumpTrue, Basic
 void CodeGen::genQMarkRegVarTransition(GenTreePtr nextNode, VARSET_VALARG_TP liveset)
 {
     // Kill any vars that may die in the transition
-    VARSET_TP VARSET_INIT_NOCOPY(newLiveSet, VarSetOps::Intersection(compiler, liveset, compiler->optAllFPregVars));
+    VARSET_TP newLiveSet(VarSetOps::Intersection(compiler, liveset, compiler->optAllFPregVars));
 
     regMaskTP liveRegIn = genRegMaskFromLivenessStackFP(newLiveSet);
     genCodeForTransitionFromMask(&compCurFPState, liveRegIn);
@@ -3088,8 +3087,8 @@ void CodeGen::genTableSwitchStackFP(regNumber reg, unsigned jumpCnt, BasicBlock*
     // Only come here when we have to do something special for the FPU stack!
     //
     assert(!compCurFPState.IsEmpty());
-    VARSET_TP VARSET_INIT_NOCOPY(liveInFP, VarSetOps::MakeEmpty(compiler));
-    VARSET_TP VARSET_INIT_NOCOPY(liveOutFP, VarSetOps::MakeEmpty(compiler));
+    VARSET_TP liveInFP(VarSetOps::MakeEmpty(compiler));
+    VARSET_TP liveOutFP(VarSetOps::MakeEmpty(compiler));
     for (unsigned i = 0; i < jumpCnt; i++)
     {
         VarSetOps::Assign(compiler, liveInFP, jumpTab[i]->bbLiveIn);
@@ -3687,7 +3686,7 @@ regNumber Compiler::raRegForVarStackFP(unsigned varTrackedIndex)
 
 void Compiler::raAddPayloadStackFP(VARSET_VALARG_TP maskArg, unsigned weight)
 {
-    VARSET_TP VARSET_INIT_NOCOPY(mask, VarSetOps::Intersection(this, maskArg, optAllFloatVars));
+    VARSET_TP mask(VarSetOps::Intersection(this, maskArg, optAllFloatVars));
     if (VarSetOps::IsEmpty(this, mask))
     {
         return;
@@ -3854,7 +3853,7 @@ void Compiler::raEnregisterVarsPrePassStackFP()
     //
     //
     //
-    VARSET_TP VARSET_INIT_NOCOPY(blockLiveOutFloats, VarSetOps::MakeEmpty(this));
+    VARSET_TP blockLiveOutFloats(VarSetOps::MakeEmpty(this));
     for (block = fgFirstBB; block; block = block->bbNext)
     {
         compCurBB = block;
@@ -3936,7 +3935,7 @@ void Compiler::raEnregisterVarsPrePassStackFP()
             }
         }
 
-        VARSET_TP VARSET_INIT(this, liveSet, block->bbLiveIn);
+        VARSET_TP liveSet(VarSetOps::MakeCopy(this, block->bbLiveIn));
         for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
         {
             assert(stmt->gtOper == GT_STMT);
@@ -4128,7 +4127,7 @@ void Compiler::raEnregisterVarsPostPassStackFP()
         }
         */
 
-        VARSET_TP VARSET_INIT(this, lastlife, block->bbLiveIn);
+        VARSET_TP lastlife(VarSetOps::MakeCopy(this, block->bbLiveIn));
         for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
         {
             assert(stmt->gtOper == GT_STMT);
@@ -4438,7 +4437,7 @@ void Compiler::raEnregisterVarsStackFP()
 
         // Create interferences with other variables.
         assert(VarSetOps::IsEmpty(this, VarSetOps::Diff(this, raLclRegIntfFloat[(int)reg], optAllFloatVars)));
-        VARSET_TP VARSET_INIT_NOCOPY(intfFloats, VarSetOps::Intersection(this, lvaVarIntf[varIndex], optAllFloatVars));
+        VARSET_TP intfFloats(VarSetOps::Intersection(this, lvaVarIntf[varIndex], optAllFloatVars));
 
         VarSetOps::UnionD(this, raLclRegIntfFloat[reg], intfFloats);
 

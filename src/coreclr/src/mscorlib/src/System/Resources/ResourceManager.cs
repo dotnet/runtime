@@ -149,7 +149,6 @@ namespace System.Resources
     // is one such example.
     //
 
-    [Serializable]
     public class ResourceManager
     {
         internal class CultureNameResourceSetPair
@@ -439,18 +438,16 @@ namespace System.Resources
         // security check in each constructor prevents it.
         private void CommonAssemblyInit()
         {
-            if (_bUsingModernResourceManagement == false)
-            {
-                UseManifest = true;
+            // Now we can use the managed resources even when using PRI's to support the APIs GetObject, GetStream...etc.
+            UseManifest = true;
 
-                _resourceSets = new Dictionary<String, ResourceSet>();
-                _lastUsedResourceCache = new CultureNameResourceSetPair();
+            _resourceSets = new Dictionary<String, ResourceSet>();
+            _lastUsedResourceCache = new CultureNameResourceSetPair();
 
-                _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
+            _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
 
-                ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-                resourceGroveler = new ManifestBasedResourceGroveler(mediator);
-            }
+            ResourceManagerMediator mediator = new ResourceManagerMediator(this);
+            resourceGroveler = new ManifestBasedResourceGroveler(mediator);
 
             _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
         }
@@ -528,17 +525,16 @@ namespace System.Resources
         // such as ".ResX", or a completely different format for naming files.
         protected virtual String GetResourceFileName(CultureInfo culture)
         {
-            StringBuilder sb = new StringBuilder(255);
-            sb.Append(BaseNameField);
-            // If this is the neutral culture, don't append culture name.
-            if (!culture.HasInvariantCultureName)
+            // If this is the neutral culture, don't include the culture name.
+            if (culture.HasInvariantCultureName)
             {
-                CultureInfo.VerifyCultureName(culture.Name, true);
-                sb.Append('.');
-                sb.Append(culture.Name);
+                return BaseNameField + ResFileExtension;
             }
-            sb.Append(ResFileExtension);
-            return sb.ToString();
+            else
+            {
+                CultureInfo.VerifyCultureName(culture.Name, throwException: true);
+                return BaseNameField + "." + culture.Name + ResFileExtension;
+            }
         }
 
         // WARNING: This function must be kept in sync with ResourceFallbackManager.GetEnumerator()
@@ -882,16 +878,6 @@ namespace System.Resources
 
         // When running under AppX, the following rules apply for resource lookup:
         //
-        // Desktop
-        // -------
-        //
-        // 1) For Framework assemblies, we always use satellite assembly based lookup.
-        // 2) For non-FX assemblies, we use modern resource manager, with the premise being that app package
-        //    contains the PRI resources since such assemblies are expected to be application assemblies.
-        //
-        // CoreCLR
-        // -------
-        //
         // 1) For Framework assemblies, we always use satellite assembly based lookup.
         // 2) For non-FX assemblies:
         //    
@@ -902,7 +888,7 @@ namespace System.Resources
         //       contains the PRI resources.
         private bool ShouldUseSatelliteAssemblyResourceLookupUnderAppX(RuntimeAssembly resourcesAssembly)
         {
-            bool fUseSatelliteAssemblyResourceLookupUnderAppX = resourcesAssembly.IsFrameworkAssembly();
+            bool fUseSatelliteAssemblyResourceLookupUnderAppX = typeof(Object).Assembly == resourcesAssembly;
 
             if (!fUseSatelliteAssemblyResourceLookupUnderAppX)
             {
@@ -927,8 +913,8 @@ namespace System.Resources
 
             return fUseSatelliteAssemblyResourceLookupUnderAppX;
         }
-
 #endif // FEATURE_APPX
+
         // Only call SetAppXConfiguration from ResourceManager constructors, and nowhere else.
         // Throws MissingManifestResourceException and WinRT HResults
 
@@ -994,8 +980,6 @@ namespace System.Resources
 
                         if (!bUsingSatelliteAssembliesUnderAppX)
                         {
-                            // See AssemblyNative::IsFrameworkAssembly for details on which kinds of assemblies are considered Framework assemblies.
-                            // The Modern Resource Manager is not used for such assemblies - they continue to use satellite assemblies (i.e. .resources.dll files).
                             _bUsingModernResourceManagement = !ShouldUseSatelliteAssemblyResourceLookupUnderAppX(resourcesAssembly);
 
                             if (_bUsingModernResourceManagement)
@@ -1050,8 +1034,13 @@ namespace System.Resources
                                         // In this case _PRIExceptionInfo is now null and we will just throw the generic
                                         // MissingManifestResource_NoPRIresources exception.
                                         // See the implementation of GetString for more details.
-                                        if (e.HResult != __HResults.ERROR_MRM_MAP_NOT_FOUND)
+                                        if (e.HResult != HResults.ERROR_MRM_MAP_NOT_FOUND)
                                             throw; // Unexpected exception code. Bubble it up to the caller.
+                                    }
+
+                                    if (!_PRIonAppXInitialized)
+                                    {
+                                        _bUsingModernResourceManagement = false;
                                     }
                                     // Allow all other exception types to bubble up to the caller.
 
@@ -1137,7 +1126,7 @@ namespace System.Resources
                 {
                     // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
                     // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
-                    culture = CultureInfo.GetCurrentUICultureNoAppX();
+                    culture = CultureInfo.CurrentUICulture;
                 }
 
                 ResourceSet last = GetFirstResourceSet(culture);

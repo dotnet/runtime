@@ -16,29 +16,29 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public class InvalidOleVariantTypeException : SystemException
     {
         public InvalidOleVariantTypeException()
             : base(SR.Arg_InvalidOleVariantTypeException)
         {
-            HResult = __HResults.COR_E_INVALIDOLEVARIANTTYPE;
+            HResult = HResults.COR_E_INVALIDOLEVARIANTTYPE;
         }
 
         public InvalidOleVariantTypeException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_INVALIDOLEVARIANTTYPE;
+            HResult = HResults.COR_E_INVALIDOLEVARIANTTYPE;
         }
 
         public InvalidOleVariantTypeException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_INVALIDOLEVARIANTTYPE;
+            HResult = HResults.COR_E_INVALIDOLEVARIANTTYPE;
         }
 
         protected InvalidOleVariantTypeException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

@@ -27,6 +27,13 @@
 #define DllIface EXTERN_C __declspec(dllimport)
 #endif // defined(DllInterfaceExporter)
 #else
+#if !defined(__cdecl)
+#if defined(__i386__)
+#define __cdecl __attribute__((cdecl))
+#else
+#define __cdecl
+#endif
+#endif
 #define DllIface EXTERN_C
 #endif // defined(_MSC_VER)
 

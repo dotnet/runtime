@@ -109,7 +109,7 @@ IF_DEF(RRW_RRW,     IS_R1_RW|IS_R2_RW,          NONE)     // r/w    reg , r/w re
 IF_DEF(RRW_RRW_CNS, IS_R1_RW|IS_R2_RW,          SCNS)     // r/w    reg , r/w  reg2 , const
 
 IF_DEF(RWR_RRD_RRD, IS_R1_WR|IS_R2_RD|IS_R3_RD, NONE)     // write  reg , read reg2 , read reg3
-
+IF_DEF(RWR_RRD_RRD_CNS, IS_R1_WR|IS_R2_RD|IS_R3_RD, SCNS) // write  reg , read reg2 , read reg3, const
 //----------------------------------------------------------------------------
 // The following formats are used for direct addresses (e.g. static data members)
 //----------------------------------------------------------------------------

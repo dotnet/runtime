@@ -186,7 +186,6 @@ namespace System.Diagnostics.Contracts
         }
     }
 
-    [Serializable]
     [SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
     internal sealed class ContractException : Exception
     {
@@ -218,21 +217,9 @@ namespace System.Diagnostics.Contracts
             _Condition = condition;
         }
 
-        private ContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-            : base(info, context)
-        {
-            _Kind = (ContractFailureKind)info.GetInt32("Kind");
-            _UserMessage = info.GetString("UserMessage");
-            _Condition = info.GetString("Condition");
-        }
-
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
             base.GetObjectData(info, context);
-
-            info.AddValue("Kind", _Kind);
-            info.AddValue("UserMessage", _UserMessage);
-            info.AddValue("Condition", _Condition);
         }
     }
 }

@@ -29,9 +29,12 @@ CoTaskMemRealloc
 CoTaskMemFree
 CreateDirectoryW
 CreateEventW
+CreateEventExW
 CreateFileW
 CreateMutexW
+CreateMutexExW
 CreateSemaphoreW
+CreateSemaphoreExW
 DeleteFileW
 DuplicateHandle
 FindClose
@@ -41,8 +44,6 @@ FlushFileBuffers
 FormatMessageW
 FreeEnvironmentStringsW
 GetACP
-GetComputerNameW
-GetConsoleCP
 GetConsoleOutputCP
 GetCurrentDirectoryW
 GetCurrentProcess
@@ -52,10 +53,10 @@ GetEnvironmentStringsW
 GetEnvironmentVariableW
 GetFileAttributesExW
 GetFileSize
-GetFileType
 GetFullPathNameW
 GetLongPathNameW
 GetProcAddress
+GetProcessAffinityMask
 GetStdHandle
 GetSystemInfo
 GetTempFileNameW
@@ -63,7 +64,6 @@ GetTempPathW
 LocalAlloc
 LocalReAlloc
 LocalFree
-LockFile
 lstrlenA
 lstrlenW
 MapViewOfFile
@@ -83,7 +83,6 @@ ReleaseMutex
 ReleaseSemaphore
 RemoveDirectoryW
 ResetEvent
-RtlZeroMemory
 SetCurrentDirectoryW
 SetEndOfFile
 SetEnvironmentVariableW
@@ -91,11 +90,9 @@ SetErrorMode
 SetEvent
 SetFileAttributesW
 SetFilePointer
-SetFileTime
 SysAllocStringLen
 SysFreeString
 SysStringLen
-UnlockFile
 UnmapViewOfFile
 VirtualAlloc
 VirtualFree
@@ -103,3 +100,9 @@ GlobalMemoryStatusEx
 VirtualQuery
 WideCharToMultiByte
 WriteFile
+GetLogicalProcessorInformationEx
+SetThreadGroupAffinity
+SetThreadAffinityMask
+GetThreadGroupAffinity
+GetCurrentProcessorNumberEx
+

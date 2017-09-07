@@ -16,13 +16,12 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     internal class AppDomainUnloadedException : SystemException
     {
         public AppDomainUnloadedException()
             : base(SR.Arg_AppDomainUnloadedException)
         {
-            HResult = __HResults.COR_E_APPDOMAINUNLOADED;
+            HResult = HResults.COR_E_APPDOMAINUNLOADED;
         }
 
         //
@@ -30,6 +29,7 @@ namespace System
         //
         protected AppDomainUnloadedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

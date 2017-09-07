@@ -30,8 +30,8 @@
 EXTERN_C Object* JIT_TrialAllocSFastMP_InlineGetThread(CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C Object* JIT_BoxFastMP_InlineGetThread (CORINFO_CLASS_HANDLE type, void* unboxedData);
 EXTERN_C Object* AllocateStringFastMP_InlineGetThread (CLR_I4 cch);
-EXTERN_C Object* JIT_NewArr1OBJ_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
-EXTERN_C Object* JIT_NewArr1VC_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1OBJ_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1VC_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
 // This next set is the fast version that invoke GetThread but is still faster than the VM implementation (i.e.
 // the "slow" versions).
@@ -42,10 +42,10 @@ EXTERN_C Object* JIT_BoxFastUP (CORINFO_CLASS_HANDLE type, void* unboxedData);
 EXTERN_C Object* AllocateStringFastMP (CLR_I4 cch);
 EXTERN_C Object* AllocateStringFastUP (CLR_I4 cch);
 
-EXTERN_C Object* JIT_NewArr1OBJ_MP (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
-EXTERN_C Object* JIT_NewArr1OBJ_UP (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
-EXTERN_C Object* JIT_NewArr1VC_MP (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
-EXTERN_C Object* JIT_NewArr1VC_UP (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1OBJ_MP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1OBJ_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1VC_MP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1VC_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
 //For the optimized JIT_Mon helpers
 #if defined(_TARGET_AMD64_)

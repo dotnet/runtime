@@ -12,7 +12,6 @@ namespace System.Runtime.CompilerServices
     // certain method properties.
 
     // Custom attribute to specify additional method properties.
-    [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
     sealed public class MethodImplAttribute : Attribute
     {

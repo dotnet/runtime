@@ -71,6 +71,7 @@ GTSTRUCT_1(Colon       , GT_COLON)
 GTSTRUCT_1(FptrVal     , GT_FTN_ADDR)
 GTSTRUCT_1(Intrinsic   , GT_INTRINSIC) 
 GTSTRUCT_1(Index       , GT_INDEX)
+GTSTRUCT_1(IndexAddr   , GT_INDEX_ADDR)
 #ifdef FEATURE_SIMD
 GTSTRUCT_2(BoundsChk   , GT_ARR_BOUNDS_CHECK, GT_SIMD_CHK)
 #else // !FEATURE_SIMD
@@ -96,12 +97,22 @@ GTSTRUCT_1(PhiArg      , GT_PHI_ARG)
 GTSTRUCT_1(StoreInd    , GT_STOREIND)
 GTSTRUCT_N(Indir       , GT_STOREIND, GT_IND, GT_NULLCHECK, GT_BLK, GT_STORE_BLK, GT_OBJ, GT_STORE_OBJ, GT_DYN_BLK, GT_STORE_DYN_BLK)
 GTSTRUCT_1(PutArgStk   , GT_PUTARG_STK)
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+GTSTRUCT_1(PutArgSplit , GT_PUTARG_SPLIT)
+#endif
 GTSTRUCT_1(PhysReg     , GT_PHYSREG)
 #ifdef FEATURE_SIMD
 GTSTRUCT_1(SIMD        , GT_SIMD) 
 #endif // FEATURE_SIMD
 GTSTRUCT_1(AllocObj    , GT_ALLOCOBJ)
-GTSTRUCT_1(JumpCC      , GT_JCC)
+GTSTRUCT_2(CC          , GT_JCC, GT_SETCC)
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#ifdef ARM_SOFTFP
+GTSTRUCT_2(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG)
+#else
+GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
+#endif
+#endif
 /*****************************************************************************/
 #undef  GTSTRUCT_0
 #undef  GTSTRUCT_1

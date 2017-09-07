@@ -10,6 +10,7 @@
 #include "stdafx.h"
 
 #include <stdlib.h>
+#include "stdmacros.h"
 #include "md5.h"
 #include "contract.h"
 
@@ -76,7 +77,16 @@ void MD5::HashMore(const void* pvInput, ULONG cbInput)
         // Hash the data in 64-byte runs, starting just after what we've copied
         while (cbInput >= 64)
             {
-            MD5Transform(m_state, (ULONG*)pbInput);
+            if (IS_ALIGNED(pbInput, sizeof(ULONG)))
+                {
+                MD5Transform(m_state, (ULONG*)pbInput);
+                }
+            else
+                {
+                ULONG inputCopy[64 / sizeof(ULONG)];
+                memcpy(inputCopy, pbInput, sizeof(inputCopy));
+                MD5Transform(m_state, inputCopy);
+                }
             pbInput += 64;
             cbInput -= 64;
             }
@@ -212,6 +222,8 @@ void MD5::GetHashValue(MD5HASHDATA* phash)
         {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
+
+        _ASSERTE(IS_ALIGNED(data, sizeof(ULONG)));
 
         ULONG a=state[0];
         ULONG b=state[1];

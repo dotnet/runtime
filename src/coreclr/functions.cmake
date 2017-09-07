@@ -86,7 +86,10 @@ function(preprocess_def_file inputFilename outputFilename)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-function(generate_exports_file inputFilename outputFilename)
+function(generate_exports_file)
+  set(INPUT_LIST ${ARGN})
+  list(GET INPUT_LIST -1 outputFilename)
+  list(REMOVE_AT INPUT_LIST -1)
 
   if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(AWK_SCRIPT generateexportedsymbols.awk)
@@ -96,8 +99,8 @@ function(generate_exports_file inputFilename outputFilename)
 
   add_custom_command(
     OUTPUT ${outputFilename}
-    COMMAND ${AWK} -f ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT} ${inputFilename} >${outputFilename}
-    DEPENDS ${inputFilename} ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT}
+    COMMAND ${AWK} -f ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT} ${INPUT_LIST} >${outputFilename}
+    DEPENDS ${INPUT_LIST} ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT}
     COMMENT "Generating exports file ${outputFilename}"
   )
   set_source_files_properties(${outputFilename}
@@ -234,3 +237,30 @@ function(verify_dependencies targetName errorMessage)
         )
     endif()
 endfunction()
+
+function(add_library_clr)
+    if(NOT WIN32)
+      add_library(${ARGV} ${VERSION_FILE_PATH})
+    else()
+      add_library(${ARGV})
+    endif(NOT WIN32)
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
+    list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)  
+    if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)  
+     set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)  
+    endif()  
+endfunction()
+
+function(add_executable_clr)
+    if(NOT WIN32)
+      add_executable(${ARGV} ${VERSION_FILE_PATH})
+    else()
+      add_executable(${ARGV})
+    endif(NOT WIN32)
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
+    list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)  
+    if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)  
+     set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)  
+    endif()  
+endfunction()
+

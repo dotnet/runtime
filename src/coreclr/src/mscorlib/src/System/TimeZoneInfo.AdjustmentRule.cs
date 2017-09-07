@@ -132,7 +132,7 @@ namespace System
                 _dateStart.Year == _dateEnd.Year;
 
             /// <summary>
-            /// Helper function that performs all of the validation checks for the actory methods and deserialization callback.
+            /// Helper function that performs all of the validation checks for the factory methods and deserialization callback.
             /// </summary>
             private static void ValidateAdjustmentRule(
                 DateTime dateStart,
@@ -212,13 +212,13 @@ namespace System
                 }
                 Contract.EndContractBlock();
 
-                info.AddValue("DateStart", _dateStart);
-                info.AddValue("DateEnd", _dateEnd);
-                info.AddValue("DaylightDelta", _daylightDelta);
-                info.AddValue("DaylightTransitionStart", _daylightTransitionStart);
-                info.AddValue("DaylightTransitionEnd", _daylightTransitionEnd);
-                info.AddValue("BaseUtcOffsetDelta", _baseUtcOffsetDelta);
-                info.AddValue("NoDaylightTransitions", _noDaylightTransitions);
+                info.AddValue("DateStart", _dateStart); // Do not rename (binary serialization)
+                info.AddValue("DateEnd", _dateEnd); // Do not rename (binary serialization)
+                info.AddValue("DaylightDelta", _daylightDelta); // Do not rename (binary serialization)
+                info.AddValue("DaylightTransitionStart", _daylightTransitionStart); // Do not rename (binary serialization)
+                info.AddValue("DaylightTransitionEnd", _daylightTransitionEnd); // Do not rename (binary serialization)
+                info.AddValue("BaseUtcOffsetDelta", _baseUtcOffsetDelta); // Do not rename (binary serialization)
+                info.AddValue("NoDaylightTransitions", _noDaylightTransitions); // Do not rename (binary serialization)
             }
 
             private AdjustmentRule(SerializationInfo info, StreamingContext context)
@@ -228,19 +228,19 @@ namespace System
                     throw new ArgumentNullException(nameof(info));
                 }
 
-                _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime));
-                _dateEnd = (DateTime)info.GetValue("DateEnd", typeof(DateTime));
-                _daylightDelta = (TimeSpan)info.GetValue("DaylightDelta", typeof(TimeSpan));
-                _daylightTransitionStart = (TransitionTime)info.GetValue("DaylightTransitionStart", typeof(TransitionTime));
-                _daylightTransitionEnd = (TransitionTime)info.GetValue("DaylightTransitionEnd", typeof(TransitionTime));
+                _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime)); // Do not rename (binary serialization)
+                _dateEnd = (DateTime)info.GetValue("DateEnd", typeof(DateTime)); // Do not rename (binary serialization)
+                _daylightDelta = (TimeSpan)info.GetValue("DaylightDelta", typeof(TimeSpan)); // Do not rename (binary serialization)
+                _daylightTransitionStart = (TransitionTime)info.GetValue("DaylightTransitionStart", typeof(TransitionTime)); // Do not rename (binary serialization)
+                _daylightTransitionEnd = (TransitionTime)info.GetValue("DaylightTransitionEnd", typeof(TransitionTime)); // Do not rename (binary serialization)
 
-                object o = info.GetValueNoThrow("BaseUtcOffsetDelta", typeof(TimeSpan));
+                object o = info.GetValueNoThrow("BaseUtcOffsetDelta", typeof(TimeSpan)); // Do not rename (binary serialization)
                 if (o != null)
                 {
                     _baseUtcOffsetDelta = (TimeSpan)o;
                 }
 
-                o = info.GetValueNoThrow("NoDaylightTransitions", typeof(bool));
+                o = info.GetValueNoThrow("NoDaylightTransitions", typeof(bool)); // Do not rename (binary serialization)
                 if (o != null)
                 {
                     _noDaylightTransitions = (bool)o;

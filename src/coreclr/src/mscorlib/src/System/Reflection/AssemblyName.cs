@@ -27,7 +27,6 @@ namespace System.Reflection
     using System.Diagnostics.Contracts;
     using System.Text;
 
-    [Serializable]
     public sealed class AssemblyName : ICloneable, ISerializable, IDeserializationCallback
     {
         //
@@ -299,68 +298,12 @@ namespace System.Reflection
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            //Allocate the serialization info and serialize our static data.
-            info.AddValue("_Name", _Name);
-            info.AddValue("_PublicKey", _PublicKey, typeof(byte[]));
-            info.AddValue("_PublicKeyToken", _PublicKeyToken, typeof(byte[]));
-#if FEATURE_USE_LCID
-            info.AddValue("_CultureInfo", (_CultureInfo == null) ? -1 : _CultureInfo.LCID);
-#endif
-            info.AddValue("_CodeBase", _CodeBase);
-            info.AddValue("_Version", _Version);
-            info.AddValue("_HashAlgorithm", _HashAlgorithm, typeof(AssemblyHashAlgorithm));
-            info.AddValue("_HashAlgorithmForControl", _HashAlgorithmForControl, typeof(AssemblyHashAlgorithm));
-            info.AddValue("_StrongNameKeyPair", _StrongNameKeyPair, typeof(StrongNameKeyPair));
-            info.AddValue("_VersionCompatibility", _VersionCompatibility, typeof(AssemblyVersionCompatibility));
-            info.AddValue("_Flags", _Flags, typeof(AssemblyNameFlags));
-            info.AddValue("_HashForControl", _HashForControl, typeof(byte[]));
+            throw new PlatformNotSupportedException();
         }
 
         public void OnDeserialization(Object sender)
         {
-            // Deserialization has already been performed
-            if (m_siInfo == null)
-                return;
-
-            _Name = m_siInfo.GetString("_Name");
-            _PublicKey = (byte[])m_siInfo.GetValue("_PublicKey", typeof(byte[]));
-            _PublicKeyToken = (byte[])m_siInfo.GetValue("_PublicKeyToken", typeof(byte[]));
-#if FEATURE_USE_LCID
-            int lcid = (int)m_siInfo.GetInt32("_CultureInfo");
-            if (lcid != -1)
-                _CultureInfo = new CultureInfo(lcid);
-#endif
-
-            _CodeBase = m_siInfo.GetString("_CodeBase");
-            _Version = (Version)m_siInfo.GetValue("_Version", typeof(Version));
-            _HashAlgorithm = (AssemblyHashAlgorithm)m_siInfo.GetValue("_HashAlgorithm", typeof(AssemblyHashAlgorithm));
-            _StrongNameKeyPair = (StrongNameKeyPair)m_siInfo.GetValue("_StrongNameKeyPair", typeof(StrongNameKeyPair));
-            _VersionCompatibility = (AssemblyVersionCompatibility)m_siInfo.GetValue("_VersionCompatibility", typeof(AssemblyVersionCompatibility));
-            _Flags = (AssemblyNameFlags)m_siInfo.GetValue("_Flags", typeof(AssemblyNameFlags));
-
-            try
-            {
-                _HashAlgorithmForControl = (AssemblyHashAlgorithm)m_siInfo.GetValue("_HashAlgorithmForControl", typeof(AssemblyHashAlgorithm));
-                _HashForControl = (byte[])m_siInfo.GetValue("_HashForControl", typeof(byte[]));
-            }
-            catch (SerializationException)
-            { // RTM did not have these defined
-                _HashAlgorithmForControl = AssemblyHashAlgorithm.None;
-                _HashForControl = null;
-            }
-
-            m_siInfo = null;
-        }
-
-        // Constructs a new AssemblyName during deserialization.
-        internal AssemblyName(SerializationInfo info, StreamingContext context)
-        {
-            //The graph is not valid until OnDeserialization() has been called.
-            m_siInfo = info;
+            throw new PlatformNotSupportedException();
         }
 
         public AssemblyName(String assemblyName)

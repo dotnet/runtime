@@ -20,7 +20,7 @@ enum var_types_classification
     VTF_S   = 0x0040, // is a struct type
 };
 
-DECLARE_TYPED_ENUM(var_types, BYTE)
+enum var_types : BYTE
 {
 #define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) TYP_##tn,
 #include "typelist.h"
@@ -28,9 +28,8 @@ DECLARE_TYPED_ENUM(var_types, BYTE)
 
     TYP_COUNT,
 
-        TYP_lastIntrins = TYP_DOUBLE
-}
-END_DECLARE_TYPED_ENUM(var_types, BYTE)
+    TYP_lastIntrins = TYP_DOUBLE
+};
 
 /*****************************************************************************
  * C-style pointers are implemented as TYP_INT or TYP_LONG depending on the

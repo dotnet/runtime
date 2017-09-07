@@ -19,7 +19,6 @@ using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
-    [Serializable]
     public class StringInfo
     {
         [OptionalField(VersionAdded = 2)] 

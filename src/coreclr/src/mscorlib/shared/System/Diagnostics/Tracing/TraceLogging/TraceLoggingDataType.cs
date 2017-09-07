@@ -182,7 +182,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Core type.
-        /// Special case: Struct indicates that this field plus the the
+        /// Special case: Struct indicates that this field plus the
         /// subsequent N logical fields are to be considered as one logical
         /// field (i.e. a nested structure). The OutType is used to encode N.
         /// The maximum value for N is 127. This field has no payload by

@@ -24,10 +24,6 @@
 #define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 #endif
 
-#ifdef _DEBUG
-void* forceFrame;   // Variable used to force a local variable to the frame
-#endif
-
 CrawlFrame::CrawlFrame()
 {
     LIMITED_METHOD_DAC_CONTRACT;

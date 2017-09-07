@@ -14,14 +14,17 @@ namespace Functions
         private const double floorDoubleDelta = 0.0004;
         private const double floorDoubleExpectedResult = -2500;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = FloorDoubleIterations)]
         public static void FloorDoubleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    FloorDoubleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        FloorDoubleTest();
+                    }
                 }
             }
         }

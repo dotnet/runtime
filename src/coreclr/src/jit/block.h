@@ -49,7 +49,7 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 
 // clang-format off
 
-DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
+enum BBjumpKinds : BYTE
 {
     BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally or fault)
     BBJ_EHFILTERRET, // block ends with 'endfilter'
@@ -64,8 +64,7 @@ DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
     BBJ_SWITCH,      // block ends with a switch statement
 
     BBJ_COUNT
-}
-END_DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
+};
 
 // clang-format on
 
@@ -518,7 +517,8 @@ struct BasicBlock : private LIR::Range
                         bool      showFlags = false,
                         bool showPreds = true); // Print a simple basic block header for various output, including a
                                                 // list of predecessors and successors.
-#endif                                          // DEBUG
+    const char* dspToString(int blockNumPadding = 0);
+#endif // DEBUG
 
     typedef unsigned weight_t; // Type used to hold block and edge weights
                                // Note that for CLR v2.0 and earlier our
@@ -1053,6 +1053,7 @@ struct BasicBlock : private LIR::Range
     // in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are
     // still in the BB list by whether they have the same stamp (with high probability).
     unsigned bbTraversalStamp;
+    unsigned bbID;
 #endif // DEBUG
 
     ThisInitState bbThisOnEntry();
@@ -1091,8 +1092,7 @@ struct BasicBlock : private LIR::Range
     GenTreeStmt* FirstNonPhiDef();
     GenTree*     FirstNonPhiDefOrCatchArgAsg();
 
-    BasicBlock()
-        : VARSET_INIT_NOCOPY(bbLiveIn, VarSetOps::UninitVal()), VARSET_INIT_NOCOPY(bbLiveOut, VarSetOps::UninitVal())
+    BasicBlock() : bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {
     }
 

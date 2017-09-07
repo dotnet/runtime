@@ -154,7 +154,10 @@ struct segment_info
 };
 
 #ifdef PROFILING_SUPPORTED
+#ifndef BUILD_AS_STANDALONE
+// [LOCALGC TODO] Enable profiling (GitHub #11515)
 #define GC_PROFILING       //Turn on profiling
+#endif // BUILD_AS_STANDALONE
 #endif // PROFILING_SUPPORTED
 
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
@@ -171,16 +174,19 @@ class Object;
 class IGCHeap;
 class IGCHandleManager;
 
-// Initializes the garbage collector. Should only be called
-// once, during EE startup. Returns true if the initialization
-// was successful, false otherwise.
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleTable, GcDacVars* gcDacVars);
+// The function that initialzes the garbage collector.
+// Should only be called once: here, during EE startup.
+// Returns true if the initialization was successful, false otherwise.
+typedef bool (*InitializeGarbageCollectorFunction)(
+    /* In  */ IGCToCLR*,
+    /* Out */ IGCHeap**,
+    /* Out */ IGCHandleManager**,
+    /* Out */ GcDacVars*
+);
 
-// The runtime needs to know whether we're using workstation or server GC 
-// long before the GCHeap is created. This function sets the type of
-// heap that will be created, before InitializeGarbageCollector is called
-// and the heap is actually recated.
-void InitializeHeapType(bool bServerHeap);
+// The name of the function that initializes the garbage collector,
+// to be used as an argument to GetProcAddress.
+#define INITIALIZE_GC_FUNCTION_NAME "InitializeGarbageCollector"
 
 #ifdef WRITE_BARRIER_CHECK
 //always defined, but should be 0 in Server GC
@@ -390,6 +396,7 @@ typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, v
 typedef void (* fq_walk_fn)(bool, void*);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
+typedef bool (* async_pin_enum_fn)(Object* object, void* context);
 
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
@@ -409,13 +416,17 @@ public:
 
     virtual bool ContainsHandle(OBJECTHANDLE handle) = 0;
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type) = 0;
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type) = 0;
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type, int heapToAffinitizeTo) = 0;
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo) = 0;
 
-    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, int type, void* pExtraInfo) = 0;
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo) = 0;
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) = 0;
+
+    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget) = 0;
+
+    virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context) = 0;
 
     virtual ~IGCHandleStore() {};
 };
@@ -435,13 +446,15 @@ public:
 
     virtual void DestroyHandleStore(IGCHandleStore* store) = 0;
 
-    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type) = 0;
+    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, HandleType type) = 0;
 
     virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) = 0;
 
-    virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type) = 0;
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type) = 0;
 
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) = 0;
+
+    virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo) = 0;
 
     virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle) = 0;
 
@@ -449,7 +462,15 @@ public:
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object) = 0;
 
+    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object) = 0;
+
+    virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle) = 0;
+
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) = 0;
+
+    virtual HandleType HandleFetchType(OBJECTHANDLE handle) = 0;
+
+    virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
@@ -803,6 +824,14 @@ void updateGCShadow(Object** ptr, Object* val);
 #define GC_ALLOC_CONTAINS_REF 0x2
 #define GC_ALLOC_ALIGN8_BIAS 0x4
 #define GC_ALLOC_ALIGN8 0x8
+
+#if defined(USE_CHECKED_OBJECTREFS) && !defined(_NOVM)
+#define OBJECTREF_TO_UNCHECKED_OBJECTREF(objref)    (*((_UNCHECKED_OBJECTREF*)&(objref)))
+#define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (OBJECTREF(obj))
+#else
+#define OBJECTREF_TO_UNCHECKED_OBJECTREF(objref)    (objref)
+#define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (obj)
+#endif
 
 struct ScanContext
 {

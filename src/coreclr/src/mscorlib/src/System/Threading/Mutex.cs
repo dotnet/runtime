@@ -21,7 +21,6 @@ namespace System.Threading
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;
     using System.Runtime.InteropServices;
-    using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
     using System.Security;
     using System.Diagnostics;
@@ -29,6 +28,9 @@ namespace System.Threading
 
     public sealed class Mutex : WaitHandle
     {
+        private const uint AccessRights =
+            (uint)Win32Native.MAXIMUM_ALLOWED | Win32Native.SYNCHRONIZE | Win32Native.MUTEX_MODIFY_STATE;
+
         private static bool dummyBool;
 
         internal class MutexSecurity
@@ -94,30 +96,16 @@ namespace System.Threading
 
             internal void MutexTryCode(object userData)
             {
-                SafeWaitHandle mutexHandle = null;
                 // try block                
-                RuntimeHelpers.PrepareConstrainedRegions();
-                try
+                if (m_initiallyOwned)
                 {
-                }
-                finally
-                {
-                    if (m_initiallyOwned)
-                    {
-                        m_cleanupInfo.inCriticalRegion = true;
-                    }
+                    m_cleanupInfo.inCriticalRegion = true;
                 }
 
-                int errorCode = 0;
-                RuntimeHelpers.PrepareConstrainedRegions();
-                try
-                {
-                }
-                finally
-                {
-                    errorCode = CreateMutexHandle(m_initiallyOwned, m_name, m_secAttrs, out mutexHandle);
-                }
+                uint mutexFlags = m_initiallyOwned ? Win32Native.CREATE_MUTEX_INITIAL_OWNER : 0;
+                SafeWaitHandle mutexHandle = Win32Native.CreateMutexEx(m_secAttrs, m_name, mutexFlags, AccessRights);
 
+                int errorCode = Marshal.GetLastWin32Error();
                 if (mutexHandle.IsInvalid)
                 {
                     mutexHandle.SetHandleAsInvalid();
@@ -135,7 +123,7 @@ namespace System.Threading
                                 throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, m_name));
                         }
                     }
-                    __Error.WinIOError(errorCode, m_name);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, m_name);
                 }
                 m_newMutex = errorCode != Win32Native.ERROR_ALREADY_EXISTS;
                 m_mutex.SetHandleInternal(mutexHandle);
@@ -213,8 +201,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 case OpenExistingResult.PathNotFound:
-                    __Error.WinIOError(Win32Native.ERROR_PATH_NOT_FOUND, name);
-                    return result; //never executes
+                    throw Win32Marshal.GetExceptionForWin32Error(Win32Native.ERROR_PATH_NOT_FOUND, name);
 
                 default:
                     return result;
@@ -251,12 +238,11 @@ namespace System.Threading
             // with parameters to allow us to view & edit the ACL.  This will
             // fail if we don't have permission to view or edit the ACL's.  
             // If that happens, ask for less permissions.
-            SafeWaitHandle myHandle = Win32Native.OpenMutex(Win32Native.MUTEX_MODIFY_STATE | Win32Native.SYNCHRONIZE, false, name);
+            SafeWaitHandle myHandle = Win32Native.OpenMutex(AccessRights, false, name);
 
-            int errorCode = 0;
             if (myHandle.IsInvalid)
             {
-                errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastWin32Error();
 
 #if PLATFORM_UNIX
                 if (name != null && errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
@@ -274,7 +260,7 @@ namespace System.Threading
                     return OpenExistingResult.NameInvalid;
 
                 // this is for passed through Win32Native Errors
-                __Error.WinIOError(errorCode, name);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
             }
 
             result = new Mutex(myHandle);
@@ -293,40 +279,6 @@ namespace System.Threading
             {
                 throw new ApplicationException(SR.Arg_SynchronizationLockException);
             }
-        }
-
-        private static int CreateMutexHandle(bool initiallyOwned, String name, Win32Native.SECURITY_ATTRIBUTES securityAttribute, out SafeWaitHandle mutexHandle)
-        {
-            int errorCode;
-
-            while (true)
-            {
-                mutexHandle = Win32Native.CreateMutex(securityAttribute, initiallyOwned, name);
-                errorCode = Marshal.GetLastWin32Error();
-                if (!mutexHandle.IsInvalid) break;
-
-                if (errorCode != Win32Native.ERROR_ACCESS_DENIED) break;
-
-                // If a mutex with the name already exists, OS will try to open it with FullAccess.
-                // It might fail if we don't have enough access. In that case, we try to open the mutex will modify and synchronize access.
-                RuntimeHelpers.PrepareConstrainedRegions();
-
-                mutexHandle = Win32Native.OpenMutex(
-                    Win32Native.MUTEX_MODIFY_STATE | Win32Native.SYNCHRONIZE,
-                    false,
-                    name);
-
-                errorCode = !mutexHandle.IsInvalid ? Win32Native.ERROR_ALREADY_EXISTS : Marshal.GetLastWin32Error();
-
-                // There could be a race condition here, the other owner of the mutex can free the mutex,
-                // We need to retry creation in that case.
-                if (errorCode != Win32Native.ERROR_FILE_NOT_FOUND)
-                {
-                    if (errorCode == Win32Native.ERROR_SUCCESS) errorCode = Win32Native.ERROR_ALREADY_EXISTS;
-                    break;
-                }
-            }
-            return errorCode;
         }
     }
 }

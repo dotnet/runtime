@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* f00b3f49-ddd2-49be-ba43-6e49ffa66959 */
-    0xf00b3f49,
-    0xddd2,
-    0x49be,
-    { 0xba, 0x43, 0x6e, 0x49, 0xff, 0xa6, 0x69, 0x59 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 5a1cfc89-a84a-4642-b01d-ead88e60c1ee */
+    0x5a1cfc89,
+    0xa84a,
+    0x4642,
+    { 0xb0, 0x1d, 0xea, 0xd8, 0x8e, 0x60, 0xc1, 0xee }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -400,6 +400,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
     CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
+    CORINFO_HELP_NEWARR_1_R2R_DIRECT, // wrapper for R2R direct call, which extracts method table from ArrayTypeDesc
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
@@ -960,6 +961,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_ByReference_Value,
     CORINFO_INTRINSIC_Span_GetItem,
     CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
+    CORINFO_INTRINSIC_GetRawHandle,
 
     CORINFO_INTRINSIC_Count,
     CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,
@@ -1323,6 +1325,20 @@ struct CORINFO_RUNTIME_LOOKUP
     bool                    testForFixup;
 
     SIZE_T                  offsets[CORINFO_MAXINDIRECTIONS];
+
+    // If set, first offset is indirect.
+    // 0 means that value stored at first offset (offsets[0]) from pointer is next pointer, to which the next offset
+    // (offsets[1]) is added and so on.
+    // 1 means that value stored at first offset (offsets[0]) from pointer is offset1, and the next pointer is
+    // stored at pointer+offsets[0]+offset1.
+    bool                indirectFirstOffset;
+
+    // If set, second offset is indirect.
+    // 0 means that value stored at second offset (offsets[1]) from pointer is next pointer, to which the next offset
+    // (offsets[2]) is added and so on.
+    // 1 means that value stored at second offset (offsets[1]) from pointer is offset2, and the next pointer is
+    // stored at pointer+offsets[1]+offset2.
+    bool                indirectSecondOffset;
 } ;
 
 // Result of calling embedGenericHandle
@@ -1513,7 +1529,8 @@ enum CORINFO_CALL_KIND
     CORINFO_VIRTUALCALL_VTABLE
 };
 
-
+// Indicates that the CORINFO_VIRTUALCALL_VTABLE lookup needn't do a chunk indirection
+#define CORINFO_VIRTUALCALL_NO_CHUNK 0xFFFFFFFF
 
 enum CORINFO_THIS_TRANSFORM
 {
@@ -2052,7 +2069,8 @@ public:
     virtual void getMethodVTableOffset (
             CORINFO_METHOD_HANDLE       method,                 /* IN */
             unsigned*                   offsetOfIndirection,    /* OUT */
-            unsigned*                   offsetAfterIndirection  /* OUT */
+            unsigned*                   offsetAfterIndirection, /* OUT */
+            bool*                       isRelative              /* OUT */
             ) = 0;
 
     // Find the virtual method in implementingClass that overrides virtualMethod,
@@ -2066,6 +2084,15 @@ public:
             CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
             CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
             ) = 0;
+
+    // Given resolved token that corresponds to an intrinsic classified as
+    // a CORINFO_INTRINSIC_GetRawHandle intrinsic, fetch the handle associated
+    // with the token. If this is not possible at compile-time (because the current method's 
+    // code is shared and the token contains generic parameters) then indicate 
+    // how the handle should be looked up at runtime.
+    virtual void expandRawHandleIntrinsic(
+        CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+        CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
 
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
     // getIntrinsicID() returns the intrinsic ID.
@@ -2110,13 +2137,6 @@ public:
             CORINFO_CLASS_HANDLE        delegateCls,      /* exact type of the delegate */
             BOOL                        *pfIsOpenDelegate /* is the delegate open */
             ) = 0;
-
-    // Determines whether the delegate creation obeys security transparency rules
-    virtual BOOL isDelegateCreationAllowed (
-            CORINFO_CLASS_HANDLE        delegateHnd,
-            CORINFO_METHOD_HANDLE       calleeHnd
-            ) = 0;
-
 
     // Indicates if the method is an instance of the generic
     // method that passes (or has passed) verification
@@ -2838,8 +2858,6 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
-    virtual SIZE_T*       getAddrModuleDomainID(CORINFO_MODULE_HANDLE   module) = 0;
-
     // return the native entry point to an EE helper (see CorInfoHelpFunc)
     virtual void* getHelperFtn (
                     CorInfoHelpFunc         ftnNum,
@@ -3073,5 +3091,20 @@ public:
 // It would be nicer to use existing IMAGE_REL_XXX constants instead of defining our own here...
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
+
+// The identifier for ARM32-specific PC-relative address
+// computation corresponds to the following instruction
+// sequence:
+//  l0: movw rX, #imm_lo  // 4 byte
+//  l4: movt rX, #imm_hi  // 4 byte
+//  l8: add  rX, pc <- after this instruction rX = relocTarget
+//
+// Program counter at l8 is address of l8 + 4
+// Address of relocated movw/movt is l0
+// So, imm should be calculated as the following:
+//  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
+// So, the value of offset correction is 12
+//
+#define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
 
 #endif // _COR_INFO_H_
