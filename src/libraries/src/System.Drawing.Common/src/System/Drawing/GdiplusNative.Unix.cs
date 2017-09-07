@@ -264,17 +264,6 @@ namespace System.Drawing
                 GdipCreateFontFromDC_ptr = LoadFunction<GdipCreateFontFromDC_delegate>("GdipCreateFontFromDC");
                 GdipCreateFontFromLogfont_ptr = LoadFunction<GdipCreateFontFromLogfont_delegate>("GdipCreateFontFromLogfontW");
                 GdipCreateFontFromHfont_ptr = LoadFunction<GdipCreateFontFromHfont_delegate>("GdipCreateFontFromHfontA");
-                GdipCreateFontFamilyFromName_ptr = LoadFunction<GdipCreateFontFamilyFromName_delegate>("GdipCreateFontFamilyFromName");
-                GdipGetFamilyName_ptr = LoadFunction<GdipGetFamilyName_delegate>("GdipGetFamilyName");
-                GdipGetGenericFontFamilySansSerif_ptr = LoadFunction<GdipGetGenericFontFamilySansSerif_delegate>("GdipGetGenericFontFamilySansSerif");
-                GdipGetGenericFontFamilySerif_ptr = LoadFunction<GdipGetGenericFontFamilySerif_delegate>("GdipGetGenericFontFamilySerif");
-                GdipGetGenericFontFamilyMonospace_ptr = LoadFunction<GdipGetGenericFontFamilyMonospace_delegate>("GdipGetGenericFontFamilyMonospace");
-                GdipGetCellAscent_ptr = LoadFunction<GdipGetCellAscent_delegate>("GdipGetCellAscent");
-                GdipGetCellDescent_ptr = LoadFunction<GdipGetCellDescent_delegate>("GdipGetCellDescent");
-                GdipGetLineSpacing_ptr = LoadFunction<GdipGetLineSpacing_delegate>("GdipGetLineSpacing");
-                GdipGetEmHeight_ptr = LoadFunction<GdipGetEmHeight_delegate>("GdipGetEmHeight");
-                GdipIsStyleAvailable_ptr = LoadFunction<GdipIsStyleAvailable_delegate>("GdipIsStyleAvailable");
-                GdipDeleteFontFamily_ptr = LoadFunction<GdipDeleteFontFamily_delegate>("GdipDeleteFontFamily");
                 GdipGetFontSize_ptr = LoadFunction<GdipGetFontSize_delegate>("GdipGetFontSize");
                 GdipGetFontHeight_ptr = LoadFunction<GdipGetFontHeight_delegate>("GdipGetFontHeight");
                 GdipGetFontHeightGivenDPI_ptr = LoadFunction<GdipGetFontHeightGivenDPI_delegate>("GdipGetFontHeightGivenDPI");
@@ -1213,62 +1202,6 @@ namespace System.Drawing
             private delegate Status GdipCreateFontFromHfont_delegate(IntPtr hdc, out IntPtr font, ref LOGFONT lf);
             private static FunctionWrapper<GdipCreateFontFromHfont_delegate> GdipCreateFontFromHfont_ptr;
             internal static Status GdipCreateFontFromHfont(IntPtr hdc, out IntPtr font, ref LOGFONT lf) => GdipCreateFontFromHfont_ptr.Delegate(hdc, out font, ref lf);
-
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
-            private delegate Status GdipCreateFontFamilyFromName_delegate([MarshalAs(UnmanagedType.LPWStr)]string fName, IntPtr collection, out IntPtr fontFamily);
-            private static FunctionWrapper<GdipCreateFontFamilyFromName_delegate> GdipCreateFontFamilyFromName_ptr;
-            internal static Status GdipCreateFontFamilyFromName(string fName, IntPtr collection, out IntPtr fontFamily) => GdipCreateFontFamilyFromName_ptr.Delegate(fName, collection, out fontFamily);
-
-            private delegate Status GdipGetFamilyName_delegate(IntPtr family, IntPtr name, int language);
-            private static FunctionWrapper<GdipGetFamilyName_delegate> GdipGetFamilyName_ptr;
-            internal static Status GdipGetFamilyName(IntPtr family, IntPtr name, int language) => GdipGetFamilyName_ptr.Delegate(family, name, language);
-            internal static unsafe Status GdipGetFamilyName(IntPtr family, StringBuilder nameBuilder, int language)
-            {
-                const int LF_FACESIZE = 32;
-                char* namePtr = stackalloc char[LF_FACESIZE];
-                Status ret = GdipGetFamilyName(family, (IntPtr)namePtr, language);
-                string name = Marshal.PtrToStringUni((IntPtr)namePtr);
-                nameBuilder.Append(name);
-                return ret;
-            }
-
-
-            private delegate Status GdipGetGenericFontFamilySansSerif_delegate(out IntPtr fontFamily);
-            private static FunctionWrapper<GdipGetGenericFontFamilySansSerif_delegate> GdipGetGenericFontFamilySansSerif_ptr;
-            internal static Status GdipGetGenericFontFamilySansSerif(out IntPtr fontFamily) => GdipGetGenericFontFamilySansSerif_ptr.Delegate(out fontFamily);
-
-            private delegate Status GdipGetGenericFontFamilySerif_delegate(out IntPtr fontFamily);
-            private static FunctionWrapper<GdipGetGenericFontFamilySerif_delegate> GdipGetGenericFontFamilySerif_ptr;
-            internal static Status GdipGetGenericFontFamilySerif(out IntPtr fontFamily) => GdipGetGenericFontFamilySerif_ptr.Delegate(out fontFamily);
-
-            private delegate Status GdipGetGenericFontFamilyMonospace_delegate(out IntPtr fontFamily);
-            private static FunctionWrapper<GdipGetGenericFontFamilyMonospace_delegate> GdipGetGenericFontFamilyMonospace_ptr;
-            internal static Status GdipGetGenericFontFamilyMonospace(out IntPtr fontFamily) => GdipGetGenericFontFamilyMonospace_ptr.Delegate(out fontFamily);
-
-            private delegate Status GdipGetCellAscent_delegate(IntPtr fontFamily, int style, out short ascent);
-            private static FunctionWrapper<GdipGetCellAscent_delegate> GdipGetCellAscent_ptr;
-            internal static Status GdipGetCellAscent(IntPtr fontFamily, int style, out short ascent) => GdipGetCellAscent_ptr.Delegate(fontFamily, style, out ascent);
-
-            private delegate Status GdipGetCellDescent_delegate(IntPtr fontFamily, int style, out short descent);
-            private static FunctionWrapper<GdipGetCellDescent_delegate> GdipGetCellDescent_ptr;
-            internal static Status GdipGetCellDescent(IntPtr fontFamily, int style, out short descent) => GdipGetCellDescent_ptr.Delegate(fontFamily, style, out descent);
-
-            private delegate Status GdipGetLineSpacing_delegate(IntPtr fontFamily, int style, out short spacing);
-            private static FunctionWrapper<GdipGetLineSpacing_delegate> GdipGetLineSpacing_ptr;
-            internal static Status GdipGetLineSpacing(IntPtr fontFamily, int style, out short spacing) => GdipGetLineSpacing_ptr.Delegate(fontFamily, style, out spacing);
-
-            private delegate Status GdipGetEmHeight_delegate(IntPtr fontFamily, int style, out short emHeight);
-            private static FunctionWrapper<GdipGetEmHeight_delegate> GdipGetEmHeight_ptr;
-            internal static Status GdipGetEmHeight(IntPtr fontFamily, int style, out short emHeight) => GdipGetEmHeight_ptr.Delegate(fontFamily, style, out emHeight);
-
-            private delegate Status GdipIsStyleAvailable_delegate(IntPtr fontFamily, int style, out bool styleAvailable);
-            private static FunctionWrapper<GdipIsStyleAvailable_delegate> GdipIsStyleAvailable_ptr;
-            internal static Status GdipIsStyleAvailable(IntPtr fontFamily, int style, out bool styleAvailable) => GdipIsStyleAvailable_ptr.Delegate(fontFamily, style, out styleAvailable);
-
-            private delegate Status GdipDeleteFontFamily_delegate(IntPtr fontFamily);
-            private static FunctionWrapper<GdipDeleteFontFamily_delegate> GdipDeleteFontFamily_ptr;
-            internal static Status GdipDeleteFontFamily(IntPtr fontFamily) => GdipDeleteFontFamily_ptr.Delegate(fontFamily);
-            internal static int IntGdipDeleteFontFamily(HandleRef fontFamily) => (int)GdipDeleteFontFamily_ptr.Delegate(fontFamily.Handle);
 
             private delegate Status GdipGetFontSize_delegate(IntPtr font, out float size);
             private static FunctionWrapper<GdipGetFontSize_delegate> GdipGetFontSize_ptr;
