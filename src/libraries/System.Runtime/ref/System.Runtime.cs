@@ -2736,6 +2736,7 @@ namespace System
         public virtual bool IsSecuritySafeCritical { get { throw null; } }
         public virtual bool IsSecurityTransparent { get { throw null; } }
         public virtual bool IsSerializable { get { throw null; } }
+        public virtual bool IsSignatureType { get { throw null; } }
         public bool IsSpecialName { get { throw null; } }
         public virtual bool IsTypeDefinition { get { throw null; } }
         public virtual bool IsSZArray { get { throw null; } }
@@ -2797,6 +2798,11 @@ namespace System
         public System.Reflection.MethodInfo GetMethod(string name, System.Type[] types) { throw null; }
         public System.Reflection.MethodInfo GetMethod(string name, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
         protected abstract System.Reflection.MethodInfo GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers);
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Type[] types) { throw null; }
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
+        protected virtual System.Reflection.MethodInfo GetMethodImpl(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
         public System.Reflection.MethodInfo[] GetMethods() { throw null; }
         public abstract System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingAttr);
         public System.Type GetNestedType(string name) { throw null; }
@@ -2855,6 +2861,7 @@ namespace System
         public virtual System.Type MakeByRefType() { throw null; }
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
+        public static Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type ReflectionOnlyGetType(System.String typeName, bool throwIfNotFound, bool ignoreCase) { throw null; }
         public override string ToString() { throw null; }
     }
@@ -5441,6 +5448,7 @@ namespace System.Reflection
         CreateInstance = 512,
         DeclaredOnly = 2,
         Default = 0,
+        DoNotWrapExceptions = 33554432, 
         ExactBinding = 65536,
         FlattenHierarchy = 64,
         GetField = 1024,
