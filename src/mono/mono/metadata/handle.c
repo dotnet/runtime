@@ -20,6 +20,10 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-threads.h>
+#ifdef HAVE_BACKTRACE_SYMBOLS
+#include <execinfo.h>
+#endif
+
 /* TODO (missing pieces)
 
 Add counters for:
@@ -167,7 +171,14 @@ chunk_element_to_chunk_idx (HandleStack *stack, HandleChunkElem *elem, int *out_
 }
 
 #ifdef MONO_HANDLE_TRACK_OWNER
-#define SET_OWNER(chunk,idx) do { (chunk)->elems[(idx)].owner = owner; } while (0)
+#ifdef HAVE_BACKTRACE_SYMBOLS
+#define SET_BACKTRACE(btaddrs) do {					\
+	backtrace(btaddrs, 7);						\
+	} while (0)
+#else
+#define SET_BACKTRACE(btaddrs) 0
+#endif
+#define SET_OWNER(chunk,idx) do { (chunk)->elems[(idx)].owner = owner; SET_BACKTRACE (&((chunk)->elems[(idx)].backtrace_ips[0])); } while (0)
 #else
 #define SET_OWNER(chunk,idx) do { } while (0)
 #endif

@@ -66,6 +66,7 @@ typedef struct {
 	gpointer o; /* MonoObject ptr or interior ptr */
 #ifdef MONO_HANDLE_TRACK_OWNER
 	const char *owner;
+	gpointer backtrace_ips[7]; /* result of backtrace () at time of allocation */
 #endif
 #ifdef MONO_HANDLE_TRACK_SP
 	gpointer alloc_sp; /* sp from HandleStack:stackmark_sp at time of allocation */
