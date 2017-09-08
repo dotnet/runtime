@@ -10,3 +10,7 @@ public class Asm : Test.Test
     t = new Test.Test ();
   }
 }
+
+public class Asm2 : Test.ReturnsTestBase
+{
+}
