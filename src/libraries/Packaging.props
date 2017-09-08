@@ -1,6 +1,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <PreReleaseLabel>preview2</PreReleaseLabel>
+    <PreReleaseLabel>preview1</PreReleaseLabel>
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
