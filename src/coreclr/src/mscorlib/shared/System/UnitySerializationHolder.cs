@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
-using System.Reflection;
 
 namespace System
 {
@@ -11,6 +10,7 @@ namespace System
     /// Holds Null class for which we guarantee that there is only ever one instance of.
     /// This only exists for compatibility with .NET Framework.
     /// </summary>
+    [Serializable]
 #if CORECLR
     internal
 #else
