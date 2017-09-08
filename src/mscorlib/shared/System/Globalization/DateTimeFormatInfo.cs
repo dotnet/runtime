@@ -2813,7 +2813,10 @@ namespace System.Globalization
                             compareStrings = !(Char.IsLetter(nextCh));
                         }
                     }
-                    if (compareStrings && CompareStringIgnoreCaseOptimized(str.Value.Slice(str.Index, value.tokenString.Length), value.tokenString.AsReadOnlySpan()))
+                    
+                    if (compareStrings &&
+                        ((value.tokenString.Length == 1 && str.Value[str.Index] == value.tokenString[0]) ||
+                         Culture.CompareInfo.Compare(str.Value.Slice(str.Index, value.tokenString.Length), value.tokenString.AsReadOnlySpan(), CompareOptions.IgnoreCase) == 0))
                     {
                         tokenType = value.tokenType & TokenMask;
                         tokenValue = value.tokenValue;
@@ -2972,17 +2975,6 @@ namespace System.Globalization
             }
 
             return (this.Culture.CompareInfo.Compare(string1, offset1, length1, string2, offset2, length2, CompareOptions.IgnoreCase) == 0);
-        }
-
-        private bool CompareStringIgnoreCaseOptimized(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
-        {
-            // Optimize for one character cases which are common due to date and time separators (/ and :)
-            if (string1.Length == 1 && string2.Length == 1 && string1[0] == string2[0])
-            {
-                return true;
-            }
-
-            return (this.Culture.CompareInfo.Compare(string1, string2, CompareOptions.IgnoreCase) == 0);
         }
 
         // class DateTimeFormatInfo
