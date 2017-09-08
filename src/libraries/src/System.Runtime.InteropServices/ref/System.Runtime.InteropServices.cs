@@ -7,6 +7,8 @@
 
 // Types moved down into System.Runtime.Handles
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.CriticalHandle))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.GCHandle))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.GCHandleType))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.SafeHandle))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.Missing))]
 
@@ -392,31 +394,6 @@ namespace System.Runtime.InteropServices
         public ErrorWrapper(int errorCode) { }
         public ErrorWrapper(object errorCode) { }
         public int ErrorCode { get { throw null; } }
-    }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GCHandle
-    {
-        public bool IsAllocated { get { throw null; } }
-        public object Target {get { throw null; } set { } }
-        public System.IntPtr AddrOfPinnedObject() { throw null; }
-        public static System.Runtime.InteropServices.GCHandle Alloc(object value) { throw null; }
-        public static System.Runtime.InteropServices.GCHandle Alloc(object value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
-        public override bool Equals(object o) { throw null; }
-        public void Free() { }
-        public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
-        public override int GetHashCode() { throw null; }
-        public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static explicit operator System.Runtime.InteropServices.GCHandle(System.IntPtr value) { throw null; }
-        public static explicit operator System.IntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
-        public static bool operator !=(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
-    }
-    public enum GCHandleType
-    {
-        Normal = 2,
-        Pinned = 3,
-        Weak = 0,
-        WeakTrackResurrection = 1,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(5149), Inherited = false)]
     public sealed partial class GuidAttribute : System.Attribute
