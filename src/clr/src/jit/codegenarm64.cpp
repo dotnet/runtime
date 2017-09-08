@@ -1510,7 +1510,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     var_types targetType = treeNode->TypeGet();
     emitter*  emit       = getEmitter();
     emitAttr  attr       = emitTypeSize(treeNode);
-    bool      isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
 
     GenTreePtr op1 = treeNode->gtGetOp1();
     GenTreePtr op2 = treeNode->gtGetOp2();
