@@ -4478,7 +4478,7 @@ array_constructed:
 
 			context->original_domain = NULL;
 			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
-			gpointer tls_jit = ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
+			gpointer tls_jit = ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_JIT_TLS, FALSE)) ();
 
 			if (tls_domain != rtm->domain || !tls_jit)
 				context->original_domain = mono_jit_thread_attach (rtm->domain);
