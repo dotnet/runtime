@@ -2410,7 +2410,9 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             op2->gtType = op1Type;
         }
-        else if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
+        else
+#endif
+            if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
         {
             GenTreeCast* cast       = op1->AsCast();
             var_types    castToType = cast->CastToType();
@@ -2428,12 +2430,26 @@ void Lowering::LowerCompare(GenTree* cmp)
                 // situations. In particular this include CALL, sometimes the JIT unnecessarilly widens
                 // the result of bool returning calls.
                 //
+                bool removeCast =
+#ifdef _TARGET_ARM64_
+                    (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
+#endif
+                    (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp));
 
-                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp))
+                if (removeCast)
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
+#ifdef _TARGET_ARM64_
+                    bool cmpEq = cmp->OperIs(GT_EQ);
+
+                    cmp->SetOperRaw(cmpEq ? GT_TEST_EQ : GT_TEST_NE);
+                    op2->SetIconValue(0xff);
+                    op2->gtType = castOp->gtType;
+#else
                     castOp->gtType = castToType;
+                    op2->gtType    = castToType;
+#endif
                     // If we have any contained memory ops on castOp, they must now not be contained.
                     if (castOp->OperIsLogical())
                     {
@@ -2449,15 +2465,12 @@ void Lowering::LowerCompare(GenTree* cmp)
                         }
                     }
                     cmp->gtOp.gtOp1 = castOp;
-                    op2->gtType     = castToType;
 
                     BlockRange().Remove(cast);
                 }
             }
         }
-        else
-#endif
-            if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
+        else if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
         {
             //
             // Transform ((x AND y) EQ|NE 0) into (x TEST_EQ|TEST_NE y) when possible.
