@@ -1174,7 +1174,13 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 	params [0] = MONO_HANDLE_RAW (fname);
 	params[1] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
 	params [2] = &isrefonly;
-	MonoReflectionAssemblyHandle result = MONO_HANDLE_NEW (MonoReflectionAssembly, mono_runtime_invoke_checked (method, domain->domain, params, error));
+	MonoObject *exc = NULL;
+	MonoReflectionAssemblyHandle result = MONO_HANDLE_NEW (MonoReflectionAssembly, mono_runtime_try_invoke (method, domain->domain, params, &exc, error));
+	if (!is_ok (error) || exc != NULL) {
+		if (is_ok (error))
+			mono_error_set_exception_instance (error, (MonoException*)exc);
+		goto leave;
+	}
 	ret = !MONO_HANDLE_IS_NULL (result) ? MONO_HANDLE_GETVAL (result, assembly) : NULL;
 
 	if (ret && !refonly && ret->ref_only) {
