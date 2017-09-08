@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <PackageVersion>4.6.0</PackageVersion>
     <TargetFrameworkName>uap</TargetFrameworkName>
     <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
