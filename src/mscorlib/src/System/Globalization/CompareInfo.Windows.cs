@@ -116,27 +116,24 @@ namespace System.Globalization
             return Interop.Kernel32.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
         }
 
-        private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
+        private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
-
-            Debug.Assert(string1 != null);
-            Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
-            fixed (char* pString1 = string1)
-            fixed (char* pString2 = string2)
+            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString2 = &string2.DangerousGetPinnableReference())
             {
                 int result = Interop.Kernel32.CompareStringEx(
                                     pLocaleName,
                                     (uint)GetNativeCompareFlags(options),
-                                    pString1 + offset1,
-                                    length1,
-                                    pString2 + offset2,
-                                    length2,
+                                    pString1,
+                                    string1.Length,
+                                    pString2,
+                                    string2.Length,
                                     null,
                                     null,
                                     _sortHandle);
