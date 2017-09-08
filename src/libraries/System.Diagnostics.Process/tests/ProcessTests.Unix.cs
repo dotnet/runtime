@@ -61,13 +61,27 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, p.Id);
         }
 
-        [Fact]
-        public void TestUseShellExecute_Unix_Succeeds()
+        [Theory, InlineData(true), InlineData(false)]
+        public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception(bool useShellExecute)
         {
-            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = "exit", Arguments = "42" }))
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = useShellExecute, FileName = "exit", Arguments = "42" }));
+        }
+
+        [Fact]
+        public void ProcessStart_UseShellExecuteTrue_OpenNano_OpensNano()
+        {
+            string appToOpen = "nano";
+            var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = appToOpen };
+            using (var px = Process.Start(startInfo))
             {
-                Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(42, p.ExitCode);
+                if (px != null)
+                {
+                    Assert.Equal(appToOpen, px.ProcessName);
+                    px.Kill();
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(137, px.ExitCode);
+                }
             }
         }
 
