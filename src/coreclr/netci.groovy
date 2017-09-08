@@ -1093,7 +1093,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     job.with {
                         publishers {
                             azureVMAgentPostBuildAction {
-                                agentPostBuildAction('Delete agent after build execution (when idle).')
+                                agentPostBuildAction('Delete agent if the build was not successful (when idle).')
                             }
                         }
                     }
@@ -1109,7 +1109,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     job.with {
                         publishers {
                             azureVMAgentPostBuildAction {
-                                agentPostBuildAction('Delete agent after build execution (when idle).')
+                                agentPostBuildAction('Delete agent if the build was not successful (when idle).')
                             }
                         }
                     }
