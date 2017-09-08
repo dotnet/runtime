@@ -3,7 +3,7 @@
   <Import Project="dir.props" />
 
   <PropertyGroup>
-    <Version>$(ProductVersion)</Version>
+    <Version>2.2.0</Version>
     <OmitDependencies>true</OmitDependencies>
 
   <!-- Reference runtime packages directly so that MSBuild .props / .targets get imported correctly in VS" -->
