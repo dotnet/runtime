@@ -2777,7 +2777,7 @@ namespace System.Globalization
 
             int hashcode = ch % TOKEN_HASH_SIZE;
             int hashProbe = 1 + ch % SECOND_PRIME;
-            int remaining = str.len - str.Index;
+            int remaining = str.Length - str.Index;
             int i = 0;
 
             TokenHashValue[] hashTable = _dtfiTokenHash;
@@ -2802,18 +2802,18 @@ namespace System.Globalization
                         // If this token starts with a letter, make sure that we won't allow partial match.  So you can't tokenize "MarchWed" separately.
                         // Also an optimization to avoid string comparison
                         int nextCharIndex = str.Index + value.tokenString.Length;
-                        if (nextCharIndex > str.len)
+                        if (nextCharIndex > str.Length)
                         {
                             compareStrings = false;
                         }
-                        else if (nextCharIndex < str.len)
+                        else if (nextCharIndex < str.Length)
                         {
                             // Check word boundary.  The next character should NOT be a letter.
                             char nextCh = str.Value[nextCharIndex];
                             compareStrings = !(Char.IsLetter(nextCh));
                         }
                     }
-                    if (compareStrings && CompareStringIgnoreCaseOptimized(str.Value, str.Index, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length))
+                    if (compareStrings && CompareStringIgnoreCaseOptimized(str.Value.Slice(str.Index, value.tokenString.Length), value.tokenString.AsReadOnlySpan()))
                     {
                         tokenType = value.tokenType & TokenMask;
                         tokenValue = value.tokenValue;
@@ -2972,6 +2972,17 @@ namespace System.Globalization
             }
 
             return (this.Culture.CompareInfo.Compare(string1, offset1, length1, string2, offset2, length2, CompareOptions.IgnoreCase) == 0);
+        }
+
+        private bool CompareStringIgnoreCaseOptimized(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
+        {
+            // Optimize for one character cases which are common due to date and time separators (/ and :)
+            if (string1.Length == 1 && string2.Length == 1 && string1[0] == string2[0])
+            {
+                return true;
+            }
+
+            return (this.Culture.CompareInfo.Compare(string1, string2, CompareOptions.IgnoreCase) == 0);
         }
 
         // class DateTimeFormatInfo
