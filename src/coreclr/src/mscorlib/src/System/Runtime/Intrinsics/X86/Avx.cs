@@ -10,6 +10,7 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel AVX hardware instructions via intrinsics
     /// </summary>
+    [CLSCompliant(false)]
     public static class Avx
     {
         public static bool IsSupported { get { return false; } }
