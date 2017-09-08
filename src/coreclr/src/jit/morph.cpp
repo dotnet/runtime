@@ -4452,10 +4452,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #endif // FEATURE_FIXED_OUT_ARGS
 
     /* Update the 'side effect' flags value for the call */
-
-    call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
-
-    if (!call->OperMayThrow(this) && ((flagsSummary & GTF_EXCEPT) == 0))
+    call->gtFlags = (call->gtFlags & ~GTF_ASG) | (flagsSummary & GTF_ALL_EFFECT);
+    if (((flagsSummary & GTF_EXCEPT) == 0) && !call->OperMayThrow(this))
     {
         call->gtFlags &= ~GTF_EXCEPT;
     }
