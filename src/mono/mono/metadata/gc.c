@@ -973,11 +973,6 @@ mono_gc_cleanup (void)
 		return;
 
 	if (!gc_disabled) {
-
-		/* Stop all worker threads before signalling the finalizer to stop
-		 * That way the finalizer has a chance to clean up the worker threads */
-		mono_gc_base_cleanup ();
-
 		finished = TRUE;
 		if (mono_thread_internal_current () != gc_thread) {
 			int ret;
@@ -1000,8 +995,7 @@ mono_gc_cleanup (void)
 					ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, FALSE);
 					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
-					/* Clean up the finalizer (and other threads that might still wait to be joined) */
-					mono_threads_join_threads ();
+					mono_threads_add_joinable_thread (GUINT_TO_POINTER (gc_thread->tid));
 					break;
 				}
 
@@ -1026,8 +1020,7 @@ mono_gc_cleanup (void)
 
 					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
-					/* Clean up the finalizer (and other threads that might still wait to be joined) */
-					mono_threads_join_threads ();
+					mono_threads_add_joinable_thread (GUINT_TO_POINTER (gc_thread->tid));
 					break;
 				}
 
@@ -1038,6 +1031,7 @@ mono_gc_cleanup (void)
 			}
 		}
 		gc_thread = NULL;
+		mono_gc_base_cleanup ();
 	}
 
 	mono_reference_queue_cleanup ();
