@@ -9,7 +9,7 @@ namespace System
 {
     /// <summary>
     /// Holds Null class for which we guarantee that there is only ever one instance of.
-    /// This only exists for backwarts compatibility with 
+    /// This only exists for compatibility with .NET Framework.
     /// </summary>
 #if CORECLR
     internal
@@ -20,6 +20,7 @@ namespace System
     {
         internal const int NullUnity = 0x0002;
         private readonly int _unityType;
+        private readonly string _data;
 
         /// <summary>
         /// A helper method that returns the SerializationInfo that a class utilizing 
@@ -42,7 +43,9 @@ namespace System
             }
 
             // We are ignoring any other serialization input as we are only concerned about DBNull.
+            // We also store data and use it for erorr logging.
             _unityType = info.GetInt32("UnityType");
+            _data = info.GetString("Data");
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context) =>
@@ -53,7 +56,7 @@ namespace System
             // We are only support deserializing DBNull and throwing for everything else.
             if (_unityType != NullUnity)
             {
-                throw new ArgumentException(SR.Argument_InvalidUnity);
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidUnity, _data ?? "UnityType"));
             }
 
             // We are always returning the same DBNull instance.
