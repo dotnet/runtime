@@ -232,17 +232,10 @@ namespace System.Diagnostics
                 {
                     throw new InvalidOperationException(SR.CantRedirectStreams);
                 }
-
-                const string ShellPath = "/bin/sh";
-
-                filename = ShellPath;
-                argv = new string[3] { ShellPath, "-c", startInfo.FileName + " " + startInfo.Arguments};
             }
-            else
-            {
-                filename = ResolvePath(startInfo.FileName);
-                argv = ParseArgv(startInfo);
-            }
+
+            filename = ResolvePath(startInfo.FileName);
+            argv = ParseArgv(startInfo);
 
             string[] envp = CreateEnvp(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
@@ -253,11 +246,33 @@ namespace System.Diagnostics
             // is used to fork/execve as executing managed code in a forked process is not safe (only
             // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
             int childPid, stdinFd, stdoutFd, stderrFd;
-            Interop.Sys.ForkAndExecProcess(
-                filename, argv, envp, cwd,
-                startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
-                out childPid,
-                out stdinFd, out stdoutFd, out stderrFd);
+
+            try
+            {
+                Interop.Sys.ForkAndExecProcess(
+                    filename, argv, envp, cwd,
+                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    out childPid,
+                    out stdinFd, out stdoutFd, out stderrFd);
+            }
+            catch (Win32Exception e)
+            {
+                if (!startInfo.UseShellExecute)
+                {
+                    throw e;
+                }
+                else
+                {
+                    filename = GetExecPath();
+                    argv = GetArgs(startInfo);
+
+                    Interop.Sys.ForkAndExecProcess(
+                    filename, argv, envp, cwd,
+                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    out childPid,
+                    out stdinFd, out stdoutFd, out stderrFd);
+                }
+            }
 
             // Store the child's information into this Process object.
             Debug.Assert(childPid >= 0);

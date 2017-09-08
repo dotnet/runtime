@@ -4,6 +4,7 @@
     <BuildConfigurations>
       netstandard-Windows_NT;
       netstandard-Unix;
+      netstandard-OSX;
       uap-Windows_NT;
       uapaot-Windows_NT;
     </BuildConfigurations>

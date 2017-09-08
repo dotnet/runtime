@@ -57,6 +57,54 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets arguments.</summary>
+        /// <param name="startInfo">The start info with which to start the process.</param>
+        private string[] GetArgs(ProcessStartInfo startInfo)
+        {
+            if (!startInfo.UseShellExecute)
+            {
+                return ParseArgv(startInfo);
+            }
+
+            string shellArgs = string.IsNullOrEmpty(startInfo.Arguments) ? startInfo.FileName : startInfo.FileName + " " + startInfo.Arguments;
+            return new string[2] { GetExecPath(), shellArgs };
+        }
+
+        /// <summary>Gets execution path</summary>
+        private string GetExecPath()
+        {
+            string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
+            foreach (var program in allowedProgramsToRun)
+            {
+                string pathToProgram = GetPathToProgram(program);
+                if (!string.IsNullOrEmpty(pathToProgram))
+                {
+                    return Path.Combine(pathToProgram, program);
+                }
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Gets the path to the program
+        /// </summary>
+        /// <param name="program"></param>
+        /// <returns></returns>
+        private string GetPathToProgram(string program)
+        {
+            string path = Environment.GetEnvironmentVariable("PATH");
+            string[] dirs = path.Split(":");
+            foreach (var dir in dirs)
+            {
+                string[] files = Directory.GetFiles(dir, program);
+                if (files.Length != 0)
+                {
+                    return dir;
+                }
+            }
+            return string.Empty;
+        }
+
         /// <summary>
         /// Gets the amount of time the associated process has spent utilizing the CPU.
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
