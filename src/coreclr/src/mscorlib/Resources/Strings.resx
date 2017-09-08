@@ -1274,7 +1274,7 @@
     <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
   </data>
   <data name="Argument_InvalidUnity" xml:space="preserve">
-    <value>Invalid Unity type.</value>
+    <value>Type '{0}' is not deserializable.</value>
   </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
