@@ -7,6 +7,8 @@
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-OSX-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-OSX-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
@@ -32,6 +34,8 @@
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="ProcessTestBase.NonUap.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="ProcessTestBase.Uap.cs" />
     <Compile Include="ProcessTests.cs" />
+    <Compile Include="ProcessTests.Linux.cs" Condition=" '$(TargetsLinux)' == 'true'" />
+    <Compile Include="ProcessTests.OSX.cs" Condition=" '$(TargetsOSX)' == 'true'" />
     <Compile Include="ProcessTests.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />

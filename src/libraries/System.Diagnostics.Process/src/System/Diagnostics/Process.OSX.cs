@@ -88,6 +88,24 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets arguments.</summary>
+        /// <param name="startInfo">The start info with which to start the process.</param>
+        private string[] GetArgs(ProcessStartInfo startInfo)
+        {
+            if (!startInfo.UseShellExecute)
+            {
+                return ParseArgv(startInfo);
+            }
+
+            return new string[3] { GetExecPath(), "--args", startInfo.FileName + " " + startInfo.Arguments };
+        }
+
+        /// <summary>Gets execution path</summary>
+        private string GetExecPath()
+        {
+            return "/usr/bin/open";
+        }
+
         /// <summary>
         /// Gets the amount of time the associated process has spent utilizing the CPU.
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
