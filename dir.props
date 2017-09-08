@@ -14,6 +14,8 @@
     <UAPvNextTFM>uap$(UAPvNextVersion)</UAPvNextTFM>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)RepoDirectories.props" />
+
   <Import Project="dependencies.props" />
 
   <!-- Build as portable by default -->
@@ -36,8 +38,6 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)RepoDirectories.props" />
-  
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
