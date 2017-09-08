@@ -160,7 +160,8 @@ g_path_get_basename (const char *filename)
 	return g_strdup (&r[1]);
 }
 
-#ifndef HAVE_STRTOK_R
+//wasm does have strtok_r even though autoconf fails to find
+#if !defined (HAVE_STRTOK_R) && !defined (HOST_WASM)
 // This is from BSD's strtok_r
 
 char *

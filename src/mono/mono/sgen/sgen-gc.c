@@ -337,13 +337,6 @@ nursery_canaries_enabled (void)
 
 #define safe_object_get_size	sgen_safe_object_get_size
 
-#if defined(HAVE_CONC_GC_AS_DEFAULT)
-/* Use concurrent major on deskstop platforms */
-#define DEFAULT_MAJOR SGEN_MAJOR_CONCURRENT
-#else
-#define DEFAULT_MAJOR SGEN_MAJOR_SERIAL
-#endif
-
 typedef enum {
 	SGEN_MAJOR_DEFAULT,
 	SGEN_MAJOR_SERIAL,

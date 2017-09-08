@@ -312,6 +312,12 @@ genmdesc_LDADD = \
 	$(GLIB_LIBS)					\
 	$(LIBICONV)
 
+wasm_sources = \
+	mini-wasm.c		\
+	mini-wasm.h		\
+	exceptions-wasm.c	\
+	tramp-wasm.c
+
 x86_sources = \
 	mini-x86.c		\
 	mini-x86.h		\
@@ -456,6 +462,7 @@ common_sources = \
 	aot-compiler.h		\
 	aot-compiler.c		\
 	aot-runtime.c		\
+	aot-runtime-wasm.c	\
 	graph.c			\
 	mini-codegen.c		\
 	mini-exceptions.c	\
@@ -540,6 +547,12 @@ regtests_DISABLED += builtin-types.exe
 endif
 
 regtests = $(filter-out $(regtests_DISABLED),$(regtests_UNIVERSAL))
+
+if WASM
+arch_sources = $(wasm_sources)
+arch_built=cpu-wasm.h
+arch_define=__wasm__
+endif
 
 if X86
 arch_sources = $(x86_sources)
@@ -687,11 +700,19 @@ GENMDESC_OPTS=
 # build dependency for the poor windows users
 # $(arch_define) is the preprocessor symbol that enables all the opcodes
 # for the specific platform in mini-ops.h
+
 if CROSS_COMPILING
 GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
-else !CROSS_COMPILING
+else
+if WASM
+GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
+else
 GENMDESC_PRG=./genmdesc $(GENMDESC_OPTS)
+endif
 endif !CROSS_COMPILING
+
+cpu-wasm.h: cpu-wasm.md genmdesc$(EXEEXT)
+	$(GENMDESC_PRG) cpu-wasm.h wasm_desc $(srcdir)/cpu-wasm.md
 
 cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-x86.h x86_desc $(srcdir)/cpu-x86.md
@@ -882,6 +903,7 @@ EXTRA_DIST = TestDriver.cs \
 	TestHelpers.cs \
 	genmdesc.pl				\
 	$(test_sources) 			\
+	$(wasm_sources) cpu-wasm.md 		\
 	$(x86_sources) cpu-x86.md 		\
 	$(amd64_sources) cpu-amd64.md 		\
 	$(ppc_sources) cpu-ppc.md cpu-ppc64.md 	\
