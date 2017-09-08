@@ -3273,22 +3273,22 @@ void mono_interruption_checkpoint_from_trampoline (void);
 
 #if defined (HOST_WASM)
 
-#define RETURN_ADDRESS_N(N) NULL
-#define RETURN_ADDRESS() RETURN_ADDRESS_N(0)
+#define MONO_RETURN_ADDRESS_N(N) NULL
+#define MONO_RETURN_ADDRESS() MONO_RETURN_ADDRESS_N(0)
 
 
 #elif defined (__GNUC__)
 
-#define RETURN_ADDRESS_N(N) (__builtin_extract_return_addr (__builtin_return_address (N)))
-#define RETURN_ADDRESS() RETURN_ADDRESS_N(0)
+#define MONO_RETURN_ADDRESS_N(N) (__builtin_extract_return_addr (__builtin_return_address (N)))
+#define MONO_RETURN_ADDRESS() MONO_RETURN_ADDRESS_N(0)
 
 #elif defined(_MSC_VER)
 
 #include <intrin.h>
 #pragma intrinsic(_ReturnAddress)
 
-#define RETURN_ADDRESS() _ReturnAddress()
-#define RETURN_ADDRESS_N(N) NULL
+#define MONO_RETURN_ADDRESS() _ReturnAddress()
+#define MONO_RETURN_ADDRESS_N(N) NULL
 
 #else
 
