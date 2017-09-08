@@ -253,8 +253,8 @@ namespace System.Net.Sockets
             }
             if (available == 0)
             {
-                // Always request at least one byte.
-                available = 1;
+                // Don't truncate iovecs.
+                available = int.MaxValue;
             }
 
             // Pin buffers and set up iovecs.
