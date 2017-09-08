@@ -331,7 +331,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Guid.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\HResults.cs" />
     <Compile Include="$(BclSourcesRoot)\System\InsufficientMemoryException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IntPtr.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
