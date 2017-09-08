@@ -472,7 +472,7 @@ CONFIG_DWORD_INFO_EX(INTERNAL_JitNoCSE, W("JitNoCSE"), 0, "", CLRConfig::REGUTIL
 CONFIG_DWORD_INFO_EX(INTERNAL_JitNoCSE2, W("JitNoCSE2"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JitNoHoist, W("JitNoHoist"), 0, "", CLRConfig::REGUTIL_default)
 
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitNoInline, W("JitNoInline"), 0, "Disables inlining of all methods", CLRConfig::REGUTIL_default)
+CONFIG_DWORD_INFO_EX(INTERNAL_JitNoInline, W("JitNoInline"), 0, "Disables inlining of all methods", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitAggressiveInlining, W("JitAggressiveInlining"), 0, "Aggressive inlining of all methods", CLRConfig::REGUTIL_default)
 
 CONFIG_STRING_INFO_EX(INTERNAL_JitNoProcedureSplitting, W("JitNoProcedureSplitting"), "Disallow procedure splitting for specified methods", CLRConfig::REGUTIL_default)
