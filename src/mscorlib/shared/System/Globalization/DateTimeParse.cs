@@ -4201,11 +4201,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     break;
                 case '\"':
                 case '\'':
-                    StringBuilder enquotedString = new StringBuilder();
+                    StringBuilder enquotedString = StringBuilderCache.Acquire();
                     // Use ParseQuoteString so that we can handle escape characters within the quoted string.
                     if (!TryParseQuoteString(format.Value, format.Index, enquotedString, out tokenLen))
                     {
                         result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadQuote), ch);
+                        StringBuilderCache.Release(enquotedString);
                         return (false);
                     }
                     format.Index += tokenLen - 1;
@@ -4213,7 +4214,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // Some cultures uses space in the quoted string.  E.g. Spanish has long date format as:
                     // "dddd, dd' de 'MMMM' de 'yyyy".  When inner spaces flag is set, we should skip whitespaces if there is space
                     // in the quoted string.
-                    String quotedStr = enquotedString.ToString();
+                    String quotedStr = StringBuilderCache.GetStringAndRelease(enquotedString);
 
                     for (int i = 0; i < quotedStr.Length; i++)
                     {
