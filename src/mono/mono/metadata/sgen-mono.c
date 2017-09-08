@@ -2803,7 +2803,7 @@ void
 sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 {
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles++;
+	InterlockedIncrement (&mono_perfcounters->gc_num_handles);
 #endif
 
 	MONO_PROFILER_RAISE (gc_handle_created, (handle, handle_type, obj));
@@ -2813,7 +2813,7 @@ void
 sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 {
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles--;
+	InterlockedDecrement (&mono_perfcounters->gc_num_handles);
 #endif
 
 	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, handle_type));

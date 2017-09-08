@@ -278,7 +278,7 @@ void
 mono_gc_collect (int generation)
 {
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_induced++;
+	InterlockedIncrement (&mono_perfcounters->gc_induced);
 #endif
 	GC_gcollect ();
 }
@@ -457,7 +457,7 @@ on_gc_notification (GC_EventType event)
 		MONO_GC_BEGIN (1);
 #ifndef DISABLE_PERFCOUNTERS
 		if (mono_perfcounters)
-			mono_perfcounters->gc_collections0++;
+			InterlockedIncrement (&mono_perfcounters->gc_collections0);
 #endif
 		InterlockedIncrement (&gc_stats.major_gc_count);
 		gc_start_time = mono_100ns_ticks ();
@@ -477,10 +477,11 @@ on_gc_notification (GC_EventType event)
 		if (mono_perfcounters) {
 			guint64 heap_size = GC_get_heap_size ();
 			guint64 used_size = heap_size - GC_get_free_bytes ();
-			mono_perfcounters->gc_total_bytes = used_size;
-			mono_perfcounters->gc_committed_bytes = heap_size;
-			mono_perfcounters->gc_reserved_bytes = heap_size;
-			mono_perfcounters->gc_gen0size = heap_size;
+			/* FIXME: change these to InterlockedWrite64 () */
+			UnlockedWrite64 (&mono_perfcounters->gc_total_bytes, used_size);
+			UnlockedWrite64 (&mono_perfcounters->gc_committed_bytes, heap_size);
+			UnlockedWrite64 (&mono_perfcounters->gc_reserved_bytes, heap_size);
+			UnlockedWrite64 (&mono_perfcounters->gc_gen0size, heap_size);
 		}
 #endif
 		UnlockedAdd64 (&gc_stats.major_gc_time, mono_100ns_ticks () - gc_start_time);
@@ -522,9 +523,10 @@ on_gc_heap_resize (size_t new_size)
 	guint64 heap_size = GC_get_heap_size ();
 #ifndef DISABLE_PERFCOUNTERS
 	if (mono_perfcounters) {
-		mono_perfcounters->gc_committed_bytes = heap_size;
-		mono_perfcounters->gc_reserved_bytes = heap_size;
-		mono_perfcounters->gc_gen0size = heap_size;
+		/* FIXME: change these to InterlockedWrite64 () */
+		UnlockedWrite64 (&mono_perfcounters->gc_committed_bytes, heap_size);
+		UnlockedWrite64 (&mono_perfcounters->gc_reserved_bytes, heap_size);
+		UnlockedWrite64 (&mono_perfcounters->gc_gen0size, heap_size);
 	}
 #endif
 
@@ -1736,7 +1738,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	}
 
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles++;
+	InterlockedIncrement (&mono_perfcounters->gc_num_handles);
 #endif
 	unlock_handles (handles);
 	res = MONO_GC_HANDLE (slot, handles->type);
@@ -1934,7 +1936,7 @@ mono_gchandle_free (guint32 gchandle)
 		/* print a warning? */
 	}
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles--;
+	InterlockedDecrement (&mono_perfcounters->gc_num_handles);
 #endif
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);

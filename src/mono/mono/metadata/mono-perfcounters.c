@@ -48,6 +48,7 @@
 #include "utils/mono-networkinterfaces.h"
 #include "utils/mono-error-internals.h"
 #include "utils/atomic.h"
+#include "utils/unlocked.h"
 
 /* map of CounterSample.cs */
 struct _MonoCounterSample {
@@ -1073,52 +1074,52 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 	case CATEGORY_EXC:
 		switch (id) {
 		case COUNTER_EXC_THROWN:
-			sample->rawValue = mono_perfcounters->exceptions_thrown;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->exceptions_thrown);
 			return TRUE;
 		}
 		break;
 	case CATEGORY_ASPNET:
 		switch (id) {
 		case COUNTER_ASPNET_REQ_Q:
-			sample->rawValue = mono_perfcounters->aspnet_requests_queued;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->aspnet_requests_queued);
 			return TRUE;
 		case COUNTER_ASPNET_REQ_TOTAL:
-			sample->rawValue = mono_perfcounters->aspnet_requests;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->aspnet_requests);
 			return TRUE;
 		}
 		break;
 	case CATEGORY_THREADPOOL:
 		switch (id) {
 		case COUNTER_THREADPOOL_WORKITEMS:
-			sample->rawValue = mono_perfcounters->threadpool_workitems;
+			sample->rawValue = InterlockedRead64 (&mono_perfcounters->threadpool_workitems);
 			return TRUE;
 		case COUNTER_THREADPOOL_IOWORKITEMS:
-			sample->rawValue = mono_perfcounters->threadpool_ioworkitems;
+			sample->rawValue = InterlockedRead64 (&mono_perfcounters->threadpool_ioworkitems);
 			return TRUE;
 		case COUNTER_THREADPOOL_THREADS:
-			sample->rawValue = mono_perfcounters->threadpool_threads;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->threadpool_threads);
 			return TRUE;
 		case COUNTER_THREADPOOL_IOTHREADS:
-			sample->rawValue = mono_perfcounters->threadpool_iothreads;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->threadpool_iothreads);
 			return TRUE;
 		}
 		break;
 	case CATEGORY_JIT:
 		switch (id) {
 		case COUNTER_JIT_BYTES:
-			sample->rawValue = mono_perfcounters->jit_bytes;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_bytes);
 			return TRUE;
 		case COUNTER_JIT_METHODS:
-			sample->rawValue = mono_perfcounters->jit_methods;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_methods);
 			return TRUE;
 		case COUNTER_JIT_TIME:
-			sample->rawValue = mono_perfcounters->jit_time;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_time);
 			return TRUE;
 		case COUNTER_JIT_BYTES_PSEC:
-			sample->rawValue = mono_perfcounters->jit_bytes;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_bytes);
 			return TRUE;
 		case COUNTER_JIT_FAILURES:
-			sample->rawValue = mono_perfcounters->jit_failures;
+			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_failures);
 			return TRUE;
 		}
 		break;
@@ -1129,7 +1130,7 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 static gint64
 predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 {
-	guint32 *volatile ptr = NULL;
+	gint32 *volatile ptr = NULL;
 	gint64 *volatile ptr64 = NULL;
 	int cat_id = GPOINTER_TO_INT (vtable->arg);
 	int id = cat_id >> 16;
@@ -1143,8 +1144,8 @@ predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 		break;
 	case CATEGORY_THREADPOOL:
 		switch (id) {
-		case COUNTER_THREADPOOL_WORKITEMS: ptr64 = (gint64 *) &mono_perfcounters->threadpool_workitems; break;
-		case COUNTER_THREADPOOL_IOWORKITEMS: ptr64 = (gint64 *) &mono_perfcounters->threadpool_ioworkitems; break;
+		case COUNTER_THREADPOOL_WORKITEMS: ptr64 = &mono_perfcounters->threadpool_workitems; break;
+		case COUNTER_THREADPOOL_IOWORKITEMS: ptr64 = &mono_perfcounters->threadpool_ioworkitems; break;
 		case COUNTER_THREADPOOL_THREADS: ptr = &mono_perfcounters->threadpool_threads; break;
 		case COUNTER_THREADPOOL_IOTHREADS: ptr = &mono_perfcounters->threadpool_iothreads; break;
 		}
@@ -1153,29 +1154,23 @@ predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 	if (ptr) {
 		if (do_incr) {
 			if (value == 1)
-				return InterlockedIncrement ((gint32 *) ptr); /* FIXME: sign */
+				return InterlockedIncrement (ptr);
 			if (value == -1)
-				return InterlockedDecrement ((gint32 *) ptr); /* FIXME: sign */
+				return InterlockedDecrement (ptr);
 
-			*ptr += value;
-			return *ptr;
+			return InterlockedAdd(ptr, value);
 		}
 		/* this can be non-atomic */
 		*ptr = value;
 		return value;
 	} else if (ptr64) {
 		if (do_incr) {
-			/* FIXME: we need to do this atomically */
-			/* No InterlockedIncrement64() yet */
-			/*
 			if (value == 1)
-				return InterlockedIncrement64 (ptr);
+				return UnlockedIncrement64 (ptr64); /* FIXME: use InterlockedIncrement64 () */
 			if (value == -1)
-				return InterlockedDecrement64 (ptr);
-			*/
+				return UnlockedDecrement64 (ptr64); /* FIXME: use InterlockedDecrement64 () */
 
-			*ptr64 += value;
-			return *ptr64;
+			return UnlockedAdd64 (ptr64, value); /* FIXME: use InterlockedAdd64 () */
 		}
 		/* this can be non-atomic */
 		*ptr64 = value;

@@ -373,7 +373,7 @@ mon_finalize (MonoThreadsSync *mon)
 	mon->data = monitor_freelist;
 	monitor_freelist = mon;
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_sync_blocks--;
+	InterlockedDecrement (&mono_perfcounters->gc_sync_blocks);
 #endif
 }
 
@@ -445,7 +445,7 @@ mon_new (gsize id)
 	new_->data = NULL;
 	
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_sync_blocks++;
+	InterlockedIncrement (&mono_perfcounters->gc_sync_blocks);
 #endif
 	return new_;
 }
@@ -792,7 +792,7 @@ retry:
 
 	/* The object must be locked by someone else... */
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->thread_contentions++;
+	InterlockedIncrement (&mono_perfcounters->thread_contentions);
 #endif
 
 	/* If ms is 0 we don't block, but just fail straight away */
@@ -874,8 +874,8 @@ retry_contended:
 	waitms = ms;
 	
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->thread_queue_len++;
-	mono_perfcounters->thread_queue_max++;
+	InterlockedIncrement (&mono_perfcounters->thread_queue_len);
+	InterlockedIncrement (&mono_perfcounters->thread_queue_max);
 #endif
 	thread = mono_thread_internal_current ();
 
@@ -909,7 +909,7 @@ retry_contended:
 
 done_waiting:
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->thread_queue_len--;
+	InterlockedDecrement (&mono_perfcounters->thread_queue_len);
 #endif
 
 	if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED && !allow_interruption) {
