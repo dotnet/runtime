@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System
@@ -16,7 +17,7 @@ namespace System
 
         internal static MatchNumberDelegate m_hebrewNumberParser = new MatchNumberDelegate(DateTimeParse.MatchHebrewDigits);
 
-        internal static DateTime ParseExact(String s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style)
+        internal static DateTime ParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             result.Init();
@@ -30,7 +31,7 @@ namespace System
             }
         }
 
-        internal static DateTime ParseExact(String s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
+        internal static DateTime ParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             offset = TimeSpan.Zero;
@@ -47,7 +48,7 @@ namespace System
             }
         }
 
-        internal static bool TryParseExact(String s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
+        internal static bool TryParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
             result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
@@ -60,7 +61,7 @@ namespace System
             return false;
         }
 
-        internal static bool TryParseExact(String s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
+        internal static bool TryParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
             result = DateTime.MinValue;
             offset = TimeSpan.Zero;
@@ -76,13 +77,8 @@ namespace System
             return false;
         }
 
-        internal static bool TryParseExact(String s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
+        internal static bool TryParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
         {
-            if (s == null)
-            {
-                result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), null, nameof(s));
-                return false;
-            }
             if (format == null)
             {
                 result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), null, nameof(format));
@@ -105,7 +101,7 @@ namespace System
             return DoStrictParse(s, format, style, dtfi, ref result);
         }
 
-        internal static DateTime ParseExactMultiple(String s, String[] formats,
+        internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
@@ -121,7 +117,7 @@ namespace System
         }
 
 
-        internal static DateTime ParseExactMultiple(String s, String[] formats,
+        internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
@@ -139,7 +135,7 @@ namespace System
             }
         }
 
-        internal static bool TryParseExactMultiple(String s, String[] formats,
+        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
             result = DateTime.MinValue;
@@ -157,7 +153,7 @@ namespace System
         }
 
 
-        internal static bool TryParseExactMultiple(String s, String[] formats,
+        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
             result = DateTime.MinValue;
@@ -171,14 +167,9 @@ namespace System
             return false;
         }
 
-        internal static bool TryParseExactMultiple(String s, String[] formats,
+        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
         {
-            if (s == null)
-            {
-                result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), null, nameof(s));
-                return false;
-            }
             if (formats == null)
             {
                 result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), null, nameof(formats));
@@ -417,14 +408,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         private static bool MatchWord(ref __DTString str, String target)
         {
-            int length = target.Length;
-            if (length > (str.Value.Length - str.Index))
+            if (target.Length > (str.Value.Length - str.Index))
             {
                 return false;
             }
 
-            if (str.CompareInfo.Compare(str.Value, str.Index, length,
-                                        target, 0, length, CompareOptions.IgnoreCase) != 0)
+            if (str.CompareInfo.Compare(str.Value.Slice(str.Index, target.Length), target.AsReadOnlySpan(), CompareOptions.IgnoreCase) != 0)
             {
                 return (false);
             }
@@ -440,7 +429,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 }
             }
             str.Index = nextCharIndex;
-            if (str.Index < str.len)
+            if (str.Index < str.Length)
             {
                 str.m_current = str.Value[str.Index];
             }
@@ -588,12 +577,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // This is the helper function to handle timezone in string in the format like +/-0800
         private static bool HandleTimeZone(ref __DTString str, ref DateTimeResult result)
         {
-            if ((str.Index < str.len - 1))
+            if ((str.Index < str.Length - 1))
             {
                 char nextCh = str.Value[str.Index];
                 // Skip whitespace, but don't update the index unless we find a time zone marker
                 int whitespaceCount = 0;
-                while (Char.IsWhiteSpace(nextCh) && str.Index + whitespaceCount < str.len - 1)
+                while (Char.IsWhiteSpace(nextCh) && str.Index + whitespaceCount < str.Length - 1)
                 {
                     whitespaceCount++;
                     nextCh = str.Value[str.Index + whitespaceCount];
@@ -673,7 +662,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     //  "11:22:33.1234" or "11:22:33-08".
                     if (dps == DS.T_NNt)
                     {
-                        if ((str.Index < str.len - 1))
+                        if ((str.Index < str.Length - 1))
                         {
                             char nextCh = str.Value[str.Index];
                             if (nextCh == '.')
@@ -688,7 +677,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     if (dps == DS.T_NNt || dps == DS.T_Nt)
                     {
-                        if ((str.Index < str.len - 1))
+                        if ((str.Index < str.Length - 1))
                         {
                             if (false == HandleTimeZone(ref str, ref result))
                             {
@@ -1196,7 +1185,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             {
                 bool foundStart = false;
                 bool foundEnd = false;
-                for (int i = 0; i < str.len; i++)
+                for (int i = 0; i < str.Length; i++)
                 {
                     ch = str.Value[i];
                     if (ch == '#')
@@ -1246,7 +1235,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             }
             else if (ch == '\0')
             {
-                for (int i = str.Index; i < str.len; i++)
+                for (int i = str.Index; i < str.Length; i++)
                 {
                     if (str.Value[i] != '\0')
                     {
@@ -1255,7 +1244,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                 }
                 // Move to the end of the string
-                str.Index = str.len;
+                str.Index = str.Length;
                 return true;
             }
             return false;
@@ -2453,7 +2442,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        internal static DateTime Parse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles)
+        internal static DateTime Parse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             result.Init();
@@ -2467,7 +2456,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             }
         }
 
-        internal static DateTime Parse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out TimeSpan offset)
+        internal static DateTime Parse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out TimeSpan offset)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             result.Init();
@@ -2484,7 +2473,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
 
-        internal static bool TryParse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result)
+        internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result)
         {
             result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
@@ -2497,7 +2486,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return false;
         }
 
-        internal static bool TryParse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
+        internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
         {
             result = DateTime.MinValue;
             offset = TimeSpan.Zero;
@@ -2517,13 +2506,8 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // This is the real method to do the parsing work.
         //
-        internal static bool TryParse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles, ref DateTimeResult result)
+        internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, ref DateTimeResult result)
         {
-            if (s == null)
-            {
-                result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), null, nameof(s));
-                return false;
-            }
             if (s.Length == 0)
             {
                 result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
@@ -4379,7 +4363,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // The pos should point to a quote character. This method will
         // get the string enclosed by the quote character.
         //
-        internal static bool TryParseQuoteString(String format, int pos, StringBuilder result, out int returnValue)
+        internal static bool TryParseQuoteString(ReadOnlySpan<char> format, int pos, StringBuilder result, out int returnValue)
         {
             //
             // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -4456,7 +4440,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         ==============================================================================*/
 
         private static bool DoStrictParse(
-            String s,
+            ReadOnlySpan<char> s,
             String formatParam,
             DateTimeStyles styles,
             DateTimeFormatInfo dtfi,
@@ -4496,7 +4480,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // if we have parsed every item twice.
             result.Hour = result.Minute = result.Second = -1;
 
-            __DTString format = new __DTString(formatParam, dtfi, false);
+            __DTString format = new __DTString(formatParam.AsReadOnlySpan(), dtfi, false);
             __DTString str = new __DTString(s, dtfi, false);
 
             if (parseInfo.fAllowTrailingWhite)
@@ -4782,7 +4766,8 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return buffer.ToString();
         }
         // return a string in the form: "Sun"
-        internal static string Hex(string str)
+        internal static string Hex(string str) => Hex(str.AsReadOnlySpan());
+        internal static string Hex(ReadOnlySpan<char> str)
         {
             StringBuilder buffer = new StringBuilder();
             buffer.Append("\"");
@@ -4815,13 +4800,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
     // It has a Index property which tracks
     // the current parsing pointer of the string.
     //
-    internal
-    struct __DTString
+    [IsByRefLike]
+    internal struct __DTString
     {
         //
         // Value propery: stores the real string to be parsed.
         //
-        internal String Value;
+        internal ReadOnlySpan<char> Value;
 
         //
         // Index property: points to the character that we are currently parsing.
@@ -4829,7 +4814,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal int Index;
 
         // The length of Value string.
-        internal int len;
+        internal int Length => Value.Length;
 
         // The current chracter to be looked at.
         internal char m_current;
@@ -4839,16 +4824,15 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // In some cultures, such as mn-MN, it uses "\x0031\x00a0\x0434\x04af\x0433\x044d\x044d\x0440\x00a0\x0441\x0430\x0440" in month names.
         private bool m_checkDigitToken;
 
-        internal __DTString(String str, DateTimeFormatInfo dtfi, bool checkDigitToken) : this(str, dtfi)
+        internal __DTString(ReadOnlySpan<char> str, DateTimeFormatInfo dtfi, bool checkDigitToken) : this(str, dtfi)
         {
             m_checkDigitToken = checkDigitToken;
         }
 
-        internal __DTString(String str, DateTimeFormatInfo dtfi)
+        internal __DTString(ReadOnlySpan<char> str, DateTimeFormatInfo dtfi)
         {
             Index = -1;
             Value = str;
-            len = Value.Length;
 
             m_current = '\0';
             if (dtfi != null)
@@ -4880,7 +4864,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal bool GetNext()
         {
             Index++;
-            if (Index < len)
+            if (Index < Length)
             {
                 m_current = Value[Index];
                 return (true);
@@ -4890,14 +4874,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
         internal bool AtEnd()
         {
-            return Index < len ? false : true;
+            return Index < Length ? false : true;
         }
 
         internal bool Advance(int count)
         {
-            Debug.Assert(Index + count <= len, "__DTString::Advance: Index + count <= len");
+            Debug.Assert(Index + count <= Length, "__DTString::Advance: Index + count <= len");
             Index += count;
-            if (Index < len)
+            if (Index < Length)
             {
                 m_current = Value[Index];
                 return (true);
@@ -4910,7 +4894,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal void GetRegularToken(out TokenType tokenType, out int tokenValue, DateTimeFormatInfo dtfi)
         {
             tokenValue = 0;
-            if (Index >= len)
+            if (Index >= Length)
             {
                 tokenType = TokenType.EndOfString;
                 return;
@@ -4929,7 +4913,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 //
                 // Collect other digits.
                 //
-                while (++Index < len)
+                while (++Index < Length)
                 {
                     m_current = Value[Index];
                     value = m_current - '0';
@@ -4985,7 +4969,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             else if (Char.IsWhiteSpace(m_current))
             {
                 // Just skip to the next character.
-                while (++Index < len)
+                while (++Index < Length)
                 {
                     m_current = Value[Index];
                     if (!(Char.IsWhiteSpace(m_current)))
@@ -5045,12 +5029,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return false;
             }
 
-            if (Index + count > len)
+            if (Index + count > Length)
             {
                 return false;
             }
 
-            return (m_info.Compare(Value, Index, count, target, 0, count, CompareOptions.IgnoreCase) == 0);
+            return (m_info.Compare(Value.Slice(Index, count), target.AsReadOnlySpan().Slice(0, count), CompareOptions.IgnoreCase) == 0);
         }
 
         private static Char[] WhiteSpaceChecks = new Char[] { ' ', '\u00A0' };
@@ -5060,7 +5044,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             int valueRemaining = Value.Length - Index;
             matchLength = target.Length;
 
-            if (matchLength > valueRemaining || m_info.Compare(Value, Index, matchLength, target, 0, matchLength, CompareOptions.IgnoreCase) != 0)
+            if (matchLength > valueRemaining || m_info.Compare(Value.Slice(Index, matchLength), target.AsReadOnlySpan(), CompareOptions.IgnoreCase) != 0)
             {
                 // Check word by word
                 int targetPosition = 0;                 // Where we are in the target string
@@ -5090,7 +5074,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             return false;
                         }
-                        if (m_info.Compare(Value, thisPosition, segmentLength, target, targetPosition, segmentLength, CompareOptions.IgnoreCase) != 0)
+                        if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsReadOnlySpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
                         {
                             return false;
                         }
@@ -5116,7 +5100,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         return false;
                     }
-                    if (m_info.Compare(Value, thisPosition, segmentLength, target, targetPosition, segmentLength, CompareOptions.IgnoreCase) != 0)
+                    if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsReadOnlySpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
                     {
                         return false;
                     }
@@ -5145,7 +5129,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         internal bool Match(String str)
         {
-            if (++Index >= len)
+            if (++Index >= Length)
             {
                 return (false);
             }
@@ -5155,7 +5139,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return false;
             }
 
-            if (m_info.Compare(Value, Index, str.Length, str, 0, str.Length, CompareOptions.Ordinal) == 0)
+            if (m_info.Compare(Value.Slice(Index, str.Length), str.AsReadOnlySpan(), CompareOptions.Ordinal) == 0)
             {
                 // Update the Index to the end of the matching string.
                 // So the following GetNext()/Match() opeartion will get
@@ -5168,7 +5152,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
         internal bool Match(char ch)
         {
-            if (++Index >= len)
+            if (++Index >= Length)
             {
                 return (false);
             }
@@ -5221,7 +5205,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         {
             char repeatChar = Value[Index];
             int pos = Index + 1;
-            while ((pos < len) && (Value[pos] == repeatChar))
+            while ((pos < Length) && (Value[pos] == repeatChar))
             {
                 pos++;
             }
@@ -5236,7 +5220,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // Return false when end of string is encountered or a non-digit character is found.
         internal bool GetNextDigit()
         {
-            if (++Index >= len)
+            if (++Index >= Length)
             {
                 return (false);
             }
@@ -5248,7 +5232,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         internal char GetChar()
         {
-            Debug.Assert(Index >= 0 && Index < len, "Index >= 0 && Index < len");
+            Debug.Assert(Index >= 0 && Index < Length, "Index >= 0 && Index < len");
             return (Value[Index]);
         }
 
@@ -5257,7 +5241,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         internal int GetDigit()
         {
-            Debug.Assert(Index >= 0 && Index < len, "Index >= 0 && Index < len");
+            Debug.Assert(Index >= 0 && Index < Length, "Index >= 0 && Index < len");
             Debug.Assert(DateTimeParse.IsDigit(Value[Index]), "IsDigit(Value[Index])");
             return (Value[Index] - '0');
         }
@@ -5271,7 +5255,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         {
             // Look ahead to see if the next character
             // is a whitespace.
-            while (Index + 1 < len)
+            while (Index + 1 < Length)
             {
                 char ch = Value[Index + 1];
                 if (!Char.IsWhiteSpace(ch))
@@ -5290,7 +5274,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         internal bool SkipWhiteSpaceCurrent()
         {
-            if (Index >= len)
+            if (Index >= Length)
             {
                 return (false);
             }
@@ -5300,7 +5284,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return (true);
             }
 
-            while (++Index < len)
+            while (++Index < Length)
             {
                 m_current = Value[Index];
                 if (!Char.IsWhiteSpace(m_current))
@@ -5314,20 +5298,19 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
         internal void TrimTail()
         {
-            int i = len - 1;
+            int i = Length - 1;
             while (i >= 0 && Char.IsWhiteSpace(Value[i]))
             {
                 i--;
             }
-            Value = Value.Substring(0, i + 1);
-            len = Value.Length;
+            Value = Value.Slice(0, i + 1);
         }
 
         // Trim the trailing spaces within a quoted string.
         // Call this after TrimTail() is done.
         internal void RemoveTrailingInQuoteSpaces()
         {
-            int i = len - 1;
+            int i = Length - 1;
             if (i <= 1)
             {
                 return;
@@ -5344,7 +5327,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         i--;
                     }
                     Value = Value.Remove(i, Value.Length - 1 - i);
-                    len = Value.Length;
                 }
             }
         }
@@ -5353,7 +5335,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // Call this after the leading spaces before quoted string are trimmed.
         internal void RemoveLeadingInQuoteSpaces()
         {
-            if (len <= 2)
+            if (Length <= 2)
             {
                 return;
             }
@@ -5362,14 +5344,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // Check if the last character is a quote.
             if (ch == '\'' || ch == '\"')
             {
-                while ((i + 1) < len && Char.IsWhiteSpace(Value[i + 1]))
+                while ((i + 1) < Length && Char.IsWhiteSpace(Value[i + 1]))
                 {
                     i++;
                 }
                 if (i != 0)
                 {
                     Value = Value.Remove(1, i);
-                    len = Value.Length;
                 }
             }
         }
@@ -5379,7 +5360,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             DTSubString sub = new DTSubString();
             sub.index = Index;
             sub.s = Value;
-            while (Index + sub.length < len)
+            while (Index + sub.length < Length)
             {
                 DTSubStringType currentType;
                 Char ch = Value[Index + sub.length];
@@ -5437,9 +5418,9 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal void ConsumeSubString(DTSubString sub)
         {
             Debug.Assert(sub.index == Index, "sub.index == Index");
-            Debug.Assert(sub.index + sub.length <= len, "sub.index + sub.length <= len");
+            Debug.Assert(sub.index + sub.length <= Length, "sub.index + sub.length <= len");
             Index = sub.index + sub.length;
-            if (Index < len)
+            if (Index < Length)
             {
                 m_current = Value[Index];
             }
@@ -5455,9 +5436,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         Other = 4,
     }
 
+    [IsByRefLike]
     internal struct DTSubString
     {
-        internal String s;
+        internal ReadOnlySpan<char> s;
         internal Int32 index;
         internal Int32 length;
         internal DTSubStringType type;

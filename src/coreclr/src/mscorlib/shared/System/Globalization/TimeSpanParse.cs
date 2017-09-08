@@ -1293,7 +1293,7 @@ namespace System.Globalization
                     case '\'':
                     case '\"':
                         StringBuilder enquotedString = new StringBuilder();
-                        if (!DateTimeParse.TryParseQuoteString(format, i, enquotedString, out tokenLen))
+                        if (!DateTimeParse.TryParseQuoteString(format.AsReadOnlySpan(), i, enquotedString, out tokenLen))
                         {
                             return result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadQuote), ch);
                         }
