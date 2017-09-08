@@ -5364,6 +5364,7 @@ public:
 #endif // FEATURE_HIJACK
 
 private:
+    static CrstStatic s_initializeYieldProcessorNormalizedCrst;
     static int s_yieldsPerNormalizedYield;
     static int s_optimalMaxNormalizedYieldsPerSpinIteration;
 
