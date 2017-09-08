@@ -10,6 +10,7 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel SSE4.1 hardware instructions via intrinsics
     /// </summary>
+    [CLSCompliant(false)]
     public static class Sse41
     {
         public static bool IsSupported { get { return false; } }
