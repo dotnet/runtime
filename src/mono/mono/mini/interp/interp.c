@@ -2414,13 +2414,6 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 				--sp;
 			child_frame.stack_args = sp;
 
-#ifndef DISABLE_REMOTING
-			/* `this' can be NULL for string:.ctor */
-			if (csignature->hasthis && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.imethod->method), &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			} else
-#endif
 			if (child_frame.imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_native_wrapper (child_frame.imethod->method, FALSE, FALSE), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -2527,14 +2520,6 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 				--sp;
 			child_frame.stack_args = sp;
 
-#ifndef DISABLE_REMOTING
-			/* `this' can be NULL for string:.ctor */
-			if (child_frame.imethod->hasthis && !child_frame.imethod->method->klass->valuetype && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.imethod->method), &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-#endif
-
 			ves_exec_method_with_context (&child_frame, context, NULL, NULL, -1);
 
 			context->current_frame = frame;
@@ -2576,13 +2561,6 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 					THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			}
 			child_frame.stack_args = sp;
-
-#ifndef DISABLE_REMOTING
-			if (child_frame.imethod->hasthis && !child_frame.imethod->method->klass->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.imethod->method), &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-#endif
 
 			ves_exec_method_with_context (&child_frame, context, NULL, NULL, -1);
 
