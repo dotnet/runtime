@@ -173,46 +173,6 @@ namespace System.Runtime.InteropServices
         public String Value { get { return _val; } }
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class PreserveSigAttribute : Attribute
-    {
-        public PreserveSigAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-    public sealed class OptionalAttribute : Attribute
-    {
-        public OptionalAttribute()
-        {
-        }
-    }
-
-    [Flags]
-    public enum DllImportSearchPath
-    {
-        UseDllDirectoryForDependencies = 0x100,
-        ApplicationDirectory = 0x200,
-        UserDirectories = 0x400,
-        System32 = 0x800,
-        SafeDirectories = 0x1000,
-        AssemblyDirectory = 0x2,
-        LegacyBehavior = 0x0
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class DefaultDllImportSearchPathsAttribute : Attribute
-    {
-        internal DllImportSearchPath _paths;
-        public DefaultDllImportSearchPathsAttribute(DllImportSearchPath paths)
-        {
-            _paths = paths;
-        }
-
-        public DllImportSearchPath Paths { get { return _paths; } }
-    }
-
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
     public sealed class CoClassAttribute : Attribute
     {
@@ -224,19 +184,6 @@ namespace System.Runtime.InteropServices
         }
 
         public Type CoClass { get { return _CoClass; } }
-    }
-
-    [AttributeUsage(AttributeTargets.Module, Inherited = false)]
-    public sealed class DefaultCharSetAttribute : Attribute
-    {
-        internal CharSet _CharSet;
-
-        public DefaultCharSetAttribute(CharSet charSet)
-        {
-            _CharSet = charSet;
-        }
-
-        public CharSet CharSet { get { return _CharSet; } }
     }
 }
 
