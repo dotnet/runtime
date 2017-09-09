@@ -22,12 +22,6 @@
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
-  <!-- Profile-based optimization data package versions -->
-  <PropertyGroup>
-    <PgoDataPackageVersion>99.99.99-master-20170830-0123</PgoDataPackageVersion>
-    <!--<IbcDataPackageVersion></IbcDataPackageVersion>-->
-  </PropertyGroup>
-
   <!--
      Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
      as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
