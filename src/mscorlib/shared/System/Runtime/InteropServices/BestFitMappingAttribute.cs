@@ -7,14 +7,12 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
     public sealed class BestFitMappingAttribute : Attribute
     {
-        private bool _bestFitMapping;
-
         public BestFitMappingAttribute(bool BestFitMapping)
         {
-            _bestFitMapping = BestFitMapping;
+            this.BestFitMapping = BestFitMapping;
         }
 
-        public bool BestFitMapping => _bestFitMapping;
+        public bool BestFitMapping { get; }
 
         public bool ThrowOnUnmappableChar;
     }
