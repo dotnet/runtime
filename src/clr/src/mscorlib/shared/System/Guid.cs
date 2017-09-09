@@ -1251,41 +1251,37 @@ namespace System
             if (format.Length != 1)
                 throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
 
-            string guidString;
-
+            int guidSize;
             switch (format[0])
             {
                 case 'D':
                 case 'd':
-                    guidString = string.FastAllocateString(36);
+                    guidSize = 36;
                     break;
                 case 'N':
                 case 'n':
-                    guidString = string.FastAllocateString(32);
+                    guidSize = 32;
                     break;
                 case 'B':
                 case 'b':
                 case 'P':
                 case 'p':
-                    guidString = string.FastAllocateString(38);
+                    guidSize = 38;
                     break;
                 case 'X':
                 case 'x':
-                    guidString = string.FastAllocateString(68);
+                    guidSize = 68;
                     break;
                 default:
                     throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
-            unsafe
-            {
-                fixed (char* guidChars = guidString)
-                {
-                    int bytesWritten;
-                    bool result = TryFormat(new Span<char>((void*)guidChars, guidString.Length), out bytesWritten, format);
-                    Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
-                }
-            }
+            string guidString = string.FastAllocateString(guidSize);
+
+            int bytesWritten;
+            bool result = TryFormat(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out bytesWritten, format);
+            Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
+
             return guidString;
         }
 
@@ -1301,8 +1297,8 @@ namespace System
 
             bool dash = true;
             bool hex = false;
-            bool setBraces = false;
-            bool curly = false;
+            int braces = 0;
+
             int guidSize;
 
             switch (format[0])
@@ -1318,19 +1314,17 @@ namespace System
                     break;
                 case 'B':
                 case 'b':
-                    setBraces = true;
-                    curly = true;
+                    braces = '{' + ('}' << 16);
                     guidSize = 38;
                     break;
                 case 'P':
                 case 'p':
-                    setBraces = true;
+                    braces = '(' + (')' << 16);
                     guidSize = 38;
                     break;
                 case 'X':
                 case 'x':
-                    setBraces = true;
-                    curly = true;
+                    braces = '{' + ('}' << 16);
                     dash = false;
                     hex = true;
                     guidSize = 68;
@@ -1345,73 +1339,66 @@ namespace System
                 return false;
             }
 
-            int offset = 0;
-
-            // Only sets part of destination after verifying that destination is large enough.
-            if (setBraces)
-            {
-                if (curly)
-                {
-                    destination[offset++] = '{';
-                    destination[guidSize - 1] = '}';
-                }
-                else
-                {
-                    destination[offset++] = '(';
-                    destination[guidSize - 1] = ')';
-                }
-            }
-
             unsafe
             {
                 fixed (char* guidChars = &destination.DangerousGetPinnableReference())
                 {
+                    char * p = guidChars;
+
+                    if (braces != 0)
+                        *p++ = (char)braces;
+
                     if (hex)
                     {
                         // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
-                        guidChars[offset++] = '0';
-                        guidChars[offset++] = 'x';
-                        offset += HexsToChars(guidChars + offset, _a >> 24, _a >> 16);
-                        offset += HexsToChars(guidChars + offset, _a >> 8, _a);
-                        guidChars[offset++] = ',';
-                        guidChars[offset++] = '0';
-                        guidChars[offset++] = 'x';
-                        offset += HexsToChars(guidChars + offset, _b >> 8, _b);
-                        guidChars[offset++] = ',';
-                        guidChars[offset++] = '0';
-                        guidChars[offset++] = 'x';
-                        offset += HexsToChars(guidChars + offset, _c >> 8, _c);
-                        guidChars[offset++] = ',';
-                        guidChars[offset++] = '{';
-                        offset += HexsToCharsHexOutput(guidChars + offset, _d, _e);
-                        guidChars[offset++] = ',';
-                        offset += HexsToCharsHexOutput(guidChars + offset, _f, _g);
-                        guidChars[offset++] = ',';
-                        offset += HexsToCharsHexOutput(guidChars + offset, _h, _i);
-                        guidChars[offset++] = ',';
-                        offset += HexsToCharsHexOutput(guidChars + offset, _j, _k);
-                        guidChars[offset++] = '}';
+                        *p++ = '0';
+                        *p++ = 'x';
+                        p += HexsToChars(p, _a >> 24, _a >> 16);
+                        p += HexsToChars(p, _a >> 8, _a);
+                        *p++ = ',';
+                        *p++ = '0';
+                        *p++ = 'x';
+                        p += HexsToChars(p, _b >> 8, _b);
+                        *p++ = ',';
+                        *p++ = '0';
+                        *p++ = 'x';
+                        p += HexsToChars(p, _c >> 8, _c);
+                        *p++ = ',';
+                        *p++ = '{';
+                        p += HexsToCharsHexOutput(p, _d, _e);
+                        *p++ = ',';
+                        p += HexsToCharsHexOutput(p, _f, _g);
+                        *p++ = ',';
+                        p += HexsToCharsHexOutput(p, _h, _i);
+                        *p++ = ',';
+                        p += HexsToCharsHexOutput(p, _j, _k);
+                        *p++ = '}';
                     }
                     else
                     {
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                        offset += HexsToChars(guidChars + offset, _a >> 24, _a >> 16);
-                        offset += HexsToChars(guidChars + offset, _a >> 8, _a);
+                        p += HexsToChars(p, _a >> 24, _a >> 16);
+                        p += HexsToChars(p, _a >> 8, _a);
                         if (dash)
-                            guidChars[offset++] = '-';
-                        offset += HexsToChars(guidChars + offset, _b >> 8, _b);
+                            *p++ = '-';
+                        p += HexsToChars(p, _b >> 8, _b);
                         if (dash)
-                            guidChars[offset++] = '-';
-                        offset += HexsToChars(guidChars + offset, _c >> 8, _c);
+                            *p++ = '-';
+                        p += HexsToChars(p, _c >> 8, _c);
                         if (dash)
-                            guidChars[offset++] = '-';
-                        offset += HexsToChars(guidChars + offset, _d, _e);
+                            *p++ = '-';
+                        p += HexsToChars(p, _d, _e);
                         if (dash)
-                            guidChars[offset++] = '-';
-                        offset += HexsToChars(guidChars + offset, _f, _g);
-                        offset += HexsToChars(guidChars + offset, _h, _i);
-                        offset += HexsToChars(guidChars + offset, _j, _k);
+                            *p++ = '-';
+                        p += HexsToChars(p, _f, _g);
+                        p += HexsToChars(p, _h, _i);
+                        p += HexsToChars(p, _j, _k);
                     }
+
+                    if (braces != 0)
+                        *p++ = (char)(braces >> 16);
+
+                    Debug.Assert(p - guidChars == guidSize);
                 }
             }
 
