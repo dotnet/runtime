@@ -63,7 +63,7 @@ Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Pro
 
 ## License
 
-.NET Core (including the corefx repo) is licensed under the [MIT license](LICENSE).
+.NET Core (including the corefx repo) is licensed under the [MIT license](LICENSE.TXT).
 
 
 
