@@ -1363,6 +1363,8 @@ void InitThreadManager()
     }
     CONTRACTL_END;
 
+    Thread::s_initializeYieldProcessorNormalizedCrst.Init(CrstLeafLock);
+
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
@@ -11745,10 +11747,10 @@ ULONGLONG Thread::QueryThreadProcessorUsage()
 }
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
+CrstStatic Thread::s_initializeYieldProcessorNormalizedCrst;
 int Thread::s_yieldsPerNormalizedYield = 0;
 int Thread::s_optimalMaxNormalizedYieldsPerSpinIteration = 0;
 
-static Crst s_initializeYieldProcessorNormalizedCrst(CrstLeafLock);
 void Thread::InitializeYieldProcessorNormalized()
 {
     LIMITED_METHOD_CONTRACT;

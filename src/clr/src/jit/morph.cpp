@@ -4451,14 +4451,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-    /* Update the 'side effect' flags value for the call */
-
-    call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
-
-    if (!call->OperMayThrow(this) && ((flagsSummary & GTF_EXCEPT) == 0))
+    // Clear the ASG and EXCEPT (if possible) flags on the call node
+    call->gtFlags &= ~GTF_ASG;
+    if (!call->OperMayThrow(this))
     {
         call->gtFlags &= ~GTF_EXCEPT;
     }
+
+    // Union in the side effect flags from the call's operands
+    call->gtFlags |= flagsSummary & GTF_ALL_EFFECT;
 
     // If the register arguments have already been determined
     // or we have no register arguments then we don't need to
