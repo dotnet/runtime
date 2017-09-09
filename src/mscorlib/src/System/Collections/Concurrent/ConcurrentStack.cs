@@ -1,25 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#pragma warning disable 0420
-
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-//
+// ConcurrentStack.cs
 //
 // A lock-free, concurrent stack primitive, and its associated debugger view type.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.Serialization;
-using System.Security;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -51,8 +43,8 @@ namespace System.Collections.Concurrent
         /// </summary>
         private class Node
         {
-            internal readonly T m_value; // Value of the node.
-            internal Node m_next; // Next pointer.
+            internal readonly T _value; // Value of the node.
+            internal Node _next; // Next pointer.
 
             /// <summary>
             /// Constructs a new node with the specified value and no next node.
@@ -60,13 +52,12 @@ namespace System.Collections.Concurrent
             /// <param name="value">The value of the node.</param>
             internal Node(T value)
             {
-                m_value = value;
-                m_next = null;
+                _value = value;
+                _next = null;
             }
         }
 
-        private volatile Node m_head; // The stack is a singly linked list, and only remembers the head.
-
+        private volatile Node _head; // The stack is a singly linked list, and only remembers the head.
         private const int BACKOFF_MAX_YIELDS = 8; // Arbitrary number to cap backoff.
 
         /// <summary>
@@ -101,7 +92,7 @@ namespace System.Collections.Concurrent
                 // they are being dequeued. If we ever changed this (e.g. to pool nodes somehow),
                 // we'd need to revisit this implementation.
 
-                for (Node curr = m_head; curr != null; curr = curr.m_next)
+                for (Node curr = _head; curr != null; curr = curr._next)
                 {
                     count++; //we don't handle overflow, to be consistent with existing generic collection types in CLR
                 }
@@ -109,6 +100,7 @@ namespace System.Collections.Concurrent
                 return count;
             }
         }
+
 
         /// <summary>
         /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection"/> is
@@ -135,7 +127,8 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                throw new NotSupportedException(SR.ConcurrentCollection_SyncRoot_NotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.ConcurrentCollection_SyncRoot_NotSupported);
+                return default(object);
             }
         }
 
@@ -169,7 +162,7 @@ namespace System.Collections.Concurrent
             // Validate arguments.
             if (array == null)
             {
-                throw new ArgumentNullException(nameof(array));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
             // We must be careful not to corrupt the array, so we will first accumulate an
@@ -203,7 +196,7 @@ namespace System.Collections.Concurrent
         {
             if (array == null)
             {
-                throw new ArgumentNullException(nameof(array));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
             // We must be careful not to corrupt the array, so we will first accumulate an
@@ -213,7 +206,7 @@ namespace System.Collections.Concurrent
             ToList().CopyTo(array, index);
         }
 
-
+#pragma warning disable 0420 // No warning for Interlocked.xxx if compiled with new managed compiler (Roslyn)
         /// <summary>
         /// Inserts an object at the top of the <see cref="ConcurrentStack{T}"/>.
         /// </summary>
@@ -228,8 +221,8 @@ namespace System.Collections.Concurrent
             // contention at the head, and then go back around and retry.
 
             Node newNode = new Node(item);
-            newNode.m_next = m_head;
-            if (Interlocked.CompareExchange(ref m_head, newNode, newNode.m_next) == newNode.m_next)
+            newNode._next = _head;
+            if (Interlocked.CompareExchange(ref _head, newNode, newNode._next) == newNode._next)
             {
                 return;
             }
@@ -249,15 +242,15 @@ namespace System.Collections.Concurrent
         {
             SpinWait spin = new SpinWait();
 
-            // Keep trying to CAS the exising head with the new node until we succeed.
+            // Keep trying to CAS the existing head with the new node until we succeed.
             do
             {
                 spin.SpinOnce();
                 // Reread the head and link our new node.
-                tail.m_next = m_head;
+                tail._next = _head;
             }
             while (Interlocked.CompareExchange(
-                ref m_head, head, tail.m_next) != tail.m_next);
+                ref _head, head, tail._next) != tail._next);
         }
 
         /// <summary>
@@ -272,16 +265,16 @@ namespace System.Collections.Concurrent
         /// successfully; otherwise, false.</returns>
         public bool TryPop(out T result)
         {
-            Node head = m_head;
+            Node head = _head;
             //stack is empty
             if (head == null)
             {
                 result = default(T);
                 return false;
             }
-            if (Interlocked.CompareExchange(ref m_head, head.m_next, head) == head)
+            if (Interlocked.CompareExchange(ref _head, head._next, head) == head)
             {
-                result = head.m_value;
+                result = head._value;
                 return true;
             }
 
@@ -300,7 +293,7 @@ namespace System.Collections.Concurrent
 
             if (TryPopCore(1, out poppedNode) == 1)
             {
-                result = poppedNode.m_value;
+                result = poppedNode._value;
                 return true;
             }
 
@@ -317,7 +310,8 @@ namespace System.Collections.Concurrent
         /// When this method returns, if the pop succeeded, contains the removed object. If no object was
         /// available to be removed, the value is unspecified. This parameter is passed uninitialized.
         /// </param>
-        /// <returns>True if an element was removed and returned; otherwise, false.</returns>
+        /// <returns>The number of objects successfully popped from the top of
+        /// the <see cref="ConcurrentStack{T}"/>.</returns>
         private int TryPopCore(int count, out Node poppedHead)
         {
             SpinWait spin = new SpinWait();
@@ -330,7 +324,7 @@ namespace System.Collections.Concurrent
             Random r = null;
             while (true)
             {
-                head = m_head;
+                head = _head;
                 // Is the stack empty?
                 if (head == null)
                 {
@@ -339,13 +333,13 @@ namespace System.Collections.Concurrent
                 }
                 next = head;
                 int nodesCount = 1;
-                for (; nodesCount < count && next.m_next != null; nodesCount++)
+                for (; nodesCount < count && next._next != null; nodesCount++)
                 {
-                    next = next.m_next;
+                    next = next._next;
                 }
 
                 // Try to swap the new head.  If we succeed, break out of the loop.
-                if (Interlocked.CompareExchange(ref m_head, next.m_next, head) == head)
+                if (Interlocked.CompareExchange(ref _head, next._next, head) == head)
                 {
                     // Return the popped Node.
                     poppedHead = head;
@@ -372,6 +366,7 @@ namespace System.Collections.Concurrent
                 }
             }
         }
+#pragma warning restore 0420
 
         /// <summary>
         /// Copies the items stored in the <see cref="ConcurrentStack{T}"/> to a new array.
@@ -380,23 +375,34 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentStack{T}"/>.</returns>
         public T[] ToArray()
         {
-            return ToList().ToArray();
+            Node curr = _head;
+            return curr == null ?
+                Array.Empty<T>() :
+                ToList(curr).ToArray();
         }
 
         /// <summary>
         /// Returns an array containing a snapshot of the list's contents, using
         /// the target list node as the head of a region in the list.
         /// </summary>
-        /// <returns>An array of the list's contents.</returns>
+        /// <returns>A list of the stack's contents.</returns>
         private List<T> ToList()
+        {
+            return ToList(_head);
+        }
+
+        /// <summary>
+        /// Returns an array containing a snapshot of the list's contents starting at the specified node.
+        /// </summary>
+        /// <returns>A list of the stack's contents starting at the specified node.</returns>
+        private List<T> ToList(Node curr)
         {
             List<T> list = new List<T>();
 
-            Node curr = m_head;
             while (curr != null)
             {
-                list.Add(curr.m_value);
-                curr = curr.m_next;
+                list.Add(curr._value);
+                curr = curr._next;
             }
 
             return list;
@@ -421,8 +427,8 @@ namespace System.Collections.Concurrent
             //If we put yield-return here, the iterator will be lazily evaluated. As a result a snapshot of
             //the stack is not taken when GetEnumerator is initialized but when MoveNext() is first called.
             //This is inconsistent with existing generic collections. In order to prevent it, we capture the 
-            //value of m_head in a buffer and call out to a helper method
-            return GetEnumerator(m_head);
+            //value of _head in a buffer and call out to a helper method
+            return GetEnumerator(_head);
         }
 
         private IEnumerator<T> GetEnumerator(Node head)
@@ -430,8 +436,8 @@ namespace System.Collections.Concurrent
             Node current = head;
             while (current != null)
             {
-                yield return current.m_value;
-                current = current.m_next;
+                yield return current._value;
+                current = current._next;
             }
         }
 
