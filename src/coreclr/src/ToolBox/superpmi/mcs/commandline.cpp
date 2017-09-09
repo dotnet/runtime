@@ -107,10 +107,6 @@ void CommandLine::DumpHelp(const char* program)
     printf("     e.g. -removeDup -thin a.mc b.mc\n");
     printf("     e.g. -removeDup -legacy -thin a.mc b.mc\n");
     printf("\n");
-    printf(" -smarty range inputfile outputfile\n");
-    printf("     Write smarty Test IDs of the range from inputfile to outputfile.\n");
-    printf("     e.g. -smarty 2 a.mc b.mc\n");
-    printf("\n");
     printf(" -stat {optional range} inputfile outputfile\n");
     printf("     Report various statistics per method context.\n");
     printf("     inputfile is read and statistics are written into outputfile\n");
@@ -344,14 +340,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             {
                 o->legacyCompare = true;
             }
-            else if ((_strnicmp(&argv[i][1], "smarty", argLen) == 0))
-            {
-                tempLen         = strlen(argv[i]);
-                o->actionSmarty = true;
-                foundVerb       = true;
-                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
-                    goto processMCL;
-            }
             else if ((_strnicmp(&argv[i][1], "verbosity", argLen) == 0))
             {
                 if (++i >= argc)
@@ -559,16 +547,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         if (o->indexCount == 0)
         {
             LogError("CommandLine::Parse() -strip requires a range.");
-            DumpHelp(argv[0]);
-            return false;
-        }
-        return true;
-    }
-    if (o->actionSmarty)
-    {
-        if ((!foundFile1) || (!foundFile2))
-        {
-            LogError("CommandLine::Parse() '-smarty' needs one input file and one output file.");
             DumpHelp(argv[0]);
             return false;
         }
