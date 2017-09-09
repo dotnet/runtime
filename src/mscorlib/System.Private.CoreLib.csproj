@@ -118,11 +118,7 @@
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FriendAccessAllowedAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
@@ -134,7 +130,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\PrePrepareMethodAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
@@ -339,14 +334,12 @@
     <Compile Include="$(BclSourcesRoot)\System\mda.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingFieldException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\NonSerializedAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Number.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ParseNumbers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ResId.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\SerializableAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\SharedStatics.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
@@ -593,8 +586,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\DebugView.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\List.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\Collection.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentStack.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\IProducerConsumerCollection.cs" />
