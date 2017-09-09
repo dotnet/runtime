@@ -7,18 +7,16 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.ReturnValue, Inherited = false)]
     public sealed class MarshalAsAttribute : Attribute
     {
-        private UnmanagedType _val;
-
         public MarshalAsAttribute(UnmanagedType unmanagedType)
         {
-            _val = unmanagedType;
+            Value = unmanagedType;
         }
         public MarshalAsAttribute(short unmanagedType)
         {
-            _val = (UnmanagedType)unmanagedType;
+            Value = (UnmanagedType)unmanagedType;
         }
 
-        public UnmanagedType Value => _val;
+        public UnmanagedType Value { get; }
 
         // Fields used with SubType = SafeArray.
         public VarEnum SafeArraySubType;
