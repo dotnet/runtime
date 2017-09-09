@@ -2,11 +2,6 @@ ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceMod
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)'.
-Compat issues with assembly mscorlib:
-TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Console.Write(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Console.WriteLine(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System:
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
@@ -67,7 +62,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.Netw
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.TransparentNetworkIPResolution.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.TransparentNetworkIPResolution.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlDataReader.IsCommandBehavior(System.Data.CommandBehavior)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlParameter..ctor(System.String, System.Data.SqlDbType, System.Int32, System.Data.ParameterDirection, System.Boolean, System.Byte, System.Byte, System.String, System.Data.DataRowVersion, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.get()' does not exist in the implementation but it does exist in the contract.
@@ -130,36 +124,14 @@ TypesMustExist : Type 'System.Security.Cryptography.Pkcs.SignerInfoCollection' d
 TypesMustExist : Type 'System.Security.Cryptography.Pkcs.SignerInfoEnumerator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509Certificate2UI' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509SelectionFlag' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Xml.EncryptedXml..ctor(System.Xml.XmlDocument, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Xml.EncryptedXml.DocumentEvidence.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Xml.EncryptedXml.DocumentEvidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermissionFlags' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ServiceProcess:
-TypesMustExist : Type 'System.ServiceProcess.PowerBroadcastStatus' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ServiceProcess.ServiceAccount' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceBase' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceController' does not inherit from base type 'System.ComponentModel.Component' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceController..ctor()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceController.Close()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceController.DisplayName.set(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceController.ExecuteCommand(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceController.MachineName.set(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceController.ServiceName.set(System.String)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionAccess' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntry' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceInstaller' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceProcessDescriptionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.ServiceProcessInstaller' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.SessionChangeDescription' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.SessionChangeReason' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.TimeoutException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialog' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialogResult' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ServiceProcess.ServiceBase.AutoLog.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ServiceProcess.ServiceBase.AutoLog.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ServiceProcess.ServiceBase.EventLog.get()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Xml:
 MembersMustExist : Member 'System.Xml.Xsl.XslCompiledTransform.TemporaryFiles.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
@@ -312,4 +284,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 300
+Total Issues: 273

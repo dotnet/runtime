@@ -198,6 +198,7 @@ MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMetho
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
 
 // Interfaces were intentional removals
+CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.TimeoutException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.NetworkInformation.PingException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.AccessViolationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Activator' does not implement interface 'System.Runtime.InteropServices._Activator' in the implementation but it does in the contract.
@@ -3226,3 +3227,23 @@ MembersMustExist : Member 'System.Xml.Xsl.XslCompiledTransform.TemporaryFiles.ge
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, Syste
+
+// Negligible usage, CAS
+TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntry' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
+
+// Undesirable dependencies
+TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialog' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialogResult' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.ServiceInstaller' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.ServiceProcessDescriptionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceProcess.ServiceProcessInstaller' does not exist in the implementation but it does exist in the contract.
+
+// Not bringing back argiterator
+TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Console.Write(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Console.WriteLine(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
