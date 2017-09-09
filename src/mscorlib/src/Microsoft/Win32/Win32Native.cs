@@ -152,9 +152,6 @@ namespace Microsoft.Win32
         internal const int REG_RESOURCE_REQUIREMENTS_LIST = 10;
         internal const int REG_QWORD = 11;    // 64-bit number
 
-        internal const int HWND_BROADCAST = 0xffff;
-        internal const int WM_SETTINGCHANGE = 0x001A;
-
         // TimeZone
         internal const int TIME_ZONE_ID_INVALID = -1;
         internal const int TIME_ZONE_ID_UNKNOWN = 0;
@@ -169,8 +166,6 @@ namespace Microsoft.Win32
         internal const int MUI_ALL_LANGUAGES = 0x40;
         internal const int MUI_LANG_NEUTRAL_PE_FILE = 0x100;
         internal const int MUI_NON_LANG_NEUTRAL_FILE = 0x200;
-
-        internal const int LOAD_STRING_MAX_LENGTH = 500;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct SystemTime
@@ -685,8 +680,6 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal static extern bool GetFileAttributesEx(String name, int fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
 
-        internal const int LCID_SUPPORTED = 0x00000002;  // supported locale ids
-
         [DllImport(Interop.Libraries.Kernel32)]
         internal static extern unsafe int WideCharToMultiByte(uint cp, uint flags, char* pwzSource, int cchSource, byte* pbDestBuffer, int cbDestBuffer, IntPtr null1, IntPtr null2);
 
@@ -780,15 +773,6 @@ namespace Microsoft.Win32
 
         [DllImport(Interop.Libraries.Kernel32)]
         internal static extern IntPtr LocalReAlloc(IntPtr handle, IntPtr sizetcbBytes, int uFlags);
-
-        internal const int SHGFP_TYPE_CURRENT = 0;      // the current (user) folder path setting
-        internal const int UOI_FLAGS = 1;
-        internal const int WSF_VISIBLE = 1;
-
-        internal const int NameSamCompatible = 2;
-
-        [DllImport(Interop.Libraries.User32, SetLastError = true, BestFitMapping = false)]
-        internal static extern IntPtr SendMessageTimeout(IntPtr hWnd, int Msg, IntPtr wParam, String lParam, uint fuFlags, uint uTimeout, IntPtr lpdwResult);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
