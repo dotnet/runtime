@@ -570,12 +570,7 @@ public:
 
     void recGlobalContext(const MethodContext& other);
 
-    void recEnvironment();
     void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
-    void repEnvironmentSet();
-    void repEnvironmentUnset();
-    int  repEnvironmentGetCount();
-    int  repGetTestID();
 
     void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
@@ -1287,7 +1282,7 @@ enum mcPackets
     Packet_EmbedMethodHandle                             = 19,
     Packet_EmbedModuleHandle                             = 20,
     Packet_EmptyStringLiteral                            = 21,
-    Packet_Environment                                   = 136, // Added 4/3/2013
+    Packet_Environment                                   = 136, // Deprecated 7/29/2017
     Packet_ErrorList                                     = 22,
     Packet_FilterException                               = 134,
     Packet_FindCallSiteSig                               = 23,

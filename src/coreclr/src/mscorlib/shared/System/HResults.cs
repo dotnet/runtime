@@ -15,8 +15,6 @@
 // HResults. Also note that some of our HResults have to map to certain 
 // COM HR's, etc.
 
-// Another arbitrary decision...  Feel free to change this, as long as you
-// renumber the HResults yourself (and update rexcep.h).
 // Reflection will use 0x1600 -> 0x161f.  IO will use 0x1620 -> 0x163f.
 // Security will use 0x1640 -> 0x165f
 
@@ -25,7 +23,7 @@ using System;
 
 namespace System
 {
-    internal static class HResults
+    internal static partial class HResults
     {
         internal const int COR_E_ABANDONEDMUTEX = unchecked((int)0x8013152D);
         internal const int COR_E_AMBIGUOUSMATCH = unchecked((int)0x8000211D);
@@ -113,12 +111,6 @@ namespace System
         internal const int COR_E_UNSUPPORTEDFORMAT = unchecked((int)0x80131523);
         internal const int COR_E_VERIFICATION = unchecked((int)0x8013150D);
         internal const int COR_E_WAITHANDLECANNOTBEOPENED = unchecked((int)0x8013152C);
-        internal const int CORSEC_E_CRYPTO = unchecked((int)0x80131430);
-        internal const int CORSEC_E_CRYPTO_UNEX_OPER = unchecked((int)0x80131431);
-        internal const int CORSEC_E_MIN_GRANT_FAIL = unchecked((int)0x80131417);
-        internal const int CORSEC_E_NO_EXEC_PERM = unchecked((int)0x80131418);
-        internal const int CORSEC_E_POLICY_EXCEPTION = unchecked((int)0x80131416);
-        internal const int CORSEC_E_XMLSYNTAX = unchecked((int)0x80131419);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
         internal const int E_BOUNDS = unchecked((int)0x8000000B);
         internal const int E_CHANGED_STATE = unchecked((int)0x8000000C);
@@ -128,10 +120,6 @@ namespace System
         internal const int E_NOTIMPL = unchecked((int)0x80004001);
         internal const int E_POINTER = unchecked((int)0x80004003);
         internal const int ERROR_MRM_MAP_NOT_FOUND = unchecked((int)0x80073B1F);
-        internal const int FUSION_E_INVALID_NAME = unchecked((int)0x80131047);
-        internal const int FUSION_E_REF_DEF_MISMATCH = unchecked((int)0x80131040);
-        internal const int NTE_FAIL = unchecked((int)0x80090020);
-        internal const int REGDB_E_CLASSNOTREG = unchecked((int)0x80040154);
         internal const int RO_E_CLOSED = unchecked((int)0x80000013);
         internal const int TYPE_E_TYPEMISMATCH = unchecked((int)0x80028CA0);
     }

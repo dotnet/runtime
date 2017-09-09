@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -53,16 +52,11 @@ namespace System.Collections.Concurrent
         /// Lock used to protect cross-segment operations, including any updates to <see cref="_tail"/> or <see cref="_head"/>
         /// and any operations that need to get a consistent view of them.
         /// </summary>
-        [NonSerialized]
         private object _crossSegmentLock;
         /// <summary>The current tail segment.</summary>
-        [NonSerialized]
         private volatile Segment _tail;
         /// <summary>The current head segment.</summary>
-        [NonSerialized]
         private volatile Segment _head;
-        /// <summary>Field used to temporarily store the contents of the queue for serialization.</summary>
-        private T[] _serializationArray;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentQueue{T}"/> class.
@@ -71,29 +65,6 @@ namespace System.Collections.Concurrent
         {
             _crossSegmentLock = new object();
             _tail = _head = new Segment(InitialSegmentLength);
-        }
-
-        /// <summary>Set the data array to be serialized.</summary>
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            _serializationArray = ToArray();
-        }
-
-        /// <summary>Clear the data array that was serialized.</summary>
-        [OnSerialized]
-        private void OnSerialized(StreamingContext context)
-        {
-            _serializationArray = null;
-        }
-
-        /// <summary>Construct the queue from the deserialized <see cref="_serializationArray"/>.</summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            Debug.Assert(_serializationArray != null);
-            InitializeFromCollection(_serializationArray);
-            _serializationArray = null;
         }
 
         /// <summary>
@@ -139,7 +110,7 @@ namespace System.Collections.Concurrent
         {
             if (collection == null)
             {
-                throw new ArgumentNullException(nameof(collection));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
             InitializeFromCollection(collection);
@@ -182,7 +153,7 @@ namespace System.Collections.Concurrent
             // Validate arguments.
             if (array == null)
             {
-                throw new ArgumentNullException(nameof(array));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
             // Otherwise, fall back to the slower path that first copies the contents
@@ -204,7 +175,7 @@ namespace System.Collections.Concurrent
         /// cref="ICollection"/>. This property is not supported.
         /// </summary>
         /// <exception cref="NotSupportedException">The SyncRoot property is not supported.</exception>
-        object ICollection.SyncRoot { get { throw new NotSupportedException(SR.ConcurrentCollection_SyncRoot_NotSupported); } }
+        object ICollection.SyncRoot { get { ThrowHelper.ThrowNotSupportedException(ExceptionResource.ConcurrentCollection_SyncRoot_NotSupported); return default(object); } }
 
         /// <summary>Returns an enumerator that iterates through a collection.</summary>
         /// <returns>An <see cref="IEnumerator"/> that can be used to iterate through the collection.</returns>
@@ -426,11 +397,11 @@ namespace System.Collections.Concurrent
         {
             if (array == null)
             {
-                throw new ArgumentNullException(nameof(array));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             // Snap for enumeration
@@ -442,7 +413,7 @@ namespace System.Collections.Concurrent
             long count = GetCount(head, headHead, tail, tailTail);
             if (index > array.Length - count)
             {
-                throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             }
 
             // Copy the items to the target array
@@ -826,7 +797,7 @@ namespace System.Collections.Concurrent
             /// <summary>Mask for quickly accessing a position within the queue's array.</summary>
             internal readonly int _slotsMask;
             /// <summary>The head and tail positions, with padding to help avoid false sharing contention.</summary>
-            /// <remarks>Dequeueing happens from the head, enqueueing happens at the tail.</remarks>
+            /// <remarks>Dequeuing happens from the head, enqueuing happens at the tail.</remarks>
             internal PaddedHeadAndTail _headAndTail; // mutable struct: do not make this readonly
 
             /// <summary>Indicates whether the segment has been marked such that dequeues don't overwrite the removed data.</summary>
@@ -855,7 +826,7 @@ namespace System.Collections.Concurrent
                 // allows dequeuers to know whether they can dequeue and enqueuers to know whether they can
                 // enqueue.  An enqueuer at position N can enqueue when the sequence number is N, and a dequeuer
                 // for position N can dequeue when the sequence number is N + 1.  When an enqueuer is done writing
-                // at position N, it sets the sequence number to N so that a dequeuer will be able to dequeue,
+                // at position N, it sets the sequence number to N + 1 so that a dequeuer will be able to dequeue,
                 // and when a dequeuer is done dequeueing at position N, it sets the sequence number to N + _slots.Length,
                 // so that when an enqueuer loops around the slots, it'll find that the sequence number at
                 // position N is N.  This also means that when an enqueuer finds that at position N the sequence

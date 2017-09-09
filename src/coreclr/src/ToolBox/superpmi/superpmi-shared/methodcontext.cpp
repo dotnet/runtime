@@ -481,7 +481,7 @@ bool MethodContext::Equal(MethodContext* other)
 //    `ICJI::compileMethod`).
 //
 //    This method is intended to be called as part of initializing a method
-//    during collection, similar to `methodContext::recEnvironment`.
+//    during collection.
 void MethodContext::recGlobalContext(const MethodContext& other)
 {
     Assert(GetIntConfigValue == nullptr);
@@ -498,128 +498,8 @@ void MethodContext::recGlobalContext(const MethodContext& other)
     }
 }
 
-void MethodContext::recEnvironment()
-{
-    if (Environment == nullptr)
-        Environment = new DenseLightWeightMap<Agnostic_Environment>();
-
-    char* l_EnvStr;
-    char* l_val;
-
-#ifdef FEATURE_PAL
-    l_EnvStr = GetEnvironmentStringsA();
-#else  // !FEATURE_PAL
-    l_EnvStr = GetEnvironmentStrings();
-#endif // !FEATURE_PAL
-
-    l_val = l_EnvStr;
-
-    char* l_str = l_EnvStr;
-
-    int count = 0;
-    while (true)
-    {
-        if (*l_str == 0)
-            break;
-        while (*l_str != 0)
-            l_str++;
-        l_str++;
-        count++;
-    }
-
-    for (int i = 0; i < count; i++)
-    {
-        if ((_strnicmp(l_EnvStr, "complus_", 8) == 0) || (_strnicmp(l_EnvStr, "dbflag", 6) == 0) ||
-            (_strnicmp(l_EnvStr, "BVT_TEST_ID", 11) == 0))
-        {
-            char* val = l_EnvStr;
-            while (*val != '=')
-                val++;
-            *val++                       = 0;
-            int                  nameind = Environment->AddBuffer((unsigned char*)l_EnvStr, (int)strlen(l_EnvStr) + 1);
-            int                  valind  = Environment->AddBuffer((unsigned char*)val, (int)strlen(val) + 1);
-            Agnostic_Environment value;
-            value.name_index = nameind;
-            value.val_index  = valind;
-            DWORD key        = (DWORD)Environment->GetCount();
-            Environment->Append(value);
-            DEBUG_REC(dmpEnvironment(key, value));
-            l_EnvStr = val;
-        }
-        while (*l_EnvStr != '\0')
-            l_EnvStr++;
-        l_EnvStr++;
-    }
-    FreeEnvironmentStringsA(l_val);
-}
 void MethodContext::dmpEnvironment(DWORD key, const Agnostic_Environment& value)
 {
-    printf("Environment key %u, value '%s' '%s'", key, (LPCSTR)Environment->GetBuffer(value.name_index),
-           (LPCSTR)Environment->GetBuffer(value.val_index));
-    Environment->Unlock();
-}
-void MethodContext::repEnvironmentSet()
-{
-    if (Environment == nullptr)
-        return;
-    Agnostic_Environment val;
-    for (unsigned int i = 0; i < Environment->GetCount(); i++)
-    {
-        val = Environment->Get((DWORD)i);
-        DEBUG_REP(dmpEnvironment(i, val));
-
-        SetEnvironmentVariableA((LPCSTR)Environment->GetBuffer(val.name_index),
-                                (LPCSTR)Environment->GetBuffer(val.val_index));
-    }
-}
-
-int MethodContext::repGetTestID()
-{
-    // CLR Test asset only - we capture the testID via smarty-environnent (BVT_TEST_ID) during record time
-    // This procedure returns the test id if found and -1 otherwise
-
-    if (Environment == nullptr)
-        return -1;
-    Agnostic_Environment val;
-    LPCSTR               key;
-    int                  value = -1;
-    for (unsigned int i = 0; i < Environment->GetCount(); i++)
-    {
-        val = Environment->Get((DWORD)i);
-        key = (LPCSTR)Environment->GetBuffer(val.name_index);
-
-        if (_strnicmp(key, "BVT_TEST_ID", 11) == 0)
-        {
-            value = atoi((LPCSTR)Environment->GetBuffer(val.val_index));
-            break;
-        }
-    }
-
-    if (value == -1)
-    {
-        LogError("Couldn't find Smarty test ID");
-    }
-
-    return value;
-}
-
-void MethodContext::repEnvironmentUnset()
-{
-    if (Environment == nullptr)
-        return;
-    Agnostic_Environment val;
-    for (unsigned int i = 0; i < Environment->GetCount(); i++)
-    {
-        val = Environment->Get((DWORD)i);
-        SetEnvironmentVariableA((LPCSTR)Environment->GetBuffer(val.name_index), nullptr);
-    }
-}
-int MethodContext::repEnvironmentGetCount()
-{
-    int result = 0;
-    if (Environment != nullptr)
-        result = Environment->GetCount();
-    return result;
 }
 
 void MethodContext::dumpToConsole(int mcNumber)
@@ -5974,15 +5854,6 @@ const wchar_t* MethodContext::repGetStringConfigValue(const wchar_t* name)
     return value;
 }
 
-struct EnvironmentVariable
-{
-    char* name;
-    DWORD val_index;
-};
-int __cdecl compareEnvironmentVariable(const void* arg1, const void* arg2)
-{
-    return _stricmp(((EnvironmentVariable*)arg1)->name, ((EnvironmentVariable*)arg2)->name);
-}
 int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
 {
     char* obuff = buff;
@@ -6006,46 +5877,6 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
                   info.options, info.regionKind);
     buff += t;
     len -= t;
-
-    // Add COMPLUS_* & dbflag environment variables to method Identity
-    // except complus_version and complus_defaultversion
-    // since they change the compilation behaviour of JIT
-    // we also need to sort them to ensure we don't produce a different
-    // hash based on the order of these variables
-    if (Environment != nullptr)
-    {
-        Agnostic_Environment val;
-        EnvironmentVariable* envValues   = new EnvironmentVariable[Environment->GetCount()];
-        int                  envValCount = 0;
-
-        for (unsigned int i = 0; i < Environment->GetCount(); i++)
-        {
-            val               = Environment->Get((DWORD)i);
-            char* envVariable = (char*)Environment->GetBuffer(val.name_index);
-            if ((_strnicmp(envVariable, "complus_", 8) == 0 || _strnicmp(envVariable, "dbflag", 6) == 0) &&
-                (_stricmp(envVariable, "complus_version") != 0) &&
-                (_stricmp(envVariable, "complus_defaultversion") != 0))
-            {
-                envValues[envValCount].name        = envVariable;
-                envValues[envValCount++].val_index = val.val_index;
-            }
-        }
-
-        // Do a quick sort on envValues if needed
-        if (envValCount > 1)
-            qsort(envValues, envValCount, sizeof(EnvironmentVariable), compareEnvironmentVariable);
-
-        // Append these values to the IdentityInfobuffer
-        for (int i = 0; i < envValCount; i++)
-        {
-            t = sprintf_s(buff, len, "%s=%s ", _strlwr(envValues[i].name),
-                          _strlwr((char*)Environment->GetBuffer(envValues[i].val_index)));
-            buff += t;
-            len -= t;
-        }
-
-        delete[] envValues;
-    }
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];

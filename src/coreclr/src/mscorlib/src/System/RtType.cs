@@ -3846,7 +3846,7 @@ namespace System
         {
             get
             {
-                return (StructLayoutAttribute)StructLayoutAttribute.GetCustomAttribute(this);
+                return PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
             }
         }
         #endregion

@@ -16,12 +16,14 @@
     <CoreFxCurrentRef>13b5345991e55bb0b30a236ab4f6693a870ed789</CoreFxCurrentRef>
     <CoreClrCurrentRef>13b5345991e55bb0b30a236ab4f6693a870ed789</CoreClrCurrentRef>
     <BuildToolsCurrentRef>7c9088cd9078e1d90be01eb94a3f66ba0a33c9f4</BuildToolsCurrentRef>
+    <PgoDataCurrentRef>c485975226ad7f4a1b9a8b7aad11e0c4a7bacc1a</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxPackageVersion>4.5.0-preview2-25707-02</CoreFxPackageVersion>
     <PlatformPackageVersion>2.1.0-preview2-25707-02</PlatformPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20170908-1805</PgoDataPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -54,6 +56,10 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="PgoData">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(PgoDataCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
@@ -79,6 +85,11 @@
       <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
       <PackageId>Microsoft.DotNet.BuildTools</PackageId>
     </UpdateStep>
+    <XmlUpdateStep Include="PgoData">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>PgoDataPackageVersion</ElementName>
+      <PackageId>optimization.PGO.CoreCLR</PackageId>
+    </XmlUpdateStep>
   </ItemGroup>
 
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
