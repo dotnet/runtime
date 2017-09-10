@@ -7,14 +7,12 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class DllImportAttribute : Attribute
     {
-        private string _dllName;
-
         public DllImportAttribute(string dllName)
         {
-            _dllName = dllName;
+            Value = dllName;
         }
 
-        public string Value => _dllName;
+        public string Value { get; }
 
         public string EntryPoint;
         public CharSet CharSet;
