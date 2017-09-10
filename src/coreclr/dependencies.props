@@ -14,20 +14,20 @@
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
     <CoreFxCurrentRef>13b5345991e55bb0b30a236ab4f6693a870ed789</CoreFxCurrentRef>
-    <CoreClrCurrentRef>13b5345991e55bb0b30a236ab4f6693a870ed789</CoreClrCurrentRef>
-    <PgoDataCurrentRef>c485975226ad7f4a1b9a8b7aad11e0c4a7bacc1a</PgoDataCurrentRef>
+    <CoreClrCurrentRef>413d7c0d92b6ecfa6ed1e8ae89bc2bd1aaec803a</CoreClrCurrentRef>
+    <PgoDataCurrentRef>413d7c0d92b6ecfa6ed1e8ae89bc2bd1aaec803a</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxPackageVersion>4.5.0-preview2-25707-02</CoreFxPackageVersion>
     <PlatformPackageVersion>2.1.0-preview2-25707-02</PlatformPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20170908-1805</PgoDataPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20170910-0049</PgoDataPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <CoreClrPackageVersion>2.1.0-preview2-25707-02</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview2-25709-04</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
     <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
