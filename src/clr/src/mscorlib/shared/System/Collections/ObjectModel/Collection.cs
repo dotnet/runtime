@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime;
 
 namespace System.Collections.ObjectModel
 {
@@ -243,7 +238,7 @@ namespace System.Collections.ObjectModel
             {
                 //
                 // Catch the obvious case assignment will fail.
-                // We can found all possible problems by doing the check though.
+                // We can't find all possible problems by doing the check though.
                 // For example, if the element type of the Array is derived from T,
                 // we can't figure out if we can successfully copy the element beforehand.
                 //
