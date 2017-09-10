@@ -7,19 +7,17 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
     public sealed class StructLayoutAttribute : Attribute
     {
-        private LayoutKind _val;
-
         public StructLayoutAttribute(LayoutKind layoutKind)
         {
-            _val = layoutKind;
+            Value = layoutKind;
         }
 
         public StructLayoutAttribute(short layoutKind)
         {
-            _val = (LayoutKind)layoutKind;
+            Value = (LayoutKind)layoutKind;
         }
 
-        public LayoutKind Value => _val;
+        public LayoutKind Value { get; }
 
         public int Pack;
         public int Size;
