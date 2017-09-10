@@ -4,14 +4,14 @@
 
 namespace System.Runtime.InteropServices
 {
-    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    public sealed class FieldOffsetAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Module, Inherited = false)]
+    public sealed class DefaultCharSetAttribute : Attribute
     {
-        public FieldOffsetAttribute(int offset)
+        public DefaultCharSetAttribute(CharSet charSet)
         {
-            Value = offset;
+            CharSet = charSet;
         }
 
-        public int Value { get; }
+        public CharSet CharSet { get; }
     }
 }
