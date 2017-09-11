@@ -5,12 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public class BinaryReaderTests
+    public partial class BinaryReaderTests
     {
         protected virtual Stream CreateStream()
         {
@@ -127,6 +128,63 @@ namespace System.IO.Tests
                 using (var reader = new BinaryReader(str, new NegEncoding()))
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>("charsRemaining", () => reader.Read(new char[10], 0, 10));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(100, 0, 100, 100, 100)]
+        [InlineData(100, 25, 50, 100, 50)]
+        [InlineData(50, 0, 100, 100, 50)]
+        [InlineData(0, 0, 10, 10, 0)]
+        public void Read_CharArray(int sourceSize, int index, int count, int destinationSize, int expectedReadLength)
+        {
+            using (var stream = CreateStream())
+            {
+                var source = new char[sourceSize];
+                var random = new Random(345);
+
+                for (int i = 0; i < sourceSize; i++)
+                {
+                    source[i] = (char)random.Next(0, 127);
+                }
+
+                stream.Write(Encoding.ASCII.GetBytes(source), 0, source.Length);
+                stream.Position = 0;
+
+                using (var reader = new BinaryReader(stream, Encoding.ASCII))
+                {
+                    var destination = new char[destinationSize];
+
+                    int readCount = reader.Read(destination, index, count);
+
+                    Assert.Equal(expectedReadLength, readCount);
+                    Assert.Equal(source.Take(readCount), destination.Skip(index).Take(readCount));
+
+                    // Make sure we didn't write past the end
+                    Assert.True(destination.Skip(readCount + index).All(b => b == default(char)));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(new[] { 'h', 'e', 'l', 'l', 'o' }, 5, new[] { 'h', 'e', 'l', 'l', 'o' })]
+        [InlineData(new[] { 'h', 'e', 'l', 'l', 'o' }, 8, new[] { 'h', 'e', 'l', 'l', 'o' })]
+        [InlineData(new[] { 'h', 'e', '\0', '\0', 'o' }, 5, new[] { 'h', 'e', '\0', '\0', 'o' })]
+        [InlineData(new[] { 'h', 'e', 'l', 'l', 'o' }, 0, new char[0])]
+        [InlineData(new char[0], 5, new char[0])]
+        public void ReadChars(char[] source, int readLength, char[] expected)
+        {
+            using (var stream = CreateStream())
+            {
+                stream.Write(Encoding.ASCII.GetBytes(source), 0, source.Length);
+                stream.Position = 0;
+
+                using (var reader = new BinaryReader(stream))
+                {
+                    var destination = reader.ReadChars(readLength);
+
+                    Assert.Equal(expected, destination);
                 }
             }
         }
