@@ -955,10 +955,13 @@ void TypeDefInfo::DumpStrings(char *ptr, int &offset)
 
 void TypeDefInfo::DumpDebugInfo(char *ptr, int &offset)
 {
-    if (m_typedef_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
 
     if (ptr != nullptr)
     {
@@ -1030,10 +1033,14 @@ void PrimitiveTypeInfo::DumpStrings(char* ptr, int& offset)
 
 void PrimitiveTypeInfo::DumpDebugInfo(char *ptr, int &offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_typedef_info->DumpDebugInfo(ptr, offset);
 
     if (ptr != nullptr)
@@ -1047,13 +1054,12 @@ void PrimitiveTypeInfo::DumpDebugInfo(char *ptr, int &offset)
         memcpy(ptr + offset,
                &bufType,
                sizeof(DebugInfoType));
-        m_type_offset = offset;
+
+        // Replace offset from real type to typedef
+        m_type_offset = m_typedef_info->m_typedef_type_offset;
     }
 
     offset += sizeof(DebugInfoType);
-    // Replace offset from real type to typedef
-    if (ptr != nullptr)
-        m_type_offset = m_typedef_info->m_typedef_type_offset;
 }
 
 ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMemberPtrArrayHolder &method)
@@ -1122,7 +1128,21 @@ void TypeMember::DumpDebugInfo(char* ptr, int& offset)
 void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
 {
     const int ptrSize = sizeof(TADDR);
-    int bufSize = 0;
+    const int valueTypeBufSize = ptrSize + 6;
+    const int refTypeBufSize = ptrSize + 2;
+
+    bool isValueType = m_member_type->GetTypeHandle().GetSignatureCorElementType() ==
+                            ELEMENT_TYPE_VALUETYPE;
+    int bufSize;
+    if (isValueType)
+    {
+        bufSize = valueTypeBufSize;
+    }
+    else
+    {
+        bufSize = refTypeBufSize;
+    }
+
     if (ptr != nullptr)
     {
         DebugInfoStaticMember memberEntry;
@@ -1133,12 +1153,9 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
 
         // for value type static fields compute address as:
         // addr = (*addr+sizeof(OBJECTREF))
-        if (m_member_type->GetTypeHandle().GetSignatureCorElementType() ==
-                ELEMENT_TYPE_VALUETYPE)
+        if (isValueType)
         {
-            bufSize = ptrSize + 6;
-
-            char buf[ptrSize + 6] = {0};
+            char buf[valueTypeBufSize] = {0};
             buf[0] = ptrSize + 5;
             buf[1] = DW_OP_addr;
 
@@ -1156,9 +1173,7 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
         }
         else
         {
-            bufSize = ptrSize + 2;
-
-            char buf[ptrSize + 2] = {0};
+            char buf[refTypeBufSize] = {0};
             buf[0] = ptrSize + 1;
             buf[1] = DW_OP_addr;
 
@@ -1516,10 +1531,14 @@ void RefTypeInfo::DumpStrings(char* ptr, int& offset)
 
 void RefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_type_offset = offset;
     offset += sizeof(DebugInfoRefType);
     m_value_type->DumpDebugInfo(ptr, offset);
@@ -1539,10 +1558,14 @@ void RefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void NamedRefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_type_offset = offset;
     offset += sizeof(DebugInfoRefType) + sizeof(DebugInfoTypeDef);
     m_value_type->DumpDebugInfo(ptr, offset);
@@ -1569,28 +1592,23 @@ void NamedRefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
 
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     if (m_parent != nullptr)
     {
-        if (m_parent->m_type_offset == 0)
-        {
-            m_parent->DumpDebugInfo(ptr, offset);
-        }
-        else if (RefTypeInfo* m_p = dynamic_cast<RefTypeInfo*>(m_parent))
-        {
-            if (m_p->m_value_type->m_type_offset == 0)
-                m_p->m_value_type->DumpDebugInfo(ptr, offset);
-        }
+        m_parent->DumpDebugInfo(ptr, offset);
     }
 
     // make sure that types of all members are dumped
     for (int i = 0; i < m_num_members; ++i)
     {
-        if (members[i].m_member_type->m_type_offset == 0 && members[i].m_member_type != this)
+        if (members[i].m_member_type != this)
         {
             members[i].m_member_type->DumpDebugInfo(ptr, offset);
         }
@@ -1654,14 +1672,16 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void ArrayTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
-    if (m_elem_type->m_type_offset == 0)
-    {
-        m_elem_type->DumpDebugInfo(ptr, offset);
-    }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
+    m_elem_type->DumpDebugInfo(ptr, offset);
+
     if (ptr != nullptr)
     {
         DebugInfoArrayType arrType;
