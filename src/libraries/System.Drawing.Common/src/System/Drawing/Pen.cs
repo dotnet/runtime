@@ -28,7 +28,7 @@ namespace System.Drawing
         private bool _immutable;
 
         // Tracks whether the dash style has been changed to something else than Solid during the lifetime of this object.
-        private bool dashStyleWasChanged;
+        private bool _dashStyleWasOrIsNotSolid;
 
         /// <summary>
         /// Creates a Pen from a native GDI+ object.
@@ -675,7 +675,7 @@ namespace System.Drawing
 
                 if (value != DashStyle.Solid)
                 {
-                    this.dashStyleWasChanged = true;
+                    this._dashStyleWasOrIsNotSolid = true;
                 }
             }
         }
@@ -740,9 +740,9 @@ namespace System.Drawing
                     status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), pattern, count);
                     SafeNativeMethods.Gdip.CheckStatus(status);
                 }
-                else if (DashStyle == DashStyle.Solid && !this.dashStyleWasChanged)
+                else if (DashStyle == DashStyle.Solid && !this._dashStyleWasOrIsNotSolid)
                 {
-                    // Most likely we're replicating an existing System.Drawing bug here, it doesn't make much sense tó
+                    // Most likely we're replicating an existing System.Drawing bug here, it doesn't make much sense to
                     // ask for a dash pattern when using a solid dash.
                     throw new OutOfMemoryException();
                 }
