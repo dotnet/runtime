@@ -458,10 +458,7 @@ namespace System.Drawing.Drawing2D
                 // Set blend factors
                 int status = SafeNativeMethods.Gdip.GdipSetPathGradientPresetBlend(new HandleRef(this, NativeBrush), argbs, positions, count);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
