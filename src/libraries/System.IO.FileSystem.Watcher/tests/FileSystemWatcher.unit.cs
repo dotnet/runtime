@@ -497,7 +497,7 @@ namespace System.IO.Tests
             watcher.Path = ".";
             Assert.Equal(".", watcher.Path);
 
-            if (!PlatformDetection.IsWinRT)
+            if (!PlatformDetection.IsInAppContainer)
             {
                 watcher.Path = "..";
                 Assert.Equal("..", watcher.Path);

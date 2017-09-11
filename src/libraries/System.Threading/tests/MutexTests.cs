@@ -90,7 +90,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWinRT))] // Can't create global objects in appcontainer
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))] // Can't create global objects in appcontainer
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Ctor_TryCreateGlobalMutexTest_Uwp()
         {
