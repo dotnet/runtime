@@ -892,7 +892,7 @@ namespace System.Drawing.Printing
 
         internal static bool EndPage(GraphicsPrinter gr)
         {
-            GdipGetPostScriptSavePage(gr.Hdc);
+            SafeNativeMethods.Gdip.GdipGetPostScriptSavePage(gr.Hdc);
             return true;
         }
 
@@ -926,7 +926,7 @@ namespace System.Drawing.Printing
                 height = psize.Height;
             }
 
-            GdipGetPostScriptGraphicsContext(name,
+            SafeNativeMethods.Gdip.GdipGetPostScriptGraphicsContext(name,
                 width * 72 / 100,
                 height * 72 / 100,
                 default_page_settings.PrinterResolution.X,
@@ -980,12 +980,6 @@ namespace System.Drawing.Printing
 
         [DllImport("libcups")]
         static extern void cupsFreeOptions(int number_options, IntPtr options);
-
-        [DllImport("gdiplus.dll", CharSet = CharSet.Ansi)]
-        static extern int GdipGetPostScriptGraphicsContext(string filename, int with, int height, double dpix, double dpiy, ref IntPtr graphics);
-
-        [DllImport("gdiplus.dll")]
-        static extern int GdipGetPostScriptSavePage(IntPtr graphics);
 
         #endregion
 
