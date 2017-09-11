@@ -64,7 +64,7 @@ namespace System.SpanTests
                 foreach (TInt elem in first)
                 {
                     int numCompares = log.CountCompares(elem.Value, elem.Value);
-                    Assert.True(numCompares == 1);
+                    Assert.True(numCompares == 1, $"Expected {numCompares} == 1 for element {elem.Value}.");
                 }
             }
         }
