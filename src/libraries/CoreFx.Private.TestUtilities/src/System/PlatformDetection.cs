@@ -31,8 +31,8 @@ namespace System
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
 
-        public static bool IsNotWinRT => !IsInAppContainer;
-        public static bool IsWinRTSupported => IsInAppContainer || (IsWindows && !IsWindows7);
+        public static bool IsNotInAppContainer => !IsInAppContainer;
+        public static bool IsWinRTSupported => IsWindows && !IsWindows7;
         public static bool IsNotWinRTSupported => !IsWinRTSupported;
         public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
 
