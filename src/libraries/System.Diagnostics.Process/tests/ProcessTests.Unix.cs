@@ -16,6 +16,8 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        private const string s_xdg_open = "xdg-open";
+
         [Fact]
         private void TestWindowApisUnix()
         {
@@ -61,33 +63,151 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, p.Id);
         }
 
-        [Theory, InlineData(false)]
-        public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception(bool useShellExecute)
+        [Fact]
+        public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
         {
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = useShellExecute, FileName = "exit", Arguments = "42" }));
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
         }
 
         [Fact]
-        // [OuterLoop("Opens application")]
-        public void ProcessStart_UseShellExecuteTrue_OpenNano_OpensNano()
+        public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
         {
-            string appToOpen = "nano";
-            var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = appToOpen };
-            using (var px = Process.Start(startInfo))
-            {
-                Assert.NotNull(px);
-                Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenNano_OpensNano)}(): Process {px.ProcessName} opened {appToOpen}");
-                px.Kill();
-                px.WaitForExit();
-                Assert.True(px.HasExited);
-                Assert.Equal(137, px.ExitCode);
-            }
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
         }
 
-        [Theory(Skip= "Needs fix for #22299: Should throw"), InlineData(true), InlineData(false)]
+        [Theory, InlineData(false), InlineData(true)]
         public void ProcessStart_TryOpenFolder_ThrowsWin32Exception(bool useShellExecute)
         {
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = useShellExecute, FileName = Environment.CurrentDirectory }));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        // [OuterLoop("Opens program")]
+        public void ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise()
+        {
+            string fileToOpen = GetTestFilePath() + ".txt";
+            File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise)}");
+
+            string[] allowedProgramsToRun = { s_xdg_open, "gnome-open", "kfmclient" };
+            foreach (var program in allowedProgramsToRun)
+            {
+                if (IsProgramInstalled(program))
+                {
+                    var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen };
+                    using (var px = Process.Start(startInfo))
+                    {
+                        Assert.NotNull(px);
+                        Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise)}(): {program} was used to open file on this machine. ProcessName: {px.ProcessName}");
+                        Assert.Equal(program, px.ProcessName);
+                        px.Kill();
+                        px.WaitForExit();
+                        Assert.True(px.HasExited);
+                        Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+                    }
+                    return;
+                }
+            }
+
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+        }
+
+        [Theory, InlineData("nano")]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        // [OuterLoop("Opens program")]
+        public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram(string programToOpenWith)
+        {
+            string fileToOpen = GetTestFilePath() + ".txt";
+            File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram)}");
+            using (var px = Process.Start(programToOpenWith, fileToOpen))
+            {
+                Assert.Equal(programToOpenWith, px.ProcessName);
+                px.Kill();
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+                Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+            }
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        // [OuterLoop("Opens program")]
+        public void ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2()
+        {
+            if (IsProgramInstalled(s_xdg_open))
+            {
+                string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
+                using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
+                {
+                    Assert.NotNull(p);
+                    Assert.Equal(s_xdg_open, p.ProcessName);
+                    p.WaitForExit();
+                    Assert.True(p.HasExited);
+                    Assert.Equal(2, p.ExitCode);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2)}(): {s_xdg_open} is not installed on this machine.");
+            }
+        }
+
+        [Theory, InlineData("/usr/bin/open"), InlineData("/usr/bin/nano")]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        // [OuterLoop("Opens program")]
+        public void ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram(string programToOpenWith)
+        {
+            string fileToOpen = GetTestFilePath() + ".txt";
+            File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram)}");
+            using (var px = Process.Start(programToOpenWith, fileToOpen))
+            {
+                Console.WriteLine($"in OSX, {nameof(programToOpenWith)} is {programToOpenWith}, while {nameof(px.ProcessName)} is {px.ProcessName}.");
+                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason
+                px.Kill();
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+                Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+            }
+        }
+
+        [Theory, InlineData("Safari"), InlineData("\"Google Chrome\"")]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        // [OuterLoop("Opens browser")]
+        public void ProcessStart_OpenUrl_UsesSpecifiedApplication(string applicationToOpenWith)
+        {
+            using (var px = Process.Start("/usr/bin/open", "https://github.com/dotnet/corefx -a " + applicationToOpenWith))
+            {
+                Assert.False(px.HasExited);
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+                Assert.Equal(0, px.ExitCode); // Exit Code 0 from open means success
+            }
+        }
+
+        [Theory, InlineData("-a Safari"), InlineData("-a \"Google Chrome\"")]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        // [OuterLoop("Opens browser")]
+        public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgument(string arguments)
+        {
+            var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = "https://github.com/dotnet/corefx", Arguments = arguments };
+            using (var px = Process.Start(startInfo))
+            {
+                Assert.NotNull(px);
+                // px.Kill(); // uncommenting this changes exit code to 137, meaning process was killed
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+                Assert.Equal(0, px.ExitCode);
+            }
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        // [OuterLoop("Opens program")]
+        public void ProcessStart_UseShellExecuteTrue_TryOpenFileThatDoesntExist_ReturnsExitCode1()
+        {
+            string file = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
+            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = file }))
+            {
+                Assert.True(p.WaitForExit(WaitInMS));
+                Assert.Equal(1, p.ExitCode); // Exit Code 1 from open means something went wrong
+            }
         }
 
         [Fact]
@@ -167,5 +287,30 @@ namespace System.Diagnostics.Tests
 
         [DllImport("libc")]
         private static extern int chmod(string path, int mode);
+
+        /// <summary>
+        /// Checks if the program is installed
+        /// </summary>
+        /// <param name="program"></param>
+        /// <returns></returns>
+        private bool IsProgramInstalled(string program)
+        {
+            string path;
+            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnvVar != null)
+            {
+                var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
+                while (pathParser.MoveNext())
+                {
+                    string subPath = pathParser.ExtractCurrent();
+                    path = Path.Combine(subPath, program);
+                    if (File.Exists(path))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 }
