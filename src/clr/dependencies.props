@@ -15,6 +15,7 @@
   <PropertyGroup>
     <CoreFxCurrentRef>13b5345991e55bb0b30a236ab4f6693a870ed789</CoreFxCurrentRef>
     <CoreClrCurrentRef>016946e95466db8aacaf2a18643352215778c54d</CoreClrCurrentRef>
+    <BuildToolsCurrentRef>7c9088cd9078e1d90be01eb94a3f66ba0a33c9f4</BuildToolsCurrentRef>
     <PgoDataCurrentRef>d406f4669b4849df27d4f1ab30e78b72a657f246</PgoDataCurrentRef>
   </PropertyGroup>
 
@@ -51,6 +52,10 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="BuildTools">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="PgoData">
       <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(PgoDataCurrentRef)</CurrentRef>
@@ -75,6 +80,11 @@
       <ElementName>CoreClrPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
     </XmlUpdateStep>
+    <UpdateStep Include="BuildTools">
+      <UpdaterType>File</UpdaterType>
+      <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
+      <PackageId>Microsoft.DotNet.BuildTools</PackageId>
+    </UpdateStep>
     <XmlUpdateStep Include="PgoData">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>PgoDataPackageVersion</ElementName>
