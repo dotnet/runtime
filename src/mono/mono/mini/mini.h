@@ -1217,6 +1217,10 @@ typedef struct {
 	int active_jit_methods;
 
 	gpointer interp_context;
+
+#if defined(TARGET_WIN32)
+	MonoContext stack_restore_ctx;
+#endif
 } MonoJitTlsData;
 
 /*
