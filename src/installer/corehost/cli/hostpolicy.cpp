@@ -274,16 +274,6 @@ SHARED_API int corehost_load(host_interface_t* init)
     return 0;
 }
 
-static char sccsid[] = "@(#)"            \
-                       HOST_PKG_VER      \
-                       "; Commit Hash: " \
-                       REPO_COMMIT_HASH  \
-                       "; Built on: "    \
-                       __DATE__          \
-                       " "               \
-                       __TIME__          \
-                       ;
-
 SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 {
     if (trace::is_enabled())
