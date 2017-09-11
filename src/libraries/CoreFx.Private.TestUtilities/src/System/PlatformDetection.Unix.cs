@@ -49,9 +49,9 @@ namespace System
 
         public static string GetDistroVersionString()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                return "";
+                return "OSX Version=" + s_osxProductVersion.ToString();
             }
 
             DistroInfo v = ParseOsReleaseFile();
