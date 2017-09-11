@@ -18,7 +18,7 @@ namespace System
         // do it in a way that failures don't cascade.
         //
 
-        public static bool IsUap => IsWinRT || IsNetNative;
+        public static bool IsUap => IsInAppContainer || IsNetNative;
         public static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
         public static bool IsNetNative => RuntimeInformation.FrameworkDescription.StartsWith(".NET Native", StringComparison.OrdinalIgnoreCase);
         public static bool IsNetCore => RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
@@ -31,8 +31,8 @@ namespace System
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
 
-        public static bool IsNotWinRT => !IsWinRT;
-        public static bool IsWinRTSupported => IsWinRT || (IsWindows && !IsWindows7);
+        public static bool IsNotWinRT => !IsInAppContainer;
+        public static bool IsWinRTSupported => IsInAppContainer || (IsWindows && !IsWindows7);
         public static bool IsNotWinRTSupported => !IsWinRTSupported;
         public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
 
@@ -40,7 +40,7 @@ namespace System
         // in a normal Win32 process and we often do so as running in an AppContainer imposes a substantial tax in debuggability
         // and investigatability. This predicate is used in ConditionalFacts to disable the specific tests that really need to be
         // running in AppContainer when running on .NetNative.
-        public static bool IsNotNetNativeRunningAsConsoleApp => !(IsNetNative && !IsWinRT);
+        public static bool IsNotNetNativeRunningAsConsoleApp => !(IsNetNative && !IsInAppContainer);
 
         private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
 
