@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.Globalization;
+using System.Linq;
 using Xunit;
 
 namespace System.Drawing.Printing.Tests
@@ -195,14 +196,15 @@ namespace System.Drawing.Printing.Tests
         public void LandscapeAngle_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(0, printerSettings.LandscapeAngle);
+            int[] validValues = new[] { 0, 90, 270 };
+            Assert.True(validValues.Contains(printerSettings.LandscapeAngle), "PrinterSettings.LandscapeAngle must be 0, 90, or 270 degrees.");
         }
 
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
         public void MaximumCopies_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(0, printerSettings.MaximumCopies);
+            Assert.True(printerSettings.MaximumCopies >= 0, "PrinterSettings.MaximumCopies should not be negative.");
         }
 
         [Fact]
@@ -476,8 +478,8 @@ namespace System.Drawing.Printing.Tests
                 Assert.NotNull(graphic);
                 Assert.Equal(printerSettings.DefaultPageSettings.Bounds.X, graphic.VisibleClipBounds.X, 0);
                 Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Y, graphic.VisibleClipBounds.Y, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 
@@ -489,8 +491,8 @@ namespace System.Drawing.Printing.Tests
             using (Graphics graphic = printerSettings.CreateMeasurementGraphics(true))
             {
                 Assert.NotNull(graphic);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 
@@ -505,8 +507,8 @@ namespace System.Drawing.Printing.Tests
                 Assert.NotNull(graphic);
                 Assert.Equal(printerSettings.DefaultPageSettings.Bounds.X, graphic.VisibleClipBounds.X, 0);
                 Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Y, graphic.VisibleClipBounds.Y, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 
@@ -519,8 +521,8 @@ namespace System.Drawing.Printing.Tests
             using (Graphics graphic = printerSettings.CreateMeasurementGraphics(pageSettings, true))
             {
                 Assert.NotNull(graphic);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 
