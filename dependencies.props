@@ -14,7 +14,7 @@
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
     <CoreFxCurrentRef>13b5345991e55bb0b30a236ab4f6693a870ed789</CoreFxCurrentRef>
-    <CoreClrCurrentRef>413d7c0d92b6ecfa6ed1e8ae89bc2bd1aaec803a</CoreClrCurrentRef>
+    <CoreClrCurrentRef>016946e95466db8aacaf2a18643352215778c54d</CoreClrCurrentRef>
     <PgoDataCurrentRef>413d7c0d92b6ecfa6ed1e8ae89bc2bd1aaec803a</PgoDataCurrentRef>
   </PropertyGroup>
 
@@ -27,7 +27,7 @@
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <CoreClrPackageVersion>2.1.0-preview2-25709-04</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview2-25711-01</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
     <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
