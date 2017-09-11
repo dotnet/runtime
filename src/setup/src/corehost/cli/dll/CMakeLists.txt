@@ -49,7 +49,9 @@ if(WIN32)
         ../../common/pal.windows.cpp
         ../../common/longfile.windows.cpp)
 else()
-    list(APPEND SOURCES ../../common/pal.unix.cpp)
+    list(APPEND SOURCES
+        ../../common/pal.unix.cpp
+        ${VERSION_FILE_PATH})
 endif()
 
 add_definitions(-D_NO_ASYNCRTIMP)

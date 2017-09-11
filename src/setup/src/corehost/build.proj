@@ -9,10 +9,14 @@
   -->
   <Target Name="Build" DependsOnTargets="BuildCoreHostUnix;BuildCoreHostWindows" /> 
 
+  <PropertyGroup Condition="'$(OSGroup)' != 'Windows_NT'">
+    <GenerateVersionSourceFile>true</GenerateVersionSourceFile>
+    <NativeVersionSourceFile>$(BaseIntermediateOutputPath)version.cpp</NativeVersionSourceFile>
+  </PropertyGroup>
 
   <Target Name="BuildCoreHostUnix"
           Condition="'$(OSGroup)' != 'Windows_NT'"
-          DependsOnTargets="GetLatestCommitHash">
+          DependsOnTargets="GetLatestCommitHash;GenerateVersionSourceFile">
     <PropertyGroup>
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
       <DotNetHostFxrPath>$(CMakeBuildDir)cli\fxr\$(DotnetHostFxrBaseName)</DotNetHostFxrPath>
