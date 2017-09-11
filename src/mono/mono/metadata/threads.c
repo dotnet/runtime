@@ -2292,7 +2292,7 @@ mono_thread_current_check_pending_interrupt (void)
 }
 
 static gboolean
-request_thread_abort (MonoInternalThread *thread, MonoObject *state)
+request_thread_abort (MonoInternalThread *thread, MonoObject *state, gboolean appdomain_unload)
 {
 	LOCK_THREAD (thread);
 	
@@ -2309,6 +2309,11 @@ request_thread_abort (MonoInternalThread *thread, MonoObject *state)
 	}
 
 	thread->state |= ThreadState_AbortRequested;
+	if (appdomain_unload)
+		thread->flags |= MONO_THREAD_FLAG_APPDOMAIN_ABORT;
+	else
+		thread->flags &= ~MONO_THREAD_FLAG_APPDOMAIN_ABORT;
+
 	if (thread->abort_state_handle)
 		mono_gchandle_free (thread->abort_state_handle);
 	if (state) {
@@ -2333,7 +2338,7 @@ request_thread_abort (MonoInternalThread *thread, MonoObject *state)
 void
 ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state)
 {
-	if (!request_thread_abort (thread, state))
+	if (!request_thread_abort (thread, state, FALSE))
 		return;
 
 	if (thread == mono_thread_internal_current ()) {
@@ -2351,11 +2356,11 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
  * \p thread MUST NOT be the current thread.
  */
 void
-mono_thread_internal_abort (MonoInternalThread *thread)
+mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload)
 {
 	g_assert (thread != mono_thread_internal_current ());
 
-	if (!request_thread_abort (thread, NULL))
+	if (!request_thread_abort (thread, NULL, appdomain_unload))
 		return;
 	async_abort_internal (thread, TRUE);
 }
@@ -2364,16 +2369,22 @@ void
 ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this_obj)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
-	gboolean was_aborting;
+	gboolean was_aborting, is_domain_abort;
 
 	LOCK_THREAD (thread);
 	was_aborting = thread->state & ThreadState_AbortRequested;
-	thread->state &= ~ThreadState_AbortRequested;
+	is_domain_abort = thread->flags & MONO_THREAD_FLAG_APPDOMAIN_ABORT; 
+
+	if (was_aborting && !is_domain_abort)
+		thread->state &= ~ThreadState_AbortRequested;
 	UNLOCK_THREAD (thread);
 
 	if (!was_aborting) {
 		const char *msg = "Unable to reset abort because no abort was requested";
 		mono_set_pending_exception (mono_get_exception_thread_state (msg));
+		return;
+	} else if (is_domain_abort) {
+		/* Silently ignore abort resets in unloading appdomains */
 		return;
 	}
 
@@ -2574,7 +2585,7 @@ mono_thread_stop (MonoThread *thread)
 {
 	MonoInternalThread *internal = thread->internal_thread;
 
-	if (!request_thread_abort (internal, NULL))
+	if (!request_thread_abort (internal, NULL, FALSE))
 		return;
 
 	if (internal == mono_thread_internal_current ()) {
@@ -3222,7 +3233,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 		wait->num++;
 
 		THREAD_DEBUG (g_print ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid));
-		mono_thread_internal_abort (thread);
+		mono_thread_internal_abort (thread, FALSE);
 	}
 
 	return TRUE;
@@ -3937,7 +3948,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 		if (user_data.wait.num > 0) {
 			/* Abort the threads outside the threads lock */
 			for (i = 0; i < user_data.wait.num; ++i)
-				mono_thread_internal_abort (user_data.wait.threads [i]);
+				mono_thread_internal_abort (user_data.wait.threads [i], TRUE);
 
 			/*
 			 * We should wait for the threads either to abort, or to leave the
