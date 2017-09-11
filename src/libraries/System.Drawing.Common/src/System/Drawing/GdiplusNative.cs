@@ -1171,9 +1171,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetPenDashCount_delegate> GdipGetPenDashCount_ptr;
             internal static int GdipGetPenDashCount(HandleRef pen, out int dashcount) => GdipGetPenDashCount_ptr.Delegate(pen, out dashcount);
 
-            private delegate int GdipGetPenDashArray_delegate(HandleRef pen, IntPtr memorydash, int count);
+            private delegate int GdipGetPenDashArray_delegate(HandleRef pen, float[] memorydash, int count);
             private static FunctionWrapper<GdipGetPenDashArray_delegate> GdipGetPenDashArray_ptr;
-            internal static int GdipGetPenDashArray(HandleRef pen, IntPtr memorydash, int count) => GdipGetPenDashArray_ptr.Delegate(pen, memorydash, count);
+            internal static int GdipGetPenDashArray(HandleRef pen, float[] memorydash, int count) => GdipGetPenDashArray_ptr.Delegate(pen, memorydash, count);
 
             private delegate int GdipGetPenCompoundCount_delegate(HandleRef pen, out int count);
             private static FunctionWrapper<GdipGetPenCompoundCount_delegate> GdipGetPenCompoundCount_ptr;
