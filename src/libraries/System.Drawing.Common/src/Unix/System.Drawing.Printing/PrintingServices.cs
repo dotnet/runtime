@@ -104,7 +104,7 @@ namespace System.Drawing.Printing
         {
             try
             {
-                cupsGetDefault();
+                LibcupsNative.cupsGetDefault();
             }
             catch (DllNotFoundException)
             {
@@ -128,9 +128,9 @@ namespace System.Drawing.Printing
         {
             try
             {
-                IntPtr ptr = cupsGetPPD(printer);
+                IntPtr ptr = LibcupsNative.cupsGetPPD(printer);
                 string ppd_filename = Marshal.PtrToStringAnsi(ptr);
-                IntPtr ppd_handle = ppdOpenFile(ppd_filename);
+                IntPtr ppd_handle = LibcupsNative.ppdOpenFile(ppd_filename);
                 return ppd_handle;
             }
             catch (Exception)
@@ -154,7 +154,7 @@ namespace System.Drawing.Printing
             try
             {
                 if (handle != IntPtr.Zero)
-                    ppdClose(handle);
+                    LibcupsNative.ppdClose(handle);
             }
             finally
             {
@@ -166,7 +166,7 @@ namespace System.Drawing.Printing
         {
             try
             {
-                return cupsGetDests(ref ptr);
+                return LibcupsNative.cupsGetDests(ref ptr);
             }
             catch
             {
@@ -180,7 +180,7 @@ namespace System.Drawing.Printing
             try
             {
                 if (ptr != IntPtr.Zero)
-                    cupsFreeDests(count, ptr);
+                    LibcupsNative.cupsFreeDests(count, ptr);
             }
             finally
             {
@@ -403,7 +403,7 @@ namespace System.Drawing.Printing
             int choice_size = Marshal.SizeOf(typeof(PPD_CHOICE));
             defoption = null;
 
-            ptr = ppdFindOption(ppd, option_name);
+            ptr = LibcupsNative.ppdFindOption(ppd, option_name);
             if (ptr != IntPtr.Zero)
             {
                 ppd_option = (PPD_OPTION)Marshal.PtrToStructure(ptr, typeof(PPD_OPTION));
@@ -854,7 +854,7 @@ namespace System.Drawing.Printing
                     sb.Append(" Duplex=DuplexNoTumble");
             }
 
-            return cupsParseOptions(sb.ToString(), 0, ref options);
+            return LibcupsNative.cupsParseOptions(sb.ToString(), 0, ref options);
         }
 
         internal static bool StartDoc(GraphicsPrinter gr, string doc_name, string output_file)
@@ -873,8 +873,8 @@ namespace System.Drawing.Printing
             IntPtr options;
             int options_count = GetCupsOptions(doc.settings, doc.default_page_settings, out options);
 
-            cupsPrintFile(doc.settings.PrinterName, doc.filename, doc.title, options_count, options);
-            cupsFreeOptions(options_count, options);
+            LibcupsNative.cupsPrintFile(doc.settings.PrinterName, doc.filename, doc.title, options_count, options);
+            LibcupsNative.cupsFreeOptions(options_count, options);
             doc_info.Remove(gr.Hdc);
             if (tmpfile != null)
             {
@@ -906,7 +906,7 @@ namespace System.Drawing.Printing
             {
                 StringBuilder sb = new StringBuilder(1024);
                 int length = sb.Capacity;
-                cupsTempFd(sb, length);
+                LibcupsNative.cupsTempFd(sb, length);
                 name = sb.ToString();
                 tmpfile = name;
             }
@@ -940,46 +940,6 @@ namespace System.Drawing.Printing
 
             return graphics;
         }
-
-        #endregion
-
-        #region DllImports
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern int cupsGetDests(ref IntPtr dests);
-
-        //        [DllImport("libcups", CharSet=CharSet.Ansi)]
-        //        static extern void cupsGetDest (string name, string instance, int num_dests, ref IntPtr dests);
-
-        [DllImport("libcups")]
-        static extern void cupsFreeDests(int num_dests, IntPtr dests);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr cupsTempFd(StringBuilder sb, int len);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr cupsGetDefault();
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern int cupsPrintFile(string printer, string filename, string title, int num_options, IntPtr options);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr cupsGetPPD(string printer);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr ppdOpenFile(string filename);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr ppdFindOption(IntPtr ppd_file, string keyword);
-
-        [DllImport("libcups")]
-        static extern void ppdClose(IntPtr ppd);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern int cupsParseOptions(string arg, int number_of_options, ref IntPtr options);
-
-        [DllImport("libcups")]
-        static extern void cupsFreeOptions(int number_options, IntPtr options);
 
         #endregion
 

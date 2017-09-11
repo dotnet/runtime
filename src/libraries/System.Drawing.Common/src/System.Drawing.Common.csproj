@@ -295,6 +295,7 @@
     <Compile Include="System\Drawing\Icon.Unix.cs" />
     <Compile Include="System\Drawing\Icon.NotSerializable.cs" />
     <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\LibcupsNative.cs" />
     <Compile Include="Unix\System.Drawing\Bitmap.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphics.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphicsManager.cs" />
