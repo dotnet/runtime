@@ -4674,6 +4674,12 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 		MonoClass *new_class = mono_class_from_mono_type (new_type);
 		MonoClass *match_class = NULL;
 
+		// check for safe byref before the next steps override new_slot
+		if (stack_slot_is_safe_byref (old_slot) ^ stack_slot_is_safe_byref (new_slot)) {
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot merge stack at depth %d byref types are safe byref incompatible at %0x04x ", i, ctx->ip_offset));
+			goto end_verify;
+		}
+
 		// S := T then U = S (new value is compatible with current value, keep current)
 		if (verify_stack_type_compatibility (ctx, old_type, new_slot)) {
 			copy_stack_value (new_slot, old_slot);
