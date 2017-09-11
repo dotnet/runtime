@@ -48,7 +48,7 @@ namespace System.Drawing.Printing.Tests
         public void CanDuplex_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(true, printerSettings.CanDuplex);
+            bool canDuplex = printerSettings.CanDuplex;
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -84,7 +84,7 @@ namespace System.Drawing.Printing.Tests
         public void Collate_Default_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(true, printerSettings.Collate);
+            bool collate = printerSettings.Collate;
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
