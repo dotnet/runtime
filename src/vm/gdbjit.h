@@ -121,12 +121,21 @@ struct SymbolsInfo
 class DwarfDumpable
 {
 public:
+    DwarfDumpable() :
+        m_base_ptr(nullptr),
+        m_is_visited(false)
+    {
+    }
+
     // writes all string literals this type needs to ptr
     virtual void DumpStrings(char* ptr, int& offset) = 0;
 
     virtual void DumpDebugInfo(char* ptr, int& offset) = 0;
 
     virtual ~DwarfDumpable() {}
+
+    char *m_base_ptr;
+    bool m_is_visited;
 };
 
 class LocalsInfo
