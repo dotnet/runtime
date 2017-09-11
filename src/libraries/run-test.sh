@@ -197,8 +197,7 @@ run_test()
     exit 0
   fi
 
-  dirName="$1/netcoreapp"
-
+  dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
   if [ ! -d "$dirName" ]; then
     dirName="$1/netstandard"
     if [ ! -d "$dirName" ]; then
@@ -397,9 +396,7 @@ if [ -n "$TestDirFile" ] || [ -n "$TestDir" ]
 then
     run_selected_tests
 else
-    run_all_tests "$CoreFxTests/AnyOS.AnyCPU.$ConfigurationGroup/"*.Tests
-    run_all_tests "$CoreFxTests/Unix.AnyCPU.$ConfigurationGroup/"*.Tests
-    run_all_tests "$CoreFxTests/$OS.AnyCPU.$ConfigurationGroup/"*.Tests
+    run_all_tests "$CoreFxTests/tests/"*.Tests
 fi
 
 if [ "$CoreClrCoverage" == "ON" ]
