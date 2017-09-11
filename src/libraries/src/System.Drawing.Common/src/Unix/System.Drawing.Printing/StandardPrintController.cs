@@ -46,24 +46,24 @@ namespace System.Drawing.Printing
 
         public override void OnEndPage(PrintDocument document, PrintPageEventArgs e)
         {
-            SysPrn.GlobalService.EndPage(e.GraphicsContext);
+            PrintingServices.EndPage(e.GraphicsContext);
         }
 
         public override void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
-            IntPtr dc = SysPrn.GlobalService.CreateGraphicsContext(document.PrinterSettings, document.DefaultPageSettings);
+            IntPtr dc = PrintingServices.CreateGraphicsContext(document.PrinterSettings, document.DefaultPageSettings);
             e.GraphicsContext = new GraphicsPrinter(null, dc);
-            SysPrn.GlobalService.StartDoc(e.GraphicsContext, document.DocumentName, string.Empty);
+            PrintingServices.StartDoc(e.GraphicsContext, document.DocumentName, string.Empty);
         }
 
         public override void OnEndPrint(PrintDocument document, PrintEventArgs e)
         {
-            SysPrn.GlobalService.EndDoc(e.GraphicsContext);
+            PrintingServices.EndDoc(e.GraphicsContext);
         }
 
         public override Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
-            SysPrn.GlobalService.StartPage(e.GraphicsContext);
+            PrintingServices.StartPage(e.GraphicsContext);
             return e.Graphics;
         }
     }

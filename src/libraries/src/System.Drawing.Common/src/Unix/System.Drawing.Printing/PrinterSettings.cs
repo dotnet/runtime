@@ -62,19 +62,14 @@ namespace System.Drawing.Printing
         private PageSettings default_pagesettings;
         private Duplex duplex;
         internal bool is_plotter;
-        private PrintingServices printing_services;
 
         internal NameValueCollection printer_capabilities; // this stores a list of all the printer options. Used only in cups, but might come in handy on win too.
-        public PrinterSettings() : this(SysPrn.CreatePrintingService())
-        {
-        }
 
-        internal PrinterSettings(PrintingServices printing_services)
+        public PrinterSettings()
         {
-            this.printing_services = printing_services;
-            printer_name = printing_services.DefaultPrinter;
+            printer_name = PrintingServices.DefaultPrinter;
             ResetToDefaults();
-            printing_services.LoadPrinterSettings(printer_name, this);
+            PrintingServices.LoadPrinterSettings(printer_name, this);
         }
 
         private void ResetToDefaults()
@@ -152,12 +147,12 @@ namespace System.Drawing.Printing
 
         public static PrinterSettings.StringCollection InstalledPrinters
         {
-            get { return SysPrn.GlobalService.InstalledPrinters; }
+            get { return PrintingServices.InstalledPrinters; }
         }
 
         public bool IsDefaultPrinter
         {
-            get { return (printer_name == printing_services.DefaultPrinter); }
+            get { return (printer_name == PrintingServices.DefaultPrinter); }
         }
 
         public bool IsPlotter
@@ -167,7 +162,7 @@ namespace System.Drawing.Printing
 
         public bool IsValid
         {
-            get { return printing_services.IsPrinterValid(this.printer_name); }
+            get { return PrintingServices.IsPrinterValid(this.printer_name); }
         }
 
         public int LandscapeAngle
@@ -241,7 +236,7 @@ namespace System.Drawing.Printing
                     return;
 
                 printer_name = value;
-                printing_services.LoadPrinterSettings(printer_name, this);
+                PrintingServices.LoadPrinterSettings(printer_name, this);
             }
         }
 
@@ -255,7 +250,7 @@ namespace System.Drawing.Printing
                 if (printer_resolutions == null)
                 {
                     printer_resolutions = new PrinterSettings.PrinterResolutionCollection(new PrinterResolution[] { });
-                    printing_services.LoadPrinterResolutions(printer_name, this);
+                    PrintingServices.LoadPrinterResolutions(printer_name, this);
                 }
 
                 return printer_resolutions;
@@ -311,7 +306,7 @@ namespace System.Drawing.Printing
         //methods        
         public object Clone()
         {
-            PrinterSettings ps = new PrinterSettings(printing_services);
+            PrinterSettings ps = new PrinterSettings();
             return ps;
         }
 

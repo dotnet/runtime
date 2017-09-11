@@ -319,8 +319,6 @@
     <Compile Include="Unix\System.Drawing.Imaging\MetafileHeader.cs" />
     <Compile Include="Unix\System.Drawing.Imaging\MetaHeader.cs" />
     <Compile Include="Unix\System.Drawing.Printing\PrintingServices.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PrintingServicesWin32.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PrintingServicesUnix.cs" />
     <Compile Include="Unix\System.Drawing.Printing\PageSettings.cs" />
     <Compile Include="Unix\System.Drawing.Printing\PreviewPrintController.cs" />
     <Compile Include="Unix\System.Drawing.Printing\PrintController.cs" />
