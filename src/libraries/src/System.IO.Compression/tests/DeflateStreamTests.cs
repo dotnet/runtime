@@ -440,14 +440,15 @@ namespace System.IO.Compression.Tests
         {
             SyncArray,
             SyncSpan,
-            AsyncArray
+            AsyncArray,
+            AsyncMemory
         }
 
         public static IEnumerable<object[]> RoundtripCompressDecompressOuterData
         {
             get
             {
-                foreach (ReadWriteMode readWriteMode in new[] { ReadWriteMode.SyncArray, ReadWriteMode.SyncSpan, ReadWriteMode.AsyncArray })
+                foreach (ReadWriteMode readWriteMode in new[] { ReadWriteMode.SyncArray, ReadWriteMode.SyncSpan, ReadWriteMode.AsyncArray, ReadWriteMode.AsyncMemory })
                 {
                     foreach (bool useGzip in new[] { true, false }) // whether to add on gzip headers/footers
                     {
@@ -493,6 +494,9 @@ namespace System.IO.Compression.Tests
                         case ReadWriteMode.SyncSpan:
                             compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
                             break;
+                        case ReadWriteMode.AsyncMemory:
+                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
+                            break;
                     }
                 }
             }
@@ -534,11 +538,15 @@ namespace System.IO.Compression.Tests
                         case ReadWriteMode.SyncSpan:
                             compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
                             break;
+                        case ReadWriteMode.AsyncMemory:
+                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
+                            break;
                     }
                 }
                 switch (readWriteMode)
                 {
                     case ReadWriteMode.AsyncArray:
+                    case ReadWriteMode.AsyncMemory:
                         await compressor.FlushAsync();
                         break;
                     case ReadWriteMode.SyncSpan:
@@ -585,6 +593,9 @@ namespace System.IO.Compression.Tests
                         case ReadWriteMode.SyncSpan:
                             compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
                             break;
+                        case ReadWriteMode.AsyncMemory:
+                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
+                            break;
                     }
                     for (int j = i; j < i + chunkSize; j++)
                         expected.Insert(j, data[j]);
@@ -592,6 +603,7 @@ namespace System.IO.Compression.Tests
                     switch (readWriteMode)
                     {
                         case ReadWriteMode.AsyncArray:
+                        case ReadWriteMode.AsyncMemory:
                             await compressor.FlushAsync();
                             break;
                         case ReadWriteMode.SyncSpan:
@@ -630,6 +642,7 @@ namespace System.IO.Compression.Tests
                 switch (readWriteMode)
                 {
                     case ReadWriteMode.AsyncArray:
+                    case ReadWriteMode.AsyncMemory:
                         await compressor.FlushAsync();
                         break;
                     case ReadWriteMode.SyncSpan:
@@ -651,12 +664,16 @@ namespace System.IO.Compression.Tests
                         case ReadWriteMode.SyncSpan:
                             compressor.Write(new ReadOnlySpan<byte>(data, i, chunkSize));
                             break;
+                        case ReadWriteMode.AsyncMemory:
+                            await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, chunkSize));
+                            break;
                     }
                 }
 
                 switch (readWriteMode)
                 {
                     case ReadWriteMode.AsyncArray:
+                    case ReadWriteMode.AsyncMemory:
                         await compressor.FlushAsync();
                         break;
                     case ReadWriteMode.SyncSpan:
@@ -700,6 +717,12 @@ namespace System.IO.Compression.Tests
                             decompressed.Write(buffer, 0, bytesRead);
                         }
                         break;
+                    case ReadWriteMode.AsyncMemory:
+                        while ((bytesRead = await decompressor.ReadAsync(new Memory<byte>(buffer))) != 0)
+                        {
+                            decompressed.Write(buffer, 0, bytesRead);
+                        }
+                        break;
                 }
                 Assert.Equal<byte>(expected, decompressed.ToArray());
             }
@@ -710,6 +733,8 @@ namespace System.IO.Compression.Tests
         [InlineData(ReadWriteMode.AsyncArray, false)]
         [InlineData(ReadWriteMode.SyncSpan, false)]
         [InlineData(ReadWriteMode.SyncSpan, true)]
+        [InlineData(ReadWriteMode.AsyncMemory, false)]
+        [InlineData(ReadWriteMode.AsyncMemory, true)]
         public async Task SequentialReadsOnMemoryStream_Return_SameBytes(ReadWriteMode readWriteMode, bool derived)
         {
             byte[] data = new byte[1024 * 10];
@@ -727,6 +752,7 @@ namespace System.IO.Compression.Tests
                         case ReadWriteMode.SyncArray: compressor.Write(data, i, 1024); break;
                         case ReadWriteMode.AsyncArray: await compressor.WriteAsync(data, i, 1024); break;
                         case ReadWriteMode.SyncSpan: compressor.Write(new Span<byte>(data, i, 1024)); break;
+                        case ReadWriteMode.AsyncMemory: await compressor.WriteAsync(new ReadOnlyMemory<byte>(data, i, 1024)); break;
                     }
                 }
 
@@ -750,6 +776,7 @@ namespace System.IO.Compression.Tests
                     case ReadWriteMode.SyncArray: decompressor.Read(array, 0, array.Length); break;
                     case ReadWriteMode.AsyncArray: await decompressor.ReadAsync(array, 0, array.Length); break;
                     case ReadWriteMode.SyncSpan: decompressor.Read(new Span<byte>(array)); break;
+                    case ReadWriteMode.AsyncMemory: await decompressor.ReadAsync(new Memory<byte>(array)); break;
                 }
                 for (i = 0; i < array.Length; i++)
                 {
@@ -762,6 +789,7 @@ namespace System.IO.Compression.Tests
                     case ReadWriteMode.SyncArray: decompressor.Read(array2, 0, array2.Length); break;
                     case ReadWriteMode.AsyncArray: await decompressor.ReadAsync(array2, 0, array2.Length); break;
                     case ReadWriteMode.SyncSpan: decompressor.Read(new Span<byte>(array2)); break;
+                    case ReadWriteMode.AsyncMemory: await decompressor.ReadAsync(new Memory<byte>(array2)); break;
                 }
                 for (j = 0; j < array2.Length; j++)
                 {
@@ -799,7 +827,7 @@ namespace System.IO.Compression.Tests
         public async Task WrapNullReturningTasksStream()
         {
             using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnNullTasks), CompressionMode.Decompress))
-                await Assert.ThrowsAsync<InvalidOperationException>(() => ds.ReadAsync(new byte[1024], 0, 1024));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => ds.ReadAsync(new byte[1024], 0, 1024));
         }
 
         [Fact]
@@ -810,11 +838,15 @@ namespace System.IO.Compression.Tests
                 Assert.Throws<InvalidDataException>(() => ds.Read(new byte[1024], 0, 1024));
             using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooLargeCounts), CompressionMode.Decompress))
                 await Assert.ThrowsAsync<InvalidDataException>(() => ds.ReadAsync(new byte[1024], 0, 1024));
+            using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooLargeCounts), CompressionMode.Decompress))
+                await Assert.ThrowsAsync<InvalidDataException>(async () => { await ds.ReadAsync(new Memory<byte>(new byte[1024])); });
 
             using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
                 Assert.Equal(0, ds.Read(new byte[1024], 0, 1024));
             using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
                 Assert.Equal(0, await ds.ReadAsync(new byte[1024], 0, 1024));
+            using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
+                Assert.Equal(0, await ds.ReadAsync(new Memory<byte>(new byte[1024])));
         }
 
         public static IEnumerable<object[]> CopyToAsync_Roundtrip_OutputMatchesInput_MemberData()
@@ -933,7 +965,7 @@ namespace System.IO.Compression.Tests
         }
     }
 
-    public class ManualSyncMemoryStream : MemoryStream
+    public partial class ManualSyncMemoryStream : MemoryStream
     {
         private bool isSync;
         public ManualResetEventSlim manualResetEvent = new ManualResetEventSlim(initialState: false);
