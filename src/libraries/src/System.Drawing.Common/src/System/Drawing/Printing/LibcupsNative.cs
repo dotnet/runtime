@@ -18,10 +18,6 @@ namespace System.Drawing.Printing
             if (lib == IntPtr.Zero)
             {
                 lib = Interop.Libdl.dlopen("libcups.so.2", Interop.Libdl.RTLD_NOW);
-                if (lib == IntPtr.Zero)
-                {
-                    throw new DllNotFoundException(SR.LibgdiplusNotFound);
-                }
             }
 
             return lib;
