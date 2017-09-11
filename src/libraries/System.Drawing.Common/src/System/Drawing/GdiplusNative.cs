@@ -721,13 +721,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetPathGradientPresetBlendCount_delegate> GdipGetPathGradientPresetBlendCount_ptr;
             internal static int GdipGetPathGradientPresetBlendCount(HandleRef brush, out int count) => GdipGetPathGradientPresetBlendCount_ptr.Delegate(brush, out count);
 
-            private delegate int GdipGetPathGradientPresetBlend_delegate(HandleRef brush, IntPtr blend, IntPtr positions, int count);
+            private delegate int GdipGetPathGradientPresetBlend_delegate(HandleRef brush, int[] blend, float[] positions, int count);
             private static FunctionWrapper<GdipGetPathGradientPresetBlend_delegate> GdipGetPathGradientPresetBlend_ptr;
-            internal static int GdipGetPathGradientPresetBlend(HandleRef brush, IntPtr blend, IntPtr positions, int count) => GdipGetPathGradientPresetBlend_ptr.Delegate(brush, blend, positions, count);
+            internal static int GdipGetPathGradientPresetBlend(HandleRef brush, int[] blend, float[] positions, int count) => GdipGetPathGradientPresetBlend_ptr.Delegate(brush, blend, positions, count);
 
-            private delegate int GdipSetPathGradientPresetBlend_delegate(HandleRef brush, HandleRef blend, HandleRef positions, int count);
+            private delegate int GdipSetPathGradientPresetBlend_delegate(HandleRef brush, int[] blend, float[] positions, int count);
             private static FunctionWrapper<GdipSetPathGradientPresetBlend_delegate> GdipSetPathGradientPresetBlend_ptr;
-            internal static int GdipSetPathGradientPresetBlend(HandleRef brush, HandleRef blend, HandleRef positions, int count) => GdipSetPathGradientPresetBlend_ptr.Delegate(brush, blend, positions, count);
+            internal static int GdipSetPathGradientPresetBlend(HandleRef brush, int[] blend, float[] positions, int count) => GdipSetPathGradientPresetBlend_ptr.Delegate(brush, blend, positions, count);
 
             private delegate int GdipSetPathGradientSigmaBlend_delegate(HandleRef brush, float focus, float scale);
             private static FunctionWrapper<GdipSetPathGradientSigmaBlend_delegate> GdipSetPathGradientSigmaBlend_ptr;
