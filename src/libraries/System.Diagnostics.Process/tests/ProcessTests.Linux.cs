@@ -16,13 +16,16 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        private const string s_xdg_open = "xdg-open";
+
         [Fact]
+        // [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise()
         {
             string fileToOpen = GetTestFilePath() + ".txt";
             File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise)}");
 
-            string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
+            string[] allowedProgramsToRun = { s_xdg_open, "gnome-open", "kfmclient" };
             foreach (var program in allowedProgramsToRun)
             {
                 if (IsProgramInstalled(program))
@@ -30,14 +33,13 @@ namespace System.Diagnostics.Tests
                     var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen };
                     using (var px = Process.Start(startInfo))
                     {
-                        if (px != null)
-                        {
-                            Assert.Equal(program, px.ProcessName);
-                            px.Kill();
-                            px.WaitForExit();
-                            Assert.True(px.HasExited);
-                            Assert.Equal(137, px.ExitCode); // 137 means the process was killed
-                        }
+                        Assert.NotNull(px);
+                        Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise)}(): {program} was used to open file on this machine. ProcessName: {px.ProcessName}");
+                        Assert.Equal(program, px.ProcessName);
+                        px.Kill();
+                        px.WaitForExit();
+                        Assert.True(px.HasExited);
+                        Assert.Equal(137, px.ExitCode); // 137 means the process was killed
                     }
                     return;
                 }
@@ -46,38 +48,66 @@ namespace System.Diagnostics.Tests
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
         }
 
-        [Fact]
-        [OuterLoop("Returns failure exit code when default program, xdg-open, is installed")]
-        public void ProcessStart_UseShellExecuteTrue_OpenMissingFile_DefaultProgramInstalled_ReturnsFailureExitCode()
+        [Theory, InlineData("nano")]
+        // [OuterLoop("Opens program")]
+        public void ProcessStart_OpenFile_UsesSpecifiedProgram(string programToOpenWith)
         {
-            string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
+            string fileToOpen = GetTestFilePath() + ".txt";
+            File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFile_UsesSpecifiedProgram)}");
+            using (var px = Process.Start(programToOpenWith, fileToOpen))
             {
-                if (p != null)
+                Assert.Equal(programToOpenWith, px.ProcessName);
+                px.Kill();
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+                Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+            }
+        }
+
+        [Fact]
+        // [OuterLoop("test should succeed when xdg-open is installed. Otherwise we write to console")]
+        public void ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2()
+        {
+            if (IsProgramInstalled(s_xdg_open))
+            {
+                string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
+                using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
                 {
-                    Assert.Equal("xdg-open", p.ProcessName);
-                    p.WaitForExit();
-                    Assert.True(p.HasExited);
-                    Assert.Equal(2, p.ExitCode);
+                    if (p != null)
+                    {
+                        Assert.Equal(s_xdg_open, p.ProcessName);
+                        p.WaitForExit();
+                        Assert.True(p.HasExited);
+                        Assert.Equal(2, p.ExitCode);
+                    }
                 }
+            }
+            else
+            {
+                Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2)}(): {s_xdg_open} is not installed on this machine.");
             }
         }
 
         /// <summary>
-        /// Gets the path to the program
+        /// Checks if the program is installed
         /// </summary>
         /// <param name="program"></param>
         /// <returns></returns>
         private bool IsProgramInstalled(string program)
         {
-            string path = Environment.GetEnvironmentVariable("PATH");
-            string[] dirs = path.Split(':');
-            foreach (var dir in dirs)
+            string path;
+            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnvVar != null)
             {
-                string[] files = Directory.GetFiles(dir, program);
-                if (files.Length != 0)
+                var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
+                while (pathParser.MoveNext())
                 {
-                    return true;
+                    string subPath = pathParser.ExtractCurrent();
+                    path = Path.Combine(subPath, program);
+                    if (File.Exists(path))
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
