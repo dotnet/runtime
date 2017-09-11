@@ -267,7 +267,7 @@ def static getOSGroup(def os) {
                             if (pgo_optimized) {
                                 pgo_trigger = "\\W+nopgo"
                             }
-                            
+
 
                             TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
                             builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} ${pgo_string} CoreCLR Throughput Perf Tests")
@@ -363,7 +363,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
                 --generatebenchviewdata=\"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" \\
                 --stabilityPrefix=\"taskset 0x00000002 nice --adjustment=-10\" \\
                 --uploadToBenchview""")
-                shell("rsync -a bin/sandbox/Logs/Perf-*.* bin/toArchive/sandbox/Logs/")
+                shell("rsync -a --rsync-path=\"mkdir -p bin/toArchive/sandbox/Logs/ && rsync\" bin/sandbox/Logs/Perf-*.* bin/toArchive/sandbox/Logs/")
             }
         }
 
