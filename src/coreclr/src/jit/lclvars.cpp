@@ -236,57 +236,13 @@ void Compiler::lvaInitTypeRef()
     lvaInitArgs(&varDscInfo);
 
 #if FEATURE_FASTTAILCALL
-
-    //-------------------------------------------------------------------------
-    // Calculate the argument register usage.
-    //
-    // This will later be used for fastTailCall determination
-    //-------------------------------------------------------------------------
-
-    unsigned argRegCount      = 0;
-    unsigned floatingRegCount = 0;
-    size_t   stackSize        = 0;
-
-    auto incrementRegCount = [&floatingRegCount, &argRegCount](LclVarDsc* varDsc) {
-        if (varDsc->lvIsHfa())
-        {
-            floatingRegCount += varDsc->lvHfaSlots();
-        }
-        else
-        {
-            varDsc->IsFloatRegType() ? ++floatingRegCount : ++argRegCount;
-        }
-    };
-
-    unsigned   argNum;
-    LclVarDsc* curDsc;
-
-    for (curDsc = lvaTable, argNum = 0; argNum < varDscInfo.varNum; argNum++, curDsc++)
-    {
-        if (curDsc->lvIsRegArg)
-        {
-            incrementRegCount(curDsc);
-#if FEATURE_MULTIREG_ARGS
-            if (curDsc->lvOtherArgReg != REG_NA)
-            {
-                incrementRegCount(curDsc);
-            }
-#endif // FEATURE_MULTIREG_ARGS
-        }
-        else
-        {
-            stackSize += curDsc->lvArgStackSize();
-        }
-    }
-
     //-------------------------------------------------------------------------
     // Save the register usage information and stack size.
     //-------------------------------------------------------------------------
 
-    info.compArgRegCount      = argRegCount;
-    info.compFloatArgRegCount = floatingRegCount;
-    info.compArgStackSize     = stackSize;
-
+    info.compArgRegCount      = varDscInfo.intRegArgNum;
+    info.compFloatArgRegCount = varDscInfo.floatRegArgNum;
+    info.compArgStackSize     = varDscInfo.stackArgSize;
 #endif // FEATURE_FASTTAILCALL
 
     //-------------------------------------------------------------------------
@@ -978,7 +934,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         else
         {
 #if defined(_TARGET_ARM_)
-
             varDscInfo->setAllRegArgUsed(argType);
             if (varTypeIsFloating(argType))
             {
@@ -994,6 +949,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
             varDscInfo->setAllRegArgUsed(argType);
 
 #endif // _TARGET_XXX_
+
+#ifdef FEATURE_FASTTAILCALL
+            varDscInfo->stackArgSize += (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
+#endif // FEATURE_FASTTAILCALL
         }
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -1090,6 +1049,9 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             // For the RyuJIT backend, we need to mark these as being on the stack,
             // as this is not done elsewhere in the case that canEnreg returns false.
             varDsc->lvOnFrame = true;
+#ifdef FEATURE_FASTTAILCALL
+            varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+#endif
         }
 #endif // !LEGACY_BACKEND
 
@@ -1163,6 +1125,9 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
             // For the RyuJIT backend, we need to mark these as being on the stack,
             // as this is not done elsewhere in the case that canEnreg returns false.
             varDsc->lvOnFrame = true;
+#ifdef FEATURE_FASTTAILCALL
+            varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+#endif
         }
 #endif // !LEGACY_BACKEND
 
