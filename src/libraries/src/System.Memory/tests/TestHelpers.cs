@@ -23,7 +23,7 @@ namespace System
                 Assert.Same(expected[i], actual);
             }
 
-            object ignore;
+            T ignore;
             AssertThrows<IndexOutOfRangeException, T>(span, (_span) => ignore = _span[expected.Length]);
         }
 
@@ -79,7 +79,7 @@ namespace System
                 Assert.Same(expected[i], actual);
             }
 
-            object ignore;
+            T ignore;
             AssertThrows<IndexOutOfRangeException, T>(span, (_span) => ignore = _span[expected.Length]);
         }
 

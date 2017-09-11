@@ -41,6 +41,7 @@ namespace System.MemoryTests
             owner.AsMemory.Span.Validate(91, -92, 93, 94, -95);
         }
 
+        [ActiveIssue(23952, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static void SpanFromCtorArrayObject()
         {
