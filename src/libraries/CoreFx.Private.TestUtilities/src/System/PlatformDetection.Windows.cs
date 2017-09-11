@@ -49,8 +49,7 @@ namespace System
         {
             get
             {
-                int productType;
-                Assert.True(GetProductInfo(Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Minor, 0, 0, out productType));
+                int productType = GetWindowsProductType();
                 if ((productType == PRODUCT_IOTUAPCOMMERCIAL) ||
                     (productType == PRODUCT_IOTUAP))
                 {
@@ -118,7 +117,7 @@ namespace System
             return null;
         }
 
-        public static string GetDistroVersionString() { return ""; }
+        public static string GetDistroVersionString() { return "ProductType=" + GetWindowsProductType(); }
 
         private static int s_isWinRT = -1;
 
@@ -212,30 +211,26 @@ namespace System
             }
         }
 
+        private static int GetWindowsProductType()
+        {
+            Assert.True(GetProductInfo(Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Minor, 0, 0, out int productType));
+            return productType;
+        }
+
         private static int GetWindowsMinorVersion()
         {
-            if (IsWindows)
-            {
-                RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-                osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
-                Assert.Equal(0, RtlGetVersion(out osvi));
-                return (int)osvi.dwMinorVersion;
-            }
-
-            return -1;
+            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+            Assert.Equal(0, RtlGetVersion(out osvi));
+            return (int)osvi.dwMinorVersion;
         }
 
         private static int GetWindowsBuildNumber()
         {
-            if (IsWindows)
-            {
-                RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-                osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
-                Assert.Equal(0, RtlGetVersion(out osvi));
-                return (int)osvi.dwBuildNumber;
-            }
-
-            return -1;
+            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+            Assert.Equal(0, RtlGetVersion(out osvi));
+            return (int)osvi.dwBuildNumber;
         }
 
         private const uint TokenElevation = 20;
