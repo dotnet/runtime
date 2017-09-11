@@ -17,6 +17,7 @@
     <ProjectNTfsTestILCCurrentRef>75030d6b2652c7c98b79a19e4d6fed4fb3b799cf</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>db23628fc4ae48865e06fed7dd55c48b68556ecf</StandardCurrentRef>
+    <BuildToolsCurrentRef>7c9088cd9078e1d90be01eb94a3f66ba0a33c9f4</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -83,6 +84,10 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs-testilc/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsTestILCCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="BuildTools">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
@@ -138,6 +143,11 @@
       <ElementName>MicrosoftNETCoreAppPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.App</PackageId>
     </XmlUpdateStep>
+    <UpdateStep Include="BuildTools">
+      <UpdaterType>File</UpdaterType>
+      <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
+      <PackageId>Microsoft.DotNet.BuildTools</PackageId>
+    </UpdateStep>
   </ItemGroup>
 
   <PropertyGroup>
