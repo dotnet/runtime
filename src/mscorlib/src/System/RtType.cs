@@ -458,8 +458,8 @@ namespace System
 
                                     Volatile.Write(ref m_cacheComplete, true);
                                 }
-                                else
-                                    list = m_allMembers;
+
+                                list = m_allMembers;
                                 break;
 
                             default:

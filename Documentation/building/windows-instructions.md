@@ -91,7 +91,7 @@ Powershell version must be 3.0 or higher. This should be the case for Windows 8 
 - Windows 7 SP1 can install Powershell version 4 [here](https://www.microsoft.com/en-us/download/details.aspx?id=40855).
 
 ## DotNet Core SDK
-While not strictly needed to build or tests the .NET Core repository, having the .NET Core SDK installed lets 
+While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets 
 you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the 
 [Using Your Build](../workflow/UsingYourBuild.md) instructions.  Visual Studio 2015 (update 3) should have
 installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .Net Core SDK](https://www.microsoft.com/net/core) page.  
