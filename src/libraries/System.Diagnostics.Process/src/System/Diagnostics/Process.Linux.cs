@@ -60,7 +60,7 @@ namespace System.Diagnostics
         /// <summary>Gets execution path</summary>
         private string GetPathToOpenFile()
         {
-            string[] allowedProgramsToRun = { "xdg-open", "gnome-open", s_kfmclient };
+            string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
             foreach (var program in allowedProgramsToRun)
             {
                 string pathToProgram = FindProgramInPath(program);

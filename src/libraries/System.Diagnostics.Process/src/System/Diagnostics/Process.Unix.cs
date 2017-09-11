@@ -16,8 +16,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private const string s_kfmclient = "kfmclient";
-
         private static readonly UTF8Encoding s_utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
@@ -47,7 +45,7 @@ namespace System.Diagnostics
 
         [CLSCompliant(false)]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
-        { 
+        {
             throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported);
         }
 
@@ -165,7 +163,7 @@ namespace System.Diagnostics
                 }
 
                 Debug.Assert(pri >= -20 && pri <= 20);
-                return 
+                return
                     pri < -15 ? ProcessPriorityClass.RealTime :
                     pri < -10 ? ProcessPriorityClass.High :
                     pri < -5 ? ProcessPriorityClass.AboveNormal :
@@ -221,12 +219,21 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_processId);
         }
 
-        /// <summary>Starts the process using the supplied start info.</summary>
+        /// <summary>
+        /// Starts the process using the supplied start info. 
+        /// Even with UseShellExecute option, we try first running fileName just in case the caller is giving executable which we should run
+        /// Then if we couldn't run it we'll try the shell tools to launch it(e.g. "open fileName")
+        /// </summary>
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
             string filename;
             string[] argv;
+
+            if (Directory.Exists(startInfo.FileName))
+            {
+                throw new Win32Exception(SR.DirectoryNotValidAsInput);
+            }
 
             if (startInfo.UseShellExecute)
             {
@@ -240,7 +247,7 @@ namespace System.Diagnostics
             string[] envp = CreateEnvp(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
-            filename = ResolvePath(startInfo.FileName);
+            filename = ResolvePath(startInfo.FileName); 
             if (!string.IsNullOrEmpty(filename))
             {
                 argv = ParseArgv(startInfo);
@@ -250,11 +257,11 @@ namespace System.Diagnostics
                 // descriptors, and execve to execute the requested process.  The shim implementation
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
-                Interop.Sys.ForkAndExecProcess(
+                result = Interop.Sys.ForkAndExecProcess(
                     filename, argv, envp, cwd,
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     out childPid,
-                    out stdinFd, out stdoutFd, out stderrFd, out result, shouldThrow: !startInfo.UseShellExecute);
+                    out stdinFd, out stdoutFd, out stderrFd, shouldThrow: !startInfo.UseShellExecute);
             }
 
             if (result != 0)
@@ -268,13 +275,15 @@ namespace System.Diagnostics
 
                 // this time, set the filename as default program to open file/url
                 filename = GetPathToOpenFile();
-                argv = GetArgsToOpenFile(startInfo);
+                argv = ParseArgv(startInfo, GetPathToOpenFile());
 
-                Interop.Sys.ForkAndExecProcess(
-                filename, argv, envp, cwd,
-                startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
-                out childPid,
-                out stdinFd, out stdoutFd, out stderrFd, out result);
+                result = Interop.Sys.ForkAndExecProcess(
+                    filename, argv, envp, cwd,
+                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    out childPid,
+                    out stdinFd, out stdoutFd, out stderrFd);
+
+                Debug.Assert(result == 0);
             }
 
             // Store the child's information into this Process object.
@@ -308,17 +317,6 @@ namespace System.Diagnostics
             return true;
         }
 
-        /// <summary>Gets arguments.</summary>
-        /// <param name="startInfo">The start info with which to start the process.</param>
-        private string[] GetArgsToOpenFile(ProcessStartInfo startInfo)
-        {
-            if (!startInfo.UseShellExecute)
-            {
-                return ParseArgv(startInfo);
-            }
-            return ParseArgv(startInfo, GetPathToOpenFile());
-        }
-
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
@@ -329,7 +327,7 @@ namespace System.Diagnostics
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
 
-        
+
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
         /// <param name="alternativePath">alternative resolved path to use as first argument</param>
@@ -346,7 +344,7 @@ namespace System.Diagnostics
             if (!string.IsNullOrEmpty(alternativePath))
             {
                 argvList.Add(alternativePath);
-                if (alternativePath.Contains(s_kfmclient))
+                if (alternativePath.Contains("kfmclient"))
                 {
                     argvList.Add("openURL"); // kfmclient needs OpenURL
                 }
@@ -370,9 +368,9 @@ namespace System.Diagnostics
             return envp;
         }
 
-        /// <summary>Resolves a path to the filename passed to ProcessStartInfo.</summary>
+        /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>
         /// <param name="filename">The filename.</param>
-        /// <returns>The resolved path.</returns>
+        /// <returns>The resolved path. It can return null in case of URLs.</returns>
         private static string ResolvePath(string filename)
         {
             // Follow the same resolution that Windows uses with CreateProcess:
@@ -482,7 +480,7 @@ namespace System.Diagnostics
         {
             Debug.Assert(fd >= 0);
             return new FileStream(
-                new SafeFileHandle((IntPtr)fd, ownsHandle: true), 
+                new SafeFileHandle((IntPtr)fd, ownsHandle: true),
                 access, StreamBufferSize, isAsync: false);
         }
 
