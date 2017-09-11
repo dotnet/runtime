@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
             object clone = BinaryFormatterHelpers.Clone(obj, null, assemblyFormat, filterLevel, typeFormat);
-            if (!ReferenceEquals(obj, string.Empty)) // "" is interned and will roundtrip as the same object
+            if (!ReferenceEquals(obj, string.Empty) && !(obj is DBNull)) // "" is interned and will roundtrip as the same object
             {
                 Assert.NotSame(obj, clone);
             }
@@ -64,6 +64,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 CheckForAnyEquals(obj, DeserializeBlobToObject(blob, FormatterAssemblyStyle.Simple));
                 CheckForAnyEquals(obj, DeserializeBlobToObject(blob, FormatterAssemblyStyle.Full));
             }
+        }
+
+        [Fact]
+        public void UnitySerializationHolderWithAssemblySingleton()
+        {
+            const string UnitySerializationHolderAssemblyBase64String = "AAEAAAD/////AQAAAAAAAAAEAQAAAB9TeXN0ZW0uVW5pdHlTZXJpYWxpemF0aW9uSG9sZGVyAwAAAAREYXRhCVVuaXR5VHlwZQxBc3NlbWJseU5hbWUBAAEIBgIAAABLbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5BgAAAAkCAAAACw==";
+            AssertExtensions.ThrowsIf<ArgumentException>(!PlatformDetection.IsFullFramework, 
+                () => DeserializeBlobToObject(UnitySerializationHolderAssemblyBase64String, FormatterAssemblyStyle.Full));
         }
 
         [Fact]
