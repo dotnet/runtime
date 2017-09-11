@@ -230,15 +230,15 @@
     <Compile Include="System\Drawing\Pen.Windows.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
-    <Compile Include="System\Drawing\Printing\PageSettings.cs" />
-    <Compile Include="System\Drawing\Printing\PreviewPrintController.cs" />
-    <Compile Include="System\Drawing\Printing\PrintController.cs" />
-    <Compile Include="System\Drawing\Printing\PrintDocument.cs">
+    <Compile Include="System\Drawing\Printing\PageSettings.Windows.cs" />
+    <Compile Include="System\Drawing\Printing\PreviewPrintController.Windows.cs" />
+    <Compile Include="System\Drawing\Printing\PrintController.Windows.cs" />
+    <Compile Include="System\Drawing\Printing\PrintDocument.Windows.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="System\Drawing\Printing\PrinterSettings.cs" />
-    <Compile Include="System\Drawing\Printing\PrintEvent.cs" />
-    <Compile Include="System\Drawing\Printing\PrintPageEvent.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterSettings.Windows.cs" />
+    <Compile Include="System\Drawing\Printing\PrintEventArgs.Windows.cs" />
+    <Compile Include="System\Drawing\Printing\PrintPageEventArgs.Windows.cs" />
     <Compile Include="System\Drawing\Printing\PrintPreviewGraphics.cs" />
     <Compile Include="System\Drawing\Printing\TriState.cs" />
     <Compile Include="System\Drawing\Region.Windows.cs" />
@@ -296,6 +296,15 @@
     <Compile Include="System\Drawing\Icon.NotSerializable.cs" />
     <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
     <Compile Include="System\Drawing\Printing\LibcupsNative.cs" />
+    <Compile Include="System\Drawing\Printing\PrintingServices.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\PageSettings.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\PreviewPrintController.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\PrintController.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\PrintDocument.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterSettings.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\PrintEventArgs.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\PrintPageEventArgs.Unix.cs" />
+    <Compile Include="System\Drawing\Printing\StandardPrintController.Unix.cs" />
     <Compile Include="Unix\System.Drawing\Bitmap.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphics.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphicsManager.cs" />
@@ -325,17 +334,6 @@
     <Compile Include="Unix\System.Drawing.Imaging\Metafile.cs" />
     <Compile Include="Unix\System.Drawing.Imaging\MetafileHeader.cs" />
     <Compile Include="Unix\System.Drawing.Imaging\MetaHeader.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PrintingServices.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PageSettings.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PreviewPrintController.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PrintController.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PrintDocument.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Unix\System.Drawing.Printing\PrinterSettings.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PrintEventArgs.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\PrintPageEventArgs.cs" />
-    <Compile Include="Unix\System.Drawing.Printing\StandardPrintController.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
     <Compile Include="Unix\MonoTODOAttribute.cs" />
     <Compile Include="misc\ExternDll.Unix.cs" />
