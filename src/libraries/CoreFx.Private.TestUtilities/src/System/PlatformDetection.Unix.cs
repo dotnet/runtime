@@ -25,7 +25,7 @@ namespace System
         public static bool IsNetfx462OrNewer() { return false; }
         public static bool IsNetfx470OrNewer() { return false; }
         public static bool IsNetfx471OrNewer() { return false; }
-        public static bool IsWinRT => false;
+        public static bool IsInAppContainer => false;
         public static int WindowsVersion => -1;
 
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
