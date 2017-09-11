@@ -3282,9 +3282,11 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
                                   bool                  readonlyCall,
                                   bool                  tailCall,
                                   bool                  isJitIntrinsic,
-                                  CorInfoIntrinsics*    pIntrinsicID)
+                                  CorInfoIntrinsics*    pIntrinsicID,
+                                  bool*                 isSpecialIntrinsic)
 {
     bool              mustExpand  = false;
+    bool              isSpecial   = false;
     CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
     *pIntrinsicID                 = intrinsicID;
 
@@ -3617,6 +3619,9 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             // CORINFO_INTRINSIC_Object_GetType intrinsic can throw NullReferenceException.
             op1->gtFlags |= (GTF_CALL | GTF_EXCEPT);
             retNode = op1;
+
+            // Might be optimizable during morph
+            isSpecial = true;
             break;
 #endif
         // Implement ByReference Ctor.  This wraps the assignment of the ref into a byref-like field
@@ -3759,33 +3764,55 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             break;
         }
 
+        case CORINFO_INTRINSIC_TypeEQ:
+        case CORINFO_INTRINSIC_TypeNEQ:
+        case CORINFO_INTRINSIC_GetCurrentManagedThread:
+        case CORINFO_INTRINSIC_GetManagedThreadId:
+        {
+            // Retry optimizing these during morph
+            isSpecial = true;
+            break;
+        }
+
         default:
             /* Unknown intrinsic */
             break;
     }
 
-#ifdef DEBUG
-    // Sample code showing how to use the new intrinsic mechansim.
+    // Look for new-style jit intrinsics by name
     if (isJitIntrinsic)
     {
         assert(retNode == nullptr);
-        const char* className     = nullptr;
-        const char* namespaceName = nullptr;
-        const char* methodName    = info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName);
+        const NamedIntrinsic ni = lookupNamedIntrinsic(method);
 
-        if ((namespaceName != nullptr) && strcmp(namespaceName, "System") == 0)
+        switch (ni)
         {
-            if ((className != nullptr) && strcmp(className, "Enum") == 0)
+            case NI_Enum_HasFlag:
             {
-                if ((methodName != nullptr) && strcmp(methodName, "HasFlag") == 0)
+                GenTree* thisOp  = impStackTop(1).val;
+                GenTree* flagOp  = impStackTop(0).val;
+                GenTree* optTree = gtOptimizeEnumHasFlag(thisOp, flagOp);
+
+                if (optTree != nullptr)
                 {
-                    // Todo: plug in the intrinsic expansion
-                    JITDUMP("Found Intrinsic call to Enum.HasFlag\n");
+                    // Optimization successful. Pop the stack for real.
+                    impPopStack();
+                    impPopStack();
+                    retNode = optTree;
                 }
+                else
+                {
+                    // Retry optimizing this during morph.
+                    isSpecial = true;
+                }
+
+                break;
             }
+
+            default:
+                break;
         }
     }
-#endif
 
     if (mustExpand)
     {
@@ -3795,7 +3822,50 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
         }
     }
 
+    // Optionally report if this intrinsic is special
+    // (that is, potentially re-optimizable during morph).
+    if (isSpecialIntrinsic != nullptr)
+    {
+        *isSpecialIntrinsic = isSpecial;
+    }
+
     return retNode;
+}
+
+//------------------------------------------------------------------------
+// lookupNamedIntrinsic: map method to jit named intrinsic value
+//
+// Arguments:
+//    method -- method handle for method
+//
+// Return Value:
+//    Id for the named intrinsic, or Illegal if none.
+//
+// Notes:
+//    method should have CORINFO_FLG_JIT_INTRINSIC set in its attributes,
+//    otherwise it is not a named jit intrinsic.
+//
+
+NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
+{
+    NamedIntrinsic result = NI_Illegal;
+
+    const char* className     = nullptr;
+    const char* namespaceName = nullptr;
+    const char* methodName    = info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName);
+
+    if ((namespaceName != nullptr) && strcmp(namespaceName, "System") == 0)
+    {
+        if ((className != nullptr) && strcmp(className, "Enum") == 0)
+        {
+            if ((methodName != nullptr) && strcmp(methodName, "HasFlag") == 0)
+            {
+                result = NI_Enum_HasFlag;
+            }
+        }
+    }
+
+    return result;
 }
 
 /*****************************************************************************/
@@ -6808,12 +6878,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // DEBUG
 
         // <NICE> Factor this into getCallInfo </NICE>
-        const bool isIntrinsic    = (mflags & CORINFO_FLG_INTRINSIC) != 0;
-        const bool isJitIntrinsic = (mflags & CORINFO_FLG_JIT_INTRINSIC) != 0;
+        const bool isIntrinsic        = (mflags & CORINFO_FLG_INTRINSIC) != 0;
+        const bool isJitIntrinsic     = (mflags & CORINFO_FLG_JIT_INTRINSIC) != 0;
+        bool       isSpecialIntrinsic = false;
         if ((isIntrinsic || isJitIntrinsic) && !pConstrainedResolvedToken)
         {
             call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall,
-                                (canTailCall && (tailCall != 0)), isJitIntrinsic, &intrinsicID);
+                                (canTailCall && (tailCall != 0)), isJitIntrinsic, &intrinsicID, &isSpecialIntrinsic);
 
             if (compIsForInlining() && compInlineResult->IsFailure())
             {
@@ -7129,9 +7200,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
         // Mark call if it's one of the ones we will maybe treat as an intrinsic
-        if (intrinsicID == CORINFO_INTRINSIC_Object_GetType || intrinsicID == CORINFO_INTRINSIC_TypeEQ ||
-            intrinsicID == CORINFO_INTRINSIC_TypeNEQ || intrinsicID == CORINFO_INTRINSIC_GetCurrentManagedThread ||
-            intrinsicID == CORINFO_INTRINSIC_GetManagedThreadId)
+        if (isSpecialIntrinsic)
         {
             call->gtCall.gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
         }

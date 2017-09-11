@@ -45,6 +45,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "valuenum.h"
 #include "reglist.h"
 #include "jittelemetry.h"
+#include "namedintrinsiclist.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
 #endif
@@ -2237,7 +2238,17 @@ public:
         gtFoldExprConst(GenTreePtr tree);
     GenTreePtr gtFoldExprSpecial(GenTreePtr tree);
     GenTreePtr gtFoldExprCompare(GenTreePtr tree);
-    bool gtTryRemoveBoxUpstreamEffects(GenTreePtr tree);
+
+    // Options to control behavior of gtTryRemoveBoxUpstreamEffects
+    enum BoxRemovalOptions
+    {
+        BR_REMOVE_AND_NARROW,     // remove effects and minimize remaining work
+        BR_REMOVE_BUT_NOT_NARROW, // remove effects but leave box copy source full size
+        BR_DONT_REMOVE            // just check if removal is possible
+    };
+
+    GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
+    GenTree* gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp);
 
     //-------------------------------------------------------------------------
     // Get the handle, if any.
@@ -2981,7 +2992,9 @@ protected:
                             bool                  readonlyCall,
                             bool                  tailCall,
                             bool                  isJitIntrinsic,
-                            CorInfoIntrinsics*    pIntrinsicID);
+                            CorInfoIntrinsics*    pIntrinsicID,
+                            bool*                 isSpecialIntrinsic = nullptr);
+    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,
                                        int                  memberRef,
