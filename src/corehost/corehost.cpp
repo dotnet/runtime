@@ -201,17 +201,6 @@ int run(const int argc, const pal::char_t* argv[])
     return code;
 }
 
-static char sccsid[] = "@(#)"            \
-                       "version: "       \
-                       CUREXE_PKG_VER    \
-                       "; commit: "      \
-                       REPO_COMMIT_HASH  \
-                       "; built: "       \
-                       __DATE__          \
-                       " "               \
-                       __TIME__          \
-                       ;
-
 #if defined(_WIN32)
 int __cdecl wmain(const int argc, const pal::char_t* argv[])
 #else
