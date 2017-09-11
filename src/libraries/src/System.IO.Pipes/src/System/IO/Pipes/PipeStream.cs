@@ -172,7 +172,35 @@ namespace System.IO.Pipes
                 return s_zeroTask;
             }
 
-            return ReadAsyncCore(buffer, offset, count, cancellationToken);
+            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_isAsync)
+            {
+                return base.ReadAsync(destination, cancellationToken);
+            }
+
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+            }
+
+            CheckReadOperations();
+
+            if (destination.Length == 0)
+            {
+                UpdateMessageCompletion(false);
+                return new ValueTask<int>(0);
+            }
+
+            return new ValueTask<int>(ReadAsyncCore(destination, cancellationToken));
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
@@ -253,7 +281,34 @@ namespace System.IO.Pipes
                 return Task.CompletedTask;
             }
 
-            return WriteAsyncCore(buffer, offset, count, cancellationToken);
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_isAsync)
+            {
+                return base.WriteAsync(source, cancellationToken);
+            }
+
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckWriteOperations();
+
+            if (source.Length == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            return WriteAsyncCore(source, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
