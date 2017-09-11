@@ -67,6 +67,13 @@ UnlockedAdd64 (gint64 *dest, gint64 add)
 }
 
 MONO_UNLOCKED_ATTRS
+gdouble
+UnlockedAddDouble (gdouble *dest, gdouble add)
+{
+	return *dest += add;
+}
+
+MONO_UNLOCKED_ATTRS
 gint64
 UnlockedSubtract64 (gint64 *dest, gint64 sub)
 {

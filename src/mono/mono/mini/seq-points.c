@@ -230,7 +230,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		g_free (next);
 
 	cfg->seq_point_info = mono_seq_point_info_new (array->len, TRUE, array->data, has_debug_data, &seq_info_size);
-	mono_jit_stats.allocated_seq_points_size += seq_info_size;
+	InterlockedAdd (&mono_jit_stats.allocated_seq_points_size, seq_info_size);
 
 	g_byte_array_free (array, TRUE);
 

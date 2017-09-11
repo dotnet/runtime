@@ -119,7 +119,7 @@ static GHashTable *codegen_regions;
 static DebugEntry *last_entry;
 static mono_mutex_t mutex;
 static GHashTable *dyn_codegen_regions;
-static double register_time;
+static gdouble register_time;
 static int num_entries;
 
 #define lldb_lock() mono_os_mutex_lock (&mutex)

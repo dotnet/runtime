@@ -23,6 +23,7 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/utils/unlocked.h>
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
@@ -1097,7 +1098,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	gpointer addr;
 	MonoGenericContext *context = mono_method_get_context (method);
 
-	mono_jit_stats.generic_virtual_invocations++;
+	UnlockedIncrement (&mono_jit_stats.generic_virtual_invocations);
 
 	if (obj == NULL) {
 		mono_set_pending_exception (mono_get_exception_null_reference ());

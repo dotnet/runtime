@@ -1576,7 +1576,7 @@ save_seq_points (TransformData *td)
 	}
 
 	info = mono_seq_point_info_new (array->len, TRUE, array->data, TRUE, &seq_info_size);
-	mono_jit_stats.allocated_seq_points_size += seq_info_size;
+	InterlockedAdd (&mono_jit_stats.allocated_seq_points_size, seq_info_size);
 
 	g_byte_array_free (array, TRUE);
 

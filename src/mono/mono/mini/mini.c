@@ -60,6 +60,7 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/unlocked.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -3069,7 +3070,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	MonoMethodSignature *sig;
 	MonoError err;
 	MonoCompile *cfg;
-	int i, code_size_ratio;
+	int i;
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 	gboolean method_is_gshared = FALSE;
@@ -3878,20 +3879,25 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	InterlockedIncrement (&mono_perfcounters->jit_methods);
 	InterlockedAdd (&mono_perfcounters->jit_bytes, header->code_size);
 #endif
-	mono_jit_stats.allocated_code_size += cfg->code_len;
-	code_size_ratio = cfg->code_len;
-	if (code_size_ratio > mono_jit_stats.biggest_method_size && mono_jit_stats.enabled) {
-		mono_jit_stats.biggest_method_size = code_size_ratio;
-		g_free (mono_jit_stats.biggest_method);
-		mono_jit_stats.biggest_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
+	gint32 code_size_ratio = cfg->code_len;
+	InterlockedAdd (&mono_jit_stats.allocated_code_size, code_size_ratio);
+	InterlockedAdd (&mono_jit_stats.native_code_size, code_size_ratio);
+	/* FIXME: use an explicit function to read booleans */
+	if ((gboolean)InterlockedRead ((gint32*)&mono_jit_stats.enabled)) {
+		if (code_size_ratio > InterlockedRead (&mono_jit_stats.biggest_method_size)) {
+			InterlockedWrite (&mono_jit_stats.biggest_method_size, code_size_ratio);
+			char *biggest_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
+			biggest_method = InterlockedExchangePointer ((gpointer*)&mono_jit_stats.biggest_method, biggest_method);
+			g_free (biggest_method);
+		}
+		code_size_ratio = (code_size_ratio * 100) / header->code_size;
+		if (code_size_ratio > InterlockedRead (&mono_jit_stats.max_code_size_ratio)) {
+			InterlockedWrite (&mono_jit_stats.max_code_size_ratio, code_size_ratio);
+			char *max_ratio_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
+			max_ratio_method = InterlockedExchangePointer ((gpointer*)&mono_jit_stats.max_ratio_method, max_ratio_method);
+			g_free (max_ratio_method);
+		}
 	}
-	code_size_ratio = (code_size_ratio * 100) / header->code_size;
-	if (code_size_ratio > mono_jit_stats.max_code_size_ratio && mono_jit_stats.enabled) {
-		mono_jit_stats.max_code_size_ratio = code_size_ratio;
-		g_free (mono_jit_stats.max_ratio_method);
-		mono_jit_stats.max_ratio_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
-	}
-	mono_jit_stats.native_code_size += cfg->code_len;
 
 	if (MONO_METHOD_COMPILE_END_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
@@ -3994,14 +4000,26 @@ GTimer *mono_time_track_start ()
 	return g_timer_new ();
 }
 
-void mono_time_track_end (double *time, GTimer *timer)
+/*
+ * mono_time_track_end:
+ *
+ *   Uses UnlockedAddDouble () to update \param time.
+ */
+void mono_time_track_end (gdouble *time, GTimer *timer)
 {
 	g_timer_stop (timer);
-	*time += g_timer_elapsed (timer, NULL);
+	UnlockedAddDouble (time, g_timer_elapsed (timer, NULL));
 	g_timer_destroy (timer);
 }
 
-void mono_update_jit_stats (MonoCompile *cfg)
+/*
+ * mono_update_jit_stats:
+ *
+ *   Only call this function in locked environments to avoid data races.
+ */
+MONO_NO_SANITIZE_THREAD
+void
+mono_update_jit_stats (MonoCompile *cfg)
 {
 	mono_jit_stats.allocate_var += cfg->stat_allocate_var;
 	mono_jit_stats.locals_stack_size += cfg->stat_locals_stack_size;
@@ -4152,9 +4170,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	jit_timer = mono_time_track_start ();
 	cfg = mini_method_compile (method, opt, target_domain, JIT_FLAG_RUN_CCTORS, 0, -1);
-	double jit_time = 0.0;
+	gdouble jit_time = 0.0;
 	mono_time_track_end (&jit_time, jit_timer);
-	mono_jit_stats.jit_time += jit_time;
+	UnlockedAddDouble (&mono_jit_stats.jit_time, jit_time);
 
 	prof_method = cfg->method;
 

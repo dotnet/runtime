@@ -65,7 +65,7 @@ lower_load (MonoCompile *cfg, MonoInst *load, MonoInst *ldaddr)
 	load->opcode = mono_type_to_regmove (cfg, type);
 	type_to_eval_stack_type (cfg, type, load);
 	load->sreg1 = var->dreg;
-	mono_jit_stats.loads_eliminated++;
+	InterlockedIncrement (&mono_jit_stats.loads_eliminated);
 	return TRUE;
 }
 
@@ -96,7 +96,7 @@ lower_store (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 	store->opcode = mono_type_to_regmove (cfg, type);
 	type_to_eval_stack_type (cfg, type, store);
 	store->dreg = var->dreg;
-	mono_jit_stats.stores_eliminated++;
+	InterlockedIncrement (&mono_jit_stats.stores_eliminated);
 	return TRUE;
 }
 
@@ -142,7 +142,7 @@ lower_store_imm (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 	default:
 		return FALSE;
 	}
-	mono_jit_stats.stores_eliminated++;	
+	InterlockedIncrement (&mono_jit_stats.stores_eliminated);
 	return TRUE;
 }
 
@@ -309,8 +309,8 @@ recompute_aliased_variables (MonoCompile *cfg, int *restored_vars)
 	}
 	*restored_vars = adds;
 
-	mono_jit_stats.alias_found += kills;
-	mono_jit_stats.alias_removed += kills - adds;
+	InterlockedAdd (&mono_jit_stats.alias_found, kills);
+	InterlockedAdd (&mono_jit_stats.alias_removed, kills - adds);
 	if (kills > adds) {
 		if (cfg->verbose_level > 2) {
 			printf ("Method: %s\n", mono_method_full_name (cfg->method, 1));

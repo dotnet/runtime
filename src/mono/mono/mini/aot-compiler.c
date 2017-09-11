@@ -7917,6 +7917,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
 
+	/* Update global stats while holding a lock. */
 	mono_update_jit_stats (cfg);
 
 	/*

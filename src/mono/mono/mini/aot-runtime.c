@@ -3957,9 +3957,10 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		return code;
 
 	if (mono_last_aot_method != -1) {
-		if (mono_jit_stats.methods_aot >= mono_last_aot_method)
-				return NULL;
-		else if (mono_jit_stats.methods_aot == mono_last_aot_method - 1) {
+		gint32 methods_aot = InterlockedRead (&mono_jit_stats.methods_aot);
+		if (methods_aot >= mono_last_aot_method)
+			return NULL;
+		else if (methods_aot == mono_last_aot_method - 1) {
 			if (!method) {
 				method = mono_get_method_checked (image, token, NULL, NULL, error);
 				if (!method)

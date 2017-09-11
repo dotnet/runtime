@@ -2049,7 +2049,7 @@ lookup_start:
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			MonoVTable *vtable;
 
-			mono_jit_stats.methods_lookups++;
+			InterlockedIncrement (&mono_jit_stats.methods_lookups);
 			vtable = mono_class_vtable_full (domain, method->klass, error);
 			if (!is_ok (error))
 				return NULL;
@@ -2294,7 +2294,7 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 	if (info) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
-			mono_jit_stats.methods_lookups++;
+			InterlockedIncrement (&mono_jit_stats.methods_lookups);
 			if (ji)
 				*ji = info;
 			return info->code_start;
@@ -4309,7 +4309,7 @@ register_icalls (void)
 MonoJitStats mono_jit_stats = {0};
 
 /**
- * Counters of mono_stats can be read without locking here.
+ * Counters of mono_stats and mono_jit_stats can be read without locking here.
  * MONO_NO_SANITIZE_THREAD tells Clang's ThreadSanitizer to hide all reports of these (known) races.
  */
 MONO_NO_SANITIZE_THREAD
@@ -4318,9 +4318,9 @@ print_jit_stats (void)
 {
 	if (mono_jit_stats.enabled) {
 		g_print ("Mono Jit statistics\n");
-		g_print ("Max code size ratio:    %.2f (%s)\n", mono_jit_stats.max_code_size_ratio/100.0,
+		g_print ("Max code size ratio:    %.2f (%s)\n", mono_jit_stats.max_code_size_ratio / 100.0,
 				 mono_jit_stats.max_ratio_method);
-		g_print ("Biggest method:         %ld (%s)\n", mono_jit_stats.biggest_method_size,
+		g_print ("Biggest method:         %" G_GINT32_FORMAT " (%s)\n", mono_jit_stats.biggest_method_size,
 				 mono_jit_stats.biggest_method);
 
 		g_print ("Delegates created:      %" G_GINT32_FORMAT "\n", mono_stats.delegate_creations);

@@ -28,6 +28,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/opcodes.h>
+#include <mono/utils/unlocked.h>
 #include "mini.h"
 #include "ir-emit.h"
 
@@ -211,7 +212,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			}
 			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, MONO_LVREG_LS (tmp_regl));
 #endif
-			mono_jit_stats.optimized_divisions++;
+			UnlockedIncrement (&mono_jit_stats.optimized_divisions);
 			break;
 		}
 		case OP_IDIV_IMM: {
@@ -293,7 +294,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, tmp_regi, SIZEOF_REGISTER * 8 - 1);
 			MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg, ins->dreg, tmp_regi);
 #endif
-			mono_jit_stats.optimized_divisions++;
+			UnlockedIncrement (&mono_jit_stats.optimized_divisions);
 			break;
 		}
 	}
