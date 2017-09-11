@@ -41,6 +41,7 @@ namespace System.MemoryTests
             memory.Validate(91, -92, 93, 94, -95);
         }
 
+        [ActiveIssue(23952, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static void CtorArrayObject()
         {
@@ -92,6 +93,7 @@ namespace System.MemoryTests
             memory.Validate(42, -1);
         }
 
+        [ActiveIssue(23952, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static void CtorVariantArrayType()
         {
