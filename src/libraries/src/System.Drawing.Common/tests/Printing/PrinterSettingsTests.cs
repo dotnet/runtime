@@ -182,6 +182,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         public void IsValid_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings()
