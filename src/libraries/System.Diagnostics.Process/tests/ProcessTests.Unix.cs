@@ -84,6 +84,12 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory(Skip= "Needs fix for #22299: Should throw"), InlineData(true), InlineData(false)]
+        public void ProcessStart_TryOpenFolder_ThrowsWin32Exception(bool useShellExecute)
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = useShellExecute, FileName = Environment.CurrentDirectory }));
+        }
+
         [Fact]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestPriorityClassUnix()
