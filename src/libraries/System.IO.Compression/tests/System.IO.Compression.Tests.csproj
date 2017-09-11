@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
       <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
+      <Compile Include="DeflateStreamTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.5-prerelease\content\**\*.*">
