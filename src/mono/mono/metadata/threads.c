@@ -1802,7 +1802,7 @@ mono_join_uninterrupted (MonoThreadHandle* thread_to_join, gint32 ms, MonoError 
 }
 
 gboolean
-ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
+ves_icall_System_Threading_Thread_Join_internal (MonoThread *this_obj, int ms)
 {
 	MonoInternalThread *thread = this_obj->internal_thread;
 	MonoThreadHandle *handle = thread->handle;
@@ -1822,30 +1822,42 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 		return FALSE;
 	}
 
+	MonoNativeThreadId tid = thread_get_tid (thread);
+
 	UNLOCK_THREAD (thread);
 
-	if(ms== -1) {
-		ms=MONO_INFINITE_WAIT;
-	}
+	if (ms == -1)
+		ms = MONO_INFINITE_WAIT;
 	THREAD_DEBUG (g_message ("%s: joining thread handle %p, %d ms", __func__, handle, ms));
-	
+
 	mono_thread_set_state (cur_thread, ThreadState_WaitSleepJoin);
 
-	ret=mono_join_uninterrupted (handle, ms, &error);
+	ret = mono_join_uninterrupted (handle, ms, &error);
 
 	mono_thread_clr_state (cur_thread, ThreadState_WaitSleepJoin);
 
 	mono_error_set_pending_exception (&error);
 
-	if(ret==MONO_THREAD_INFO_WAIT_RET_SUCCESS_0) {
+	if (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0) {
 		THREAD_DEBUG (g_message ("%s: join successful", __func__));
 
-		return(TRUE);
+#ifdef HOST_WIN32
+		/* TODO: Do this on Unix platforms as well. See PR #5454 for context.  */
+		/* Wait for the thread to really exit */
+		MONO_ENTER_GC_SAFE;
+		/* This shouldn't block */
+		mono_threads_join_lock ();
+		mono_native_thread_join (tid);
+		mono_threads_join_unlock ();
+		MONO_EXIT_GC_SAFE;
+#endif
+
+		return TRUE;
 	}
 	
 	THREAD_DEBUG (g_message ("%s: join failed", __func__));
 
-	return(FALSE);
+	return FALSE;
 }
 
 #define MANAGED_WAIT_FAILED 0x7fffffff
