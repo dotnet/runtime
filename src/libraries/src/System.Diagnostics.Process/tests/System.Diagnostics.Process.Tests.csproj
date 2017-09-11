@@ -17,6 +17,9 @@
     <Compile Include="$(CommonPath)\System\PasteArguments.cs">
       <Link>Common\System\PasteArguments.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
+      <Link>Common\System\IO\StringParser.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
@@ -34,8 +37,8 @@
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="ProcessTestBase.NonUap.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="ProcessTestBase.Uap.cs" />
     <Compile Include="ProcessTests.cs" />
-    <Compile Include="ProcessTests.Linux.cs" Condition=" '$(TargetsLinux)' == 'true'" />
-    <Compile Include="ProcessTests.OSX.cs" Condition=" '$(TargetsOSX)' == 'true'" />
+    <Compile Include="ProcessTests.Linux.cs" Condition="'$(TargetsLinux)' == 'true'" />
+    <Compile Include="ProcessTests.OSX.cs" Condition="'$(TargetsOSX)' == 'true'" />
     <Compile Include="ProcessTests.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />

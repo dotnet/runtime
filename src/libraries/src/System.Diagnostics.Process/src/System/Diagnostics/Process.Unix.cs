@@ -16,6 +16,8 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        private const string s_kfmclient = "kfmclient";
+
         private static readonly UTF8Encoding s_utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
@@ -234,44 +236,45 @@ namespace System.Diagnostics
                 }
             }
 
-            filename = ResolvePath(startInfo.FileName);
-            argv = ParseArgv(startInfo);
-
+            int childPid = -1, stdinFd = -1, stdoutFd = -1, stderrFd = -1, result = -1;
             string[] envp = CreateEnvp(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
-            // Invoke the shim fork/execve routine.  It will create pipes for all requested
-            // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
-            // descriptors, and execve to execute the requested process.  The shim implementation
-            // is used to fork/execve as executing managed code in a forked process is not safe (only
-            // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
-            int childPid, stdinFd, stdoutFd, stderrFd;
-
-            try
+            filename = ResolvePath(startInfo.FileName);
+            if (!string.IsNullOrEmpty(filename))
             {
+                argv = ParseArgv(startInfo);
+
+                // Invoke the shim fork/execve routine.  It will create pipes for all requested
+                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+                // descriptors, and execve to execute the requested process.  The shim implementation
+                // is used to fork/execve as executing managed code in a forked process is not safe (only
+                // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
                 Interop.Sys.ForkAndExecProcess(
                     filename, argv, envp, cwd,
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     out childPid,
-                    out stdinFd, out stdoutFd, out stderrFd);
+                    out stdinFd, out stdoutFd, out stderrFd, out result, shouldThrow: !startInfo.UseShellExecute);
             }
-            catch (Win32Exception e)
+
+            if (result != 0)
             {
                 if (!startInfo.UseShellExecute)
                 {
-                    throw e;
+                    // Could not find the file
+                    Debug.Assert(string.IsNullOrEmpty(filename));
+                    throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
                 }
-                else
-                {
-                    filename = GetExecPath();
-                    argv = GetArgs(startInfo);
 
-                    Interop.Sys.ForkAndExecProcess(
-                    filename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
-                    out childPid,
-                    out stdinFd, out stdoutFd, out stderrFd);
-                }
+                // this time, set the filename as default program to open file/url
+                filename = GetPathToOpenFile();
+                argv = GetArgsToOpenFile(startInfo);
+
+                Interop.Sys.ForkAndExecProcess(
+                filename, argv, envp, cwd,
+                startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                out childPid,
+                out stdinFd, out stdoutFd, out stderrFd, out result);
             }
 
             // Store the child's information into this Process object.
@@ -305,6 +308,17 @@ namespace System.Diagnostics
             return true;
         }
 
+        /// <summary>Gets arguments.</summary>
+        /// <param name="startInfo">The start info with which to start the process.</param>
+        private string[] GetArgsToOpenFile(ProcessStartInfo startInfo)
+        {
+            if (!startInfo.UseShellExecute)
+            {
+                return ParseArgv(startInfo);
+            }
+            return ParseArgv(startInfo, GetPathToOpenFile());
+        }
+
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
@@ -315,23 +329,31 @@ namespace System.Diagnostics
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
 
+        
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
+        /// <param name="alternativePath">alternative resolved path to use as first argument</param>
         /// <returns>The argv array.</returns>
-        private static string[] ParseArgv(ProcessStartInfo psi)
+        private static string[] ParseArgv(ProcessStartInfo psi, string alternativePath = null)
         {
-            string argv0 = psi.FileName; // pass filename (instead of resolved path) as argv[0], to match what caller supplied
-            if (string.IsNullOrEmpty(psi.Arguments))
+            string argv0 = psi.FileName; // when no alternative path exists, pass filename (instead of resolved path) as argv[0], to match what caller supplied
+            if (string.IsNullOrEmpty(psi.Arguments) && string.IsNullOrEmpty(alternativePath))
             {
                 return new string[] { argv0 };
             }
-            else
+
+            var argvList = new List<string>();
+            if (!string.IsNullOrEmpty(alternativePath))
             {
-                var argvList = new List<string>();
-                argvList.Add(argv0);
-                ParseArgumentsIntoList(psi.Arguments, argvList);
-                return argvList.ToArray();
+                argvList.Add(alternativePath);
+                if (alternativePath.Contains(s_kfmclient))
+                {
+                    argvList.Add("openURL"); // kfmclient needs OpenURL
+                }
             }
+            argvList.Add(argv0);
+            ParseArgumentsIntoList(psi.Arguments, argvList);
+            return argvList.ToArray();
         }
 
         /// <summary>Converts the environment variables information from a ProcessStartInfo into an envp array.</summary>
@@ -392,6 +414,17 @@ namespace System.Diagnostics
             }
 
             // Then check each directory listed in the PATH environment variables
+            return FindProgramInPath(filename);
+        }
+
+        /// <summary>
+        /// Gets the path to the program
+        /// </summary>
+        /// <param name="program"></param>
+        /// <returns></returns>
+        private static string FindProgramInPath(string program)
+        {
+            string path;
             string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
@@ -399,16 +432,14 @@ namespace System.Diagnostics
                 while (pathParser.MoveNext())
                 {
                     string subPath = pathParser.ExtractCurrent();
-                    path = Path.Combine(subPath, filename);
+                    path = Path.Combine(subPath, program);
                     if (File.Exists(path))
                     {
                         return path;
                     }
                 }
             }
-
-            // Could not find the file
-            throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
+            return null;
         }
 
         /// <summary>Convert a number of "jiffies", or ticks, to a TimeSpan.</summary>
