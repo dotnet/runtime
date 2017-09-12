@@ -78,7 +78,7 @@ void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t&
     pal::string_t maj_min_star = start_ver.patch_glob();
 
     std::vector<pal::string_t> list;
-    pal::readdir(path, maj_min_star, &list);
+    pal::readdir_onlydirectories(path, maj_min_star, &list);
 
     fx_ver_t max_ver = start_ver;
     fx_ver_t ver(-1, -1, -1);
@@ -112,7 +112,7 @@ void try_prerelease_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_v
     pal::string_t maj_min_pat_star = start_ver.prerelease_glob();
 
     std::vector<pal::string_t> list;
-    pal::readdir(path, maj_min_pat_star, &list);
+    pal::readdir_onlydirectories(path, maj_min_pat_star, &list);
 
     fx_ver_t max_ver = start_ver;
     fx_ver_t ver(-1, -1, -1);

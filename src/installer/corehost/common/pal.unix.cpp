@@ -492,7 +492,7 @@ bool pal::file_exists(const pal::string_t& path)
     return (::stat(path.c_str(), &buffer) == 0);
 }
 
-void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list)
+static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
 {
     assert(list != nullptr);
 
@@ -513,7 +513,13 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
             switch (entry->d_type)
             {
             case DT_DIR:
+                break;
+
             case DT_REG:
+                if (onlydirectories)
+                {
+                    continue;
+                }
                 break;
 
             // Handle symlinks and file systems that do not support d_type
@@ -532,7 +538,15 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
                         continue;
                     }
 
-                    if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode))
+                    if (onlydirectories)
+                    {
+                        if (!S_ISDIR(sb.st_mode))
+                        {
+                            continue;
+                        }
+                        break;
+                    }
+                    else if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode))
                     {
                         continue;
                     }
@@ -543,12 +557,31 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
                 continue;
             }
 
-            files.push_back(pal::string_t(entry->d_name));
+            pal::string_t filepath(entry->d_name);
+            if (filepath != _X(".") && filepath != _X(".."))
+            {
+                files.push_back(filepath);
+            }
         }
     }
 }
 
+void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list)
+{
+    ::readdir(path, pattern, false, list);
+}
+
 void pal::readdir(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
-    readdir(path, _X("*"), list);
+    ::readdir(path, _X("*"), false, list);
+}
+
+void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pattern, std::vector<pal::string_t>* list)
+{
+    ::readdir(path, pattern, true, list);
+}
+
+void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
+{
+    ::readdir(path, _X("*"), true, list);
 }

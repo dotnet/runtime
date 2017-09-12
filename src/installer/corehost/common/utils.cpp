@@ -150,6 +150,14 @@ pal::string_t get_directory(const pal::string_t& path)
     return ret.substr(0, pos + 1) + DIR_SEPARATOR;
 }
 
+void remove_trailing_dir_seperator(pal::string_t* dir)
+{
+    if (dir->back() == DIR_SEPARATOR)
+    {
+        dir->pop_back();
+    }
+}
+
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
 {
     int pos = 0;
