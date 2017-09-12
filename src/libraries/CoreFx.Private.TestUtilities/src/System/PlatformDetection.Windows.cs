@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 using Xunit;
 
@@ -117,7 +119,7 @@ namespace System
             return null;
         }
 
-        public static string GetDistroVersionString() { return "ProductType=" + GetWindowsProductType(); }
+        public static string GetDistroVersionString() { return "ProductType=" + GetWindowsProductType() + "InstallationType=" + GetInstallationType(); }
 
         private static int s_isInAppContainer = -1;
 
@@ -213,6 +215,22 @@ namespace System
 
                 return s_isWindowsElevated == 1;
             }
+        }
+
+        private static string GetInstallationType()
+        {
+            string key = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
+            string value = "";
+
+            try
+            {
+                value = (string)Registry.GetValue(key, "InstallationType", defaultValue: "");
+            }
+            catch (Exception e) when (e is SecurityException || e is InvalidCastException || e is PlatformNotSupportedException /* UAP */)
+            {
+            }
+
+            return value;
         }
 
         private static int GetWindowsProductType()
