@@ -37,7 +37,9 @@
       <Private>true</Private>
     </ReferenceFromRuntime>
   </ItemGroup>
-  <Target Name="GenerateSerializationAssembly" AfterTargets="Build" Condition=" '$(SkipTestsOnPlatform)' != 'true' " >
+  <!-- This target runs before binplacing as it needs to provide a test assembly to binplace, and depends on CopyFilesToOutputDirectory
+       so that the Generator app dll and runtimeconfig will be copied to the OutputPath -->
+  <Target Name="GenerateSerializationAssembly" DependsOnTargets="CopyFilesToOutputDirectory" BeforeTargets="GetBinPlaceItems" Condition=" '$(SkipTestsOnPlatform)' != 'true' " >
     <PropertyGroup>
       <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
     </PropertyGroup>
@@ -55,6 +57,11 @@
          DisabledWarnings="$(NoWarn), 219" 
          UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll"/>
+
+    <ItemGroup>
+      <!-- Include the Serializer in ReferenceCopyLocalPaths so that it will be binplaced -->
+      <ReferenceCopyLocalPaths Include="$(OutputPath)$(SerializerName).dll" />
+    </ItemGroup>
   </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
