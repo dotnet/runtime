@@ -517,13 +517,13 @@ CrashInfo::GetDSOInfo()
 bool
 CrashInfo::GetELFInfo(uint64_t baseAddress)
 {
-    if (baseAddress == 0) {
+    if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR] || baseAddress == m_auxvValues[AT_BASE]) {
         return true;
     }
     Ehdr ehdr;
     if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
-        fprintf(stderr, "ReadMemory(%p, %" PRIx ") ehdr FAILED\n", (void*)baseAddress, sizeof(ehdr));
-        return false;
+        TRACE("ReadMemory(%p, %" PRIx ") ehdr FAILED\n", (void*)baseAddress, sizeof(ehdr));
+        return true;
     }
     int phnum = ehdr.e_phnum;
     assert(phnum != PN_XNUM);
