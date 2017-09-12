@@ -112,6 +112,8 @@ namespace Mono.Linker {
 
 		public bool LogInternalExceptions { get; set; } = false;
 
+		public ILogger Logger { get; set; } = new ConsoleLogger ();
+
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
 		{
@@ -300,6 +302,17 @@ namespace Mono.Linker {
 		public void Dispose ()
 		{
 			_resolver.Dispose ();
+		}
+
+		public void LogMessage (string message, params object[] values)
+		{
+			LogMessage (MessageImportance.Normal, message, values);
+		}
+
+		public void LogMessage (MessageImportance importance, string message, params object [] values)
+		{
+			if (LogInternalExceptions && Logger != null)
+				Logger.LogMessage (importance, message, values);
 		}
 	}
 }
