@@ -112,6 +112,7 @@
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
     <Compile Include="System\UIntPtrTests.cs" />
+    <Compile Include="System\UnitySerializationHolderTests.cs" />
     <Compile Include="System\Uri.CreateStringTests.cs" />
     <Compile Include="System\Uri.CreateUriTests.cs" />
     <Compile Include="System\Uri.MethodsTests.cs" />
