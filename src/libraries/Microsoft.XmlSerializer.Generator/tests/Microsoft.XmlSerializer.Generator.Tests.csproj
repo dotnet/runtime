@@ -22,7 +22,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include=".\AlwaysPassTest.cs" />
-    <Content Include="dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json">
+    <!-- We're running the Generator on the test shared framework, which uses a fake shared framework version.
+         Reuse the same runtimeconfig that the tests use -->
+    <Content Include="$(XunitRuntimeConfig)">
+      <!-- Rename it to match the Generator application name -->
+      <Link>dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
