@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -13,7 +12,6 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using Xunit;
-using Xunit.NetCore.Extensions;
 
 namespace System.Diagnostics.Tests
 {
@@ -117,6 +115,36 @@ namespace System.Diagnostics.Tests
             else
             {
                 Assert.False(exitedInvoked);
+            }
+        }
+
+        [Fact]
+        public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
+        }
+
+        [Fact]
+        public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
+        }
+
+        [Fact]
+        public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
+        }
+        
+        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior varies on Windows and Unix. Refer to #23969
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano does not support UseShellExecute
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "not supported on UAP")]
+        [OuterLoop("Launches File Explorer")]
+        public void ProcessStart_TryOpenFolder_UseShellExecuteIsTrue_DoesNotThrow()
+        {
+            using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = Path.GetTempPath() }))
+            {
+                Assert.Null(px); // Not sure why px returned is null. but the call does not throw and opens folder successfully.
             }
         }
 

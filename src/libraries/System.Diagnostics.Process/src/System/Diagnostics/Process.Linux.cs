@@ -57,6 +57,21 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets execution path</summary>
+        private string GetPathToOpenFile()
+        {
+            string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
+            foreach (var program in allowedProgramsToRun)
+            {
+                string pathToProgram = FindProgramInPath(program);
+                if (!string.IsNullOrEmpty(pathToProgram))
+                {
+                    return pathToProgram;
+                }
+            }
+            return null;
+        }
+
         /// <summary>
         /// Gets the amount of time the associated process has spent utilizing the CPU.
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and

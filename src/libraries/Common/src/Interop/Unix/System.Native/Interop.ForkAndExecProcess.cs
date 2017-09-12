@@ -12,17 +12,18 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static unsafe void ForkAndExecProcess(
+        internal static unsafe int ForkAndExecProcess(
             string filename, string[] argv, string[] envp, string cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
-            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd)
+            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
+            int result = -1;
             try
             {
                 AllocNullTerminatedArray(argv, ref argvPtr);
                 AllocNullTerminatedArray(envp, ref envpPtr);
-                int result = ForkAndExecProcess(
+                result = ForkAndExecProcess(
                     filename, argvPtr, envpPtr, cwd,
                     redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 :0,
                     out lpChildPid, out stdinFd, out stdoutFd, out stderrFd);
@@ -38,7 +39,8 @@ internal static partial class Interop
                     // technically ambiguous, in the case of a failure with a 0 errno.  Simplest
                     // solution then is just to throw here the same exception the Process caller
                     // would have.  This can be revisited if we ever have another call site.
-                    throw new Win32Exception();
+                    if (shouldThrow)
+                        throw new Win32Exception();
                 }
             }
             finally
@@ -46,6 +48,7 @@ internal static partial class Interop
                 FreeArray(envpPtr, envp.Length);
                 FreeArray(argvPtr, argv.Length);
             }
+            return result;
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", SetLastError = true)]
