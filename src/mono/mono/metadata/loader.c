@@ -1148,10 +1148,13 @@ remove_cached_module(gpointer key, gpointer value, gpointer user_data)
 static void
 cached_module_cleanup(void)
 {
-	g_hash_table_foreach(global_module_map, remove_cached_module, NULL);
+	if(global_module_map != NULL)
+	{
+		g_hash_table_foreach(global_module_map, remove_cached_module, NULL);
 
-	g_hash_table_destroy(global_module_map);
-	global_module_map = NULL;
+		g_hash_table_destroy(global_module_map);
+		global_module_map = NULL;
+	}
 }
 
 static MonoDl *internal_module;
