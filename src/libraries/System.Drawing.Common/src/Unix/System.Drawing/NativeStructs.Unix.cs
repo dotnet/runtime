@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
-// System.Drawing.gdipStructs.cs
+// System.Drawing.NativeStructs.cs
 //
 // Author: 
 // Alexandre Pigolkine (pigolkine@gmx.de)
@@ -34,20 +34,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct GdiColorPalette
-    {
-        internal int Flags;             // Palette flags
-        internal int Count;             // Number of color entries                    
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct GdiColorMap
-    {
-        internal int from;
-        internal int to;
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
     internal struct LOGFONT
     {
@@ -113,15 +99,6 @@ namespace System.Drawing
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct GdipEncoderParameter
-    {
-        internal Guid guid;
-        internal uint numberOfValues;
-        internal EncoderParameterValueType type;
-        internal IntPtr value;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct GdipPropertyItem
     {
         internal int id;
@@ -153,15 +130,6 @@ namespace System.Drawing
             get { return (fIcon == 1); }
             set { fIcon = (value) ? 1 : 0; }
         }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct XColor
-    {
-        public int pixel;
-        public ushort red, green, blue;
-        public sbyte flags;
-        public sbyte pad;
     }
 
     [StructLayout(LayoutKind.Sequential)]
