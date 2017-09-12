@@ -243,6 +243,7 @@ void Compiler::lvaInitTypeRef()
     info.compArgRegCount      = varDscInfo.intRegArgNum;
     info.compFloatArgRegCount = varDscInfo.floatRegArgNum;
     info.compArgStackSize     = varDscInfo.stackArgSize;
+
 #endif // FEATURE_FASTTAILCALL
 
     //-------------------------------------------------------------------------
