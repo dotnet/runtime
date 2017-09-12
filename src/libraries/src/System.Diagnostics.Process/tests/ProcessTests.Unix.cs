@@ -17,6 +17,7 @@ namespace System.Diagnostics.Tests
     public partial class ProcessTests : ProcessTestBase
     {
         private const string s_xdg_open = "xdg-open";
+        private const int s_exit_code_kill = 137;  // using exit code 137 to show the process was killed
 
         [Fact]
         private void TestWindowApisUnix()
@@ -63,22 +64,10 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, p.Id);
         }
 
-        [Fact]
-        public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
-        {
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
-        }
-
-        [Fact]
-        public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
-        {
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
-        }
-
-        [Theory, InlineData(false), InlineData(true)]
+        [Theory, InlineData(false), InlineData(true)] // Expected behavior varies on Windows and Unix. Refer to #23969
         public void ProcessStart_TryOpenFolder_ThrowsWin32Exception(bool useShellExecute)
         {
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = useShellExecute, FileName = Environment.CurrentDirectory }));
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = useShellExecute, FileName = Path.GetTempPath() }));
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
@@ -102,7 +91,7 @@ namespace System.Diagnostics.Tests
                         px.Kill();
                         px.WaitForExit();
                         Assert.True(px.HasExited);
-                        Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+                        Assert.Equal(s_exit_code_kill, px.ExitCode);
                     }
                     return;
                 }
@@ -116,7 +105,6 @@ namespace System.Diagnostics.Tests
         // [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram(string programToOpenWith)
         {
-
             if (IsProgramInstalled(programToOpenWith))
             {
                 string fileToOpen = GetTestFilePath() + ".txt";
@@ -127,7 +115,7 @@ namespace System.Diagnostics.Tests
                     px.Kill();
                     px.WaitForExit();
                     Assert.True(px.HasExited);
-                    Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+                    Assert.Equal(s_exit_code_kill, px.ExitCode);
                 }
             }
             else
@@ -140,6 +128,7 @@ namespace System.Diagnostics.Tests
         // [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2()
         {
+            // The exit code is coming from xdg-open. Which is why I split this test for OSX and Linux to assert against two different exit code values.
             if (IsProgramInstalled(s_xdg_open))
             {
                 string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
@@ -149,12 +138,25 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(s_xdg_open, p.ProcessName);
                     p.WaitForExit();
                     Assert.True(p.HasExited);
-                    Assert.Equal(2, p.ExitCode);
+                    Assert.Equal(2, p.ExitCode); // Exit Code 2 from xdg-open means file was not found 
                 }
             }
             else
             {
                 Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2)}(): {s_xdg_open} is not installed on this machine.");
+            }
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        // [OuterLoop("Opens program")]
+        public void ProcessStart_UseShellExecuteTrue_TryOpenFileThatDoesntExist_ReturnsExitCode1()
+        {
+            // The exit code is coming from open. Which is why I split this test for OSX and Linux to assert against two different exit code values.
+            string file = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
+            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = file }))
+            {
+                Assert.True(p.WaitForExit(WaitInMS));
+                Assert.Equal(1, p.ExitCode); // Exit Code 1 from open means something went wrong
             }
         }
 
@@ -168,11 +170,11 @@ namespace System.Diagnostics.Tests
             using (var px = Process.Start(programToOpenWith, fileToOpen))
             {
                 Console.WriteLine($"in OSX, {nameof(programToOpenWith)} is {programToOpenWith}, while {nameof(px.ProcessName)} is {px.ProcessName}.");
-                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason
+                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to #23972
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+                Assert.Equal(s_exit_code_kill, px.ExitCode);
             }
         }
 
@@ -183,10 +185,11 @@ namespace System.Diagnostics.Tests
         {
             using (var px = Process.Start("/usr/bin/open", "https://github.com/dotnet/corefx -a " + applicationToOpenWith))
             {
-                Assert.False(px.HasExited);
+                Assert.NotNull(px);
+                px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(0, px.ExitCode); // Exit Code 0 from open means success
+                Assert.Equal(s_exit_code_kill, px.ExitCode);
             }
         }
 
@@ -199,22 +202,10 @@ namespace System.Diagnostics.Tests
             using (var px = Process.Start(startInfo))
             {
                 Assert.NotNull(px);
-                // px.Kill(); // uncommenting this changes exit code to 137, meaning process was killed
+                px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(0, px.ExitCode);
-            }
-        }
-
-        [Fact, PlatformSpecific(TestPlatforms.OSX)]
-        // [OuterLoop("Opens program")]
-        public void ProcessStart_UseShellExecuteTrue_TryOpenFileThatDoesntExist_ReturnsExitCode1()
-        {
-            string file = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = file }))
-            {
-                Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(1, p.ExitCode); // Exit Code 1 from open means something went wrong
+                Assert.Equal(s_exit_code_kill, px.ExitCode);
             }
         }
 
