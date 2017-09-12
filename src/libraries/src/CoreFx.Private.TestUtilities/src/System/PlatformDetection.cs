@@ -26,6 +26,7 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsNotWindows8x => !IsWindows8x;
         public static bool IsNotWindowsNanoServer => !IsWindowsNanoServer;
+        public static bool IsNotWindowsServerCore => !IsWindowsServerCore;
         public static bool IsNotWindowsIoTCore => !IsWindowsIoTCore;
         public static bool IsDrawingSupported => (IsNotWindowsNanoServer && IsNotWindowsIoTCore);
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
