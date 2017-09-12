@@ -41,9 +41,7 @@ namespace System.IO
 
         // To implement Async IO operations on streams that don't support async IO
 
-        [NonSerialized]
         private ReadWriteTask _activeReadWriteTask;
-        [NonSerialized]
         private SemaphoreSlim _asyncActiveSemaphore;
 
         internal SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized()
