@@ -1514,6 +1514,7 @@ parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, 
 static gboolean
 parse_property_signature (VerifyContext *ctx, const char **_ptr, const char *end)
 {
+	unsigned type = 0;
 	unsigned sig = 0;
 	unsigned param_count = 0, i;
 	const char *ptr = *_ptr;
@@ -1529,6 +1530,13 @@ parse_property_signature (VerifyContext *ctx, const char **_ptr, const char *end
 
 	if (!parse_custom_mods (ctx, &ptr, end))
 		return FALSE;
+
+	if (!safe_read8 (type, ptr, end))
+		FAIL (ctx, g_strdup ("PropertySig: Not enough room for the type"));
+
+	//check if it's a byref. safe_read8 did update ptr, so we rollback if it's not a byref
+	if (type != MONO_TYPE_BYREF)
+		--ptr;
 
 	if (!parse_type (ctx, &ptr, end))
 		FAIL (ctx, g_strdup ("PropertySig: Could not parse property type"));
