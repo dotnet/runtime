@@ -1518,7 +1518,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     assert(!varTypeIsFloating(targetType));
 
     // The arithmetic node must be sitting in a register (since it's not contained)
-    noway_assert(targetReg != REG_NA);
+    assert(targetReg != REG_NA);
 
     if (EA_SIZE(attr) == EA_8BYTE)
     {
@@ -1526,7 +1526,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
         regNumber r = emit->emitInsTernary(ins, attr, treeNode, op1, op2);
 
-        noway_assert(r == targetReg);
+        assert(r == targetReg);
     }
     else
     {
@@ -1559,10 +1559,10 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
     // The arithmetic node must be sitting in a register (since it's not contained)
-    noway_assert(targetReg != REG_NA);
+    assert(targetReg != REG_NA);
 
     regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
-    noway_assert(r == targetReg);
+    assert(r == targetReg);
 
     genProduceReg(treeNode);
 }
