@@ -11889,12 +11889,12 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 // * Dividend must not be constant.  Lower disables this rare const % const case
                 //
                 {
-                    // Do "a % b = a - (a / b) * b" morph if ...................
+                    // Do "a % b = a - (a / b) * b" morph if ...........................
                     bool doMorphModToSubMulDiv =
-                        !op2->IsIntegralConst() ||             // Divisor is not an integer constant
-                        (tree->OperGet() == GT_MOD) ||         // Modulo operation is signed
-                        op1->IsCnsIntOrI() ||                  // Dividend is constant
-                        !isPow2(op2->AsIntCon()->IconValue()); // Divisor is not a power of two
+                        (tree->OperGet() == GT_MOD) ||           // Modulo operation is signed
+                        !op2->IsIntegralConst() ||               // Divisor is not an integer constant
+                        !isPow2(op2->AsIntCon()->IconValue()) || // Divisor is not a power of two
+                        op1->IsCnsIntOrI();                      // Dividend is constant
 
                     if (doMorphModToSubMulDiv)
                     {
