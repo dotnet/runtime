@@ -4759,7 +4759,7 @@ void Lowering::DoPhase()
     }
 
 #ifdef DEBUG
-    JITDUMP("Lower has completed modifying nodes, proceeding to initialize LSRA TreeNodeInfo structs...\n");
+    JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
     {
         comp->fgDispBasicBlocks(true);
@@ -4804,84 +4804,6 @@ void Lowering::DoPhase()
         assert(LIR::AsRange(block).CheckLIR(comp, true));
     }
 #endif
-
-    // does not necessarily lower nodes in execution order and also, it could potentially
-    // add new BasicBlocks on the fly as part of the Lowering pass so the traversal won't be complete.
-    //
-    // Doing a new traversal guarantees we 'see' all new introduced trees and basic blocks allowing us
-    // to correctly initialize all the data structures LSRA requires later on.
-    // This code still has issues when it has to do with initialization of recently introduced locals by
-    // lowering.  The effect of this is that any temporary local variable introduced by lowering won't be
-    // enregistered yielding suboptimal CQ.
-    // The reason for this is because we cannot re-sort the local variables per ref-count and bump of the number of
-    // tracked variables just here because then LSRA will work with mismatching BitSets (i.e. BitSets with different
-    // 'epochs' that were created before and after variable resorting, that will result in different number of tracked
-    // local variables).
-    //
-    // The fix for this is to refactor this code to be run JUST BEFORE LSRA and not as part of lowering.
-    // It's also desirable to avoid initializing this code using a non-execution order traversal.
-    //
-    LsraLocation currentLoc = 1;
-    for (BasicBlock* block = m_lsra->startBlockSequence(); block != nullptr; block = m_lsra->moveToNextBlock())
-    {
-        GenTreePtr stmt;
-
-        // Increment the LsraLocation (currentLoc) at each BasicBlock.
-        // This ensures that the block boundary (RefTypeBB, RefTypeExpUse and RefTypeDummyDef) RefPositions
-        // are in increasing location order.
-        currentLoc += 2;
-
-        m_block = block;
-        for (GenTree* node : BlockRange().NonPhiNodes())
-        {
-            // We increment the number position of each tree node by 2 to simplify the logic when there's the case of
-            // a tree that implicitly does a dual-definition of temps (the long case).  In this case it is easier to
-            // already have an idle spot to handle a dual-def instead of making some messy adjustments if we only
-            // increment the number position by one.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-            node->gtSeqNum = currentLoc;
-            // In DEBUG, we want to set the gtRegTag to GT_REGTAG_REG, so that subsequent dumps will so the register
-            // value.
-            // Although this looks like a no-op it sets the tag.
-            node->gtRegNum = node->gtRegNum;
-#endif
-
-            node->gtLsraInfo.Initialize(m_lsra, node, currentLoc);
-
-            currentLoc += 2;
-
-            m_lsra->TreeNodeInfoInit(node);
-
-            // Only nodes that produce values should have a non-zero dstCount.
-            assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
-
-            // If the node produces an unused value, mark it as a local def-use
-            if (node->IsValue() && node->IsUnusedValue())
-            {
-                node->gtLsraInfo.isLocalDefUse = true;
-                node->gtLsraInfo.dstCount      = 0;
-            }
-
-#if 0
-            // TODO-CQ: Enable this code after fixing the isContained() logic to not abort for these
-            // top-level nodes that throw away their result.
-            // If this is an interlocked operation that has a non-last-use lclVar as its op2,
-            // make sure we allocate a target register for the interlocked operation.; otherwise we need
-            // not allocate a register
-            else if ((tree->OperGet() == GT_LOCKADD || tree->OperGet() == GT_XCHG || tree->OperGet() == GT_XADD))
-            {
-                tree->gtLsraInfo.dstCount = 0;
-                if (tree->gtGetOp2()->IsLocal() && (tree->gtFlags & GTF_VAR_DEATH) == 0)
-                    tree->gtLsraInfo.isLocalDefUse = true;
-            }
-#endif
-        }
-
-        assert(BlockRange().CheckLIR(comp, true));
-    }
-    DBEXEC(VERBOSE, DumpNodeInfoMap());
 }
 
 #ifdef DEBUG
@@ -5589,24 +5511,5 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
     }
 #endif // FEATURE_SIMD
 }
-
-#ifdef DEBUG
-void Lowering::DumpNodeInfoMap()
-{
-    printf("-----------------------------\n");
-    printf("TREE NODE INFO DUMP\n");
-    printf("-----------------------------\n");
-
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
-    {
-        for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
-        {
-            comp->gtDispTree(node, nullptr, nullptr, true);
-            printf("    +");
-            node->gtLsraInfo.dump(m_lsra);
-        }
-    }
-}
-#endif // DEBUG
 
 #endif // !LEGACY_BACKEND

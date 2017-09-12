@@ -4195,6 +4195,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                                           (unsigned)i DEBUG_ARG(minRegCount));
         if (info.isLocalDefUse)
         {
+            // This must be an unused value, OR it is a special node for which we allocate
+            // a target register even though it produces no value.
+            assert(defNode->IsUnusedValue() || (defNode->gtOper == GT_LOCKADD));
             pos->isLocalDefUse = true;
             pos->lastUse       = true;
         }
@@ -4576,6 +4579,17 @@ void LinearScan::buildIntervals()
     // second part:
     JITDUMP("\nbuildIntervals second part ========\n");
     LsraLocation currentLoc = 0;
+    // TODO-Cleanup: This duplicates prior behavior where entry (ParamDef) RefPositions were
+    // being assigned the bbNum of the last block traversed in the 2nd phase of Lowering.
+    // Previously, the block sequencing was done for the (formerly separate) TreeNodeInfoInit pass,
+    // and the curBBNum was left as the last block sequenced. This block was then used to set the
+    // weight for the entry (ParamDef) RefPositions. It would be logical to set this to the
+    // normalized entry weight (compiler->fgCalledCount), but that results in a net regression.
+    if (!blockSequencingDone)
+    {
+        setBlockSequence();
+    }
+    curBBNum = blockSequence[bbSeqCount - 1]->bbNum;
 
     // Next, create ParamDef RefPositions for all the tracked parameters,
     // in order of their varIndex
@@ -4712,6 +4726,8 @@ void LinearScan::buildIntervals()
             if (block == compiler->fgFirstBB)
             {
                 insertZeroInitRefPositions();
+                // The first real location is at 1; 0 is for the entry.
+                currentLoc = 1;
             }
 
             // Any lclVars live-in to a block are resolution candidates.
@@ -4766,15 +4782,49 @@ void LinearScan::buildIntervals()
         // this point.
 
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
+        currentLoc += 2;
         JITDUMP("\n");
 
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange.NonPhiNodes())
         {
-            assert(node->gtLsraInfo.loc >= currentLoc);
-            assert(!node->IsValue() || !node->IsUnusedValue() || node->gtLsraInfo.isLocalDefUse);
+            // We increment the number position of each tree node by 2 to simplify the logic when there's the case of
+            // a tree that implicitly does a dual-definition of temps (the long case).  In this case it is easier to
+            // already have an idle spot to handle a dual-def instead of making some messy adjustments if we only
+            // increment the number position by one.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
-            currentLoc = node->gtLsraInfo.loc;
+#ifdef DEBUG
+            node->gtSeqNum = currentLoc;
+            // In DEBUG, we want to set the gtRegTag to GT_REGTAG_REG, so that subsequent dumps will so the register
+            // value.
+            // Although this looks like a no-op it sets the tag.
+            node->gtRegNum = node->gtRegNum;
+#endif
+
+            node->gtLsraInfo.Initialize(this, node, currentLoc);
+
+            TreeNodeInfoInit(node);
+
+            // If the node produces an unused value, mark it as a local def-use
+            if (node->IsValue() && node->IsUnusedValue())
+            {
+                node->gtLsraInfo.isLocalDefUse = true;
+                node->gtLsraInfo.dstCount      = 0;
+            }
+
+#ifdef DEBUG
+            if (VERBOSE)
+            {
+                compiler->gtDispTree(node, nullptr, nullptr, true);
+                printf("    +");
+                node->gtLsraInfo.dump(this);
+            }
+#endif // DEBUG
+
+            // Only nodes that produce values should have a non-zero dstCount.
+            assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
+
             buildRefPositionsForNode(node, block, listNodePool, operandToLocationInfoMap, currentLoc);
 
 #ifdef DEBUG
@@ -4783,11 +4833,8 @@ void LinearScan::buildIntervals()
                 maxNodeLocation = currentLoc;
             }
 #endif // DEBUG
+            currentLoc += 2;
         }
-
-        // Increment the LsraLocation at this point, so that the dummy RefPositions
-        // will not have the same LsraLocation as any "real" RefPosition.
-        currentLoc += 2;
 
         // Note: the visited set is cleared in LinearScan::doLinearScan()
         markBlockVisited(block);
@@ -9729,6 +9776,7 @@ void LinearScan::insertMove(
         dst->gtLsraInfo.isLsraAdded   = true;
     }
     dst->gtLsraInfo.isLocalDefUse = true;
+    dst->SetUnusedValue();
 
     LIR::Range  treeRange  = LIR::SeqTree(compiler, dst);
     LIR::Range& blockRange = LIR::AsRange(block);
