@@ -8890,6 +8890,9 @@ NO_TAIL_CALL:
 
             if (gtCanOptimizeTypeEquality(op1) || gtCanOptimizeTypeEquality(op2))
             {
+                JITDUMP("Optimizing call to Type:op_%s to simple compare via %s\n",
+                        methodID == CORINFO_INTRINSIC_TypeEQ ? "Equality" : "Inequality", GenTree::OpName(simpleOp));
+
                 GenTreePtr compare = gtNewOperNode(simpleOp, TYP_INT, op1, op2);
 
                 // fgMorphSmpOp will further optimize the following patterns:
@@ -12046,6 +12049,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                     if (bOp1ClassFromHandle && bOp2ClassFromHandle)
                     {
+                        JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
+
                         GenTreePtr classFromHandleArg1 = tree->gtOp.gtOp1->gtCall.gtCallArgs->gtOp.gtOp1;
                         GenTreePtr classFromHandleArg2 = tree->gtOp.gtOp2->gtCall.gtCallArgs->gtOp.gtOp1;
 
@@ -12103,19 +12108,22 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                             if (info.compCompHnd->canInlineTypeCheckWithObjectVTable(clsHnd))
                             {
-                                // Method Table tree
-                                CLANG_FORMAT_COMMENT_ANCHOR;
+                                // Fetch object method table from the object itself
+                                JITDUMP("Optimizing compare of obj.GetType()"
+                                        " and type-from-handle to compare handles\n");
+
+                                // Method table constant
+                                GenTree* cnsMT = pGetClassFromHandleArgument;
 #ifdef LEGACY_BACKEND
-                                GenTreePtr objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtCall.gtCallObjp);
+                                // Method table from object
+                                GenTree* objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtCall.gtCallObjp);
 #else
-                                GenTreePtr objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtUnOp.gtOp1);
+                                // Method table from object
+                                GenTree* objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtUnOp.gtOp1);
 #endif
                                 objMT->gtFlags |= GTF_EXCEPT; // Null ref exception if object is null
                                 compCurBB->bbFlags |= BBF_HAS_VTABREF;
                                 optMethodFlags |= OMF_HAS_VTABLEREF;
-
-                                // Method table constant
-                                GenTreePtr cnsMT = pGetClassFromHandleArgument;
 
                                 GenTreePtr compare = gtNewOperNode(oper, TYP_INT, objMT, cnsMT);
 
