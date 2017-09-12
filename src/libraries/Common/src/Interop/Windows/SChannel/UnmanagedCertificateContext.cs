@@ -9,43 +9,16 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    internal static unsafe class UnmanagedCertificateContext
+    internal static unsafe partial class UnmanagedCertificateContext
     {
         internal static X509Certificate2Collection GetRemoteCertificatesFromStoreContext(SafeFreeCertContext certContext)
         {
-            X509Certificate2Collection result = new X509Certificate2Collection();
-
             if (certContext.IsInvalid)
             {
-                return result;
+                return new X509Certificate2Collection();
             }
 
-            Interop.Crypt32.CERT_CONTEXT context =
-                Marshal.PtrToStructure<Interop.Crypt32.CERT_CONTEXT>(certContext.DangerousGetHandle());
-
-            if (context.hCertStore != IntPtr.Zero)
-            {
-                Interop.Crypt32.CERT_CONTEXT* last = null;
-
-                while (true)
-                {
-                    Interop.Crypt32.CERT_CONTEXT* next =
-                        Interop.Crypt32.CertEnumCertificatesInStore(context.hCertStore, last);
-
-                    if (next == null)
-                    {
-                        break;
-                    }
-
-                    var cert = new X509Certificate2(new IntPtr(next));
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(certContext, $"Adding remote certificate:{cert}");
-
-                    result.Add(cert);
-                    last = next;
-                }
-            }
-
-            return result;
+            return GetRemoteCertificatesFromStoreContext(certContext.DangerousGetHandle());
         }
     }
 }
