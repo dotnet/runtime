@@ -193,6 +193,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0-global-dummy", _dotnetSdkDllMessageTerminator));
+
+            // Verify we have the expected sdk versions
+            dotnet.Exec("--list-sdks")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9999.0.0-dummy")
+                .And
+                .HaveStdOutContaining("9999.0.0-global-dummy")
+                .And
+                .HaveStdOutContaining("9999.0.1")
+                .And
+                .HaveStdOutContaining("9999.0.4")
+                .And
+                .HaveStdOutContaining("9999.0.6-dummy");
         }
 
         [Fact]
@@ -244,6 +264,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+
+            // Verify we have the expected sdk versions
+            dotnet.Exec("--list-sdks")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9999.0.4");
         }
 
         [Fact]
@@ -335,6 +368,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0", _dotnetSdkDllMessageTerminator));
+
+            // Verify we have the expected sdk versions
+            dotnet.Exec("--list-sdks")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9999.0.0")
+                .And
+                .HaveStdOutContaining("9999.0.1-dummy")
+                .And
+                .HaveStdOutContaining("9999.0.1")
+                .And
+                .HaveStdOutContaining("10000.0.0")
+                .And
+                .HaveStdOutContaining("10000.0.0-dummy");
         }
 
         // This method adds a list of new sdk version folders in the specified

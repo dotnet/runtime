@@ -99,7 +99,7 @@ pal::string_t resolve_fxr_path(const pal::string_t& own_dir)
         trace::info(_X("Reading fx resolver directory=[%s]"), fxr_dir.c_str());
 
         std::vector<pal::string_t> list;
-        pal::readdir(fxr_dir, &list);
+        pal::readdir_onlydirectories(fxr_dir, &list);
 
         fx_ver_t max_ver(-1, -1, -1);
         for (const auto& dir : list)
@@ -162,8 +162,10 @@ int run(const int argc, const pal::char_t* argv[])
         trace::println(_X("Usage: dotnet [path-to-application]"));
         trace::println();
         trace::println(_X("Options:"));
-        trace::println(_X("  -h|--help            Display help."));
-        trace::println(_X("  --version         Display version."));
+        trace::println(_X("  -h|--help         Display help."));
+        trace::println(_X("  --version         Display the current SDK version."));
+        trace::println(_X("  --list-sdks       Display the installed SDKs."));
+        trace::println(_X("  --list-runtimes   Display the installed runtimes."));
         trace::println();
         trace::println(_X("path-to-application:"));
         trace::println(_X("  The path to an application .dll file to execute."));
