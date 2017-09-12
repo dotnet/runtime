@@ -363,7 +363,8 @@ def static getFullPerfJobName(def project, def os, def isPR) {
                 --generatebenchviewdata=\"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" \\
                 --stabilityPrefix=\"taskset 0x00000002 nice --adjustment=-10\" \\
                 --uploadToBenchview""")
-                shell("rsync -a --rsync-path=\"mkdir -p bin/toArchive/sandbox/Logs/ && rsync\" bin/sandbox/Logs/Perf-*.* bin/toArchive/sandbox/Logs/")
+                shell("mkdir -p bin/toArchive/sandbox/Logs/")
+                shell("rsync -a bin/sandbox/Logs/Perf-*.* bin/toArchive/sandbox/Logs/")
             }
         }
 
