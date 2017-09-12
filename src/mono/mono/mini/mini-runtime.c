@@ -3302,12 +3302,13 @@ mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
 void
 mini_init_delegate (MonoDelegate *del)
 {
-	if (mono_llvm_only)
-		del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 #ifdef ENABLE_INTERPRETER
 	if (mono_use_interpreter)
 		mono_interp_init_delegate (del);
+	else
 #endif
+	if (mono_llvm_only)
+		del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 }
 
 char*
