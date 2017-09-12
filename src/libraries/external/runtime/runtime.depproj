@@ -69,6 +69,7 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 
+    <Exec Command="chmod +x $(TestHostRootPath)dotnet" Condition="'$(RunningOnUnix)' == 'true'"/>
   </Target>
 
   <Target Name="OverrideRuntime"
