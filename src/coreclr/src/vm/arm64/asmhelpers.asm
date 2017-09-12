@@ -1467,8 +1467,8 @@ NeedFrame
     bl      ArrayStoreCheck ; ArrayStoreCheck(&val, &array)
 
 DoWrite        
-    ldp     x0, x1, [sp], #16
-    ldr     x2, [sp], #32	
+    ldp     x0, x1, [sp, #16]
+    ldr     x2, [sp, #32]	
     EPILOG_RESTORE_REG_PAIR           fp, lr, #0x48!
     EPILOG_BRANCH JIT_Stelem_DoWrite    
     NESTED_END 
