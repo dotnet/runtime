@@ -386,7 +386,7 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
 
             genCodeForTreeNode(node);
-            if (node->gtHasReg() && node->gtLsraInfo.isLocalDefUse)
+            if (node->gtHasReg() && node->IsUnusedValue())
             {
                 genConsumeReg(node);
             }
