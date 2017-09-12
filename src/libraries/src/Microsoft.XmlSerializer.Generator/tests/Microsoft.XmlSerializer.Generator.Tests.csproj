@@ -8,10 +8,24 @@
   <PropertyGroup>
     <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap' OR '$(TargetsUnix)' == 'true'">true</SkipTestsOnPlatform>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <!-- We're building netcoreap, run on the test CLI
+         Reuse the same runtimeconfig that the tests use. -->
+     <GeneratorRuntimeConfig>$(ToolsDir)xunit.console.netcore.runtimeconfig.json</GeneratorRuntimeConfig>
+     <GeneratorCliPath>$(TestHostRootPath)</GeneratorCliPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
+    <!-- We're building some non-netcoreapp target, run on the Tools CLI.
+         Reuse the same runtimeconfig used by CSC. -->
+     <GeneratorRuntimeConfig>$(ToolsDir)csc.runtimeconfig.json</GeneratorRuntimeConfig>
+     <GeneratorCliPath>$(ToolsDir)dotnetcli/</GeneratorCliPath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
@@ -22,9 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include=".\AlwaysPassTest.cs" />
-    <!-- We're running the Generator on the test shared framework, which uses a fake shared framework version.
-         Reuse the same runtimeconfig that the tests use -->
-    <Content Include="$(XunitRuntimeConfig)">
+    <Content Include="$(GeneratorRuntimeConfig)">
       <!-- Rename it to match the Generator application name -->
       <Link>dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -44,7 +56,7 @@
       <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
     </PropertyGroup>
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec ContinueOnError="true" Command="$(TestHostRootPath)\dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
+    <Exec Command="$(GeneratorCliPath)dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs"/>
     <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" ContinueOnError="true" 
          OutputAssembly="$(OutputPath)$(SerializerName).dll" 
