@@ -8,9 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Since Microsoft.DotNet.PlatformAbstractions isn't being serviced, take a dependency on the shipped package. -->
-    <!--<ProjectReference Include="..\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />-->
-    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="2.0.0" />
+    <ProjectReference Include="..\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
   </ItemGroup>
 
