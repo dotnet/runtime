@@ -24,7 +24,7 @@
       <Version>$(MicrosoftNetNativeCompilerPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Private.CoreFx.UAP">
-      <Version>$(CoreFxVersion)</Version>
+      <Version>$(CoreFxUAPVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
       <Version>$(PlatformPackageVersion)</Version>

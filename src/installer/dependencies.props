@@ -18,6 +18,7 @@
 
   <PropertyGroup>
     <CoreFxVersion>4.5.0-preview1-25712-02</CoreFxVersion>
+    <CoreFxUAPVersion>4.6.0-preview1-25712-02</CoreFxUAPVersion>
     <PlatformPackageVersion>2.1.0-preview1-25712-02</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25712-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
@@ -64,6 +65,11 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>CoreFxVersion</ElementName>
       <PackageId>Microsoft.Private.CoreFx.NETCoreApp</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreFxUAPVersion</ElementName>
+      <PackageId>Microsoft.Private.CoreFx.UAP</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
