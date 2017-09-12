@@ -30,7 +30,6 @@ struct InitVarDscInfo
     unsigned stackArgSize;
 #endif // FEATURE_FASTTAILCALL
 
-
 public:
     // set to initial values
     void Init(LclVarDsc* lvaTable, bool _hasRetBufArg)
