@@ -111,20 +111,28 @@ namespace System.Diagnostics.Tests
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
         }
 
-        [Theory, InlineData("nano")]
+        [Theory, InlineData("nano"), InlineData("vi")]
         [PlatformSpecific(TestPlatforms.Linux)]
         // [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram(string programToOpenWith)
         {
-            string fileToOpen = GetTestFilePath() + ".txt";
-            File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram)}");
-            using (var px = Process.Start(programToOpenWith, fileToOpen))
+
+            if (IsProgramInstalled(programToOpenWith))
             {
-                Assert.Equal(programToOpenWith, px.ProcessName);
-                px.Kill();
-                px.WaitForExit();
-                Assert.True(px.HasExited);
-                Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+                string fileToOpen = GetTestFilePath() + ".txt";
+                File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram)}");
+                using (var px = Process.Start(programToOpenWith, fileToOpen))
+                {
+                    Assert.Equal(programToOpenWith, px.ProcessName);
+                    px.Kill();
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(137, px.ExitCode); // 137 means the process was killed
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Program specified to open file with {programToOpenWith} is not installed on this machine.");
             }
         }
 
