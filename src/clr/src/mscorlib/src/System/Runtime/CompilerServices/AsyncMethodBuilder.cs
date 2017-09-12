@@ -719,7 +719,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="result">The result for which we need a task.</param>
         /// <returns>The completed task containing the result.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
-        private Task<TResult> GetTaskForResult(TResult result)
+        internal static Task<TResult> GetTaskForResult(TResult result)
         {
             Contract.Ensures(
                 EqualityComparer<TResult>.Default.Equals(result, Contract.Result<Task<TResult>>().Result),
