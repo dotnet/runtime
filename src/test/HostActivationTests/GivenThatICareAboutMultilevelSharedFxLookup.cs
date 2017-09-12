@@ -159,6 +159,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining(_exeSelectedMessage);
+
+            // Verify we have the expected runtime versions
+            dotnet.Exec("--list-runtimes")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9999.0.0");
         }
 
         [Fact]
@@ -204,7 +216,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
-            
+            // Verify we have the expected runtime versions
+            dotnet.Exec("--list-runtimes")
+                .WorkingDirectory(_currentWorkingDir)
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9999.0.0")
+                .And
+                .HaveStdOutContaining("9999.0.0-dummy2")
+                .And
+                .HaveStdOutContaining("9999.0.2")
+                .And
+                .HaveStdOutContaining("9999.0.3");
+
             DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.3", "9999.0.0-dummy3", "9999.0.2", "9999.0.0-dummy2");
         }
 
@@ -258,6 +285,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1"));
+
+            // Verify we have the expected runtime versions
+            dotnet.Exec("--list-runtimes")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9999.1.1")
+                .And
+                .HaveStdOutContaining("10000.1.1")
+                .And
+                .HaveStdOutContaining("10000.1.3");
         }
 
         [Fact]
@@ -291,6 +333,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Fail()
                 .And
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
+
+            // Verify we have the expected runtime versions
+            dotnet.Exec("--list-runtimes")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9998.0.1")
+                .And
+                .HaveStdOutContaining("9998.1.0")
+                .And
+                .HaveStdOutContaining("9999.0.0")
+                .And
+                .HaveStdOutContaining("9999.0.1")
+                .And
+                .HaveStdOutContaining("9999.1.0");
         }
 
         // This method adds a list of new framework version folders in the specified

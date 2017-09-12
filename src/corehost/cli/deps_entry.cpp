@@ -75,10 +75,8 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str) co
         pal::string_t ietf_dir = get_directory(pal_relative_path);
         pal::string_t ietf = ietf_dir;
 
-        // get_directory returns with DIR_SEPERATOR appended that we need to remove.
-        if (ietf.back() == DIR_SEPARATOR) {
-            ietf.pop_back();
-        }
+        // get_directory returns with DIR_SEPARATOR appended that we need to remove.
+        remove_trailing_dir_seperator(&ietf);
 
         // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
         ietf = get_filename(ietf);

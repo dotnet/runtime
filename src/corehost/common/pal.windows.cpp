@@ -443,12 +443,12 @@ bool pal::file_exists(const string_t& path)
     return false;
 }
 
-void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list)
+static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
 {
     assert(list != nullptr);
 
-    std::vector<string_t>& files = *list;
-    string_t normalized_path(path);
+    std::vector<pal::string_t>& files = *list;
+    pal::string_t normalized_path(path);
 
     if (LongFile::ShouldNormalize(normalized_path))
     {
@@ -458,7 +458,7 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
         }
     }
 
-    string_t search_string(normalized_path);
+    pal::string_t search_string(normalized_path);
     append_path(&search_string, pattern.c_str());
 
     WIN32_FIND_DATAW data = { 0 };
@@ -470,14 +470,34 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
     }
     do
     {
-        string_t filepath(data.cFileName);
-        files.push_back(filepath);
+        if (!onlydirectories || (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            pal::string_t filepath(data.cFileName);
+            if (filepath != _X(".") && filepath != _X(".."))
+            {
+                files.push_back(filepath);
+            }
+        }
     } while (::FindNextFileW(handle, &data));
     ::FindClose(handle);
 }
 
-void pal::readdir(const string_t& path, std::vector<pal::string_t>* list)
+void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list)
 {
-    pal::readdir(path, _X("*"), list);
+    ::readdir(path, pattern, false, list);
 }
 
+void pal::readdir(const string_t& path, std::vector<pal::string_t>* list)
+{
+    ::readdir(path, _X("*"), false, list);
+}
+
+void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pattern, std::vector<pal::string_t>* list)
+{
+    ::readdir(path, pattern, true, list);
+}
+
+void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
+{
+    ::readdir(path, _X("*"), true, list);
+}
