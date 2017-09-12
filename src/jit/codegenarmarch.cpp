@@ -1225,7 +1225,16 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
         jmpKind = genJumpKindForOper(GT_GE, CK_UNSIGNED);
     }
 
-    getEmitter()->emitInsBinary(INS_cmp, EA_4BYTE, src1, src2);
+    var_types bndsChkType = genActualType(src2->TypeGet());
+#if DEBUG
+    // Bounds checks can only be 32 or 64 bit sized comparisons.
+    assert(bndsChkType == TYP_INT || bndsChkType == TYP_LONG);
+
+    // The type of the bounds check should always wide enough to compare against the index.
+    assert(emitTypeSize(bndsChkType) >= emitTypeSize(genActualType(src1->TypeGet())));
+#endif // DEBUG
+
+    getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(bndsChkType), src1, src2);
     genJumpToThrowHlpBlk(jmpKind, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
 }
 
