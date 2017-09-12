@@ -119,6 +119,34 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
+        }
+
+        [Fact]
+        public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
+        }
+
+        [Fact]
+        public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior varies on Windows and Unix. Refer to #23969
+        public void ProcessStart_TryOpenFolder_UseShellExecuteIsTrue_DoesNotThrow()
+        {
+            using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = Path.GetTempPath() }))
+            {
+                Assert.Null(px); // Not sure why px returned is null. but the call does not throw and opens folder successfully.
+            }
+        }
+
+        [Fact]
         public void TestExitCode()
         {
             {
