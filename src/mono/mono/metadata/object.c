@@ -7403,6 +7403,9 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 static MonoObject*
 mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
 {
+#ifdef HOST_WASM
+	return mono_runtime_invoke_checked (mono_get_context_capture_method (), NULL, NULL, error);
+#else
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	RuntimeInvokeFunction runtime_invoke;
@@ -7424,6 +7427,7 @@ mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
 	runtime_invoke = (RuntimeInvokeFunction)domain->capture_context_runtime_invoke;
 
 	return runtime_invoke (NULL, NULL, NULL, domain->capture_context_method);
+#endif
 }
 /**
  * mono_async_result_new:
