@@ -43,7 +43,7 @@ check_c_source_compiles(
     #include <${SOCKET_INCLUDES}>
     int main()
     {
-        struct in_pktinfo;
+        struct in_pktinfo pktinfo;
         return 0;
     }
     "
@@ -54,7 +54,7 @@ check_c_source_compiles(
     #include <${SOCKET_INCLUDES}>
     int main()
     {
-        struct ip_mreqn;
+        struct ip_mreqn mreqn;
         return 0;
     }
     "
