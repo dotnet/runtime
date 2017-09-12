@@ -91,6 +91,8 @@
     <Compile Include="Mono.Linker\TypeReferenceExtensions.cs" />
     <Compile Include="Mono.Linker\XApiReader.cs" />
     <Compile Include="Mono.Linker.Steps\TypeMapStep.cs" />
+    <Compile Include="Mono.Linker\ILogger.cs" />
+    <Compile Include="Mono.Linker\ConsoleLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
