@@ -135,9 +135,11 @@ namespace System.Diagnostics.Tests
         {
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
-
-        [Fact]
+        
         [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior varies on Windows and Unix. Refer to #23969
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano does not support UseShellExecute
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "not supported on UAP")]
+        [OuterLoop("Launches File Explorer")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsTrue_DoesNotThrow()
         {
             using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = Path.GetTempPath() }))

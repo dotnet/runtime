@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
-        // [OuterLoop("Opens program")]
+        [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise()
         {
             string fileToOpen = GetTestFilePath() + ".txt";
@@ -102,7 +102,7 @@ namespace System.Diagnostics.Tests
 
         [Theory, InlineData("nano"), InlineData("vi")]
         [PlatformSpecific(TestPlatforms.Linux)]
-        // [OuterLoop("Opens program")]
+        [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram(string programToOpenWith)
         {
             if (IsProgramInstalled(programToOpenWith))
@@ -125,7 +125,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
-        // [OuterLoop("Opens program")]
+        [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2()
         {
             // The exit code is coming from xdg-open. Which is why I split this test for OSX and Linux to assert against two different exit code values.
@@ -148,7 +148,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.OSX)]
-        // [OuterLoop("Opens program")]
+        [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecuteTrue_TryOpenFileThatDoesntExist_ReturnsExitCode1()
         {
             // The exit code is coming from open. Which is why I split this test for OSX and Linux to assert against two different exit code values.
@@ -162,7 +162,7 @@ namespace System.Diagnostics.Tests
 
         [Theory, InlineData("/usr/bin/open"), InlineData("/usr/bin/nano")]
         [PlatformSpecific(TestPlatforms.OSX)]
-        // [OuterLoop("Opens program")]
+        [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram(string programToOpenWith)
         {
             string fileToOpen = GetTestFilePath() + ".txt";
@@ -180,7 +180,7 @@ namespace System.Diagnostics.Tests
 
         [Theory, InlineData("Safari"), InlineData("\"Google Chrome\"")]
         [PlatformSpecific(TestPlatforms.OSX)]
-        // [OuterLoop("Opens browser")]
+        [OuterLoop("Opens browser")]
         public void ProcessStart_OpenUrl_UsesSpecifiedApplication(string applicationToOpenWith)
         {
             using (var px = Process.Start("/usr/bin/open", "https://github.com/dotnet/corefx -a " + applicationToOpenWith))
@@ -195,7 +195,7 @@ namespace System.Diagnostics.Tests
 
         [Theory, InlineData("-a Safari"), InlineData("-a \"Google Chrome\"")]
         [PlatformSpecific(TestPlatforms.OSX)]
-        // [OuterLoop("Opens browser")]
+        [OuterLoop("Opens browser")]
         public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgument(string arguments)
         {
             var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = "https://github.com/dotnet/corefx", Arguments = arguments };
