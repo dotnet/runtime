@@ -32,6 +32,8 @@
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="dotnet-Microsoft.XmlSerializer.Generator">
+      <!-- Copy this to our test output directory and run from there.
+           This is required so that we can stage the application with a custom runtimeconfig that lets it run on the test shared framework. -->
       <Private>true</Private>
     </ReferenceFromRuntime>
   </ItemGroup>
@@ -39,9 +41,8 @@
     <PropertyGroup>
       <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
     </PropertyGroup>
-    <Copy SourceFiles="$(ToolsDir)\csc.runtimeconfig.json" DestinationFiles="$(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json" />
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec ContinueOnError="true" Command="$(ToolsDir)\dotnetcli\dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
+    <Exec ContinueOnError="true" Command="$(TestHostRootPath)\dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs"/>
     <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" ContinueOnError="true" 
          OutputAssembly="$(OutputPath)$(SerializerName).dll" 
