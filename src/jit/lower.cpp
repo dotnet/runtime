@@ -2457,7 +2457,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         }
         else
 #endif
-        if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
+            if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
         {
             //
             // Transform ((x AND y) EQ|NE 0) into (x TEST_EQ|TEST_NE y) when possible.
