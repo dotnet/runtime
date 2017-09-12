@@ -12,6 +12,7 @@ using System.Data.SqlTypes;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -19,6 +20,104 @@ namespace System.Runtime.Serialization.Formatters.Tests
 {
     public static class EqualityExtensions
     {
+        private static MethodInfo GetExtensionMethod(Type extendedType)
+        {
+            if (extendedType.IsGenericType)
+            {
+                MethodInfo method = typeof(EqualityExtensions).GetMethods()
+                        ?.SingleOrDefault(m =>
+                            m.Name == "IsEqual" &&
+                            m.GetParameters().Length == 2 &&
+                            m.GetParameters()[0].ParameterType.Name == extendedType.Name &&
+                            m.IsGenericMethodDefinition);
+                if (method != null)
+                    return method.MakeGenericMethod(extendedType.GenericTypeArguments[0]);
+            }
+
+            return typeof(EqualityExtensions).GetMethod("IsEqual", new[] { extendedType, extendedType });
+        }
+
+        public static bool CheckEquals(object objA, object objB)
+        {
+            if (objA == null && objB == null)
+                return true;
+
+            if (objA != null && objB != null)
+            {
+                object equalityResult = null;
+                Type objType = objA.GetType();
+
+                // Check if custom equality extension method is available
+                MethodInfo customEqualityCheck = GetExtensionMethod(objType);
+                if (customEqualityCheck != null)
+                {
+                    equalityResult = customEqualityCheck.Invoke(objA, new object[] { objA, objB });
+                }
+                else
+                {
+                    // Check if object.Equals(object) is overridden and if not check if there is a more concrete equality check implementation
+                    bool equalsNotOverridden = objType.GetMethod("Equals", new Type[] { typeof(object) }).DeclaringType == typeof(object);
+                    if (equalsNotOverridden)
+                    {
+                        // If type doesn't override Equals(object) method then check if there is a more concrete implementation
+                        // e.g. if type implements IEquatable<T>.
+                        MethodInfo equalsMethod = objType.GetMethod("Equals", new Type[] { objType });
+                        if (equalsMethod.DeclaringType != typeof(object))
+                        {
+                            equalityResult = equalsMethod.Invoke(objA, new object[] { objB });
+                        }
+                    }
+                }
+
+                if (equalityResult != null)
+                {
+                    return (bool)equalityResult;
+                }
+            }
+
+            if (objA is IEnumerable objAEnumerable && objB is IEnumerable objBEnumerable)
+            {
+                return CheckSequenceEquals(objAEnumerable, objBEnumerable);
+            }
+
+            return objA.Equals(objB);
+        }
+
+        public static bool CheckSequenceEquals(this IEnumerable @this, IEnumerable other)
+        {
+            if (@this == null || other == null)
+                return @this == other;
+
+            if (@this.GetType() != other.GetType())
+                return false;
+
+            IEnumerator eA = null;
+            IEnumerator eB = null;
+
+            try
+            {
+                eA = (@this as IEnumerable).GetEnumerator();
+                eB = (@this as IEnumerable).GetEnumerator();
+                while (true)
+                {
+                    bool moved = eA.MoveNext();
+                    if (moved != eB.MoveNext())
+                        return false;
+                    if (!moved)
+                        return true;
+                    if (eA.Current == null && eB.Current == null)
+                        return true;
+                    if (!CheckEquals(eA.Current, eB.Current))
+                        return true;
+                }
+            }
+            finally
+            {
+                (eA as IDisposable)?.Dispose();
+                (eB as IDisposable)?.Dispose();
+            }
+        }
+
         public static bool IsEqual(this WeakReference @this, WeakReference other)
         {
             if (@this == null || other == null)
@@ -90,7 +189,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Locale.LCID == other.Locale.LCID &&
                 @this.EnforceConstraints == other.EnforceConstraints &&
                 @this.ExtendedProperties?.Count == other.ExtendedProperties?.Count &&
-                BinaryFormatterTests.CheckEquals(@this.ExtendedProperties, other.ExtendedProperties);
+                CheckEquals(@this.ExtendedProperties, other.ExtendedProperties);
         }
 
         public static bool IsEqual(this DataTable @this, DataTable other)
@@ -153,7 +252,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             for (int i = 0; i < @this.Count; i++)
             {
-                if (!BinaryFormatterTests.CheckEquals(@this[i], other[i]))
+                if (!CheckEquals(@this[i], other[i]))
                     return false;
             }
 
@@ -170,17 +269,17 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.IsSynchronized == other.IsSynchronized))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return CheckSequenceEquals(@this, other);
         }
 
         public static bool IsEqual(this Dictionary<int, string> @this, Dictionary<int, string> other)
         {
             if (!(@this != null &&
                 other != null &&
-                BinaryFormatterTests.CheckEquals(@this.Comparer, other.Comparer) &&
+                CheckEquals(@this.Comparer, other.Comparer) &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values)))
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
+                @this.Values.CheckSequenceEquals(other.Values)))
                 return false;
 
             foreach (var kv in @this)
@@ -203,10 +302,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (!(@this != null &&
                 other != null &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckEquals(@this.Comparer, other.Comparer)))
+                CheckEquals(@this.Comparer, other.Comparer)))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this LinkedListNode<Point> @this, LinkedListNode<Point> other)
@@ -216,7 +315,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             return @this != null
                 && other != null &&
-                BinaryFormatterTests.CheckEquals(@this.Value, other.Value);
+                CheckEquals(@this.Value, other.Value);
         }
 
         public static bool IsEqual(this LinkedList<Point> @this, LinkedList<Point> other)
@@ -228,7 +327,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 IsEqual(@this.Last, other.Last)))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this List<int> @this, List<int> other)
@@ -239,7 +338,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this Queue<int> @this, Queue<int> other)
@@ -249,7 +348,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this SortedList<int, Point> @this, SortedList<int, Point> other)
@@ -257,13 +356,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (!(@this != null &&
                 other != null &&
                 @this.Capacity == other.Capacity &&
-                BinaryFormatterTests.CheckEquals(@this.Comparer, other.Comparer) &&
+                CheckEquals(@this.Comparer, other.Comparer) &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values)))
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
+                @this.Values.CheckSequenceEquals(other.Values)))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this SortedSet<Point> @this, SortedSet<Point> other)
@@ -271,12 +370,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (!(@this != null &&
                 other != null &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckEquals(@this.Comparer, other.Comparer) &&
-                BinaryFormatterTests.CheckEquals(@this.Min, other.Min) &&
-                BinaryFormatterTests.CheckEquals(@this.Max, other.Max)))
+                CheckEquals(@this.Comparer, other.Comparer) &&
+                CheckEquals(@this.Min, other.Min) &&
+                CheckEquals(@this.Max, other.Max)))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this Stack<Point> @this, Stack<Point> other)
@@ -286,7 +385,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this Hashtable @this, Hashtable other)
@@ -296,14 +395,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.IsReadOnly == other.IsReadOnly &&
                 @this.IsFixedSize == other.IsFixedSize &&
                 @this.IsSynchronized == other.IsSynchronized &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values) &&
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
+                @this.Values.CheckSequenceEquals(other.Values) &&
                 @this.Count == other.Count))
                 return false;
             
             foreach (var key in @this.Keys)
             {
-                if (!BinaryFormatterTests.CheckEquals(@this[key], other[key]))
+                if (!CheckEquals(@this[key], other[key]))
                     return false;
             }
 
@@ -317,7 +416,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this ObservableCollection<int> @this, ObservableCollection<int> other)
@@ -327,7 +426,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this ReadOnlyCollection<int> @this, ReadOnlyCollection<int> other)
@@ -337,15 +436,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this ReadOnlyDictionary<int, string> @this, ReadOnlyDictionary<int, string> other)
         {
             if (!(@this != null &&
                 other != null &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values) &&
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
+                @this.Values.CheckSequenceEquals(other.Values) &&
                 @this.Count == other.Count))
                 return false;
 
@@ -365,7 +464,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this Queue @this, Queue other)
@@ -376,7 +475,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.IsSynchronized == other.IsSynchronized))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this SortedList @this, SortedList other)
@@ -385,14 +484,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 other != null &&
                 @this.Capacity == other.Capacity &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values) &&
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
+                @this.Values.CheckSequenceEquals(other.Values) &&
                 @this.IsReadOnly == other.IsReadOnly &&
                 @this.IsFixedSize == other.IsFixedSize &&
                 @this.IsSynchronized == other.IsSynchronized))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this HybridDictionary @this, HybridDictionary other)
@@ -400,16 +499,16 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (!(@this != null &&
                 other != null &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
                 @this.IsReadOnly == other.IsReadOnly &&
                 @this.IsFixedSize == other.IsFixedSize &&
                 @this.IsSynchronized == other.IsSynchronized &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values)))
+                @this.Values.CheckSequenceEquals(other.Values)))
                 return false;
 
             foreach (var key in @this.Keys)
             {
-                if (!BinaryFormatterTests.CheckEquals(@this[key], other[key]))
+                if (!CheckEquals(@this[key], other[key]))
                     return false;
             }
 
@@ -421,16 +520,16 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (!(@this != null &&
                 other != null &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
                 @this.IsReadOnly == other.IsReadOnly &&
                 @this.IsFixedSize == other.IsFixedSize &&
                 @this.IsSynchronized == other.IsSynchronized &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values)))
+                @this.Values.CheckSequenceEquals(other.Values)))
                 return false;
 
             foreach (var key in @this.Keys)
             {
-                if (!BinaryFormatterTests.CheckEquals(@this[key], other[key]))
+                if (!CheckEquals(@this[key], other[key]))
                     return false;
             }
 
@@ -441,14 +540,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             if (!(@this != null &&
                 other != null &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.AllKeys, other.AllKeys) &&
+                @this.AllKeys.CheckSequenceEquals(other.AllKeys) &&
                 @this.Count == other.Count &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys)))
+                @this.Keys.CheckSequenceEquals(other.Keys)))
                 return false;
 
             foreach (var key in @this.AllKeys)
             {
-                if (!BinaryFormatterTests.CheckEquals(@this[key], other[key]))
+                if (!CheckEquals(@this[key], other[key]))
                     return false;
             }
 
@@ -461,13 +560,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 other != null &&
                 @this.Count == other.Count &&
                 @this.IsReadOnly == other.IsReadOnly &&
-                BinaryFormatterTests.CheckEquals(@this.Keys, other.Keys) &&
-                BinaryFormatterTests.CheckEquals(@this.Values, other.Values)))
+                CheckEquals(@this.Keys, other.Keys) &&
+                CheckEquals(@this.Values, other.Values)))
                 return false;
 
             foreach (var key in @this.Keys)
             {
-                if (!BinaryFormatterTests.CheckEquals(@this[key], other[key]))
+                if (!CheckEquals(@this[key], other[key]))
                     return false;
             }
 
@@ -483,7 +582,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.IsSynchronized == other.IsSynchronized))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this Stack @this, Stack other)
@@ -494,7 +593,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.IsSynchronized == other.IsSynchronized))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this BindingList<int> @this, BindingList<int> other)
@@ -508,7 +607,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this BindingList<Point> @this, BindingList<Point> other)
@@ -522,7 +621,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this PropertyCollection @this, PropertyCollection other)
@@ -532,12 +631,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.IsReadOnly == other.IsReadOnly &&
                 @this.IsFixedSize == other.IsFixedSize &&
                 @this.IsSynchronized == other.IsSynchronized &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Keys, other.Keys) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Values, other.Values) &&
+                @this.Keys.CheckSequenceEquals(other.Keys) &&
+                @this.Values.CheckSequenceEquals(other.Values) &&
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this CompareInfo @this, CompareInfo other)
@@ -569,14 +668,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Discard == other.Discard &&
                 @this.Domain == other.Domain &&
                 @this.Expired == other.Expired &&
-                BinaryFormatterTests.CheckEquals(@this.Expires, other.Expires) &&
+                CheckEquals(@this.Expires, other.Expires) &&
                 @this.Name == other.Name &&
                 @this.Path == other.Path &&
                 @this.Port == other.Port &&
                 @this.Secure == other.Secure &&
                 // This needs to have m_Timestamp set by reflection in order to roundtrip correctly
                 // otherwise this field will change each time you create an object and cause this to fail
-                BinaryFormatterTests.CheckEquals(@this.TimeStamp, other.TimeStamp) &&
+                CheckEquals(@this.TimeStamp, other.TimeStamp) &&
                 @this.Value == other.Value &&
                 @this.Version == other.Version;
         }
@@ -588,7 +687,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this BasicISerializableObject @this, BasicISerializableObject other)
@@ -672,7 +771,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     return false;
             }
 
-            return BinaryFormatterTests.CheckEquals(thisFlattened.Item2, otherFlattened.Item2);
+            return CheckEquals(thisFlattened.Item2, otherFlattened.Item2);
         }
 
         public static bool IsEqual(this ArraySegment<int> @this, ArraySegment<int> other)
@@ -682,19 +781,19 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Offset == other.Offset))
                 return false;
 
-            return @this.Array == null || BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.Array == null || @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this ObjectWithArrays @this, ObjectWithArrays other)
         {
             return @this != null &&
                 other != null &&
-                BinaryFormatterTests.CheckEquals(@this.IntArray, other.IntArray) &&
-                BinaryFormatterTests.CheckEquals(@this.StringArray, other.StringArray) &&
-                BinaryFormatterTests.CheckEquals(@this.TreeArray, other.TreeArray) &&
-                BinaryFormatterTests.CheckEquals(@this.ByteArray, other.ByteArray) &&
-                BinaryFormatterTests.CheckEquals(@this.JaggedArray, other.JaggedArray) &&
-                BinaryFormatterTests.CheckEquals(@this.MultiDimensionalArray, other.MultiDimensionalArray);
+                CheckEquals(@this.IntArray, other.IntArray) &&
+                CheckEquals(@this.StringArray, other.StringArray) &&
+                CheckEquals(@this.TreeArray, other.TreeArray) &&
+                CheckEquals(@this.ByteArray, other.ByteArray) &&
+                CheckEquals(@this.JaggedArray, other.JaggedArray) &&
+                CheckEquals(@this.MultiDimensionalArray, other.MultiDimensionalArray);
         }
 
         public static bool IsEqual(this ObjectWithIntStringUShortUIntULongAndCustomObjectFields @this, ObjectWithIntStringUShortUIntULongAndCustomObjectFields other)
@@ -750,7 +849,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.Count == other.Count))
                 return false;
 
-            return BinaryFormatterTests.CheckSequenceEquals(@this, other);
+            return @this.CheckSequenceEquals(other);
         }
 
         public static bool IsEqual(this Tree<Colors> @this, Tree<Colors> other)
@@ -912,19 +1011,19 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 ((PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative) ? true :
                 (@this.StackTrace == other.StackTrace &&
                 @this.ToString() == other.ToString())) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.Data, other.Data) &&
+                @this.Data.CheckSequenceEquals(other.Data) &&
                 @this.Message == other.Message &&
                 @this.Source == other.Source &&
                 // On Net Native we can't reflect on Exceptions and change its HResult
                 (PlatformDetection.IsNetNative ? true : @this.HResult == other.HResult) &&
                 @this.HelpLink == other.HelpLink &&
-                BinaryFormatterTests.CheckEquals(@this.InnerException, other.InnerException);
+                CheckEquals(@this.InnerException, other.InnerException);
         }
 
         public static bool IsEqual(this AggregateException @this, AggregateException other)
         {
             return IsEqual(@this as Exception, other as Exception) &&
-                BinaryFormatterTests.CheckSequenceEquals(@this.InnerExceptions, other.InnerExceptions);
+                @this.InnerExceptions.CheckSequenceEquals(other.InnerExceptions);
         }
 
         public class ReferenceComparer<T> : IEqualityComparer<T> where T: class
