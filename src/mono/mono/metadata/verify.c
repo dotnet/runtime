@@ -190,6 +190,7 @@ typedef struct {
 
 	int num_locals;
 	MonoType **locals;
+	char *locals_verification_state;
 
 	/*TODO get rid of target here, need_merge in mono_method_verify and hoist the merging code in the branching code*/
 	int target;
@@ -283,6 +284,9 @@ enum {
 
 	/*This is an unitialized this ref*/
 	UNINIT_THIS_MASK = 0x2000,
+
+	/* This is a safe to return byref */
+	SAFE_BYREF_MASK = 0x4000,
 };
 
 static const char* const
@@ -1109,10 +1113,36 @@ stack_slot_is_boxed_value (ILStackDesc *value)
 	return (value->stype & BOXED_MASK) == BOXED_MASK;
 }
 
+/* stack_slot_is_safe_byref:
+ *
+ * Returns TRUE is @value is a safe byref
+ */
+static gboolean
+stack_slot_is_safe_byref (ILStackDesc *value)
+{
+	return (value->stype & SAFE_BYREF_MASK) == SAFE_BYREF_MASK;
+}
+
 static const char *
 stack_slot_get_name (ILStackDesc *value)
 {
 	return type_names [value->stype & TYPE_MASK];
+}
+
+enum {
+	SAFE_BYREF_LOCAL = 1,
+	UNSAFE_BYREF_LOCAL = 2
+};
+static gboolean
+local_is_safe_byref (VerifyContext *ctx, unsigned int arg)
+{
+	return ctx->locals_verification_state [arg] == SAFE_BYREF_LOCAL;
+}
+
+static gboolean
+local_is_unsafe_byref (VerifyContext *ctx, unsigned int arg)
+{
+	return ctx->locals_verification_state [arg] == UNSAFE_BYREF_LOCAL;
 }
 
 #define APPEND_WITH_PREDICATE(PRED,NAME) do {\
@@ -1137,6 +1167,7 @@ stack_slot_stack_type_full_name (ILStackDesc *value)
 		APPEND_WITH_PREDICATE (stack_slot_is_null_literal, "null");
 		APPEND_WITH_PREDICATE (stack_slot_is_managed_mutability_pointer, "cmmp");
 		APPEND_WITH_PREDICATE (stack_slot_is_managed_pointer, "mp");
+		APPEND_WITH_PREDICATE (stack_slot_is_safe_byref, "safe-byref");
 		has_pred = TRUE;
 	}
 
@@ -1804,6 +1835,9 @@ dump_stack_value (ILStackDesc *value)
 
 	if (stack_slot_is_managed_pointer (value))
 		printf ("Managed Pointer to: ");
+
+	if (stack_slot_is_safe_byref (value))
+		printf ("Safe ByRef to: ");
 
 	switch (stack_slot_get_underlying_type (value)) {
 		case TYPE_INV:
@@ -2788,6 +2822,18 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 #undef IS_LOAD_FUN_PTR
 }
 
+static gboolean
+is_this_arg_of_struct_instance_method (unsigned int arg, VerifyContext *ctx)
+{
+	if (arg != 0)
+		return FALSE;
+	if (ctx->method->flags & METHOD_ATTRIBUTE_STATIC)
+		return FALSE;
+	if (!ctx->method->klass->valuetype)
+		return FALSE;
+	return TRUE;
+}
+
 /* implement the opcode checks*/
 static void
 push_arg (VerifyContext *ctx, unsigned int arg, int take_addr) 
@@ -2819,6 +2865,8 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 			if (mono_method_is_constructor (ctx->method) && !ctx->super_ctor_called && !ctx->method->klass->valuetype)
 				top->stype |= UNINIT_THIS_MASK;
 		}
+		if (!take_addr && ctx->params [arg]->byref && !is_this_arg_of_struct_instance_method (arg, ctx))
+			top->stype |= SAFE_BYREF_MASK;
 	} 
 }
 
@@ -2833,8 +2881,11 @@ push_local (VerifyContext *ctx, guint32 arg, int take_addr)
 		if (ctx->locals [arg]->byref && take_addr)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("ByRef of ByRef at 0x%04x", ctx->ip_offset));
 
-		set_stack_value (ctx, stack_push (ctx), ctx->locals [arg], take_addr);
-	} 
+		ILStackDesc *value = stack_push (ctx);
+		set_stack_value (ctx, value, ctx->locals [arg], take_addr);
+		if (local_is_safe_byref (ctx, arg))
+			value->stype |= SAFE_BYREF_MASK;
+	}
 }
 
 static void
@@ -2873,9 +2924,20 @@ store_local (VerifyContext *ctx, guint32 arg)
 		return;
 
 	value = stack_pop (ctx);
-	if (ctx->locals [arg]->byref && stack_slot_is_managed_mutability_pointer (value))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly managed reference when storing on a local variable at 0x%04x", ctx->ip_offset));
-			
+	if (ctx->locals [arg]->byref) {
+		if (stack_slot_is_managed_mutability_pointer (value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly managed reference when storing on a local variable at 0x%04x", ctx->ip_offset));
+
+		if (local_is_safe_byref (ctx, arg) && !stack_slot_is_safe_byref (value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot store an unsafe ret byref to a local that was previously stored a save ret byref value at 0x%04x", ctx->ip_offset));
+
+		if (stack_slot_is_safe_byref (value) && !local_is_unsafe_byref (ctx, arg))
+			ctx->locals_verification_state [arg] |= SAFE_BYREF_LOCAL;
+
+		if (!stack_slot_is_safe_byref (value))
+			ctx->locals_verification_state [arg] |= UNSAFE_BYREF_LOCAL;
+
+	}
 	if (!verify_stack_type_compatibility (ctx, ctx->locals [arg], value)) {
 		char *expected = mono_type_full_name (ctx->locals [arg]);
 		char *found = stack_slot_full_name (value);
@@ -3127,7 +3189,10 @@ do_ret (VerifyContext *ctx)
 			return;
 		}
 
-		if (ret->byref || ret->type == MONO_TYPE_TYPEDBYREF || mono_type_is_value_type (ret, "System", "ArgIterator") || mono_type_is_value_type (ret, "System", "RuntimeArgumentHandle"))
+		if (ret->byref && !stack_slot_is_safe_byref (top))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns byref and return value is not a safe-to-return-byref at 0x%04x", ctx->ip_offset));
+
+		if (ret->type == MONO_TYPE_TYPEDBYREF || mono_type_is_value_type (ret, "System", "ArgIterator") || mono_type_is_value_type (ret, "System", "RuntimeArgumentHandle"))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns byref, TypedReference, ArgIterator or RuntimeArgumentHandle at 0x%04x", ctx->ip_offset));
 	}
 
@@ -3193,6 +3258,8 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual_)
 	if (!check_underflow (ctx, param_count))
 		return;
 
+	gboolean is_safe_byref_call = TRUE;
+
 	for (i = sig->param_count - 1; i >= 0; --i) {
 		VERIFIER_DEBUG ( printf ("verifying argument %d\n", i); );
 		value = stack_pop (ctx);
@@ -3211,6 +3278,8 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual_)
 			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot  pass a byref argument to a tail %s at 0x%04x", virtual_ ? "callvirt" : "call",  ctx->ip_offset));
 			return;
 		}
+		if (stack_slot_is_managed_pointer (value) && !stack_slot_is_safe_byref (value))
+			is_safe_byref_call = FALSE;
 	}
 
 	if (sig->hasthis) {
@@ -3296,6 +3365,8 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual_)
 				ctx->prefix_set &= ~PREFIX_READONLY;
 				value->stype |= CMMP_MASK;
 			}
+			if (sig->ret->byref && is_safe_byref_call)
+				value->stype |= SAFE_BYREF_MASK;
 		}
 	}
 
@@ -3333,7 +3404,10 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 
-	set_stack_value (ctx, stack_push (ctx), field->type, take_addr);
+	ILStackDesc *value = stack_push (ctx);
+	set_stack_value (ctx, value, field->type, take_addr);
+	if (take_addr)
+		value->stype |= SAFE_BYREF_MASK;
 }
 
 static void
@@ -3432,6 +3506,7 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 {
 	ILStackDesc *obj;
 	MonoClassField *field;
+	gboolean is_safe_byref = FALSE;
 
 	if (!take_addr)
 		CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
@@ -3450,7 +3525,14 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 		!(field->parent == ctx->method->klass && mono_method_is_constructor (ctx->method)))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a init-only field at 0x%04x", ctx->ip_offset));
 
-	set_stack_value (ctx, stack_push (ctx), field->type, take_addr);
+	//must do it here cuz stack_push will return the same slot as obj above
+	is_safe_byref = take_addr && (stack_slot_is_reference_value (obj) || stack_slot_is_safe_byref (obj));
+
+	ILStackDesc *value = stack_push (ctx);
+	set_stack_value (ctx, value, field->type, take_addr);
+
+	if (is_safe_byref)
+		value->stype |= SAFE_BYREF_MASK;
 }
 
 static void
@@ -4116,6 +4198,8 @@ do_ldelema (VerifyContext *ctx, int klass_token)
 		ctx->prefix_set &= ~PREFIX_READONLY;
 		res->stype |= CMMP_MASK;
 	}
+
+	res->stype |= SAFE_BYREF_MASK;
 }
 
 /*
@@ -4590,6 +4674,12 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 		MonoClass *new_class = mono_class_from_mono_type (new_type);
 		MonoClass *match_class = NULL;
 
+		// check for safe byref before the next steps override new_slot
+		if (stack_slot_is_safe_byref (old_slot) ^ stack_slot_is_safe_byref (new_slot)) {
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot merge stack at depth %d byref types are safe byref incompatible at %0x04x ", i, ctx->ip_offset));
+			goto end_verify;
+		}
+
 		// S := T then U = S (new value is compatible with current value, keep current)
 		if (verify_stack_type_compatibility (ctx, old_type, new_slot)) {
 			copy_stack_value (new_slot, old_slot);
@@ -4891,6 +4981,7 @@ mono_method_verify (MonoMethod *method, int level)
 	ctx.num_locals = ctx.header->num_locals;
 	ctx.locals = (MonoType **)g_memdup (ctx.header->locals, sizeof (MonoType*) * ctx.header->num_locals);
 	_MEM_ALLOC (sizeof (MonoType*) * ctx.header->num_locals);
+	ctx.locals_verification_state = g_new0 (char, ctx.num_locals);
 
 	if (ctx.num_locals > 0 && !ctx.header->init_locals)
 		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Method with locals variable but without init locals set"));
@@ -6008,6 +6099,7 @@ cleanup:
 	if (ctx.code)
 		g_free (ctx.code);
 	g_free (ctx.locals);
+	g_free (ctx.locals_verification_state);
 	g_free (ctx.params);
 	mono_basic_block_free (original_bb);
 	mono_metadata_free_mh (ctx.header);
