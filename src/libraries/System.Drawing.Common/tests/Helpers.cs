@@ -19,7 +19,7 @@ namespace System.Drawing
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return PlatformDetection.IsNotWindowsNanoServer;
+                return PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsServerCore;
             }
             else
             {

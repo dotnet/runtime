@@ -38,6 +38,7 @@ namespace System
         public static bool IsNotFedoraOrRedHatOrCentos => !IsDistroAndVersion("fedora") && !IsDistroAndVersion("rhel") && !IsDistroAndVersion("centos");
         public static bool IsFedora => IsDistroAndVersion("fedora");
         public static bool IsWindowsNanoServer => false;
+        public static bool IsWindowsServerCore => false;
         public static bool IsWindowsAndElevated => false;
 
         public static bool IsRedHat => IsDistroAndVersion("rhel") || IsDistroAndVersion("rhl");

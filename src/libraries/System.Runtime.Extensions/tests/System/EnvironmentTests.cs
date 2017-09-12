@@ -358,7 +358,7 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.ProgramFiles)]
         [InlineData(Environment.SpecialFolder.CommonProgramFiles)]
         [InlineData(Environment.SpecialFolder.AdminTools)]
-        [InlineData(Environment.SpecialFolder.CDBurning)]
+        //[InlineData(Environment.SpecialFolder.CDBurning)]  // Not available on Server Core
         [InlineData(Environment.SpecialFolder.CommonAdminTools)]
         [InlineData(Environment.SpecialFolder.CommonDocuments)]
         [InlineData(Environment.SpecialFolder.CommonMusic)]
