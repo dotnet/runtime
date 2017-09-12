@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap' OR '$(TargetsUnix)' == 'true'">true</SkipTestsOnPlatform>
+    <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap'">true</SkipTestsOnPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <!-- We're building netcoreap, run on the test CLI
@@ -26,8 +26,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
     <Compile Include=".\SGenTests.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
@@ -58,14 +56,28 @@
     <Message Text="Running Serialization Tool" Importance="normal" />
     <Exec Command="$(GeneratorCliPath)dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs"/>
-    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" ContinueOnError="true" 
+    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' != 'core'" ContinueOnError="true" 
          OutputAssembly="$(OutputPath)$(SerializerName).dll" 
          References="@(ReferencePath);@(IntermediateAssembly)" 
          EmitDebugInformation="$(DebugSymbols)"  
+         DebugType="$(DebugType)" 
          Sources="$(OutputPath)$(SerializerName).cs" 
          TargetType="Library" 
          ToolExe="$(CscToolExe)" 
          ToolPath="$(CscToolPath)" 
+         DisabledWarnings="$(NoWarn), 219" 
+         UseSharedCompilation="true" />
+    <!-- when building on core CSC requires the OverrideToolHost parameter, but this is not supported by desktop csc -->
+    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' == 'core'" ContinueOnError="true" 
+         OutputAssembly="$(OutputPath)$(SerializerName).dll" 
+         References="@(ReferencePath);@(IntermediateAssembly)" 
+         EmitDebugInformation="$(DebugSymbols)"  
+         DebugType="$(DebugType)" 
+         Sources="$(OutputPath)$(SerializerName).cs" 
+         TargetType="Library" 
+         ToolExe="$(CscToolExe)" 
+         ToolPath="$(CscToolPath)" 
+         OverrideToolHost="$(OverrideToolHost)" 
          DisabledWarnings="$(NoWarn), 219" 
          UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll"/>
