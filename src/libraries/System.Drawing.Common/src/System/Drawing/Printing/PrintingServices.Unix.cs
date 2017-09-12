@@ -138,7 +138,6 @@ namespace System.Drawing.Printing
 #if NETCORE
                 System.Diagnostics.Debug.WriteLine("There was an error opening the printer {0}. Please check your cups installation.");
 #else
-
                 Console.WriteLine("There was an error opening the printer {0}. Please check your cups installation.");
 #endif
             }
@@ -198,16 +197,6 @@ namespace System.Drawing.Printing
                 return false;
 
             return installed_printers.Contains(printer);
-            /*
-                        if (!force && this.printer_name != null && String.Intern(this.printer_name).Equals(printer))
-                            return is_printer_valid;
-
-                        IntPtr ptr = cupsGetPPD (printer);
-                        string ppd_filename = Marshal.PtrToStringAnsi (ptr);
-                        is_printer_valid = ppd_filename != null;
-                        this.printer_name = printer; 
-                        return is_printer_valid;
-            */
         }
 
         /// <summary>
@@ -1075,13 +1064,11 @@ namespace System.Drawing.Printing
 
         internal class Printer
         {
-            //public readonly string Name;
             public readonly string Comment;
             public readonly string Port;
             public readonly string Type;
             public readonly string Status;
             public PrinterSettings Settings;
-            //public bool IsDefault;
 
             public Printer(string port, string type, string status, string comment)
             {
@@ -1112,5 +1099,3 @@ namespace System.Drawing.Printing
         internal IntPtr Hdc { get { return hDC; } }
     }
 }
-
-
