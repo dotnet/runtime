@@ -35,7 +35,7 @@ namespace System.Drawing
 
         public static bool IsAnyInstalledPrinters()
         {
-            return PrinterSettings.InstalledPrinters.Count == 0;
+            return PrinterSettings.InstalledPrinters.Count > 0;
         }
 
         [DllImport("libdl")]

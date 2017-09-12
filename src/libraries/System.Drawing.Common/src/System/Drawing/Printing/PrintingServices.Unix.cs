@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
-//#define PrintDebug
-//
-// Copyright (C) 2005, 2007 Novell, Inc. http://www.novell.com
+// Copyright (C) 2005 Novell, Inc. http://www.novell.com
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -31,23 +29,27 @@
 
 using System.Runtime.InteropServices;
 using System.Collections;
-using System.Collections.Specialized;
 using System.Drawing.Printing;
 using System.ComponentModel;
 using System.Drawing.Imaging;
+using System.Diagnostics;
 using System.Text;
 using System.IO;
+using System.Collections.Specialized;
 
 namespace System.Drawing.Printing
 {
-    internal class PrintingServicesUnix : PrintingServices
+    /// <summary>
+    /// This class is designed to cache the values retrieved by the 
+    /// native printing services, as opposed to GlobalPrintingServices, which
+    /// doesn't cache any values.
+    /// </summary>
+    internal static class PrintingServices
     {
         #region Private Fields
 
         private static Hashtable doc_info = new Hashtable();
         private static bool cups_installed;
-
-        //private string printer_name;
 
         private static Hashtable installed_printers;
         private static string default_printer = String.Empty;
@@ -56,11 +58,7 @@ namespace System.Drawing.Printing
 
         #region Constructor
 
-        internal PrintingServicesUnix()
-        {
-        }
-
-        static PrintingServicesUnix()
+        static PrintingServices()
         {
             installed_printers = new Hashtable();
             CheckCupsInstalled();
@@ -84,7 +82,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        internal override string DefaultPrinter
+        internal static string DefaultPrinter
         {
             get
             {
@@ -106,7 +104,7 @@ namespace System.Drawing.Printing
         {
             try
             {
-                cupsGetDefault();
+                LibcupsNative.cupsGetDefault();
             }
             catch (DllNotFoundException)
             {
@@ -126,13 +124,13 @@ namespace System.Drawing.Printing
         /// Open the printer's PPD file
         /// </summary>
         /// <param name="printer">Printer name, returned from cupsGetDests</param>
-        private IntPtr OpenPrinter(string printer)
+        private static IntPtr OpenPrinter(string printer)
         {
             try
             {
-                IntPtr ptr = cupsGetPPD(printer);
+                IntPtr ptr = LibcupsNative.cupsGetPPD(printer);
                 string ppd_filename = Marshal.PtrToStringAnsi(ptr);
-                IntPtr ppd_handle = ppdOpenFile(ppd_filename);
+                IntPtr ppd_handle = LibcupsNative.ppdOpenFile(ppd_filename);
                 return ppd_handle;
             }
             catch (Exception)
@@ -140,7 +138,6 @@ namespace System.Drawing.Printing
 #if NETCORE
                 System.Diagnostics.Debug.WriteLine("There was an error opening the printer {0}. Please check your cups installation.");
 #else
-
                 Console.WriteLine("There was an error opening the printer {0}. Please check your cups installation.");
 #endif
             }
@@ -151,12 +148,12 @@ namespace System.Drawing.Printing
         /// Close the printer file
         /// </summary>
         /// <param name="handle">PPD handle</param>
-        private void ClosePrinter(ref IntPtr handle)
+        private static void ClosePrinter(ref IntPtr handle)
         {
             try
             {
                 if (handle != IntPtr.Zero)
-                    ppdClose(handle);
+                    LibcupsNative.ppdClose(handle);
             }
             finally
             {
@@ -168,7 +165,7 @@ namespace System.Drawing.Printing
         {
             try
             {
-                return cupsGetDests(ref ptr);
+                return LibcupsNative.cupsGetDests(ref ptr);
             }
             catch
             {
@@ -182,7 +179,7 @@ namespace System.Drawing.Printing
             try
             {
                 if (ptr != IntPtr.Zero)
-                    cupsFreeDests(count, ptr);
+                    LibcupsNative.cupsFreeDests(count, ptr);
             }
             finally
             {
@@ -194,22 +191,12 @@ namespace System.Drawing.Printing
         /// Checks if a printer has a valid PPD file. Caches the result unless force is true
         /// </summary>
         /// <param name="force">Does the check disregarding the last cached value if true</param>
-        internal override bool IsPrinterValid(string printer)
+        internal static bool IsPrinterValid(string printer)
         {
             if (!cups_installed || printer == null | printer == String.Empty)
                 return false;
 
             return installed_printers.Contains(printer);
-            /*
-                        if (!force && this.printer_name != null && String.Intern(this.printer_name).Equals(printer))
-                            return is_printer_valid;
-
-                        IntPtr ptr = cupsGetPPD (printer);
-                        string ppd_filename = Marshal.PtrToStringAnsi (ptr);
-                        is_printer_valid = ppd_filename != null;
-                        this.printer_name = printer; 
-                        return is_printer_valid;
-            */
         }
 
         /// <summary>
@@ -217,7 +204,7 @@ namespace System.Drawing.Printing
         /// </summary>
         /// <param name="printer">Printer name</param>
         /// <param name="settings">PrinterSettings object to initialize</param>
-        internal override void LoadPrinterSettings(string printer, PrinterSettings settings)
+        internal static void LoadPrinterSettings(string printer, PrinterSettings settings)
         {
             if (cups_installed == false || (printer == null) || (printer == String.Empty))
                 return;
@@ -405,7 +392,7 @@ namespace System.Drawing.Printing
             int choice_size = Marshal.SizeOf(typeof(PPD_CHOICE));
             defoption = null;
 
-            ptr = ppdFindOption(ppd, option_name);
+            ptr = LibcupsNative.ppdFindOption(ppd, option_name);
             if (ptr != IntPtr.Zero)
             {
                 ppd_option = (PPD_OPTION)Marshal.PtrToStructure(ptr, typeof(PPD_OPTION));
@@ -432,7 +419,7 @@ namespace System.Drawing.Printing
         /// </summary>
         /// <param name="printer">Printer name</param>
         /// <param name="settings">PrinterSettings object to fill</param>
-        internal override void LoadPrinterResolutions(string printer, PrinterSettings settings)
+        internal static void LoadPrinterResolutions(string printer, PrinterSettings settings)
         {
             IntPtr ppd_handle = OpenPrinter(printer);
             if (ppd_handle == IntPtr.Zero)
@@ -447,7 +434,7 @@ namespace System.Drawing.Printing
         /// Create a PrinterResolution from a string Resolution that is set in the PPD option.
         /// An example of Resolution is "600x600dpi" or "600dpi". Returns null if malformed or "Unknown".
         /// </summary>
-        private PrinterResolution ParseResolution(string resolution)
+        private static PrinterResolution ParseResolution(string resolution)
         {
             if (String.IsNullOrEmpty(resolution))
                 return null;
@@ -490,7 +477,7 @@ namespace System.Drawing.Printing
         /// <param name="settings">PrinterSettings object to fill</param>
         /// <param name="def_size">Default paper size, from the global options of the printer</param>
         /// <param name="paper_names">List of available paper sizes that gets filled</param>
-        private PaperSize LoadPrinterPaperSizes(IntPtr ppd_handle, PrinterSettings settings,
+        private static PaperSize LoadPrinterPaperSizes(IntPtr ppd_handle, PrinterSettings settings,
                                                 string def_size, NameValueCollection paper_names)
         {
             IntPtr ptr;
@@ -528,7 +515,7 @@ namespace System.Drawing.Printing
         /// <param name="settings">PrinterSettings object to fill</param>
         /// <param name="def_source">Default paper source, from the global options of the printer</param>
         /// <param name="paper_sources">List of available paper sizes that gets filled</param>
-        private PaperSource LoadPrinterPaperSources(PrinterSettings settings, string def_source,
+        private static PaperSource LoadPrinterPaperSources(PrinterSettings settings, string def_source,
                                                     NameValueCollection paper_sources)
         {
             PaperSourceKind kind;
@@ -570,7 +557,7 @@ namespace System.Drawing.Printing
         /// Sets the available resolutions and default resolution from a
         /// printer's PPD file into settings.
         /// </summary>
-        private void LoadPrinterResolutionsAndDefault(string printer,
+        private static void LoadPrinterResolutionsAndDefault(string printer,
             PrinterSettings settings, IntPtr ppd_handle)
         {
             if (settings.printer_resolutions == null)
@@ -675,7 +662,7 @@ namespace System.Drawing.Printing
         /// <param name="type"></param>
         /// <param name="status"></param>
         /// <param name="comment"></param>
-        internal override void GetPrintDialogInfo(string printer, ref string port, ref string type, ref string status, ref string comment)
+        internal static void GetPrintDialogInfo(string printer, ref string port, ref string type, ref string status, ref string comment)
         {
             int count = 0, state = -1;
             bool found = false;
@@ -743,7 +730,7 @@ namespace System.Drawing.Printing
         /// </summary>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        private PaperKind GetPaperKind(int width, int height)
+        private static PaperKind GetPaperKind(int width, int height)
         {
             if (width == 827 && height == 1169)
                 return PaperKind.A4;
@@ -856,7 +843,7 @@ namespace System.Drawing.Printing
                     sb.Append(" Duplex=DuplexNoTumble");
             }
 
-            return cupsParseOptions(sb.ToString(), 0, ref options);
+            return LibcupsNative.cupsParseOptions(sb.ToString(), 0, ref options);
         }
 
         internal static bool StartDoc(GraphicsPrinter gr, string doc_name, string output_file)
@@ -875,8 +862,8 @@ namespace System.Drawing.Printing
             IntPtr options;
             int options_count = GetCupsOptions(doc.settings, doc.default_page_settings, out options);
 
-            cupsPrintFile(doc.settings.PrinterName, doc.filename, doc.title, options_count, options);
-            cupsFreeOptions(options_count, options);
+            LibcupsNative.cupsPrintFile(doc.settings.PrinterName, doc.filename, doc.title, options_count, options);
+            LibcupsNative.cupsFreeOptions(options_count, options);
             doc_info.Remove(gr.Hdc);
             if (tmpfile != null)
             {
@@ -894,7 +881,7 @@ namespace System.Drawing.Printing
 
         internal static bool EndPage(GraphicsPrinter gr)
         {
-            GdipGetPostScriptSavePage(gr.Hdc);
+            SafeNativeMethods.Gdip.GdipGetPostScriptSavePage(gr.Hdc);
             return true;
         }
 
@@ -908,7 +895,7 @@ namespace System.Drawing.Printing
             {
                 StringBuilder sb = new StringBuilder(1024);
                 int length = sb.Capacity;
-                cupsTempFd(sb, length);
+                LibcupsNative.cupsTempFd(sb, length);
                 name = sb.ToString();
                 tmpfile = name;
             }
@@ -928,7 +915,7 @@ namespace System.Drawing.Printing
                 height = psize.Height;
             }
 
-            GdipGetPostScriptGraphicsContext(name,
+            SafeNativeMethods.Gdip.GdipGetPostScriptGraphicsContext(name,
                 width * 72 / 100,
                 height * 72 / 100,
                 default_page_settings.PrinterResolution.X,
@@ -942,52 +929,6 @@ namespace System.Drawing.Printing
 
             return graphics;
         }
-
-        #endregion
-
-        #region DllImports
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern int cupsGetDests(ref IntPtr dests);
-
-        //        [DllImport("libcups", CharSet=CharSet.Ansi)]
-        //        static extern void cupsGetDest (string name, string instance, int num_dests, ref IntPtr dests);
-
-        [DllImport("libcups")]
-        static extern void cupsFreeDests(int num_dests, IntPtr dests);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr cupsTempFd(StringBuilder sb, int len);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr cupsGetDefault();
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern int cupsPrintFile(string printer, string filename, string title, int num_options, IntPtr options);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr cupsGetPPD(string printer);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr ppdOpenFile(string filename);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern IntPtr ppdFindOption(IntPtr ppd_file, string keyword);
-
-        [DllImport("libcups")]
-        static extern void ppdClose(IntPtr ppd);
-
-        [DllImport("libcups", CharSet = CharSet.Ansi)]
-        static extern int cupsParseOptions(string arg, int number_of_options, ref IntPtr options);
-
-        [DllImport("libcups")]
-        static extern void cupsFreeOptions(int number_options, IntPtr options);
-
-        [DllImport("gdiplus.dll", CharSet = CharSet.Ansi)]
-        static extern int GdipGetPostScriptGraphicsContext(string filename, int with, int height, double dpix, double dpiy, ref IntPtr graphics);
-
-        [DllImport("gdiplus.dll")]
-        static extern int GdipGetPostScriptSavePage(IntPtr graphics);
 
         #endregion
 
@@ -1105,42 +1046,56 @@ namespace System.Drawing.Printing
 
         #endregion
 #pragma warning restore 649
+        internal static void LoadDefaultResolutions(PrinterSettings.PrinterResolutionCollection col)
+        {
+            col.Add(new PrinterResolution(PrinterResolutionKind.High, (int)PrinterResolutionKind.High, -1));
+            col.Add(new PrinterResolution(PrinterResolutionKind.Medium, (int)PrinterResolutionKind.Medium, -1));
+            col.Add(new PrinterResolution(PrinterResolutionKind.Low, (int)PrinterResolutionKind.Low, -1));
+            col.Add(new PrinterResolution(PrinterResolutionKind.Draft, (int)PrinterResolutionKind.Draft, -1));
+        }
     }
 
-    class GlobalPrintingServicesUnix : GlobalPrintingServices
+    internal class SysPrn
     {
-        internal override PrinterSettings.StringCollection InstalledPrinters
+        internal static void GetPrintDialogInfo(string printer, ref string port, ref string type, ref string status, ref string comment)
         {
-            get
+            PrintingServices.GetPrintDialogInfo(printer, ref port, ref type, ref status, ref comment);
+        }
+
+        internal class Printer
+        {
+            public readonly string Comment;
+            public readonly string Port;
+            public readonly string Type;
+            public readonly string Status;
+            public PrinterSettings Settings;
+
+            public Printer(string port, string type, string status, string comment)
             {
-                return PrintingServicesUnix.InstalledPrinters;
+                Port = port;
+                Type = type;
+                Status = status;
+                Comment = comment;
             }
         }
+    }
 
-        internal override IntPtr CreateGraphicsContext(PrinterSettings settings, PageSettings default_page_settings)
+    internal class GraphicsPrinter
+    {
+        private Graphics graphics;
+        private IntPtr hDC;
+
+        internal GraphicsPrinter(Graphics gr, IntPtr dc)
         {
-            return PrintingServicesUnix.CreateGraphicsContext(settings, default_page_settings);
+            graphics = gr;
+            hDC = dc;
         }
 
-        internal override bool StartDoc(GraphicsPrinter gr, string doc_name, string output_file)
+        internal Graphics Graphics
         {
-            return PrintingServicesUnix.StartDoc(gr, doc_name, output_file);
+            get { return graphics; }
+            set { graphics = value; }
         }
-
-        internal override bool EndDoc(GraphicsPrinter gr)
-        {
-            return PrintingServicesUnix.EndDoc(gr);
-        }
-
-        internal override bool StartPage(GraphicsPrinter gr)
-        {
-            return PrintingServicesUnix.StartPage(gr);
-        }
-
-        internal override bool EndPage(GraphicsPrinter gr)
-        {
-            return PrintingServicesUnix.EndPage(gr);
-        }
+        internal IntPtr Hdc { get { return hDC; } }
     }
 }
-
