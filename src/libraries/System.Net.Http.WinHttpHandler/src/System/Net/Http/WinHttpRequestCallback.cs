@@ -258,7 +258,11 @@ namespace System.Net.Http
 
                     throw WinHttpException.CreateExceptionUsingError(lastError);
                 }
-                
+
+                // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
+                X509Certificate2Collection remoteCertificateStore =
+                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle);
+
                 // Create a managed wrapper around the certificate handle. Since this results in duplicating
                 // the handle, we will close the original handle after creating the wrapper.
                 var serverCertificate = new X509Certificate2(certHandle);
@@ -271,6 +275,7 @@ namespace System.Net.Http
                 {
                     WinHttpCertificateHelper.BuildChain(
                         serverCertificate,
+                        remoteCertificateStore,
                         state.RequestMessage.RequestUri.Host,
                         state.CheckCertificateRevocationList,
                         out chain,
