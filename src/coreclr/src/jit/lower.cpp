@@ -210,7 +210,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerCast(node);
             break;
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
         case GT_ARR_BOUNDS_CHECK:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
