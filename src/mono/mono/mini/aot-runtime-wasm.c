@@ -205,6 +205,15 @@ typedef union {
 } interp_pair;
 
 static void
+wasm_invoke_l (void *target_func, InterpMethodArguments *margs)
+{
+	gint64 (*func)(void) = target_func;
+
+	gint64 res = func ();
+	*(gint64*)margs->retval = res;
+}
+
+static void
 wasm_invoke_ll (void *target_func, InterpMethodArguments *margs)
 {
 	gint64 (*func)(gint64 a) = target_func;
@@ -345,6 +354,8 @@ wasm_enter_icall_trampoline (void *target_func, InterpMethodArguments *margs)
 		wasm_invoke_iiiii (target_func, margs);
 	else if (!strcmp ("IIIIII", cookie))
 		wasm_invoke_iiiiii (target_func, margs);
+	else if (!strcmp ("L", cookie))
+		wasm_invoke_l (target_func, margs);
 	else if (!strcmp ("LL", cookie))
 		wasm_invoke_ll (target_func, margs);
 	else if (!strcmp ("LI", cookie))
