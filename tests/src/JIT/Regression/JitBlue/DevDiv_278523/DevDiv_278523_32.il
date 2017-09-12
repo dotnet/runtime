@@ -64,13 +64,12 @@
         .entrypoint
         .locals init (int32 V_0)
 
-        ldc.i4 100
-        dup
-
         sizeof [mscorlib]System.IntPtr
         ldc.i4 8
         beq.s _64bit
 
+        ldc.i4 100
+        dup
         call int32 C::Test32Bit(int32)
         bne.un.s fail
         br.s success
