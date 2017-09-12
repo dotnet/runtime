@@ -238,16 +238,16 @@ namespace System.Drawing
 
             if (GDIPlus.Display == IntPtr.Zero)
             {
-                GDIPlus.Display = GDIPlus.XOpenDisplay(IntPtr.Zero);
+                GDIPlus.Display = LibX11Functions.XOpenDisplay(IntPtr.Zero);
             }
 
-            window = GDIPlus.XRootWindow(GDIPlus.Display, 0);
-            defvisual = GDIPlus.XDefaultVisual(GDIPlus.Display, 0);
+            window = LibX11Functions.XRootWindow(GDIPlus.Display, 0);
+            defvisual = LibX11Functions.XDefaultVisual(GDIPlus.Display, 0);
             XVisualInfo visual = new XVisualInfo();
 
             /* Get XVisualInfo for this visual */
-            visual.visualid = GDIPlus.XVisualIDFromVisual(defvisual);
-            vPtr = GDIPlus.XGetVisualInfo(GDIPlus.Display, 0x1 /* VisualIDMask */, ref visual, ref nitems);
+            visual.visualid = LibX11Functions.XVisualIDFromVisual(defvisual);
+            vPtr = LibX11Functions.XGetVisualInfo(GDIPlus.Display, 0x1 /* VisualIDMask */, ref visual, ref nitems);
             visual = (XVisualInfo)Marshal.PtrToStructure(vPtr, typeof(XVisualInfo));
 #if false
             Console.WriteLine ("visual\t{0}", visual.visual);
@@ -261,7 +261,7 @@ namespace System.Drawing
             Console.WriteLine ("colormap_size\t{0}", visual.colormap_size);
             Console.WriteLine ("bits_per_rgb\t{0}", visual.bits_per_rgb);
 #endif
-            image = GDIPlus.XGetImage(GDIPlus.Display, window, sourceX, sourceY, blockRegionSize.Width,
+            image = LibX11Functions.XGetImage(GDIPlus.Display, window, sourceX, sourceY, blockRegionSize.Width,
                 blockRegionSize.Height, AllPlanes, 2 /* ZPixmap*/);
             if (image == IntPtr.Zero)
             {
@@ -279,7 +279,7 @@ namespace System.Drawing
             {
                 for (int x = 0; x < blockRegionSize.Width; x++)
                 {
-                    pixel = GDIPlus.XGetPixel(image, x, y);
+                    pixel = LibX11Functions.XGetPixel(image, x, y);
 
                     switch (visual.depth)
                     {
@@ -305,8 +305,8 @@ namespace System.Drawing
 
             DrawImage(bmp, destinationX, destinationY);
             bmp.Dispose();
-            GDIPlus.XDestroyImage(image);
-            GDIPlus.XFree(vPtr);
+            LibX11Functions.XDestroyImage(image);
+            LibX11Functions.XFree(vPtr);
         }
 
         public void Dispose()
@@ -1752,13 +1752,13 @@ namespace System.Drawing
             {
                 if (GDIPlus.Display == IntPtr.Zero)
                 {
-                    GDIPlus.Display = GDIPlus.XOpenDisplay(IntPtr.Zero);
+                    GDIPlus.Display = LibX11Functions.XOpenDisplay(IntPtr.Zero);
                     if (GDIPlus.Display == IntPtr.Zero)
                         throw new NotSupportedException("Could not open display (X-Server required. Check your DISPLAY environment variable)");
                 }
                 if (hwnd == IntPtr.Zero)
                 {
-                    hwnd = GDIPlus.XRootWindow(GDIPlus.Display, GDIPlus.XDefaultScreen(GDIPlus.Display));
+                    hwnd = LibX11Functions.XRootWindow(GDIPlus.Display, LibX11Functions.XDefaultScreen(GDIPlus.Display));
                 }
 
                 return FromXDrawable(hwnd, GDIPlus.Display);
@@ -1994,12 +1994,12 @@ namespace System.Drawing
             if (pts == null)
                 throw new ArgumentNullException("pts");
 
-            IntPtr ptrPt = GDIPlus.FromPointToUnManagedMemory(pts);
+            IntPtr ptrPt = MarshallingHelpers.FromPointToUnManagedMemory(pts);
 
             Status status = SafeNativeMethods.Gdip.GdipTransformPoints(nativeObject, destSpace, srcSpace, ptrPt, pts.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
-            GDIPlus.FromUnManagedMemoryToPoint(ptrPt, pts);
+            MarshallingHelpers.FromUnManagedMemoryToPoint(ptrPt, pts);
         }
 
 
@@ -2007,12 +2007,12 @@ namespace System.Drawing
         {
             if (pts == null)
                 throw new ArgumentNullException("pts");
-            IntPtr ptrPt = GDIPlus.FromPointToUnManagedMemoryI(pts);
+            IntPtr ptrPt = MarshallingHelpers.FromPointToUnManagedMemoryI(pts);
 
             Status status = SafeNativeMethods.Gdip.GdipTransformPointsI(nativeObject, destSpace, srcSpace, ptrPt, pts.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
-            GDIPlus.FromUnManagedMemoryToPointI(ptrPt, pts);
+            MarshallingHelpers.FromUnManagedMemoryToPointI(ptrPt, pts);
         }
 
         public CompositingMode CompositingMode
