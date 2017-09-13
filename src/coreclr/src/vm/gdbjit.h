@@ -419,9 +419,12 @@ private:
 #ifdef FEATURE_GDBJIT_FRAME
     static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
 #endif // FEATURE_GDBJIT_FRAME
+#ifdef FEATURE_GDBJIT_SYMTAB
+    static bool EmitSymtab(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize);
+#endif // FEATURE_GDBJIT_SYMTAB
     static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile);
 
-    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
+    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, int methodCount,
                                         NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
                                         unsigned int thunkIndexBase);
     static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
