@@ -214,12 +214,13 @@ CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE me
 // vtable of it's owning class or interface.
 void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                              unsigned*             offsetOfIndirection,   /* OUT */
-                                             unsigned*             offsetAfterIndirection /* OUT */
+                                             unsigned*             offsetAfterIndirection,/* OUT */
+                                             bool*                 isRelative             /* OUT */
                                              )
 {
     mc->cr->AddCall("getMethodVTableOffset");
-    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
-    mc->recGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
+    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
+    mc->recGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
@@ -1363,6 +1364,17 @@ const char* interceptor_ICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* 
     mc->cr->AddCall("getMethodName");
     const char* temp = original_ICorJitInfo->getMethodName(ftn, moduleName);
     mc->recGetMethodName(ftn, (char*)temp, moduleName);
+    return temp;
+}
+
+const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,          /* IN */
+                                                        const char**          className,    /* OUT */
+                                                        const char**          namespaceName /* OUT */            
+                                                        )
+{
+    mc->cr->AddCall("getMethodNameFromMetadata");
+    const char* temp = original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName);
+    mc->recGetMethodNameFromMetadata(ftn, (char*)temp, className, namespaceName);
     return temp;
 }
 

@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
             return IsAssignableFrom(typeInfo.AsType());
         }
 
-        #region Private Data Mebers
+        #region Private Data Members
         internal TypeBuilder m_type;
         #endregion
 

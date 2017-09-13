@@ -7,11 +7,6 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
     public sealed class UnmanagedFunctionPointerAttribute : Attribute
     {
-        public bool BestFitMapping;
-        public bool SetLastError;
-        public bool ThrowOnUnmappableChar;
-        public CharSet CharSet;
-
         public UnmanagedFunctionPointerAttribute()
         {
             CallingConvention = CallingConvention.Winapi;
@@ -23,5 +18,10 @@ namespace System.Runtime.InteropServices
         }
 
         public CallingConvention CallingConvention { get; }
+
+        public bool BestFitMapping;
+        public bool SetLastError;
+        public bool ThrowOnUnmappableChar;
+        public CharSet CharSet;
     }
 }

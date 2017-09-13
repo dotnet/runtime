@@ -1003,9 +1003,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     //
     if (structSize <= sizeof(double))
     {
-        // We set the "primitive" useType based upon the structSize
-        // and also examine the clsHnd to see if it is an HFA of count one
-        useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+#if defined LEGACY_BACKEND
+        if (!IsHfa(clsHnd))
+#endif
+        {
+            // We set the "primitive" useType based upon the structSize
+            // and also examine the clsHnd to see if it is an HFA of count one
+            useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+        }
     }
 
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -1043,8 +1048,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // Structs that are HFA's are returned in multiple registers
             if (IsHfa(clsHnd))
             {
+#if !defined(LEGACY_BACKEND)
                 // HFA's of count one should have been handled by getPrimitiveTypeForStruct
                 assert(GetHfaCount(clsHnd) >= 2);
+#endif // !defined(LEGACY_BACKEND)
 
                 // setup wbPassType and useType indicate that this is returned by value as an HFA
                 //  using multiple registers
@@ -3650,17 +3657,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(opts.compGCPollType == GCPOLL_NONE);
         opts.compGCPollType = GCPOLL_INLINE;
     }
+
+#ifdef PROFILING_SUPPORTED
+#ifdef UNIX_AMD64_ABI
+    if (compIsProfilerHookNeeded())
+    {
+        opts.compNeedToAlignFrame = true;
+    }
+#endif // UNIX_AMD64_ABI
+#endif
 }
 
 #ifdef DEBUG
-
-void JitDump(const char* pcFormat, ...)
-{
-    va_list lst;
-    va_start(lst, pcFormat);
-    vflogf(jitstdout, pcFormat, lst);
-    va_end(lst);
-}
 
 bool Compiler::compJitHaltMethod()
 {
@@ -3848,8 +3856,7 @@ void Compiler::compInitDebuggingInfo()
 
         fgInsertStmtAtEnd(fgFirstBB, gtNewNothingNode());
 
-        JITDUMP("Debuggable code - Add new BB%02u to perform initialization of variables [%08X]\n", fgFirstBB->bbNum,
-                dspPtr(fgFirstBB));
+        JITDUMP("Debuggable code - Add new %s to perform initialization of variables\n", fgFirstBB->dspToString());
     }
 
     /*-------------------------------------------------------------------------
@@ -5022,6 +5029,29 @@ bool Compiler::compQuirkForPPP()
         // This fixes the PPP backward compat issue
         varDscExposedStruct->lvExactSize += 32;
 
+        // Update the GC info to indicate that the padding area does
+        // not contain any GC pointers.
+        //
+        // The struct is now 64 bytes.
+        //
+        // We're on x64 so this should be 8 pointer slots.
+        assert((varDscExposedStruct->lvExactSize / TARGET_POINTER_SIZE) == 8);
+
+        BYTE* oldGCPtrs = varDscExposedStruct->lvGcLayout;
+        BYTE* newGCPtrs = (BYTE*)compGetMemA(8, CMK_LvaTable);
+
+        for (int i = 0; i < 4; i++)
+        {
+            newGCPtrs[i] = oldGCPtrs[i];
+        }
+
+        for (int i = 4; i < 8; i++)
+        {
+            newGCPtrs[i] = TYPE_GC_NONE;
+        }
+
+        varDscExposedStruct->lvGcLayout = newGCPtrs;
+
         return true;
     }
     return false;
@@ -5800,8 +5830,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     compCurBB = nullptr;
     lvaTable  = nullptr;
 
-    // Reset node ID counter
-    compGenTreeID = 0;
+    // Reset node and block ID counter
+    compGenTreeID    = 0;
+    compBasicBlockID = 0;
 #endif
 
     /* Initialize emitter */
@@ -5844,6 +5875,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     {
         compInitDebuggingInfo();
     }
+
+#ifdef DEBUG
+    if (compIsForInlining())
+    {
+        compBasicBlockID = impInlineInfo->InlinerCompiler->compBasicBlockID;
+    }
+#endif
 
     const bool forceInline = !!(info.compFlags & CORINFO_FLG_FORCEINLINE);
 
@@ -5977,7 +6015,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 #ifdef DEBUG
     if (compIsForInlining())
     {
-        impInlineInfo->InlinerCompiler->compGenTreeID = compGenTreeID;
+        impInlineInfo->InlinerCompiler->compGenTreeID    = compGenTreeID;
+        impInlineInfo->InlinerCompiler->compBasicBlockID = compBasicBlockID;
     }
 #endif
 
@@ -6846,6 +6885,29 @@ void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSIN
         *type1 = GetEightByteType(structDesc, 1);
     }
 }
+
+//------------------------------------------------------------------------------------------------------
+// GetStructTypeOffset: Gets the type, size and offset of the eightbytes of a struct for System V systems.
+//
+// Arguments:
+//    'typeHnd'    -  type handle
+//    'type0'      -  out param; returns the type of the first eightbyte.
+//    'type1'      -  out param; returns the type of the second eightbyte.
+//    'offset0'    -  out param; returns the offset of the first eightbyte.
+//    'offset1'    -  out param; returns the offset of the second eightbyte.
+//
+void Compiler::GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
+                                   var_types*           type0,
+                                   var_types*           type1,
+                                   unsigned __int8*     offset0,
+                                   unsigned __int8*     offset1)
+{
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
+    assert(structDesc.passedInRegisters);
+    GetStructTypeOffset(structDesc, type0, type1, offset0, offset1);
+}
+
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 /*****************************************************************************/
@@ -9281,10 +9343,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->gtFlags & GTF_IND_REFARR_LAYOUT)
-                {
-                    chars += printf("[IND_REFARR_LAYOUT]");
-                }
                 if (tree->gtFlags & GTF_IND_TGTANYWHERE)
                 {
                     chars += printf("[IND_TGTANYWHERE]");
@@ -9739,7 +9797,7 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if ((op == GT_IND) || (op == GT_STOREIND))
+            if (tree->OperIsIndirOrArrLength())
             {
                 chars += printf("[IND_NONFAULTING]");
             }
@@ -10940,7 +10998,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
             GenTree*         base   = lea->Base();
             GenTree*         index  = lea->Index();
             unsigned         scale  = lea->gtScale;
-            unsigned         offset = lea->gtOffset;
+            int              offset = lea->Offset();
 
             chars += printf(" [");
             if (base != nullptr)
@@ -10965,7 +11023,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("+");
                 }
-                chars += printf("%u", offset);
+                chars += printf("%d", offset);
             }
             chars += printf("]");
             break;

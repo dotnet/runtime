@@ -89,6 +89,12 @@ public:
         DWORDLONG A;
         DWORD     B;
     };
+    struct DLDD
+    {
+        DWORDLONG A;
+        DWORD     B;
+        DWORD     C;
+    };
     struct Agnostic_CORINFO_RESOLVED_TOKENin
     {
         DWORDLONG tokenContext;
@@ -211,6 +217,7 @@ public:
         DWORD     testForFixup;
         DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
         DWORD     indirectFirstOffset;
+        DWORD     indirectSecondOffset;
     };
     struct Agnostic_CORINFO_LOOKUP
     {
@@ -235,6 +242,12 @@ public:
     {
         DWORD A;
         DWORD B;
+    };
+    struct DDD
+    {
+        DWORD A;
+        DWORD B;
+        DWORD C;
     };
     struct Agnostic_CanTailCall
     {
@@ -557,12 +570,7 @@ public:
 
     void recGlobalContext(const MethodContext& other);
 
-    void recEnvironment();
     void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
-    void repEnvironmentSet();
-    void repEnvironmentUnset();
-    int  repEnvironmentGetCount();
-    int  repGetTestID();
 
     void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
@@ -608,6 +616,10 @@ public:
     void recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName);
     void dmpGetMethodName(DLD key, DD value);
     const char* repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char** moduleName);
+
+    void recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName, const char** namespaceName);
+    void dmpGetMethodNameFromMetadata(DLDD key, DDD value);
+    const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName);
 
     void recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result);
     void dmpGetJitFlags(DWORD key, DD value);
@@ -843,11 +855,13 @@ public:
 
     void recGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                   unsigned*             offsetOfIndirection,
-                                  unsigned*             offsetAfterIndirection);
-    void dmpGetMethodVTableOffset(DWORDLONG key, DD value);
+                                  unsigned*             offsetAfterIndirection,
+                                  bool*                 isRelative);
+    void dmpGetMethodVTableOffset(DWORDLONG key, DDD value);
     void repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                   unsigned*             offsetOfIndirection,
-                                  unsigned*             offsetAfterIndirection);
+                                  unsigned*             offsetAfterIndirection,
+                                  bool*                 isRelative);
 
     void recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
                                  CORINFO_CLASS_HANDLE   implClass,
@@ -1224,6 +1238,9 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const wchar_t* repGetStringConfigValue(const wchar_t* name);
 
+    bool wasEnviromentChanged();
+    static DenseLightWeightMap<Agnostic_Environment>* prevEnviroment;
+
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;
@@ -1235,7 +1252,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 160
+// Highest packet number: 161
 // *************************************************************************************
 enum mcPackets
 {
@@ -1265,7 +1282,7 @@ enum mcPackets
     Packet_EmbedMethodHandle                             = 19,
     Packet_EmbedModuleHandle                             = 20,
     Packet_EmptyStringLiteral                            = 21,
-    Packet_Environment                                   = 136, // Added 4/3/2013
+    Packet_Environment                                   = 136, // Deprecated 7/29/2017
     Packet_ErrorList                                     = 22,
     Packet_FilterException                               = 134,
     Packet_FindCallSiteSig                               = 23,
@@ -1330,6 +1347,7 @@ enum mcPackets
     Packet_GetMethodHash                                 = 73,
     Packet_GetMethodInfo                                 = 74,
     Packet_GetMethodName                                 = 75,
+    Packet_GetMethodNameFromMetadata                     = 161,  // Added 9/6/17
     Packet_GetMethodSig                                  = 76,
     Packet_GetMethodSync                                 = 77,
     Packet_GetMethodVTableOffset                         = 78,

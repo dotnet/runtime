@@ -17,7 +17,6 @@
 #include "eeconfig.h"
 #include "product_version.h"
 #include "eventtrace.h"
-#include "security.h"
 #include "corperm.h"
 #include "dbginterface.h"
 #include "peimagelayout.inl"

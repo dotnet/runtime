@@ -14,7 +14,6 @@
 #include "arraynative.h"
 #include "excep.h"
 #include "field.h"
-#include "security.h"
 #include "invokeutil.h"
 
 #include "arraynative.inl"
@@ -1152,7 +1151,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
     CorElementType etType = elementType.GetSignatureCorElementType();
     if (etType == ELEMENT_TYPE_PTR || etType == ELEMENT_TYPE_FNPTR)
     {
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
         return;
     }
 

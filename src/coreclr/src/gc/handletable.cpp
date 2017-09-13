@@ -263,6 +263,7 @@ ADIndex HndGetHandleTableADIndex(HHANDLETABLE hTable)
  *
  * Retrieves the AppDomain index associated with a handle table at creation
  */
+GC_DAC_VISIBLE
 ADIndex HndGetHandleADIndex(OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
@@ -570,6 +571,7 @@ uintptr_t HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType,
  * Retrieves owner data from handle.
  *
  */
+GC_DAC_VISIBLE
 uintptr_t HndGetHandleExtraInfo(OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
@@ -659,6 +661,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 #endif
 }
 
+#ifndef DACCESS_COMPILE
 /*
  * HndWriteBarrier
  *
@@ -733,6 +736,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
         }
     }
 }
+#endif // DACCESS_COMPILE
 
 /*
  * HndEnumHandles
@@ -743,6 +747,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
  * needs to enumerate all roots in the handle table.
  *
  */
+GC_DAC_VISIBLE_NO_MANGLE
 void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeCount,
                     HANDLESCANPROC pfnEnum, uintptr_t lParam1, uintptr_t lParam2, bool fAsync)
 {
@@ -803,6 +808,7 @@ void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeC
  * as it scans.
  *
  */
+GC_DAC_VISIBLE_NO_MANGLE
 void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, uintptr_t param1, uintptr_t param2,
                          const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {

@@ -14,11 +14,14 @@
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 #include "jitinterface.h"
+#include "ecall.h"
 
 EXTERN_C void JIT_GetSharedNonGCStaticBase_SingleAppDomain();
 EXTERN_C void JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain();
 EXTERN_C void JIT_GetSharedGCStaticBase_SingleAppDomain();
 EXTERN_C void JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain();
+EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
+
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -1086,6 +1089,31 @@ void JIT_TailCall()
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 void InitJITHelpers1()
 {
+#ifdef FEATURE_PAL // TODO
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
+
+    // Allocation helpers, faster but non-logging
+    if (!((TrackAllocationsEnabled()) ||
+        (LoggingOn(LF_GCALLOC, LL_INFO10))
+#ifdef _DEBUG
+        || (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP) != 0)
+#endif // _DEBUG
+        ))
+    {
+        if (GCHeapUtilities::UseThreadAllocationContexts())
+        {
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+
+            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
+        }
+    }
+#endif
+
     if(IsSingleAppDomain())
     {
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_SingleAppDomain);
@@ -1093,7 +1121,15 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain);
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
     }
+
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
+#ifndef FEATURE_PAL // TODO-ARM64-WINDOWS #13592
+EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
+#endif
+
+#else
+EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 EXTERN_C void __stdcall ProfileEnterNaked(UINT_PTR clientData)
@@ -1244,6 +1280,11 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
+void UMEntryThunkCode::Poison()
+{
+    // Insert 'brk 0xbe' at the entry point
+    m_code[0] = 0xd42017c0;
+}
 
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
@@ -1307,28 +1348,29 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#ifndef CROSSGEN_COMPILE
 void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
 void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 void SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
 void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
+#endif // CROSSGEN_COMPILE
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)

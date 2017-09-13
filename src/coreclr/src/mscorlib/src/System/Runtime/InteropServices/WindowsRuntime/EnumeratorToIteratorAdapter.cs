@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 if (!m_hasCurrent)
                 {
-                    throw WindowsRuntimeMarshal.GetExceptionForHR(__HResults.E_BOUNDS, null);
+                    throw WindowsRuntimeMarshal.GetExceptionForHR(HResults.E_BOUNDS, null);
                 }
 
                 return m_enumerator.Current;
@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (InvalidOperationException e)
             {
-                throw WindowsRuntimeMarshal.GetExceptionForHR(__HResults.E_CHANGED_STATE, e);
+                throw WindowsRuntimeMarshal.GetExceptionForHR(HResults.E_CHANGED_STATE, e);
             }
 
             return m_hasCurrent;

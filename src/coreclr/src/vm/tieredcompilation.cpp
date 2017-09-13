@@ -12,6 +12,7 @@
 #include "excep.h"
 #include "log.h"
 #include "win32threadpool.h"
+#include "threadsuspend.h"
 #include "tieredcompilation.h"
 
 // TieredCompilationManager determines which methods should be recompiled and
@@ -47,14 +48,16 @@
 // # Important entrypoints in this code:
 //
 // 
-// a) .ctor and Init(...) - called once during AppDomain initialization
-// b) OnMethodCalled(...) - called when a method is being invoked. When a method
-//                     has been called enough times this is currently the only
-//                     trigger that initiates re-compilation.
-// c) OnAppDomainShutdown() - called during AppDomain::Exit() to begin the process
-//                     of stopping tiered compilation. After this point no more
-//                     background optimization work will be initiated but in-progress
-//                     work still needs to complete.
+// a) .ctor and Init(...) -  called once during AppDomain initialization
+// b) OnMethodCalled(...) -  called when a method is being invoked. When a method
+//                           has been called enough times this is currently the only
+//                           trigger that initiates re-compilation.
+// c) Shutdown() -           called during AppDomain::Exit() to begin the process
+//                           of stopping tiered compilation. After this point no more
+//                           background optimization work will be initiated but in-progress
+//                           work still needs to complete.
+// d) ShutdownAllDomains() - Called from EEShutdownHelper to block until all async work is
+//                           complete. We must do this before we shutdown the JIT.
 //
 // # Overall workflow
 //
@@ -107,6 +110,7 @@ void TieredCompilationManager::Init(ADID appDomainId)
 
     SpinLockHolder holder(&m_lock);
     m_domainId = appDomainId;
+    m_asyncWorkDoneEvent.CreateManualEventNoThrow(TRUE);
 }
 
 // Called each time code in this AppDomain has been run. This is our sole entrypoint to begin
@@ -127,6 +131,43 @@ BOOL TieredCompilationManager::OnMethodCalled(MethodDesc* pMethodDesc, DWORD cur
     {
         return TRUE; // stop notifications for this method
     }
+    AsyncPromoteMethodToTier1(pMethodDesc);
+    return TRUE;
+}
+
+void TieredCompilationManager::AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc)
+{
+    STANDARD_VM_CONTRACT;
+
+    NativeCodeVersion t1NativeCodeVersion;
+
+    // Add an inactive native code entry in the versioning table to track the tier1 
+    // compilation we are going to create. This entry binds the compilation to a
+    // particular version of the IL code regardless of any changes that may
+    // occur between now and when jitting completes. If the IL does change in that
+    // interval the new code entry won't be activated.
+    {
+        CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
+        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMethodDesc);
+        NativeCodeVersionCollection nativeVersions = ilVersion.GetNativeCodeVersions(pMethodDesc);
+        for (NativeCodeVersionIterator cur = nativeVersions.Begin(), end = nativeVersions.End(); cur != end; cur++)
+        {
+            if (cur->GetOptimizationTier() == NativeCodeVersion::OptimizationTier1)
+            {
+                // we've already promoted
+                return;
+            }
+        }
+
+        if (FAILED(ilVersion.AddNativeCodeVersion(pMethodDesc, &t1NativeCodeVersion)))
+        {
+            // optimization didn't work for some reason (presumably OOM)
+            // just give up and continue on
+            return;
+        }
+        t1NativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTier1);
+    }
 
     // Insert the method into the optimization queue and trigger a thread to service
     // the queue if needed.
@@ -141,7 +182,7 @@ BOOL TieredCompilationManager::OnMethodCalled(MethodDesc* pMethodDesc, DWORD cur
     // unserviced. Synchronous retries appear unlikely to offer any material improvement 
     // and complicating the code to narrow an already rare error case isn't desirable.
     {
-        SListElem<MethodDesc*>* pMethodListItem = new (nothrow) SListElem<MethodDesc*>(pMethodDesc);
+        SListElem<NativeCodeVersion>* pMethodListItem = new (nothrow) SListElem<NativeCodeVersion>(t1NativeCodeVersion);
         SpinLockHolder holder(&m_lock);
         if (pMethodListItem != NULL)
         {
@@ -152,11 +193,11 @@ BOOL TieredCompilationManager::OnMethodCalled(MethodDesc* pMethodDesc, DWORD cur
         {
             // Our current policy throttles at 1 thread, but in the future we
             // could experiment with more parallelism.
-            m_countOptimizationThreadsRunning++;
+            IncrementWorkerThreadCount();
         }
         else
         {
-            return TRUE; // stop notifications for this method
+            return;
         }
     }
 
@@ -165,7 +206,7 @@ BOOL TieredCompilationManager::OnMethodCalled(MethodDesc* pMethodDesc, DWORD cur
         if (!ThreadpoolMgr::QueueUserWorkItem(StaticOptimizeMethodsCallback, this, QUEUE_ONLY, TRUE))
         {
             SpinLockHolder holder(&m_lock);
-            m_countOptimizationThreadsRunning--;
+            DecrementWorkerThreadCount();
             STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::OnMethodCalled: "
                 "ThreadpoolMgr::QueueUserWorkItem returned FALSE (no thread will run), method=%pM\n",
                 pMethodDesc);
@@ -174,20 +215,45 @@ BOOL TieredCompilationManager::OnMethodCalled(MethodDesc* pMethodDesc, DWORD cur
     EX_CATCH
     {
         SpinLockHolder holder(&m_lock);
-        m_countOptimizationThreadsRunning--;
+        DecrementWorkerThreadCount();
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::OnMethodCalled: "
             "Exception queuing work item to threadpool, hr=0x%x, method=%pM\n",
             GET_EXCEPTION()->GetHR(), pMethodDesc);
     }
     EX_END_CATCH(RethrowTerminalExceptions);
 
-    return TRUE; // stop notifications for this method
+    return;
 }
 
-void TieredCompilationManager::OnAppDomainShutdown()
+// static
+// called from EEShutDownHelper
+void TieredCompilationManager::ShutdownAllDomains()
 {
-    SpinLockHolder holder(&m_lock);
-    m_isAppDomainShuttingDown = TRUE;
+    STANDARD_VM_CONTRACT;
+
+    AppDomainIterator domain(TRUE);
+    while (domain.Next())
+    {
+        AppDomain * pDomain = domain.GetDomain();
+        if (pDomain != NULL)
+        {
+            pDomain->GetTieredCompilationManager()->Shutdown(TRUE);
+        }
+    }
+}
+
+void TieredCompilationManager::Shutdown(BOOL fBlockUntilAsyncWorkIsComplete)
+{
+    STANDARD_VM_CONTRACT;
+
+    {
+        SpinLockHolder holder(&m_lock);
+        m_isAppDomainShuttingDown = TRUE;
+    }
+    if (fBlockUntilAsyncWorkIsComplete)
+    {
+        m_asyncWorkDoneEvent.Wait(INFINITE, FALSE);
+    }
 }
 
 // This is the initial entrypoint for the background thread, called by
@@ -221,31 +287,33 @@ void TieredCompilationManager::OptimizeMethodsCallback()
         SpinLockHolder holder(&m_lock);
         if (m_isAppDomainShuttingDown)
         {
-            m_countOptimizationThreadsRunning--;
+            DecrementWorkerThreadCount();
             return;
         }
     }
 
     ULONGLONG startTickCount = CLRGetTickCount64();
-    MethodDesc* pMethod = NULL;
+    NativeCodeVersion nativeCodeVersion;
     EX_TRY
     {
+        GCX_COOP();
         ENTER_DOMAIN_ID(m_domainId);
         {
+            GCX_PREEMP();
             while (true)
             {
                 {
                     SpinLockHolder holder(&m_lock); 
-                    pMethod = GetNextMethodToOptimize();
-                    if (pMethod == NULL ||
+                    nativeCodeVersion = GetNextMethodToOptimize();
+                    if (nativeCodeVersion.IsNull() ||
                         m_isAppDomainShuttingDown)
                     {
-                        m_countOptimizationThreadsRunning--;
+                        DecrementWorkerThreadCount();
                         break;
                     }
                     
                 }
-                OptimizeMethod(pMethod);
+                OptimizeMethod(nativeCodeVersion);
 
                 // If we have been running for too long return the thread to the threadpool and queue another event
                 // This gives the threadpool a chance to service other requests on this thread before returning to
@@ -256,7 +324,7 @@ void TieredCompilationManager::OptimizeMethodsCallback()
                     if (!ThreadpoolMgr::QueueUserWorkItem(StaticOptimizeMethodsCallback, this, QUEUE_ONLY, TRUE))
                     {
                         SpinLockHolder holder(&m_lock);
-                        m_countOptimizationThreadsRunning--;
+                        DecrementWorkerThreadCount();
                         STRESS_LOG0(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::OptimizeMethodsCallback: "
                             "ThreadpoolMgr::QueueUserWorkItem returned FALSE (no thread will run)\n");
                     }
@@ -270,51 +338,35 @@ void TieredCompilationManager::OptimizeMethodsCallback()
     {
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_ERROR, "TieredCompilationManager::OptimizeMethodsCallback: "
             "Unhandled exception during method optimization, hr=0x%x, last method=%pM\n",
-            GET_EXCEPTION()->GetHR(), pMethod);
+            GET_EXCEPTION()->GetHR(), nativeCodeVersion.GetMethodDesc());
     }
     EX_END_CATCH(RethrowTerminalExceptions);
 }
 
 // Jit compiles and installs new optimized code for a method.
 // Called on a background thread.
-void TieredCompilationManager::OptimizeMethod(MethodDesc* pMethod)
+void TieredCompilationManager::OptimizeMethod(NativeCodeVersion nativeCodeVersion)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(pMethod->IsEligibleForTieredCompilation());
-    PCODE pJittedCode = CompileMethod(pMethod);
-    if (pJittedCode != NULL)
+    _ASSERTE(nativeCodeVersion.GetMethodDesc()->IsEligibleForTieredCompilation());
+    if (CompileCodeVersion(nativeCodeVersion))
     {
-        InstallMethodCode(pMethod, pJittedCode);
+        ActivateCodeVersion(nativeCodeVersion);
     }
 }
 
 // Compiles new optimized code for a method.
 // Called on a background thread.
-PCODE TieredCompilationManager::CompileMethod(MethodDesc* pMethod)
+BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVersion)
 {
     STANDARD_VM_CONTRACT;
 
     PCODE pCode = NULL;
-    ULONG sizeOfCode = 0;
+    MethodDesc* pMethod = nativeCodeVersion.GetMethodDesc();
     EX_TRY
     {
-        CORJIT_FLAGS flags = CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND);
-        flags.Add(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_TIER1));
-
-        if (pMethod->IsDynamicMethod())
-        {
-            ILStubResolver* pResolver = pMethod->AsDynamicMethodDesc()->GetILStubResolver();
-            flags.Add(pResolver->GetJitFlags());
-            COR_ILMETHOD_DECODER* pILheader = pResolver->GetILHeader();
-            pCode = UnsafeJitFunction(pMethod, pILheader, flags, &sizeOfCode);
-        }
-        else
-        {
-            COR_ILMETHOD_DECODER::DecoderStatus status;
-            COR_ILMETHOD_DECODER header(pMethod->GetILHeader(), pMethod->GetModule()->GetMDImport(), &status);
-            pCode = UnsafeJitFunction(pMethod, &header, flags, &sizeOfCode);
-        }
+        pCode = pMethod->PrepareCode(nativeCodeVersion);
     }
     EX_CATCH
     {
@@ -324,58 +376,117 @@ PCODE TieredCompilationManager::CompileMethod(MethodDesc* pMethod)
     }
     EX_END_CATCH(RethrowTerminalExceptions)
 
-    return pCode;
+    return pCode != NULL;
 }
 
 // Updates the MethodDesc and precode so that future invocations of a method will
 // execute the native code pointed to by pCode.
 // Called on a background thread.
-void TieredCompilationManager::InstallMethodCode(MethodDesc* pMethod, PCODE pCode)
+void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeVersion)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!pMethod->IsNativeCodeStableAfterInit());
+    MethodDesc* pMethod = nativeCodeVersion.GetMethodDesc();
+    CodeVersionManager* pCodeVersionManager = pMethod->GetCodeVersionManager();
 
-    PCODE pExistingCode = pMethod->GetNativeCode();
-#ifdef FEATURE_INTERPRETER
-    if (!pMethod->SetNativeCodeInterlocked(pCode, pExistingCode, TRUE))
-#else
-    if (!pMethod->SetNativeCodeInterlocked(pCode, pExistingCode))
-#endif
+    // If the ilParent version is active this will activate the native code version now.
+    // Otherwise if the ilParent version becomes active again in the future the native
+    // code version will activate then.
+    ILCodeVersion ilParent;
+    HRESULT hr = S_OK;
     {
-        //We aren't there yet, but when the feature is finished we shouldn't be racing against any other code mutator and there would be no
-        //reason for this to fail
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::InstallMethodCode: Method %pM failed to update native code slot. Code=%pK\n",
-            pMethod, pCode);
+        // As long as we are exclusively using precode publishing for tiered compilation
+        // methods this first attempt should succeed
+        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        ilParent = nativeCodeVersion.GetILCodeVersion();
+        hr = ilParent.SetActiveNativeCodeVersion(nativeCodeVersion, FALSE);
     }
-    else
+    if (hr == CORPROF_E_RUNTIME_SUSPEND_REQUIRED)
     {
-        Precode* pPrecode = pMethod->GetPrecode();
-        if (!pPrecode->SetTargetInterlocked(pCode, FALSE))
+        // if we start using jump-stamp publishing for tiered compilation, the first attempt
+        // without the runtime suspended will fail and then this second attempt will
+        // succeed.
+        // Even though this works performance is likely to be quite bad. Realistically
+        // we are going to need batched updates to makes tiered-compilation + jump-stamp
+        // viable. This fallback path is just here as a proof-of-concept.
+        ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_REJIT);
         {
-            //We aren't there yet, but when the feature is finished we shouldn't be racing against any other code mutator and there would be no
-            //reason for this to fail
-            STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::InstallMethodCode: Method %pM failed to update precode. Code=%pK\n",
-                pMethod, pCode);
+            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            hr = ilParent.SetActiveNativeCodeVersion(nativeCodeVersion, TRUE);
         }
+        ThreadSuspend::RestartEE(FALSE, TRUE);
+    }
+    if (FAILED(hr))
+    {
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::ActivateCodeVersion: Method %pM failed to publish native code for native code version %d\n",
+            pMethod, nativeCodeVersion.GetVersionId());
     }
 }
 
 // Dequeues the next method in the optmization queue.
 // This should be called with m_lock already held and runs
 // on the background thread.
-MethodDesc* TieredCompilationManager::GetNextMethodToOptimize()
+NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
 {
     STANDARD_VM_CONTRACT;
 
-    SListElem<MethodDesc*>* pElem = m_methodsToOptimize.RemoveHead();
+    SListElem<NativeCodeVersion>* pElem = m_methodsToOptimize.RemoveHead();
     if (pElem != NULL)
     {
-        MethodDesc* pMD = pElem->GetValue();
+        NativeCodeVersion nativeCodeVersion = pElem->GetValue();
         delete pElem;
-        return pMD;
+        return nativeCodeVersion;
     }
-    return NULL;
+    return NativeCodeVersion();
+}
+
+void TieredCompilationManager::IncrementWorkerThreadCount()
+{
+    STANDARD_VM_CONTRACT;
+    //m_lock should be held
+
+    m_countOptimizationThreadsRunning++;
+    m_asyncWorkDoneEvent.Reset();
+}
+
+void TieredCompilationManager::DecrementWorkerThreadCount()
+{
+    STANDARD_VM_CONTRACT;
+    //m_lock should be held
+    
+    m_countOptimizationThreadsRunning--;
+    if (m_countOptimizationThreadsRunning == 0)
+    {
+        m_asyncWorkDoneEvent.Set();
+    }
+}
+
+//static
+CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeVersion)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    CORJIT_FLAGS flags;
+    if (!nativeCodeVersion.GetMethodDesc()->IsEligibleForTieredCompilation())
+    {
+#ifdef FEATURE_INTERPRETER
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
+#endif
+        return flags;
+    }
+    
+    if (nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+    }
+    else
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+#ifdef FEATURE_INTERPRETER
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
+#endif
+    }
+    return flags;
 }
 
 #endif // FEATURE_TIERED_COMPILATION

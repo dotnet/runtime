@@ -22,7 +22,6 @@
 #include "method.hpp"
 #include "runtimecallablewrapper.h"
 #include "excep.h"
-#include "security.h"
 #include "typeparse.h"
 
 //
@@ -216,9 +215,6 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
         {
             // The target isn't a TP so it better be a COM object.
             _ASSERTE(Lr.Obj->GetMethodTable()->IsComObjectType());
-
-            // We are about to call out to ummanaged code so we need to make a security check.
-            Security::SpecialDemand(SSWT_DEMAND_FROM_NATIVE, SECURITY_UNMANAGED_CODE);
 
             {
                 RCWHolder pRCW(GetThread());

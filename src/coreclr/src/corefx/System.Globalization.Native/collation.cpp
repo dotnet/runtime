@@ -327,12 +327,6 @@ bool CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, i
 
 }
 
-extern "C" int32_t GlobalizationNative_GetSortVersion()
-{
-    // we didn't use UCOL_TAILORINGS_VERSION because it is deprecated in ICU v5
-    return UCOL_RUNTIME_VERSION << 16 | UCOL_BUILDER_VERSION;
-}
-
 extern "C" ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle)
 {
     assert(ppSortHandle != nullptr);
@@ -405,6 +399,26 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
     }
 
     return pCollator;
+}
+
+extern "C" int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
+{
+    UErrorCode err = U_ZERO_ERROR;
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, 0, &err);
+    int32_t result = 0;
+
+    if (U_SUCCESS(err))
+    {
+        ucol_getVersion(pColl, (uint8_t *) &result);
+    }
+    else
+    {
+        assert(false && "Unexpected ucol_getVersion to fail.");
+
+        // we didn't use UCOL_TAILORINGS_VERSION because it is deprecated in ICU v5
+        result = UCOL_RUNTIME_VERSION << 16 | UCOL_BUILDER_VERSION;
+    }
+    return result;
 }
 
 /*

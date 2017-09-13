@@ -108,6 +108,7 @@ namespace System.Reflection
         protected override bool IsPointerImpl() => typeImpl.IsPointer;
         protected override bool IsValueTypeImpl() => typeImpl.IsValueType;
         protected override bool IsCOMObjectImpl() => typeImpl.IsCOMObject;
+        public override bool IsByRefLike => typeImpl.IsByRefLike;
         public override bool IsConstructedGenericType => typeImpl.IsConstructedGenericType;
         public override Type GetElementType() => typeImpl.GetElementType();
         protected override bool HasElementTypeImpl() => typeImpl.HasElementType;

@@ -30,8 +30,11 @@ if(FEATURE_GDBJIT)
     set(VM_SOURCES_GDBJIT
         gdbjit.cpp
     )
-    add_definitions(-DFEATURE_GDBJIT)
 endif(FEATURE_GDBJIT)
+
+if(FEATURE_JIT_PITCHING)
+   add_definitions(-DFEATURE_JIT_PITCHING)
+endif(FEATURE_JIT_PITCHING)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
@@ -44,6 +47,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     classhash.cpp
     clsload.cpp
     codeman.cpp
+    codeversion.cpp
     comdelegate.cpp
     contractimpl.cpp
     coreassemblyspec.cpp
@@ -75,6 +79,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     generics.cpp
     hash.cpp
     hillclimbing.cpp
+    ilinstrumentation.cpp
     ilstubcache.cpp
     ilstubresolver.cpp
     inlinetracking.cpp
@@ -95,7 +100,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     precode.cpp
     prestub.cpp
     rejit.cpp
-    security.cpp
     sigformat.cpp
     siginfo.cpp
     spinlock.cpp
@@ -120,22 +124,22 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
 )
 
 set( GC_SOURCES_DAC_AND_WKS_COMMON
-  ../gc/gcconfig.cpp
-  ../gc/gccommon.cpp
-  ../gc/gcscan.cpp
-  ../gc/gcsvr.cpp
-  ../gc/gcwks.cpp
   ../gc/handletable.cpp
   ../gc/handletablecore.cpp
   ../gc/handletablescan.cpp
-  ../gc/objecthandle.cpp
-  ../gc/softwarewritewatch.cpp)
+  ../gc/objecthandle.cpp)
 
 if(FEATURE_READYTORUN)
     list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
         readytoruninfo.cpp
     )
 endif(FEATURE_READYTORUN)
+
+if(FEATURE_JIT_PITCHING)
+    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+        codepitchingmanager.cpp
+    )
+endif(FEATURE_JIT_PITCHING)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
@@ -196,7 +200,6 @@ set(VM_SOURCES_WKS
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
-    gcenv.os.cpp
     gchelpers.cpp
     genmeth.cpp
     hosting.cpp
@@ -207,7 +210,6 @@ set(VM_SOURCES_WKS
     interpreter.cpp
     invokeutil.cpp
     jithelpers.cpp
-    listlock.cpp
     managedmdimport.cpp
     marshalnative.cpp
     marvin32.cpp
@@ -260,9 +262,15 @@ set(VM_SOURCES_WKS
 
 set(GC_SOURCES_WKS
     ${GC_SOURCES_DAC_AND_WKS_COMMON}
+    ../gc/gcconfig.cpp
+    ../gc/gccommon.cpp
+    ../gc/gcscan.cpp
+    ../gc/gcsvr.cpp
+    ../gc/gcwks.cpp
     ../gc/gchandletable.cpp
     ../gc/gceesvr.cpp
     ../gc/gceewks.cpp
+    ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
 
 if(FEATURE_EVENT_TRACE)
@@ -386,6 +394,7 @@ else(WIN32)
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkeramd64.S
             ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S

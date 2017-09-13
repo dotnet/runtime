@@ -649,6 +649,7 @@ public:
 
     // ICorMethodInfo stuff
     const char* getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName);
+    const char* getMethodNameFromMetadata (CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName);
     unsigned getMethodHash (CORINFO_METHOD_HANDLE ftnHnd);
 
     DWORD getMethodAttribs (CORINFO_METHOD_HANDLE ftnHnd);
@@ -728,8 +729,8 @@ public:
     void getMethodVTableOffset (
             CORINFO_METHOD_HANDLE methodHnd,
             unsigned * pOffsetOfIndirection,
-            unsigned * pOffsetAfterIndirection
-            );
+            unsigned * pOffsetAfterIndirection,
+            bool * isRelative);
 
     CORINFO_METHOD_HANDLE resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,
@@ -1053,16 +1054,17 @@ public:
 
     DWORD getExpectedTargetArchitecture();
 
-    CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false) :
+    CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false, bool fAllowInlining = true) :
         m_pOverride(NULL),
         m_pMethodBeingCompiled(fd),
         m_fVerifyOnly(fVerifyOnly),
         m_pThread(GetThread()),
         m_hMethodForSecurity_Key(NULL),
-        m_pMethodForSecurity_Value(NULL)
+        m_pMethodForSecurity_Value(NULL),
 #if defined(FEATURE_GDBJIT)
-        , m_pCalledMethods(NULL)
+        m_pCalledMethods(NULL),
 #endif
+        m_allowInlining(fAllowInlining)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1154,6 +1156,8 @@ protected:
 #if defined(FEATURE_GDBJIT)
     CalledMethod *          m_pCalledMethods;
 #endif
+
+    bool                    m_allowInlining;
 
     // Tracking of module activation dependencies. We have two flavors: 
     // - Fast one that gathers generic arguments from EE handles, but does not work inside generic context.
@@ -1331,8 +1335,8 @@ public:
 #endif
 
     CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header, 
-               EEJitManager* jm, bool fVerifyOnly)
-        : CEEInfo(fd, fVerifyOnly),
+               EEJitManager* jm, bool fVerifyOnly, bool allowInlining = true)
+        : CEEInfo(fd, fVerifyOnly, allowInlining),
           m_jitManager(jm),
           m_CodeHeader(NULL),
           m_ILHeader(header),
@@ -1464,7 +1468,6 @@ protected :
         bool                    m_bGphHookFunction : 1;
         void*                   m_pvGphProfilerHandle;
     } m_gphCache;
-
 
 };
 #endif // CROSSGEN_COMPILE

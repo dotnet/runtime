@@ -37,7 +37,7 @@ class WaitAnyEx
             Console.WriteLine("Waiting...");
             int i = WaitHandle.WaitAny(
                 new WaitHandle[]{myMutex, myMRE});
-            Console.WriteLine("WaitAny did not throw AbandonedMutexException");
+            Console.WriteLine("WaitAny did not throw AbandonedMutexException. Result: {0}", i);
         }
         catch(AbandonedMutexException)
         {

@@ -137,14 +137,6 @@ namespace System.Globalization
             return -1;
         }
 
-        private int GetHashCodeOfStringCore(string source, CompareOptions options)
-        {
-            Debug.Assert(source != null);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            return GetHashCodeOfStringCore(source, options, forceRandomizedHashing: false, additionalEntropy: 0);
-        }
-
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -357,7 +349,7 @@ namespace System.Globalization
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        internal unsafe int GetHashCodeOfStringCore(string source, CompareOptions options, bool forceRandomizedHashing, long additionalEntropy)
+        internal unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
 
@@ -376,7 +368,7 @@ namespace System.Globalization
             {
                 byte* pSortKey = stackalloc byte[sortKeyLength];
                 Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength, false, additionalEntropy);
+                return InternalHashSortKey(pSortKey, sortKeyLength);
             }
 
             byte[] sortKey = new byte[sortKeyLength];
@@ -384,13 +376,13 @@ namespace System.Globalization
             fixed (byte* pSortKey = sortKey)
             {
                 Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength, false, additionalEntropy);
+                return InternalHashSortKey(pSortKey, sortKeyLength);
             }
         }
 
         [DllImport(JitHelpers.QCall)]
         [SuppressUnmanagedCodeSecurity]
-        private static unsafe extern int InternalHashSortKey(byte* sortKey, int sortKeyLength, [MarshalAs(UnmanagedType.Bool)] bool forceRandomizedHashing, long additionalEntropy);
+        private static unsafe extern int InternalHashSortKey(byte* sortKey, int sortKeyLength);
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
         {
@@ -428,7 +420,7 @@ namespace System.Globalization
         {
             Debug.Assert(!_invariantMode);
 
-            int sortVersion = Interop.GlobalizationInterop.GetSortVersion();
+            int sortVersion = Interop.GlobalizationInterop.GetSortVersion(_sortHandle);
             return new SortVersion(sortVersion, LCID, new Guid(sortVersion, 0, 0, 0, 0, 0, 0,
                                                              (byte) (LCID >> 24),
                                                              (byte) ((LCID  & 0x00FF0000) >> 16),

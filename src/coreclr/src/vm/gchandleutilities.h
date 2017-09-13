@@ -40,12 +40,13 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
 {
     _ASSERTE(handle);
 
-#ifdef _DEBUG_IMPL
+#if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
+    // not allowed to dispatch virtually on a IGCHandleManager when compiling for DAC
     DWORD context = (DWORD)GCHandleUtilities::GetGCHandleManager()->GetHandleContext(handle);
     OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
 
     ValidateObjectAndAppDomain(objRef, ADIndex(context));
-#endif // _DEBUG_IMPL
+#endif // defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
 
     // Wrap the raw OBJECTREF and return it
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));

@@ -109,7 +109,8 @@ CORINFO_MODULE_HANDLE getMethodModule(CORINFO_METHOD_HANDLE method);
 // vtable of it's owning class or interface.
 void getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                            unsigned*             offsetOfIndirection,   /* OUT */
-                           unsigned*             offsetAfterIndirection /* OUT */
+                           unsigned*             offsetAfterIndirection,/* OUT */
+                           bool*                 isRelative             /* OUT */
                            );
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
@@ -668,6 +669,14 @@ mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
 const char* getMethodName(CORINFO_METHOD_HANDLE ftn,       /* IN */
                           const char**          moduleName /* OUT */
                           );
+
+// Return method name as in metadata, or nullptr if there is none,
+// and optionally return the class name as in metadata.
+// Suitable for non-debugging use.
+const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,       /* IN */
+                                      const char**          className, /* OUT */
+                                      const char**          namespaceName /* OUT */
+                                      );
 
 // this function is for debugging only.  It returns a value that
 // is will always be the same for a given method.  It is used

@@ -34,6 +34,9 @@ private:
     // The GUID of the provider.
     GUID m_providerID;
 
+    // The name of the provider.
+    SString m_providerName;
+
     // True if the provider is enabled.
     bool m_enabled;
 
@@ -61,14 +64,14 @@ private:
     bool m_deleteDeferred;
 
     // Private constructor because all providers are created through EventPipe::CreateProvider.
-    EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
+    EventPipeProvider(const SString &providerName, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
 
 public:
 
     ~EventPipeProvider();
 
-    // Get the provider ID.
-    const GUID& GetProviderID() const;
+    // Get the provider Name.
+    const SString& GetProviderName() const;
 
     // Determine if the provider is enabled.
     bool Enabled() const;

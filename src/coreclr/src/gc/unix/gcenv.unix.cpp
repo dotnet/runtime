@@ -6,32 +6,15 @@
 #include <cstddef>
 #include <cassert>
 #include <memory>
-
-// The CoreCLR PAL defines _POSIX_C_SOURCE to avoid calling non-posix pthread functions.
-// This isn't something we want, because we're totally fine using non-posix functions.
-#if defined(__APPLE__)
- #define _DARWIN_C_SOURCE
-#endif // definfed(__APPLE__)
-
 #include <pthread.h>
 #include <signal.h>
 #include "config.h"
-
-// clang typedefs uint64_t to be unsigned long long, which clashes with
-// PAL/MSVC's unsigned long, causing linker errors. This ugly hack
-// will go away once the GC doesn't depend on PAL headers.
-typedef unsigned long uint64_t_hack;
-#define uint64_t uint64_t_hack
-static_assert(sizeof(uint64_t) == 8, "unsigned long isn't 8 bytes");
-
-#ifndef __out_z
-#define __out_z
-#endif // __out_z
 
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"
 #include "gcenv.unix.inl"
+#include "volatile.h"
 
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>
@@ -66,6 +49,7 @@ static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetWorkingSetSize(size_t* val);
+bool GetCpuLimit(uint32_t* val);
 
 static size_t g_RestrictedPhysicalMemoryLimit = 0;
 
@@ -507,6 +491,7 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMa
 uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 {
     uintptr_t pmask, smask;
+    uint32_t cpuLimit;
 
     if (!GetCurrentProcessAffinityMask(&pmask, &smask))
         return 1;
@@ -529,6 +514,9 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
     // maximum of 64 here.
     if (count == 0 || count > 64)
         count = 64;
+
+    if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        count = cpuLimit;
 
     return count;
 }

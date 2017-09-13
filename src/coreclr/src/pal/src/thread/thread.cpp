@@ -130,10 +130,13 @@ CObjectType CorUnix::otThread(
                 otiThread,
                 ThreadCleanupRoutine,
                 ThreadInitializationRoutine,
-                0, //sizeof(CThreadImmutableData),
+                0,      // sizeof(CThreadImmutableData),
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
-                0, //sizeof(CThreadSharedData),
-                0, // THREAD_ALL_ACCESS,
+                NULL,   // No process local data cleanup routine
+                0,      // sizeof(CThreadSharedData),
+                0,      // THREAD_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
                 CObjectType::UnnamedObject,
@@ -633,15 +636,21 @@ CorUnix::InternalCreateThread(
 
     fAttributesInitialized = TRUE;
 
+    if (alignedStackSize == 0)
+    {
+        // The thread is to be created with default stack size. Use the default stack size
+        // override that was determined during the PAL initialization.
+        alignedStackSize = g_defaultStackSize;
+    }
+
     /* adjust the stack size if necessary */
     if (alignedStackSize != 0)
     {
 #ifdef PTHREAD_STACK_MIN
-        const size_t MinStackSize = PTHREAD_STACK_MIN;
+        size_t MinStackSize = ALIGN_UP(PTHREAD_STACK_MIN, GetVirtualPageSize());
 #else // !PTHREAD_STACK_MIN
-        const size_t MinStackSize = 64 * 1024; // this value is typically accepted by pthread_attr_setstacksize()
+        size_t MinStackSize = 64 * 1024; // this value is typically accepted by pthread_attr_setstacksize()
 #endif // PTHREAD_STACK_MIN
-        _ASSERTE(IS_ALIGNED(MinStackSize, GetVirtualPageSize()));
         if (alignedStackSize < MinStackSize)
         {
             // Adjust the stack size to a minimum value that is likely to be accepted by pthread_attr_setstacksize(). If this
@@ -843,80 +852,6 @@ ExitThread(
     ASSERT("pthread_exit should not return!\n");
     for (;;);
 }
-
-/*++
-Function:
-  GetExitCodeThread
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-GetExitCodeThread(
-           IN HANDLE hThread,
-           IN LPDWORD lpExitCode)
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pthrCurrent = NULL;
-    CPalThread *pthrTarget = NULL;
-    IPalObject *pobjThread = NULL;
-    BOOL fExitCodeSet;
-
-    PERF_ENTRY(GetExitCodeThread);
-    ENTRY("GetExitCodeThread(hThread = %p, lpExitCode = %p)\n",
-          hThread, lpExitCode);
-
-    if (NULL == lpExitCode)
-    {
-        WARN("Got NULL lpExitCode\n");
-        palError = ERROR_INVALID_PARAMETER;
-        goto done;
-    }
-
-    pthrCurrent = InternalGetCurrentThread();
-    palError = InternalGetThreadDataFromHandle(
-        pthrCurrent,
-        hThread,
-        0,
-        &pthrTarget,
-        &pobjThread
-        );
-
-    pthrTarget->Lock(pthrCurrent);
-
-    fExitCodeSet = pthrTarget->GetExitCode(lpExitCode);
-    if (!fExitCodeSet)
-    {
-        if (TS_DONE == pthrTarget->synchronizationInfo.GetThreadState())
-        {
-#ifdef FEATURE_PAL_SXS
-            // The thread exited without ever calling ExitThread.
-            // It must have wandered in.
-            *lpExitCode = 0;
-#else // FEATURE_PAL_SXS
-            ASSERT("exit code not set but thread is dead\n");
-#endif // FEATURE_PAL_SXS
-        }
-        else
-        {
-            *lpExitCode = STILL_ACTIVE;
-        }
-    }
-
-    pthrTarget->Unlock(pthrCurrent);
-
-done:
-    if (NULL != pobjThread)
-    {
-        pobjThread->ReleaseReference(pthrCurrent);
-    }
-
-    LOGEXIT("GetExitCodeThread returns BOOL %d\n", NO_ERROR == palError);
-    PERF_EXIT(GetExitCodeThread);
-    
-    return NO_ERROR == palError;
-}
-
 
 /*++
 Function:

@@ -11082,7 +11082,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
         if (addr->OperGet() == GT_LEA)
         {
-            offset = (int)addr->AsAddrMode()->gtOffset;
+            offset = addr->AsAddrMode()->Offset();
             if (addr->AsAddrMode()->gtScale > 0)
             {
                 assert(isPow2(addr->AsAddrMode()->gtScale));

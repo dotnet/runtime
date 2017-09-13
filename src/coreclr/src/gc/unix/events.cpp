@@ -11,10 +11,6 @@
 #include <errno.h>
 #include "config.h"
 
-#ifndef __out_z
-#define __out_z
-#endif // __out_z
-
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"

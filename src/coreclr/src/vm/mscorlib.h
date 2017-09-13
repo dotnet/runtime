@@ -113,11 +113,6 @@ DEFINE_CLASS_U(System,       AppDomainSetup,                 AppDomainSetupObjec
 DEFINE_FIELD_U(_Entries,                           AppDomainSetupObject,   m_Entries)
 DEFINE_FIELD_U(_AppBase,                           AppDomainSetupObject,   m_AppBase)
 DEFINE_FIELD_U(_CompatFlags,                       AppDomainSetupObject,   m_CompatFlags)
-DEFINE_FIELD_U(_TargetFrameworkName,               AppDomainSetupObject,   m_TargetFrameworkName)
-DEFINE_FIELD_U(_CheckedForTargetFrameworkName,     AppDomainSetupObject,   m_CheckedForTargetFrameworkName)
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-DEFINE_FIELD_U(_UseRandomizedStringHashing,        AppDomainSetupObject,   m_UseRandomizedStringHashing)
-#endif
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.
@@ -165,7 +160,9 @@ DEFINE_FIELD_U(_Minor,                     VersionBaseObject,    m_Minor)
 DEFINE_FIELD_U(_Build,                     VersionBaseObject,    m_Build)
 DEFINE_FIELD_U(_Revision,                  VersionBaseObject,    m_Revision)
 DEFINE_CLASS(VERSION,               System,                 Version)
-DEFINE_METHOD(VERSION,              CTOR,                   .ctor,                      IM_Int_Int_Int_Int_RetVoid)
+DEFINE_METHOD(VERSION,              CTOR_Ix2,               .ctor,                      IM_Int_Int_RetVoid)
+DEFINE_METHOD(VERSION,              CTOR_Ix3,               .ctor,                      IM_Int_Int_Int_RetVoid)
+DEFINE_METHOD(VERSION,              CTOR_Ix4,               .ctor,                      IM_Int_Int_Int_Int_RetVoid)
 
 DEFINE_CLASS(ASSEMBLY_VERSION_COMPATIBILITY, Assemblies,    AssemblyVersionCompatibility)
 
@@ -609,12 +606,7 @@ DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_CLOSED,            CtorClosed,         
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_CLOSED_STATIC,     CtorClosedStatic,           IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_RT_CLOSED,         CtorRTClosed,               IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_OPENED,            CtorOpened,                 IM_Obj_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_SECURE_CLOSED,     CtorSecureClosed,           IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_SECURE_CLOSED_STATIC,CtorSecureClosedStatic,   IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_SECURE_RT_CLOSED,  CtorSecureRTClosed,         IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_SECURE_OPENED,     CtorSecureOpened,           IM_Obj_IntPtr_IntPtr_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_VIRTUAL_DISPATCH,  CtorVirtualDispatch,        IM_Obj_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_SECURE_VIRTUAL_DISPATCH,  CtorSecureVirtualDispatch, IM_Obj_IntPtr_IntPtr_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_CLOSED_STATIC,     CtorCollectibleClosedStatic,           IM_Obj_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_OPENED,            CtorCollectibleOpened,                 IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
@@ -785,8 +777,10 @@ DEFINE_METHOD(JIT_HELPERS,          GET_RAW_SZ_ARRAY_DATA,  GetRawSzArrayData, N
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               SIZEOF,                 SizeOf, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, NoSig)
+DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, GM_RefTFrom_RetRefTTo)
+DEFINE_METHOD(UNSAFE,               OBJECT_AS,              As, GM_Obj_RetT)
+DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, GM_RefT_Int_RetRefT)
+DEFINE_METHOD(UNSAFE,               PTR_ADD,                Add, GM_PtrVoid_Int_RetPtrVoid)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD_BYTE_OFFSET,  AddByteOffset, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ARE_SAME,         AreSame, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_INIT_BLOCK_UNALIGNED, InitBlockUnaligned, NoSig)
@@ -807,7 +801,7 @@ DEFINE_FIELD(ARRAY_PINNING_HELPER,  M_ARRAY_DATA,           m_arrayData)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
-DEFINE_FIELD(RUNTIME_WRAPPED_EXCEPTION, WRAPPED_EXCEPTION,  m_wrappedException)
+DEFINE_FIELD(RUNTIME_WRAPPED_EXCEPTION, WRAPPED_EXCEPTION,  _wrappedException)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)
@@ -881,6 +875,7 @@ DEFINE_METHOD(STRING,               CTORF_CHARARRAY_START_LEN,CtorCharArrayStart
 DEFINE_METHOD(STRING,               CTORF_CHAR_COUNT,       CtorCharCount,              IM_Char_Int_RetStr)
 DEFINE_METHOD(STRING,               CTORF_CHARPTR,          CtorCharPtr,                IM_PtrChar_RetStr)
 DEFINE_METHOD(STRING,               CTORF_CHARPTR_START_LEN,CtorCharPtrStartLength,     IM_PtrChar_Int_Int_RetStr)
+DEFINE_METHOD(STRING,               CTORF_READONLYSPANOFCHAR,CtorReadOnlySpanOfChar,    IM_ReadOnlySpanOfChar_RetStr)
 DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,               SM_Str_IntPtr_Int_RetVoid)
 DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
@@ -971,6 +966,8 @@ DEFINE_CLASS(UNKNOWN_WRAPPER,       Interop,                UnknownWrapper)
 #endif
 
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
+DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
+DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,                 IM_Obj_RetBool)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)

@@ -121,12 +121,21 @@ struct SymbolsInfo
 class DwarfDumpable
 {
 public:
+    DwarfDumpable() :
+        m_base_ptr(nullptr),
+        m_is_visited(false)
+    {
+    }
+
     // writes all string literals this type needs to ptr
     virtual void DumpStrings(char* ptr, int& offset) = 0;
 
     virtual void DumpDebugInfo(char* ptr, int& offset) = 0;
 
     virtual ~DwarfDumpable() {}
+
+    char *m_base_ptr;
+    bool m_is_visited;
 };
 
 class LocalsInfo
@@ -326,12 +335,13 @@ public:
 };
 
 struct Elf_Symbol;
+class Elf_Builder;
 
 class NotifyGdb
 {
 public:
-    static void MethodCompiled(MethodDesc* methodDescPtr);
-    static void MethodDropped(MethodDesc* methodDescPtr);
+    static void MethodPrepared(MethodDesc* methodDescPtr);
+    static void MethodPitched(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
     {
@@ -404,14 +414,19 @@ private:
         }
     };
 
-    static void OnMethodCompiled(MethodDesc* methodDescPtr);
+    static void OnMethodPrepared(MethodDesc* methodDescPtr);
 
-    static int GetSectionIndex(const char *sectName);
-    static bool BuildELFHeader(MemBuf& buf);
-    static void BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
-                                   int symbolCount);
-    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
-                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
+#ifdef FEATURE_GDBJIT_FRAME
+    static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
+#endif // FEATURE_GDBJIT_FRAME
+#ifdef FEATURE_GDBJIT_SYMTAB
+    static bool EmitSymtab(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize);
+#endif // FEATURE_GDBJIT_SYMTAB
+    static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile);
+
+    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, int methodCount,
+                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
+                                        unsigned int thunkIndexBase);
     static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
     static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
     static bool BuildDebugAbbrev(MemBuf& buf);
@@ -427,9 +442,6 @@ private:
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
     static bool CollectCalledMethods(CalledMethod* pCM, TADDR nativeCode, FunctionMemberPtrArrayHolder &method,
                                      NewArrayHolder<Elf_Symbol> &symbolNames, int &symbolCount);
-#ifdef _DEBUG
-    static void DumpElf(const char* methodName, const MemBuf& buf);
-#endif
 };
 
 class FunctionMember: public TypeMember
