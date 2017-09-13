@@ -2777,7 +2777,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			(rmb->iattrs & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		m = (MonoMethod *)image_g_new0 (image, MonoMethodPInvoke, 1);
 	else
-		m = (MonoMethod *)image_g_new0 (image, MonoMethodWrapper, 1);
+		m = (MonoMethod *)image_g_new0 (image, MonoDynamicMethod, 1);
 
 	wrapperm = (MonoMethodWrapper*)m;
 
@@ -2872,6 +2872,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		}
 
 		wrapperm->header = header;
+		MonoDynamicMethod *dm = (MonoDynamicMethod*)wrapperm;
+		dm->assembly = klass->image->assembly;
 	}
 
 	if (rmb->generic_params) {
@@ -3908,6 +3910,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 		rmb.refs [i + 1] = handle_class;
 	}		
 
+	MonoAssembly *ass = NULL;
 	if (mb->owner) {
 		MonoType *owner_type = mono_reflection_type_get_handle ((MonoReflectionType*)mb->owner, error);
 		if (!is_ok (error)) {
@@ -3915,11 +3918,14 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 			return FALSE;
 		}
 		klass = mono_class_from_mono_type (owner_type);
+		ass = klass->image->assembly;
 	} else {
 		klass = mono_defaults.object_class;
+		ass = (mb->module && mb->module->image) ? mb->module->image->assembly : NULL;
 	}
 
 	mb->mhandle = handle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
+	((MonoDynamicMethod*)handle)->assembly = ass;
 	g_free (rmb.refs);
 	return_val_if_nok (error, FALSE);
 
