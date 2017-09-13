@@ -8,25 +8,23 @@
 
   <ItemDefinitionGroup>
     <LibraryPackage>
-      <Version>4.5.0</Version>
+      <Version>4.4.0</Version>
     </LibraryPackage>
+    <PrereleaseLibraryPackage>
+      <Version>4.5.0</Version>
+    </PrereleaseLibraryPackage>
   </ItemDefinitionGroup>
 
   <ItemGroup>
+    <LibraryPackage Include="Microsoft.Win32.Registry" />
+    <LibraryPackage Include="Microsoft.Win32.Registry.AccessControl" />
     <LibraryPackage Include="System.CodeDom" />
-    <LibraryPackage Include="System.ComponentModel.Annotations" />
     <LibraryPackage Include="System.Configuration.ConfigurationManager" />
     <LibraryPackage Include="System.Data.SqlClient" />
-    <LibraryPackage Include="System.DirectoryServices" />
-    <LibraryPackage Include="System.DirectoryServices.AccountManagement" />
-    <LibraryPackage Include="System.DirectoryServices.Protocols" />
-    <LibraryPackage Include="System.Drawing.Common" />
     <LibraryPackage Include="System.IO.FileSystem.AccessControl" />
     <LibraryPackage Include="System.IO.Packaging" />
     <LibraryPackage Include="System.IO.Pipes.AccessControl" />
     <LibraryPackage Include="System.IO.Ports" />
-    <LibraryPackage Include="System.Numerics.Vectors" />
-    <LibraryPackage Include="System.Reflection.TypeExtensions" />
     <LibraryPackage Include="System.Security.AccessControl" />
     <LibraryPackage Include="System.Security.Cryptography.Cng" />
     <LibraryPackage Include="System.Security.Cryptography.Pkcs" />
@@ -37,10 +35,12 @@
     <LibraryPackage Include="System.ServiceProcess.ServiceController" />
     <LibraryPackage Include="System.Text.Encoding.CodePages" />
     <LibraryPackage Include="System.Threading.AccessControl" />
+    <PrereleaseLibraryPackage Include="System.Drawing.Common" />
   </ItemGroup>
 
   <ItemGroup>
     <Dependency Include="@(LibraryPackage)" />
+    <Dependency Include="@(PrereleaseLibraryPackage)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
