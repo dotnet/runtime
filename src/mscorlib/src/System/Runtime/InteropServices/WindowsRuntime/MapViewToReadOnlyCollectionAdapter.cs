@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [Pure]
         internal int Count<K, V>()
         {
-            object _this = JitHelpers.UnsafeCast<object>(this);
+            object _this = Unsafe.As<object>(this);
 
             IMapView<K, V> _this_map = _this as IMapView<K, V>;
             if (_this_map != null)
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             else
             {
-                IVectorView<KeyValuePair<K, V>> _this_vector = JitHelpers.UnsafeCast<IVectorView<KeyValuePair<K, V>>>(this);
+                IVectorView<KeyValuePair<K, V>> _this_vector = Unsafe.As<IVectorView<KeyValuePair<K, V>>>(this);
                 uint size = _this_vector.Size;
 
                 if (((uint)Int32.MaxValue) < size)

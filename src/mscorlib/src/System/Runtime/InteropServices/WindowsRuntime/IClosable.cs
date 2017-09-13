@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public void Close()
         {
-            IDisposable _this = JitHelpers.UnsafeCast<IDisposable>(this);
+            IDisposable _this = Unsafe.As<IDisposable>(this);
             _this.Dispose();
         }
     }
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private void Dispose()
         {
-            IClosable _this = JitHelpers.UnsafeCast<IClosable>(this);
+            IClosable _this = Unsafe.As<IClosable>(this);
             _this.Close();
         }
     }

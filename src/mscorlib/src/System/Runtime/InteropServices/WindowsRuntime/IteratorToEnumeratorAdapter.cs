@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // This method is invoked when GetEnumerator is called on a WinRT-backed implementation of IEnumerable<T>.
         internal IEnumerator<T> GetEnumerator_Stub<T>()
         {
-            IIterable<T> _this = JitHelpers.UnsafeCast<IIterable<T>>(this);
+            IIterable<T> _this = Unsafe.As<IIterable<T>>(this);
             return new IteratorToEnumeratorAdapter<T>(_this.First());
         }
 
@@ -53,12 +53,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (target != null)
             {
-                return (JitHelpers.UnsafeCast<GetEnumerator_Delegate<T>>(target))();
+                return (Unsafe.As<GetEnumerator_Delegate<T>>(target))();
             }
 
             if (fUseString)
             {
-                return JitHelpers.UnsafeCast<IEnumerator<T>>(GetEnumerator_Stub<string>());
+                return Unsafe.As<IEnumerator<T>>(GetEnumerator_Stub<string>());
             }
 
             return GetEnumerator_Stub<T>();
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // This method is invoked when GetEnumerator is called on a WinRT-backed implementation of IEnumerable.
         internal IEnumerator GetEnumerator_Stub()
         {
-            IBindableIterable _this = JitHelpers.UnsafeCast<IBindableIterable>(this);
+            IBindableIterable _this = Unsafe.As<IBindableIterable>(this);
             return new IteratorToEnumeratorAdapter<object>(new NonGenericToGenericIterator(_this.First()));
         }
     }
