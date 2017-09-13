@@ -4122,8 +4122,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
     }
 
-// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32/64
-#ifdef _TARGET_XARCH_
+// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
     if (!comp->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
@@ -4300,7 +4300,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
             return next;
         }
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
         ssize_t magic;
         int     shift;
 
@@ -4407,7 +4407,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 
         return mulhi;
 #else
-        // Currently there's no GT_MULHI for ARM32/64
+        // Currently there's no GT_MULHI for ARM32
         return next;
 #endif
     }
