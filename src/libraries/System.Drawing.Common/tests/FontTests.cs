@@ -638,7 +638,7 @@ namespace System.Drawing.Tests
                 };
                 using (Font font = Font.FromLogFont(logFont))
                 {
-                    VerifyFont(font, family.Name, 16, fontStyle, GraphicsUnit.World, charSet, expectedGdiVerticalFont: false);
+                    VerifyFont(font, family.Name, font.Size, fontStyle, GraphicsUnit.World, charSet, expectedGdiVerticalFont: false);
                 }
             }
         }
