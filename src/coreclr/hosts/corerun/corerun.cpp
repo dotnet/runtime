@@ -402,7 +402,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         appPathPtr = appPath.OpenUnicodeBuffer(size - 1);
         length = WszGetFullPathName(exeName, size, appPathPtr, &filePart);
     }
-    if (length == 0 || length >= size) {
+    if (length == 0 || length >= size || filePart == NULL) {
         log << W("Failed to get full path: ") << exeName << Logger::endl;
         log << W("Error code: ") << GetLastError() << Logger::endl;
         return false;
