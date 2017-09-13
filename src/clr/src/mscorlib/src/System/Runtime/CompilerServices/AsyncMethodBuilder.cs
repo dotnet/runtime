@@ -762,7 +762,7 @@ namespace System.Runtime.CompilerServices
                 {
                     Boolean value = (Boolean)(object)result;
                     Task<Boolean> task = value ? AsyncTaskCache.TrueTask : AsyncTaskCache.FalseTask;
-                    return JitHelpers.UnsafeCast<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
+                    return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
                 }
                 // For Int32, we cache a range of common values, e.g. [-1,4).
                 else if (typeof(TResult) == typeof(Int32))
@@ -775,7 +775,7 @@ namespace System.Runtime.CompilerServices
                         value >= AsyncTaskCache.INCLUSIVE_INT32_MIN)
                     {
                         Task<Int32> task = AsyncTaskCache.Int32Tasks[value - AsyncTaskCache.INCLUSIVE_INT32_MIN];
-                        return JitHelpers.UnsafeCast<Task<TResult>>(task); // UnsafeCast avoids a type check we know will succeed
+                        return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids a type check we know will succeed
                     }
                 }
                 // For other known value types, we only special-case 0 / default(TResult).
