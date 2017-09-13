@@ -70,6 +70,7 @@
                class unload events no longer exist (they were never emitted)
                removed type field from TYPE_SAMPLE_HIT
                removed MONO_GC_EVENT_{MARK,RECLAIM}_{START,END}
+               reverted the root_type field back to uleb128
  */
 
 /*
@@ -265,7 +266,7 @@
  * 	[num_roots: uleb128] number of root references
  * 	[num_gc: uleb128] number of major gcs
  * 	[object: sleb128] the object as a difference from obj_base
- * 	[root_type: byte] the root_type: MonoProfileGCRootType (profiler.h)
+ * 	[root_type: uleb128] the root_type: MonoProfileGCRootType (profiler.h)
  * 	[extra_info: uleb128] the extra_info value
  * 	object, root_type and extra_info are repeated num_roots times
  *
