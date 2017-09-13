@@ -1657,22 +1657,15 @@ namespace System
             if (r)
                 return;
 
-            int i = index;
-            int j = index + length - 1;
             Object[] objArray = array as Object[];
             if (objArray != null)
             {
-                while (i < j)
-                {
-                    Object temp = objArray[i];
-                    objArray[i] = objArray[j];
-                    objArray[j] = temp;
-                    i++;
-                    j--;
-                }
+                Array.Reverse<object>(objArray, index, length);
             }
             else
             {
+                int i = index;
+                int j = index + length - 1;
                 while (i < j)
                 {
                     Object temp = array.GetValue(i);
