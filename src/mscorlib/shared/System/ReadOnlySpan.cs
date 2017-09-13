@@ -104,6 +104,7 @@ namespace System
         /// <param name="objectData">A reference to data within that object.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length) => new ReadOnlySpan<T>(ref objectData, length);
 
         // Constructor for internal use only.
@@ -121,6 +122,7 @@ namespace System
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public ref T DangerousGetPinnableReference()
         {
             return ref _pointer.Value;
