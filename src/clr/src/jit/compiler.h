@@ -3938,6 +3938,9 @@ public:
     // Returns "true" iff lcl "lclNum" should be excluded from SSA.
     inline bool fgExcludeFromSsa(unsigned lclNum);
 
+    // Returns "true" if a struct temp of the given type requires needs zero init in this block
+    inline bool fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block);
+
     // The value numbers for this compilation.
     ValueNumStore* vnStore;
 
