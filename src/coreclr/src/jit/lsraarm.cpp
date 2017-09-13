@@ -630,6 +630,17 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             TreeNodeInfoInitCall(tree->AsCall());
             break;
 
+        case GT_ADDR:
+        {
+            // For a GT_ADDR, the child node should not be evaluated into a register
+            GenTreePtr child = tree->gtOp.gtOp1;
+            assert(!isCandidateLocalRef(child));
+            assert(child->isContained());
+            assert(info->dstCount == 1);
+            info->srcCount = 0;
+        }
+        break;
+
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
