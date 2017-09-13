@@ -317,7 +317,7 @@ namespace System.Drawing
                 // We use a custom API for this, because there's no easy way
                 // to get the Stream down to libgdiplus.  So, we wrap the stream
                 // with a set of delegates.
-                GDIPlus.GdiPlusStreamHelper sh = new GDIPlus.GdiPlusStreamHelper(stream, true);
+                GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, true);
 
                 st = SafeNativeMethods.Gdip.GdipLoadImageFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                     sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, out imagePtr);
@@ -525,7 +525,7 @@ namespace System.Drawing
             {
                 if (GDIPlus.RunningOnUnix())
                 {
-                    GDIPlus.GdiPlusStreamHelper sh = new GDIPlus.GdiPlusStreamHelper(stream, false);
+                    GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
                     st = SafeNativeMethods.Gdip.GdipSaveImageToDelegate_linux(nativeObject, sh.GetBytesDelegate, sh.PutBytesDelegate,
                         sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, ref guid, nativeEncoderParams);
                 }
