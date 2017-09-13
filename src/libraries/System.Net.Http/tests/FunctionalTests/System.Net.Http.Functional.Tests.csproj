@@ -99,8 +99,6 @@
     <Compile Include="SyncBlockingContent.cs" />
     <Compile Include="TestHelper.cs" />
     <Compile Include="ManagedHandlerTestHelpers.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
