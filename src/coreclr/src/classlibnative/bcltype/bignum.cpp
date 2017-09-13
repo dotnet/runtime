@@ -582,7 +582,7 @@ UINT32 BigNum::LogBase2(UINT64 value)
 {
     _ASSERTE(value != 0);
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if (defined(_X86_) || defined(_ARM_)) && !defined(FEATURE_PAL)
     UINT64 temp = value >> 32;
     if (temp != 0)
     {
