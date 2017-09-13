@@ -137,7 +137,7 @@ namespace System.Diagnostics.Tests
         }
         
         [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior varies on Windows and Unix. Refer to #23969
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano does not support UseShellExecute
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "not supported on UAP")]
         [OuterLoop("Launches File Explorer")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsTrue_DoesNotThrow()
