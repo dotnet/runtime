@@ -643,8 +643,10 @@ if [ `uname` = "FreeBSD" ]; then
   __NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
 elif [ `uname` = "NetBSD" ]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-else
+elif [ `uname` = "Darwin" ]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+else
+  __NumProc=$(nproc --all)
 fi
 
 while :; do
