@@ -92,6 +92,11 @@ else (WIN32)
     if (AWK STREQUAL "AWK-NOTFOUND")
         message(FATAL_ERROR "AWK not found")
     endif()
+
+    # Try to locate the paxctl tool. Failure to find it is not fatal,
+    # but the generated executables won't work on a system where PAX is set
+    # to prevent applications to create executable memory mappings.
+    find_program(PAXCTL paxctl)
  
     if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
