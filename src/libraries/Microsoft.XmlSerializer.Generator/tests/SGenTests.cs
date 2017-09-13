@@ -15,7 +15,7 @@ namespace Microsoft.XmlSerializer.Generator.Tests
         public static void SgenCommandTest()
         {
             string codefile = "Microsoft.XmlSerializer.Generator.Tests.XmlSerializers.cs";
-            int n = Sgen.Main(new string[] { "Microsoft.XmlSerializer.Generator.Tests.dll", "/force", "/casesensitive" });
+            int n = Sgen.Main(new string[] { "Microsoft.XmlSerializer.Generator.Tests.dll", "/force"});
             Assert.Equal(0, n);
             Assert.True(File.Exists(codefile), string.Format("Fail to generate {0}.", codefile));
         }

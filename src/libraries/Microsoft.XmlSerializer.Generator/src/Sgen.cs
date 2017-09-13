@@ -28,18 +28,9 @@ namespace Microsoft.XmlSerializer.Generator
             var errs = new ArrayList();
             bool force = false;
             bool proxyOnly = false;
-            bool caseSensitive = false;
 
             try
             {
-                if (args.Length > 0)
-                {
-                    if (args.Any(s => s.IndexOf("casesensitive", StringComparison.OrdinalIgnoreCase) >= 0))
-                    {
-                        caseSensitive = true;
-                    }
-                }
-
                 for (int i = 0; i < args.Length; i++)
                 {
                     string arg = args[i];
@@ -55,10 +46,8 @@ namespace Microsoft.XmlSerializer.Generator
                         }
                     }
 
-                    if (!caseSensitive)
-                    {
-                        arg = arg.ToLower(CultureInfo.InvariantCulture);
-                    }
+                    string originalArg = arg;
+                    arg = arg.ToLower(CultureInfo.InvariantCulture);
 
                     if (ArgumentMatch(arg, "?") || ArgumentMatch(arg, "help"))
                     {
@@ -87,9 +76,14 @@ namespace Microsoft.XmlSerializer.Generator
                     {
                         types.Add(value);
                     }
-                    else if (ArgumentMatch(arg, "casesensitive"))
+                    else if (ArgumentMatch(arg, "assembly"))
                     {
-                        continue;
+                        if (assembly != null)
+                        {
+                            errs.Add(SR.Format(SR.ErrInvalidArgument, "/assembly", arg));
+                        }
+
+                        assembly = value;
                     }
                     else
                     {
@@ -100,7 +94,7 @@ namespace Microsoft.XmlSerializer.Generator
                                 errs.Add(SR.Format(SR.ErrInvalidArgument, "/assembly", arg));
                             }
 
-                            assembly = arg;
+                            assembly = originalArg;
                         }
                         else
                         {
