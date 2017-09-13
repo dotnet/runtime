@@ -381,4 +381,7 @@
   <data name="net_http_ssl_connection_failed" xml:space="preserve">
     <value>The SSL connection could not be established, see inner exception.</value>
   </data>
+  <data name="IO_SeekBeforeBegin" xml:space="preserve">
+    <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
 </root>
