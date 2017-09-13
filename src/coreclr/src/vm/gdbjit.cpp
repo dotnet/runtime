@@ -1759,11 +1759,12 @@ struct Elf_Symbol {
     Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
 };
 
-static int countFuncs(const SymbolsInfo *lines, int nlines)
+template <class T>
+static int countFuncs(T &arr, int n)
 {
     int count = 0;
-    for (int i = 0; i < nlines; i++) {
-        if (lines[i].ilOffset == ICorDebugInfo::PROLOG)
+    for (int i = 0; i < n; i++) {
+        if (arr[i].ilOffset == ICorDebugInfo::PROLOG)
         {
             count++;
         }
@@ -1771,10 +1772,11 @@ static int countFuncs(const SymbolsInfo *lines, int nlines)
     return count;
 }
 
-static int getNextPrologueIndex(int from, const SymbolsInfo *lines, int nlines)
+template <class T>
+static int getNextPrologueIndex(int from, T &arr, int n)
 {
-    for (int i = from; i < nlines; ++i) {
-        if (lines[i].ilOffset == ICorDebugInfo::PROLOG)
+    for (int i = from; i < n; ++i) {
+        if (arr[i].ilOffset == ICorDebugInfo::PROLOG)
         {
             return i;
         }
@@ -2509,6 +2511,13 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
         bool bEmitted = EmitDebugInfo(elfBuilder, methodDescPtr, pCode, codeSize, szModuleFile);
         bNotify = bNotify || bEmitted;
     }
+#ifdef FEATURE_GDBJIT_SYMTAB
+    else
+    {
+        bool bEmitted = EmitSymtab(elfBuilder, methodDescPtr, pCode, codeSize);
+        bNotify = bNotify || bEmitted;
+    }
+#endif
 
     if (!bNotify)
     {
@@ -2563,6 +2572,94 @@ bool NotifyGdb::EmitFrameInfo(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSi
     return true;
 }
 #endif // FEATURE_GDBJIT_FRAME
+
+#ifdef FEATURE_GDBJIT_SYMTAB
+bool NotifyGdb::EmitSymtab(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize)
+{
+    NewArrayHolder<DebuggerILToNativeMap> map = nullptr;
+    NewArrayHolder<Elf_Symbol> symbols = nullptr;
+    NewArrayHolder<NewArrayHolder<char>> symbolNames = nullptr;
+
+    ULONG32 numMap;
+    int symbolCount;
+
+    LPCUTF8 methodName = methodDescPtr->GetName();
+
+    if (GetMethodNativeMap(methodDescPtr, &numMap, map, NULL, NULL) == S_OK)
+    {
+        int methodCount = countFuncs(map, numMap);
+        symbolCount = methodCount + 1;
+        symbols = new Elf_Symbol[symbolCount];
+
+        if (methodCount > 1)
+            symbolNames = new NewArrayHolder<char>[methodCount - 1];
+
+        int startIndex = getNextPrologueIndex(0, map, numMap);
+
+        int methodNameSize = strlen(methodName) + 10;
+
+        for (int i = 1; i < symbolCount; ++i)
+        {
+            int endIndex = getNextPrologueIndex(startIndex + 1, map, numMap);
+
+            PCODE methodStart = map[startIndex].nativeStartOffset;
+            TADDR methodSize = endIndex == -1 ? codeSize - methodStart : map[endIndex].nativeStartOffset - methodStart;
+
+            if (i == 1)
+            {
+                symbols[i].m_name = methodName;
+            }
+            else
+            {
+                int symbolNameIndex = i - 2;
+                symbolNames[symbolNameIndex] = new char[methodNameSize];
+                sprintf_s(symbolNames[symbolNameIndex], methodNameSize, "%s_%d", methodName, symbolNameIndex + 1);
+                symbols[i].m_name = symbolNames[symbolNameIndex];
+            }
+
+            symbols[i].m_value = pCode + methodStart;
+            symbols[i].m_size = methodSize;
+
+            startIndex = endIndex;
+        }
+    }
+    else
+    {
+        symbolCount = 2;
+        symbols = new Elf_Symbol[symbolCount];
+
+        symbols[1].m_name = methodName;
+        symbols[1].m_value = pCode;
+        symbols[1].m_size = codeSize;
+    }
+
+    symbols[0].m_name = "";
+
+    MemBuf sectSymTab, sectStrTab;
+
+    if (!BuildStringTableSection(sectStrTab, symbols, symbolCount))
+    {
+        return false;
+    }
+
+    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, symbolCount - 1, symbols, symbolCount, 0))
+    {
+        return false;
+    }
+
+    Elf_SectionTracker *strtab = elfBuilder.OpenSection(".strtab", SHT_STRTAB, 0);
+    elfBuilder.Append(sectStrTab.MemPtr, sectStrTab.MemSize);
+    elfBuilder.CloseSection();
+
+    Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
+    elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
+    symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_entsize = sizeof(Elf_Sym);
+    elfBuilder.CloseSection();
+
+    return true;
+}
+#endif // FEATURE_GDBJIT_SYMTAB
 
 bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile)
 {
@@ -2705,7 +2802,7 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
         return false;
     }
     /* Build .symtab section */
-    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, method, symbolNames, symbolCount, thunkIndexBase))
+    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, method.GetCount(), symbolNames, symbolCount, thunkIndexBase))
     {
         return false;
     }
@@ -3265,7 +3362,7 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf, NewArrayHolder<Elf_Symbol> 
 }
 
 /* Build ELF .symtab section */
-bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
+bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, int methodCount,
                                         NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
                                         unsigned int thunkIndexBase)
 {
@@ -3281,7 +3378,7 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize,
     sym[0].st_size = 0;
     sym[0].st_shndx = SHN_UNDEF;
 
-    for (int i = 1; i < 1 + method.GetCount(); ++i)
+    for (int i = 1; i < 1 + methodCount; ++i)
     {
         sym[i].st_name = symbolNames[i].m_off;
         sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
@@ -3291,12 +3388,12 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize,
         sym[i].st_size = symbolNames[i].m_size;
     }
 
-    for (int i = 1 + method.GetCount(); i < symbolCount; ++i)
+    for (int i = 1 + methodCount; i < symbolCount; ++i)
     {
         sym[i].st_name = symbolNames[i].m_off;
         sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
         sym[i].st_other = 0;
-        sym[i].st_shndx = thunkIndexBase + (i - (1 + method.GetCount())); // .thunks section index
+        sym[i].st_shndx = thunkIndexBase + (i - (1 + methodCount)); // .thunks section index
         sym[i].st_size = 8;
 #ifdef _TARGET_ARM_
         sym[i].st_value = 1; // for THUMB code
