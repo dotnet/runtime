@@ -5,6 +5,7 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
@@ -34,7 +35,66 @@ namespace System.Drawing
                 return lib;
             }
 
-            internal static void CheckStatus(Status status) => GDIPlus.CheckStatus(status);
+            private static IntPtr LoadFunctionPointer(IntPtr nativeLibraryHandle, string functionName) => Interop.Libdl.dlsym(nativeLibraryHandle, functionName);
+
+            internal static void CheckStatus(Status status)
+            {
+                string msg;
+                switch (status)
+                {
+                    case Status.Ok:
+                        return;
+                    case Status.GenericError:
+                        msg = string.Format("Generic Error [GDI+ status: {0}]", status);
+                        throw new Exception(msg);
+                    case Status.InvalidParameter:
+                        msg = string.Format("A null reference or invalid value was found [GDI+ status: {0}]", status);
+                        throw new ArgumentException(msg);
+                    case Status.OutOfMemory:
+                        msg = string.Format("Not enough memory to complete operation [GDI+ status: {0}]", status);
+                        throw new OutOfMemoryException(msg);
+                    case Status.ObjectBusy:
+                        msg = string.Format("Object is busy and cannot state allow this operation [GDI+ status: {0}]", status);
+                        throw new MemberAccessException(msg);
+                    case Status.InsufficientBuffer:
+                        msg = string.Format("Insufficient buffer provided to complete operation [GDI+ status: {0}]", status);
+#if NETCORE
+                        throw new Exception(msg);
+#else
+                throw new InternalBufferOverflowException (msg);
+#endif
+                    case Status.PropertyNotSupported:
+                        msg = string.Format("Property not supported [GDI+ status: {0}]", status);
+                        throw new NotSupportedException(msg);
+                    case Status.FileNotFound:
+                        msg = string.Format("Requested file was not found [GDI+ status: {0}]", status);
+                        throw new FileNotFoundException(msg);
+                    case Status.AccessDenied:
+                        msg = string.Format("Access to resource was denied [GDI+ status: {0}]", status);
+                        throw new UnauthorizedAccessException(msg);
+                    case Status.UnknownImageFormat:
+                        msg = string.Format("Either the image format is unknown or you don't have the required libraries to decode this format [GDI+ status: {0}]", status);
+                        throw new NotSupportedException(msg);
+                    case Status.NotImplemented:
+                        msg = string.Format("The requested feature is not implemented [GDI+ status: {0}]", status);
+                        throw new NotImplementedException(msg);
+                    case Status.WrongState:
+                        msg = string.Format("Object is not in a state that can allow this operation [GDI+ status: {0}]", status);
+                        throw new ArgumentException(msg);
+                    case Status.FontFamilyNotFound:
+                        msg = string.Format("The requested FontFamily could not be found [GDI+ status: {0}]", status);
+                        throw new ArgumentException(msg);
+                    case Status.ValueOverflow:
+                        msg = string.Format("Argument is out of range [GDI+ status: {0}]", status);
+                        throw new OverflowException(msg);
+                    case Status.Win32Error:
+                        msg = string.Format("The operation is invalid [GDI+ status: {0}]", status);
+                        throw new InvalidOperationException(msg);
+                    default:
+                        msg = string.Format("Unknown Error [GDI+ status: {0}]", status);
+                        throw new Exception(msg);
+                }
+            }
 
             private static void LoadPlatformFunctionPointers()
             {

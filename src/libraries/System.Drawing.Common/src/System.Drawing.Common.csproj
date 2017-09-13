@@ -46,6 +46,7 @@
     <Compile Include="System\Drawing\Brushes.cs" />
     <Compile Include="System\Drawing\CharacterRange.cs" />
     <Compile Include="System\Drawing\ColorTranslator.cs" />
+    <Compile Include="System\Drawing\ContentAlignment.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
     <Compile Include="System\Drawing\GdiplusNative.cs" />
     <Compile Include="System\Drawing\Graphics.cs" />
@@ -206,7 +207,6 @@
     <Compile Include="System\Drawing\BufferedGraphics.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsContext.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
-    <Compile Include="System\Drawing\ContentAlignment.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
     <Compile Include="System\Drawing\Font.cs" />
@@ -312,13 +312,15 @@
     <Compile Include="Unix\System.Drawing\macFunctions.cs" />
     <Compile Include="Unix\System.Drawing\ComIStreamMarshaler.cs" />
     <Compile Include="Unix\System.Drawing\ComIStreamWrapper.cs" />
-    <Compile Include="Unix\System.Drawing\ContentAlignment.cs" />
     <Compile Include="Unix\System.Drawing\Font.cs" />
     <Compile Include="Unix\System.Drawing\GraphicsUnit.cs" />
     <Compile Include="Unix\System.Drawing\gdipEnums.cs" />
     <Compile Include="Unix\System.Drawing\gdipFunctions.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
-    <Compile Include="Unix\System.Drawing\gdipStructs.cs" />
+    <Compile Include="Unix\System.Drawing\GdiPlusStreamHelper.cs" />
+    <Compile Include="Unix\System.Drawing\LibX11Functions.cs" />
+    <Compile Include="Unix\System.Drawing\MarshallingHelpers.cs" />
+    <Compile Include="Unix\System.Drawing\NativeStructs.Unix.cs" />
     <Compile Include="Unix\System.Drawing\ImageAnimator.cs" />
     <Compile Include="Unix\System.Drawing\Image.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />
