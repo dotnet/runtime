@@ -2368,9 +2368,9 @@ void Lowering::LowerCompare(GenTree* cmp)
             GenTree*  longOp       = op1Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
             GenTree** smallerOpUse = op2Is64Bit ? &cmp->gtOp.gtOp1 : &cmp->gtOp.gtOp2;
 #ifdef _TARGET_AMD64_
-            var_types smallerType  = (*smallerOpUse)->TypeGet();
+            var_types smallerType = (*smallerOpUse)->TypeGet();
 #elif defined(_TARGET_ARM64_)
-            var_types smallerType  = genActualType((*smallerOpUse)->TypeGet());
+            var_types smallerType = genActualType((*smallerOpUse)->TypeGet());
 #endif // _TARGET_AMD64_
 
             assert(genTypeSize(smallerType) < 8);
