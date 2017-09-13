@@ -2586,6 +2586,9 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
     //
     // Optimization cases
     //
+    // TODO-ARM : If the optimization cases are implemented in CreateDictionaryLookupHelper,
+    //            It's ifndef for ARM will be removed.
+#ifndef _TARGET_ARM_
     if (signatureKind == ENCODE_TYPE_HANDLE)
     {
         SigPointer sigptr(pBlob, -1);
@@ -2628,6 +2631,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             return;
         }
     }
+#endif // !_TARGET_ARM_
 
     if (pContextMT != NULL && pContextMT->GetNumDicts() > 0xFFFF)
         ThrowHR(COR_E_BADIMAGEFORMAT);

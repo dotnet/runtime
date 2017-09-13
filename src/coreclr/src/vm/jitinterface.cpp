@@ -3132,9 +3132,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
     {
-#if defined(_TARGET_ARM_)
-        ThrowHR(E_NOTIMPL); /* TODO - NYI */
-#endif
         pResultLookup->lookupKind.runtimeLookupArgs = NULL;
 
         switch (entryKind)
