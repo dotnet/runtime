@@ -1707,13 +1707,14 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
+            ref T p = ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData());
             int i = index;
             int j = index + length - 1;
             while (i < j)
             {
-                T temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
+                T temp = Unsafe.Add(ref p, i);
+                Unsafe.Add(ref p, i) = Unsafe.Add(ref p, j);
+                Unsafe.Add(ref p, j) = temp;
                 i++;
                 j--;
             }
