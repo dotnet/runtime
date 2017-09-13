@@ -1,6 +1,5 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <DefineConstants Condition="'$(BuildTypeRet)' == 'true'">$(DefineConstants);BUILDTYPE_RET</DefineConstants>
         <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
@@ -11,30 +10,16 @@
         <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(DefineConstants);FEATURE_COREFX_GLOBALIZATION</DefineConstants>
-        <DefineConstants Condition="'$(FeatureDisplayCultureInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_CULTURE_INFO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureDisplayRegionInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_REGION_INFO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureHosting)' == 'true'">$(DefineConstants);FEATURE_HOSTING</DefineConstants>
-        <DefineConstants Condition="'$(FeatureImplicitLongPath)' == 'true'">$(DefineConstants);FEATURE_IMPLICIT_LONGPATH</DefineConstants>
-        <DefineConstants Condition="'$(FeatureIsolatedStorageQuotaEnforcement)' == 'true'">$(DefineConstants);FEATURE_ISOLATED_STORAGE_QUOTA_ENFORCEMENT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureMacl)' == 'true'">$(DefineConstants);FEATURE_MACL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePal)' == 'true'">$(DefineConstants);FEATURE_PAL</DefineConstants>
-        <DefineConstants Condition="'$(FeaturePathCompat)' == 'true'">$(DefineConstants);FEATURE_PATHCOMPAT</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(DefineConstants);FEATURE_RANDOMIZED_STRING_HASHING</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
-        <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
-        <DefineConstants Condition="'$(FeatureValidator)' == 'true'">$(DefineConstants);FEATURE_VALIDATOR</DefineConstants>
         <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
-        <DefineConstants Condition="'$(FeatureWinMDResilient)' == 'true'">$(DefineConstants);FEATURE_WINMD_RESILIENT</DefineConstants>
+
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
-        <DefineConstants Condition="'$(FeatureReJIT)' == 'true'">$(DefineConstants);FEATURE_REJIT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
-        <DefineConstants Condition="'$(BinderDebugLog)' == 'true'">$(DefineConstants);BINDER_DEBUG_LOG</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSymDiff)' == 'true'">$(DefineConstants);FEATURE_SYMDIFF</DefineConstants>
+
 
         <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);PLATFORM_UNIX</DefineConstants>
         <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);PLATFORM_WINDOWS</DefineConstants>

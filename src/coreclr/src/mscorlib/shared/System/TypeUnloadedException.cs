@@ -11,19 +11,19 @@ namespace System
         public TypeUnloadedException()
             : base(SR.Arg_TypeUnloadedException)
         {
-            HResult = __HResults.COR_E_TYPEUNLOADED;
+            HResult = HResults.COR_E_TYPEUNLOADED;
         }
 
         public TypeUnloadedException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_TYPEUNLOADED;
+            HResult = HResults.COR_E_TYPEUNLOADED;
         }
 
         public TypeUnloadedException(string message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_TYPEUNLOADED;
+            HResult = HResults.COR_E_TYPEUNLOADED;
         }
         
         protected TypeUnloadedException(SerializationInfo info, StreamingContext context)

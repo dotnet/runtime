@@ -472,6 +472,7 @@ struct DECLSPEC_ALIGN(8) UMEntryThunkCode
     BYTE            m_padding2[5];
 
     void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Poison();
 
     LPCBYTE GetEntryPoint() const
     {

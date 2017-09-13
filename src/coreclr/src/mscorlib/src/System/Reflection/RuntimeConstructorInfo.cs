@@ -57,16 +57,7 @@ namespace System.Reflection
                         // this should be an invocable method, determine the other flags that participate in invocation
                         invocationFlags |= RuntimeMethodHandle.GetSecurityFlags(this);
 
-                        if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) == 0 &&
-                             ((Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public ||
-                              (declaringType != null && declaringType.NeedsReflectionSecurityCheck)))
-                        {
-                            // If method is non-public, or declaring type is not visible
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-                        }
-
-                        // Check for attempt to create a delegate class, we demand unmanaged
-                        // code permission for this since it's hard to validate the target address.
+                        // Check for attempt to create a delegate class.
                         if (typeof(Delegate).IsAssignableFrom(DeclaringType))
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_IS_DELEGATE_CTOR;
                     }
@@ -363,13 +354,6 @@ namespace System.Reflection
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
 
-            if (obj != null)
-            {
-                // For unverifiable code, we require the caller to be critical.
-                // Adding the INVOCATION_FLAGS_NEED_SECURITY flag makes that check happen
-                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-            }
-
             Signature sig = Signature;
 
             // get the signature
@@ -379,16 +363,17 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             // if we are here we passed all the previous checks. Time to look at the arguments
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (actualCount > 0)
             {
                 Object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
-                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false);
+                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
                     parameters[index] = arguments[index];
                 return retValue;
             }
-            return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false);
+            return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false, wrapExceptions);
         }
 
         public override MethodBody GetMethodBody()
@@ -449,16 +434,17 @@ namespace System.Reflection
             // JIT/NGen will insert the call to .cctor in the instance ctor.
 
             // if we are here we passed all the previous checks. Time to look at the arguments
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (actualCount > 0)
             {
                 Object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
-                Object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true);
+                Object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
                     parameters[index] = arguments[index];
                 return retValue;
             }
-            return RuntimeMethodHandle.InvokeMethod(null, null, sig, true);
+            return RuntimeMethodHandle.InvokeMethod(null, null, sig, true, wrapExceptions);
         }
         #endregion
     }

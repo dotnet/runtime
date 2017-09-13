@@ -134,6 +134,17 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_FinalizeOnShutdown, W("FinalizeOnShutdown"), D
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ARMEnabled, W("ARMEnabled"), (DWORD)0, "Set it to 1 to enable ARM")
 
 //
+// Jit Pitching
+//
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchEnabled, W("JitPitchEnabled"), (DWORD)0, "Set it to 1 to enable Jit Pitching")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMemThreshold, W("JitPitchMemThreshold"), (DWORD)0, "Do Jit Pitching when code heap usage is larger than this (in bytes)")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMethodSizeThreshold, W("JitPitchMethodSizeThreshold"), (DWORD)0, "Do Jit Pitching for methods whose native code size larger than this (in bytes)")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchTimeInterval, W("JitPitchTimeInterval"), (DWORD)0, "Time interval between Jit Pitchings in ms")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchPrintStat, W("JitPitchPrintStat"), (DWORD)0, "Print statistics about Jit Pitching")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMinVal, W("JitPitchMinVal"), (DWORD)0, "Do Jit Pitching if the value of the inner counter greater than this value (for debugging purpose only)")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMaxVal, W("JitPitchMaxVal"), (DWORD)0xffffffff, "Do Jit Pitching the value of the inner counter less then this value (for debuggin purpose only)")
+
+//
 // Assembly Loader
 //
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DesignerNamespaceResolutionEnabled, W("designerNamespaceResolution"), FALSE, "Set it to 1 to enable DesignerNamespaceResolve event for WinRT types", CLRConfig::IgnoreEnv | CLRConfig::IgnoreHKLM | CLRConfig::IgnoreHKCU | CLRConfig::FavorConfigFile)
@@ -153,9 +164,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NetFx45_LegacyManagedDeflateStream, W("NetFx45
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DateTime_NetFX35ParseMode, W("DateTime_NetFX35ParseMode"), 0, "Flag to enable the .NET 3.5 System.DateTime Token Replacement Policy")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThrowUnobservedTaskExceptions, W("ThrowUnobservedTaskExceptions"), 0, "Flag to propagate unobserved task exceptions on the finalizer thread.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DateTime_NetFX40AmPmParseAdjustment, W("EnableAmPmParseAdjustment"), 0, "Flag to enable the .NET 4.0 DateTimeParse to correctly parse AM/PM cases")
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseRandomizedStringHashAlgorithm, W("UseRandomizedStringHashAlgorithm"), 0, "Flag to use a string hashing algorithm who's behavior differs between AppDomains")
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
 
 // 
 // Conditional breakpoints
@@ -836,6 +844,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ProfAPI_ValidateNGENInstrumentation, W("Pro
 
 #ifdef FEATURE_PERFMAP
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux to enable writing /tmp/perf-$pid.map. It is disabled by default", CLRConfig::REGUTIL_default)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PerfMapIgnoreSignal, W("PerfMapIgnoreSignal"), 0, "When perf map is enabled, this option will configure the specified signal to be accepeted and ignored as a marker in the perf logs.  It is disabled by default", CLRConfig::REGUTIL_default)
 #endif
 
 //
@@ -1041,6 +1050,16 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_AllowDComReflection, W("AllowDComReflection"),
 // Performance Tracing
 //
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_PerformanceTracing, W("PerformanceTracing"), 0, "Enable/disable performance tracing.  Non-zero values enable tracing.")
+
+#ifdef FEATURE_GDBJIT
+//
+// GDBJIT
+//
+CONFIG_STRING_INFO(INTERNAL_GDBJitElfDump, W("GDBJitElfDump"), "Dump ELF for specified method")
+#ifdef FEATURE_GDBJIT_FRAME
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"), TRUE, "Enable .debug_frame generation")
+#endif
+#endif
 
 //
 // Unknown

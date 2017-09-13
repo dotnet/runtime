@@ -15,6 +15,22 @@
 #include "gdbjit.h"
 #include "gdbjithelpers.h"
 
+__declspec(thread) bool tls_isSymReaderInProgress = false;
+
+#ifdef _DEBUG
+static void DumpElf(const char* methodName, const char *addr, size_t size)
+{
+    char dump[1024] = { 0, };
+
+    strcat(dump, methodName);
+    strcat(dump, ".o");
+
+    FILE *f = fopen(dump,  "wb");
+    fwrite(addr, sizeof(char), size, f);
+    fclose(f);
+}
+#endif
+
 TypeInfoBase*
 GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
                           NotifyGdb::PTK_TypeInfoMap pTypeMap,
@@ -648,46 +664,6 @@ struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
 
 // END of GDB JIT interface
 
-/* Predefined section names */
-const char* SectionNames[] = {
-    "",
-    ".text",
-    ".shstrtab",
-    ".debug_str",
-    ".debug_abbrev",
-    ".debug_info",
-    ".debug_pubnames",
-    ".debug_pubtypes",
-    ".debug_line",
-    ".symtab",
-    ".strtab"
-    /* After the last (.strtab) section zero or more .thunk_* sections are generated.
-
-       Each .thunk_* section contains a single .thunk_#.
-       These symbols are mapped to methods (or trampolines) called by currently compiled method. */
-};
-
-const int SectionNamesCount = sizeof(SectionNames) / sizeof(SectionNames[0]); // Does not include .thunk_* sections
-
-/* Static data for section headers */
-struct SectionHeader {
-    uint32_t m_type;
-    uint64_t m_flags;
-} Sections[] = {
-    {SHT_NULL, 0},
-    {SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR},
-    {SHT_STRTAB, 0},
-    {SHT_PROGBITS, SHF_MERGE | SHF_STRINGS },
-    {SHT_PROGBITS, 0},
-    {SHT_PROGBITS, 0},
-    {SHT_PROGBITS, 0},
-    {SHT_PROGBITS, 0},
-    {SHT_PROGBITS, 0},
-    {SHT_SYMTAB, 0},
-    {SHT_STRTAB, 0},
-    {SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR}
-};
-
 /* Static data for .debug_str section */
 const char* DebugStrings[] = {
   "CoreCLR", "" /* module name */, "" /* module path */
@@ -780,6 +756,11 @@ const int AbbrevTableSize = sizeof(AbbrevTable);
 #define DWARF_LINE_RANGE 14
 #define DWARF_OPCODE_BASE 13
 
+#ifdef FEATURE_GDBJIT_LANGID_CS
+/* TODO: use corresponding constant when it will be added to llvm */
+#define DW_LANG_MICROSOFT_CSHARP 0x9e57
+#endif
+
 DwarfLineNumHeader LineNumHeader = {
     0, 2, 0, 1, 1, DWARF_LINE_BASE, DWARF_LINE_RANGE, DWARF_OPCODE_BASE, {0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1}
 };
@@ -793,7 +774,11 @@ struct __attribute__((packed)) DebugInfoCU
     uint32_t m_cu_name;
     uint32_t m_line_num;
 } debugInfoCU = {
+#ifdef FEATURE_GDBJIT_LANGID_CS
+    1, 0, DW_LANG_MICROSOFT_CSHARP, 0, 0
+#else
     1, 0, DW_LANG_C89, 0, 0
+#endif
 };
 
 struct __attribute__((packed)) DebugInfoTryCatchSub
@@ -979,10 +964,13 @@ void TypeDefInfo::DumpStrings(char *ptr, int &offset)
 
 void TypeDefInfo::DumpDebugInfo(char *ptr, int &offset)
 {
-    if (m_typedef_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
 
     if (ptr != nullptr)
     {
@@ -1054,10 +1042,14 @@ void PrimitiveTypeInfo::DumpStrings(char* ptr, int& offset)
 
 void PrimitiveTypeInfo::DumpDebugInfo(char *ptr, int &offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_typedef_info->DumpDebugInfo(ptr, offset);
 
     if (ptr != nullptr)
@@ -1071,13 +1063,12 @@ void PrimitiveTypeInfo::DumpDebugInfo(char *ptr, int &offset)
         memcpy(ptr + offset,
                &bufType,
                sizeof(DebugInfoType));
-        m_type_offset = offset;
+
+        // Replace offset from real type to typedef
+        m_type_offset = m_typedef_info->m_typedef_type_offset;
     }
 
     offset += sizeof(DebugInfoType);
-    // Replace offset from real type to typedef
-    if (ptr != nullptr)
-        m_type_offset = m_typedef_info->m_typedef_type_offset;
 }
 
 ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMemberPtrArrayHolder &method)
@@ -1146,7 +1137,21 @@ void TypeMember::DumpDebugInfo(char* ptr, int& offset)
 void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
 {
     const int ptrSize = sizeof(TADDR);
-    int bufSize = 0;
+    const int valueTypeBufSize = ptrSize + 6;
+    const int refTypeBufSize = ptrSize + 2;
+
+    bool isValueType = m_member_type->GetTypeHandle().GetSignatureCorElementType() ==
+                            ELEMENT_TYPE_VALUETYPE;
+    int bufSize;
+    if (isValueType)
+    {
+        bufSize = valueTypeBufSize;
+    }
+    else
+    {
+        bufSize = refTypeBufSize;
+    }
+
     if (ptr != nullptr)
     {
         DebugInfoStaticMember memberEntry;
@@ -1157,12 +1162,9 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
 
         // for value type static fields compute address as:
         // addr = (*addr+sizeof(OBJECTREF))
-        if (m_member_type->GetTypeHandle().GetSignatureCorElementType() ==
-                ELEMENT_TYPE_VALUETYPE)
+        if (isValueType)
         {
-            bufSize = ptrSize + 6;
-
-            char buf[ptrSize + 6] = {0};
+            char buf[valueTypeBufSize] = {0};
             buf[0] = ptrSize + 5;
             buf[1] = DW_OP_addr;
 
@@ -1180,9 +1182,7 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
         }
         else
         {
-            bufSize = ptrSize + 2;
-
-            char buf[ptrSize + 2] = {0};
+            char buf[refTypeBufSize] = {0};
             buf[0] = ptrSize + 1;
             buf[1] = DW_OP_addr;
 
@@ -1540,10 +1540,14 @@ void RefTypeInfo::DumpStrings(char* ptr, int& offset)
 
 void RefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_type_offset = offset;
     offset += sizeof(DebugInfoRefType);
     m_value_type->DumpDebugInfo(ptr, offset);
@@ -1563,10 +1567,14 @@ void RefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void NamedRefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_type_offset = offset;
     offset += sizeof(DebugInfoRefType) + sizeof(DebugInfoTypeDef);
     m_value_type->DumpDebugInfo(ptr, offset);
@@ -1593,28 +1601,23 @@ void NamedRefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
 
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     if (m_parent != nullptr)
     {
-        if (m_parent->m_type_offset == 0)
-        {
-            m_parent->DumpDebugInfo(ptr, offset);
-        }
-        else if (RefTypeInfo* m_p = dynamic_cast<RefTypeInfo*>(m_parent))
-        {
-            if (m_p->m_value_type->m_type_offset == 0)
-                m_p->m_value_type->DumpDebugInfo(ptr, offset);
-        }
+        m_parent->DumpDebugInfo(ptr, offset);
     }
 
     // make sure that types of all members are dumped
     for (int i = 0; i < m_num_members; ++i)
     {
-        if (members[i].m_member_type->m_type_offset == 0 && members[i].m_member_type != this)
+        if (members[i].m_member_type != this)
         {
             members[i].m_member_type->DumpDebugInfo(ptr, offset);
         }
@@ -1678,14 +1681,16 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void ArrayTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
-    if (m_elem_type->m_type_offset == 0)
-    {
-        m_elem_type->DumpDebugInfo(ptr, offset);
-    }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
+    m_elem_type->DumpDebugInfo(ptr, offset);
+
     if (ptr != nullptr)
     {
         DebugInfoArrayType arrType;
@@ -1754,11 +1759,12 @@ struct Elf_Symbol {
     Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
 };
 
-static int countFuncs(const SymbolsInfo *lines, int nlines)
+template <class T>
+static int countFuncs(T &arr, int n)
 {
     int count = 0;
-    for (int i = 0; i < nlines; i++) {
-        if (lines[i].ilOffset == ICorDebugInfo::PROLOG)
+    for (int i = 0; i < n; i++) {
+        if (arr[i].ilOffset == ICorDebugInfo::PROLOG)
         {
             count++;
         }
@@ -1766,10 +1772,11 @@ static int countFuncs(const SymbolsInfo *lines, int nlines)
     return count;
 }
 
-static int getNextPrologueIndex(int from, const SymbolsInfo *lines, int nlines)
+template <class T>
+static int getNextPrologueIndex(int from, T &arr, int n)
 {
-    for (int i = from; i < nlines; ++i) {
-        if (lines[i].ilOffset == ICorDebugInfo::PROLOG)
+    for (int i = from; i < n; ++i) {
+        if (arr[i].ilOffset == ICorDebugInfo::PROLOG)
         {
             return i;
         }
@@ -1777,81 +1784,46 @@ static int getNextPrologueIndex(int from, const SymbolsInfo *lines, int nlines)
     return -1;
 }
 
-static NotifyGdb::AddrSet codeAddrs;
-
-/* Create ELF/DWARF debug info for jitted method */
-void NotifyGdb::MethodCompiled(MethodDesc* methodDescPtr)
+static inline bool isListedModule(const WCHAR *wszModuleFile)
 {
-    EX_TRY
-    {
-        NotifyGdb::OnMethodCompiled(methodDescPtr);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-}
-
-void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
-{
-    int symbolCount = 0;
-    NewArrayHolder<Elf_Symbol> symbolNames;
-
-    PCODE pCode = methodDescPtr->GetNativeCode();
-    if (pCode == NULL)
-        return;
-    unsigned int symInfoLen = 0;
-    NewArrayHolder<SymbolsInfo> symInfo = nullptr;
-    LocalsInfo locals;
-
-    /* Get method name & size of jitted code */
-    LPCUTF8 methodName = methodDescPtr->GetName();
-    EECodeInfo codeInfo(pCode);
-    TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
-
-    pCode = PCODEToPINSTR(pCode);
-
-    /* Get module name */
-    const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
-    StackScratchBuffer scratch;
-    const char* szModName = modName.GetUTF8(scratch);
-    const char *szModulePath, *szModuleFile;
-    SplitPathname(szModName, szModulePath, szModuleFile);
-
-
-    int length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, NULL, 0);
-    if (length == 0)
-        return;
-    NewArrayHolder<WCHAR> wszModuleFile = new WCHAR[length+1];
-    length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, wszModuleFile, length);
-
-    if (length == 0)
-        return;
-
     static NewArrayHolder<WCHAR> wszModuleNames = nullptr;
-    DWORD cCharsNeeded = 0;
+    static DWORD cBytesNeeded = 0;
 
     // Get names of interesting modules from environment
-    if (wszModuleNames == nullptr)
+    if (wszModuleNames == nullptr && cBytesNeeded == 0)
     {
-        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
+        DWORD cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
 
-        if(cCharsNeeded == 0)
-            return;
-        wszModuleNames = new WCHAR[cCharsNeeded+1];
-        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNames, cCharsNeeded);
-        if(cCharsNeeded == 0)
-            return;
+        if (cCharsNeeded == 0)
+        {
+            cBytesNeeded = 0xffffffff;
+            return false;
+        }
+
+        WCHAR *wszModuleNamesBuf = new WCHAR[cCharsNeeded+1];
+
+        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNamesBuf, cCharsNeeded);
+
+        if (cCharsNeeded == 0)
+        {
+            delete[] wszModuleNamesBuf;
+            cBytesNeeded = 0xffffffff;
+            return false;
+        }
+
+        wszModuleNames = wszModuleNamesBuf;
+        cBytesNeeded = cCharsNeeded + 1;
     }
-    else
+    else if (wszModuleNames == nullptr)
     {
-        cCharsNeeded = wcslen(wszModuleNames);
+        return false;
     }
+
+    _ASSERTE(wszModuleNames != nullptr && cBytesNeeded > 0);
 
     BOOL isUserDebug = FALSE;
 
-    NewArrayHolder<WCHAR> wszModuleName = new WCHAR[cCharsNeeded+1];
+    NewArrayHolder<WCHAR> wszModuleName = new WCHAR[cBytesNeeded];
     LPWSTR pComma = wcsstr(wszModuleNames, W(","));
     LPWSTR tmp = wszModuleNames;
 
@@ -1878,10 +1850,829 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
         }
     }
 
-    if (isUserDebug == FALSE)
+    return isUserDebug;
+}
+
+static NotifyGdb::AddrSet codeAddrs;
+
+class Elf_SectionTracker
+{
+    private:
+        unsigned int m_Flag;
+
+    private:
+        NewArrayHolder<char>  m_NamePtr;
+        unsigned int          m_NameLen;
+
+    private:
+        unsigned int m_Ind;
+        unsigned int m_Off;
+        unsigned int m_Len;
+
+    private:
+        Elf_Shdr m_Hdr;
+
+    private:
+        Elf_SectionTracker *m_Next;
+
+    public:
+        Elf_SectionTracker(const char *name, unsigned ind, unsigned off, uint32_t type, uint64_t flags);
+        ~Elf_SectionTracker();
+
+    public:
+        bool NeedHeaderUpdate() const;
+        void DisableHeaderUpdate();
+
+    public:
+        unsigned int GetIndex() const   { return m_Ind; }
+        unsigned int GetOffset() const  { return m_Off; }
+        unsigned int GetSize() const    { return m_Len; }
+
+    public:
+        const char *GetName() const     { return m_NamePtr; }
+        unsigned int GetNameLen() const { return m_NameLen; }
+
+    public:
+        Elf_SectionTracker *GetNext(void);
+        void SetNext(Elf_SectionTracker *next);
+
+    public:
+        void Forward(unsigned int len);
+
+    public:
+        Elf_Shdr *Header(void);
+        const Elf_Shdr *Header(void) const;
+
+};
+
+Elf_SectionTracker::Elf_SectionTracker(const char *name,
+                                       unsigned ind, unsigned off,
+                                       uint32_t type, uint64_t flags)
+    : m_Flag(0),
+      m_NamePtr(nullptr),
+      m_NameLen(0),
+      m_Ind(ind),
+      m_Off(off),
+      m_Len(0),
+      m_Next(nullptr)
+{
+    if (name)
+    {
+        unsigned int len = strlen(name);
+        char *ptr = new char[len + 1];
+
+        strncpy(ptr, name, len + 1);
+
+        m_NamePtr = ptr;
+        m_NameLen = len;
+    }
+
+    m_Hdr.sh_type       = type;
+    m_Hdr.sh_flags      = flags;
+    m_Hdr.sh_name       = 0;
+    m_Hdr.sh_addr       = 0;
+    m_Hdr.sh_offset     = 0;
+    m_Hdr.sh_size       = 0;
+    m_Hdr.sh_link       = SHN_UNDEF;
+    m_Hdr.sh_info       = 0;
+    m_Hdr.sh_addralign  = 1;
+    m_Hdr.sh_entsize    = 0;
+}
+
+Elf_SectionTracker::~Elf_SectionTracker()
+{
+}
+
+#define ESTF_NO_HEADER_UPDATE 0x00000001
+
+bool Elf_SectionTracker::NeedHeaderUpdate() const
+{
+    return !(m_Flag & ESTF_NO_HEADER_UPDATE);
+}
+
+void Elf_SectionTracker::DisableHeaderUpdate()
+{
+    m_Flag |= ESTF_NO_HEADER_UPDATE;
+}
+
+void Elf_SectionTracker::Forward(unsigned int len)
+{
+    m_Len += len;
+}
+
+void Elf_SectionTracker::SetNext(Elf_SectionTracker *next)
+{
+    m_Next = next;
+}
+
+Elf_SectionTracker *Elf_SectionTracker::GetNext(void)
+{
+    return m_Next;
+}
+
+Elf_Shdr *Elf_SectionTracker::Header(void)
+{
+    return &m_Hdr;
+}
+
+const Elf_Shdr *Elf_SectionTracker::Header(void) const
+{
+    return &m_Hdr;
+}
+
+class Elf_Buffer
+{
+    private:
+        NewArrayHolder<char>  m_Ptr;
+        unsigned int          m_Len;
+        unsigned int          m_Pos;
+
+    public:
+        Elf_Buffer(unsigned int len);
+
+    private:
+        char *Ensure(unsigned int len);
+        void Forward(unsigned int len);
+
+    public:
+        unsigned int GetPos() const
+        {
+            return m_Pos;
+        }
+
+        char *GetPtr(unsigned int off = 0)
+        {
+            return m_Ptr.GetValue() + off;
+        }
+
+    public:
+        char *Reserve(unsigned int len);
+        template <typename T> T *ReserveT(unsigned int len = sizeof(T))
+        {
+            _ASSERTE(len >= sizeof(T));
+            return reinterpret_cast<T *>(Reserve(len));
+        }
+
+    public:
+        void Append(const char *src, unsigned int len);
+        template <typename T> void AppendT(T *src)
+        {
+            Append(reinterpret_cast<const char *>(src), sizeof(T));
+        }
+};
+
+Elf_Buffer::Elf_Buffer(unsigned int len)
+    : m_Ptr(new char[len])
+    , m_Len(len)
+    , m_Pos(0)
+{
+}
+
+char *Elf_Buffer::Ensure(unsigned int len)
+{
+    bool bAdjusted = false;
+
+    while (m_Pos + len > m_Len)
+    {
+        m_Len *= 2;
+        bAdjusted = true;
+    }
+
+    if (bAdjusted)
+    {
+        char *ptr = new char [m_Len * 2];
+        memcpy(ptr, m_Ptr.GetValue(), m_Pos);
+        m_Ptr = ptr;
+    }
+
+    return GetPtr(m_Pos);
+}
+
+void Elf_Buffer::Forward(unsigned int len)
+{
+    m_Pos += len;
+}
+
+char *Elf_Buffer::Reserve(unsigned int len)
+{
+    char *ptr = Ensure(len);
+    Forward(len);
+    return ptr;
+}
+
+void Elf_Buffer::Append(const char *src, unsigned int len)
+{
+    char *dst = Reserve(len);
+    memcpy(dst, src, len);
+}
+
+#define ELF_BUILDER_TEXT_SECTION_INDEX 1
+
+class Elf_Builder
+{
+    private:
+        Elf_Buffer m_Buffer;
+
+    private:
+        unsigned int          m_SectionCount;
+        Elf_SectionTracker   *m_First;
+        Elf_SectionTracker   *m_Last;
+        Elf_SectionTracker   *m_Curr;
+
+    public:
+        Elf_Builder();
+        ~Elf_Builder();
+
+    public:
+        unsigned int GetSectionCount(void) { return m_SectionCount; }
+
+    public:
+        void Initialize(PCODE codePtr, TADDR codeLen);
+
+    public:
+        Elf_SectionTracker *OpenSection(const char *name, uint32_t type, uint64_t flags);
+        void CloseSection();
+
+    public:
+        char *Reserve(unsigned int len);
+        template <typename T> T *ReserveT(unsigned int len = sizeof(T))
+        {
+            _ASSERTE(len >= sizeof(T));
+            return reinterpret_cast<T *>(Reserve(len));
+        }
+
+    public:
+        void Append(const char *src, unsigned int len);
+        template <typename T> void AppendT(T *src)
+        {
+            Append(reinterpret_cast<const char *>(src), sizeof(T));
+        }
+
+    public:
+        void Finalize(void);
+
+    public:
+        char *Export(size_t *len);
+};
+
+Elf_Builder::Elf_Builder()
+    : m_Buffer(128),
+      m_SectionCount(0),
+      m_First(nullptr),
+      m_Last(nullptr),
+      m_Curr(nullptr)
+{
+}
+
+Elf_Builder::~Elf_Builder()
+{
+    Elf_SectionTracker *curr = m_First;
+
+    while (curr)
+    {
+        Elf_SectionTracker *next = curr->GetNext();
+        delete curr;
+        curr = next;
+    }
+}
+
+void Elf_Builder::Initialize(PCODE codePtr, TADDR codeLen)
+{
+    //
+    // Reserve ELF Header
+    //
+    m_Buffer.Reserve(sizeof(Elf_Ehdr));
+
+    //
+    // Create NULL section
+    //
+    Elf_SectionTracker *null = OpenSection("", SHT_NULL, 0);
+    {
+        null->DisableHeaderUpdate();
+        null->Header()->sh_addralign = 0;
+    }
+    CloseSection();
+
+    //
+    // Create '.text' section
+    //
+    Elf_SectionTracker *text = OpenSection(".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR);
+    {
+        text->DisableHeaderUpdate();
+        text->Header()->sh_addr = codePtr;
+        text->Header()->sh_size = codeLen;
+
+        _ASSERTE(text->GetIndex() == ELF_BUILDER_TEXT_SECTION_INDEX);
+    }
+    CloseSection();
+}
+
+char *Elf_Builder::Reserve(unsigned int len)
+{
+    _ASSERTE(m_Curr != nullptr && "Section should be opened before");
+    char *ptr = m_Buffer.Reserve(len);
+    m_Curr->Forward(len);
+    return ptr;
+}
+
+void  Elf_Builder::Append(const char *src, unsigned int len)
+{
+    _ASSERTE(m_Curr != nullptr && "Section should be opened before");
+    char *dst = Reserve(len);
+    memcpy(dst, src, len);
+}
+
+Elf_SectionTracker *Elf_Builder::OpenSection(const char *name, uint32_t type, uint64_t flags)
+{
+    _ASSERTE(m_Curr == nullptr && "Section should be closed before");
+
+    Elf_SectionTracker *next = new Elf_SectionTracker(name, m_SectionCount, m_Buffer.GetPos(), type, flags);
+
+    if (m_First == NULL)
+    {
+        m_First = next;
+    }
+
+    if (m_Last != NULL)
+    {
+        m_Last->SetNext(next);
+    }
+
+    m_SectionCount++;
+
+    m_Last = next;
+    m_Curr = next;
+
+    return next;
+}
+
+void Elf_Builder::CloseSection()
+{
+    _ASSERTE(m_Curr != nullptr && "Section should be opened before");
+    m_Curr = nullptr;
+}
+
+char *Elf_Builder::Export(size_t *pLen)
+{
+    unsigned int len = m_Buffer.GetPos();
+    const char  *src = m_Buffer.GetPtr();
+    char        *dst = new char[len];
+
+    memcpy(dst, src, len);
+
+    if (pLen)
+    {
+        *pLen = len;
+    }
+
+    return dst;
+}
+
+void Elf_Builder::Finalize()
+{
+    //
+    // Create '.shstrtab'
+    //
+    Elf_SectionTracker *shstrtab = OpenSection(".shstrtab", SHT_STRTAB, 0);
+    {
+        Elf_SectionTracker *curr = m_First;
+
+        while (curr)
+        {
+            unsigned int off = shstrtab->GetSize();
+            unsigned int len = curr->GetNameLen();
+
+            char *dst = Reserve(len + 1);
+            memcpy(dst, curr->GetName(), len);
+            dst[len] = '\0';
+
+            curr->Header()->sh_name = off;
+
+            curr = curr->GetNext();
+        }
+    }
+    CloseSection();
+
+    //
+    // Create Section Header(s) Table
+    //
+    unsigned int shtOffset = m_Buffer.GetPos();
+    {
+        Elf_SectionTracker *curr = m_First;
+
+        while (curr)
+        {
+            if (curr->NeedHeaderUpdate())
+            {
+                curr->Header()->sh_offset  = curr->GetOffset();
+                curr->Header()->sh_size    = curr->GetSize();
+            }
+            m_Buffer.AppendT(curr->Header());
+            curr = curr->GetNext();
+        }
+    }
+
+    //
+    // Update ELF Header
+    //
+    Elf_Ehdr *elfHeader = new (m_Buffer.GetPtr()) Elf_Ehdr;
+
+#ifdef _TARGET_ARM_
+    elfHeader->e_flags = EF_ARM_EABI_VER5;
+#ifdef ARM_SOFTFP
+    elfHeader->e_flags |= EF_ARM_SOFT_FLOAT;
+#else
+    elfHeader->e_flags |= EF_ARM_VFP_FLOAT;
+#endif
+#endif
+    elfHeader->e_shoff = shtOffset;
+    elfHeader->e_shentsize = sizeof(Elf_Shdr);
+    elfHeader->e_shnum = m_SectionCount;
+    elfHeader->e_shstrndx = shstrtab->GetIndex();
+}
+
+#ifdef FEATURE_GDBJIT_FRAME
+struct __attribute__((packed)) Length
+{
+    UINT32 value;
+
+    Length &operator=(UINT32 n)
+    {
+        value = n;
+        return *this;
+    }
+
+    Length()
+    {
+        value = 0;
+    }
+};
+
+struct __attribute__((packed)) CIE
+{
+    Length  length;
+    UINT32  id;
+    UINT8   version;
+    UINT8   augmentation;
+    UINT8   code_alignment_factor;
+    INT8    data_alignment_factor;
+    UINT8   return_address_register;
+    UINT8   instructions[0];
+};
+
+struct __attribute__((packed)) FDE
+{
+    Length  length;
+    UINT32  cie;
+    PCODE   initial_location;
+    TADDR   address_range;
+    UINT8   instructions[0];
+};
+
+static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize)
+{
+#if defined(_TARGET_ARM_)
+    const unsigned int code_alignment_factor = 2;
+    const int data_alignment_factor = -4;
+
+    UINT8 cieCode[] = {
+        // DW_CFA_def_cfa 13[sp], 0
+        0x0c, 0x0d, 0x00,
+    };
+
+    UINT8 fdeCode[] = {
+        // DW_CFA_advance_loc 1
+       0x02, 0x01,
+       // DW_CFA_def_cfa_offset 8
+       0x0e, 0x08,
+       // DW_CFA_offset 11(r11), -8(= -4 * 2)
+       (0x02 << 6) | 0x0b, 0x02,
+       // DW_CFA_offset 14(lr),  -4(= -4 * 1)
+       (0x02 << 6) | 0x0e, 0x01,
+       // DW_CFA_def_cfa_register 11(r11)
+       0x0d, 0x0b,
+    };
+#elif defined(_TARGET_X86_)
+    const unsigned int code_alignment_factor = 1;
+    const int data_alignment_factor = -4;
+
+    UINT8 cieCode[] = {
+        // DW_CFA_def_cfa 4(esp), 4
+        0x0c, 0x04, 0x04,
+        // DW_CFA_offset 8(eip), -4(= -4 * 1)
+       (0x02 << 6) | 0x08, 0x01,
+    };
+
+    UINT8 fdeCode[] = {
+        // DW_CFA_advance_loc 1
+       0x02, 0x01,
+       // DW_CFA_def_cfa_offset 8
+       0x0e, 0x08,
+       // DW_CFA_offset 5(ebp), -8(= -4 * 2)
+       (0x02 << 6) | 0x05, 0x02,
+       // DW_CFA_def_cfa_register 5(ebp)
+       0x0d, 0x05,
+    };
+#elif defined(_TARGET_AMD64_)
+    const unsigned int code_alignment_factor = 1;
+    const int data_alignment_factor = -8;
+
+    UINT8 cieCode[] = {
+      // DW_CFA_def_cfa 7(rsp), 8
+      0x0c, 0x07, 0x08,
+      // DW_CFA_offset 16, -16 (= -8 * 2)
+      (0x02 << 6) | 0x10, 0x01,
+    };
+
+    UINT8 fdeCode[] = {
+      // DW_CFA_advance_loc(1)
+      0x02, 0x01,
+      // DW_CFA_def_cfa_offset(16)
+      0x0e, 0x10,
+      // DW_CFA_offset 6, -16 (= -8 * 2)
+      (0x02 << 6) | 0x06, 0x02,
+      // DW_CFA_def_cfa_register(6)
+      0x0d, 0x06,
+    };
+#else
+#error "Unsupported architecture"
+#endif
+
+    elfBuilder.OpenSection(".debug_frame", SHT_PROGBITS, 0);
+
+    //
+    // Common Information Entry
+    //
+    int cieLen = ALIGN_UP(sizeof(CIE) + sizeof(cieCode), ADDRESS_SIZE) + sizeof(Length);
+
+    CIE *pCIE = elfBuilder.ReserveT<CIE>(cieLen);
+
+    memset(pCIE, 0, cieLen);
+
+    pCIE->length  = cieLen - sizeof(Length);
+    pCIE->id      = 0xffffffff;
+    pCIE->version = 3;
+    pCIE->augmentation = 0;
+    Leb128Encode(code_alignment_factor, reinterpret_cast<char *>(&pCIE->code_alignment_factor), 1);
+    Leb128Encode(data_alignment_factor, reinterpret_cast<char *>(&pCIE->data_alignment_factor), 1);
+
+    pCIE->return_address_register = 0;
+
+    memcpy(&pCIE->instructions, cieCode, sizeof(cieCode));
+
+    //
+    // Frame Description Entry
+    //
+    int fdeLen = ALIGN_UP((sizeof(FDE) + sizeof(fdeCode)), ADDRESS_SIZE) + sizeof(Length);
+
+    FDE *pFDE = elfBuilder.ReserveT<FDE>(fdeLen);
+
+    memset(pFDE, 0, fdeLen);
+
+    pFDE->length = fdeLen - sizeof(Length);
+    pFDE->cie = 0;
+    pFDE->initial_location = pCode;
+    pFDE->address_range = codeSize;
+    memcpy(&pFDE->instructions, fdeCode, sizeof(fdeCode));
+
+    elfBuilder.CloseSection();
+}
+#endif // FEATURE_GDBJIT_FRAME
+
+/* Create ELF/DWARF debug info for jitted method */
+void NotifyGdb::MethodPrepared(MethodDesc* methodDescPtr)
+{
+    EX_TRY
+    {
+        if (!tls_isSymReaderInProgress)
+        {
+            tls_isSymReaderInProgress = true;
+            NotifyGdb::OnMethodPrepared(methodDescPtr);
+            tls_isSymReaderInProgress = false;
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+}
+
+void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
+{
+    PCODE pCode = methodDescPtr->GetNativeCode();
+    if (pCode == NULL)
+        return;
+
+    /* Get method name & size of jitted code */
+    EECodeInfo codeInfo(pCode);
+    if (!codeInfo.IsValid())
     {
         return;
     }
+
+    TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
+
+    pCode = PCODEToPINSTR(pCode);
+
+    /* Get module name */
+    const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
+    SString modName = mod->GetFile()->GetPath();
+    StackScratchBuffer scratch;
+    const char* szModName = modName.GetUTF8(scratch);
+    const char *szModulePath, *szModuleFile;
+    SplitPathname(szModName, szModulePath, szModuleFile);
+
+
+    int length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, NULL, 0);
+    if (length == 0)
+        return;
+    NewArrayHolder<WCHAR> wszModuleFile = new WCHAR[length+1];
+    length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, wszModuleFile, length);
+
+    if (length == 0)
+        return;
+
+    bool bNotify = false;
+
+    Elf_Builder elfBuilder;
+
+    elfBuilder.Initialize(pCode, codeSize);
+
+#ifdef FEATURE_GDBJIT_FRAME
+    if (g_pConfig->ShouldEmitDebugFrame())
+    {
+        bool bEmitted = EmitFrameInfo(elfBuilder, pCode, codeSize);
+        bNotify = bNotify || bEmitted;
+    }
+#endif
+
+    if (isListedModule(wszModuleFile))
+    {
+        bool bEmitted = EmitDebugInfo(elfBuilder, methodDescPtr, pCode, codeSize, szModuleFile);
+        bNotify = bNotify || bEmitted;
+    }
+#ifdef FEATURE_GDBJIT_SYMTAB
+    else
+    {
+        bool bEmitted = EmitSymtab(elfBuilder, methodDescPtr, pCode, codeSize);
+        bNotify = bNotify || bEmitted;
+    }
+#endif
+
+    if (!bNotify)
+    {
+        return;
+    }
+
+    elfBuilder.Finalize();
+
+    char   *symfile_addr = NULL;
+    size_t  symfile_size = 0;
+
+    symfile_addr = elfBuilder.Export(&symfile_size);
+
+#ifdef _DEBUG
+    LPCUTF8 methodName = methodDescPtr->GetName();
+
+    if (g_pConfig->ShouldDumpElfOnMethod(methodName))
+    {
+        DumpElf(methodName, symfile_addr, symfile_size);
+    }
+#endif
+
+    /* Create GDB JIT structures */
+    NewHolder<jit_code_entry> jit_symbols = new jit_code_entry;
+
+    /* Fill the new entry */
+    jit_symbols->next_entry = jit_symbols->prev_entry = 0;
+    jit_symbols->symfile_addr = symfile_addr;
+    jit_symbols->symfile_size = symfile_size;
+
+    /* Link into list */
+    jit_code_entry *head = __jit_debug_descriptor.first_entry;
+    __jit_debug_descriptor.first_entry = jit_symbols;
+    if (head != 0)
+    {
+        jit_symbols->next_entry = head;
+        head->prev_entry = jit_symbols;
+    }
+
+    jit_symbols.SuppressRelease();
+
+    /* Notify the debugger */
+    __jit_debug_descriptor.relevant_entry = jit_symbols;
+    __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
+    __jit_debug_register_code();
+}
+
+#ifdef FEATURE_GDBJIT_FRAME
+bool NotifyGdb::EmitFrameInfo(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize)
+{
+    BuildDebugFrame(elfBuilder, pCode, codeSize);
+    return true;
+}
+#endif // FEATURE_GDBJIT_FRAME
+
+#ifdef FEATURE_GDBJIT_SYMTAB
+bool NotifyGdb::EmitSymtab(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize)
+{
+    NewArrayHolder<DebuggerILToNativeMap> map = nullptr;
+    NewArrayHolder<Elf_Symbol> symbols = nullptr;
+    NewArrayHolder<NewArrayHolder<char>> symbolNames = nullptr;
+
+    ULONG32 numMap;
+    int symbolCount;
+
+    LPCUTF8 methodName = methodDescPtr->GetName();
+
+    if (GetMethodNativeMap(methodDescPtr, &numMap, map, NULL, NULL) == S_OK)
+    {
+        int methodCount = countFuncs(map, numMap);
+        symbolCount = methodCount + 1;
+        symbols = new Elf_Symbol[symbolCount];
+
+        if (methodCount > 1)
+            symbolNames = new NewArrayHolder<char>[methodCount - 1];
+
+        int startIndex = getNextPrologueIndex(0, map, numMap);
+
+        int methodNameSize = strlen(methodName) + 10;
+
+        for (int i = 1; i < symbolCount; ++i)
+        {
+            int endIndex = getNextPrologueIndex(startIndex + 1, map, numMap);
+
+            PCODE methodStart = map[startIndex].nativeStartOffset;
+            TADDR methodSize = endIndex == -1 ? codeSize - methodStart : map[endIndex].nativeStartOffset - methodStart;
+
+            if (i == 1)
+            {
+                symbols[i].m_name = methodName;
+            }
+            else
+            {
+                int symbolNameIndex = i - 2;
+                symbolNames[symbolNameIndex] = new char[methodNameSize];
+                sprintf_s(symbolNames[symbolNameIndex], methodNameSize, "%s_%d", methodName, symbolNameIndex + 1);
+                symbols[i].m_name = symbolNames[symbolNameIndex];
+            }
+
+            symbols[i].m_value = pCode + methodStart;
+            symbols[i].m_size = methodSize;
+
+            startIndex = endIndex;
+        }
+    }
+    else
+    {
+        symbolCount = 2;
+        symbols = new Elf_Symbol[symbolCount];
+
+        symbols[1].m_name = methodName;
+        symbols[1].m_value = pCode;
+        symbols[1].m_size = codeSize;
+    }
+
+    symbols[0].m_name = "";
+
+    MemBuf sectSymTab, sectStrTab;
+
+    if (!BuildStringTableSection(sectStrTab, symbols, symbolCount))
+    {
+        return false;
+    }
+
+    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, symbolCount - 1, symbols, symbolCount, 0))
+    {
+        return false;
+    }
+
+    Elf_SectionTracker *strtab = elfBuilder.OpenSection(".strtab", SHT_STRTAB, 0);
+    elfBuilder.Append(sectStrTab.MemPtr, sectStrTab.MemSize);
+    elfBuilder.CloseSection();
+
+    Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
+    elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
+    symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_entsize = sizeof(Elf_Sym);
+    elfBuilder.CloseSection();
+
+    return true;
+}
+#endif // FEATURE_GDBJIT_SYMTAB
+
+bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile)
+{
+    unsigned int thunkIndexBase = elfBuilder.GetSectionCount();
+
+    LPCUTF8 methodName = methodDescPtr->GetName();
+
+    int symbolCount = 0;
+    NewArrayHolder<Elf_Symbol> symbolNames;
+
+    unsigned int symInfoLen = 0;
+    NewArrayHolder<SymbolsInfo> symInfo = nullptr;
+    LocalsInfo locals;
 
     NewHolder<TK_TypeInfoMap> pTypeMap = new TK_TypeInfoMap();
 
@@ -1889,7 +2680,7 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     HRESULT hr = GetDebugInfoFromPDB(methodDescPtr, symInfo, symInfoLen, locals);
     if (FAILED(hr) || symInfoLen == 0)
     {
-        return;
+        return false;
     }
 
     int method_count = countFuncs(symInfo, symInfoLen);
@@ -1900,7 +2691,7 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     /* Collect addresses of thunks called by method */
     if (!CollectCalledMethods(pCalledMethods, (TADDR)methodDescPtr->GetNativeCode(), method, symbolNames, symbolCount))
     {
-        return;
+        return false;
     }
     pCH->SetCalledMethods(NULL);
 
@@ -1916,7 +2707,7 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
 
     if (firstLineIndex >= symInfoLen)
     {
-        return;
+        return false;
     }
 
     int start_index = getNextPrologueIndex(0, symInfo, symInfoLen);
@@ -1950,19 +2741,19 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
         start_index = end_index;
     }
 
-    MemBuf elfHeader, sectHeaders, sectStr, sectSymTab, sectStrTab, dbgInfo, dbgAbbrev, dbgPubname, dbgPubType, dbgLine,
-        dbgStr, elfFile;
+    MemBuf sectSymTab, sectStrTab, dbgInfo, dbgAbbrev, dbgPubname, dbgPubType, dbgLine,
+        dbgStr;
 
     /* Build .debug_abbrev section */
     if (!BuildDebugAbbrev(dbgAbbrev))
     {
-        return;
+        return false;
     }
 
     /* Build .debug_line section */
     if (!BuildLineTable(dbgLine, pCode, codeSize, symInfo, symInfoLen))
     {
-        return;
+        return false;
     }
 
     DebugStrings[1] = szModuleFile;
@@ -1970,13 +2761,13 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     /* Build .debug_str section */
     if (!BuildDebugStrings(dbgStr, pTypeMap, method))
     {
-        return;
+        return false;
     }
 
     /* Build .debug_info section */
     if (!BuildDebugInfo(dbgInfo, pTypeMap, method))
     {
-        return;
+        return false;
     }
 
     for (int i = 0; i < method.GetCount(); ++i)
@@ -1988,13 +2779,13 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     /* Build .debug_pubname section */
     if (!BuildDebugPub(dbgPubname, methodName, dbgInfo.MemSize, 0x28))
     {
-        return;
+        return false;
     }
 
     /* Build debug_pubtype section */
     if (!BuildDebugPub(dbgPubType, "int", dbgInfo.MemSize, 0x1a))
     {
-        return;
+        return false;
     }
 
     /* Build .strtab section */
@@ -2008,158 +2799,64 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     }
     if (!BuildStringTableSection(sectStrTab, symbolNames, symbolCount))
     {
-        return;
+        return false;
     }
     /* Build .symtab section */
-    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, method, symbolNames, symbolCount))
+    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, method.GetCount(), symbolNames, symbolCount, thunkIndexBase))
     {
-        return;
+        return false;
     }
 
-    /* Build section headers table and section names table */
-    BuildSectionTables(sectHeaders, sectStr, method, symbolCount);
-
-    /* Patch section offsets & sizes */
-    long offset = sizeof(Elf_Ehdr);
-    Elf_Shdr* pShdr = reinterpret_cast<Elf_Shdr*>(sectHeaders.MemPtr.GetValue());
-    ++pShdr; // .text
-    pShdr->sh_addr = pCode;
-    pShdr->sh_size = codeSize;
-    ++pShdr; // .shstrtab
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = sectStr.MemSize;
-    offset += sectStr.MemSize;
-    ++pShdr; // .debug_str
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = dbgStr.MemSize;
-    offset += dbgStr.MemSize;
-    ++pShdr; // .debug_abbrev
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = dbgAbbrev.MemSize;
-    offset += dbgAbbrev.MemSize;
-    ++pShdr; // .debug_info
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = dbgInfo.MemSize;
-    offset += dbgInfo.MemSize;
-    ++pShdr; // .debug_pubnames
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = dbgPubname.MemSize;
-    offset += dbgPubname.MemSize;
-    ++pShdr; // .debug_pubtypes
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = dbgPubType.MemSize;
-    offset += dbgPubType.MemSize;
-    ++pShdr; // .debug_line
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = dbgLine.MemSize;
-    offset += dbgLine.MemSize;
-    ++pShdr; // .symtab
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = sectSymTab.MemSize;
-    pShdr->sh_link = GetSectionIndex(".strtab");
-    offset += sectSymTab.MemSize;
-    ++pShdr; // .strtab
-    pShdr->sh_offset = offset;
-    pShdr->sh_size = sectStrTab.MemSize;
-    offset += sectStrTab.MemSize;
-
-    // .thunks
     for (int i = 1 + method.GetCount(); i < symbolCount; i++)
     {
-        ++pShdr;
-        pShdr->sh_addr = PCODEToPINSTR(symbolNames[i].m_value);
-        pShdr->sh_size = 8;
+        char name[256];
+
+        sprintf_s(name, _countof(name), ".thunk_%i", i);
+
+        Elf_SectionTracker *thunk = elfBuilder.OpenSection(name, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR);
+        thunk->DisableHeaderUpdate();
+        elfBuilder.CloseSection();
     }
 
-    /* Build ELF header */
-    if (!BuildELFHeader(elfHeader))
-    {
-        return;
-    }
-    Elf_Ehdr* header = reinterpret_cast<Elf_Ehdr*>(elfHeader.MemPtr.GetValue());
-#ifdef _TARGET_ARM_
-    header->e_flags = EF_ARM_EABI_VER5;
-#ifdef ARM_SOFTFP
-    header->e_flags |= EF_ARM_SOFT_FLOAT;
-#else
-    header->e_flags |= EF_ARM_VFP_FLOAT;
-#endif
-#endif
-    header->e_shoff = offset;
-    header->e_shentsize = sizeof(Elf_Shdr);
-    int thunks_count = symbolCount - method.GetCount() - 1;
-    header->e_shnum = SectionNamesCount + thunks_count;
-    header->e_shstrndx = GetSectionIndex(".shstrtab");
+    elfBuilder.OpenSection(".debug_str", SHT_PROGBITS, SHF_MERGE | SHF_STRINGS);
+    elfBuilder.Append(dbgStr.MemPtr, dbgStr.MemSize);
+    elfBuilder.CloseSection();
 
-    /* Build ELF image in memory */
-    elfFile.MemSize = elfHeader.MemSize + sectStr.MemSize + dbgStr.MemSize + dbgAbbrev.MemSize + dbgInfo.MemSize +
-                      dbgPubname.MemSize + dbgPubType.MemSize + dbgLine.MemSize + sectSymTab.MemSize +
-                      sectStrTab.MemSize + sectHeaders.MemSize;
-    elfFile.MemPtr =  new char[elfFile.MemSize];
+    elfBuilder.OpenSection(".debug_abbrev", SHT_PROGBITS, 0);
+    elfBuilder.Append(dbgAbbrev.MemPtr, dbgAbbrev.MemSize);
+    elfBuilder.CloseSection();
 
-    /* Copy section data */
-    offset = 0;
-    memcpy(elfFile.MemPtr, elfHeader.MemPtr, elfHeader.MemSize);
-    offset += elfHeader.MemSize;
-    memcpy(elfFile.MemPtr + offset, sectStr.MemPtr, sectStr.MemSize);
-    offset +=  sectStr.MemSize;
-    memcpy(elfFile.MemPtr + offset, dbgStr.MemPtr, dbgStr.MemSize);
-    offset +=  dbgStr.MemSize;
-    memcpy(elfFile.MemPtr + offset, dbgAbbrev.MemPtr, dbgAbbrev.MemSize);
-    offset +=  dbgAbbrev.MemSize;
-    memcpy(elfFile.MemPtr + offset, dbgInfo.MemPtr, dbgInfo.MemSize);
-    offset +=  dbgInfo.MemSize;
-    memcpy(elfFile.MemPtr + offset, dbgPubname.MemPtr, dbgPubname.MemSize);
-    offset +=  dbgPubname.MemSize;
-    memcpy(elfFile.MemPtr + offset, dbgPubType.MemPtr, dbgPubType.MemSize);
-    offset +=  dbgPubType.MemSize;
-    memcpy(elfFile.MemPtr + offset, dbgLine.MemPtr, dbgLine.MemSize);
-    offset +=  dbgLine.MemSize;
-    memcpy(elfFile.MemPtr + offset, sectSymTab.MemPtr, sectSymTab.MemSize);
-    offset +=  sectSymTab.MemSize;
-    memcpy(elfFile.MemPtr + offset, sectStrTab.MemPtr, sectStrTab.MemSize);
-    offset +=  sectStrTab.MemSize;
+    elfBuilder.OpenSection(".debug_info", SHT_PROGBITS, 0);
+    elfBuilder.Append(dbgInfo.MemPtr, dbgInfo.MemSize);
+    elfBuilder.CloseSection();
 
-    memcpy(elfFile.MemPtr + offset, sectHeaders.MemPtr, sectHeaders.MemSize);
+    elfBuilder.OpenSection(".debug_pubnames", SHT_PROGBITS, 0);
+    elfBuilder.Append(dbgPubname.MemPtr, dbgPubname.MemSize);
+    elfBuilder.CloseSection();
 
-    elfFile.MemPtr.SuppressRelease();
+    elfBuilder.OpenSection(".debug_pubtypes", SHT_PROGBITS, 0);
+    elfBuilder.Append(dbgPubType.MemPtr, dbgPubType.MemSize);
+    elfBuilder.CloseSection();
 
-#ifdef GDBJIT_DUMPELF
-    DumpElf(methodName, elfFile);
-#endif
+    elfBuilder.OpenSection(".debug_line", SHT_PROGBITS, 0);
+    elfBuilder.Append(dbgLine.MemPtr, dbgLine.MemSize);
+    elfBuilder.CloseSection();
 
-    /* Create GDB JIT structures */
-    NewHolder<jit_code_entry> jit_symbols = new jit_code_entry;
+    Elf_SectionTracker *strtab = elfBuilder.OpenSection(".strtab", SHT_STRTAB, 0);
+    elfBuilder.Append(sectStrTab.MemPtr, sectStrTab.MemSize);
+    elfBuilder.CloseSection();
 
-    /* Fill the new entry */
-    jit_symbols->next_entry = jit_symbols->prev_entry = 0;
-    jit_symbols->symfile_addr = elfFile.MemPtr;
-    jit_symbols->symfile_size = elfFile.MemSize;
+    Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
+    elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
+    symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_entsize = sizeof(Elf_Sym);
+    elfBuilder.CloseSection();
 
-    /* Link into list */
-    jit_code_entry *head = __jit_debug_descriptor.first_entry;
-    __jit_debug_descriptor.first_entry = jit_symbols;
-    if (head != 0)
-    {
-        jit_symbols->next_entry = head;
-        head->prev_entry = jit_symbols;
-    }
-
-    jit_symbols.SuppressRelease();
-
-    /* Notify the debugger */
-    __jit_debug_descriptor.relevant_entry = jit_symbols;
-    __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
-    __jit_debug_register_code();
+    return true;
 }
 
-void NotifyGdb::MethodDropped(MethodDesc* methodDescPtr)
+void NotifyGdb::MethodPitched(MethodDesc* methodDescPtr)
 {
-    static const int textSectionIndex = GetSectionIndex(".text");
-
-    if (textSectionIndex < 0)
-        return;
-
     PCODE pCode = methodDescPtr->GetNativeCode();
 
     if (pCode == NULL)
@@ -2173,7 +2870,7 @@ void NotifyGdb::MethodDropped(MethodDesc* methodDescPtr)
 
         const Elf_Ehdr* pEhdr = reinterpret_cast<const Elf_Ehdr*>(ptr);
         const Elf_Shdr* pShdr = reinterpret_cast<const Elf_Shdr*>(ptr + pEhdr->e_shoff);
-        pShdr += textSectionIndex; // bump to .text section
+        pShdr += ELF_BUILDER_TEXT_SECTION_INDEX; // bump to .text section
         if (pShdr->sh_addr == pCode)
         {
             /* Notify the debugger */
@@ -2665,11 +3362,10 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf, NewArrayHolder<Elf_Symbol> 
 }
 
 /* Build ELF .symtab section */
-bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
-                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount)
+bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, int methodCount,
+                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
+                                        unsigned int thunkIndexBase)
 {
-    static const int textSectionIndex = GetSectionIndex(".text");
-
     buf.MemSize = symbolCount * sizeof(Elf_Sym);
     buf.MemPtr = new char[buf.MemSize];
 
@@ -2682,22 +3378,22 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize,
     sym[0].st_size = 0;
     sym[0].st_shndx = SHN_UNDEF;
 
-    for (int i = 1; i < 1 + method.GetCount(); ++i)
+    for (int i = 1; i < 1 + methodCount; ++i)
     {
         sym[i].st_name = symbolNames[i].m_off;
         sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
         sym[i].st_other = 0;
         sym[i].st_value = PINSTRToPCODE(symbolNames[i].m_value - addr);
-        sym[i].st_shndx = textSectionIndex;
+        sym[i].st_shndx = ELF_BUILDER_TEXT_SECTION_INDEX;
         sym[i].st_size = symbolNames[i].m_size;
     }
 
-    for (int i = 1 + method.GetCount(); i < symbolCount; ++i)
+    for (int i = 1 + methodCount; i < symbolCount; ++i)
     {
         sym[i].st_name = symbolNames[i].m_off;
         sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
         sym[i].st_other = 0;
-        sym[i].st_shndx = SectionNamesCount + (i - (1 + method.GetCount())); // .thunks section index
+        sym[i].st_shndx = thunkIndexBase + (i - (1 + methodCount)); // .thunks section index
         sym[i].st_size = 8;
 #ifdef _TARGET_ARM_
         sym[i].st_value = 1; // for THUMB code
@@ -2705,97 +3401,6 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize,
         sym[i].st_value = 0;
 #endif
     }
-    return true;
-}
-
-int NotifyGdb::GetSectionIndex(const char *sectName)
-{
-    for (int i = 0; i < SectionNamesCount; ++i)
-        if (strcmp(SectionNames[i], sectName) == 0)
-            return i;
-    return -1;
-}
-
-/* Build the ELF section headers table and section names table */
-void NotifyGdb::BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
-                                   int symbolCount)
-{
-    static const int symtabSectionIndex = GetSectionIndex(".symtab");
-    static const int nullSectionIndex = GetSectionIndex("");
-
-    const int thunks_count = symbolCount - 1 - method.GetCount();
-
-    // Approximate length of single section name.
-    // Used only to reduce memory reallocations.
-    static const int SECT_NAME_LENGTH = 11;
-
-    strBuf.Resize(SECT_NAME_LENGTH * (SectionNamesCount + thunks_count));
-
-    Elf_Shdr* sectionHeaders = new Elf_Shdr[SectionNamesCount + thunks_count];
-    sectBuf.MemPtr = reinterpret_cast<char*>(sectionHeaders);
-    sectBuf.MemSize = sizeof(Elf_Shdr) * (SectionNamesCount + thunks_count);
-
-    Elf_Shdr* pSh = sectionHeaders;
-    uint32_t sectNameOffset = 0;
-
-    // Additional memory for remaining section names,
-    // grows twice on each reallocation.
-    int addSize = SECT_NAME_LENGTH;
-
-    // Fill section headers and names
-    for (int i = 0; i < SectionNamesCount + thunks_count; ++i, ++pSh)
-    {
-        char thunkSectNameBuf[256]; // temporary buffer for .thunk_# section name
-        const char *sectName;
-
-        bool isThunkSection = i >= SectionNamesCount;
-        if (isThunkSection)
-        {
-            sprintf_s(thunkSectNameBuf, _countof(thunkSectNameBuf), ".thunk_%i", i);
-            sectName = thunkSectNameBuf;
-        }
-        else
-        {
-            sectName = SectionNames[i];
-        }
-
-        // Ensure that there is enough memory for section name,
-        // reallocate if necessary.
-        pSh->sh_name = sectNameOffset;
-        sectNameOffset += strlen(sectName) + 1;
-        if (sectNameOffset > strBuf.MemSize)
-        {
-            // Allocate more memory for remaining section names
-            strBuf.Resize(sectNameOffset + addSize);
-            addSize *= 2;
-        }
-
-        strcpy(strBuf.MemPtr + pSh->sh_name, sectName);
-
-        // All .thunk_* sections have the same type and flags
-        int index = isThunkSection ? SectionNamesCount : i;
-        pSh->sh_type = Sections[index].m_type;
-        pSh->sh_flags = Sections[index].m_flags;
-
-        pSh->sh_addr = 0;
-        pSh->sh_offset = 0;
-        pSh->sh_size = 0;
-        pSh->sh_link = SHN_UNDEF;
-        pSh->sh_info = 0;
-        pSh->sh_addralign = i == nullSectionIndex ? 0 : 1;
-        pSh->sh_entsize = i == symtabSectionIndex ? sizeof(Elf_Sym) : 0;
-    }
-
-    // Set actual used size to avoid garbage in ELF section
-    strBuf.MemSize = sectNameOffset;
-}
-
-/* Build the ELF header */
-bool NotifyGdb::BuildELFHeader(MemBuf& buf)
-{
-    Elf_Ehdr* header = new Elf_Ehdr;
-    buf.MemPtr = reinterpret_cast<char*>(header);
-    buf.MemSize = sizeof(Elf_Ehdr);
     return true;
 }
 
@@ -2816,19 +3421,6 @@ void NotifyGdb::SplitPathname(const char* path, const char*& pathName, const cha
         pathName = nullptr;
     }
 }
-
-#ifdef _DEBUG
-void NotifyGdb::DumpElf(const char* methodName, const MemBuf& elfFile)
-{
-    char dump[1024];
-    strcpy(dump, "./");
-    strcat(dump, methodName);
-    strcat(dump, ".o");
-    FILE *f = fopen(dump,  "wb");
-    fwrite(elfFile.MemPtr, sizeof(char),elfFile.MemSize, f);
-    fclose(f);
-}
-#endif
 
 /* ELF 32bit header */
 Elf32_Ehdr::Elf32_Ehdr()

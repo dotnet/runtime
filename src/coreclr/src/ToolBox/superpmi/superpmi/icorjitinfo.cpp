@@ -165,11 +165,12 @@ CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 // vtable of it's owning class or interface.
 void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                    unsigned*             offsetOfIndirection,   /* OUT */
-                                   unsigned*             offsetAfterIndirection /* OUT */
+                                   unsigned*             offsetAfterIndirection,/* OUT */
+                                   bool*                 isRelative             /* OUT */
                                    )
 {
     jitInstance->mc->cr->AddCall("getMethodVTableOffset");
-    jitInstance->mc->repGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
+    jitInstance->mc->repGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
@@ -1180,6 +1181,15 @@ const char* MyICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* IN */
 {
     jitInstance->mc->cr->AddCall("getMethodName");
     return jitInstance->mc->repGetMethodName(ftn, moduleName);
+}
+
+const char* MyICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,          /* IN */
+                                              const char**          className,    /* OUT */
+                                              const char**          namespaceName /* OUT */
+                                              )
+{
+    jitInstance->mc->cr->AddCall("getMethodNameFromMetadata");
+    return jitInstance->mc->repGetMethodNameFromMetadata(ftn, className, namespaceName);
 }
 
 // this function is for debugging only.  It returns a value that

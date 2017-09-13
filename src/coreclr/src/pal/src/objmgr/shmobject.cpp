@@ -180,7 +180,7 @@ CSharedMemoryObject::InitializeFromExistingSharedData(
 
     m_ObjectDomain = SharedObject;
 
-    _ASSERTE(SHMNULL != m_shmod);
+    _ASSERTE(NULL != m_shmod);
 
     psmod = SHMPTR_TO_TYPED_PTR(SHMObjData, m_shmod);
     if (NULL == psmod)
@@ -236,12 +236,19 @@ CSharedMemoryObject::InitializeFromExistingSharedData(
         goto InitializeFromExistingSharedDataExit;
     }
 
-    if (SHMNULL != psmod->shmObjImmutableData)
+    if (NULL != psmod->shmObjImmutableData)
     {
         VOID *pv = SHMPTR_TO_TYPED_PTR(VOID, psmod->shmObjImmutableData);
         if (NULL != pv)
         {
             memcpy(m_pvImmutableData, pv, m_pot->GetImmutableDataSize());
+            if (NULL != psmod->pCopyRoutine)
+            {
+                (*psmod->pCopyRoutine)(pv, m_pvImmutableData);
+            }
+
+            m_pot->SetImmutableDataCopyRoutine(psmod->pCopyRoutine);
+            m_pot->SetImmutableDataCleanupRoutine(psmod->pCleanupRoutine);
         }
         else
         {
@@ -251,7 +258,7 @@ CSharedMemoryObject::InitializeFromExistingSharedData(
         }
     }
 
-    if (SHMNULL != psmod->shmObjSharedData)
+    if (NULL != psmod->shmObjSharedData)
     {
         m_pvSharedData = SHMPTR_TO_TYPED_PTR(VOID, psmod->shmObjSharedData);
         if (NULL == m_pvSharedData)
@@ -301,7 +308,7 @@ CSharedMemoryObject::AllocateSharedDataItems(
     )
 {
     PAL_ERROR palError = NO_ERROR;
-    SHMPTR shmod = SHMNULL;
+    SHMPTR shmod = NULL;
     SHMObjData *psmod = NULL;
 
     _ASSERTE(NULL != pshmObjData);
@@ -321,8 +328,8 @@ CSharedMemoryObject::AllocateSharedDataItems(
 
     SHMLock();
 
-    shmod = SHMalloc(sizeof(SHMObjData));
-    if (SHMNULL == shmod)
+    shmod = malloc(sizeof(SHMObjData));
+    if (NULL == shmod)
     {
         ERROR("Unable to allocate m_shmod for new object\n");
         palError = ERROR_OUTOFMEMORY;
@@ -339,9 +346,19 @@ CSharedMemoryObject::AllocateSharedDataItems(
 
     if (0 != m_oa.sObjectName.GetStringLength())
     {
+        LPCWSTR str = m_oa.sObjectName.GetString();
+        _ASSERTE(str);
+
         psmod->dwNameLength = m_oa.sObjectName.GetStringLength();
-        psmod->shmObjName = SHMWStrDup(m_oa.sObjectName.GetString());
-        if (SHMNULL == psmod->shmObjName)
+
+        UINT length = (PAL_wcslen(str) + 1) * sizeof(WCHAR);
+        psmod->shmObjName = malloc(length);
+
+        if (psmod->shmObjName != 0)
+        {
+            memcpy(psmod->shmObjName, str, length);
+        }
+        else
         {
             ERROR("Unable to allocate psmod->shmObjName for new object\n");
             palError = ERROR_OUTOFMEMORY;
@@ -356,8 +373,8 @@ CSharedMemoryObject::AllocateSharedDataItems(
         // by CSharedMemoryObjectManager::RegisterObject or PromoteSharedData
         //
         
-        psmod->shmObjImmutableData = SHMalloc(m_pot->GetImmutableDataSize());
-        if (SHMNULL == psmod->shmObjImmutableData)
+        psmod->shmObjImmutableData = malloc(m_pot->GetImmutableDataSize());
+        if (NULL == psmod->shmObjImmutableData)
         {
             ERROR("Unable to allocate psmod->shmObjImmutableData for new object\n");
             palError = ERROR_OUTOFMEMORY;
@@ -367,8 +384,8 @@ CSharedMemoryObject::AllocateSharedDataItems(
 
     if (0 != m_pot->GetSharedDataSize())
     {
-        psmod->shmObjSharedData = SHMalloc(m_pot->GetSharedDataSize());
-        if (SHMNULL == psmod->shmObjSharedData)
+        psmod->shmObjSharedData = malloc(m_pot->GetSharedDataSize());
+        if (NULL == psmod->shmObjSharedData)
         {
             ERROR("Unable to allocate psmod->shmObjSharedData for new object\n");
             palError = ERROR_OUTOFMEMORY;
@@ -381,7 +398,7 @@ CSharedMemoryObject::AllocateSharedDataItems(
 
 AllocateSharedDataItemsExit:
 
-    if (NO_ERROR != palError && SHMNULL != shmod)
+    if (NO_ERROR != palError && NULL != shmod)
     {
         FreeSharedDataAreas(shmod);
     }
@@ -412,7 +429,7 @@ CSharedMemoryObject::FreeSharedDataAreas(
 {
     SHMObjData *psmod;
 
-    _ASSERTE(SHMNULL != shmObjData);
+    _ASSERTE(NULL != shmObjData);
 
     ENTRY("CSharedMemoryObject::FreeSharedDataAreas"
         "(shmObjData = %p)\n",
@@ -424,179 +441,30 @@ CSharedMemoryObject::FreeSharedDataAreas(
     psmod = SHMPTR_TO_TYPED_PTR(SHMObjData, shmObjData);
     _ASSERTE(NULL != psmod);
     
-    if (SHMNULL != psmod->shmObjImmutableData)
+    if (NULL != psmod->shmObjImmutableData)
     {
-        SHMfree(psmod->shmObjImmutableData);
+        if (NULL != psmod->pCleanupRoutine)
+        {
+            (*psmod->pCleanupRoutine)(psmod->shmObjImmutableData);
+        }
+        free(psmod->shmObjImmutableData);
     }
 
-    if (SHMNULL != psmod->shmObjSharedData)
+    if (NULL != psmod->shmObjSharedData)
     {
-        SHMfree(psmod->shmObjSharedData);
+        free(psmod->shmObjSharedData);
     }
 
-    if (SHMNULL != psmod->shmObjName)
+    if (NULL != psmod->shmObjName)
     {
-        SHMfree(psmod->shmObjName);
+        free(psmod->shmObjName);
     }
     
-    SHMfree(shmObjData);
+    free(shmObjData);
 
     SHMRelease();
 
     LOGEXIT("CSharedMemoryObject::FreeSharedDataAreas\n");
-}
-
-/*++
-Function:
-  CSharedMemoryObject::PromoteShjaredData
-
-  Copies the object's state into the passed-in shared data structures
-
-Parameters:
-  shmObjData -- shared memory pointer for the shared memory object data
-  psmod -- locally-mapped pointer for the shared memory object data
---*/
-
-void
-CSharedMemoryObject::PromoteSharedData(
-    SHMPTR shmObjData,
-    SHMObjData *psmod
-    )
-{
-    _ASSERTE(SHMNULL != shmObjData);
-    _ASSERTE(NULL != psmod);
-    
-    ENTRY("CSharedMemoryObject::PromoteSharedData"
-        "(this = %p, shmObjData = %p, psmod = %p)\n",
-        this, 
-        shmObjData,
-        psmod);
-    
-    //
-    // psmod has been zero-inited, so we don't need to worry about
-    // shmPrevObj, shmNextObj, fAddedToList, shmObjName, dwNameLength,
-    // or pvSynchData
-    //
-    
-    psmod->lProcessRefCount = 1;
-    psmod->eTypeId = m_pot->GetId();
-    
-    if (0 != m_pot->GetImmutableDataSize())
-    {
-        void *pvImmutableData;
-
-        pvImmutableData = SHMPTR_TO_TYPED_PTR(void, psmod->shmObjImmutableData);
-        _ASSERTE(NULL != pvImmutableData);
-
-        CopyMemory(
-            pvImmutableData,
-            m_pvImmutableData,
-            m_pot->GetImmutableDataSize()
-            );
-    }
-
-    if (0 != m_pot->GetSharedDataSize())
-    {
-        void *pvSharedData;
-
-        pvSharedData = SHMPTR_TO_TYPED_PTR(void, psmod->shmObjSharedData);
-        _ASSERTE(NULL != pvSharedData);
-
-        CopyMemory(
-            pvSharedData,
-            m_pvSharedData,
-            m_pot->GetSharedDataSize()
-            );
-        
-        free(m_pvSharedData);
-        m_pvSharedData = pvSharedData;
-    }
-
-    m_shmod = shmObjData;
-
-    LOGEXIT("CSharedMemoryObject::PromoteSharedData\n");
-}
-
-/*++
-Function:
-  CSharedMemoryObject::EnsureObjectIsShared
-
-  If this object is not yet in the shared domain allocate the necessary
-  shared memory structures for it and copy the object's data into those
-  structures
-
-Parameters:
-  pthr -- thread data for the calling thread
---*/
-
-PAL_ERROR
-CSharedMemoryObject::EnsureObjectIsShared(
-    CPalThread *pthr
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IDataLock *pDataLock = NULL;
-    SHMPTR shmObjData;
-    SHMObjData *psmod;
-
-    _ASSERTE(NULL != pthr);
-
-    ENTRY("CSharedMemoryObject::EnsureObjectIsShared"
-        "(this = %p, pthr = %p)\n",
-        this,
-        pthr
-        );
-
-    //
-    // Grab the shared memory lock and check if the object is already
-    // shared
-    //
-    
-    SHMLock();
-
-    if (SharedObject == m_ObjectDomain)
-    {
-        goto EnsureObjectIsSharedExit;
-    }
-
-    //
-    // Grab the local shared data lock, if necessary
-    //
-    
-    if (0 != m_pot->GetSharedDataSize())
-    {
-        m_sdlSharedData.AcquireLock(pthr, &pDataLock);
-    }
-
-    //
-    // Allocate the necessary shared data areas
-    //
-
-    palError = AllocateSharedDataItems(&shmObjData, &psmod);
-    if (NO_ERROR != palError)
-    {
-        goto EnsureObjectIsSharedExit;
-    }
-
-    //
-    // Promote the object's data and set the domain to shared
-    //
-
-    PromoteSharedData(shmObjData, psmod);
-    m_ObjectDomain = SharedObject;
-
-EnsureObjectIsSharedExit:
-
-    if (NULL != pDataLock)
-    {
-        pDataLock->ReleaseLock(pthr, TRUE);
-    }
-
-    SHMRelease();
-
-    LOGEXIT("CSharedMemoryObject::EnsureObjectIsShared returns %d\n", palError);
-
-    return palError;    
 }
 
 /*++
@@ -634,6 +502,16 @@ CSharedMemoryObject::CleanupForProcessShutdown(
             TRUE,
             fCleanupSharedState
             );
+    }
+
+    if (NULL != m_pot->GetImmutableDataCleanupRoutine())
+    {
+        (*m_pot->GetImmutableDataCleanupRoutine())(m_pvImmutableData);
+    }
+
+    if (NULL != m_pot->GetProcessLocalDataCleanupRoutine())
+    {
+        (*m_pot->GetProcessLocalDataCleanupRoutine())(pthr, static_cast<IPalObject*>(this));
     }
 
     //
@@ -760,7 +638,7 @@ CSharedMemoryObject::DereferenceSharedData()
 
     if (!fSharedDataAlreadDereferenced)
     {   
-        if (SHMNULL != m_shmod)
+        if (NULL != m_shmod)
         {
             SHMObjData *psmod;
             
@@ -789,7 +667,7 @@ CSharedMemoryObject::DereferenceSharedData()
 
                     _ASSERTE(0 != psmod->dwNameLength);
 
-                    if (SHMNULL != psmod->shmPrevObj)
+                    if (NULL != psmod->shmPrevObj)
                     {
                         SHMObjData *psmodPrevious = SHMPTR_TO_TYPED_PTR(SHMObjData, psmod->shmPrevObj);
                         _ASSERTE(NULL != psmodPrevious);
@@ -809,7 +687,7 @@ CSharedMemoryObject::DereferenceSharedData()
                         }
                     }
 
-                    if (SHMNULL != psmod->shmNextObj)
+                    if (NULL != psmod->shmNextObj)
                     {
                         SHMObjData *psmodNext = SHMPTR_TO_TYPED_PTR(SHMObjData, psmod->shmNextObj);
                         _ASSERTE(NULL != psmodNext);
@@ -820,8 +698,8 @@ CSharedMemoryObject::DereferenceSharedData()
 #if _DEBUG                
                 else
                 {
-                    _ASSERTE(SHMNULL == psmod->shmPrevObj);
-                    _ASSERTE(SHMNULL == psmod->shmNextObj);
+                    _ASSERTE(NULL == psmod->shmPrevObj);
+                    _ASSERTE(NULL == psmod->shmNextObj);
                 }
 #endif                
             }
@@ -871,7 +749,7 @@ CSharedMemoryObject::~CSharedMemoryObject()
     {
         free(m_pvSharedData);
     }
-    else if (SHMNULL != m_shmod && m_fDeleteSharedData)
+    else if (NULL != m_shmod && m_fDeleteSharedData)
     {
         FreeSharedDataAreas(m_shmod);        
     }
@@ -1172,126 +1050,6 @@ CSharedMemoryWaitableObject::Initialize(
 InitializeExit:
 
     LOGEXIT("CSharedMemoryWaitableObject::Initialize returns %d\n", palError);
-
-    return palError;
-}
-
-/*++
-Function:
-  CSharedMemoryWaitableObject::EnsureObjectIsShared
-
-  If this object is not yet in the shared domain allocate the necessary
-  shared memory structures for it and copy the object's data into those
-  structures
-
-Parameters:
-  pthr -- thread data for the calling thread
---*/
-
-PAL_ERROR
-CSharedMemoryWaitableObject::EnsureObjectIsShared(
-    CPalThread *pthr
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IDataLock *pDataLock = NULL;
-    SHMPTR shmObjData = SHMNULL;
-    SHMObjData *psmod;
-    VOID *pvSharedSynchData;
-
-    _ASSERTE(NULL != pthr);
-
-    ENTRY("CSharedMemoryWaitableObject::EnsureObjectIsShared"
-        "(this = %p, pthr = %p)\n",
-        this,
-        pthr
-        );
-    
-    //
-    // First, grab the process synchronization lock and check
-    // if the object is already shared
-    //
-
-    g_pSynchronizationManager->AcquireProcessLock(pthr);
-
-    if (SharedObject == m_ObjectDomain)
-    {
-        goto EnsureObjectIsSharedExitNoSHMLockRelease;
-    }
-
-    //
-    // Grab the necessary locks
-    //
-
-    SHMLock();
-
-    if (0 != m_pot->GetSharedDataSize())
-    {
-        m_sdlSharedData.AcquireLock(pthr, &pDataLock);
-    }
-
-    //
-    // Allocate the necessary shared data areas
-    //
-
-    palError = AllocateSharedDataItems(&shmObjData, &psmod);
-    if (NO_ERROR != palError)
-    {
-        goto EnsureObjectIsSharedExit;
-    }
-
-    //
-    // Promote the object's synchronization data
-    //
-
-    palError = g_pSynchronizationManager->PromoteObjectSynchData(
-        pthr,
-        m_pvSynchData,
-        &pvSharedSynchData
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto EnsureObjectIsSharedExit;
-    }
-
-    m_pvSynchData = pvSharedSynchData;
-    psmod->pvSynchData = pvSharedSynchData;
-
-    //
-    // Promote the object's data and set the domain to shared
-    //
-
-    PromoteSharedData(shmObjData, psmod);
-    m_ObjectDomain = SharedObject;
-
-EnsureObjectIsSharedExit:
-
-    if (NULL != pDataLock)
-    {
-        pDataLock->ReleaseLock(pthr, TRUE);
-    }
-
-    SHMRelease();
-
-EnsureObjectIsSharedExitNoSHMLockRelease:
-
-    g_pSynchronizationManager->ReleaseProcessLock(pthr);
-
-    if (NO_ERROR != palError && SHMNULL != shmObjData)
-    {
-        //
-        // Since shmObjdData is local to this function there's no
-        // need to continue to hold the promotion locks when
-        // freeing the allocated data on error
-        //
-        
-        FreeSharedDataAreas(shmObjData);
-    }
-
-    LOGEXIT("CSharedMemoryWaitableObject::EnsureObjectIsShared returns %d\n",
-        palError
-        );
 
     return palError;
 }

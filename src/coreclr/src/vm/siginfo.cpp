@@ -18,7 +18,6 @@
 #include "field.h"
 #include "eeconfig.h"
 #include "runtimehandles.h" // for SignatureNative
-#include "security.h" // for CanSkipVerification
 #include "winwrap.h"
 #include <formattype.h>
 #include "sigbuilder.h"
@@ -1531,12 +1530,11 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 
                     if (typFromSigIsClass != typLoadedIsClass)
                     {
-                        if((pModule->GetMDImport()->GetMetadataStreamVersion() != MD_STREAM_VER_1X)
-                            || !Security::CanSkipVerification(pModule->GetDomainAssembly()))
+                        if (pModule->GetMDImport()->GetMetadataStreamVersion() != MD_STREAM_VER_1X)
                         {
-                                pOrigModule->GetAssembly()->ThrowTypeLoadException(pModule->GetMDImport(),
-                                                                                   typeToken, 
-                                                                                   BFA_CLASSLOAD_VALUETYPEMISMATCH);
+                            pOrigModule->GetAssembly()->ThrowTypeLoadException(pModule->GetMDImport(),
+                                                                                typeToken, 
+                                                                                BFA_CLASSLOAD_VALUETYPEMISMATCH);
                         }
                     }
                 }

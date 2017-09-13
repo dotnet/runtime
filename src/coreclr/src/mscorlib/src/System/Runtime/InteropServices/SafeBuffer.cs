@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Specifies the the size of the region in memory, as the number of 
+        /// Specifies the size of the region in memory, as the number of 
         /// elements in an array.  Must be called before using the SafeBuffer.
         /// </summary>
         [CLSCompliant(false)]
@@ -126,7 +126,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Specifies the the size of the region in memory, as the number of 
+        /// Specifies the size of the region in memory, as the number of 
         /// elements in an array.  Must be called before using the SafeBuffer.
         /// </summary>
         [CLSCompliant(false)]
@@ -173,15 +173,10 @@ namespace System.Runtime.InteropServices
 
             pointer = null;
             RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-            }
-            finally
-            {
-                bool junk = false;
-                DangerousAddRef(ref junk);
-                pointer = (byte*)handle;
-            }
+
+            bool junk = false;
+            DangerousAddRef(ref junk);
+            pointer = (byte*)handle;
         }
 
         public void ReleasePointer()

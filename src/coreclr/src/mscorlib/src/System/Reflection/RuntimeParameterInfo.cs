@@ -118,20 +118,12 @@ namespace System.Reflection
         #endregion
 
         #region Private Data Members
-        // These are new in Whidbey, so we cannot serialize them directly or we break backwards compatibility.
-        [NonSerialized]
         private int m_tkParamDef;
-        [NonSerialized]
         private MetadataImport m_scope;
-        [NonSerialized]
         private Signature m_signature;
-        [NonSerialized]
         private volatile bool m_nameIsCached = false;
-        [NonSerialized]
         private readonly bool m_noMetadata = false;
-        [NonSerialized]
         private bool m_noDefaultValue = false;
-        [NonSerialized]
         private MethodBase m_originalMember = null;
         #endregion
 
@@ -366,15 +358,15 @@ namespace System.Reflection
 
                         if (attrType == typeof(DateTimeConstantAttribute))
                         {
-                            defaultValue = DateTimeConstantAttribute.GetRawDateTimeConstant(attr);
+                            defaultValue = GetRawDateTimeConstant(attr);
                         }
                         else if (attrType == typeof(DecimalConstantAttribute))
                         {
-                            defaultValue = DecimalConstantAttribute.GetRawDecimalConstant(attr);
+                            defaultValue = GetRawDecimalConstant(attr);
                         }
                         else if (attrType.IsSubclassOf(s_CustomConstantAttributeType))
                         {
-                            defaultValue = CustomConstantAttribute.GetRawConstant(attr);
+                            defaultValue = GetRawConstant(attr);
                         }
                     }
                 }
@@ -401,6 +393,80 @@ namespace System.Reflection
                 m_noDefaultValue = true;
 
             return defaultValue;
+        }
+
+        private static Decimal GetRawDecimalConstant(CustomAttributeData attr)
+        {
+            Contract.Requires(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
+
+            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
+            {
+                if (namedArgument.MemberInfo.Name.Equals("Value"))
+                {
+                    // This is not possible because Decimal cannot be represented directly in the metadata.
+                    Debug.Assert(false, "Decimal cannot be represented directly in the metadata.");
+                    return (Decimal)namedArgument.TypedValue.Value;
+                }
+            }
+
+            ParameterInfo[] parameters = attr.Constructor.GetParameters();
+            Debug.Assert(parameters.Length == 5);
+
+            System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
+            Debug.Assert(args.Count == 5);
+
+            if (parameters[2].ParameterType == typeof(uint))
+            {
+                // DecimalConstantAttribute(byte scale, byte sign, uint hi, uint mid, uint low)
+                int low = (int)(UInt32)args[4].Value;
+                int mid = (int)(UInt32)args[3].Value;
+                int hi = (int)(UInt32)args[2].Value;
+                byte sign = (byte)args[1].Value;
+                byte scale = (byte)args[0].Value;
+
+                return new System.Decimal(low, mid, hi, (sign != 0), scale);
+            }
+            else
+            {
+                // DecimalConstantAttribute(byte scale, byte sign, int hi, int mid, int low)
+                int low = (int)args[4].Value;
+                int mid = (int)args[3].Value;
+                int hi = (int)args[2].Value;
+                byte sign = (byte)args[1].Value;
+                byte scale = (byte)args[0].Value;
+
+                return new System.Decimal(low, mid, hi, (sign != 0), scale);
+            }
+        }
+
+        private static DateTime GetRawDateTimeConstant(CustomAttributeData attr)
+        {
+            Contract.Requires(attr.Constructor.DeclaringType == typeof(DateTimeConstantAttribute));
+            Contract.Requires(attr.ConstructorArguments.Count == 1);
+
+            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
+            {
+                if (namedArgument.MemberInfo.Name.Equals("Value"))
+                {
+                    return new DateTime((long)namedArgument.TypedValue.Value);
+                }
+            }
+
+            // Look at the ctor argument if the "Value" property was not explicitly defined.
+            return new DateTime((long)attr.ConstructorArguments[0].Value);
+        }
+
+        private static object GetRawConstant(CustomAttributeData attr)
+        {
+            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
+            {
+                if (namedArgument.MemberInfo.Name.Equals("Value"))
+                    return namedArgument.TypedValue.Value;
+            }
+
+            // Return DBNull to indicate that no default value is available.
+            // Not to be confused with a null return which indicates a null default value.
+            return DBNull.Value;
         }
 
         internal RuntimeModule GetRuntimeModule()

@@ -11,12 +11,14 @@
 //      GC-internal type's fields, while still maintaining the same layout.
 // This interface is strictly versioned, see gcinterface.dacvars.def for more information.
 
-#define NUM_GC_DATA_POINTS             9
-#define MAX_COMPACT_REASONS_COUNT      11
-#define MAX_EXPAND_MECHANISMS_COUNT    6
-#define MAX_GC_MECHANISM_BITS_COUNT    2
-#define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
-#define NUMBERGENERATIONS              4
+#define NUM_GC_DATA_POINTS              9
+#define MAX_COMPACT_REASONS_COUNT       11
+#define MAX_EXPAND_MECHANISMS_COUNT     6
+#define MAX_GC_MECHANISM_BITS_COUNT     2
+#define MAX_GLOBAL_GC_MECHANISMS_COUNT  6
+#define NUMBERGENERATIONS               4
+#define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
+#define HANDLE_MAX_INTERNAL_TYPES       12
 
 // Analogue for the GC heap_segment class, containing information regarding a single
 // heap segment.
@@ -47,6 +49,32 @@ class dac_finalize_queue {
 public:
     static const int ExtraSegCount = 2;
     uint8_t** m_FillPointers[NUMBERGENERATIONS + ExtraSegCount];
+};
+
+class dac_handle_table {
+public:
+    // On the handle table side, this is an ADIndex. They should still have
+    // the same layout.
+    //
+    // We do try to keep everything that the DAC knows about as close to the
+    // start of the struct as possible to avoid having padding members. However,
+    // HandleTable has rgTypeFlags at offset 0 for performance reasons and
+    // we don't want to disrupt that.
+    uint32_t padding[HANDLE_MAX_INTERNAL_TYPES];
+    DWORD uADIndex;
+};
+
+class dac_handle_table_bucket {
+public:
+    DPTR(DPTR(dac_handle_table)) pTable;
+    uint32_t HandleTableIndex;
+};
+
+class dac_handle_table_map {
+public:
+    DPTR(DPTR(dac_handle_table_bucket)) pBuckets;
+    DPTR(dac_handle_table_map) pNext;
+    uint32_t dwMaxIndex;
 };
 
 // Possible values of the current_c_gc_state dacvar, indicating the state of
@@ -132,6 +160,23 @@ public:
 };
 
 
+// The DAC links against six symbols that build as part of the VM DACCESS_COMPILE
+// build. These symbols are considered to be GC-private functions, but the DAC needs
+// to use them in order to perform some handle-related functions. These six functions
+// are adorned by this macro to make clear that their implementations must be versioned
+// alongside the rest of this file.
+//
+// Practically, this macro ensures that the target symbols aren't mangled, since the
+// DAC calls them with a signature slightly different than the one used when they
+// were defined.
+#define GC_DAC_VISIBLE
+
+#ifdef DACCESS_COMPILE
+#define GC_DAC_VISIBLE_NO_MANGLE extern "C"
+#else
+#define GC_DAC_VISIBLE_NO_MANGLE
+#endif // DACCESS_COMPILE
+
 // The actual structure containing the DAC variables. When DACCESS_COMPILE is not
 // defined (i.e. the normal runtime build), this structure contains pointers to the
 // GC's global DAC variabels. When DACCESS_COMPILE is defined (i.e. the DAC build),
@@ -142,9 +187,7 @@ struct GcDacVars {
   uint8_t minor_version_number;
   size_t generation_size;
 #ifdef DACCESS_COMPILE
- #define GC_DAC_VAR(type, name) DPTR(type) name;
- // ArrayDPTR doesn't allow decaying arrays to pointers, which
- // avoids some accidental errors.
+ #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;
  #define GC_DAC_ARRAY_VAR(type, name) DPTR(type) name;
 #else

@@ -255,7 +255,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     // Bytes are required for the vtable itself
     S_SIZE_T safe_cbMT = S_SIZE_T( cbGC ) + S_SIZE_T( sizeof(MethodTable) );
-    safe_cbMT += MethodTable::GetNumVtableIndirections(cSlots) * sizeof(PTR_PCODE);
+    safe_cbMT += MethodTable::GetNumVtableIndirections(cSlots) * sizeof(MethodTable::VTableIndir_t);
     if (safe_cbMT.IsOverflow())
     {
         ThrowHR(COR_E_OVERFLOW);
@@ -364,7 +364,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     pMT->ClearFlag(MethodTable::enum_flag_IsZapped);
     pMT->ClearFlag(MethodTable::enum_flag_IsPreRestored);
 
-    pMT->ClearFlag(MethodTable::enum_flag_HasIndirectParent);
+    pMT->m_pParentMethodTable.SetValueMaybeNull(NULL);
 
     // Non non-virtual slots
     pMT->ClearFlag(MethodTable::enum_flag_HasSingleNonVirtualSlot);
@@ -440,7 +440,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         if (canShareVtableChunks)
         {
             // Share the canonical chunk
-            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
+            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
         }
         else
         {
@@ -499,7 +499,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     _ASSERTE(pOldMT->HasPerInstInfo());
 
     // Fill in per-inst map pointer (which points to the array of generic dictionary pointers)
-    pMT->SetPerInstInfo ((Dictionary**) (pMemory + cbMT + cbOptional + cbIMap + sizeof(GenericsDictInfo)));
+    pMT->SetPerInstInfo((MethodTable::PerInstInfoElem_t *) (pMemory + cbMT + cbOptional + cbIMap + sizeof(GenericsDictInfo)));
     _ASSERTE(FitsIn<WORD>(pOldMT->GetNumDicts()));
     _ASSERTE(FitsIn<WORD>(pOldMT->GetNumGenericArgs()));
     pMT->SetDictInfo(static_cast<WORD>(pOldMT->GetNumDicts()), static_cast<WORD>(pOldMT->GetNumGenericArgs()));
@@ -508,7 +508,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // The others are filled in by LoadExactParents which copied down any inherited generic
     // dictionary pointers.
     Dictionary * pDict = (Dictionary*) (pMemory + cbMT + cbOptional + cbIMap + cbPerInst);
-    *(pMT->GetPerInstInfo() + (pOldMT->GetNumDicts()-1)) = pDict;
+    MethodTable::PerInstInfoElem_t *pPInstInfo = (MethodTable::PerInstInfoElem_t *) (pMT->GetPerInstInfo() + (pOldMT->GetNumDicts()-1));
+    pPInstInfo->SetValueMaybeNull(pDict);
 
     // Fill in the instantiation section of the generic dictionary.  The remainder of the
     // generic dictionary will be zeroed, which is the correct initial state.

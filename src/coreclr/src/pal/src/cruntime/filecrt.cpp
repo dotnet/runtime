@@ -93,7 +93,7 @@ _open_osfhandle( INT_PTR osfhandle, int flags )
 
     if (NO_ERROR == palError)
     {
-        if ('\0' != pLocalData->unix_filename[0])
+        if (NULL != pLocalData->unix_filename)
         {
             nRetVal = InternalOpen(pLocalData->unix_filename, openFlags);
         }

@@ -5431,7 +5431,7 @@ public:
     HRESULT GetILCode(CordbILCode ** ppCode);
 
     // Finds or creates an ILCode for a given rejit request
-    HRESULT LookupOrCreateReJitILCode(VMPTR_SharedReJitInfo vmSharedRejitInfo,
+    HRESULT LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCodeVersionNode,
                                       CordbReJitILCode** ppILCode);
 
 
@@ -5775,7 +5775,7 @@ class CordbReJitILCode : public CordbILCode, public ICorDebugILCode, public ICor
 {
 public:
     // Initialize a new CordbILCode instance
-    CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_SharedReJitInfo vmSharedReJitInfo);
+    CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_ILCodeVersionNode vmILCodeVersionNode);
 
     //-----------------------------------------------------------
     // IUnknown

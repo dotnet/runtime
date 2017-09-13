@@ -495,7 +495,6 @@ void Thread::ChooseThreadCPUGroupAffinity()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups()) 
          return;
 
@@ -515,7 +514,6 @@ void Thread::ChooseThreadCPUGroupAffinity()
     CPUGroupInfo::SetThreadGroupAffinity(GetThreadHandle(), &groupAffinity, NULL);
     m_wCPUGroup = groupAffinity.Group;
     m_pAffinityMask = groupAffinity.Mask;
-#endif // !FEATURE_PAL
 }
 
 void Thread::ClearThreadCPUGroupAffinity()
@@ -527,7 +525,6 @@ void Thread::ClearThreadCPUGroupAffinity()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups()) 
          return;
 
@@ -545,7 +542,6 @@ void Thread::ClearThreadCPUGroupAffinity()
 
     m_wCPUGroup = 0;
     m_pAffinityMask = 0;
-#endif // !FEATURE_PAL
 }
 
 DWORD Thread::StartThread()
@@ -1367,6 +1363,8 @@ void InitThreadManager()
     }
     CONTRACTL_END;
 
+    Thread::s_initializeYieldProcessorNormalizedCrst.Init(CrstLeafLock);
+
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
@@ -1582,7 +1580,7 @@ void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
     STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::EnterSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
                     caller,
                     ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld,
+                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
                     ((AwareLock*)pAwareLock)->m_HoldingThread );
 
     if (m_Active)
@@ -1608,7 +1606,7 @@ void Dbg_TrackSyncStack::LeaveSync(UINT_PTR caller, void *pAwareLock)
     STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::LeaveSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
                     caller,
                     ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld,
+                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
                     ((AwareLock*)pAwareLock)->m_HoldingThread );
 
     if (m_Active)
@@ -2017,10 +2015,8 @@ Thread::Thread()
     
     m_fGCSpecial = FALSE;
 
-#if !defined(FEATURE_PAL)
     m_wCPUGroup = 0;
     m_pAffinityMask = 0;
-#endif
 
     m_pAllLoggedTypes = NULL;
 
@@ -2530,7 +2526,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken)
 // We don't want ::CreateThread() calls scattered throughout the source.  So gather
 // them all here.
 
-BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args)
+BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName)
 {
     CONTRACTL {
         NOTHROW;
@@ -2557,6 +2553,7 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     bRet = CreateNewOSThread(stackSize, start, args);
 #ifndef FEATURE_PAL
     UndoRevert(bReverted, token);
+    SetThreadName(m_ThreadHandle, pName);
 #endif // !FEATURE_PAL
 
     return bRet;
@@ -11749,3 +11746,87 @@ ULONGLONG Thread::QueryThreadProcessorUsage()
     return ullCurrentUsage - ullPreviousUsage;
 }
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
+
+CrstStatic Thread::s_initializeYieldProcessorNormalizedCrst;
+int Thread::s_yieldsPerNormalizedYield = 0;
+int Thread::s_optimalMaxNormalizedYieldsPerSpinIteration = 0;
+
+void Thread::InitializeYieldProcessorNormalized()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    CrstHolder lock(&s_initializeYieldProcessorNormalizedCrst);
+
+    if (IsYieldProcessorNormalizedInitialized())
+    {
+        return;
+    }
+
+    // Intel pre-Skylake processor: measured typically 14-17 cycles per yield
+    // Intel post-Skylake processor: measured typically 125-150 cycles per yield
+    const int DefaultYieldsPerNormalizedYield = 1; // defaults are for when no measurement is done
+    const int DefaultOptimalMaxNormalizedYieldsPerSpinIteration = 64; // tuned for pre-Skylake processors, for post-Skylake it should be 7
+    const int MeasureDurationMs = 10;
+    const int MaxYieldsPerNormalizedYield = 10; // measured typically 8-9 on pre-Skylake
+    const int MinNsPerNormalizedYield = 37; // measured typically 37-46 on post-Skylake
+    const int NsPerOptimialMaxSpinIterationDuration = 272; // approx. 900 cycles, measured 281 on pre-Skylake, 263 on post-Skylake
+    const int NsPerSecond = 1000 * 1000 * 1000;
+
+    LARGE_INTEGER li;
+    if (!QueryPerformanceFrequency(&li) || (ULONGLONG)li.QuadPart < 1000 / MeasureDurationMs)
+    {
+        // High precision clock not available or clock resolution is too low, resort to defaults
+        s_yieldsPerNormalizedYield = DefaultYieldsPerNormalizedYield;
+        s_optimalMaxNormalizedYieldsPerSpinIteration = DefaultOptimalMaxNormalizedYieldsPerSpinIteration;
+        return;
+    }
+    ULONGLONG ticksPerSecond = li.QuadPart;
+
+    // Measure the nanosecond delay per yield
+    ULONGLONG measureDurationTicks = ticksPerSecond / (1000 / MeasureDurationMs);
+    unsigned int yieldCount = 0;
+    QueryPerformanceCounter(&li);
+    ULONGLONG startTicks = li.QuadPart;
+    ULONGLONG elapsedTicks;
+    do
+    {
+        for (int i = 0; i < 10; ++i)
+        {
+            YieldProcessor();
+        }
+        yieldCount += 10;
+
+        QueryPerformanceCounter(&li);
+        ULONGLONG nowTicks = li.QuadPart;
+        elapsedTicks = nowTicks - startTicks;
+    } while (elapsedTicks < measureDurationTicks);
+    double nsPerYield = (double)elapsedTicks * NsPerSecond / ((double)yieldCount * ticksPerSecond);
+    if (nsPerYield < 1)
+    {
+        nsPerYield = 1;
+    }
+
+    // Calculate the number of yields required to span the duration of a normalized yield
+    int yieldsPerNormalizedYield = (int)(MinNsPerNormalizedYield / nsPerYield + 0.5);
+    if (yieldsPerNormalizedYield < 1)
+    {
+        yieldsPerNormalizedYield = 1;
+    }
+    else if (yieldsPerNormalizedYield > MaxYieldsPerNormalizedYield)
+    {
+        yieldsPerNormalizedYield = MaxYieldsPerNormalizedYield;
+    }
+
+    // Calculate the maximum number of yields that would be optimal for a late spin iteration. Typically, we would not want to
+    // spend excessive amounts of time (thousands of cycles) doing only YieldProcessor, as SwitchToThread/Sleep would do a
+    // better job of allowing other work to run.
+    int optimalMaxNormalizedYieldsPerSpinIteration =
+        (int)(NsPerOptimialMaxSpinIterationDuration / (yieldsPerNormalizedYield * nsPerYield) + 0.5);
+    if (optimalMaxNormalizedYieldsPerSpinIteration < 1)
+    {
+        optimalMaxNormalizedYieldsPerSpinIteration = 1;
+    }
+
+    s_yieldsPerNormalizedYield = yieldsPerNormalizedYield;
+    s_optimalMaxNormalizedYieldsPerSpinIteration = optimalMaxNormalizedYieldsPerSpinIteration;
+}

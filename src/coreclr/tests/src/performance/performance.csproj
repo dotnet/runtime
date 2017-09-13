@@ -7,6 +7,9 @@
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="CommandLineParser">
+      <Version>2.1.1-beta</Version>
+    </PackageReference>
     <PackageReference Include="xunit.performance.api">
       <Version>$(XUnitPerformanceApiVersion)</Version>
     </PackageReference>

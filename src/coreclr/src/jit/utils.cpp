@@ -1258,6 +1258,8 @@ void HelperCallProperties::init()
 
             // This (or these) are not pure, in that they have "VM side effects"...but they don't mutate the heap.
             case CORINFO_HELP_ENDCATCH:
+
+                noThrow = true;
                 break;
 
             // Arithmetic helpers that may throw
@@ -1393,11 +1395,11 @@ void HelperCallProperties::init()
                 break;
 
             // helpers that return internal handle
-            // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_GETCLASSFROMMETHODPARAM:
             case CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
 
-                isPure = true;
+                isPure  = true;
+                noThrow = true;
                 break;
 
             // Helpers that load the base address for static variables.
@@ -1472,6 +1474,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_THROWNULLREF:
             case CORINFO_HELP_THROW:
             case CORINFO_HELP_RETHROW:
+            case CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
+            case CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
 
                 break;
 
@@ -1480,12 +1484,33 @@ void HelperCallProperties::init()
             case CORINFO_HELP_FIELD_ACCESS_CHECK:
             case CORINFO_HELP_CLASS_ACCESS_CHECK:
             case CORINFO_HELP_DELEGATE_SECURITY_CHECK:
+            case CORINFO_HELP_MON_EXIT_STATIC:
 
                 break;
 
             // This is a debugging aid; it simply returns a constant address.
             case CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR:
                 isPure  = true;
+                noThrow = true;
+                break;
+
+            case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
+            case CORINFO_HELP_BBT_FCN_ENTER:
+            case CORINFO_HELP_POLL_GC:
+            case CORINFO_HELP_MON_ENTER:
+            case CORINFO_HELP_MON_EXIT:
+            case CORINFO_HELP_MON_ENTER_STATIC:
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
+            case CORINFO_HELP_SECURITY_PROLOG:
+            case CORINFO_HELP_SECURITY_PROLOG_FRAMED:
+            case CORINFO_HELP_VERIFICATION_RUNTIME_CHECK:
+            case CORINFO_HELP_GETFIELDADDR:
+            case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            case CORINFO_HELP_JIT_PINVOKE_BEGIN:
+            case CORINFO_HELP_JIT_PINVOKE_END:
+            case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
+
                 noThrow = true;
                 break;
 

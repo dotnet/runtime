@@ -125,7 +125,7 @@ int __cdecl main(int argc, char* argv[])
     //
     static MethodTable freeObjectMT;
     freeObjectMT.InitializeFreeObject();
-    g_pFreeObjectMethodTable = &freeObjectMT;
+    g_gc_pFreeObjectMethodTable = &freeObjectMT;
 
     //
     // Initialize GC heap

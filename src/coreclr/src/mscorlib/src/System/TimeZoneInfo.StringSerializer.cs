@@ -175,7 +175,7 @@ namespace System
             }
 
             /// <summary>
-            /// Helper function to determine if the passed in string token is allowed to be preceeded by an escape sequence token.
+            /// Helper function to determine if the passed in string token is allowed to be preceded by an escape sequence token.
             /// </summary>
             private static void VerifyIsEscapableCharacter(char c)
             {

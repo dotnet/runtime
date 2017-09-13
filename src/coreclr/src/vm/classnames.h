@@ -145,6 +145,7 @@
 
 #define g_CompilerServicesFixedAddressValueTypeAttribute "System.Runtime.CompilerServices.FixedAddressValueTypeAttribute"
 #define g_CompilerServicesUnsafeValueTypeAttribute "System.Runtime.CompilerServices.UnsafeValueTypeAttribute"
+#define g_CompilerServicesIntrinsicAttribute "System.Runtime.CompilerServices.IntrinsicAttribute"
 #define g_UnmanagedFunctionPointerAttribute "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"
 #define g_DefaultDllImportSearchPathsAttribute "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute"
 #define g_NativeCallableAttribute "System.Runtime.InteropServices.NativeCallableAttribute"

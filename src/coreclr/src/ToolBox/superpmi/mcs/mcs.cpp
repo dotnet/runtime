@@ -19,7 +19,6 @@
 #include "verbconcat.h"
 #include "verbmerge.h"
 #include "verbstrip.h"
-#include "verbsmarty.h"
 #include "logging.h"
 
 int __cdecl main(int argc, char* argv[])
@@ -97,10 +96,6 @@ int __cdecl main(int argc, char* argv[])
     if (o.actionTOC)
     {
         exitCode = verbTOC::DoWork(o.nameOfFile1);
-    }
-    if (o.actionSmarty)
-    {
-        exitCode = verbSmarty::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes);
     }
 
     Logger::Shutdown();

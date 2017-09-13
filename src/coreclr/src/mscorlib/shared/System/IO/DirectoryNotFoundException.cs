@@ -17,19 +17,19 @@ namespace System.IO
         public DirectoryNotFoundException()
             : base(SR.Arg_DirectoryNotFoundException)
         {
-            HResult = __HResults.COR_E_DIRECTORYNOTFOUND;
+            HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         public DirectoryNotFoundException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_DIRECTORYNOTFOUND;
+            HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         public DirectoryNotFoundException(string message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_DIRECTORYNOTFOUND;
+            HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         protected DirectoryNotFoundException(SerializationInfo info, StreamingContext context)

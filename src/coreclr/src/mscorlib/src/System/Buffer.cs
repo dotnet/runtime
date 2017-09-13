@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if AMD64 || (BIT32 && !ARM)
+#if AMD64 || ARM64 || (BIT32 && !ARM)
 #define HAS_CUSTOM_BLOCKS
 #endif
 
@@ -262,6 +262,17 @@ namespace System
         {
 #if AMD64 || (BIT32 && !ARM)
             const nuint CopyThreshold = 2048;
+#elif ARM64
+#if PLATFORM_WINDOWS
+            // TODO-ARM64-WINDOWS-OPT determine optimal value for Windows
+            // https://github.com/dotnet/coreclr/issues/13843
+            const nuint CopyThreshold = 2048;
+#else // PLATFORM_WINDOWS
+            // Managed code is currently faster than glibc unoptimized memmove
+            // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
+            // https://github.com/dotnet/coreclr/issues/13844
+            const nuint CopyThreshold = UInt64.MaxValue;
+#endif // PLATFORM_WINDOWS
 #else
             const nuint CopyThreshold = 512;
 #endif // AMD64 || (BIT32 && !ARM)
@@ -369,7 +380,6 @@ namespace System
             {
                 goto PInvoke;
             }
-
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
             Debug.Assert(len > 64 && len <= CopyThreshold);

@@ -42,7 +42,7 @@ public:
     bool UnregisterProvider(EventPipeProvider &provider);
 
     // Get the provider with the specified provider ID if it exists.
-    EventPipeProvider* GetProvider(const GUID &providerID);
+    EventPipeProvider* GetProvider(const SString &providerID);
 
     // Get the configured size of the circular buffer.
     size_t GetCircularBufferSize() const;
@@ -77,7 +77,7 @@ public:
 private:
 
     // Get the provider without taking the lock.
-    EventPipeProvider* GetProviderNoLock(const GUID &providerID);
+    EventPipeProvider* GetProviderNoLock(const SString &providerID);
 
     // Determines whether or not the event pipe is enabled.
     Volatile<bool> m_enabled;
@@ -98,9 +98,9 @@ private:
     // The event used to write event information to the event stream.
     EventPipeEvent *m_pMetadataEvent;
 
-    // The provider ID for the configuration event pipe provider.
+    // The provider name for the configuration event pipe provider.
     // This provider is used to emit configuration events.
-    static const GUID s_configurationProviderID;
+    const static WCHAR* s_configurationProviderName;
 
     // True if rundown is enabled.
     Volatile<bool> m_rundownEnabled;

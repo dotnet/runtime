@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
         }
         #endregion
 
-        #region Private Data Mebers
+        #region Private Data Members
         internal MethodInfo m_method;
         private TypeBuilderInstantiation m_type;
         #endregion
@@ -99,7 +99,7 @@ namespace System.Reflection.Emit
         }
         #endregion
 
-        #region Private Data Mebers
+        #region Private Data Members
         internal ConstructorInfo m_ctor;
         private TypeBuilderInstantiation m_type;
         #endregion
