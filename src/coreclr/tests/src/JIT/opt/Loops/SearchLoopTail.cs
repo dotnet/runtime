@@ -60,6 +60,82 @@ namespace N
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TrueFalseOr(int[] input)
+        {
+            int n = 0, m = 0;
+            for (int i = 0; i < input.Length; ++i)
+            {
+                m = n;
+                n = input[i];
+                if (n < 7)
+                    return true;
+                if (n > 22)
+                    return false;
+                if (n == 12)
+                    return (m == 5);
+            }
+
+            return (n == 9 || m == 13);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TrueFalseAnd(int[] input)
+        {
+            int n = 0, m = 0;
+            for (int i = 0; i < input.Length; ++i)
+            {
+                m = n;
+                n = input[i];
+                if (n < 7)
+                    return true;
+                if (n > 22)
+                    return false;
+                if (n == 12)
+                    return (m == 5);
+            }
+
+            return (n == 9 && m == 13);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool FalseTrueOr(int[] input)
+        {
+            int n = 0, m = 0;
+            for (int i = 0; i < input.Length; ++i)
+            {
+                m = n;
+                n = input[i];
+                if (n < 7)
+                    return false;
+                if (n > 22)
+                    return true;
+                if (n == 12)
+                    return (m == 5);
+            }
+
+            return (n == 9 || m == 13);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool FalseTrueAnd(int[] input)
+        {
+            int n = 0, m = 0;
+            for (int i = 0; i < input.Length; ++i)
+            {
+                m = n;
+                n = input[i];
+                if (n < 7)
+                    return false;
+                if (n > 22)
+                    return true;
+                if (n == 12)
+                    return (m == 5);
+            }
+
+            return (n == 9 && m == 13);
+        }
+
         public static int Main(string[] args)
         {
             if (HasPrimeUnderTwenty(22, 36) || !HasPrimeUnderTwenty(-1, 4))
@@ -68,6 +144,12 @@ namespace N
             }
 
             if ((Distance_abCD("xxxxAyyyyBzyzyzC1234D") != 5) || (Distance_abCD("nnABmmDC") != -1))
+            {
+                return -1;
+            }
+
+            int[] inputs = new int[] { 8, 20, 11, 13, 15 };
+            if (!TrueFalseOr(inputs) || TrueFalseAnd(inputs) || !FalseTrueOr(inputs) || FalseTrueAnd(inputs))
             {
                 return -1;
             }
