@@ -2703,7 +2703,7 @@ decode_buffer (ProfContext *ctx)
 				for (i = 0; i < num; ++i) {
 					intptr_t objdiff = decode_sleb128 (p, &p);
 					int root_type;
-					if (ctx->data_version > 12)
+					if (ctx->data_version == 13)
 						root_type = *p++;
 					else
 						root_type = decode_uleb128 (p, &p);

@@ -1219,7 +1219,7 @@ gc_roots (MonoProfiler *prof, MonoObject *const *objects, const MonoProfilerGCRo
 
 	for (int i = 0; i < num; ++i) {
 		emit_obj (logbuffer, objects [i]);
-		emit_byte (logbuffer, root_types [i]);
+		emit_value (logbuffer, root_types [i]);
 		emit_value (logbuffer, extra_info [i]);
 	}
 
