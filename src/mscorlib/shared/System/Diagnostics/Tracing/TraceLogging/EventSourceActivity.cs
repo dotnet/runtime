@@ -77,8 +77,8 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Writes a Start event with the specified name and data.   If the start event is not active (because the provider 
-        /// is not on or keyword-level indiates the event is off, then the returned activity is simply the 'this' poitner 
-        /// and it is effectively like the Start d
+        /// is not on or keyword-level indicates the event is off, then the returned activity is simply the 'this' pointer
+        /// and it is effectively like start did not get called.
         /// 
         /// A new activityID GUID is generated and the returned
         /// EventSourceActivity remembers this activity and will mark every event (including the start stop and any writes)
@@ -139,7 +139,7 @@ namespace System.Diagnostics.Tracing
         }
         /// <summary>
         /// Used if you wish to use the non-default stop name (which is the start name with Start replace with 'Stop')
-        /// This can be useful to indicate unusual ways of stoping (but it is still STRONGLY recommeded that
+        /// This can be useful to indicate unusual ways of stopping (but it is still STRONGLY recommended that
         /// you start with the same prefix used for the start event and you end with the 'Stop' suffix.   
         /// </summary>
         public void Stop<T>(string eventName)
@@ -149,7 +149,7 @@ namespace System.Diagnostics.Tracing
         }
         /// <summary>
         /// Used if you wish to use the non-default stop name (which is the start name with Start replace with 'Stop')
-        /// This can be useful to indicate unusual ways of stoping (but it is still STRONGLY recommeded that
+        /// This can be useful to indicate unusual ways of stopping (but it is still STRONGLY recommended that
         /// you start with the same prefix used for the start event and you end with the 'Stop' suffix.   
         /// </summary>
         public void Stop<T>(string eventName, T data)
@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Writes an event associated with this activity to the eventSource associted with this activity.  
+        /// Writes an event associated with this activity to the eventSource associated with this activity.  
         /// May only be called when the activity is in the Started state.
         /// </summary>
         /// <param name="eventName">

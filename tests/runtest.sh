@@ -58,6 +58,7 @@ function print_usage {
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
     echo '  --long-gc                        : Runs the long GC tests'
     echo '  --gcsimulator                    : Runs the GCSimulator tests'
+    echo '  --tieredcompilation              : Runs the tests with COMPlus_EXPERIMENTAL_TieredCompilation=1'
     echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --show-time                      : Print execution sequence and running time for each test'
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
@@ -122,7 +123,12 @@ case $OSName in
 esac
 
 function xunit_output_begin {
-    xunitOutputPath=$testRootDir/coreclrtests.xml
+    if [ -z "$xunitOutputPath" ]; then
+        xunitOutputPath=$testRootDir/coreclrtests.xml
+    fi
+    if ! [ -e $(basename "$xunitOutputPath") ]; then
+        xunitOutputPath=$testRootDir/coreclrtests.xml
+    fi
     xunitTestOutputPath=${xunitOutputPath}.test
     if [ -e "$xunitOutputPath" ]; then
         rm -f -r "$xunitOutputPath"
@@ -727,8 +733,10 @@ function run_test {
 # Variables for running tests in the background
 if [ `uname` = "NetBSD" ]; then
     NumProc=$(getconf NPROCESSORS_ONLN)
-else
+elif [ `uname` = "Darwin" ]; then
     NumProc=$(getconf _NPROCESSORS_ONLN)
+else
+    NumProc=$(nproc --all)
 fi
 ((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
 
@@ -1019,6 +1027,9 @@ do
             export ILLINK=${i#*=}
             export DoLink=true
             ;;
+        --tieredcompilation)
+            export COMPlus_EXPERIMENTAL_TieredCompilation=1
+            ;;
         --jitdisasm)
             jitdisasm=1
             ;;
@@ -1200,7 +1211,7 @@ precompile_overlay_assemblies
 
 if [ "$buildOverlayOnly" == "ON" ];
 then
-    echo "Build overlay directory \'$coreOverlayDir\' complete."
+    echo "Build overlay directory '$coreOverlayDir' complete."
     exit 0
 fi
 

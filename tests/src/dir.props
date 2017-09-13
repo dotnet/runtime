@@ -66,6 +66,11 @@
   </Choose>
 
   <PropertyGroup>
+    <TargetRid Condition="'$(__RuntimeId)' != ''">$(__RuntimeId)</TargetRid>
+    <TargetRid Condition="'$(__RuntimeId)' == ''">$(TestNugetRuntimeId)</TargetRid>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
@@ -90,8 +95,8 @@
     <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
 
     <!-- Specify the target framework of the common test dependency project.json. -->
-    <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 

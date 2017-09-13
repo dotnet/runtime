@@ -310,7 +310,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     DWORD numNonVirtualSlots = numCtors + 3; // 3 for the proper rank Get, Set, Address
 
     size_t cbMT = sizeof(MethodTable);
-    cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(PTR_PCODE);
+    cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
     // GC info
     size_t cbCGCDescData = 0;
@@ -509,8 +509,11 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 #endif // !defined(_WIN64) && (DATA_ALIGNMENT > 4)
     pMT->SetBaseSize(baseSize);
     // Because of array method table persisting, we need to copy the map
-    memcpy(pMTHead + imapOffset, pParentClass->GetInterfaceMap(),
-           pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t));
+    for (unsigned index = 0; index < pParentClass->GetNumInterfaces(); ++index)
+    {
+      InterfaceInfo_t *pIntInfo = (InterfaceInfo_t *) (pMTHead + imapOffset + index * sizeof(InterfaceInfo_t));
+      pIntInfo->SetMethodTable((pParentClass->GetInterfaceMap() + index)->GetMethodTable());
+    }
     pMT->SetInterfaceMap(pParentClass->GetNumInterfaces(), (InterfaceInfo_t *)(pMTHead + imapOffset));
 
     // Copy down flags for these interfaces as well. This is simplified a bit since we know that System.Array
@@ -536,7 +539,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             if (canShareVtableChunks)
             {
                 // Share the parent chunk
-                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
+                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
             }
             else 
             {

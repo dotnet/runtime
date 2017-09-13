@@ -12,7 +12,6 @@
 
 
 #include "common.h"
-#include "security.h"
 #include "excep.h"
 #include "dbginterface.h"
 #include "ecall.h"
@@ -30,9 +29,6 @@
 #include "interoputil.h"
 #include "prettyprintsig.h"
 #include "formattype.h"
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -942,118 +938,6 @@ BOOL MethodDesc::IsTightlyBoundToMethodTable()
 
 #ifndef DACCESS_COMPILE
 
-
-//*******************************************************************************
-HRESULT MethodDesc::Verify(COR_ILMETHOD_DECODER* ILHeader,
-                            BOOL fThrowException,
-                            BOOL fForceVerify)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-    }
-    CONTRACTL_END
-
-#ifdef _VER_EE_VERIFICATION_ENABLED
-    // ForceVerify will force verification if the Verifier is OFF
-    if (fForceVerify)
-        goto DoVerify;
-
-    // Don't even try to verify if verifier is off.
-    if (g_fVerifierOff)
-        return S_OK;
-
-    if (IsVerified())
-        return S_OK;
-
-    // LazyCanSkipVerification does not resolve the policy.
-    // We go ahead with verification if policy is not resolved.
-    // In case the verification fails, we resolve policy and
-    // fail verification if the Assembly of this method does not have
-    // permission to skip verification.
-
-    if (Security::LazyCanSkipVerification(GetModule()->GetDomainAssembly()))
-        return S_OK;
-
-#ifdef _DEBUG
-    _ASSERTE(Security::IsSecurityOn());
-    _ASSERTE(GetModule() != SystemDomain::SystemModule());
-#endif // _DEBUG
-
-
-DoVerify:
-
-    HRESULT hr;
-
-    if (fThrowException)
-        hr = Verifier::VerifyMethod(this, ILHeader, NULL,
-            fForceVerify ? VER_FORCE_VERIFY : VER_STOP_ON_FIRST_ERROR);
-    else
-        hr = Verifier::VerifyMethodNoException(this, ILHeader);
-
-    if (SUCCEEDED(hr))
-        SetIsVerified(TRUE);
-
-    return hr;
-#else // !_VER_EE_VERIFICATION_ENABLED
-    _ASSERTE(!"EE Verification is disabled, should never get here");
-    return E_FAIL;
-#endif // !_VER_EE_VERIFICATION_ENABLED
-}
-
-//*******************************************************************************
-
-BOOL MethodDesc::IsVerifiable()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (IsVerified())
-        return (m_wFlags & mdcVerifiable);
-
-    if (!IsTypicalMethodDefinition())
-    {
-        // We cannot verify concrete instantiation (eg. List<int>.Add()).
-        // We have to verify the typical instantiation (eg. List<T>.Add()).
-        MethodDesc * pGenMethod = LoadTypicalMethodDefinition();
-        BOOL isVerifiable = pGenMethod->IsVerifiable();
-
-        // Propagate the result from the typical instantiation to the
-        // concrete instantiation
-        SetIsVerified(isVerifiable);
-
-        return isVerifiable;
-    }
-
-    COR_ILMETHOD_DECODER *pHeader = NULL;
-    // Don't use HasILHeader() here because it returns the wrong answer
-    // for methods that have DynamicIL (not to be confused with DynamicMethods)
-    if (IsIL() && !IsUnboxingStub())
-    {
-        COR_ILMETHOD_DECODER::DecoderStatus status;
-        COR_ILMETHOD_DECODER header(GetILHeader(), GetMDImport(), &status);
-        if (status != COR_ILMETHOD_DECODER::SUCCESS)
-        {
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
-        }
-        pHeader = &header;
-
-#ifdef _VER_EE_VERIFICATION_ENABLED
-        static ConfigDWORD peVerify;
-        if (peVerify.val(CLRConfig::EXTERNAL_PEVerify))
-        {
-            HRESULT hr = Verify(&header, TRUE, FALSE);
-        }
-#endif // _VER_EE_VERIFICATION_ENABLED
-    }
-
-    UnsafeJitFunction(this, pHeader, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY));
-    _ASSERTE(IsVerified());
-
-    return (IsVerified() && (m_wFlags & mdcVerifiable));
-}
-
 //*******************************************************************************
 // Update flags in a thread safe manner.
 WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
@@ -1175,16 +1059,6 @@ PCODE MethodDesc::GetNativeCode()
 #endif
         return pCode;
     }
-
-#ifdef FEATURE_INTERPRETER
-#ifndef DACCESS_COMPILE // TODO: Need a solution that will work under DACCESS
-    PCODE pEntryPoint = GetMethodEntryPoint();
-    if (Interpreter::InterpretationStubToMethodInfo(pEntryPoint) == this)
-    {
-        return pEntryPoint;
-    }
-#endif
-#endif
 
     if (!HasStableEntryPoint() || HasPrecode())
         return NULL;
@@ -2440,32 +2314,6 @@ BOOL MethodDesc::IsPointingToPrestub()
     return GetPrecode()->IsPointingToPrestub();
 }
 
-#ifdef FEATURE_INTERPRETER
-//*******************************************************************************
-BOOL MethodDesc::IsReallyPointingToPrestub()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!HasPrecode())
-    {
-        PCODE pCode = GetMethodEntryPoint();
-        return HasTemporaryEntryPoint() && pCode == GetTemporaryEntryPoint();
-    }
-
-    if (!IsRestored())
-        return TRUE;
-
-    return GetPrecode()->IsPointingToPrestub();
-}
-#endif
-
 //*******************************************************************************
 void MethodDesc::Reset()
 {
@@ -2698,9 +2546,6 @@ BOOL MethodDesc::MayHaveNativeCode()
 void MethodDesc::Save(DataImage *image)
 {
     STANDARD_VM_CONTRACT;
-
-    // Make sure that the transparency is cached in the NGen image
-    Security::IsMethodTransparent(this);
 
     // Initialize the DoesNotHaveEquivalentValuetypeParameters flag.
     // If we fail to determine whether there is a type-equivalent struct parameter (eg. because there is a struct parameter
@@ -3501,14 +3346,7 @@ MethodDesc::Fixup(
             }
         }
 
-        if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-        {
-            image->FixupRelativePointerField(this, offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
-        }
-        else
-        {
-            image->FixupPointerField(this, offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
-        }
+        image->FixupPlainOrRelativePointerField((InstantiatedMethodDesc*) this, &InstantiatedMethodDesc::m_pPerInstInfo);
 
         // Generic methods are dealt with specially to avoid encoding the formal method type parameters
         if (IsTypicalMethodDefinition())
@@ -3587,14 +3425,7 @@ MethodDesc::Fixup(
 
         NDirectMethodDesc *pNMD = (NDirectMethodDesc *)this;
 
-        if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
-        {
-            image->FixupRelativePointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
-        }
-        else
-        {
-            image->FixupPointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
-        }
+        image->FixupPlainOrRelativePointerField(pNMD, &NDirectMethodDesc::ndirect, &decltype(NDirectMethodDesc::ndirect)::m_pWriteableData);
 
         NDirectWriteableData *pWriteableData = pNMD->GetWriteableData();
         NDirectImportThunkGlue *pImportThunkGlue = pNMD->GetNDirectImportThunkGlue();
@@ -4185,7 +4016,7 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             // for details on the race.
             // 
             {
-                ReJitPublishMethodHolder publishWorker(this, GetNativeCode());
+                PublishMethodHolder publishWorker(this, GetNativeCode());
                 pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
             }
 
@@ -4968,11 +4799,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
 }
 
 //*******************************************************************************
-BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/
-#ifdef FEATURE_INTERPRETER
-                                          , BOOL fStable
-#endif
-                                          )
+BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 {
     CONTRACTL {
         THROWS;
@@ -4998,28 +4825,8 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/
         value.SetValueMaybeNull(pSlot, addr | (*dac_cast<PTR_TADDR>(pSlot) & FIXUP_LIST_MASK));
         expected.SetValueMaybeNull(pSlot, pExpected | (*dac_cast<PTR_TADDR>(pSlot) & FIXUP_LIST_MASK));
 
-#ifdef FEATURE_INTERPRETER
-        BOOL fRet = FALSE;
-
-        fRet = FastInterlockCompareExchangePointer(
-                   EnsureWritablePages(reinterpret_cast<TADDR*>(pSlot)),
-                   (TADDR&)value,
-                   (TADDR&)expected) == (TADDR&)expected;
-
-        if (!fRet)
-        {
-            // Can always replace NULL.
-            expected.SetValueMaybeNull(pSlot, (*dac_cast<PTR_TADDR>(pSlot) & FIXUP_LIST_MASK));
-            fRet = FastInterlockCompareExchangePointer(
-                       EnsureWritablePages(reinterpret_cast<TADDR*>(pSlot)),
-                       (TADDR&)value,
-                       (TADDR&)expected) == (TADDR&)expected;
-        }
-        return fRet;
-#else  // FEATURE_INTERPRETER
         return FastInterlockCompareExchangePointer(EnsureWritablePages(reinterpret_cast<TADDR*>(pSlot)),
             (TADDR&)value, (TADDR&)expected) == (TADDR&)expected;
-#endif // FEATURE_INTERPRETER
     }
     
     if (IsDefaultInterfaceMethod() && HasPrecode())
@@ -5027,17 +4834,8 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/
         return GetPrecode()->SetTargetInterlocked(addr);
     }
 
-#ifdef FEATURE_INTERPRETER
-    PCODE pFound = FastInterlockCompareExchangePointer(GetAddrOfSlot(), addr, pExpected);
-    if (fStable)
-    {
-        InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint, TRUE);
-    }
-    return (pFound == pExpected);
-#else
     _ASSERTE(pExpected == NULL);
     return SetStableEntryPointInterlocked(addr);
-#endif
 }
 
 //*******************************************************************************
@@ -5060,26 +4858,6 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
 
     return fResult;
 }
-
-#ifdef FEATURE_INTERPRETER
-BOOL MethodDesc::SetEntryPointInterlocked(PCODE addr)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    _ASSERTE(!HasPrecode());
-
-    PCODE pExpected = GetTemporaryEntryPoint();
-    PTR_PCODE pSlot = GetAddrOfSlot();
-
-    BOOL fResult = FastInterlockCompareExchangePointer(pSlot, addr, pExpected) == pExpected;
-
-    return fResult;
-}
-
-#endif // FEATURE_INTERPRETER
 
 //*******************************************************************************
 void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
@@ -5243,14 +5021,6 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     }
 
     return FALSE;
-}
-
-//*******************************************************************************
-BOOL MethodDesc::HasSuppressUnmanagedCodeAccessAttr()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return TRUE;
 }
 
 #ifdef FEATURE_COMINTEROP

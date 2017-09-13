@@ -42,7 +42,7 @@ namespace System
 
             state = null;
 
-#region Map named parameters to candidate parameter postions
+#region Map named parameters to candidate parameter positions
             // We are creating an paramOrder array to act as a mapping
             //  between the order of the args and the actual order of the
             //  parameters in the method.  This order may differ because
@@ -530,7 +530,7 @@ namespace System
             for (i = 0; i < types.Length; i++)
             {
                 realTypes[i] = types[i].UnderlyingSystemType;
-                if (!(realTypes[i].IsRuntimeImplemented()))
+                if (!(realTypes[i].IsRuntimeImplemented() || realTypes[i] is SignatureType))
                     throw new ArgumentException(SR.Arg_MustBeType, nameof(types));
             }
             types = realTypes;
@@ -552,19 +552,30 @@ namespace System
                 for (j = 0; j < types.Length; j++)
                 {
                     Type pCls = par[j].ParameterType;
-                    if (pCls == types[j])
+                    if (types[j].MatchesParameterTypeExactly(par[j]))
                         continue;
                     if (pCls == typeof(object))
                         continue;
+
+                    Type type = types[j];
+                    if (type is SignatureType signatureType)
+                    {
+                        if (!(candidates[i] is MethodInfo methodInfo))
+                            break;
+                        type = signatureType.TryResolveAgainstGenericMethod(methodInfo);
+                        if (type == null)
+                            break;
+                    }
+
                     if (pCls.IsPrimitive)
                     {
-                        if (!(types[j].UnderlyingSystemType.IsRuntimeImplemented()) ||
-                            !CanChangePrimitive(types[j].UnderlyingSystemType, pCls.UnderlyingSystemType))
+                        if (!(type.UnderlyingSystemType.IsRuntimeImplemented()) ||
+                            !CanChangePrimitive(type.UnderlyingSystemType, pCls.UnderlyingSystemType))
                             break;
                     }
                     else
                     {
-                        if (!pCls.IsAssignableFrom(types[j]))
+                        if (!pCls.IsAssignableFrom(type))
                             break;
                     }
                 }
@@ -918,11 +929,22 @@ namespace System
             if (c1 == c2)
                 return 0;
 
-            if (c1 == t)
-                return 1;
+            if (t is SignatureType signatureType)
+            {
+                if (signatureType.MatchesExactly(c1))
+                    return 1;
 
-            if (c2 == t)
-                return 2;
+                if (signatureType.MatchesExactly(c2))
+                    return 2;
+            }
+            else
+            {
+                if (c1 == t)
+                    return 1;
+
+                if (c2 == t)
+                    return 2;
+            }
 
             bool c1FromC2;
             bool c2FromC1;

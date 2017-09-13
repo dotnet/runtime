@@ -1121,8 +1121,21 @@ inline GenTreePtr Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd, 
 
 /*****************************************************************************/
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, unsigned flags, GenTreeArgList* args)
+//------------------------------------------------------------------------------
+// gtNewHelperCallNode : Helper to create a call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTreeArgList* args)
 {
+    unsigned     flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? 0 : GTF_EXCEPT;
     GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
     result->gtFlags |= flags;
 
@@ -1226,6 +1239,43 @@ inline GenTreePtr Compiler::gtNewIndexRef(var_types typ, GenTreePtr arrayOp, Gen
     GenTreeIndex* gtIndx = new (this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
 
     return gtIndx;
+}
+
+//------------------------------------------------------------------------------
+// gtNewArrLen : Helper to create an array length node.
+//
+//
+// Arguments:
+//    typ      -  Type of the node
+//    arrayOp  -  Array node
+//    lenOffset - Offset of the length field
+//
+// Return Value:
+//    New GT_ARR_LENGTH node
+
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset)
+{
+    GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
+    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    arrLen->SetIndirExceptionFlags(this);
+    return arrLen;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Helper to create an indirection node.
+//
+// Arguments:
+//    typ   -  Type of the node
+//    addr  -  Address of the indirection
+//
+// Return Value:
+//    New GT_IND node
+
+inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
+{
+    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
+    indir->SetIndirExceptionFlags(this);
+    return indir;
 }
 
 /*****************************************************************************
@@ -1512,8 +1562,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(!OperIsConst(oper)); // use ChangeOperLeaf() instead
 
+    unsigned mask = GTF_COMMON_MASK;
+    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    {
+        mask |= GTF_IND_NONFAULTING;
+    }
     SetOper(oper, vnUpdate);
-    gtFlags &= GTF_COMMON_MASK;
+    gtFlags &= mask;
 
     // Do "oper"-specific initializations...
     switch (oper)
@@ -1529,8 +1584,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 
 inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
 {
+    unsigned mask = GTF_COMMON_MASK;
+    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    {
+        mask |= GTF_IND_NONFAULTING;
+    }
     SetOperRaw(oper); // Trust the caller and don't use SetOper()
-    gtFlags &= GTF_COMMON_MASK;
+    gtFlags &= mask;
 }
 
 /*****************************************************************************
@@ -3020,6 +3080,35 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 */
 inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 {
+    // If we're converting a BBJ_CALLFINALLY block to a BBJ_THROW block,
+    // then mark the subsequent BBJ_ALWAYS block as unreferenced.
+    if (block->isBBCallAlwaysPair())
+    {
+        BasicBlock* leaveBlk = block->bbNext;
+        noway_assert(leaveBlk->bbJumpKind == BBJ_ALWAYS);
+
+        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+        leaveBlk->bbRefs  = 0;
+        leaveBlk->bbPreds = nullptr;
+
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+        // This function (fgConvertBBToThrowBB) can be called before the predecessor lists are created (e.g., in
+        // fgMorph). The fgClearFinallyTargetBit() function to update the BBF_FINALLY_TARGET bit depends on these
+        // predecessor lists. If there are no predecessor lists, we immediately clear all BBF_FINALLY_TARGET bits
+        // (to allow subsequent dead code elimination to delete such blocks without asserts), and set a flag to
+        // recompute them later, before they are required.
+        if (fgComputePredsDone)
+        {
+            fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
+        }
+        else
+        {
+            fgClearAllFinallyTargetBits();
+            fgNeedToAddFinallyTargetBits = true;
+        }
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+    }
+
     block->bbJumpKind = BBJ_THROW;
     block->bbSetRunRarely(); // any block with a throw is rare
 }
@@ -4622,6 +4711,28 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 
 #endif // MEASURE_CLRAPI_CALLS
 
+//------------------------------------------------------------------------------
+// fgStructTempNeedsExplicitZeroInit : Check whether temp struct needs
+//                                     explicit zero initialization in this basic block.
+//
+// Arguments:
+//    varDsc -           struct local var description
+//    block  -           basic block to check
+//
+// Returns:
+//             true if the struct temp needs explicit zero-initialization in this basic block;
+//             false otherwise
+//
+// Notes:
+//     Structs with GC pointer fields are fully zero-initialized in the prolog if compInitMem is true.
+//     Therefore, we don't need to insert zero-initialization if this block is not in a loop.
+
+bool Compiler::fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block)
+{
+    bool containsGCPtr = (varDsc->lvStructGcCount > 0);
+    return (!containsGCPtr || !info.compInitMem || ((block->bbFlags & BBF_BACKWARD_JUMP) != 0));
+}
+
 /*****************************************************************************/
 bool Compiler::fgExcludeFromSsa(unsigned lclNum)
 {
@@ -5000,20 +5111,15 @@ void GenTree::VisitBinOpOperands(TVisitor visitor)
  *
  *  Note that compGetMem is an arena allocator that returns memory that is
  *  not zero-initialized and can contain data from a prior allocation lifetime.
- *  it also requires that 'sz' be aligned to a multiple of sizeof(int)
  */
 
 inline void* __cdecl operator new(size_t sz, Compiler* context, CompMemKind cmk)
 {
-    sz = AlignUp(sz, sizeof(int));
-    assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
     return context->compGetMem(sz, cmk);
 }
 
 inline void* __cdecl operator new[](size_t sz, Compiler* context, CompMemKind cmk)
 {
-    sz = AlignUp(sz, sizeof(int));
-    assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
     return context->compGetMem(sz, cmk);
 }
 

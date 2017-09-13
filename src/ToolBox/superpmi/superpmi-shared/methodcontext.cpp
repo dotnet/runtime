@@ -481,7 +481,7 @@ bool MethodContext::Equal(MethodContext* other)
 //    `ICJI::compileMethod`).
 //
 //    This method is intended to be called as part of initializing a method
-//    during collection, similar to `methodContext::recEnvironment`.
+//    during collection.
 void MethodContext::recGlobalContext(const MethodContext& other)
 {
     Assert(GetIntConfigValue == nullptr);
@@ -498,128 +498,8 @@ void MethodContext::recGlobalContext(const MethodContext& other)
     }
 }
 
-void MethodContext::recEnvironment()
-{
-    if (Environment == nullptr)
-        Environment = new DenseLightWeightMap<Agnostic_Environment>();
-
-    char* l_EnvStr;
-    char* l_val;
-
-#ifdef FEATURE_PAL
-    l_EnvStr = GetEnvironmentStringsA();
-#else  // !FEATURE_PAL
-    l_EnvStr = GetEnvironmentStrings();
-#endif // !FEATURE_PAL
-
-    l_val = l_EnvStr;
-
-    char* l_str = l_EnvStr;
-
-    int count = 0;
-    while (true)
-    {
-        if (*l_str == 0)
-            break;
-        while (*l_str != 0)
-            l_str++;
-        l_str++;
-        count++;
-    }
-
-    for (int i = 0; i < count; i++)
-    {
-        if ((_strnicmp(l_EnvStr, "complus_", 8) == 0) || (_strnicmp(l_EnvStr, "dbflag", 6) == 0) ||
-            (_strnicmp(l_EnvStr, "BVT_TEST_ID", 11) == 0))
-        {
-            char* val = l_EnvStr;
-            while (*val != '=')
-                val++;
-            *val++                       = 0;
-            int                  nameind = Environment->AddBuffer((unsigned char*)l_EnvStr, (int)strlen(l_EnvStr) + 1);
-            int                  valind  = Environment->AddBuffer((unsigned char*)val, (int)strlen(val) + 1);
-            Agnostic_Environment value;
-            value.name_index = nameind;
-            value.val_index  = valind;
-            DWORD key        = (DWORD)Environment->GetCount();
-            Environment->Append(value);
-            DEBUG_REC(dmpEnvironment(key, value));
-            l_EnvStr = val;
-        }
-        while (*l_EnvStr != '\0')
-            l_EnvStr++;
-        l_EnvStr++;
-    }
-    FreeEnvironmentStringsA(l_val);
-}
 void MethodContext::dmpEnvironment(DWORD key, const Agnostic_Environment& value)
 {
-    printf("Environment key %u, value '%s' '%s'", key, (LPCSTR)Environment->GetBuffer(value.name_index),
-           (LPCSTR)Environment->GetBuffer(value.val_index));
-    Environment->Unlock();
-}
-void MethodContext::repEnvironmentSet()
-{
-    if (Environment == nullptr)
-        return;
-    Agnostic_Environment val;
-    for (unsigned int i = 0; i < Environment->GetCount(); i++)
-    {
-        val = Environment->Get((DWORD)i);
-        DEBUG_REP(dmpEnvironment(i, val));
-
-        SetEnvironmentVariableA((LPCSTR)Environment->GetBuffer(val.name_index),
-                                (LPCSTR)Environment->GetBuffer(val.val_index));
-    }
-}
-
-int MethodContext::repGetTestID()
-{
-    // CLR Test asset only - we capture the testID via smarty-environnent (BVT_TEST_ID) during record time
-    // This procedure returns the test id if found and -1 otherwise
-
-    if (Environment == nullptr)
-        return -1;
-    Agnostic_Environment val;
-    LPCSTR               key;
-    int                  value = -1;
-    for (unsigned int i = 0; i < Environment->GetCount(); i++)
-    {
-        val = Environment->Get((DWORD)i);
-        key = (LPCSTR)Environment->GetBuffer(val.name_index);
-
-        if (_strnicmp(key, "BVT_TEST_ID", 11) == 0)
-        {
-            value = atoi((LPCSTR)Environment->GetBuffer(val.val_index));
-            break;
-        }
-    }
-
-    if (value == -1)
-    {
-        LogError("Couldn't find Smarty test ID");
-    }
-
-    return value;
-}
-
-void MethodContext::repEnvironmentUnset()
-{
-    if (Environment == nullptr)
-        return;
-    Agnostic_Environment val;
-    for (unsigned int i = 0; i < Environment->GetCount(); i++)
-    {
-        val = Environment->Get((DWORD)i);
-        SetEnvironmentVariableA((LPCSTR)Environment->GetBuffer(val.name_index), nullptr);
-    }
-}
-int MethodContext::repEnvironmentGetCount()
-{
-    int result = 0;
-    if (Environment != nullptr)
-        result = Environment->GetCount();
-    return result;
 }
 
 void MethodContext::dumpToConsole(int mcNumber)
@@ -1121,6 +1001,7 @@ void MethodContext::dmpGetMethodName(DLD key, DD value)
            moduleName);
     GetMethodName->Unlock();
 }
+
 const char* MethodContext::repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char** moduleName)
 {
     const char* result = "hackishMethodName";
@@ -1145,6 +1026,85 @@ const char* MethodContext::repGetMethodName(CORINFO_METHOD_HANDLE ftn, const cha
         result          = (const char*)GetMethodName->GetBuffer(value.A);
     }
     DEBUG_REP(dmpGetMethodName(key, value));
+    return result;
+}
+
+
+void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, 
+    char* methodName, const char** className, const char **namespaceName)
+{
+    if (GetMethodNameFromMetadata == nullptr)
+        GetMethodNameFromMetadata = new LightWeightMap<DLDD, DDD>();
+    DDD  value;
+    DLDD key;
+    key.A = (DWORDLONG)ftn;
+    key.B = (className != nullptr);
+    key.C = (namespaceName != nullptr);
+
+    if (methodName != nullptr)
+        value.A = GetMethodNameFromMetadata->AddBuffer((unsigned char*)methodName, (DWORD)strlen(methodName) + 1);
+    else
+        value.A = (DWORD)-1;
+
+    if (className != nullptr)
+        value.B = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*className, (DWORD)strlen(*className) + 1);
+    else
+        value.B = (DWORD)-1;
+
+    if (namespaceName != nullptr)
+        value.C = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
+    else
+        value.C = (DWORD)-1;
+
+    GetMethodNameFromMetadata->Add(key, value);
+    DEBUG_REC(dmpGetMethodNameFromMetadata(key, value));
+}
+
+void MethodContext::dmpGetMethodNameFromMetadata(DLDD key, DDD value)
+{
+    unsigned char* methodName = (unsigned char*)GetMethodName->GetBuffer(value.A);
+    unsigned char* className = (unsigned char*)GetMethodName->GetBuffer(value.B);
+    unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.C);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u, value meth-'%s', class-'%s', namespace-'%s'", 
+        key.A, key.B, key.C, methodName, className, namespaceName);
+    GetMethodNameFromMetadata->Unlock();
+}
+
+const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** moduleName, const char** namespaceName)
+{
+    const char* result = nullptr;
+    DDD         value;
+    DLDD        key;
+    key.A = (DWORDLONG)ftn;
+    key.B = (moduleName != nullptr);
+    key.C = (namespaceName != nullptr);
+
+    int itemIndex = -1;
+    if (GetMethodNameFromMetadata != nullptr)
+        itemIndex = GetMethodNameFromMetadata->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        if (moduleName != nullptr)
+        {
+            *moduleName = nullptr;
+        }
+    }
+    else
+    {
+        value = GetMethodNameFromMetadata->Get(key);
+        result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.A);
+
+        if (moduleName != nullptr)
+        {            
+            *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.B);
+        }
+
+        if (namespaceName != nullptr)
+        {            
+            *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.C);
+        }
+    }
+    DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
     return result;
 }
 
@@ -1504,6 +1464,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->stubLookup.runtimeLookup.testForNull         = value.stubLookup.runtimeLookup.testForNull != 0;
         pResult->stubLookup.runtimeLookup.testForFixup        = value.stubLookup.runtimeLookup.testForFixup != 0;
         pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
+        pResult->stubLookup.runtimeLookup.indirectSecondOffset = value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
         for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
     }
@@ -2970,26 +2931,29 @@ void MethodContext::repGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, C
 
 void MethodContext::recGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                              unsigned*             offsetOfIndirection,
-                                             unsigned*             offsetAfterIndirection)
+                                             unsigned*             offsetAfterIndirection,
+                                             bool*                 isRelative)
 {
     if (GetMethodVTableOffset == nullptr)
-        GetMethodVTableOffset = new LightWeightMap<DWORDLONG, DD>();
+        GetMethodVTableOffset = new LightWeightMap<DWORDLONG, DDD>();
 
-    DD value;
+    DDD value;
     value.A = (DWORD)*offsetOfIndirection;
     value.B = (DWORD)*offsetAfterIndirection;
+    value.C = *isRelative ? 1 : 0;
     GetMethodVTableOffset->Add((DWORDLONG)method, value);
     DEBUG_REC(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
-void MethodContext::dmpGetMethodVTableOffset(DWORDLONG key, DD value)
+void MethodContext::dmpGetMethodVTableOffset(DWORDLONG key, DDD value)
 {
-    printf("GetMethodVTableOffset key ftn-%016llX, value offi-%u, offa-%u", key, value.A, value.B);
+    printf("GetMethodVTableOffset key ftn-%016llX, value offi-%u, offa-%u. offr-%d", key, value.A, value.B, value.C);
 }
 void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                              unsigned*             offsetOfIndirection,
-                                             unsigned*             offsetAfterIndirection)
+                                             unsigned*             offsetAfterIndirection,
+                                             bool*                 isRelative)
 {
-    DD value;
+    DDD value;
 
     AssertCodeMsg(GetMethodVTableOffset != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX",
                   (DWORDLONG)method);
@@ -2999,6 +2963,7 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
 
     *offsetOfIndirection    = (unsigned)value.A;
     *offsetAfterIndirection = (unsigned)value.B;
+    *isRelative             = (value.C != 0);
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
@@ -5889,15 +5854,6 @@ const wchar_t* MethodContext::repGetStringConfigValue(const wchar_t* name)
     return value;
 }
 
-struct EnvironmentVariable
-{
-    char* name;
-    DWORD val_index;
-};
-int __cdecl compareEnvironmentVariable(const void* arg1, const void* arg2)
-{
-    return _stricmp(((EnvironmentVariable*)arg1)->name, ((EnvironmentVariable*)arg2)->name);
-}
 int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
 {
     char* obuff = buff;
@@ -5921,46 +5877,6 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
                   info.options, info.regionKind);
     buff += t;
     len -= t;
-
-    // Add COMPLUS_* & dbflag environment variables to method Identity
-    // except complus_version and complus_defaultversion
-    // since they change the compilation behaviour of JIT
-    // we also need to sort them to ensure we don't produce a different
-    // hash based on the order of these variables
-    if (Environment != nullptr)
-    {
-        Agnostic_Environment val;
-        EnvironmentVariable* envValues   = new EnvironmentVariable[Environment->GetCount()];
-        int                  envValCount = 0;
-
-        for (unsigned int i = 0; i < Environment->GetCount(); i++)
-        {
-            val               = Environment->Get((DWORD)i);
-            char* envVariable = (char*)Environment->GetBuffer(val.name_index);
-            if ((_strnicmp(envVariable, "complus_", 8) == 0 || _strnicmp(envVariable, "dbflag", 6) == 0) &&
-                (_stricmp(envVariable, "complus_version") != 0) &&
-                (_stricmp(envVariable, "complus_defaultversion") != 0))
-            {
-                envValues[envValCount].name        = envVariable;
-                envValues[envValCount++].val_index = val.val_index;
-            }
-        }
-
-        // Do a quick sort on envValues if needed
-        if (envValCount > 1)
-            qsort(envValues, envValCount, sizeof(EnvironmentVariable), compareEnvironmentVariable);
-
-        // Append these values to the IdentityInfobuffer
-        for (int i = 0; i < envValCount; i++)
-        {
-            t = sprintf_s(buff, len, "%s=%s ", _strlwr(envValues[i].name),
-                          _strlwr((char*)Environment->GetBuffer(envValues[i].val_index)));
-            buff += t;
-            len -= t;
-        }
-
-        delete[] envValues;
-    }
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];
@@ -6055,4 +5971,54 @@ OnError:
     return -1;
 
 #endif // !FEATURE_PAL
+}
+
+DenseLightWeightMap<MethodContext::Agnostic_Environment>* MethodContext::prevEnviroment = nullptr;
+
+bool MethodContext::wasEnviromentChanged()
+{
+    bool changed = false;
+    if (prevEnviroment == nullptr)
+    {
+        changed = true;
+    }
+    else if (Environment->GetCount() != prevEnviroment->GetCount())
+    {
+        changed = true;
+    }
+    else
+    {
+        for (unsigned int i = 0; i < Environment->GetCount(); i++)
+        {
+            Agnostic_Environment currEnvValue = Environment->Get(i);
+            LPCSTR currKey = (LPCSTR)Environment->GetBuffer(currEnvValue.name_index);
+            LPCSTR currVal = (LPCSTR)Environment->GetBuffer(currEnvValue.val_index);
+
+            Agnostic_Environment prevEnvValue = prevEnviroment->Get(i);
+            LPCSTR prevKey = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.name_index);
+            LPCSTR prevVal = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.val_index);
+            if (strcmp(currKey, prevKey) != 0 || strcmp(currVal, prevVal) != 0)
+            {
+                changed = true;
+                break;
+            }
+        }
+    }
+    if (changed)
+    {
+        if (prevEnviroment != nullptr)
+        {
+            delete prevEnviroment;
+        }
+        if (Environment != nullptr)
+        {
+            prevEnviroment = new DenseLightWeightMap<Agnostic_Environment>(*Environment);
+        }
+        else
+        {
+            prevEnviroment = nullptr;
+        }
+        return true;
+    }
+    return false;
 }

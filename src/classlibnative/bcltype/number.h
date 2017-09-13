@@ -14,6 +14,11 @@
 
 #define NUMBER_MAXDIGITS 50
 
+static const double LOG10V2 = 0.30102999566398119521373889472449;
+
+// DRIFT_FACTOR = 1 - LOG10V2 - epsilon (a small number account for drift of floating point multiplication)
+static const double DRIFT_FACTOR = 0.69;
+
 struct NUMBER {
     int precision;
     int scale;

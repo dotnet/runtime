@@ -572,7 +572,7 @@ enum Masks
     enum_SigClassLoadChecked            = 0x00000100,
     enum_ComClassItf                    = 0x00000200,
     enum_GuidGenerated                  = 0x00000400,
-    enum_IsUntrusted                    = 0x00001000,
+    // enum_unused                      = 0x00001000,
     enum_IsBasic                        = 0x00002000,
     enum_IsWinRTDelegate                = 0x00004000,
     enum_IsWinRTTrivialAggregate        = 0x00008000,
@@ -644,12 +644,6 @@ struct ComMethodTable
 
         _ASSERTE(IsIClassXOrBasicItf());
         return (CorClassIfaceAttr)(m_Flags & enum_ClassInterfaceTypeMask);
-    }
-
-    BOOL IsDefinedInUntrustedCode()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsUntrusted) ? TRUE : FALSE;
     }
 
     BOOL IsIClassX()

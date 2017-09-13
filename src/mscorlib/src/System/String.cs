@@ -16,6 +16,7 @@ namespace System
 {
     using System.Text;
     using System;
+    using System.Buffers;
     using System.Runtime;
     using System.Runtime.ConstrainedExecution;
     using System.Globalization;
@@ -666,6 +667,45 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern String(ReadOnlySpan<char> value);
+
+        private unsafe string CtorReadOnlySpanOfChar(ReadOnlySpan<char> value)
+        {
+            if (value.Length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(value.Length);
+            fixed (char* dest = &result._firstChar, src = &value.DangerousGetPinnableReference())
+            {
+                wstrcpy(dest, src, value.Length);
+            }
+            return result;
+        }
+
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            if (length > 0)
+            {
+                string result = FastAllocateString(length);
+                action(new Span<char>(ref result.GetRawStringData(), length), state);
+                return result;
+            }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(length));
+        }
 
         // Returns this string.
         public override String ToString()

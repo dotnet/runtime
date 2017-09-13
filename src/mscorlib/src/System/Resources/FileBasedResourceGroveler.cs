@@ -118,18 +118,13 @@ namespace System.Resources
             return null;  // give up.
         }
 
-        // Constructs a new ResourceSet for a given file name.  The logic in
-        // here avoids a ReflectionPermission check for our RuntimeResourceSet
-        // for perf and working set reasons.
+        // Constructs a new ResourceSet for a given file name.
         private ResourceSet CreateResourceSet(String file)
         {
             Debug.Assert(file != null, "file shouldn't be null; check caller");
 
             if (_mediator.UserResourceSet == null)
             {
-                // Explicitly avoid CreateInstance if possible, because it
-                // requires ReflectionPermission to call private & protected
-                // constructors.  
                 return new RuntimeResourceSet(file);
             }
             else

@@ -11,7 +11,6 @@
 #include "object.h"
 #include "method.hpp"
 #include "comdelegate.h"
-#include "security.h"
 #include "field.h"
 #include "contractimpl.h"
 #include "nibblemapmacros.h"

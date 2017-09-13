@@ -96,15 +96,6 @@ int __cdecl main(int argc, char *argv[])
             GetLastError());
     }
 
-    /* check if the file type is correct for the handle */
-    if((dwFileType = GetFileType(hFile)) != FILE_TYPE_CHAR)
-    {
-        Fail("GetStdHandle: ERROR -> GetFileType returned %u for "
-            "STD_ERROR_HANDLE instead of the expected FILE_TYPE_CHAR (%u).\n",
-            dwFileType,
-            FILE_TYPE_CHAR);
-    }
-
     /* check to see if we can CloseHandle works on the STD_ERROR_HANDLE */
     if (!CloseHandle(hFile))
     {

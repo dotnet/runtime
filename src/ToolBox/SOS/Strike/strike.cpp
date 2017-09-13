@@ -320,18 +320,23 @@ DECLARE_API(IP2MD)
 // (MAX_STACK_FRAMES is also used by x86 to prevent infinite loops in _EFN_StackTrace)
 #define MAX_STACK_FRAMES 1000
 
-#ifdef _TARGET_WIN64_
+#if defined(_TARGET_WIN64_)
+#define DEBUG_STACK_CONTEXT AMD64_CONTEXT
+#elif defined(_TARGET_ARM_) // _TARGET_WIN64_
+#define DEBUG_STACK_CONTEXT ARM_CONTEXT
+#endif // _TARGET_ARM_
 
+#ifdef DEBUG_STACK_CONTEXT
 // I use a global set of frames for stack walking on win64 because the debugger's
 // GetStackTrace function doesn't provide a way to find out the total size of a stackwalk,
 // and I'd like to have a reasonably big maximum without overflowing the stack by declaring
 // the buffer locally and I also want to get a managed trace in a low memory environment
 // (so no dynamic allocation if possible).
 DEBUG_STACK_FRAME g_Frames[MAX_STACK_FRAMES];
-AMD64_CONTEXT g_X64FrameContexts[MAX_STACK_FRAMES];
+DEBUG_STACK_CONTEXT g_FrameContexts[MAX_STACK_FRAMES];
 
 static HRESULT
-GetContextStackTrace(PULONG pnumFrames)
+GetContextStackTrace(ULONG osThreadId, PULONG pnumFrames)
 {
     PDEBUG_CONTROL4 debugControl4;
     HRESULT hr;
@@ -339,7 +344,15 @@ GetContextStackTrace(PULONG pnumFrames)
     // Do we have advanced capability?
     if ((hr = g_ExtControl->QueryInterface(__uuidof(IDebugControl4), (void **)&debugControl4)) == S_OK)
     {
-        // GetContextStackTrace fills g_X64FrameContexts as an array of 
+        ULONG oldId, id;
+        g_ExtSystem->GetCurrentThreadId(&oldId);
+
+        if ((hr = g_ExtSystem->GetThreadIdBySystemId(osThreadId, &id)) != S_OK) {
+            return hr;
+        }
+        g_ExtSystem->SetCurrentThreadId(id);
+
+        // GetContextStackTrace fills g_FrameContexts as an array of
         // contexts packed as target architecture contexts. We cannot 
         // safely cast this as an array of CROSS_PLATFORM_CONTEXT, since 
         // sizeof(CROSS_PLATFORM_CONTEXT) != sizeof(TGT_CONTEXT)
@@ -348,17 +361,18 @@ GetContextStackTrace(PULONG pnumFrames)
             0,
             g_Frames,
             MAX_STACK_FRAMES,
-            g_X64FrameContexts,
+            g_FrameContexts,
             MAX_STACK_FRAMES*g_targetMachine->GetContextSize(),
             g_targetMachine->GetContextSize(),
             pnumFrames);
 
+        g_ExtSystem->SetCurrentThreadId(oldId);
         debugControl4->Release();
     }
     return hr;
 }
 
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -418,6 +432,9 @@ void DumpStackInternal(DumpStackFlag *pDSFlag)
     DumpStackWorker(*pDSFlag);
 }
 
+#if defined(FEATURE_PAL) && defined(_TARGET_AMD64_)
+static BOOL UnwindStackFrames(ULONG32 osThreadId);
+#endif
 
 DECLARE_API(DumpStack)
 {
@@ -431,11 +448,13 @@ DECLARE_API(DumpStack)
     DSFlag.top = 0;
     DSFlag.end = 0;
 
+    BOOL unwind = FALSE;
     BOOL dml = FALSE;
     CMDOption option[] = {
         // name, vptr, type, hasValue
         {"-EE", &DSFlag.fEEonly, COBOOL, FALSE},
         {"-n",  &DSFlag.fSuppressSrcInfo, COBOOL, FALSE},
+        {"-unwind",  &unwind, COBOOL, FALSE},
 #ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE}
 #endif
@@ -459,13 +478,22 @@ DECLARE_API(DumpStack)
 
     EnableDMLHolder enabledml(dml);
 
-    ULONG id = 0;
-    g_ExtSystem->GetCurrentThreadSystemId(&id);
-    ExtOut("OS Thread Id: 0x%x ", id);
+    ULONG sysId = 0, id = 0;
+    g_ExtSystem->GetCurrentThreadSystemId(&sysId);
+    ExtOut("OS Thread Id: 0x%x ", sysId);
     g_ExtSystem->GetCurrentThreadId(&id);
     ExtOut("(%d)\n", id);
 
-    DumpStackInternal(&DSFlag);
+#if defined(FEATURE_PAL) && defined(_TARGET_AMD64_)
+    if (unwind)
+    {
+        UnwindStackFrames(sysId);
+    }
+    else
+#endif
+    {
+        DumpStackInternal(&DSFlag);
+    }
     return Status;
 }
 
@@ -12040,12 +12068,12 @@ public:
             return;
         }
 
-#ifdef _TARGET_WIN64_
+#ifdef DEBUG_STACK_CONTEXT
         PDEBUG_STACK_FRAME currentNativeFrame = NULL;
         ULONG numNativeFrames = 0;
         if (bFull)
         {
-            hr = GetContextStackTrace(&numNativeFrames);
+            hr = GetContextStackTrace(osID, &numNativeFrames);
             if (FAILED(hr))
             {
                 ExtOut("Failed to get native stack frames: %lx\n", hr);
@@ -12053,7 +12081,7 @@ public:
             }
             currentNativeFrame = &g_Frames[0];
         }
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
         
         unsigned int refCount = 0, errCount = 0;
         ArrayHolder<SOSStackRefData> pRefs = NULL;
@@ -12079,7 +12107,7 @@ public:
             if (SUCCEEDED(frameDataResult) && FrameData.frameAddr)
                 sp = FrameData.frameAddr;
 
-#ifdef _TARGET_WIN64_
+#ifdef DEBUG_STACK_CONTEXT
             while ((numNativeFrames > 0) && (currentNativeFrame->StackOffset <= sp))
             {
                 if (currentNativeFrame->StackOffset != sp)
@@ -12089,7 +12117,7 @@ public:
                 currentNativeFrame++;
                 numNativeFrames--;
             }
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
 
             // Print the stack pointer.
             out.WriteColumn(0, sp);
@@ -12138,14 +12166,14 @@ public:
 
         } while (pStackWalk->Next() == S_OK);
 
-#ifdef _TARGET_WIN64_
+#ifdef DEBUG_STACK_CONTEXT
         while (numNativeFrames > 0)
         {
             PrintNativeStackFrame(out, currentNativeFrame, bSuppressLines);
             currentNativeFrame++;
             numNativeFrames--;
         }
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
     }
     
     static HRESULT PrintManagedFrameContext(IXCLRDataStackWalk *pStackWalk)
@@ -12282,15 +12310,43 @@ public:
         
         PrintThread(osid, bParams, bLocals, bSuppressLines, bGC, bNative, bDisplayRegVals);
     }
-private: 
 
+    static void PrintAllThreads(BOOL bParams, BOOL bLocals, BOOL bSuppressLines, BOOL bGC, BOOL bNative, BOOL bDisplayRegVals)
+    {
+        HRESULT Status;
+
+        DacpThreadStoreData ThreadStore;
+        if ((Status = ThreadStore.Request(g_sos)) != S_OK)
+        {
+            ExtErr("Failed to request ThreadStore\n");
+            return;
+        }
+
+        DacpThreadData Thread;
+        CLRDATA_ADDRESS CurThread = ThreadStore.firstThread;
+        while (CurThread != 0)
+        {
+            if (IsInterrupt())
+                break;
+
+            if ((Status = Thread.Request(g_sos, CurThread)) != S_OK)
+            {
+                ExtErr("Failed to request thread at %p\n", CurThread);
+                return;
+            }
+            ExtOut("OS Thread Id: 0x%x\n", Thread.osThreadId);
+            PrintThread(Thread.osThreadId, bParams, bLocals, bSuppressLines, bGC, bNative, bDisplayRegVals);
+            CurThread = Thread.nextThread;
+        }
+    }
+
+private: 
     static HRESULT CreateStackWalk(ULONG osID, IXCLRDataStackWalk **ppStackwalk)
     {
         HRESULT hr = S_OK;
         ToRelease<IXCLRDataTask> pTask;
 
-        if ((hr = g_ExtSystem->GetCurrentThreadSystemId(&osID)) != S_OK ||
-            (hr = g_clrData->GetTaskByOSThreadID(osID, &pTask)) != S_OK)
+        if ((hr = g_clrData->GetTaskByOSThreadID(osID, &pTask)) != S_OK)
         {
             ExtOut("Unable to walk the managed stack. The current thread is likely not a \n");
             ExtOut("managed thread. You can run !threads to get a list of managed threads in\n");
@@ -12693,6 +12749,7 @@ DECLARE_API(ClrStack)
     BOOL dml = FALSE;
     BOOL bFull = FALSE;
     BOOL bDisplayRegVals = FALSE;
+    BOOL bAllThreads = FALSE;    
     DWORD frameToDumpVariablesFor = -1;
     StringHolder cvariableName;
     ArrayHolder<WCHAR> wvariableName = new NOTHROW WCHAR[mdNameLen];
@@ -12708,6 +12765,7 @@ DECLARE_API(ClrStack)
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
         {"-a", &bAll, COBOOL, FALSE},
+        {"-all", &bAllThreads, COBOOL, FALSE},
         {"-p", &bParams, COBOOL, FALSE},
         {"-l", &bLocals, COBOOL, FALSE},
         {"-n", &bSuppressLines, COBOOL, FALSE},
@@ -12765,7 +12823,12 @@ DECLARE_API(ClrStack)
         return ClrStackImplWithICorDebug::ClrStackFromPublicInterface(bParams, bLocals, FALSE, wvariableName, frameToDumpVariablesFor);
     }
     
-    ClrStackImpl::PrintCurrentThread(bParams, bLocals, bSuppressLines, bGC, bFull, bDisplayRegVals);
+    if (bAllThreads) {
+        ClrStackImpl::PrintAllThreads(bParams, bLocals, bSuppressLines, bGC, bFull, bDisplayRegVals);
+    }
+    else {
+        ClrStackImpl::PrintCurrentThread(bParams, bLocals, bSuppressLines, bGC, bFull, bDisplayRegVals);
+    }
     
     return S_OK;
 }
@@ -13297,7 +13360,7 @@ HRESULT CALLBACK ImplementEFNStackTrace(
     ULONG numFrames = 0;
     BOOL bInNative = TRUE;
 
-    Status = GetContextStackTrace(&numFrames);
+    Status = GetContextStackTrace(ThreadId, &numFrames);
     if (FAILED(Status))
     {
         goto Exit;
@@ -13321,7 +13384,7 @@ HRESULT CALLBACK ImplementEFNStackTrace(
                 {
                     // below we cast the i-th AMD64_CONTEXT to CROSS_PLATFORM_CONTEXT
                     AppendContext (pTransitionContexts, *puiTransitionContextCount, 
-                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_X64FrameContexts[i])));
+                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_FrameContexts[i])));
                 }
                 else
                 {
@@ -13354,7 +13417,7 @@ HRESULT CALLBACK ImplementEFNStackTrace(
                 if (puiTransitionContextCount)
                 {
                     AppendContext (pTransitionContexts, *puiTransitionContextCount, 
-                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_X64FrameContexts[i])));
+                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_FrameContexts[i])));
                 }
                 else
                 {
@@ -14597,3 +14660,86 @@ DECLARE_API(Help)
     
     return S_OK;
 }
+
+#if defined(FEATURE_PAL) && defined(_TARGET_AMD64_)
+
+static BOOL 
+ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    ULONG fetched;
+    HRESULT hr = g_ExtData->ReadVirtual(TO_CDADDR(address), buffer, size, &fetched);
+    return SUCCEEDED(hr);
+}
+
+static BOOL
+GetStackFrame(CONTEXT* context, ULONG numNativeFrames)
+{
+    KNONVOLATILE_CONTEXT_POINTERS contextPointers;
+    memset(&contextPointers, 0, sizeof(contextPointers));
+
+    ULONG64 baseAddress;
+    HRESULT hr = g_ExtSymbols->GetModuleByOffset(context->Rip, 0, NULL, &baseAddress);
+    if (FAILED(hr))
+    {
+        PDEBUG_STACK_FRAME frame = &g_Frames[0];
+        for (int i = 0; i < numNativeFrames; i++, frame++) {
+            if (frame->InstructionOffset == context->Rip)
+            {
+                if ((i + 1) >= numNativeFrames) {
+                    return FALSE;
+                }
+                memcpy(context, &(g_FrameContexts[i + 1]), sizeof(*context));
+                return TRUE;
+            }
+        }
+        return FALSE;
+    }
+    if (!PAL_VirtualUnwindOutOfProc(context, &contextPointers, baseAddress, ReadMemoryAdapter))
+    {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static BOOL
+UnwindStackFrames(ULONG32 osThreadId)
+{
+    ULONG numNativeFrames = 0;
+    HRESULT hr = GetContextStackTrace(osThreadId, &numNativeFrames);
+    if (FAILED(hr))
+    {
+        return FALSE;
+    }
+    CONTEXT context;
+    memset(&context, 0, sizeof(context));
+    context.ContextFlags = CONTEXT_FULL;
+
+    hr = g_ExtSystem->GetThreadContextById(osThreadId, CONTEXT_FULL, sizeof(context), (PBYTE)&context);
+    if (FAILED(hr))
+    {
+        return FALSE;
+    }
+    TableOutput out(3, POINTERSIZE_HEX, AlignRight);
+    out.WriteRow("RSP", "RIP", "Call Site");
+
+    DEBUG_STACK_FRAME nativeFrame;
+    memset(&nativeFrame, 0, sizeof(nativeFrame));
+
+    do 
+    {
+        if (context.Rip == 0)
+        {
+            break;
+        }
+        nativeFrame.InstructionOffset = context.Rip;
+        nativeFrame.ReturnOffset = context.Rip;
+        nativeFrame.FrameOffset = context.Rbp;
+        nativeFrame.StackOffset = context.Rsp;
+        ClrStackImpl::PrintNativeStackFrame(out, &nativeFrame, FALSE);
+
+    } while (GetStackFrame(&context, numNativeFrames));
+
+    return TRUE;
+}
+
+#endif // FEATURE_PAL && _TARGET_AMD64_

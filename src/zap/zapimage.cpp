@@ -572,6 +572,7 @@ void ZapImage::AllocateVirtualSections()
 #endif // defined(WIN64EXCEPTIONS)
 
         m_pPreloadSections[CORCOMPILE_SECTION_READONLY_WARM] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_VCHUNKS_AND_DICTIONARY] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, sizeof(TADDR));
 
         //
         // GC Info for methods which were not touched in profiling
@@ -1106,6 +1107,10 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATURE 
 
     HANDLE hFile = GenerateFile(wszOutputFileName, pNativeImageSig);
 
+    if (m_zapper->m_pOpt->m_verbose)
+    {
+        PrintStats(wszOutputFileName);
+    }
 
     return hFile;
 }

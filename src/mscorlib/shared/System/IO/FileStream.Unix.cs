@@ -286,13 +286,20 @@ namespace System.IO
             }
         }
 
+        private void FlushWriteBufferForWriteByte()
+        {
+            _asyncState?.Wait();
+            try { FlushWriteBuffer(); }
+            finally { _asyncState?.Release(); }
+        }
+
         /// <summary>Writes any data in the write buffer to the underlying stream and resets the buffer.</summary>
         private void FlushWriteBuffer()
         {
             AssertBufferInvariants();
             if (_writePos > 0)
             {
-                WriteNative(GetBuffer(), 0, _writePos);
+                WriteNative(new ReadOnlySpan<byte>(GetBuffer(), 0, _writePos));
                 _writePos = 0;
             }
         }
@@ -375,44 +382,7 @@ namespace System.IO
         }
 
         /// <summary>Reads a block of bytes from the stream and writes the data in a given buffer.</summary>
-        /// <param name="array">
-        /// When this method returns, contains the specified byte array with the values between offset and 
-        /// (offset + count - 1) replaced by the bytes read from the current source.
-        /// </param>
-        /// <param name="offset">The byte offset in array at which the read bytes will be placed.</param>
-        /// <param name="count">The maximum number of bytes to read. </param>
-        /// <returns>
-        /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
-        /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
-        /// </returns>
-        public override int Read(byte[] array, int offset, int count)
-        {
-            ValidateReadWriteArgs(array, offset, count);
-
-            if (_useAsyncIO)
-            {
-                _asyncState.Wait();
-                try { return ReadCore(array, offset, count); }
-                finally { _asyncState.Release(); }
-            }
-            else
-            {
-                return ReadCore(array, offset, count);
-            }
-        }
-
-        /// <summary>Reads a block of bytes from the stream and writes the data in a given buffer.</summary>
-        /// <param name="array">
-        /// When this method returns, contains the specified byte array with the values between offset and 
-        /// (offset + count - 1) replaced by the bytes read from the current source.
-        /// </param>
-        /// <param name="offset">The byte offset in array at which the read bytes will be placed.</param>
-        /// <param name="count">The maximum number of bytes to read. </param>
-        /// <returns>
-        /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
-        /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
-        /// </returns>
-        private int ReadCore(byte[] array, int offset, int count)
+        private int ReadSpan(Span<byte> destination)
         {
             PrepareForReading();
 
@@ -429,16 +399,16 @@ namespace System.IO
                 // If we're not able to seek, then we're not able to rewind the stream (i.e. flushing
                 // a read buffer), in which case we don't want to use a read buffer.  Similarly, if
                 // the user has asked for more data than we can buffer, we also want to skip the buffer.
-                if (!CanSeek || (count >= _bufferLength))
+                if (!CanSeek || (destination.Length >= _bufferLength))
                 {
                     // Read directly into the user's buffer
                     _readPos = _readLength = 0;
-                    return ReadNative(array, offset, count);
+                    return ReadNative(destination);
                 }
                 else
                 {
                     // Read into our buffer.
-                    _readLength = numBytesAvailable = ReadNative(GetBuffer(), 0, _bufferLength);
+                    _readLength = numBytesAvailable = ReadNative(GetBuffer());
                     _readPos = 0;
                     if (numBytesAvailable == 0)
                     {
@@ -454,8 +424,8 @@ namespace System.IO
 
             // Now that we know there's data in the buffer, read from it into the user's buffer.
             Debug.Assert(numBytesAvailable > 0, "Data must be in the buffer to be here");
-            int bytesRead = Math.Min(numBytesAvailable, count);
-            Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, bytesRead);
+            int bytesRead = Math.Min(numBytesAvailable, destination.Length);
+            new Span<byte>(GetBuffer(), _readPos, bytesRead).CopyTo(destination);
             _readPos += bytesRead;
 
             // We may not have had enough data in the buffer to completely satisfy the user's request.
@@ -466,38 +436,33 @@ namespace System.IO
             // behavior, we do the same thing here on Unix.  Note that we may still get less the requested 
             // amount, as the OS may give us back fewer than we request, either due to reaching the end of 
             // file, or due to its own whims.
-            if (!readFromOS && bytesRead < count)
+            if (!readFromOS && bytesRead < destination.Length)
             {
-                Debug.Assert(_readPos == _readLength, "bytesToRead should only be < count if numBytesAvailable < count");
+                Debug.Assert(_readPos == _readLength, "bytesToRead should only be < destination.Length if numBytesAvailable < destination.Length");
                 _readPos = _readLength = 0; // no data left in the read buffer
-                bytesRead += ReadNative(array, offset + bytesRead, count - bytesRead);
+                bytesRead += ReadNative(destination.Slice(bytesRead));
             }
 
             return bytesRead;
         }
 
-        /// <summary>Unbuffered, reads a block of bytes from the stream and writes the data in a given buffer.</summary>
-        /// <param name="array">
-        /// When this method returns, contains the specified byte array with the values between offset and 
-        /// (offset + count - 1) replaced by the bytes read from the current source.
-        /// </param>
-        /// <param name="offset">The byte offset in array at which the read bytes will be placed.</param>
-        /// <param name="count">The maximum number of bytes to read. </param>
+        /// <summary>Unbuffered, reads a block of bytes from the file handle into the given buffer.</summary>
+        /// <param name="buffer">The buffer into which data from the file is read.</param>
         /// <returns>
         /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
         /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
         /// </returns>
-        private unsafe int ReadNative(byte[] array, int offset, int count)
+        private unsafe int ReadNative(Span<byte> buffer)
         {
             FlushWriteBuffer(); // we're about to read; dump the write buffer
 
             VerifyOSHandlePosition();
 
             int bytesRead;
-            fixed (byte* bufPtr = array)
+            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
             {
-                bytesRead = CheckFileCall(Interop.Sys.Read(_fileHandle, bufPtr + offset, count));
-                Debug.Assert(bytesRead <= count);
+                bytesRead = CheckFileCall(Interop.Sys.Read(_fileHandle, bufPtr, buffer.Length));
+                Debug.Assert(bytesRead <= buffer.Length);
             }
             _filePosition += bytesRead;
             return bytesRead;
@@ -507,135 +472,97 @@ namespace System.IO
         /// Asynchronously reads a sequence of bytes from the current stream and advances
         /// the position within the stream by the number of bytes read.
         /// </summary>
-        /// <param name="buffer">The buffer to write the data into.</param>
-        /// <param name="offset">The byte offset in buffer at which to begin writing data from the stream.</param>
-        /// <param name="count">The maximum number of bytes to read.</param>
+        /// <param name="destination">The buffer to write the data into.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <param name="synchronousResult">If the operation completes synchronously, the number of bytes read.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
-        private Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private Task<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
-            if (_useAsyncIO)
+            Debug.Assert(_useAsyncIO);
+
+            if (!CanRead) // match Windows behavior; this gets thrown synchronously
             {
-                if (!CanRead) // match Windows behavior; this gets thrown synchronously
+                throw Error.GetReadNotSupported();
+            }
+
+            // Serialize operations using the semaphore.
+            Task waitTask = _asyncState.WaitAsync();
+
+            // If we got ownership immediately, and if there's enough data in our buffer
+            // to satisfy the full request of the caller, hand back the buffered data.
+            // While it would be a legal implementation of the Read contract, we don't
+            // hand back here less than the amount requested so as to match the behavior
+            // in ReadCore that will make a native call to try to fulfill the remainder
+            // of the request.
+            if (waitTask.Status == TaskStatus.RanToCompletion)
+            {
+                int numBytesAvailable = _readLength - _readPos;
+                if (numBytesAvailable >= destination.Length)
                 {
-                    throw Error.GetReadNotSupported();
-                }
-
-                // Serialize operations using the semaphore.
-                Task waitTask = _asyncState.WaitAsync();
-
-                // If we got ownership immediately, and if there's enough data in our buffer
-                // to satisfy the full request of the caller, hand back the buffered data.
-                // While it would be a legal implementation of the Read contract, we don't
-                // hand back here less than the amount requested so as to match the behavior
-                // in ReadCore that will make a native call to try to fulfill the remainder
-                // of the request.
-                if (waitTask.Status == TaskStatus.RanToCompletion)
-                {
-                    int numBytesAvailable = _readLength - _readPos;
-                    if (numBytesAvailable >= count)
-                    {
-                        try
-                        {
-                            PrepareForReading();
-
-                            Buffer.BlockCopy(GetBuffer(), _readPos, buffer, offset, count);
-                            _readPos += count;
-
-                            return _asyncState._lastSuccessfulReadTask != null && _asyncState._lastSuccessfulReadTask.Result == count ?
-                                _asyncState._lastSuccessfulReadTask :
-                                (_asyncState._lastSuccessfulReadTask = Task.FromResult(count));
-                        }
-                        catch (Exception exc)
-                        {
-                            return Task.FromException<int>(exc);
-                        }
-                        finally
-                        {
-                            _asyncState.Release();
-                        }
-                    }
-                }
-
-                // Otherwise, issue the whole request asynchronously.
-                _asyncState.Update(buffer, offset, count);
-                return waitTask.ContinueWith((t, s) =>
-                {
-                    // The options available on Unix for writing asynchronously to an arbitrary file 
-                    // handle typically amount to just using another thread to do the synchronous write, 
-                    // which is exactly  what this implementation does. This does mean there are subtle
-                    // differences in certain FileStream behaviors between Windows and Unix when multiple 
-                    // asynchronous operations are issued against the stream to execute concurrently; on 
-                    // Unix the operations will be serialized due to the usage of a semaphore, but the 
-                    // position /length information won't be updated until after the write has completed, 
-                    // whereas on Windows it may happen before the write has completed.
-
-                    Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                    var thisRef = (FileStream)s;
                     try
                     {
-                        byte[] b = thisRef._asyncState._buffer;
-                        thisRef._asyncState._buffer = null; // remove reference to user's buffer
-                        return thisRef.ReadCore(b, thisRef._asyncState._offset, thisRef._asyncState._count);
+                        PrepareForReading();
+
+                        new Span<byte>(GetBuffer(), _readPos, destination.Length).CopyTo(destination.Span);
+                        _readPos += destination.Length;
+
+                        synchronousResult = destination.Length;
+                        return null;
                     }
-                    finally { thisRef._asyncState.Release(); }
-                }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+                    catch (Exception exc)
+                    {
+                        synchronousResult = 0;
+                        return Task.FromException<int>(exc);
+                    }
+                    finally
+                    {
+                        _asyncState.Release();
+                    }
+                }
             }
-            else
+
+            // Otherwise, issue the whole request asynchronously.
+            synchronousResult = 0;
+            _asyncState.Memory = destination;
+            return waitTask.ContinueWith((t, s) =>
             {
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
-            }
+                // The options available on Unix for writing asynchronously to an arbitrary file 
+                // handle typically amount to just using another thread to do the synchronous write, 
+                // which is exactly  what this implementation does. This does mean there are subtle
+                // differences in certain FileStream behaviors between Windows and Unix when multiple 
+                // asynchronous operations are issued against the stream to execute concurrently; on 
+                // Unix the operations will be serialized due to the usage of a semaphore, but the 
+                // position /length information won't be updated until after the write has completed, 
+                // whereas on Windows it may happen before the write has completed.
+
+                Debug.Assert(t.Status == TaskStatus.RanToCompletion);
+                var thisRef = (FileStream)s;
+                try
+                {
+                    Memory<byte> memory = thisRef._asyncState.Memory;
+                    thisRef._asyncState.Memory = default(Memory<byte>);
+                    return thisRef.ReadSpan(memory.Span);
+                }
+                finally { thisRef._asyncState.Release(); }
+            }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        /// <summary>
-        /// Reads a byte from the stream and advances the position within the stream
-        /// by one byte, or returns -1 if at the end of the stream.
-        /// </summary>
-        /// <returns>The unsigned byte cast to an Int32, or -1 if at the end of the stream.</returns>
-        public override int ReadByte()
+        /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
+        private int FillReadBufferForReadByte()
         {
-            if (_useAsyncIO)
-            {
-                _asyncState.Wait();
-                try { return ReadByteCore(); }
-                finally { _asyncState.Release(); }
-            }
-            else
-            {
-                return ReadByteCore();
-            }
+            _asyncState?.Wait();
+            try { return ReadNative(_buffer); }
+            finally { _asyncState?.Release(); }
         }
 
         /// <summary>Writes a block of bytes to the file stream.</summary>
-        /// <param name="array">The buffer containing data to write to the stream.</param>
-        /// <param name="offset">The zero-based byte offset in array from which to begin copying bytes to the stream.</param>
-        /// <param name="count">The maximum number of bytes to write.</param>
-        public override void Write(byte[] array, int offset, int count)
-        {
-            ValidateReadWriteArgs(array, offset, count);
-
-            if (_useAsyncIO)
-            {
-                _asyncState.Wait();
-                try { WriteCore(array, offset, count); }
-                finally { _asyncState.Release(); }
-            }
-            else
-            {
-                WriteCore(array, offset, count);
-            }
-        }
-
-        /// <summary>Writes a block of bytes to the file stream.</summary>
-        /// <param name="array">The buffer containing data to write to the stream.</param>
-        /// <param name="offset">The zero-based byte offset in array from which to begin copying bytes to the stream.</param>
-        /// <param name="count">The maximum number of bytes to write.</param>
-        private void WriteCore(byte[] array, int offset, int count)
+        /// <param name="source">The buffer containing data to write to the stream.</param>
+        private void WriteSpan(ReadOnlySpan<byte> source)
         {
             PrepareForWriting();
 
             // If no data is being written, nothing more to do.
-            if (count == 0)
+            if (source.Length == 0)
             {
                 return;
             }
@@ -647,21 +574,17 @@ namespace System.IO
                 // If there's space remaining in the buffer, then copy as much as
                 // we can from the user's buffer into ours.
                 int spaceRemaining = _bufferLength - _writePos;
-                if (spaceRemaining > 0)
+                if (spaceRemaining >= source.Length)
                 {
-                    int bytesToCopy = Math.Min(spaceRemaining, count);
-                    Buffer.BlockCopy(array, offset, GetBuffer(), _writePos, bytesToCopy);
-                    _writePos += bytesToCopy;
-
-                    // If we've successfully copied all of the user's data, we're done.
-                    if (count == bytesToCopy)
-                    {
-                        return;
-                    }
-
-                    // Otherwise, keep track of how much more data needs to be handled.
-                    offset += bytesToCopy;
-                    count -= bytesToCopy;
+                    source.CopyTo(new Span<byte>(GetBuffer()).Slice(_writePos));
+                    _writePos += source.Length;
+                    return;
+                }
+                else if (spaceRemaining > 0)
+                {
+                    source.Slice(0, spaceRemaining).CopyTo(new Span<byte>(GetBuffer()).Slice(_writePos));
+                    _writePos += spaceRemaining;
+                    source = source.Slice(spaceRemaining);
                 }
 
                 // At this point, the buffer is full, so flush it out.
@@ -672,35 +595,33 @@ namespace System.IO
             // the user's looking to write more data than we can store in the buffer),
             // skip the buffer.  Otherwise, put the remaining data into the buffer.
             Debug.Assert(_writePos == 0);
-            if (count >= _bufferLength)
+            if (source.Length >= _bufferLength)
             {
-                WriteNative(array, offset, count);
+                WriteNative(source);
             }
             else
             {
-                Buffer.BlockCopy(array, offset, GetBuffer(), _writePos, count);
-                _writePos = count;
+                source.CopyTo(new Span<byte>(GetBuffer()));
+                _writePos = source.Length;
             }
         }
 
         /// <summary>Unbuffered, writes a block of bytes to the file stream.</summary>
-        /// <param name="array">The buffer containing data to write to the stream.</param>
-        /// <param name="offset">The zero-based byte offset in array from which to begin copying bytes to the stream.</param>
-        /// <param name="count">The maximum number of bytes to write.</param>
-        private unsafe void WriteNative(byte[] array, int offset, int count)
+        /// <param name="source">The buffer containing data to write to the stream.</param>
+        private unsafe void WriteNative(ReadOnlySpan<byte> source)
         {
             VerifyOSHandlePosition();
 
-            fixed (byte* bufPtr = array)
+            fixed (byte* bufPtr = &source.DangerousGetPinnableReference())
             {
+                int offset = 0;
+                int count = source.Length;
                 while (count > 0)
                 {
                     int bytesWritten = CheckFileCall(Interop.Sys.Write(_fileHandle, bufPtr + offset, count));
-                    Debug.Assert(bytesWritten <= count);
-
                     _filePosition += bytesWritten;
-                    count -= bytesWritten;
                     offset += bytesWritten;
+                    count -= bytesWritten;
                 }
             }
         }
@@ -710,103 +631,77 @@ namespace System.IO
         /// the current position within this stream by the number of bytes written, and
         /// monitors cancellation requests.
         /// </summary>
-        /// <param name="buffer">The buffer to write data from.</param>
-        /// <param name="offset">The zero-based byte offset in buffer from which to begin copying bytes to the stream.</param>
-        /// <param name="count">The maximum number of bytes to write.</param>
+        /// <param name="source">The buffer to write data from.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        private Task WriteAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private Task WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
+            Debug.Assert(_useAsyncIO);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            if (_useAsyncIO)
+            if (!CanWrite) // match Windows behavior; this gets thrown synchronously
             {
-                if (!CanWrite) // match Windows behavior; this gets thrown synchronously
+                throw Error.GetWriteNotSupported();
+            }
+
+            // Serialize operations using the semaphore.
+            Task waitTask = _asyncState.WaitAsync();
+
+            // If we got ownership immediately, and if there's enough space in our buffer
+            // to buffer the entire write request, then do so and we're done.
+            if (waitTask.Status == TaskStatus.RanToCompletion)
+            {
+                int spaceRemaining = _bufferLength - _writePos;
+                if (spaceRemaining >= source.Length)
                 {
-                    throw Error.GetWriteNotSupported();
-                }
-
-                // Serialize operations using the semaphore.
-                Task waitTask = _asyncState.WaitAsync();
-
-                // If we got ownership immediately, and if there's enough space in our buffer
-                // to buffer the entire write request, then do so and we're done.
-                if (waitTask.Status == TaskStatus.RanToCompletion)
-                {
-                    int spaceRemaining = _bufferLength - _writePos;
-                    if (spaceRemaining >= count)
-                    {
-                        try
-                        {
-                            PrepareForWriting();
-
-                            Buffer.BlockCopy(buffer, offset, GetBuffer(), _writePos, count);
-                            _writePos += count;
-
-                            return Task.CompletedTask;
-                        }
-                        catch (Exception exc)
-                        {
-                            return Task.FromException(exc);
-                        }
-                        finally
-                        {
-                            _asyncState.Release();
-                        }
-                    }
-                }
-
-                // Otherwise, issue the whole request asynchronously.
-                _asyncState.Update(buffer, offset, count);
-                return waitTask.ContinueWith((t, s) =>
-                {
-                    // The options available on Unix for writing asynchronously to an arbitrary file 
-                    // handle typically amount to just using another thread to do the synchronous write, 
-                    // which is exactly  what this implementation does. This does mean there are subtle
-                    // differences in certain FileStream behaviors between Windows and Unix when multiple 
-                    // asynchronous operations are issued against the stream to execute concurrently; on 
-                    // Unix the operations will be serialized due to the usage of a semaphore, but the 
-                    // position /length information won't be updated until after the write has completed, 
-                    // whereas on Windows it may happen before the write has completed.
-
-                    Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                    var thisRef = (FileStream)s;
                     try
                     {
-                        byte[] b = thisRef._asyncState._buffer;
-                        thisRef._asyncState._buffer = null; // remove reference to user's buffer
-                        thisRef.WriteCore(b, thisRef._asyncState._offset, thisRef._asyncState._count);
-                    }
-                    finally { thisRef._asyncState.Release(); }
-                }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
-            }
-            else
-            {
-                return base.WriteAsync(buffer, offset, count, cancellationToken);
-            }
-        }
+                        PrepareForWriting();
 
-        /// <summary>
-        /// Writes a byte to the current position in the stream and advances the position
-        /// within the stream by one byte.
-        /// </summary>
-        /// <param name="value">The byte to write to the stream.</param>
-        public override void WriteByte(byte value) // avoids an array allocation in the base implementation
-        {
-            if (_useAsyncIO)
-            {
-                _asyncState.Wait();
-                try { WriteByteCore(value); }
-                finally { _asyncState.Release(); }
+                        source.Span.CopyTo(new Span<byte>(GetBuffer(), _writePos, source.Length));
+                        _writePos += source.Length;
+
+                        return Task.CompletedTask;
+                    }
+                    catch (Exception exc)
+                    {
+                        return Task.FromException(exc);
+                    }
+                    finally
+                    {
+                        _asyncState.Release();
+                    }
+                }
             }
-            else
+
+            // Otherwise, issue the whole request asynchronously.
+            _asyncState.ReadOnlyMemory = source;
+            return waitTask.ContinueWith((t, s) =>
             {
-                WriteByteCore(value);
-            }
+                // The options available on Unix for writing asynchronously to an arbitrary file 
+                // handle typically amount to just using another thread to do the synchronous write, 
+                // which is exactly  what this implementation does. This does mean there are subtle
+                // differences in certain FileStream behaviors between Windows and Unix when multiple 
+                // asynchronous operations are issued against the stream to execute concurrently; on 
+                // Unix the operations will be serialized due to the usage of a semaphore, but the 
+                // position/length information won't be updated until after the write has completed, 
+                // whereas on Windows it may happen before the write has completed.
+
+                Debug.Assert(t.Status == TaskStatus.RanToCompletion);
+                var thisRef = (FileStream)s;
+                try
+                {
+                    ReadOnlyMemory<byte> readOnlyMemory = thisRef._asyncState.ReadOnlyMemory;
+                    thisRef._asyncState.ReadOnlyMemory = default(ReadOnlyMemory<byte>);
+                    thisRef.WriteSpan(readOnlyMemory.Span);
+                }
+                finally { thisRef._asyncState.Release(); }
+            }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         /// <summary>Sets the current position of this stream to the given value.</summary>
@@ -907,25 +802,11 @@ namespace System.IO
         /// <summary>State used when the stream is in async mode.</summary>
         private sealed class AsyncState : SemaphoreSlim
         {
-            /// <summary>The caller's buffer currently being used by the active async operation.</summary>
-            internal byte[] _buffer;
-            /// <summary>The caller's offset currently being used by the active async operation.</summary>
-            internal int _offset;
-            /// <summary>The caller's count currently being used by the active async operation.</summary>
-            internal int _count;
-            /// <summary>The last task successfully, synchronously returned task from ReadAsync.</summary>
-            internal Task<int> _lastSuccessfulReadTask;
+            internal ReadOnlyMemory<byte> ReadOnlyMemory;
+            internal Memory<byte> Memory;
 
             /// <summary>Initialize the AsyncState.</summary>
             internal AsyncState() : base(initialCount: 1, maxCount: 1) { }
-
-            /// <summary>Sets the active buffer, offset, and count.</summary>
-            internal void Update(byte[] buffer, int offset, int count)
-            {
-                _buffer = buffer;
-                _offset = offset;
-                _count = count;
-            }
         }
     }
 }

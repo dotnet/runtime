@@ -13,14 +13,17 @@
   
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>a97bcb7231471554cf5cf9b685e60ccbaf505d1f</CoreFxCurrentRef>
-    <CoreClrCurrentRef>a97bcb7231471554cf5cf9b685e60ccbaf505d1f</CoreClrCurrentRef>
+    <CoreFxCurrentRef>ab762a3c35e208cd698988fb7761bc92be417be9</CoreFxCurrentRef>
+    <CoreClrCurrentRef>ab762a3c35e208cd698988fb7761bc92be417be9</CoreClrCurrentRef>
+    <BuildToolsCurrentRef>ab762a3c35e208cd698988fb7761bc92be417be9</BuildToolsCurrentRef>
+    <PgoDataCurrentRef>ab762a3c35e208cd698988fb7761bc92be417be9</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxPackageVersion>4.5.0-preview2-25526-52</CoreFxPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview1-25324-02</PlatformPackageVersion>
+    <CoreFxPackageVersion>4.5.0-preview1-25712-02</CoreFxPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25712-02</PlatformPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20170912-0038</PgoDataPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -49,6 +52,14 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="BuildTools">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="PgoData">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(PgoDataCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
@@ -68,6 +79,16 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>CoreClrPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
+    </XmlUpdateStep>
+    <UpdateStep Include="BuildTools">
+      <UpdaterType>File</UpdaterType>
+      <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
+      <PackageId>Microsoft.DotNet.BuildTools</PackageId>
+    </UpdateStep>
+    <XmlUpdateStep Include="PgoData">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>PgoDataPackageVersion</ElementName>
+      <PackageId>optimization.PGO.CoreCLR</PackageId>
     </XmlUpdateStep>
   </ItemGroup>
 

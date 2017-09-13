@@ -115,14 +115,15 @@ class CrstBase
 friend class Thread;
 friend class ThreadStore;
 friend class ThreadSuspend;
-friend class ListLock;
-friend class ListLockEntry;
+template <typename ELEMENT>
+friend class ListLockBase;
+template <typename ELEMENT>
+friend class ListLockEntryBase;
 //friend class CExecutionEngine;
 friend struct SavedExceptionInfo;
 friend void EEEnterCriticalSection(CRITSEC_COOKIE cookie);
 friend void EELeaveCriticalSection(CRITSEC_COOKIE cookie);
-friend class ReJitPublishMethodHolder;
-friend class ReJitPublishMethodTableHolder;
+friend class CodeVersionManager;
 
 friend class Debugger;
 friend class Crst;

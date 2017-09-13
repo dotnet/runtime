@@ -62,21 +62,6 @@ namespace System
             return SR.GetResourceString(key);
         }
 
-        // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject
-        {
-            get
-            {
-                if (s_InternalSyncObject == null)
-                {
-                    Object o = new Object();
-                    Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
-
         /*==================================TickCount===================================
         **Action: Gets the number of ticks since the system was started.
         **Returns: The number of ticks since the system was started.
@@ -139,7 +124,7 @@ namespace System
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
                 Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
-                if (r == 0) __Error.WinIOError();
+                if (r == 0) throw Win32Marshal.GetExceptionForLastWin32Error();
                 String path = sb.ToString();
 
                 return path;
@@ -256,44 +241,38 @@ namespace System
         {
             char[] block = null;
 
-            // Make sure pStrings is not leaked with async exceptions
             RuntimeHelpers.PrepareConstrainedRegions();
+
+            char* pStrings = null;
+
             try
             {
+                pStrings = Win32Native.GetEnvironmentStrings();
+                if (pStrings == null)
+                {
+                    throw new OutOfMemoryException();
+                }
+
+                // Format for GetEnvironmentStrings is:
+                // [=HiddenVar=value\0]* [Variable=value\0]* \0
+                // See the description of Environment Blocks in MSDN's
+                // CreateProcess page (null-terminated array of null-terminated strings).
+
+                // Search for terminating \0\0 (two unicode \0's).
+                char* p = pStrings;
+                while (!(*p == '\0' && *(p + 1) == '\0'))
+                    p++;
+
+                int len = (int)(p - pStrings + 1);
+                block = new char[len];
+
+                fixed (char* pBlock = block)
+                    string.wstrcpy(pBlock, pStrings, len);
             }
             finally
             {
-                char* pStrings = null;
-
-                try
-                {
-                    pStrings = Win32Native.GetEnvironmentStrings();
-                    if (pStrings == null)
-                    {
-                        throw new OutOfMemoryException();
-                    }
-
-                    // Format for GetEnvironmentStrings is:
-                    // [=HiddenVar=value\0]* [Variable=value\0]* \0
-                    // See the description of Environment Blocks in MSDN's
-                    // CreateProcess page (null-terminated array of null-terminated strings).
-
-                    // Search for terminating \0\0 (two unicode \0's).
-                    char* p = pStrings;
-                    while (!(*p == '\0' && *(p + 1) == '\0'))
-                        p++;
-
-                    int len = (int)(p - pStrings + 1);
-                    block = new char[len];
-
-                    fixed (char* pBlock = block)
-                        string.wstrcpy(pBlock, pStrings, len);
-                }
-                finally
-                {
-                    if (pStrings != null)
-                        Win32Native.FreeEnvironmentStrings(pStrings);
-                }
+                if (pStrings != null)
+                    Win32Native.FreeEnvironmentStrings(pStrings);
             }
 
             return block;
@@ -735,7 +714,7 @@ namespace System
                         // which is not accurate.
                         throw new ArgumentException(SR.Format(SR.Argument_LongEnvVarValue));
                     default:
-                        throw new ArgumentException(Win32Native.GetMessage(errorCode));
+                        throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
                 }
             }
         }
@@ -803,8 +782,8 @@ namespace System
             }
 
             // send a WM_SETTINGCHANGE message to all windows
-            IntPtr r = Win32Native.SendMessageTimeout(new IntPtr(Win32Native.HWND_BROADCAST),
-                Win32Native.WM_SETTINGCHANGE, IntPtr.Zero, "Environment", 0, 1000, IntPtr.Zero);
+            IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST),
+                Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, "Environment", 0, 1000, IntPtr.Zero);
 
             if (r == IntPtr.Zero) Debug.Assert(false, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
 #endif // FEATURE_WIN32_REGISTRY

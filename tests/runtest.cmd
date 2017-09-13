@@ -85,6 +85,7 @@ if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg
 if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "tieredcompilation"     (set COMPLUS_EXPERIMENTAL_TieredCompilation=1&shift&goto Arg_Loop)
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
@@ -464,6 +465,7 @@ echo                               2: GC on transitions to preemptive GC
 echo                               4: GC on every allowable JITed instruction
 echo                               8: GC on every allowable NGEN instruction
 echo                              16: GC only on a unique stack trace
+echo tieredcompilation         - Run the tests with COMPlus_EXPERIMENTAL_TieredCompilation=1
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test (if specified).
 echo.

@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
+#include "codeversion.h"
 
 #ifndef FEATURE_PREJIT
 #include "fixuppointer.h"
@@ -42,6 +43,8 @@ class Dictionary;
 class GCCoverageInfo;
 class DynamicMethodDesc;
 class ReJitManager;
+class CodeVersionManager;
+class PrepareCodeConfig;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
 typedef DPTR(ArrayMethodDesc)        PTR_ArrayMethodDesc;
@@ -143,29 +146,10 @@ enum MethodDescClassification
     // Method is static
     mdcStatic                           = 0x0020,
 
-    // Temporary Security Interception.
-    // Methods can now be intercepted by security. An intercepted method behaves
-    // like it was an interpreted method. The Prestub at the top of the method desc
-    // is replaced by an interception stub. Therefore, no back patching will occur.
-    // We picked this approach to minimize the number variations given IL and native
-    // code with edit and continue. E&C will need to find the real intercepted method
-    // and if it is intercepted change the real stub. If E&C is enabled then there
-    // is no back patching and needs to fix the pre-stub.
-    mdcIntercepted                      = 0x0040,
-
-    // Method requires linktime security checks.
-    mdcRequiresLinktimeCheck            = 0x0080,
-
-    // Method requires inheritance security checks.
-    // If this bit is set, then this method demands inheritance permissions
-    // or a method that this method overrides demands inheritance permissions
-    // or both.
-    mdcRequiresInheritanceCheck         = 0x0100,
-
-    // The method that this method overrides requires an inheritance security check.
-    // This bit is used as an optimization to avoid looking up overridden methods
-    // during the inheritance check.
-    mdcParentRequiresInheritanceCheck   = 0x0200,
+    // unused                           = 0x0040,
+    // unused                           = 0x0080,
+    // unused                           = 0x0100,
+    // unused                           = 0x0200,
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
     // method table, because it could not be packed into one slot. For eg, a method
@@ -267,10 +251,6 @@ public:
     }
 
     BOOL SetStableEntryPointInterlocked(PCODE addr);
-
-#ifdef FEATURE_INTERPRETER
-    BOOL SetEntryPointInterlocked(PCODE addr);
-#endif // FEATURE_INTERPRETER
 
     BOOL HasTemporaryEntryPoint();
     PCODE GetTemporaryEntryPoint();
@@ -507,7 +487,12 @@ public:
 
     BaseDomain *GetDomain();
 
-    ReJitManager * GetReJitManager();
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager* GetCodeVersionManager();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCounter* GetCallCounter();
+#endif
 
     PTR_LoaderAllocator GetLoaderAllocator();
 
@@ -669,7 +654,6 @@ public:
     }
 
     void ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImport);
-    BOOL HasSuppressUnmanagedCodeAccessAttr();
     BOOL HasNativeCallableAttribute();
 
 #ifdef FEATURE_COMINTEROP 
@@ -697,32 +681,6 @@ public:
     // Update flags in a thread safe manner.
     WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
 
-    inline DWORD IsInterceptedForDeclSecurity()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;        
-        return m_wFlags & mdcIntercepted;
-    }
-
-    inline void SetInterceptedForDeclSecurity()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcIntercepted;
-    }
-
-    inline DWORD IsInterceptedForDeclSecurityCASDemandsOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;        
-        return m_bFlags2 & enum_flag2_CASDemandsOnly;
-    }
-
-    inline void SetInterceptedForDeclSecurityCASDemandsOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_CASDemandsOnly;
-    }
-
     // If the method is in an Edit and Contine (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
     // through the precode so that we can update the method.
@@ -745,7 +703,6 @@ public:
         WRAPPER_NO_CONTRACT;
         InterlockedUpdateFlags(mdcNotInline, set);
     }
-
 
     BOOL IsIntrospectionOnly();
 #ifndef DACCESS_COMPILE
@@ -811,50 +768,11 @@ public:
     BOOL IsQCall();
 
     //================================================================
-    // Has the method been verified?
-    // This does not mean that the IL is verifiable, just that we have
-    // determined if the IL is verfiable or unverifiable.
-    // (Is this is dead code since the JIT now does verification?)
-
-    inline BOOL IsVerified()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcVerifiedState;
-    }
-
-    inline void SetIsVerified(BOOL isVerifiable)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        WORD flags = isVerifiable ? (WORD(mdcVerifiedState) | WORD(mdcVerifiable))
-                                  : (WORD(mdcVerifiedState));
-        InterlockedUpdateFlags(flags, TRUE);
-    }
-
-    inline void ResetIsVerified()
-    {
-        WRAPPER_NO_CONTRACT;
-        InterlockedUpdateFlags(mdcVerifiedState | mdcVerifiable, FALSE);
-    }
-
-    BOOL IsVerifiable();
-
-    // fThrowException is used to prevent Verifier from
-    // throwin an exception on error
-    // fForceVerify is to be used by tools that need to
-    // force verifier to verify code even if the code is fully trusted.
-    HRESULT Verify(COR_ILMETHOD_DECODER* ILHeader,
-                   BOOL fThrowException,
-                   BOOL fForceVerify);
-
-
-    //================================================================
     //
 
     inline void ClearFlagsOnUpdate()
     {
         WRAPPER_NO_CONTRACT;
-        ResetIsVerified();
         SetNotInline(FALSE);
     }
 
@@ -1229,45 +1147,6 @@ protected:
     }
 
 public:
-    //==================================================================
-    // Security...
-
-    inline DWORD RequiresLinktimeCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcRequiresLinktimeCheck;
-    }
-
-    inline DWORD RequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcRequiresInheritanceCheck;
-    }
-
-    inline DWORD ParentRequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcParentRequiresInheritanceCheck;
-    }
-
-    void SetRequiresLinktimeCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcRequiresLinktimeCheck;
-    }
-
-    void SetRequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcRequiresInheritanceCheck;
-    }
-
-    void SetParentRequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcParentRequiresInheritanceCheck;
-    }
-
     mdMethodDef GetMemberDef() const;
     mdMethodDef GetMemberDef_NoLogging() const;
 
@@ -1286,11 +1165,72 @@ public:
     void SetChunkIndex(MethodDescChunk *pChunk);
 
     BOOL IsPointingToPrestub();
-#ifdef FEATURE_INTERPRETER
-    BOOL IsReallyPointingToPrestub();
-#endif // FEATURE_INTERPRETER
 
 public:
+
+    // TRUE iff it is possible to change the code this method will run using
+    // the CodeVersionManager.
+    // Note: EnC currently returns FALSE here because it uses its own seperate
+    // scheme to manage versionability. We will likely want to converge them
+    // at some point.
+    BOOL IsVersionable()
+    {
+#ifndef FEATURE_CODE_VERSIONING
+        return FALSE;
+#else
+        return IsVersionableWithPrecode() || IsVersionableWithJumpStamp();
+#endif
+    }
+
+    // If true, these methods version using the CodeVersionManager and
+    // switch between different code versions by updating the target of the precode.
+    // Note: EnC returns FALSE - even though it uses precode updates it does not
+    // use the CodeVersionManager right now
+    BOOL IsVersionableWithPrecode()
+    {
+#ifdef FEATURE_CODE_VERSIONING
+        return
+            // policy: which things do we want to version with a precode if possible
+            IsEligibleForTieredCompilation() &&
+
+            // functional requirements:
+            !IsZapped() &&        // NGEN directly invokes the pre-generated native code.
+                                  // without necessarily going through the prestub or
+                                  // precode
+            HasNativeCodeSlot();  // the stable entry point will need to point at our
+                                  // precode and not directly contain the native code.
+#else
+        return FALSE;
+#endif
+    }
+
+    // If true, these methods version using the CodeVersionManager and switch between
+    // different code versions by overwriting the first bytes of the method's initial
+    // native code with a jmp instruction.
+    BOOL IsVersionableWithJumpStamp()
+    {
+#if defined(FEATURE_CODE_VERSIONING) && defined(FEATURE_JUMPSTAMP)
+        return
+            // for native image code this is policy, but for jitted code it is a functional requirement
+            // to ensure the prolog is sufficiently large
+            ReJitManager::IsReJITEnabled() &&
+
+            // functional requirement - the runtime doesn't expect both options to be possible
+            !IsVersionableWithPrecode() &&
+
+            // functional requirement - we must be able to evacuate the prolog and the prolog must be big
+            // enough, both of which are only designed to work on jitted code
+            (IsIL() || IsNoMetadata()) &&
+            !IsUnboxingStub() &&
+            !IsInstantiatingStub() &&
+
+            // functional requirement - code version manager can't handle what would happen if the code
+            // was collected
+            !GetLoaderAllocator()->IsCollectible();
+#else
+        return FALSE;
+#endif
+    }
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Is this method allowed to be recompiled and the entrypoint redirected so that we
@@ -1301,19 +1241,30 @@ public:
 
         // This policy will need to change some more before tiered compilation feature
         // can be properly supported across a broad range of scenarios. For instance it 
-        // wouldn't interact correctly debugging or profiling at the moment because we 
-        // enable it too aggresively and it conflicts with the operations of those features.
+        // wouldn't interact correctly with debugging at the moment because we enable
+        // it too aggresively and it conflicts with the operations of those features.
 
-        //Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
-        //In the future we might want mutable vtable slots too, but that would require
-        //more work around the runtime to prevent those mutable pointers from leaking
+        // Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
+        // to ensure native slots are available where needed.
         return g_pConfig->TieredCompilation() &&
-            !GetModule()->HasNativeOrReadyToRunImage() &&
+            !IsZapped() &&
             !IsEnCMethod() &&
-            HasNativeCodeSlot();
+            HasNativeCodeSlot() &&
+            !IsUnboxingStub() &&
+            !IsInstantiatingStub();
+
+        // We should add an exclusion for modules with debuggable code gen flags
 
     }
 #endif
+
+    // Returns a code version that represents the first (default)
+    // code body that this method would have.
+    NativeCodeVersion GetInitialCodeVersion()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return NativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    }
 
     // Does this method force the NativeCodeSlot to stay fixed after it
     // is first initialized to native code? Consumers of the native code
@@ -1326,6 +1277,12 @@ public:
     BOOL IsNativeCodeStableAfterInit()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(FEATURE_JIT_PITCHING)
+        if (IsPitchable())
+            return false;
+#endif
+
         return 
 #ifdef FEATURE_TIERED_COMPILATION
             !IsEligibleForTieredCompilation() &&
@@ -1371,11 +1328,7 @@ public:
         return GetNativeCode() != NULL;
     }
 
-#ifdef FEATURE_INTERPRETER
-    BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected, BOOL fStable);
-#else  // FEATURE_INTERPRETER
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
-#endif // FEATURE_INTERPRETER
 
     TADDR GetAddrOfNativeCodeSlot();
 
@@ -1441,6 +1394,11 @@ public:
     // - jitted code if !IsPreImplemented()
     // - ngened code if IsPreImplemented()
     PCODE GetNativeCode();
+
+#if defined(FEATURE_JIT_PITCHING)
+    bool IsPitchable();
+    void PitchNativeCode();
+#endif
 
     //================================================================
     // FindOrCreateAssociatedMethodDesc
@@ -1685,68 +1643,10 @@ public:
 
     PCODE DoPrestub(MethodTable *pDispatchingMT);
 
-    PCODE MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS flags);
-
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName);
     VOID GetFullMethodInfo(SString& fullMethodSigName);
-
-    BOOL IsCritical()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_bFlags2 & enum_flag2_Transparency_Mask) != enum_flag2_Transparency_Transparent;
-    }
-
-    BOOL IsTreatAsSafe()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_bFlags2 & enum_flag2_Transparency_Mask) == enum_flag2_Transparency_TreatAsSafe;
-    }
-
-    BOOL IsTransparent()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return !IsCritical();
-    }
-
-    BOOL HasCriticalTransparentInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_bFlags2 & enum_flag2_Transparency_Mask) != enum_flag2_Transparency_Unknown;
-    }
-
-    void SetCriticalTransparentInfo(BOOL fIsCritical, BOOL fIsTreatAsSafe)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // TreatAsSafe has to imply critical
-        _ASSERTE(fIsCritical || !fIsTreatAsSafe);
-
-        EnsureWritablePages(this);
-        InterlockedUpdateFlags2(
-            static_cast<BYTE>(fIsTreatAsSafe ? enum_flag2_Transparency_TreatAsSafe :
-                fIsCritical ? enum_flag2_Transparency_Critical :
-                    enum_flag2_Transparency_Transparent),
-            TRUE);
-
-        _ASSERTE(HasCriticalTransparentInfo());
-    }
-
-    BOOL RequiresLinkTimeCheckHostProtectionOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_bFlags2 & enum_flag2_HostProtectionLinkCheckOnly) != 0;
-    }
-
-    void SetRequiresLinkTimeCheckHostProtectionOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_HostProtectionLinkCheckOnly;
-    }
 
     BOOL HasTypeEquivalentStructParameters()
 #ifndef FEATURE_TYPEEQUIVALENCE
@@ -1797,21 +1697,11 @@ protected:
         enum_flag2_IsUnboxingStub           = 0x04,
         enum_flag2_HasNativeCodeSlot        = 0x08,   // Has slot for native code
 
-        enum_flag2_Transparency_Mask        = 0x30,
-        enum_flag2_Transparency_Unknown     = 0x00,   // The transparency has not been computed yet
-        enum_flag2_Transparency_Transparent = 0x10,   // Method is transparent
-        enum_flag2_Transparency_Critical    = 0x20,   // Method is critical
-        enum_flag2_Transparency_TreatAsSafe = 0x30,   // Method is treat as safe. Also implied critical.
+        enum_flag2_IsJitIntrinsic           = 0x10,   // Jit may expand method as an intrinsic
 
-        // CAS Demands: Demands for Permissions that are CAS Permissions. CAS Perms are those 
-        // that derive from CodeAccessPermission and need a stackwalk to evaluate demands
-        // Non-CAS perms are those that don't need a stackwalk and don't derive from CodeAccessPermission. The implementor 
-        // specifies the behavior on a demand. Examples: CAS: FileIOPermission. Non-CAS: PrincipalPermission.
-        // This bit gets set if the demands are BCL CAS demands only. Even if there are non-BCL CAS demands, we don't set this
-        // bit.
-        enum_flag2_CASDemandsOnly           = 0x40,
-
-        enum_flag2_HostProtectionLinkCheckOnly = 0x80, // Method has LinkTime check due to HP only.
+        // unused                           = 0x20,
+        // unused                           = 0x40,
+        // unused                           = 0x80, 
     };
     BYTE        m_bFlags2;
 
@@ -1859,6 +1749,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_bFlags2 |= enum_flag2_HasNativeCodeSlot;
+    }
+
+    inline BOOL IsJitIntrinsic()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_bFlags2 & enum_flag2_IsJitIntrinsic) != 0;
+    }
+
+    inline void SetIsJitIntrinsic()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_bFlags2 |= enum_flag2_IsJitIntrinsic;
     }
 
     static const SIZE_T s_ClassificationSizeTable[];
@@ -1949,7 +1851,71 @@ public:
     REFLECTMETHODREF GetStubMethodInfo();
     
     PrecodeType GetPrecodeType();
+
+
+    // ---------------------------------------------------------------------------------
+    // IL based Code generation pipeline
+    // ---------------------------------------------------------------------------------
+
+#ifndef DACCESS_COMPILE
+public:
+    PCODE PrepareInitialCode();
+    PCODE PrepareCode(NativeCodeVersion codeVersion);
+    PCODE PrepareCode(PrepareCodeConfig* pConfig);
+
+private:
+    PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
+    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig);
+    PCODE GetPrecompiledNgenCode();
+    PCODE GetPrecompiledR2RCode();
+    PCODE GetMulticoreJitCode();
+    COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
+    COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
+    COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
+    PCODE JitCompileCode(PrepareCodeConfig* pConfig);
+    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
+#endif // DACCESS_COMPILE
 };
+
+#ifndef DACCESS_COMPILE
+class PrepareCodeConfig
+{
+public:
+    PrepareCodeConfig();
+    PrepareCodeConfig(NativeCodeVersion nativeCodeVersion, BOOL needsMulticoreJitNotification, BOOL mayUsePrecompiledCode);
+    MethodDesc* GetMethodDesc();
+    NativeCodeVersion GetCodeVersion();
+    BOOL NeedsMulticoreJitNotification();
+    BOOL MayUsePrecompiledCode();
+    virtual PCODE IsJitCancellationRequested();
+    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
+    virtual COR_ILMETHOD* GetILHeader();
+    virtual CORJIT_FLAGS GetJitCompilationFlags();
+    
+protected:
+    MethodDesc* m_pMethodDesc;
+    NativeCodeVersion m_nativeCodeVersion;
+    BOOL m_needsMulticoreJitNotification;
+    BOOL m_mayUsePrecompiledCode;
+};
+
+#ifdef FEATURE_CODE_VERSIONING
+class VersionedPrepareCodeConfig : public PrepareCodeConfig
+{
+public:
+    VersionedPrepareCodeConfig();
+    VersionedPrepareCodeConfig(NativeCodeVersion codeVersion);
+    HRESULT FinishConfiguration();
+    virtual PCODE IsJitCancellationRequested();
+    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
+    virtual COR_ILMETHOD* GetILHeader();
+    virtual CORJIT_FLAGS GetJitCompilationFlags();
+private:
+    ILCodeVersion m_ilCodeVersion;
+};
+#endif // FEATURE_CODE_VERSIONING
+#endif // DACCESS_COMPILE
 
 /******************************************************************/
 

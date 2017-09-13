@@ -483,6 +483,12 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+    if (CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages())
+    {
+        DoLog("Ready to Run disabled - profiler disabled native images");
+        return NULL;
+    }
+
     if (g_pConfig->ExcludeReadyToRun(pModule->GetSimpleName()))
     {
         DoLog("Ready to Run disabled - module on exclusion list");

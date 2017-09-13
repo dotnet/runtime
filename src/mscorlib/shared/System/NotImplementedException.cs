@@ -21,17 +21,17 @@ namespace System
         public NotImplementedException()
             : base(SR.Arg_NotImplementedException)
         {
-            HResult = __HResults.E_NOTIMPL;
+            HResult = HResults.E_NOTIMPL;
         }
         public NotImplementedException(String message)
             : base(message)
         {
-            HResult = __HResults.E_NOTIMPL;
+            HResult = HResults.E_NOTIMPL;
         }
         public NotImplementedException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.E_NOTIMPL;
+            HResult = HResults.E_NOTIMPL;
         }
 
         protected NotImplementedException(SerializationInfo info, StreamingContext context) : base(info, context)

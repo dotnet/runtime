@@ -108,19 +108,19 @@ namespace System.Text
         public EncoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public EncoderFallbackException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public EncoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         internal EncoderFallbackException(

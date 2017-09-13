@@ -196,11 +196,12 @@ void Compiler::optEarlyProp()
             {
                 if (optEarlyPropRewriteTree(tree))
                 {
+                    gtUpdateSideEffects(stmt, tree);
                     isRewritten = true;
                 }
             }
 
-            // Morph the stmt and update the evaluation order if the stmt has been rewritten.
+            // Update the evaluation order and the statement info if the stmt has been rewritten.
             if (isRewritten)
             {
                 gtSetStmtInfo(stmt);
@@ -611,6 +612,7 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
 
                                                     // Set this flag to prevent reordering
                                                     nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
+                                                    nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
 
                                                     defRHS->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
                                                     defRHS->gtFlags |=

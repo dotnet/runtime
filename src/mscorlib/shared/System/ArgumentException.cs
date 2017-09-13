@@ -29,7 +29,7 @@ namespace System
         public ArgumentException()
             : base(SR.Arg_ArgumentException)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         // Creates a new ArgumentException with its message 
@@ -38,27 +38,27 @@ namespace System
         public ArgumentException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public ArgumentException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public ArgumentException(String message, String paramName, Exception innerException)
             : base(message, innerException)
         {
             _paramName = paramName;
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public ArgumentException(String message, String paramName)
             : base(message)
         {
             _paramName = paramName;
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         protected ArgumentException(SerializationInfo info, StreamingContext context)

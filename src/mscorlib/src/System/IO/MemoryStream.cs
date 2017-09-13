@@ -49,7 +49,6 @@ namespace System.IO
         private bool _exposable;   // Whether the array can be returned to the user.
         private bool _isOpen;      // Is this stream open or closed?
 
-        [NonSerialized]
         private Task<int> _lastReadTask; // The last successful task returned from ReadAsync
 
         private const int MemStreamMaxLength = Int32.MaxValue;
@@ -391,6 +390,37 @@ namespace System.IO
             return n;
         }
 
+        public override int Read(Span<byte> destination)
+        {
+            if (GetType() != typeof(MemoryStream))
+            {
+                // MemoryStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
+                // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
+                // should use the behavior of Read(byte[],int,int) overload.
+                return base.Read(destination);
+            }
+
+            if (!_isOpen)
+            {
+                __Error.StreamIsClosed();
+            }
+
+            int n = Math.Min(_length - _position, destination.Length);
+            if (n <= 0)
+            {
+                return 0;
+            }
+
+            // TODO https://github.com/dotnet/corefx/issues/22388:
+            // Read(byte[], int, int) has an n <= 8 optimization, presumably based
+            // on benchmarking.  Determine if/where such a cut-off is here and add
+            // an equivalent optimization if necessary.
+            new Span<byte>(_buffer, _position, n).CopyTo(destination);
+
+            _position += n;
+            return n;
+        }
+
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -422,6 +452,27 @@ namespace System.IO
             catch (Exception exception)
             {
                 return Task.FromException<int>(exception);
+            }
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+            }
+
+            try
+            {
+                return new ValueTask<int>(Read(destination.Span));
+            }
+            catch (OperationCanceledException oce)
+            {
+                return new ValueTask<int>(Task.FromCancellation<int>(oce));
+            }
+            catch (Exception exception)
+            {
+                return new ValueTask<int>(Task.FromException<int>(exception));
             }
         }
 
@@ -634,6 +685,52 @@ namespace System.IO
             _position = i;
         }
 
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            if (GetType() != typeof(MemoryStream))
+            {
+                // MemoryStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this Write(Span<byte>) overload being introduced.  In that case, this Write(Span<byte>) overload
+                // should use the behavior of Write(byte[],int,int) overload.
+                base.Write(source);
+                return;
+            }
+
+            if (!_isOpen)
+            {
+                __Error.StreamIsClosed();
+            }
+            EnsureWriteable();
+
+            // Check for overflow
+            int i = _position + source.Length;
+            if (i < 0)
+            {
+                throw new IOException(SR.IO_StreamTooLong);
+            }
+
+            if (i > _length)
+            {
+                bool mustZero = _position > _length;
+                if (i > _capacity)
+                {
+                    bool allocatedNewArray = EnsureCapacity(i);
+                    if (allocatedNewArray)
+                    {
+                        mustZero = false;
+                    }
+                }
+                if (mustZero)
+                {
+                    Array.Clear(_buffer, _length, i - _length);
+                }
+                _length = i;
+            }
+
+            source.CopyTo(new Span<byte>(_buffer, _position, source.Length));
+            _position = i;
+        }
+
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -653,6 +750,28 @@ namespace System.IO
             try
             {
                 Write(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+            catch (OperationCanceledException oce)
+            {
+                return Task.FromCancellation<VoidTaskResult>(oce);
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException(exception);
+            }
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Write(source.Span);
                 return Task.CompletedTask;
             }
             catch (OperationCanceledException oce)

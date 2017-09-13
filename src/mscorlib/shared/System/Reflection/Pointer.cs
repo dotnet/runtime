@@ -46,6 +46,6 @@ namespace System.Reflection
         }
 
         internal Type GetPointerType() => _ptrType;
-        internal object GetPointerValue() => (IntPtr)_ptr;
+        internal IntPtr GetPointerValue() => (IntPtr)_ptr;
     }
 }

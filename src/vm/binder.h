@@ -277,6 +277,7 @@ private:
 
     Signature GetSignatureLocal(LPHARDCODEDMETASIG pHardcodedSig);
 
+    bool ConvertType(const BYTE*& pSig, SigBuilder * pSigBuilder);
     void BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigBuilder);
     const BYTE* ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, const BYTE* pSig);
 
