@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -86,6 +87,11 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
+            if (PlatformDetection.IsFedora)
+            {
+                return; // [ActiveIssue(24008)]
+            }
+
             // On all platforms, index 0 means "any interface"
             await MulticastInterface_Set_Helper(0);
         }
@@ -129,6 +135,10 @@ namespace System.Net.Sockets.Tests
                 {
                     sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
                 }
+
+                var cts = new CancellationTokenSource();
+                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(20_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
+                cts.Cancel();
 
                 int bytesReceived = await receiveTask;
                 string receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, bytesReceived);
