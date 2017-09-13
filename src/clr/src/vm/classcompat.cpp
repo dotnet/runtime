@@ -31,7 +31,6 @@
 #include "fieldmarshaler.h"
 #include "cgensys.h"
 #include "gcheaputilities.h"
-#include "security.h"
 #include "dbginterface.h"
 #include "comdelegate.h"
 #include "sigformat.h"
@@ -54,7 +53,6 @@
 #include "clrtocomcall.h"
 #include "runtimecallablewrapper.h"
 
-#include "listlock.inl"
 #include "generics.h"
 #include "contractimpl.h"
 
@@ -1307,11 +1305,6 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
         InterfaceInfo_t *pCurItfInfo = &(bmtInterface->pInterfaceMap[wCurInterface]);
         // The interface we are attempting to place
         MethodTable *pInterface = pCurItfInfo->m_pMethodTable;
-
-        _ASSERTE(!(pCurItfInfo->IsDeclaredOnClass() &&
-           !pInterface->IsExternallyVisible() &&
-                 pInterface->GetAssembly() != bmtType->pModule->GetAssembly() &&
-           !Security::CanSkipVerification(GetAssembly()->GetDomainAssembly())));
 
         // Did we place this interface already due to the parent class's interface placement?
         if (pCurItfInfo->GetInteropStartSlot() != MethodTable::NO_SLOT)

@@ -24,6 +24,20 @@
           }
         },
         {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "centos-6-c8c9b08-20174310104313",
+            "Rid": "rhel.6",
+			"PB_AdditionalBuildArgs": "-portablebuild=false"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
+            "Type": "build/product/",
+            "Architecture": "x64",
+            "PB_BuildType": null
+          }
+        },		
+        {
           "Name": "DotNet-CoreClr-Trusted-Mac",
           "Parameters": {
             "Rid": "osx"
@@ -118,7 +132,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Release"
+        "PB_BuildType": "Release",
+        "PB_EnforcePGO": "enforcepgo"
       },
       "ReportingParameters": {
         "PB_BuildType": "Release"
@@ -327,7 +342,7 @@
             "HelixJobType": "test/functional/cli/",
             "TargetsWindows": "true",
             "Rid": "win-x64",
-            "TargetQueues": "windows.10.amd64",
+            "TargetQueues": "Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64",
             "TestContainerSuffix": "windows",
           },
           "ReportingParameters": {
@@ -343,7 +358,7 @@
             "HelixJobType": "test/functional/r2r/cli/",
             "TargetsWindows": "true",
             "Rid": "win-x64",
-            "TargetQueues": "windows.10.amd64",
+            "TargetQueues": "Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64",
             "TestContainerSuffix": "windows-r2r",
             "CrossgenArg": "Crossgen "
           },
@@ -366,6 +381,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
+            "Architecture": "arm64",
             "SubType":  "Build-Tests",
             "Type": "build/product/",
             "PB_BuildType": "Release"
@@ -384,6 +400,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
+            "Architecture": "arm64",
             "SubType":  "Build-Tests-R2R",
             "Type": "build/product/",
             "PB_BuildType": "Release"
@@ -430,7 +447,7 @@
             "HelixJobType": "test/functional/cli/",
             "TargetsWindows": "false",
             "Rid": "linux-x64",
-            "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1610.amd64",
+            "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1710.amd64",
             "TestContainerSuffix": "linux",
             "TargetsNonWindowsArg": "TargetsNonWindows "
           },
@@ -447,7 +464,7 @@
             "HelixJobType": "test/functional/r2r/cli/",
             "TargetsWindows": "false",
             "Rid": "linux-x64",
-            "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1610.amd64",
+            "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1710.amd64",
             "TestContainerSuffix": "linux-r2r",
             "CrossgenArg": "Crossgen ",
             "TargetsNonWindowsArg": "TargetsNonWindows "
@@ -458,7 +475,42 @@
             "Type": "build/product/",
             "PB_BuildType": "Release"
           }
-        }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "HelixJobType": "test/functional/cli/",
+            "TargetsWindows": "false",
+            "Rid": "rhel.6-x64",
+            "TargetQueues": "redhat.69.amd64",
+            "TestContainerSuffix": "rhel6",
+            "TargetsNonWindowsArg": "TargetsNonWindows "
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
+            "SubType":  "Build-Tests",
+            "Type": "build/product/",
+            "PB_BuildType": "Release"
+          }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "HelixJobType": "test/functional/r2r/cli/",
+            "TargetsWindows": "false",
+            "Rid": "rhel.6-x64",
+            "TargetQueues": "redhat.69.amd64",
+            "TestContainerSuffix": "rhel6-r2r",
+            "CrossgenArg": "Crossgen ",
+            "TargetsNonWindowsArg": "TargetsNonWindows "
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
+            "SubType":  "Build-Tests-R2R",
+            "Type": "build/product/",
+            "PB_BuildType": "Release"
+          }
+        }		
       ],
       "DependsOn": [
         "Trusted-All-Release"

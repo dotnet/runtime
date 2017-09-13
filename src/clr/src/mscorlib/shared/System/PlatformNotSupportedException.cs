@@ -20,19 +20,19 @@ namespace System
         public PlatformNotSupportedException()
             : base(SR.Arg_PlatformNotSupported)
         {
-            HResult = __HResults.COR_E_PLATFORMNOTSUPPORTED;
+            HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
         public PlatformNotSupportedException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_PLATFORMNOTSUPPORTED;
+            HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
         public PlatformNotSupportedException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_PLATFORMNOTSUPPORTED;
+            HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
         protected PlatformNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context)

@@ -2,13 +2,14 @@
 @rem The .NET Foundation licenses this file to you under the MIT license.
 @rem See the LICENSE file in the project root for more information.
 
-@echo off
-@if defined _echo echo on
+@if not defined _echo echo off
 
 setlocal ENABLEDELAYEDEXPANSION
   set ERRORLEVEL=
   set BENCHVIEW_RUN_TYPE=local
   set CORECLR_REPO=%CD%
+  set LV_SANDBOX_DIR=%CORECLR_REPO%\bin\sandbox
+  set LV_BENCHMARKS_OUTPUT_DIR=%LV_SANDBOX_DIR%\Logs
   set TEST_FILE_EXT=exe
   set TEST_ARCH=x64
   set TEST_ARCHITECTURE=x64
@@ -27,19 +28,15 @@ setlocal ENABLEDELAYEDEXPANSION
   call :parse_command_line_arguments %*
   if defined USAGE_DISPLAYED exit /b %ERRORLEVEL%
 
-  call :set_test_architecture  || exit /b 1
-  call :set_collection_config  || exit /b 1
-  call :verify_benchview_tools || exit /b 1
-  call :verify_core_overlay    || exit /b 1
-  call :set_perf_run_log       || exit /b 1
-  call :setup_sandbox          || exit /b 1
+  call :set_test_architecture   || exit /b 1
+  call :set_collection_config   || exit /b 1
+  call :verify_benchview_tools  || exit /b 1
+  call :verify_core_overlay     || exit /b 1
+  call :set_perf_run_log        || exit /b 1
+  call :setup_sandbox           || exit /b 1
+  call :build_perfharness       || exit /b 1
 
-  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj"                                        || exit /b 1
-  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" publish "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" -c Release -o "%CORECLR_REPO%\sandbox" || exit /b 1
-
-  rem TODO: Remove the version of the package to copy. e.g.) if multiple version exist, then error out?
-  call :run_cmd xcopy /sy "%CORECLR_REPO%\packages\Microsoft.Diagnostics.Tracing.TraceEvent\1.0.3-alpha-experimental\lib\native"\* . >> %RUNLOG%  || exit /b 1
-  call :run_cmd xcopy /sy "%CORECLR_REPO%\bin\tests\Windows_NT.%TEST_ARCH%.%TEST_CONFIG%\Tests\Core_Root"\* . >> %RUNLOG%                         || exit /b 1
+  call :run_cmd xcopy /sy "%CORECLR_REPO%\bin\tests\Windows_NT.%TEST_ARCH%.%TEST_CONFIG%\Tests\Core_Root"\* . >> %RUNLOG% || exit /b 1
 
   rem find and stage the tests
   set /A "LV_FAILURES=0"
@@ -47,6 +44,14 @@ setlocal ENABLEDELAYEDEXPANSION
     call :run_benchmark %%T || (
       set /A "LV_FAILURES+=1"
     )
+  )
+
+  if not defined OPT_LEVEL (
+    set OPT_LEVEL=full_opt
+  )
+
+  if not defined JIT_NAME (
+    set JIT_NAME=ryujit
   )
 
   rem optionally upload results to benchview
@@ -83,21 +88,29 @@ setlocal
     )
   )
 
-  echo/
-  echo/  ----------
-  echo/  Running %BENCHNAME%
-  echo/  ----------
+  rem setup optimisation level
+  if DEFINED OPT_LEVEL (
+    if /I "%OPT_LEVEL%" == "min_opt" (
+        set COMPlus_JITMinOpts=1
+    )
+  )
 
   rem CORE_ROOT environment variable is used by some benchmarks such as Roslyn / CscBench.
-  set CORE_ROOT=%CORECLR_REPO%\sandbox
-
+  set CORE_ROOT=%LV_SANDBOX_DIR%
   set LV_RUNID=Perf-%ETW_COLLECTION%
-  set BENCHNAME_LOG_FILE_NAME=%LV_RUNID%-%BENCHNAME%.log
+  set BENCHNAME_LOG_FILE_NAME=%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.log
+
+
+  echo/
+  echo/  ----------
+  echo/  Running %LV_RUNID% %BENCHNAME%
+  echo/  ----------
+
   set LV_CMD=
   if defined IS_SCENARIO_TEST (
-    set "LV_CMD=corerun.exe "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid "%LV_RUNID%""
+    set "LV_CMD=corerun.exe "%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARKS_OUTPUT_DIR%" --perf:runid "%LV_RUNID%" --target-architecture "%TEST_ARCHITECTURE%""
   ) else (
-    set "LV_CMD=%STABILITY_PREFIX% corerun.exe PerfHarness.dll "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid "%LV_RUNID%" --perf:collect %COLLECTION_FLAGS%"
+    set "LV_CMD=%STABILITY_PREFIX% corerun.exe PerfHarness.dll "%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARKS_OUTPUT_DIR%" --perf:runid "%LV_RUNID%" --perf:collect %COLLECTION_FLAGS%"
   )
 
   call :print_to_console $ !LV_CMD!
@@ -112,13 +125,6 @@ setlocal
   rem optionally generate results for benchview
   if exist "%BENCHVIEW_PATH%" (
     call :generate_results_for_benchview || exit /b 1
-  )
-
-  rem Save off the results to the root directory for recovery later in Jenkins
-  for %%e in (xml etl log) do (
-    IF EXIST ".\%LV_RUNID%-%BENCHNAME%.%%e" (
-      call :run_cmd xcopy /vy ".\%LV_RUNID%-%BENCHNAME%.%%e" .. || exit /b 1
-    )
   )
 
   exit /b 0
@@ -195,6 +201,18 @@ rem ****************************************************************************
     shift
     goto :parse_command_line_arguments
   )
+  IF /I [%~1] == [-optLevel] (
+    set OPT_LEVEL=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-jitName] (
+    set JIT_NAME=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
   IF /I [%~1] == [-configuration] (
     set TEST_CONFIG=%~2
     shift
@@ -207,6 +225,13 @@ rem ****************************************************************************
     shift
     goto :parse_command_line_arguments
   )
+  IF /I [%~1] == [-outputdir] (
+    set LV_BENCHMARKS_OUTPUT_DIR=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
+
   if /I [%~1] == [-?] (
     call :USAGE
     exit /b 0
@@ -215,7 +240,10 @@ rem ****************************************************************************
     call :USAGE
     exit /b 0
   )
-  if [%CORECLR_PERF%] == [] (
+
+  if not defined CORECLR_PERF call :USAGE
+  if not exist "%CORECLR_PERF%" (
+    call :print_error Specified testBinLoc: "%CORECLR_PERF%" does not exist.
     call :USAGE
   )
 
@@ -262,7 +290,6 @@ rem ****************************************************************************
   )
   exit /b 0
 
-
 :set_perf_run_log
 rem ****************************************************************************
 rem   Sets the script's output log file.
@@ -279,11 +306,41 @@ rem ****************************************************************************
 rem   Creates the sandbox folder used by the script to copy binaries locally,
 rem   and execute benchmarks.
 rem ****************************************************************************
-  if exist sandbox rmdir /s /q sandbox
-  if exist sandbox call :print_error Failed to remove the sandbox folder& exit /b 1
-  if not exist sandbox mkdir sandbox
-  if not exist sandbox call :print_error Failed to create the sandbox folder& exit /b 1
-  cd sandbox
+  if not defined LV_SANDBOX_DIR (
+    call :print_error LV_SANDBOX_DIR was not defined.
+    exit /b 1
+  )
+
+  if exist "%LV_SANDBOX_DIR%" rmdir /s /q "%LV_SANDBOX_DIR%"
+  if exist "%LV_SANDBOX_DIR%" call :print_error Failed to remove the "%LV_SANDBOX_DIR%" folder& exit /b 1
+
+  if not exist "%LV_SANDBOX_DIR%" mkdir "%LV_SANDBOX_DIR%"
+  if not exist "%LV_SANDBOX_DIR%" (
+    call :print_error Failed to create the "%LV_SANDBOX_DIR%" folder.
+    exit /b 1
+  )
+
+  if not exist "%LV_BENCHMARKS_OUTPUT_DIR%" mkdir "%LV_BENCHMARKS_OUTPUT_DIR%"
+  if not exist "%LV_BENCHMARKS_OUTPUT_DIR%" (
+    call :print_error Failed to create the "%LV_BENCHMARKS_OUTPUT_DIR%" folder.
+    exit /b 1
+  )
+
+  cd "%LV_SANDBOX_DIR%"
+  exit /b %ERRORLEVEL%
+
+:build_perfharness
+rem ****************************************************************************
+rem   Restores and publish the PerfHarness.
+rem ****************************************************************************
+  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" || (
+    call :print_error Failed to restore PerfHarness.csproj
+    exit /b 1
+  )
+  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" publish "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" -c Release -o "%LV_SANDBOX_DIR%" || (
+    call :print_error Failed to publish PerfHarness.csproj
+    exit /b 1
+  )
   exit /b 0
 
 :generate_results_for_benchview
@@ -291,6 +348,10 @@ rem ****************************************************************************
 rem   Generates results for BenchView, by appending new data to the existing
 rem   measurement.json file.
 rem ****************************************************************************
+  if not defined LV_RUNID (
+    call :print_error LV_RUNID was not defined before calling generate_results_for_benchview.
+    exit /b 1
+  )
   set BENCHVIEW_MEASUREMENT_PARSER=xunit
   if defined IS_SCENARIO_TEST set BENCHVIEW_MEASUREMENT_PARSER=xunitscenario
 
@@ -300,12 +361,18 @@ rem ****************************************************************************
   set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% %HAS_WARMUP_RUN%
   set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --append
 
-  for /f %%f in ('dir /b Perf-*%BENCHNAME%.xml 2^>nul') do (
-    call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% %%f
+  rem Currently xUnit Performance Api saves the scenario output
+  rem   files on the current working directory.
+  set LV_PATTERN="%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.xml"
+  rem The first pattern is the general case, the second is used by IlLink
+  if defined IS_SCENARIO_TEST set LV_PATTERN="%LV_RUNID%-%BENCHNAME%.xml" "%LV_RUNID%-*-%BENCHNAME%.xml"
 
-    IF !ERRORLEVEL! NEQ 0 (
-      call :print_error Failed to generate BenchView measurement data.
-      exit /b 1
+  for %%f in (%LV_PATTERN%) do (
+    if exist "%%~f" (
+      call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% "%%~f" || (
+        call :print_error Failed to generate BenchView measurement data.
+        exit /b 1
+      )
     )
   )
 
@@ -317,16 +384,18 @@ rem   Generates BenchView's submission data and upload it
 rem ****************************************************************************
 setlocal
   set LV_SUBMISSION_ARGS=
-  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --build ..\build.json
-  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machine-data ..\machinedata.json
-  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --metadata ..\submission-metadata.json
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --build "%CORECLR_REPO%\build.json"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machine-data "%CORECLR_REPO%\machinedata.json"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --metadata "%CORECLR_REPO%\submission-metadata.json"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --group "%BENCHVIEW_GROUP%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --type "%BENCHVIEW_RUN_TYPE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config-name "%TEST_CONFIG%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Configuration "%TEST_CONFIG%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OS "Windows_NT"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Profile "%ETW_COLLECTION%"
-  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --arch "%TEST_ARCHITECTURE%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OptLevel "%OPT_LEVEL%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config JitName  "%JIT_NAME%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --architecture "%TEST_ARCHITECTURE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
 
   call :run_cmd py.exe "%BENCHVIEW_PATH%\submission.py" measurement.json %LV_SUBMISSION_ARGS%
@@ -350,7 +419,7 @@ rem ****************************************************************************
 rem   Script's usage.
 rem ****************************************************************************
   set USAGE_DISPLAYED=1
-  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-warmup] [-better] ^<asc ^| desc^> [-group] ^<group^> [-runtype] ^<rolling^|private^> [-scenarioTest] [-collectionFlags] ^<default^+CacheMisses^+InstructionRetired^+BranchMispredictions^+gcapi^>
+  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-warmup] [-better] ^<asc ^| desc^> [-group] ^<group^> [-runtype] ^<rolling^|private^> [-scenarioTest] [-collectionFlags] ^<default^+CacheMisses^+InstructionRetired^+BranchMispredictions^+gcapi^> [-outputdir] ^<outputdir^>
   echo/
   echo For the path to the tests you can pass a parent directory and the script will grovel for
   echo all tests in subdirectories and run them.
@@ -365,6 +434,7 @@ rem ****************************************************************************
   echo Runtype sets the runtype that we upload to Benchview, rolling for regular runs, and private for
   echo PRs.
   echo -scenarioTest should be included if you are running a scenario benchmark.
+  echo -outputdir Specifies the directory where the generated performance output will be saved.
   echo -collectionFlags This is used to specify what collectoin flags get passed to the performance
   echo harness that is doing the test running.  If this is not specified we only use stopwatch.
   echo Other flags are "default", which is the whatever the test being run specified, "CacheMisses",

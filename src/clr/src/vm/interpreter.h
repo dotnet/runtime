@@ -552,9 +552,6 @@ struct InterpreterMethodInfo
     // The module containing the method.
     CORINFO_MODULE_HANDLE       m_module;
 
-    // If the method has been JITted, it's JITted code (for indirection).
-    PCODE                       m_jittedCode;
-
     // Code pointer, size, and max stack usage.
     BYTE*                       m_ILCode;
     BYTE*                       m_ILCodeEnd;        // One byte past the last byte of IL. IL Code Size = m_ILCodeEnd - m_ILCode.

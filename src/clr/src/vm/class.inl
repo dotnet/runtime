@@ -5,12 +5,6 @@
 // File: CLASS.INL
 //
 
-
-//
-
-//
-// ============================================================================
-
 #ifndef _CLASS_INL_
 #define _CLASS_INL_
 //***************************************************************************************
@@ -18,18 +12,6 @@ inline PTR_MethodDescChunk EEClass::GetChunks()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return m_pChunks.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pChunks));
-}
-
-//***************************************************************************************
-inline DWORD EEClass::SomeMethodsRequireInheritanceCheck()
-{
-    return (m_VMFlags & VMFLAG_METHODS_REQUIRE_INHERITANCE_CHECKS);
-}
-
-//***************************************************************************************
-inline void EEClass::SetSomeMethodsRequireInheritanceCheck()
-{
-    m_VMFlags = m_VMFlags | VMFLAG_METHODS_REQUIRE_INHERITANCE_CHECKS;
 }
 
 //*******************************************************************************

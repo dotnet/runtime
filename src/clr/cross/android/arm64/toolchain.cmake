@@ -22,6 +22,10 @@ find_program(CMAKE_OBJDUMP ${TOOLCHAIN_PREFIX}objdump)
 add_compile_options(--sysroot=${CROSS_ROOTFS})
 add_compile_options(-fPIE)
 
+## Needed for Android or bionic specific conditionals
+add_compile_options(-D__ANDROID__)
+add_compile_options(-D__BIONIC__)
+
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B ${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}")
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib/${TOOLCHAIN}")
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} --sysroot=${CROSS_ROOTFS}")

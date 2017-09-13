@@ -1544,14 +1544,15 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    if ((insCodeRM(ins) & 0xFF00) != 0)
+    code_t code = insCodeRM(ins);
+
+    if ((code & 0xFF00) != 0)
     {
         sz = 5;
     }
     else
     {
-        code_t code = insCodeRM(ins);
-        sz          = emitInsSize(insEncodeRMreg(ins, code));
+        sz = emitInsSize(insEncodeRMreg(ins, code));
     }
 
     // Most 16-bit operand instructions will need a prefix
@@ -1564,10 +1565,13 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     sz += emitGetVexPrefixAdjustedSize(ins, size, insCodeRM(ins));
 
     // REX prefix
-    if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
-        IsExtendedReg(reg2, attr))
+    if (!hasRexPrefix(code))
     {
-        sz += emitGetRexPrefixSize(ins);
+        if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
+            IsExtendedReg(reg2, attr))
+        {
+            sz += emitGetRexPrefixSize(ins);
+        }
     }
 
     return sz;
@@ -1902,7 +1906,6 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE) // Only for x64
                || (attrSize == EA_16BYTE)                         // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx));
-
         size = 3;
     }
     else
@@ -1935,7 +1938,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         // REX.W prefix
         size += emitGetRexPrefixSize(ins);
     }
-    else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) || IsExtendedReg(id->idReg1(), attrSize))
+    else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) ||
+             ((ins != INS_call) && IsExtendedReg(id->idReg1(), attrSize)))
     {
         // Should have a REX byte
         size += emitGetRexPrefixSize(ins);
@@ -1958,6 +1962,14 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                 size++;
             }
 #endif
+            return size;
+        }
+
+        // If this is just "call reg", we're done.
+        if (id->idIsCallRegPtr())
+        {
+            assert(ins == INS_call);
+            assert(dsp == 0);
             return size;
         }
 
@@ -2599,7 +2611,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         id->idInsFmt(emitMapFmtForIns(fmt, ins));
 
         // disp must have already been set in the instrDesc constructor.
-        assert(emitGetInsAmdAny(id) == ssize_t(indir->Offset())); // make sure "disp" is stored properly
+        assert(emitGetInsAmdAny(id) == indir->Offset()); // make sure "disp" is stored properly
     }
 }
 
@@ -2639,130 +2651,149 @@ void emitter::spillIntArgRegsToShadowSlots()
     }
 }
 
-// this is very similar to emitInsBinary and probably could be folded in to same
-// except the requirements on the incoming parameter are different,
-// ex: the memory op in storeind case must NOT be contained
-void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
+//------------------------------------------------------------------------
+// emitInsLoadInd: Emits a "mov reg, [mem]" (or a variant such as "movzx" or "movss")
+// instruction for a GT_IND node.
+//
+// Arguments:
+//    ins - the instruction to emit
+//    attr - the instruction operand size
+//    dstReg - the destination register
+//    mem - the GT_IND node
+//
+void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem)
 {
+    assert(mem->OperIs(GT_IND));
+
+    GenTree* addr = mem->Addr();
+
+    if (addr->OperGet() == GT_CLS_VAR_ADDR)
+    {
+        emitIns_R_C(ins, attr, dstReg, addr->gtClsVar.gtClsVarHnd, 0);
+        return;
+    }
+
+    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    {
+        GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), 0);
+        codeGen->genUpdateLife(varNode);
+        return;
+    }
+
+    assert(addr->OperIsAddrMode() || (addr->IsCnsIntOrI() && addr->isContained()) || !addr->isContained());
+    ssize_t    offset = mem->Offset();
+    instrDesc* id     = emitNewInstrAmd(attr, offset);
+    id->idIns(ins);
+    id->idReg1(dstReg);
+    emitHandleMemOp(mem, id, IF_RWR_ARD, ins);
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+//------------------------------------------------------------------------
+// emitInsStoreInd: Emits a "mov [mem], reg/imm" (or a variant such as "movss")
+// instruction for a GT_STOREIND node.
+//
+// Arguments:
+//    ins - the instruction to emit
+//    attr - the instruction operand size
+//    mem - the GT_STOREIND node
+//
+void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem)
+{
+    assert(mem->OperIs(GT_STOREIND));
+
+    GenTree* addr = mem->Addr();
+    GenTree* data = mem->Data();
+
+    if (addr->OperGet() == GT_CLS_VAR_ADDR)
+    {
+        if (data->isContainedIntOrIImmed())
+        {
+            emitIns_C_I(ins, attr, addr->gtClsVar.gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
+        }
+        else
+        {
+            assert(!data->isContained());
+            emitIns_C_R(ins, attr, addr->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
+        }
+        return;
+    }
+
+    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    {
+        GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+        if (data->isContainedIntOrIImmed())
+        {
+            emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
+        }
+        else
+        {
+            assert(!data->isContained());
+            emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
+        }
+        codeGen->genUpdateLife(varNode);
+        return;
+    }
+
+    ssize_t        offset = mem->Offset();
     UNATIVE_OFFSET sz;
     instrDesc*     id;
 
-    switch (node->OperGet())
+    if (data->isContainedIntOrIImmed())
     {
-        case GT_IND:
-        {
-            GenTreeIndir* mem  = node->AsIndir();
-            GenTreePtr    addr = mem->Addr();
-
-            if (addr->OperGet() == GT_CLS_VAR_ADDR)
-            {
-                emitIns_R_C(ins, attr, mem->gtRegNum, addr->gtClsVar.gtClsVarHnd, 0);
-                return;
-            }
-            else if (addr->OperGet() == GT_LCL_VAR_ADDR)
-            {
-                GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-                emitIns_R_S(ins, attr, mem->gtRegNum, varNode->GetLclNum(), 0);
-                codeGen->genUpdateLife(varNode);
-                return;
-            }
-            else
-            {
-                assert(addr->OperIsAddrMode() || (addr->IsCnsIntOrI() && addr->isContained()) || !addr->isContained());
-                size_t offset = mem->Offset();
-                id            = emitNewInstrAmd(attr, offset);
-                id->idIns(ins);
-                id->idReg1(mem->gtRegNum);
-                emitHandleMemOp(mem, id, IF_RWR_ARD, ins);
-                sz = emitInsSizeAM(id, insCodeRM(ins));
-                id->idCodeSize(sz);
-            }
-        }
-        break;
-
-        case GT_STOREIND:
-        {
-            GenTreeStoreInd* mem    = node->AsStoreInd();
-            GenTreePtr       addr   = mem->Addr();
-            size_t           offset = mem->Offset();
-            GenTree*         data   = mem->Data();
-
-            if (addr->OperGet() == GT_CLS_VAR_ADDR)
-            {
-                if (data->isContainedIntOrIImmed())
-                {
-                    emitIns_C_I(ins, attr, addr->gtClsVar.gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
-                }
-                else
-                {
-                    assert(!data->isContained());
-                    emitIns_C_R(ins, attr, addr->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
-                }
-                return;
-            }
-            else if (addr->OperGet() == GT_LCL_VAR_ADDR)
-            {
-                GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-                if (data->isContainedIntOrIImmed())
-                {
-                    emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
-                }
-                else
-                {
-                    assert(!data->isContained());
-                    emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
-                }
-                codeGen->genUpdateLife(varNode);
-                return;
-            }
-            else if (data->isContainedIntOrIImmed())
-            {
-                int icon = (int)data->AsIntConCommon()->IconValue();
-                id       = emitNewInstrAmdCns(attr, offset, icon);
-                id->idIns(ins);
-                emitHandleMemOp(mem, id, IF_AWR_CNS, ins);
-                sz = emitInsSizeAM(id, insCodeMI(ins), icon);
-                id->idCodeSize(sz);
-            }
-            else
-            {
-                assert(!data->isContained());
-                id = emitNewInstrAmd(attr, offset);
-                id->idIns(ins);
-                emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
-                id->idReg1(data->gtRegNum);
-                sz = emitInsSizeAM(id, insCodeMR(ins));
-                id->idCodeSize(sz);
-            }
-        }
-        break;
-
-        case GT_STORE_LCL_VAR:
-        {
-            GenTreeLclVarCommon* varNode = node->AsLclVarCommon();
-            GenTree*             data    = varNode->gtOp.gtOp1;
-            codeGen->inst_set_SV_var(varNode);
-            assert(varNode->gtRegNum == REG_NA); // stack store
-
-            if (data->isContainedIntOrIImmed())
-            {
-                emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
-            }
-            else
-            {
-                assert(!data->isContained());
-                emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
-            }
-            codeGen->genUpdateLife(varNode);
-        }
-            return;
-
-        default:
-            unreached();
+        int icon = (int)data->AsIntConCommon()->IconValue();
+        id       = emitNewInstrAmdCns(attr, offset, icon);
+        id->idIns(ins);
+        emitHandleMemOp(mem, id, IF_AWR_CNS, ins);
+        sz = emitInsSizeAM(id, insCodeMI(ins), icon);
+        id->idCodeSize(sz);
+    }
+    else
+    {
+        assert(!data->isContained());
+        id = emitNewInstrAmd(attr, offset);
+        id->idIns(ins);
+        emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
+        id->idReg1(data->gtRegNum);
+        sz = emitInsSizeAM(id, insCodeMR(ins));
+        id->idCodeSize(sz);
     }
 
     dispIns(id);
     emitCurIGsize += sz;
+}
+
+//------------------------------------------------------------------------
+// emitInsStoreLcl: Emits a "mov [mem], reg/imm" (or a variant such as "movss")
+// instruction for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    ins - the instruction to emit
+//    attr - the instruction operand size
+//    varNode - the GT_STORE_LCL_VAR node
+//
+void emitter::emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode)
+{
+    assert(varNode->OperIs(GT_STORE_LCL_VAR));
+    assert(varNode->gtRegNum == REG_NA); // stack store
+
+    GenTree* data = varNode->gtGetOp1();
+    codeGen->inst_set_SV_var(varNode);
+
+    if (data->isContainedIntOrIImmed())
+    {
+        emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
+    }
+    else
+    {
+        assert(!data->isContained());
+        emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
+    }
+    codeGen->genUpdateLife(varNode);
 }
 
 CORINFO_FIELD_HANDLE emitter::emitLiteralConst(ssize_t cnsValIn, emitAttr attr /*= EA_8BYTE*/)
@@ -3082,8 +3113,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     }
     else // [mem], reg OR reg, [mem]
     {
-        size_t offset = mem->Offset();
-        id            = emitNewInstrAmd(attr, offset);
+        ssize_t offset = mem->Offset();
+        id             = emitNewInstrAmd(attr, offset);
         id->idIns(ins);
 
         GenTree* regTree = (src == mem) ? dst : src;
@@ -3199,7 +3230,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
 
-    size_t offset = 0;
+    ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
@@ -3260,7 +3291,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_CLS_VAR_ADDR ||
            addr->OperGet() == GT_LEA || addr->OperGet() == GT_CNS_INT);
 
-    size_t offset = 0;
+    ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
@@ -3497,6 +3528,10 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                 if (IsSSEOrAVXInstruction(ins))
                 {
                     sz = 5;
+                }
+                else if (size == EA_1BYTE && reg == REG_EAX && !instrIs3opImul(ins))
+                {
+                    sz = 2;
                 }
                 else
                 {
@@ -4168,12 +4203,14 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitTotalIGjmps++;
 #endif
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
-
     // Set the relocation flags - these give hint to zap to perform
     // relocation of the specified 32bit address.
+    //
+    // Note the relocation flags influence the size estimate.
     id->idSetRelocFlags(attr);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
 
     dispIns(id);
     emitCurIGsize += sz;

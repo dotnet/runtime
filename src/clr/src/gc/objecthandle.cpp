@@ -21,14 +21,16 @@
 
 #include "gchandletableimpl.h"
 
+#ifndef BUILD_AS_STANDALONE
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 #ifndef FEATURE_REDHAWK
 #include "nativeoverlapped.h"
 #endif // FEATURE_REDHAWK
+#endif // BUILD_AS_STANDALONE
 
-GVAL_IMPL(HandleTableMap, g_HandleTableMap);
+HandleTableMap g_HandleTableMap;
 
 // Array of contexts used while scanning dependent handles for promotion. There are as many contexts as GC
 // heaps and they're allocated by Ref_Initialize and initialized during each GC by GcDhInitialScan.
@@ -137,7 +139,7 @@ void CALLBACK TraceDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
     // At this point, it's possible that either or both of the primary and secondary
     // objects are NULL.  However, if the secondary object is non-NULL, then the primary
     // object should also be non-NULL.
-    _ASSERTE(*pExtraInfo == NULL || *pObjRef != NULL);
+    _ASSERTE(*pExtraInfo == 0 || *pObjRef != NULL);
 
     struct DIAG_DEPSCANINFO *pInfo = (struct DIAG_DEPSCANINFO*)lp2;
 
@@ -1894,9 +1896,24 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
 
 #endif // !DACCESS_COMPILE
 
+GC_DAC_VISIBLE
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     return UNCHECKED_OBJECTREF_TO_OBJECTREF((_UNCHECKED_OBJECTREF)HndGetHandleExtraInfo(handle));
+}
+
+void PopulateHandleTableDacVars(GcDacVars* gcDacVars)
+{
+    static_assert(offsetof(HandleTableMap, pBuckets) == offsetof(dac_handle_table_map, pBuckets), "handle table map DAC layout mismatch");
+    static_assert(offsetof(HandleTableMap, pNext) == offsetof(dac_handle_table_map, pNext), "handle table map DAC layout mismatch");
+    static_assert(offsetof(HandleTableMap, dwMaxIndex) == offsetof(dac_handle_table_map, dwMaxIndex), "handle table map DAC layout mismatch");
+    static_assert(offsetof(HandleTableBucket, pTable) == offsetof(dac_handle_table_bucket, pTable), "handle table bucket DAC layout mismatch");
+    static_assert(offsetof(HandleTableBucket, HandleTableIndex) == offsetof(dac_handle_table_bucket, HandleTableIndex), "handle table bucket DAC layout mismatch");
+    static_assert(offsetof(HandleTable, uADIndex) == offsetof(dac_handle_table, uADIndex), "handle table DAC layout mismatch");
+
+#ifndef DACCESS_COMPILE
+    gcDacVars->handle_table_map = reinterpret_cast<dac_handle_table_map*>(&g_HandleTableMap);
+#endif // DACCESS_COMPILE
 }

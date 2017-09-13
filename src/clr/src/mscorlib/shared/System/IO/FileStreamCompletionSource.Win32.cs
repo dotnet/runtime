@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security;
+using System.Buffers;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
 
 namespace System.IO
 {
@@ -15,7 +15,7 @@ namespace System.IO
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by IOCallback and all of the async methods.
-        unsafe private sealed class FileStreamCompletionSource : TaskCompletionSource<int>
+        private unsafe class FileStreamCompletionSource : TaskCompletionSource<int>
         {
             private const long NoResult = 0;
             private const long ResultSuccess = (long)1 << 32;
@@ -28,7 +28,6 @@ namespace System.IO
 
             private readonly FileStream _stream;
             private readonly int _numBufferedBytes;
-            private readonly CancellationToken _cancellationToken;
             private CancellationTokenRegistration _cancellationRegistration;
 #if DEBUG
             private bool _cancellationHasBeenRegistered;
@@ -37,20 +36,19 @@ namespace System.IO
             private long _result; // Using long since this needs to be used in Interlocked APIs
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            internal FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[] bytes, CancellationToken cancellationToken)
+            internal FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[] bytes)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
                 _stream = stream;
                 _result = NoResult;
-                _cancellationToken = cancellationToken;
 
-                // Create the native overlapped. We try to use the preallocated overlapped if possible: 
-                // it's possible if the byte buffer is the same one that's associated with the preallocated overlapped 
-                // and if no one else is currently using the preallocated overlapped.  This is the fast-path for cases 
-                // where the user-provided buffer is smaller than the FileStream's buffer (such that the FileStream's 
+                // Create the native overlapped. We try to use the preallocated overlapped if possible: it's possible if the byte
+                // buffer is null (there's nothing to pin) or the same one that's associated with the preallocated overlapped (and
+                // thus is already pinned) and if no one else is currently using the preallocated overlapped.  This is the fast-path
+                // for cases where the user-provided buffer is smaller than the FileStream's buffer (such that the FileStream's
                 // buffer is used) and where operations on the FileStream are not being performed concurrently.
-                _overlapped = ReferenceEquals(bytes, _stream._buffer) && _stream.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
+                _overlapped = (bytes == null || ReferenceEquals(bytes, _stream._buffer)) && _stream.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
                     _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
                     _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
@@ -67,15 +65,16 @@ namespace System.IO
                 TrySetResult(numBytes + _numBufferedBytes);
             }
 
-            public void RegisterForCancellation()
+            public void RegisterForCancellation(CancellationToken cancellationToken)
             {
 #if DEBUG
+                Debug.Assert(cancellationToken.CanBeCanceled);
                 Debug.Assert(!_cancellationHasBeenRegistered, "Cannot register for cancellation twice");
                 _cancellationHasBeenRegistered = true;
 #endif
 
-                // Quick check to make sure that the cancellation token supports cancellation, and that the IO hasn't completed
-                if ((_cancellationToken.CanBeCanceled) && (_overlapped != null))
+                // Quick check to make sure the IO hasn't completed
+                if (_overlapped != null)
                 {
                     var cancelCallback = s_cancelCallback;
                     if (cancelCallback == null) s_cancelCallback = cancelCallback = Cancel;
@@ -84,7 +83,7 @@ namespace System.IO
                     long packedResult = Interlocked.CompareExchange(ref _result, RegisteringCancellation, NoResult);
                     if (packedResult == NoResult)
                     {
-                        _cancellationRegistration = _cancellationToken.Register(cancelCallback, this);
+                        _cancellationRegistration = cancellationToken.Register(cancelCallback, this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
                         packedResult = Interlocked.Exchange(ref _result, NoResult);
@@ -104,7 +103,7 @@ namespace System.IO
                 }
             }
 
-            internal void ReleaseNativeResource()
+            internal virtual void ReleaseNativeResource()
             {
                 // Ensure that cancellation has been completed and cleaned up.
                 _cancellationRegistration.Dispose();
@@ -172,6 +171,7 @@ namespace System.IO
             private void CompleteCallback(ulong packedResult)
             {
                 // Free up the native resource and cancellation registration
+                CancellationToken cancellationToken = _cancellationRegistration.Token; // access before disposing registration
                 ReleaseNativeResource();
 
                 // Unpack the result and send it to the user
@@ -181,7 +181,7 @@ namespace System.IO
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
                     if (errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                     {
-                        TrySetCanceled(_cancellationToken.IsCancellationRequested ? _cancellationToken : new CancellationToken(true));
+                        TrySetCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                     }
                     else
                     {
@@ -216,6 +216,29 @@ namespace System.IO
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Extends <see cref="FileStreamCompletionSource"/> with to support disposing of a
+        /// <see cref="MemoryHandle"/> when the operation has completed.  This should only be used
+        /// when memory doesn't wrap a byte[].
+        /// </summary>
+        private sealed class MemoryFileStreamCompletionSource : FileStreamCompletionSource
+        {
+            private MemoryHandle _handle; // mutable struct; do not make this readonly
+
+            internal MemoryFileStreamCompletionSource(FileStream stream, int numBufferedBytes, ReadOnlyMemory<byte> memory) :
+                base(stream, numBufferedBytes, bytes: null) // this type handles the pinning, so null is passed for bytes
+            {
+                Debug.Assert(!memory.DangerousTryGetArray(out ArraySegment<byte> array), "The base should be used directly if we can get the array.");
+                _handle = memory.Retain(pin: true);
+            }
+
+            internal override void ReleaseNativeResource()
+            {
+                _handle.Dispose();
+                base.ReleaseNativeResource();
             }
         }
     }

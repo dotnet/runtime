@@ -20,19 +20,19 @@ namespace System
         public MissingMethodException()
             : base(SR.Arg_MissingMethodException)
         {
-            HResult = __HResults.COR_E_MISSINGMETHOD;
+            HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_MISSINGMETHOD;
+            HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_MISSINGMETHOD;
+            HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(string className, string methodName)

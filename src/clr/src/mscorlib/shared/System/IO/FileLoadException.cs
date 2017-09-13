@@ -11,31 +11,31 @@ namespace System.IO
         public FileLoadException()
             : base(SR.IO_FileLoad)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = HResults.COR_E_FILELOAD;
         }
 
         public FileLoadException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = HResults.COR_E_FILELOAD;
         }
 
         public FileLoadException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = HResults.COR_E_FILELOAD;
         }
 
         public FileLoadException(string message, string fileName) : base(message)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = HResults.COR_E_FILELOAD;
             FileName = fileName;
         }
 
         public FileLoadException(string message, string fileName, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = HResults.COR_E_FILELOAD;
             FileName = fileName;
         }
 

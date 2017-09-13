@@ -18,13 +18,13 @@ namespace System.Diagnostics.Tracing
 
         // Register an event provider.
         unsafe uint IEventProvider.EventRegister(
-            ref Guid providerId,
+            EventSource eventSource,
             UnsafeNativeMethods.ManifestEtw.EtwEnableCallback enableCallback,
             void* callbackContext,
             ref long registrationHandle)
         {
             uint returnStatus = 0;
-            m_provHandle = EventPipeInternal.CreateProvider(providerId, enableCallback);
+            m_provHandle = EventPipeInternal.CreateProvider(eventSource.Name, enableCallback);
             if(m_provHandle != IntPtr.Zero)
             {
                 // Fixed registration handle because a new EventPipeEventProvider
@@ -62,28 +62,11 @@ namespace System.Diagnostics.Tracing
             {
                 if (userDataCount == 0)
                 {
-                    EventPipeInternal.WriteEvent(eventHandle, eventID, null, 0, activityId, relatedActivityId);
+                    EventPipeInternal.WriteEventData(eventHandle, eventID, null, 0, activityId, relatedActivityId);
                     return 0;
                 }
 
-                uint length = 0;
-                for (int i = 0; i < userDataCount; i++)
-                {
-                    length += userData[i].Size;
-                }
-
-                byte[] data = new byte[length];
-                fixed (byte *pData = data)
-                {
-                    uint offset = 0;
-                    for (int i = 0; i < userDataCount; i++)
-                    {
-                        byte * singleUserDataPtr = (byte *)(userData[i].Ptr);
-                        uint singleUserDataSize = userData[i].Size;
-                        WriteToBuffer(pData, length, ref offset, singleUserDataPtr, singleUserDataSize);
-                    }
-                    EventPipeInternal.WriteEvent(eventHandle, eventID, pData, length, activityId, relatedActivityId);
-                }
+                EventPipeInternal.WriteEventData(eventHandle, eventID, &userData, (uint) userDataCount, activityId, relatedActivityId);
             }
             return 0;
         }

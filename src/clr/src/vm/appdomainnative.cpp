@@ -7,7 +7,6 @@
 #include "common.h"
 #include "appdomain.hpp"
 #include "appdomainnative.hpp"
-#include "security.h"
 #include "vars.hpp"
 #include "eeconfig.h"
 #include "appdomain.inl"

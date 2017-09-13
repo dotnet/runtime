@@ -58,6 +58,18 @@ public:
         assert((end & ~PAGE_MASK) == 0);
     }
 
+    // This is a special constructor for the module base address
+    // set where the start/end are not page aligned and "offset"
+    // is reused as the module base address.
+    MemoryRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t baseAddress) : 
+        m_flags(flags),
+        m_startAddress(start),
+        m_endAddress(end),
+        m_offset(baseAddress),
+        m_fileName(nullptr)
+    {
+    }
+
     // copy with new file name constructor
     MemoryRegion(const MemoryRegion& region, const char* fileName) : 
         m_flags(region.m_flags),

@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
     // ByReference<T> is meant to be used to represent "ref T" fields. It is working
     // around lack of first class support for byref fields in C# and IL. The JIT and 
     // type loader has special handling for it that turns it into a thin wrapper around ref T.
+    [NonVersionable]
     internal struct ByReference<T>
     {
         private IntPtr _value;

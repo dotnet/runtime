@@ -182,19 +182,11 @@ void EventPipeEventInstance::SerializeToJsonFile(EventPipeJsonFile *pFile)
 
     EX_TRY
     {
-        const unsigned int guidSize = 39;
-        WCHAR wszProviderID[guidSize];
-        if(!StringFromGUID2(m_pEvent->GetProvider()->GetProviderID(), wszProviderID, guidSize))
-        {
-            wszProviderID[0] = '\0';
-        }
-
-        // Strip off the {}.
         StackScratchBuffer scratch;
-        SString guidStr(&wszProviderID[1], guidSize-3);
+        SString providerName = m_pEvent->GetProvider()->GetProviderName();
 
         SString message;
-        message.Printf("Provider=%s/EventID=%d/Version=%d", guidStr.GetANSI(scratch), m_pEvent->GetEventID(), m_pEvent->GetEventVersion());
+        message.Printf("Provider=%s/EventID=%d/Version=%d", providerName.GetANSI(scratch), m_pEvent->GetEventID(), m_pEvent->GetEventVersion());
         pFile->WriteEvent(m_timeStamp, m_threadID, message, m_stackContents);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);

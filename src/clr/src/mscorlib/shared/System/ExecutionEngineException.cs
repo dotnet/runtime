@@ -26,19 +26,19 @@ namespace System
         public ExecutionEngineException()
             : base(SR.Arg_ExecutionEngineException)
         {
-            HResult = __HResults.COR_E_EXECUTIONENGINE;
+            HResult = HResults.COR_E_EXECUTIONENGINE;
         }
 
         public ExecutionEngineException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_EXECUTIONENGINE;
+            HResult = HResults.COR_E_EXECUTIONENGINE;
         }
 
         public ExecutionEngineException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_EXECUTIONENGINE;
+            HResult = HResults.COR_E_EXECUTIONENGINE;
         }
     }
 }

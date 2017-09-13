@@ -49,7 +49,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) git clone $(GitHubRepo) $(GitHubDirectory)",
+        "arguments": "run --rm $(DockerCommonRunArgs) git clone $(VsoCoreClrGitUrl) $(GitHubDirectory)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) $(PB_AdditionalBuildArgs) -- /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -139,7 +139,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./build-packages.sh -BuildType=$(PB_BuildType) -BuildArch=$(Architecture) -- /p:OfficialBuildId=$(OfficialBuildId)",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./build-packages.sh -BuildType=$(PB_BuildType) -BuildArch=$(Architecture) $(PB_AdditionalBuildArgs) -- /p:OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -369,6 +369,22 @@
     },
     "PB_CleanAgent": {
       "value": "true"
+    },
+    "PB_AdditionalBuildArgs": {
+      "value":""
+    },
+    "VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "VsoCoreClrGitUrl": {
+      "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepositoryName)/"
+    },
+    "VsoPassword": {
+      "value": null,
+      "isSecret": true
+    },
+    "VsoRepositoryName": {
+      "value": "DotNet-CoreCLR-Trusted"
     }
   },
   "demands": [

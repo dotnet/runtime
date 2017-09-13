@@ -226,7 +226,7 @@ namespace System
 
         /// <summary>
         ///     Initialize the compatibility flags to non-NULL values.
-        ///     This method is also called from the VM when the default domain dosen't have a domain manager.
+        ///     This method is also called from the VM when the default domain doesn't have a domain manager.
         /// </summary>
         private void InitializeCompatibilityFlags()
         {
@@ -398,7 +398,7 @@ namespace System
         }
 
         [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
-        [DllImport(Microsoft.Win32.Win32Native.KERNEL32)]
+        [DllImport(Interop.Libraries.Kernel32)]
         public static extern int GetCurrentThreadId();
 
         private AppDomain()
@@ -874,7 +874,7 @@ namespace System
 
     /// <summary>
     ///     Handle used to marshal an AppDomain to the VM (eg QCall). When marshaled via a QCall, the target
-    ///     method in the VM will recieve a QCall::AppDomainHandle parameter.
+    ///     method in the VM will receive a QCall::AppDomainHandle parameter.
     /// </summary>
     internal struct AppDomainHandle
     {

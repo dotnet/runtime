@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "clrtypes.h"
+#include "safemath.h"
 #include "common.h"
 #include "eventpipe.h"
 #include "eventpipebuffermanager.h"
@@ -37,6 +39,146 @@ extern "C" void InitProvidersAndEvents();
 // This function is auto-generated from /src/scripts/genEventPipe.py
 extern "C" void InitProvidersAndEvents();
 #endif
+
+EventPipeEventPayload::EventPipeEventPayload(BYTE *pData, unsigned int length)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    m_pData = pData;
+    m_pEventData = NULL;
+    m_eventDataCount = 0;
+    m_allocatedData = false;
+
+    m_size = length;
+}
+
+EventPipeEventPayload::EventPipeEventPayload(EventData **pEventData, unsigned int eventDataCount)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    m_pData = NULL;
+    m_pEventData = pEventData;
+    m_eventDataCount = eventDataCount;
+    m_allocatedData = false;
+
+    S_UINT32 tmp_size = S_UINT32(0);
+    for (unsigned int i=0; i<m_eventDataCount; i++)
+    {
+        tmp_size += S_UINT32((*m_pEventData)[i].Size);
+    }
+
+    if (tmp_size.IsOverflow())
+    {
+        // If there is an overflow, drop the data and create an empty payload
+        m_pEventData = NULL;
+        m_eventDataCount = 0;
+        m_size = 0;
+    }
+    else
+    {
+        m_size = tmp_size.Value();
+    }
+}
+
+EventPipeEventPayload::~EventPipeEventPayload()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if(m_allocatedData && m_pData != NULL)
+    {
+        delete[] m_pData;
+        m_pData = NULL;
+    }
+}
+
+void EventPipeEventPayload::Flatten()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if(m_size > 0)
+    {
+        if (!IsFlattened())
+        {
+            BYTE* tmp_pData = new (nothrow) BYTE[m_size];
+            if (tmp_pData != NULL)
+            {
+                m_allocatedData = true;
+                CopyData(tmp_pData);
+                m_pData = tmp_pData;
+            }
+        }
+    }
+}
+
+void EventPipeEventPayload::CopyData(BYTE *pDst)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if(m_size > 0)
+    {
+        if(IsFlattened())
+        {
+            memcpy(pDst, m_pData, m_size);
+        }
+
+        else if(m_pEventData != NULL)
+        {
+            unsigned int offset = 0;
+            for(unsigned int i=0; i<m_eventDataCount; i++)
+            {
+                memcpy(pDst + offset, (BYTE*)(*m_pEventData)[i].Ptr, (*m_pEventData)[i].Size);
+                offset += (*m_pEventData)[i].Size;
+            }
+        }
+    }
+}
+
+BYTE* EventPipeEventPayload::GetFlatData()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (!IsFlattened())
+    {
+        Flatten();
+    }
+    return m_pData;
+}
 
 void EventPipe::Initialize()
 {
@@ -238,7 +380,7 @@ bool EventPipe::Enabled()
     return enabled;
 }
 
-EventPipeProvider* EventPipe::CreateProvider(const GUID &providerID, EventPipeCallback pCallbackFunction, void *pCallbackData)
+EventPipeProvider* EventPipe::CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
     {
@@ -248,7 +390,7 @@ EventPipeProvider* EventPipe::CreateProvider(const GUID &providerID, EventPipeCa
     }
     CONTRACTL_END;
 
-    return new EventPipeProvider(providerID, pCallbackFunction, pCallbackData);
+    return new EventPipeProvider(providerName, pCallbackFunction, pCallbackData);
 }
 
 void EventPipe::DeleteProvider(EventPipeProvider *pProvider)
@@ -289,6 +431,34 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    EventPipeEventPayload payload(pData, length);
+    EventPipe::WriteEventInternal(event, payload, pActivityId, pRelatedActivityId);
+}
+
+void EventPipe::WriteEvent(EventPipeEvent &event, EventData **pEventData, unsigned int eventDataCount, LPCGUID pActivityId, LPCGUID pRelatedActivityId)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    EventPipeEventPayload payload(pEventData, eventDataCount);
+    EventPipe::WriteEventInternal(event, payload, pActivityId, pRelatedActivityId);
+}
+
+void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
         PRECONDITION(s_pBufferManager != NULL);
     }
     CONTRACTL_END;
@@ -309,7 +479,7 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
 
     if(!s_pConfig->RundownEnabled() && s_pBufferManager != NULL)
     {
-        if(!s_pBufferManager->WriteEvent(pThread, event, pData, length, pActivityId, pRelatedActivityId))
+        if(!s_pBufferManager->WriteEvent(pThread, event, payload, pActivityId, pRelatedActivityId))
         {
             // This is used in DEBUG to make sure that we don't log an event synchronously that we didn't log to the buffer.
             return;
@@ -317,19 +487,23 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
     }
     else if(s_pConfig->RundownEnabled())
     {
-        // Write synchronously to the file.
-        // We're under lock and blocking the disabling thread.
-        EventPipeEventInstance instance(
-            event,
-            pThread->GetOSThreadId(),
-            pData,
-            length,
-            pActivityId,
-            pRelatedActivityId);
-
-        if(s_pFile != NULL)
+        BYTE *pData = payload.GetFlatData();
+        if (pData != NULL)
         {
-            s_pFile->WriteEvent(instance);
+            // Write synchronously to the file.
+            // We're under lock and blocking the disabling thread.
+            EventPipeEventInstance instance(
+                event,
+                pThread->GetOSThreadId(),
+                pData,
+                payload.GetSize(),
+                pActivityId,
+                pRelatedActivityId);
+
+            if(s_pFile != NULL)
+            {
+                s_pFile->WriteEvent(instance);
+            }
         }
     }
 
@@ -337,25 +511,29 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
     {
         GCX_PREEMP();
 
-        // Create an instance of the event for the synchronous path.
-        EventPipeEventInstance instance(
-            event,
-            pThread->GetOSThreadId(),
-            pData,
-            length,
-            pActivityId,
-            pRelatedActivityId);
+        BYTE *pData = payload.GetFlatData();
+        if (pData != NULL)
+        {
+            // Create an instance of the event for the synchronous path.
+            EventPipeEventInstance instance(
+                event,
+                pThread->GetOSThreadId(),
+                pData,
+                payload.GetSize(),
+                pActivityId,
+                pRelatedActivityId);
 
-        // Write to the EventPipeFile if it exists.
-        if(s_pSyncFile != NULL)
-        {
-            s_pSyncFile->WriteEvent(instance);
-        }
+            // Write to the EventPipeFile if it exists.
+            if(s_pSyncFile != NULL)
+            {
+                s_pSyncFile->WriteEvent(instance);
+            }
  
-        // Write to the EventPipeJsonFile if it exists.
-        if(s_pJsonFile != NULL)
-        {
-            s_pJsonFile->WriteEvent(instance);
+            // Write to the EventPipeJsonFile if it exists.
+            if(s_pJsonFile != NULL)
+            {
+                s_pJsonFile->WriteEvent(instance);
+            }
         }
     }
 #endif // _DEBUG
@@ -371,12 +549,14 @@ void EventPipe::WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent 
     }
     CONTRACTL_END;
 
+    EventPipeEventPayload payload(pData, length);
+
     // Write the event to the thread's buffer.
     if(s_pBufferManager != NULL)
     {
         // Specify the sampling thread as the "current thread", so that we select the right buffer.
         // Specify the target thread so that the event gets properly attributed.
-        if(!s_pBufferManager->WriteEvent(pSamplingThread, *pEvent, pData, length, NULL /* pActivityId */, NULL /* pRelatedActivityId */, pTargetThread, &stackContents))
+        if(!s_pBufferManager->WriteEvent(pSamplingThread, *pEvent, payload, NULL /* pActivityId */, NULL /* pRelatedActivityId */, pTargetThread, &stackContents))
         {
             // This is used in DEBUG to make sure that we don't log an event synchronously that we didn't log to the buffer.
             return;
@@ -520,7 +700,7 @@ void QCALLTYPE EventPipeInternal::Disable()
 }
 
 INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
-    GUID providerID,
+    __in_z LPCWSTR providerName,
     EventPipeCallback pCallbackFunc)
 {
     QCALL_CONTRACT;
@@ -529,7 +709,7 @@ INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
 
     BEGIN_QCALL;
 
-    pProvider = EventPipe::CreateProvider(providerID, pCallbackFunc, NULL);
+    pProvider = EventPipe::CreateProvider(providerName, pCallbackFunc, NULL);
 
     END_QCALL;
 
@@ -591,6 +771,24 @@ void QCALLTYPE EventPipeInternal::WriteEvent(
     _ASSERTE(eventHandle != NULL);
     EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
     EventPipe::WriteEvent(*pEvent, (BYTE *)pData, length, pActivityId, pRelatedActivityId);
+
+    END_QCALL;
+}
+
+void QCALLTYPE EventPipeInternal::WriteEventData(
+    INT_PTR eventHandle,
+    unsigned int eventID,
+    EventData **pEventData,
+    unsigned int eventDataCount,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    _ASSERTE(eventHandle != NULL);
+    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
+    EventPipe::WriteEvent(*pEvent, pEventData, eventDataCount, pActivityId, pRelatedActivityId);
 
     END_QCALL;
 }

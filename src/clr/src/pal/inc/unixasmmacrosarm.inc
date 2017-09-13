@@ -72,7 +72,6 @@ C_FUNC(\Name\()_End):
 
 .macro free_stack Size
         add sp, sp, (\Size)
-        .pad #-(\Size)
 .endm
 
 .macro POP_CALLEE_SAVED_REGISTERS

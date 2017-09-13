@@ -15,7 +15,6 @@
 
 4.   ADDITIONAL NOTES ON TESTING/SPECIFIC TEST CASE ISSUES
      C_runtime: _fdopen testing issues
-     File_IO: getfiletime/test5
      File_IO: getfilesize/test1, setfilepointer/test(5,6,7)
      File_IO: gettempfilename(a,w)/test2
      File_IO: setfileattributesa/test(1,4), setfileattributesw/test(1,4)
@@ -91,11 +90,6 @@ The modes that will not be tested are as follows:
     "w+" - Opens an empty file for both reading and writing.
     "a+" - Opens for reading and appending.
 
-
-
-File_IO: getfiletime/test5
-
-This test case is NTFS specific.
 
 
 File_IO: getfilesize/test1, getfilesizeex/test1 setfilepointer/test(5,6,7)

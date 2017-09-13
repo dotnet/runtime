@@ -137,7 +137,6 @@
 #include "stackwalk.h"
 #include "gcheaputilities.h"
 #include "interoputil.h"
-#include "security.h"
 #include "fieldmarshaler.h"
 #include "dbginterface.h"
 #include "eedbginterfaceimpl.h"
@@ -900,10 +899,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-        // This isn't done as part of InitializeGarbageCollector() above because thread
-        // creation requires AppDomains to have been set up.
-        FinalizerThread::FinalizerThreadCreate();
-
 #ifndef FEATURE_PAL
         // Watson initialization must precede InitializeDebugger() and InstallUnhandledExceptionFilter() 
         // because on CoreCLR when Waston is enabled, debugging service needs to be enabled and UEF will be used.
@@ -1010,6 +1005,10 @@ void EEStartupHelper(COINITIEE fFlags)
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
+        // This isn't done as part of InitializeGarbageCollector() above because thread
+        // creation requires AppDomains to have been set up.
+        FinalizerThread::FinalizerThreadCreate();
+
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
 
@@ -1109,12 +1108,6 @@ void EEStartupHelper(COINITIEE fFlags)
         if (g_pConfig->ExpandModulesOnLoad())
         {
             SystemDomain::SystemModule()->ExpandAll();
-        }
-
-        //For a similar reason, let's not run VerifyAllOnLoad either.
-        if (g_pConfig->VerifyModulesOnLoad())
-        {
-            SystemDomain::SystemModule()->VerifyAllMethods();
         }
 
         // Perform mscorlib consistency check if requested
@@ -1629,6 +1622,13 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // Indicate the EE is the shut down phase.
         g_fEEShutDown |= ShutDown_Start;
+
+#ifdef FEATURE_TIERED_COMPILATION
+        {
+            GCX_PREEMP();
+            TieredCompilationManager::ShutdownAllDomains();
+        }
+#endif
 
         fFinalizeOK = TRUE;
 
@@ -2509,6 +2509,7 @@ void LoadGarbageCollector()
 
 #endif // FEATURE_STANDALONE_GC
 
+#ifndef FEATURE_STANDALONE_GC_ONLY
 void LoadStaticGarbageCollector()
 {
     CONTRACTL{
@@ -2531,6 +2532,7 @@ void LoadStaticGarbageCollector()
     g_pGCHandleManager = pGcHandleManager;
     g_gcDacGlobals = &g_gc_dac_vars;
 }
+#endif // FEATURE_STANDALONE_GC_ONLY
 
 
 void InitializeGarbageCollector()
@@ -2567,7 +2569,9 @@ void InitializeGarbageCollector()
     else
 #endif // FEATURE_STANDALONE_GC
     {
+#ifndef FEATURE_STANDALONE_GC_ONLY
         LoadStaticGarbageCollector();
+#endif // FEATURE_STANDALONE_GC_ONLY
     }
 
     // Apparently the Windows linker removes global variables if they are never

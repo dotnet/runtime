@@ -977,7 +977,7 @@ void CodeGen::sched_AM(instruction ins,
         // Setup regVal
         //
 
-        regVal = regSet.rsPickReg(RBM_ALLINT & ~avoidMask);
+        regVal = regSet.rsPickFreeReg(RBM_ALLINT & ~avoidMask);
         regTracker.rsTrackRegTrash(regVal);
         avoidMask |= genRegMask(regVal);
         var_types load_store_type;
@@ -2532,7 +2532,24 @@ AGAIN:
                     }
                     else
                     {
-                        regTmp = regSet.rsPickReg(RBM_ALLINT & ~genRegMask(reg));
+                        // Lock the destination register to ensure that rsPickReg does not choose it.
+                        const regMaskTP regMask = genRegMask(reg);
+                        if ((regMask & regSet.rsMaskUsed) == 0)
+                        {
+                            regSet.rsLockReg(regMask);
+                            regTmp = regSet.rsPickReg(RBM_ALLINT);
+                            regSet.rsUnlockReg(regMask);
+                        }
+                        else if ((regMask & regSet.rsMaskLock) == 0)
+                        {
+                            regSet.rsLockUsedReg(regMask);
+                            regTmp = regSet.rsPickReg(RBM_ALLINT);
+                            regSet.rsUnlockUsedReg(regMask);
+                        }
+                        else
+                        {
+                            regTmp = regSet.rsPickReg(RBM_ALLINT);
+                        }
                     }
 #endif // LEGACY_BACKEND
 

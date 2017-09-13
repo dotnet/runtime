@@ -281,7 +281,7 @@ namespace System
         }
 
         /// <summary>
-        /// Gets the AdjustmentRule that is immediately preceeding the specified rule.
+        /// Gets the AdjustmentRule that is immediately preceding the specified rule.
         /// If the specified rule is the first AdjustmentRule, or it isn't in _adjustmentRules,
         /// then the specified rule is returned.
         /// </summary>

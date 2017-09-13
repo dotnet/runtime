@@ -23,7 +23,6 @@
 #include "field.h"
 #include "assemblyname.hpp"
 #include "eeconfig.h"
-#include "security.h"
 #include "strongname.h"
 #include "interoputil.h"
 #include "frames.h"
@@ -423,6 +422,40 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR 
     {
          GCX_COOP();
          retType.Set(retTypeHandle.GetManagedClassObject());
+    }
+
+    END_QCALL;
+
+    return;
+}
+
+void QCALLTYPE AssemblyNative::GetForwardedType(QCall::AssemblyHandle pAssembly, mdToken mdtExternalType, QCall::ObjectHandleOnStack retType)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    HRESULT hr;
+    LPCSTR pszNameSpace;
+    LPCSTR pszClassName;
+    mdToken mdImpl;
+
+    Assembly * pAsm = pAssembly->GetAssembly();
+    Module *pManifestModule = pAsm->GetManifestModule();
+    IfFailThrow(pManifestModule->GetMDImport()->GetExportedTypeProps(mdtExternalType, &pszNameSpace, &pszClassName, &mdImpl, NULL, NULL));
+    if (TypeFromToken(mdImpl) == mdtAssemblyRef)
+    {
+        NameHandle typeName(pszNameSpace, pszClassName);
+        typeName.SetTypeToken(pManifestModule, mdtExternalType);
+        TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
+        {
+            GCX_COOP();
+            retType.Set(typeHnd.GetManagedClassObject());
+        }
     }
 
     END_QCALL;

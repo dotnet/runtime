@@ -122,10 +122,11 @@ CORINFO_MODULE_HANDLE WrapICorJitInfo::getMethodModule(
 void WrapICorJitInfo::getMethodVTableOffset(
             CORINFO_METHOD_HANDLE       method,                 /* IN */
             unsigned*                   offsetOfIndirection,    /* OUT */
-            unsigned*                   offsetAfterIndirection  /* OUT */)
+            unsigned*                   offsetAfterIndirection, /* OUT */
+            bool*                       isRelative              /* OUT */)
 {
     API_ENTER(getMethodVTableOffset);
-    wrapHnd->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
+    wrapHnd->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
     API_LEAVE(getMethodVTableOffset);
 }
 
@@ -1025,6 +1026,17 @@ const char* WrapICorJitInfo::getMethodName(
     API_ENTER(getMethodName);
     const char* temp = wrapHnd->getMethodName(ftn, moduleName);
     API_LEAVE(getMethodName);
+    return temp;
+}
+
+const char* WrapICorJitInfo::getMethodNameFromMetadata(
+        CORINFO_METHOD_HANDLE       ftn,           /* IN */
+        const char                **className,     /* OUT */
+        const char                **namespaceName  /* OUT */)
+{
+    API_ENTER(getMethodNameFromMetadata);
+    const char* temp = wrapHnd->getMethodNameFromMetaData(ftn, moduleName, namespaceName);
+    API_LEAVE(getMethodNameFromMetadata);
     return temp;
 }
 
