@@ -256,7 +256,8 @@ namespace System.Drawing.Printing.Tests
                     break;
 
                 default:
-                    Assert.False(true, "Unexpected default paper size");
+                    string message = $"Unexpected default paper size. Kind={pageSettings.PaperSize.Kind}, Bounds={pageSettings.Bounds}";
+                    Assert.False(true, message);
                     break;
             }
 
