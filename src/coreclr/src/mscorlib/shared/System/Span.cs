@@ -117,6 +117,7 @@ namespace System
         /// <param name="objectData">A reference to data within that object.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Span<T> DangerousCreate(object obj, ref T objectData, int length) => new Span<T>(ref objectData, length);
 
         // Constructor for internal use only.
@@ -133,6 +134,8 @@ namespace System
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public ref T DangerousGetPinnableReference()
         {
             return ref _pointer.Value;
