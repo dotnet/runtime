@@ -74,6 +74,7 @@ static gint32 signatures_size;
 MonoNativeTlsKey loader_lock_nest_id;
 
 static void dllmap_cleanup (void);
+static void cached_module_cleanup(void);
 
 static void
 global_loader_data_lock (void)
@@ -117,6 +118,7 @@ void
 mono_loader_cleanup (void)
 {
 	dllmap_cleanup ();
+	cached_module_cleanup ();
 
 	mono_native_tls_free (loader_lock_nest_id);
 
@@ -1135,6 +1137,23 @@ mono_loader_register_module (const char *name, MonoDl *module)
 	if (!global_module_map)
 		global_module_map = g_hash_table_new (g_str_hash, g_str_equal);
 	g_hash_table_insert (global_module_map, g_strdup (name), module);
+}
+
+static void
+remove_cached_module(gpointer key, gpointer value, gpointer user_data)
+{
+	mono_dl_close((MonoDl*)value);
+}
+
+static void
+cached_module_cleanup(void)
+{
+	if (global_module_map != NULL) {
+		g_hash_table_foreach(global_module_map, remove_cached_module, NULL);
+
+		g_hash_table_destroy(global_module_map);
+		global_module_map = NULL;
+	}
 }
 
 static MonoDl *internal_module;
