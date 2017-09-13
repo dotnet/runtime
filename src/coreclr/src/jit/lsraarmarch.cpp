@@ -99,7 +99,7 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
     }
     else
     {
-        assert((info->dstCount == 1) || tree->OperIs(GT_CMP));
+        assert((info->dstCount == 1) || tree->OperIs(GT_CMP, GT_TEST_EQ, GT_TEST_NE));
     }
 }
 
