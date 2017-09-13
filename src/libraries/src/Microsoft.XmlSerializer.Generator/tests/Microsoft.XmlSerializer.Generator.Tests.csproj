@@ -6,14 +6,26 @@
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap' OR '$(TargetsUnix)' == 'true'">true</SkipTestsOnPlatform>
+    <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap'">true</SkipTestsOnPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <!-- We're building netcoreap, run on the test CLI
+         Reuse the same runtimeconfig that the tests use. -->
+     <GeneratorRuntimeConfig>$(ToolsDir)xunit.console.netcore.runtimeconfig.json</GeneratorRuntimeConfig>
+     <GeneratorCliPath>$(TestHostRootPath)</GeneratorCliPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
+    <!-- We're building some non-netcoreapp target, run on the Tools CLI.
+         Reuse the same runtimeconfig used by CSC. -->
+     <GeneratorRuntimeConfig>$(ToolsDir)csc.runtimeconfig.json</GeneratorRuntimeConfig>
+     <GeneratorCliPath>$(ToolsDir)dotnetcli/</GeneratorCliPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
     <Compile Include=".\SGenTests.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
@@ -22,32 +34,58 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include=".\AlwaysPassTest.cs" />
-    <Content Include="dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json">
+    <Content Include="$(GeneratorRuntimeConfig)">
+      <!-- Rename it to match the Generator application name -->
+      <Link>dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="dotnet-Microsoft.XmlSerializer.Generator" />
+    <ReferenceFromRuntime Include="dotnet-Microsoft.XmlSerializer.Generator">
+      <!-- Copy this to our test output directory and run from there.
+           This is required so that we can stage the application with a custom runtimeconfig that lets it run on the test shared framework. -->
+      <Private>true</Private>
+    </ReferenceFromRuntime>
   </ItemGroup>
-  <Target Name="GenerateSerializationAssembly" AfterTargets="Build" Condition=" '$(SkipTestsOnPlatform)' != 'true' " >
+  <!-- This target runs before binplacing as it needs to provide a test assembly to binplace, and depends on CopyFilesToOutputDirectory
+       so that the Generator app dll and runtimeconfig will be copied to the OutputPath -->
+  <Target Name="GenerateSerializationAssembly" DependsOnTargets="CopyFilesToOutputDirectory" BeforeTargets="GetBinPlaceItems" Condition=" '$(SkipTestsOnPlatform)' != 'true' " >
     <PropertyGroup>
       <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
     </PropertyGroup>
-    <Copy SourceFiles="$(ToolsDir)\csc.runtimeconfig.json" DestinationFiles="$(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json" />
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec ContinueOnError="true" Command="$(ToolsDir)\dotnetcli\dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
+    <Exec Command="$(GeneratorCliPath)dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs"/>
-    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" ContinueOnError="true" 
+    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' != 'core'" ContinueOnError="true" 
          OutputAssembly="$(OutputPath)$(SerializerName).dll" 
          References="@(ReferencePath);@(IntermediateAssembly)" 
          EmitDebugInformation="$(DebugSymbols)"  
+         DebugType="$(DebugType)" 
          Sources="$(OutputPath)$(SerializerName).cs" 
          TargetType="Library" 
          ToolExe="$(CscToolExe)" 
          ToolPath="$(CscToolPath)" 
          DisabledWarnings="$(NoWarn), 219" 
          UseSharedCompilation="true" />
+    <!-- when building on core CSC requires the OverrideToolHost parameter, but this is not supported by desktop csc -->
+    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' == 'core'" ContinueOnError="true" 
+         OutputAssembly="$(OutputPath)$(SerializerName).dll" 
+         References="@(ReferencePath);@(IntermediateAssembly)" 
+         EmitDebugInformation="$(DebugSymbols)"  
+         DebugType="$(DebugType)" 
+         Sources="$(OutputPath)$(SerializerName).cs" 
+         TargetType="Library" 
+         ToolExe="$(CscToolExe)" 
+         ToolPath="$(CscToolPath)" 
+         OverrideToolHost="$(OverrideToolHost)" 
+         DisabledWarnings="$(NoWarn), 219" 
+         UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll"/>
+
+    <ItemGroup>
+      <!-- Include the Serializer in ReferenceCopyLocalPaths so that it will be binplaced -->
+      <ReferenceCopyLocalPaths Include="$(OutputPath)$(SerializerName).dll" />
+    </ItemGroup>
   </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

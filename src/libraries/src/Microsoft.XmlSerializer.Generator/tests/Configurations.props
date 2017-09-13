@@ -4,7 +4,7 @@
     <BuildConfigurations>
       netstandard;
       uap;
-      netcoreapp-Unix;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
