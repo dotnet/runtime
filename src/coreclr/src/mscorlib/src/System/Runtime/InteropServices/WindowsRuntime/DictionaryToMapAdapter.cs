@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // V Lookup(K key)
         internal V Lookup<K, V>(K key)
         {
-            IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
+            IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
             V value;
             bool keyFound = _this.TryGetValue(key, out value);
 
@@ -52,21 +52,21 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // uint Size { get }
         internal uint Size<K, V>()
         {
-            IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
+            IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
             return (uint)_this.Count;
         }
 
         // bool HasKey(K key)
         internal bool HasKey<K, V>(K key)
         {
-            IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
+            IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
             return _this.ContainsKey(key);
         }
 
         // IMapView<K, V> GetView()
         internal IReadOnlyDictionary<K, V> GetView<K, V>()
         {
-            IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
+            IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
             Debug.Assert(_this != null);
 
             // Note: This dictionary is not really read-only - you could QI for a modifiable
@@ -82,7 +82,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // bool Insert(K key, V value)
         internal bool Insert<K, V>(K key, V value)
         {
-            IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
+            IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
             bool replacing = _this.ContainsKey(key);
             _this[key] = value;
             return replacing;
@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void Remove(K key)
         internal void Remove<K, V>(K key)
         {
-            IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
+            IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
             bool removed = _this.Remove(key);
 
             if (!removed)
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void Clear()
         internal void Clear<K, V>()
         {
-            IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
+            IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
             _this.Clear();
         }
     }
