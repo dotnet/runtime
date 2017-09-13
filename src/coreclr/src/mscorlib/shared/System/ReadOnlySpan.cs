@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
-using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
+using System.Runtime.Versioning;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -17,6 +17,7 @@ namespace System
     /// </summary>
     [IsReadOnly]
     [IsByRefLike]
+    [NonVersionable]
     public struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -131,12 +132,26 @@ namespace System
         /// <summary>
         /// The number of items in the read-only span.
         /// </summary>
-        public int Length => _length;
+        public int Length
+        {
+            [NonVersionable]
+            get
+            {
+                return _length;
+            }
+        }
 
         /// <summary>
         /// Returns true if Length is 0.
         /// </summary>
-        public bool IsEmpty => _length == 0;
+        public bool IsEmpty
+        {
+            [NonVersionable]
+            get
+            {
+                return _length == 0;
+            }
+        }
 
         /// <summary>
         /// Returns the specified element of the read-only span.
@@ -159,6 +174,7 @@ namespace System
             [Intrinsic]
 #endif
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [NonVersionable]
             get
             {
                 if ((uint)index >= (uint)_length)
