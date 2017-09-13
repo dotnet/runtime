@@ -155,7 +155,7 @@ mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout
 		enter_alertable_wait (info);
 	}
 
-	result = SignalObjectAndWait (toSignal, towlower, timeout, alertable);
+	result = SignalObjectAndWait (toSignal, toWait, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
 	// if changed, last error need to be preserved and reset before returning.
