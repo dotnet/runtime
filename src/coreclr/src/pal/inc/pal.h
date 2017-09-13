@@ -4078,6 +4078,52 @@ BitScanForward64(
     return bRet;
 }
 
+// Define BitScanReverse64 and BitScanReverse
+// Per MSDN, BitScanReverse64 or BitScanReverse will search the mask data from most significant bit (MSB) 
+// to least significant bit (LSB) for a set bit (1).
+// If one is found, its bit position is returned in the out PDWORD argument and 1 is returned.
+// Otherwise, 0 is returned.
+//
+// On GCC, the equivalent function is __builtin_clzll or __builtin_clz. It returns 1+index of the most
+// significant set bit, or undefined result if mask is zero.
+EXTERN_C
+PALIMPORT
+inline
+unsigned char
+PALAPI
+BitScanReverse(
+    IN OUT PDWORD Index,
+    IN UINT qwMask)
+{
+    unsigned char bRet = FALSE;
+    if (qwMask != 0)
+    {
+        *Index = (UINT) (8 * sizeof (UINT) - __builtin_clz(qwMask) - 1);
+        bRet = TRUE;
+    }
+
+    return bRet;
+}
+
+EXTERN_C
+PALIMPORT
+inline
+unsigned char
+PALAPI
+BitScanReverse64(
+    IN OUT PDWORD Index,
+    IN UINT64 qwMask)
+{
+    unsigned char bRet = FALSE;
+    if (qwMask != 0)
+    {
+        *Index = (UINT) (8 * sizeof (UINT64) - __builtin_clzll(qwMask) - 1);
+        bRet = TRUE;
+    }
+
+    return bRet;
+}
+
 /*++
 Function:
 InterlockedIncrement
@@ -5045,7 +5091,6 @@ PALIMPORT char * __cdecl _strlwr(char *);
 PALIMPORT int __cdecl _stricmp(const char *, const char *);
 PALIMPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
-PALIMPORT char * __cdecl _ecvt(double, int, int *, int *);
 PALIMPORT int __cdecl __iscsym(int);
 PALIMPORT unsigned char * __cdecl _mbsinc(const unsigned char *);
 PALIMPORT unsigned char * __cdecl _mbsninc(const unsigned char *, size_t);
