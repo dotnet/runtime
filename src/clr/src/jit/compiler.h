@@ -4279,9 +4279,9 @@ private:
     BlockToSwitchDescMap* m_switchDescMap;
 
 public:
-    BlockToSwitchDescMap* GetSwitchDescMap()
+    BlockToSwitchDescMap* GetSwitchDescMap(bool createIfNull = true)
     {
-        if (m_switchDescMap == nullptr)
+        if ((m_switchDescMap == nullptr) && createIfNull)
         {
             m_switchDescMap = new (getAllocator()) BlockToSwitchDescMap(getAllocator());
         }
