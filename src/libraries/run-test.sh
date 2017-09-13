@@ -199,11 +199,8 @@ run_test()
 
   dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
   if [ ! -d "$dirName" ]; then
-    dirName="$1/netstandard"
-    if [ ! -d "$dirName" ]; then
-        echo "Nothing to test in $testProject"
-        return
-    fi
+    echo "Nothing to test in $testProject"
+    return
   fi
 
   if [ ! -e "$dirName/RunTests.sh" ]; then
