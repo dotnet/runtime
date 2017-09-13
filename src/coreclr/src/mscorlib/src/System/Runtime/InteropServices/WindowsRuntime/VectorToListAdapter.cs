@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
+            IVector<T> _this = Unsafe.As<IVector<T>>(this);
             return GetAt(_this, (uint)index);
         }
 
@@ -46,14 +46,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
+            IVector<T> _this = Unsafe.As<IVector<T>>(this);
             SetAt(_this, (uint)index, value);
         }
 
         // int IndexOf(T item)
         internal int IndexOf<T>(T item)
         {
-            IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
+            IVector<T> _this = Unsafe.As<IVector<T>>(this);
 
             uint index;
             bool exists = _this.IndexOf(item, out index);
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
+            IVector<T> _this = Unsafe.As<IVector<T>>(this);
             InsertAtHelper<T>(_this, (uint)index, item);
         }
 
@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
+            IVector<T> _this = Unsafe.As<IVector<T>>(this);
             RemoveAtHelper<T>(_this, (uint)index);
         }
 

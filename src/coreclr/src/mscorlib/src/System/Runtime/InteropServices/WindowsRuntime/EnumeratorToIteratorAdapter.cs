@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // This method is invoked when First is called on a managed implementation of IIterable<T>.
         internal IIterator<T> First_Stub<T>()
         {
-            IEnumerable<T> _this = JitHelpers.UnsafeCast<IEnumerable<T>>(this);
+            IEnumerable<T> _this = Unsafe.As<IEnumerable<T>>(this);
             return new EnumeratorToIteratorAdapter<T>(_this.GetEnumerator());
         }
     }
@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // This method is invoked when First is called on a managed implementation of IBindableIterable.
         internal IBindableIterator First_Stub()
         {
-            IEnumerable _this = JitHelpers.UnsafeCast<IEnumerable>(this);
+            IEnumerable _this = Unsafe.As<IEnumerable>(this);
             return new EnumeratorToIteratorAdapter<object>(new NonGenericToGenericEnumerator(_this.GetEnumerator()));
         }
     }
