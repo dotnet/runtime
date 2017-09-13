@@ -15,6 +15,7 @@ namespace System.Net.Http.Functional.Tests
 
     // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class DefaultCredentialsTest
     {
         private static string DomainJoinedTestServer => Configuration.Http.DomainJoinedHttpHost;
@@ -292,11 +293,4 @@ namespace System.Net.Http.Functional.Tests
             }
         }        
     }
-
-    public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
-    {
-        public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
-
 }
