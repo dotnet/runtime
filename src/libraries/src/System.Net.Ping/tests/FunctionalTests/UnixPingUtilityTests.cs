@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -22,7 +23,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(1)]
         [InlineData(50)]
         [InlineData(1000)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests un-priviledged Ping support on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
             IPAddress localAddress = await TestSettings.GetLocalIPAddress();
@@ -39,6 +40,13 @@ namespace System.Net.NetworkInformation.Tests
 
             string pingOutput = p.StandardOutput.ReadToEnd();
             Assert.True(p.WaitForExit(TestSettings.PingTimeout), "Ping process did not exit in " + TestSettings.PingTimeout + " ms.");
+            if (p.ExitCode == 1 || p.ExitCode == 2)
+            {
+                // Workaround known OSX bug in ping6 utility.
+                Assert.Equal(utilityPath, UnixCommandLinePing.Ping6UtilityPath);
+                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                return;
+            }
 
             try
             {
