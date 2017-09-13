@@ -58,15 +58,21 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 if (fileVersions.TryGetValue(fileName, out existing))
                 {
-                    if (current.AssemblyVersion != null &&
-                        existing.AssemblyVersion != null &&
-                        current.AssemblyVersion != existing.AssemblyVersion)
+                    if (current.AssemblyVersion != null)
                     {
-                        if (current.AssemblyVersion > existing.AssemblyVersion)
+                        if (existing.AssemblyVersion == null)
                         {
                             fileVersions[fileName] = current;
+                            continue;
                         }
-                        continue;
+                        else if (current.AssemblyVersion != existing.AssemblyVersion)
+                        {
+                            if (current.AssemblyVersion > existing.AssemblyVersion)
+                            {
+                                fileVersions[fileName] = current;
+                            }
+                            continue;
+                        }
                     }
 
                     if (current.FileVersion != null && 
