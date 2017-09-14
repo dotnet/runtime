@@ -68,6 +68,6 @@ namespace System.IO.Pipes.Tests
         }
 
         // InOut pipes can be written/read from either direction
-        public override void ReadOnWriteOnlyPipe_Throws_NotSupportedException() { }
+        public override bool SupportsBidirectionalReadingWriting => true;
     }
 }
