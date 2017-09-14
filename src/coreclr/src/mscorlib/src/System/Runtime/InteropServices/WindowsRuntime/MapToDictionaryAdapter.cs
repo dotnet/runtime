@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             Contract.EndContractBlock();
 
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             return Lookup(_this, key);
         }
 
@@ -50,14 +50,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             Contract.EndContractBlock();
 
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             Insert(_this, key, value);
         }
 
         // ICollection<K> Keys { get }
         internal ICollection<K> Keys<K, V>()
         {
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             IDictionary<K, V> dictionary = (IDictionary<K, V>)_this;
             return new DictionaryKeyCollection<K, V>(dictionary);
         }
@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // ICollection<V> Values { get }
         internal ICollection<V> Values<K, V>()
         {
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             IDictionary<K, V> dictionary = (IDictionary<K, V>)_this;
             return new DictionaryValueCollection<K, V>(dictionary);
         }
@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             return _this.HasKey(key);
         }
 
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             Contract.EndContractBlock();
 
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             Insert(_this, key, value);
         }
 
@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             if (!_this.HasKey(key))
                 return false;
 
@@ -126,7 +126,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
+            IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             if (!_this.HasKey(key))
             {
                 value = default(V);

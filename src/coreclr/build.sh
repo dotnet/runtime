@@ -42,9 +42,9 @@ usage()
     echo "-skipcrossgen - skip native image generation"
     echo "-verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
-	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
-	echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
-	echo "-Rebuild: passes /t:rebuild to the build projects."
+    echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
+    echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
+    echo "-Rebuild: passes /t:rebuild to the build projects."
     echo "-stripSymbols - Optional argument to strip native symbols during the build."
     echo "-skipgenerateversion - disable version generation even if MSBuild is supported."
     echo "-ignorewarnings - do not treat warnings as errors"
@@ -62,6 +62,10 @@ initHostDistroRid()
     if [ "$__HostOS" == "Linux" ]; then
         if [ -e /etc/os-release ]; then
             source /etc/os-release
+            if [[ $ID == "alpine" ]]; then
+                # remove the last version digit
+                VERSION_ID=${VERSION_ID%.*}
+            fi
             __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
         elif [ -e /etc/redhat-release ]; then
             local redhatRelease=$(</etc/redhat-release)
@@ -396,7 +400,7 @@ isMSBuildOnNETCoreSupported()
         if [ "$__HostOS" == "Linux" ]; then
             __isMSBuildOnNETCoreSupported=1
             # note: the RIDs below can use globbing patterns
-            UNSUPPORTED_RIDS=("debian.9-x64" "ubuntu.17.04-x64" "alpine.3.6.*-x64")
+            UNSUPPORTED_RIDS=("debian.9-x64" "ubuntu.17.04-x64")
             for UNSUPPORTED_RID in "${UNSUPPORTED_RIDS[@]}"
             do
                 if [[ $__HostDistroRid == $UNSUPPORTED_RID ]]; then

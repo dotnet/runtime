@@ -2028,9 +2028,11 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
         slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
         GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
         GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
+        indir->gtFlags |= GTF_IND_NONFAULTING;
+        indir->gtFlags |= GTF_IND_INVARIANT;
+
         slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
         GenTree* asg   = gtNewAssignNode(slot, indir);
-
         GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
         GenTree* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
         impAppendTree(qmark, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
