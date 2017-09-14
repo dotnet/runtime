@@ -2459,6 +2459,8 @@ void fgArgInfo::EvalArgsToTemps()
                 noway_assert(parent->OperIsList());
                 noway_assert(parent->gtOp.gtOp1 == argx);
 
+                parent->gtFlags |= (setupArg->gtFlags & GTF_ALL_EFFECT);
+
                 parent->gtOp.gtOp1 = setupArg;
             }
             else
@@ -2482,8 +2484,12 @@ void fgArgInfo::EvalArgsToTemps()
             noway_assert(tmpRegArgNext->OperIsList());
             noway_assert(tmpRegArgNext->Current());
             tmpRegArgNext->gtOp.gtOp2 = compiler->gtNewArgList(defArg);
+
+            tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
             tmpRegArgNext             = tmpRegArgNext->Rest();
         }
+
+        tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
 
         curArgTabEntry->node       = defArg;
         curArgTabEntry->lateArgInx = regArgInx++;
