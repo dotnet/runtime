@@ -17,10 +17,14 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    public static class FannkuchRedux
+    public static class FannkuchRedux_5
     {
         static int[] fact, chkSums, maxFlips;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,9 +102,30 @@ namespace BenchmarksGame
             maxFlips[taskId] = maxflips;
         }
 
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             int n = args.Length > 0 ? int.Parse(args[0]) : 7;
+            int sum = Bench(n, true);
+
+            int expected = 228;
+
+            // Return 100 on success, anything else on failure.
+            return sum - expected + 100;
+        }
+
+        [Benchmark(InnerIterationCount = 20)]
+        [InlineData(10, 73196)]
+        public static void RunBench(int n, int expectedSum)
+        {
+            Benchmark.Iterate(() =>
+            {
+                int sum = Bench(n, false);
+                Assert.Equal(expectedSum, sum);
+            });
+        }
+
+        static int Bench(int n, bool verbose)
+        {
             fact = new int[n + 1];
             fact[0] = 1;
             var factn = 1;
@@ -124,7 +149,9 @@ namespace BenchmarksGame
                 chksum += chkSums[i];
                 if (maxFlips[i] > maxflips) maxflips = maxFlips[i];
             }
-            Console.Out.WriteLineAsync(chksum + "\nPfannkuchen(" + n + ") = " + maxflips);
+            if (verbose) Console.Out.WriteLineAsync(chksum + "\nPfannkuchen(" + n + ") = " + maxflips);
+
+            return chksum;
         }
     }
 }

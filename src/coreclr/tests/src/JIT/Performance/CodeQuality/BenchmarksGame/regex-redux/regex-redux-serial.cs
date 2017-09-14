@@ -15,17 +15,52 @@
 */
 
 using System;
+using System.IO;
 using System.Text.RegularExpressions;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    class regexredux
+    public class RegexRedux_1
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
+            var helpers = new TestHarnessHelpers(bigInput: false);
 
+            using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+            using (var input = new StreamReader(inputStream))
+            {
+                if (Bench(input, true) != helpers.ExpectedLength)
+                {
+                    return -1;
+                }
+            }
+
+            return 100;
+        }
+
+        [Benchmark(InnerIterationCount = 5)]
+        public static void RunBench()
+        {
+            var helpers = new TestHarnessHelpers(bigInput: true);
+
+            Benchmark.Iterate(() =>
+            {
+                using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+                using (var input = new StreamReader(inputStream))
+                {
+                    Assert.Equal(helpers.ExpectedLength, Bench(input, false));
+                }
+            });
+        }
+
+        static int Bench(TextReader inputReader, bool verbose)
+        {
             // read FASTA sequence
-            String sequence = Console.In.ReadToEnd();
+            String sequence = inputReader.ReadToEnd();
             int initialLength = sequence.Length;
 
             // remove FASTA sequence descriptions and new-lines
@@ -54,7 +89,8 @@ namespace BenchmarksGame
                 r = new Regex(v, RegexOptions.Compiled);
 
                 for (Match m = r.Match(sequence); m.Success; m = m.NextMatch()) count++;
-                Console.WriteLine("{0} {1}", v, count);
+                if (verbose)
+                    Console.WriteLine("{0} {1}", v, count);
             }
 
 
@@ -72,8 +108,10 @@ namespace BenchmarksGame
                 r = new Regex(iub.code, RegexOptions.Compiled);
                 sequence = r.Replace(sequence, iub.alternatives);
             }
-            Console.WriteLine("\n{0}\n{1}\n{2}",
-               initialLength, codeLength, sequence.Length);
+            if (verbose)
+                Console.WriteLine("\n{0}\n{1}\n{2}", initialLength, codeLength, sequence.Length);
+
+            return sequence.Length;
         }
 
 
