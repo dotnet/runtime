@@ -156,7 +156,7 @@ namespace System.IO.Pipes
             }
         }
 
-        private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async Task<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
         {
             Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
 
@@ -175,7 +175,7 @@ namespace System.IO.Pipes
                     cancellationToken.ThrowIfCancellationRequested();
                     if (socket.Poll(timeout, SelectMode.SelectRead))
                     {
-                        return ReadCore(new Span<byte>(buffer, offset, count));
+                        return ReadCore(destination.Span);
                     }
                     timeout = Math.Min(timeout * 2, MaxTimeoutMicroseconds);
                 }
@@ -184,7 +184,16 @@ namespace System.IO.Pipes
             // The token wasn't cancelable, so we can simply use an async receive on the socket.
             try
             {
-                return await socket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), SocketFlags.None).ConfigureAwait(false);
+                if (destination.TryGetArray(out ArraySegment<byte> buffer))
+                {
+                    return await socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                }
+                else
+                {
+                    // TODO #22608: Remove this terribly inefficient special-case once Socket.ReceiveAsync
+                    // accepts a Memory<T> in the near future.
+                    return await socket.ReceiveAsync(destination.ToArray(), SocketFlags.None);
+                }
             }
             catch (SocketException e)
             {
@@ -192,11 +201,28 @@ namespace System.IO.Pipes
             }
         }
 
-        private async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async Task WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
             try
             {
+                // TODO #22608: Remove this terribly inefficient special-case once Socket.SendAsync
+                // accepts a Memory<T> in the near future.
+                byte[] buffer;
+                int offset, count;
+                if (source.DangerousTryGetArray(out ArraySegment<byte> segment))
+                {
+                    buffer = segment.Array;
+                    offset = segment.Offset;
+                    count = segment.Count;
+                }
+                else
+                {
+                    buffer = source.ToArray();
+                    offset = 0;
+                    count = buffer.Length;
+                }
+
                 while (count > 0)
                 {
                     // cancellationToken is (mostly) ignored.  We could institute a polling loop like we do for reads if 

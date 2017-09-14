@@ -29,7 +29,7 @@ namespace System.IO.Tests
             {
                 tasks[i] = stream.WriteAsync(data, 250 * i, 250);
             }
-            Assert.False(tasks.All(t => t.IsCompleted));
+            Assert.All(tasks, t => Assert.Equal(TaskStatus.WaitingForActivation, t.Status));
 
             mcaos.Release();
             await Task.WhenAll(tasks);
@@ -264,12 +264,21 @@ namespace System.IO.Tests
         }
     }
 
-    internal sealed class ManuallyReleaseAsyncOperationsStream : MemoryStream
+    internal sealed class ManuallyReleaseAsyncOperationsStream : Stream
     {
+        private readonly MemoryStream _stream = new MemoryStream();
         private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _canSeek = true;
 
         public override bool CanSeek => _canSeek;
+
+        public override bool CanRead => _stream.CanRead;
+
+        public override bool CanWrite => _stream.CanWrite;
+
+        public override long Length => _stream.Length;
+
+        public override long Position { get => _stream.Position; set => _stream.Position = value; }
 
         public void SetCanSeek(bool canSeek) => _canSeek = canSeek;
 
@@ -278,38 +287,44 @@ namespace System.IO.Tests
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             await _tcs.Task;
-            return await base.ReadAsync(buffer, offset, count, cancellationToken);
+            return await _stream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             await _tcs.Task;
-            await base.WriteAsync(buffer, offset, count, cancellationToken);
+            await _stream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             await _tcs.Task;
-            await base.FlushAsync(cancellationToken);
+            await _stream.FlushAsync(cancellationToken);
         }
+
+        public override void Flush() => _stream.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => _stream.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
+        public override void SetLength(long value) => _stream.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _stream.Write(buffer, offset, count);
     }
 
     internal sealed class ThrowsExceptionFromAsyncOperationsStream : MemoryStream
     {
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
+        public override int Read(byte[] buffer, int offset, int count) =>
             throw new InvalidOperationException("Exception from ReadAsync");
-        }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new InvalidOperationException("Exception from ReadAsync");
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("Exception from ReadAsync");
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Exception from WriteAsync");
-        }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
+        public override Task FlushAsync(CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Exception from FlushAsync");
-        }
     }
 
     public class BufferedStream_NS17
