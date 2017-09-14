@@ -2383,7 +2383,6 @@ void Lowering::LowerCompare(GenTree* cmp)
             {
                 (*smallerOpUse)->gtType = TYP_LONG;
             }
-#ifdef _TARGET_AMD64_
             else
             {
                 GenTree* cast = comp->gtNewCastNode(TYP_LONG, *smallerOpUse, TYP_LONG);
@@ -2391,14 +2390,6 @@ void Lowering::LowerCompare(GenTree* cmp)
                 BlockRange().InsertAfter(cast->gtGetOp1(), cast);
                 ContainCheckCast(cast->AsCast());
             }
-#elif defined(_TARGET_ARM64_)
-            else if (op2Is64Bit && !longOp->IsCnsIntOrI())
-            {
-                // Arm64 can use extended compare if smaller register operand is second
-                cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
-                std::swap(cmp->gtOp.gtOp1, cmp->gtOp.gtOp2);
-            }
-#endif // _TARGET_AMD64_
         }
     }
 #endif // _TARGET_64BIT_
