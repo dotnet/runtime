@@ -121,6 +121,10 @@ MethodContextReader::MethodContextReader(
 
 MethodContextReader::~MethodContextReader()
 {
+    if (MethodContext::prevEnviroment != nullptr)
+    {
+        delete MethodContext::prevEnviroment;
+    }
     if (fileHandle != INVALID_HANDLE_VALUE)
     {
         CloseHandle(this->fileHandle);

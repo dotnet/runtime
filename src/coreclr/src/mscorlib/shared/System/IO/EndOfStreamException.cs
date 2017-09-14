@@ -11,19 +11,19 @@ namespace System.IO
         public EndOfStreamException()
             : base(SR.Arg_EndOfStreamException)
         {
-            HResult = __HResults.COR_E_ENDOFSTREAM;
+            HResult = HResults.COR_E_ENDOFSTREAM;
         }
 
         public EndOfStreamException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_ENDOFSTREAM;
+            HResult = HResults.COR_E_ENDOFSTREAM;
         }
 
         public EndOfStreamException(string message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ENDOFSTREAM;
+            HResult = HResults.COR_E_ENDOFSTREAM;
         }
 
         protected EndOfStreamException(SerializationInfo info, StreamingContext context)

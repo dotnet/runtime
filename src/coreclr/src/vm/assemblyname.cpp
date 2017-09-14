@@ -20,7 +20,6 @@
 #include <shlwapi.h>
 
 #include "assemblyname.hpp"
-#include "security.h"
 #include "field.h"
 #include "strongname.h"
 #include "eeconfig.h"
@@ -111,7 +110,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF orOutputArray = NULL;
+    U1ARRAYREF orOutputArray = NULL;
     OBJECTREF refThis       = (OBJECTREF) refThisUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
 
@@ -137,7 +136,8 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
             }
         }
 
-        Security::CopyEncodingToByteArray(pbToken, cb, &orOutputArray);
+        orOutputArray = (U1ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_U1, cb);
+        memcpyNoGCRefs(orOutputArray->m_Array, pbToken, cb);
     }
 
     HELPER_METHOD_FRAME_END();

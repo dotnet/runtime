@@ -7,6 +7,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
+#include "eventpipe.h"
 #include "eventpipeevent.h"
 #include "eventpipeeventinstance.h"
 
@@ -81,7 +82,7 @@ public:
     // Returns:
     //  - true: The write succeeded.
     //  - false: The write failed.  In this case, the buffer should be considered full.
-    bool WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *pData, unsigned int dataLength, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack = NULL);
+    bool WriteEvent(Thread *pThread, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack = NULL);
 
     // Get the timestamp of the most recent event in the buffer.
     LARGE_INTEGER GetMostRecentTimeStamp() const;

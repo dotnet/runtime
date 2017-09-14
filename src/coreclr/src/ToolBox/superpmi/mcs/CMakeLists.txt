@@ -24,7 +24,6 @@ set(MCS_SOURCES
     verbinteg.cpp
     verbmerge.cpp
     verbremovedup.cpp
-    verbsmarty.cpp
     verbstat.cpp
     verbstrip.cpp
     verbtoc.cpp

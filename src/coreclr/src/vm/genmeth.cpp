@@ -120,34 +120,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     {
         pMD->SetSynchronized();
     }
-    if (pTemplateMD->RequiresLinktimeCheck())
-    {
-        pMD->SetRequiresLinktimeCheck();
-    }
-    if (pTemplateMD->RequiresInheritanceCheck())
-    {
-        pMD->SetRequiresInheritanceCheck();
-    }
-    if (pTemplateMD->ParentRequiresInheritanceCheck())
-    {
-        pMD->SetParentRequiresInheritanceCheck();
-    }
-    if (pTemplateMD->IsInterceptedForDeclSecurity())
-    {
-        pMD->SetInterceptedForDeclSecurity();
-    }
-    if (pTemplateMD->IsInterceptedForDeclSecurityCASDemandsOnly())
-    {
-        pMD->SetInterceptedForDeclSecurityCASDemandsOnly();
-    }
-    if (pTemplateMD->HasCriticalTransparentInfo())
-    {
-        pMD->SetCriticalTransparentInfo(pTemplateMD->IsCritical(), pTemplateMD->IsTreatAsSafe());
-    }
-    if (pTemplateMD->RequiresLinkTimeCheckHostProtectionOnly())
-    {
-        pMD->SetRequiresLinkTimeCheckHostProtectionOnly();
-    }
 
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());

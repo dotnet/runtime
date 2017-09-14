@@ -22,7 +22,11 @@ namespace System.Reflection
         private static Assembly LoadFromResolveHandler(object sender, ResolveEventArgs args)
         {
             Assembly requestingAssembly = args.RequestingAssembly;
-            
+            if (requestingAssembly == null)
+            {
+                return null;
+            }
+
             // Requesting assembly for LoadFrom is always loaded in defaultContext - proceed only if that
             // is the case.
             if (AssemblyLoadContext.Default != AssemblyLoadContext.GetLoadContext(requestingAssembly))

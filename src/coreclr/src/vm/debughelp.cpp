@@ -318,7 +318,7 @@ MethodDesc* AsMethodDesc(size_t addr)
                 // extra indirection if the address is tagged (the low bit is set).
                 // That could AV if we don't check it first.
 
-                if (!ppMT->IsTagged((TADDR)ppMT) || isMemoryReadable((TADDR)ppMT->GetValuePtr((TADDR)ppMT), sizeof(MethodTable*)))
+                if (!ppMT->IsTagged((TADDR)ppMT) || isMemoryReadable((TADDR)ppMT->GetValuePtr(), sizeof(MethodTable*)))
                 {
                     if (AsMethodTable((size_t)RelativeFixupPointer<PTR_MethodTable>::GetValueAtPtr((TADDR)ppMT)) != 0)
                     {

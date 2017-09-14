@@ -123,7 +123,7 @@ namespace System.Threading
                                 throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, m_name));
                         }
                     }
-                    __Error.WinIOError(errorCode, m_name);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, m_name);
                 }
                 m_newMutex = errorCode != Win32Native.ERROR_ALREADY_EXISTS;
                 m_mutex.SetHandleInternal(mutexHandle);
@@ -201,8 +201,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 case OpenExistingResult.PathNotFound:
-                    __Error.WinIOError(Win32Native.ERROR_PATH_NOT_FOUND, name);
-                    return result; //never executes
+                    throw Win32Marshal.GetExceptionForWin32Error(Win32Native.ERROR_PATH_NOT_FOUND, name);
 
                 default:
                     return result;
@@ -261,7 +260,7 @@ namespace System.Threading
                     return OpenExistingResult.NameInvalid;
 
                 // this is for passed through Win32Native Errors
-                __Error.WinIOError(errorCode, name);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
             }
 
             result = new Mutex(myHandle);

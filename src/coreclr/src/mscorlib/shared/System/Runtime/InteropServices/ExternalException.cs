@@ -26,19 +26,19 @@ namespace System.Runtime.InteropServices
         public ExternalException()
             : base(SR.Arg_ExternalException)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public ExternalException(string message)
             : base(message)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public ExternalException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public ExternalException(string message, int errorCode)

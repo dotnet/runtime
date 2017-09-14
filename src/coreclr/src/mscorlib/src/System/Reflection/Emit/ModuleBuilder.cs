@@ -87,7 +87,7 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region Intenral Data Members
+        #region Internal Data Members
         // m_TypeBuilder contains both TypeBuilder and EnumBuilder objects
         private Dictionary<string, Type> m_TypeBuilderDict;
         private ISymbolWriter m_iSymWriter;

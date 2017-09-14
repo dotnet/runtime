@@ -557,14 +557,12 @@ HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedIL
     {
         *ppReJitedILCode = NULL;
 
-        VMPTR_ReJitInfo vmReJitInfo = VMPTR_ReJitInfo::NullPtr();
-        GetProcess()->GetDAC()->GetReJitInfo(GetModule()->m_vmModule, m_MDToken, &vmReJitInfo);
-        if (!vmReJitInfo.IsNull())
+        VMPTR_ILCodeVersionNode vmILCodeVersionNode = VMPTR_ILCodeVersionNode::NullPtr();
+        GetProcess()->GetDAC()->GetActiveRejitILCodeVersionNode(GetModule()->m_vmModule, m_MDToken, &vmILCodeVersionNode);
+        if (!vmILCodeVersionNode.IsNull())
         {
-            VMPTR_SharedReJitInfo vmSharedReJitInfo = VMPTR_SharedReJitInfo::NullPtr();
-            GetProcess()->GetDAC()->GetSharedReJitInfo(vmReJitInfo, &vmSharedReJitInfo);
             RSSmartPtr<CordbReJitILCode> pILCode;
-            IfFailThrow(LookupOrCreateReJitILCode(vmSharedReJitInfo, &pILCode));
+            IfFailThrow(LookupOrCreateReJitILCode(vmILCodeVersionNode, &pILCode));
             IfFailThrow(pILCode->QueryInterface(IID_ICorDebugILCode, (void**)ppReJitedILCode));
         }
     }
@@ -1165,21 +1163,21 @@ VOID CordbFunction::NotifyCodeCreated(CordbNativeCode* nativeCode)
 // If the CordbReJitILCode doesn't exist, it creates it.
 //
 //
-HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_SharedReJitInfo vmSharedReJitInfo, CordbReJitILCode** ppILCode)
+HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCodeVersionNode, CordbReJitILCode** ppILCode)
 {
     INTERNAL_API_ENTRY(this);
 
     HRESULT hr = S_OK;
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
 
-    CordbReJitILCode * pILCode = m_reJitILCodes.GetBase(VmPtrToCookie(vmSharedReJitInfo));
+    CordbReJitILCode * pILCode = m_reJitILCodes.GetBase(VmPtrToCookie(vmILCodeVersionNode));
 
     // special case non-existance as need to add to the hash table too
     if (pILCode == NULL)
     {
         // we don't yet support ENC and ReJIT together, so the version should be 1
         _ASSERTE(m_dwEnCVersionNumber == 1);
-        RSInitHolder<CordbReJitILCode> pILCodeHolder(new CordbReJitILCode(this, 1, vmSharedReJitInfo));
+        RSInitHolder<CordbReJitILCode> pILCodeHolder(new CordbReJitILCode(this, 1, vmILCodeVersionNode));
         IfFailRet(m_reJitILCodes.AddBase(pILCodeHolder));
         pILCode = pILCodeHolder;
         pILCodeHolder.ClearAndMarkDontNeuter();

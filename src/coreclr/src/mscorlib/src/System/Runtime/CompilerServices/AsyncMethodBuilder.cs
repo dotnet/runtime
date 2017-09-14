@@ -395,7 +395,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <remarks>
         /// This property lazily instantiates the ID in a non-thread-safe manner.  
-        /// It must only be used by the debugger and tracing pruposes, and only in a single-threaded manner
+        /// It must only be used by the debugger and tracing purposes, and only in a single-threaded manner
         /// when no other threads are in the middle of accessing this property or this.Task.
         /// </remarks>
         private object ObjectIdForDebugger { get { return this.Task; } }
@@ -431,8 +431,9 @@ namespace System.Runtime.CompilerServices
         public static AsyncTaskMethodBuilder<TResult> Create()
         {
             return default(AsyncTaskMethodBuilder<TResult>);
-            // NOTE:  If this method is ever updated to perform more initialization,
-            //        ATMB.Create must also be updated to call this Create method.
+            // NOTE: If this method is ever updated to perform more initialization,
+            //       other Create methods like AsyncTaskMethodBuilder.Create and
+            //       AsyncValueTaskMethodBuilder.Create must be updated to call this.
         }
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
@@ -718,7 +719,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="result">The result for which we need a task.</param>
         /// <returns>The completed task containing the result.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
-        private Task<TResult> GetTaskForResult(TResult result)
+        internal static Task<TResult> GetTaskForResult(TResult result)
         {
             Contract.Ensures(
                 EqualityComparer<TResult>.Default.Equals(result, Contract.Result<Task<TResult>>().Result),
@@ -1119,7 +1120,7 @@ namespace System.Runtime.CompilerServices
         }
 
         ///<summary>
-        /// Given an action, see if it is a contiunation wrapper and has a Task associated with it.  If so return it (null otherwise)
+        /// Given an action, see if it is a continuation wrapper and has a Task associated with it.  If so return it (null otherwise)
         ///</summary>
         internal static Task TryGetContinuationTask(Action action)
         {

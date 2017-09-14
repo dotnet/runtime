@@ -9,8 +9,7 @@
 ** Purpose: Tests the PAL implementation of the GetFileAttributesExW function.
 ** Call the function on a normal directory and file and a read-only directory
 ** and file and a hidden file and directory.  
-** Ensure that the attributes returned are correct, and the 
-** file times and file sizes.
+** Ensure that the returned attributes and file sizes are correct.
 **
 **
 **===================================================================*/
@@ -23,24 +22,6 @@ typedef enum Item
     IS_DIR,
     IS_FILE
 }ItemType;
-
-/*
-  This is a helper function which takes two FILETIME structures and 
-  checks to see if they contain the exact same time.
-*/
-int IsEqualFileTime(FILETIME FirstTime, FILETIME SecondTime)
-{
-    
-    ULONG64 TimeOne, TimeTwo;
-
-    TimeOne = ((((ULONG64)FirstTime.dwHighDateTime)<<32) | 
-               ((ULONG64)FirstTime.dwLowDateTime));
-    
-    TimeTwo = ((((ULONG64)SecondTime.dwHighDateTime)<<32) | 
-               ((ULONG64)SecondTime.dwLowDateTime));
-    
-    return(TimeOne == TimeTwo);
-}
 
 /* This function takes a structure and checks that the information 
    within the structure is correct.  The 'Attribs' are the expected 
@@ -88,38 +69,6 @@ void VerifyInfo(WIN32_FILE_ATTRIBUTE_DATA InfoStruct,
                  GetLastError()); 
         }
 
-
-    
-        /* Get the FileTime of the file in question */
-        if(GetFileTime(hFile, &CorrectCreation, 
-                       &CorrectAccess, &CorrectModify) == 0)
-        {
-            Fail("ERROR: GetFileTime failed to get the filetime of the "
-                 "file.  GetLastError() returned %d.",
-                 GetLastError());
-        }
-    
-        /* Check that the Creation, Access and Last Modified times are all 
-           the same in the structure as what GetFileTime just returned.
-        */
-        if(!IsEqualFileTime(CorrectCreation, InfoStruct.ftCreationTime)) 
-        {
-            Fail("ERROR: The creation time of the file "
-                 "does not match the creation time given from "
-                 "GetFileTime.\n");
-        }
-        if(!IsEqualFileTime(CorrectAccess, InfoStruct.ftLastAccessTime)) 
-        {
-            Fail("ERROR: The access time of the file  "
-                 "does not match the access time given from "
-                 "GetFileTime.\n");
-        }   
-        if(!IsEqualFileTime(CorrectModify, InfoStruct.ftLastWriteTime)) 
-        {
-            Fail("ERROR: The write time of the file "
-                 "does not match the last write time given from "
-                 "GetFileTime.\n");
-        }
  
         if(InfoStruct.nFileSizeLow != GetFileSize(hFile,NULL))
         {

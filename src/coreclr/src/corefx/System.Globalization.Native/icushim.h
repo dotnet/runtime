@@ -38,6 +38,7 @@
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc) \
+    PER_FUNCTION_BLOCK(u_getVersion, libicuuc) \
     PER_FUNCTION_BLOCK(u_strlen, libicuuc) \
     PER_FUNCTION_BLOCK(u_strncpy, libicuuc) \
     PER_FUNCTION_BLOCK(u_tolower, libicuuc) \
@@ -56,6 +57,7 @@
     PER_FUNCTION_BLOCK(ucol_getRules, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getSortKey, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getStrength, libicui18n) \
+    PER_FUNCTION_BLOCK(ucol_getVersion, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_next, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_open, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_openElements, libicui18n) \
@@ -143,6 +145,7 @@ FOR_ALL_ICU_FUNCTIONS
 // Redefine all calls to ICU functions as calls through pointers that are set
 // to the functions of the selected version of ICU in the initialization.
 #define u_charsToUChars(...) u_charsToUChars_ptr(__VA_ARGS__)
+#define u_getVersion(...) u_getVersion_ptr(__VA_ARGS__)
 #define u_strlen(...) u_strlen_ptr(__VA_ARGS__)
 #define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)
 #define u_tolower(...) u_tolower_ptr(__VA_ARGS__)
@@ -161,6 +164,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucol_getRules(...) ucol_getRules_ptr(__VA_ARGS__)
 #define ucol_getSortKey(...) ucol_getSortKey_ptr(__VA_ARGS__)
 #define ucol_getStrength(...) ucol_getStrength_ptr(__VA_ARGS__)
+#define ucol_getVersion(...) ucol_getVersion_ptr(__VA_ARGS__)
 #define ucol_next(...) ucol_next_ptr(__VA_ARGS__)
 #define ucol_open(...) ucol_open_ptr(__VA_ARGS__)
 #define ucol_openElements(...) ucol_openElements_ptr(__VA_ARGS__)

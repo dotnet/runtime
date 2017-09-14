@@ -382,6 +382,8 @@ namespace System.Text
             return Array.Empty<byte>();
         }
 
+        public virtual ReadOnlySpan<byte> Preamble => GetPreamble();
+
         private void GetDataItem()
         {
             if (_dataItem == null)
@@ -733,6 +735,14 @@ namespace System.Text
             return GetByteCount(arrChar, 0, count);
         }
 
+        public virtual unsafe int GetByteCount(ReadOnlySpan<char> chars)
+        {
+            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            {
+                return GetByteCount(charsPtr, chars.Length);
+            }
+        }
+
         // For NLS Encodings, workhorse takes an encoder (may be null)
         // Always validate parameters before calling internal version, which will only assert.
         internal virtual unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
@@ -916,6 +926,15 @@ namespace System.Text
             return byteCount;
         }
 
+        public virtual unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
+        {
+            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            {
+                return GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length);
+            }
+        }
+
         // Returns the number of characters produced by decoding the given byte
         // array.
         //
@@ -960,6 +979,14 @@ namespace System.Text
                 arrbyte[index] = bytes[index];
 
             return GetCharCount(arrbyte, 0, count);
+        }
+
+        public virtual unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
+        {
+            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            {
+                return GetCharCount(bytesPtr, bytes.Length);
+            }
         }
 
         // This is our internal workhorse
@@ -1070,6 +1097,14 @@ namespace System.Text
             return charCount;
         }
 
+        public virtual unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
+        {
+            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            {
+                return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length);
+            }
+        }
 
         // This is our internal workhorse
         // Always validate parameters before calling internal version, which will only assert.
@@ -1092,6 +1127,15 @@ namespace System.Text
 
             return String.CreateStringFromEncoding(bytes, byteCount, this);
         }
+
+        public unsafe string GetString(ReadOnlySpan<byte> bytes)
+        {
+            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            {
+                return GetString(bytesPtr, bytes.Length);
+            }
+        }
+
 
         // Returns the code page identifier of this encoding. The returned value is
         // an integer between 0 and 65535 if the encoding has a code page

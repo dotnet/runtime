@@ -9,7 +9,7 @@ Module Name:
     cgroup.cpp
 
 Abstract:
-    Read memory limits for the current process
+    Read memory and cpu limits for the current process
 --*/
 
 #include "pal/dbgmsg.h"
@@ -22,41 +22,23 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
 #define PROC_STATM_FILENAME "/proc/self/statm"
 #define MEM_LIMIT_FILENAME "/memory.limit_in_bytes"
-
+#define CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
+#define CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 class CGroup
 {
     char *m_memory_cgroup_path;
+    char *m_cpu_cgroup_path;
 public:
     CGroup()
     {
-        m_memory_cgroup_path = nullptr;
-        char* memoryHierarchyMount = nullptr;
-        char *cgroup_path_relative_to_mount = nullptr;
-        size_t len;
-        memoryHierarchyMount = FindMemoryHierarchyMount();
-        if (memoryHierarchyMount == nullptr)
-            goto done;
-
-        cgroup_path_relative_to_mount = FindCGroupPathForMemorySubsystem();
-        if (cgroup_path_relative_to_mount == nullptr)
-            goto done;
-
-        len = strlen(memoryHierarchyMount);
-        len += strlen(cgroup_path_relative_to_mount);
-        m_memory_cgroup_path = (char*)PAL_malloc(len+1);
-        if (m_memory_cgroup_path == nullptr)
-           goto done;
-        
-        strcpy_s(m_memory_cgroup_path, len+1, memoryHierarchyMount);
-        strcat_s(m_memory_cgroup_path, len+1, cgroup_path_relative_to_mount);
-
-    done:
-        PAL_free(memoryHierarchyMount);
-        PAL_free(cgroup_path_relative_to_mount);
+       m_memory_cgroup_path = FindCgroupPath(&IsMemorySubsystem);
+       m_cpu_cgroup_path = FindCgroupPath(&IsCpuSubsystem);
     }
+
     ~CGroup()
     {
         PAL_free(m_memory_cgroup_path);
+        PAL_free(m_cpu_cgroup_path);
     }
     
     bool GetPhysicalMemoryLimit(size_t *val)
@@ -79,14 +61,92 @@ public:
         PAL_free(mem_limit_filename);
         return result;
     }
+
+    bool GetCpuLimit(UINT *val)
+    {
+        long long quota;
+        long long period;
+        long long cpu_count;
+
+        quota = ReadCpuCGroupValue(CFS_QUOTA_FILENAME);
+        if (quota <= 0)
+            return false;
+
+        period = ReadCpuCGroupValue(CFS_PERIOD_FILENAME);
+        if (period <= 0)
+            return false;
+
+        // Cannot have less than 1 CPU
+        if (quota <= period)
+        {
+            *val = 1;
+            return true;
+        }
+        
+        cpu_count = quota / period;
+        if (cpu_count < UINT_MAX)
+        {
+            *val = cpu_count;
+        }
+        else
+        {
+            *val = UINT_MAX;
+        }
+
+        return true;
+    }
+
 private:
-    char* FindMemoryHierarchyMount()
+    static bool IsMemorySubsystem(const char *strTok){
+        return strcmp("memory", strTok) == 0;
+    }
+
+    static bool IsCpuSubsystem(const char *strTok){
+        return strcmp("cpu", strTok) == 0;
+    }
+
+    static char* FindCgroupPath(bool (*is_subsystem)(const char *)){
+        char *cgroup_path = nullptr;
+        char *hierarchy_mount = nullptr;
+        char *hierarchy_root = nullptr;
+        char *cgroup_path_relative_to_mount = nullptr;
+        size_t len;
+
+        FindHierarchyMount(is_subsystem, &hierarchy_mount, &hierarchy_root);
+        if (hierarchy_mount == nullptr || hierarchy_root == nullptr)
+            goto done;
+
+        cgroup_path_relative_to_mount = FindCGroupPathForSubsystem(is_subsystem);
+        if (cgroup_path_relative_to_mount == nullptr)
+            goto done;
+
+        len = strlen(hierarchy_mount);
+        len += strlen(cgroup_path_relative_to_mount);
+        cgroup_path = (char*)PAL_malloc(len+1);
+        if (cgroup_path == nullptr)
+           goto done;
+
+        strcpy_s(cgroup_path, len+1, hierarchy_mount);
+        // For a host cgroup, we need to append the relative path.
+        // In a docker container, the root and relative path are the same and we don't need to append.
+        if (strcmp(hierarchy_root, cgroup_path_relative_to_mount) != 0)
+            strcat_s(cgroup_path, len+1, cgroup_path_relative_to_mount);
+
+    done:
+        PAL_free(hierarchy_mount);
+        PAL_free(hierarchy_root);
+        PAL_free(cgroup_path_relative_to_mount);
+        return cgroup_path;
+    }
+
+    static void FindHierarchyMount(bool (*is_subsystem)(const char *), char** pmountpath, char** pmountroot)
     {
         char *line = nullptr;
         size_t lineLen = 0, maxLineLen = 0;
         char *filesystemType = nullptr;
         char *options = nullptr;
-        char* mountpath = nullptr;
+        char *mountpath = nullptr;
+        char *mountroot = nullptr;
 
         FILE *mountinfofile = fopen(PROC_MOUNTINFO_FILENAME, "r");
         if (mountinfofile == nullptr)
@@ -106,11 +166,11 @@ private:
                     goto done;
                 maxLineLen = lineLen;
             }
-            char* separatorChar = strchr(line, '-');
+            char* separatorChar = strstr(line, " - ");;
 
             // See man page of proc to get format for /proc/self/mountinfo file
             int sscanfRet = sscanf_s(separatorChar, 
-                                     "- %s %*s %s",
+                                     " - %s %*s %s",
                                      filesystemType, lineLen+1,
                                      options, lineLen+1);
             if (sscanfRet != 2)
@@ -125,21 +185,26 @@ private:
                 char* strTok = strtok_s(options, ",", &context); 
                 while (strTok != nullptr)
                 {
-                    if (strncmp("memory", strTok, 6) == 0)
+                    if (is_subsystem(strTok))
                     {
                         mountpath = (char*)PAL_malloc(lineLen+1);
                         if (mountpath == nullptr)
                             goto done;
+                        mountroot = (char*)PAL_malloc(lineLen+1);
+                        if (mountroot == nullptr)
+                            goto done;
 
                         sscanfRet = sscanf_s(line,
-                                             "%*s %*s %*s %*s %s ",
+                                             "%*s %*s %*s %s %s ",
+                                             mountroot, lineLen+1,
                                              mountpath, lineLen+1);
-                        if (sscanfRet != 1)
-                        {
-                            PAL_free(mountpath);
-                            mountpath = nullptr;
+                        if (sscanfRet != 2)
                             _ASSERTE(!"Failed to parse mount info file contents with sscanf_s.");
-                        }
+
+                        // assign the output arguments and clear the locals so we don't free them.
+                        *pmountpath = mountpath;
+                        *pmountroot = mountroot;
+                        mountpath = mountroot = nullptr;
                         goto done;
                     }
                     strTok = strtok_s(nullptr, ",", &context);
@@ -147,15 +212,16 @@ private:
             }
         }
     done:
+        PAL_free(mountpath);
+        PAL_free(mountroot);
         PAL_free(filesystemType);
         PAL_free(options);
         free(line);
         if (mountinfofile)
             fclose(mountinfofile);
-        return mountpath;
     }
 
-    char* FindCGroupPathForMemorySubsystem()
+    static char* FindCGroupPathForSubsystem(bool (*is_subsystem)(const char *))
     {
         char *line = nullptr;
         size_t lineLen = 0;
@@ -198,7 +264,7 @@ private:
             char* strTok = strtok_s(subsystem_list, ",", &context); 
             while (strTok != nullptr)
             {
-                if (strncmp("memory", strTok, 6) == 0)
+                if (is_subsystem(strTok))
                 {
                     result = true;
                     break;  
@@ -221,15 +287,43 @@ private:
 
     bool ReadMemoryValueFromFile(const char* filename, size_t* val)
     {
+        return ::ReadMemoryValueFromFile(filename, val);
+    }
+
+    long long ReadCpuCGroupValue(const char* subsystemFilename){
+        char *filename = nullptr;
+        bool result = false;
+        long long val;
+        size_t len;
+
+        if (m_cpu_cgroup_path == nullptr)
+            return -1;
+
+        len = strlen(m_cpu_cgroup_path);
+        len += strlen(subsystemFilename);
+        filename = (char*)PAL_malloc(len + 1);
+        if (filename == nullptr)
+            return -1;
+
+        strcpy_s(filename, len+1, m_cpu_cgroup_path);
+        strcat_s(filename, len+1, subsystemFilename);
+        result = ReadLongLongValueFromFile(filename, &val);
+        PAL_free(filename);
+        if (!result)
+            return -1;
+
+        return val;
+    }
+
+    bool ReadLongLongValueFromFile(const char* filename, long long* val)
+    {
         bool result = false;
         char *line = nullptr;
         size_t lineLen = 0;
-        char* endptr = nullptr;
-        size_t num = 0, l, multiplier;
-
+  
         if (val == nullptr)
-            return false;
-
+            return false;;
+    
         FILE* file = fopen(filename, "r");
         if (file == nullptr)
             goto done;
@@ -238,25 +332,11 @@ private:
             goto done;
 
         errno = 0;
-        num = strtoull(line, &endptr, 0); 
+        *val = atoll(line);
         if (errno != 0)
-            goto done;
+            goto done;      
 
-        multiplier = 1;
-        switch(*endptr)
-        {
-            case 'g':
-            case 'G': multiplier = 1024;
-            case 'm': 
-            case 'M': multiplier = multiplier*1024;
-            case 'k':
-            case 'K': multiplier = multiplier*1024;
-        }
-
-        *val = num * multiplier;
         result = true;
-        if (*val/multiplier != num)
-            result = false;
     done:
         if (file)
             fclose(file);
@@ -332,4 +412,16 @@ PAL_GetWorkingSetSize(size_t* val)
         fclose(file);
     free(line);
     return result;
+}
+
+BOOL
+PALAPI
+PAL_GetCpuLimit(UINT* val)
+{
+    CGroup cgroup;
+
+    if (val == nullptr)
+        return FALSE;
+
+    return cgroup.GetCpuLimit(val);
 }

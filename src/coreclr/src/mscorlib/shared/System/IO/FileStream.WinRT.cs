@@ -13,7 +13,7 @@ namespace System.IO
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
-            int fAccess =
+            int access =
                 ((_access & FileAccess.Read) == FileAccess.Read ? GENERIC_READ : 0) |
                 ((_access & FileAccess.Write) == FileAccess.Write ? GENERIC_WRITE : 0);
 
@@ -30,31 +30,15 @@ namespace System.IO
             parameters.dwFileFlags = (uint)options;
             parameters.lpSecurityAttributes = &secAttrs;
 
-            SafeFileHandle fileHandle = Interop.Kernel32.CreateFile2(
-                lpFileName: _path,
-                dwDesiredAccess: fAccess,
-                dwShareMode: share,
-                dwCreationDisposition: mode,
-                pCreateExParams: &parameters);
-
-            fileHandle.IsAsync = _useAsyncIO;
-
-            if (fileHandle.IsInvalid)
+            using (DisableMediaInsertionPrompt.Create())
             {
-                // Return a meaningful exception with the full path.
-
-                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
-                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
-                // probably be consistent w/ every other directory.
-                int errorCode = Marshal.GetLastWin32Error();
-
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path.Length == PathInternal.GetRootLength(_path))
-                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
-
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                return ValidateFileHandle(Interop.Kernel32.CreateFile2(
+                    lpFileName: _path,
+                    dwDesiredAccess: access,
+                    dwShareMode: share,
+                    dwCreationDisposition: mode,
+                    pCreateExParams: ref parameters));
             }
-
-            return fileHandle;
         }
     }
 }

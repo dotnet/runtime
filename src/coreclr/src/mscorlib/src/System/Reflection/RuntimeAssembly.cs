@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using CultureInfo = System.Globalization.CultureInfo;
 using System.Security;
 using System.IO;
@@ -800,5 +801,78 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeAssembly assembly);
+
+        public sealed override Type[] GetForwardedTypes()
+        {
+            List<Type> types = new List<Type>();
+            List<Exception> exceptions = new List<Exception>();
+
+            MetadataImport scope = GetManifestModule(GetNativeHandle()).MetadataImport;
+            scope.Enum(MetadataTokenType.ExportedType, 0, out MetadataEnumResult enumResult);
+            for (int i = 0; i < enumResult.Length; i++)
+            {
+                MetadataToken mdtExternalType = enumResult[i];
+                Type type = null;
+                Exception exception = null;
+                ObjectHandleOnStack pType = JitHelpers.GetObjectHandleOnStack(ref type);
+                try
+                {
+                    GetForwardedType(this, mdtExternalType, pType);
+                    if (type == null)
+                        continue;  // mdtExternalType was not a forwarder entry.
+                }
+                catch (Exception e)
+                {
+                    type = null;
+                    exception = e;
+                }
+
+                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
+
+                if (type != null)
+                {
+                    types.Add(type);
+                    AddPublicNestedTypes(type, types, exceptions);
+                }
+                else
+                {
+                    exceptions.Add(exception);
+                }
+            }
+
+            if (exceptions.Count != 0)
+            {
+                int numTypes = types.Count;
+                int numExceptions = exceptions.Count;
+                types.AddRange(new Type[numExceptions]); // add one null Type for each exception.
+                exceptions.InsertRange(0, new Exception[numTypes]); // align the Exceptions with the null Types.
+                throw new ReflectionTypeLoadException(types.ToArray(), exceptions.ToArray());
+            }
+
+            return types.ToArray();
+        }
+
+        private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
+        {
+            Type[] nestedTypes;
+            try
+            {
+                nestedTypes = type.GetNestedTypes(BindingFlags.Public);
+            }
+            catch (Exception e)
+            {
+                exceptions.Add(e);
+                return;
+            }
+            foreach (Type nestedType in nestedTypes)
+            {
+                types.Add(nestedType);
+                AddPublicNestedTypes(nestedType, types, exceptions);
+            }
+        }
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [SuppressUnmanagedCodeSecurity]
+        private static extern void GetForwardedType(RuntimeAssembly assembly, MetadataToken mdtExternalType, ObjectHandleOnStack type);
     }
 }

@@ -29,12 +29,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "sideeffects.h"
 #include "lower.h"
 
-// returns true if the tree can use the read-modify-write memory instruction form
-bool Lowering::isRMWRegOper(GenTreePtr tree)
-{
-    return false;
-}
-
 #endif // _TARGET_ARM64_
 
 #endif // !LEGACY_BACKEND

@@ -136,13 +136,13 @@ public class UInt32ToString2
         retVal &= VerifyToString("PostTest3", UInt32.MinValue, "f", "0,000");
         retVal &= VerifyToString("PostTest4", UInt32.MaxValue, "G", "4294967295");
         retVal &= VerifyToString("PostTest5", UInt32.MaxValue, "f", "4294967295,000");
-        retVal &= VerifyToString("PostTest6", UInt32.MaxValue, "E", TestLibrary.Utilities.IsWindows? "4,294967E++009" : "4,294967E9");
+        retVal &= VerifyToString("PostTest6", UInt32.MaxValue, "E", "4,294967E++009");
         retVal &= VerifyToString("PostTest7", UInt32.MaxValue, "N", "42#94#96#72#95,000");
         retVal &= VerifyToString("PostTest8", UInt32.MaxValue, "P", "429,496,729,500,0000~");
         retVal &= VerifyToString("PostTest9", UInt32.MaxValue, "D", "4294967295");
         retVal &= VerifyToString("PostTest10", 00065536, "G", "65536");
         retVal &= VerifyToString("PostTest11", 00065536, "P", "6,553,600,0000~");
-        retVal &= VerifyToString("PostTest12", 00065536, "E", TestLibrary.Utilities.IsWindows? "6,553600E++004" : "6,553600E4");
+        retVal &= VerifyToString("PostTest12", 00065536, "E", "6,553600E++004");
         retVal &= VerifyToString("PostTest13", 00065536, String.Empty, "65536");
         retVal &= VerifyToString("PostTest14", 00065536, null, "65536");
 

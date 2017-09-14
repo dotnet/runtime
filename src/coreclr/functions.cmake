@@ -192,9 +192,28 @@ function(install_clr targetName)
   endif()  
 endfunction()
 
+# Disable PAX mprotect that would prevent JIT and other codegen in coreclr from working.
+# PAX mprotect prevents:
+# - changing the executable status of memory pages that were
+#   not originally created as executable,
+# - making read-only executable pages writable again,
+# - creating executable pages from anonymous memory,
+# - making read-only-after-relocations (RELRO) data pages writable again.
+function(disable_pax_mprotect targetName)
+  if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
+    add_custom_command(
+      TARGET ${targetName}
+      POST_BUILD
+      VERBATIM
+      COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
+    )
+  endif()
+endfunction()
+
 function(_add_executable)
     if(NOT WIN32)
       add_executable(${ARGV} ${VERSION_FILE_PATH})
+      disable_pax_mprotect(${ARGV})
     else()
       add_executable(${ARGV})
     endif(NOT WIN32)
@@ -237,3 +256,14 @@ function(verify_dependencies targetName errorMessage)
         )
     endif()
 endfunction()
+
+function(add_library_clr)
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
+    _add_library(${ARGV})
+endfunction()
+
+function(add_executable_clr)
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
+    _add_executable(${ARGV})
+endfunction()
+

@@ -286,6 +286,21 @@ public:
     bool          TieredCompilation(void)           const {LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
 #endif
 
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    inline bool ShouldDumpElfOnMethod(LPCUTF8 methodName) const
+    {
+        CONTRACTL {
+            NOTHROW;
+            GC_NOTRIGGER;
+            PRECONDITION(CheckPointer(methodName, NULL_OK));
+        } CONTRACTL_END
+        return RegexOrExactMatch(pszGDBJitElfDump, methodName);
+    }
+#endif // FEATURE_GDBJIT && _DEBUG
+
+#if defined(FEATURE_GDBJIT_FRAME)
+    inline bool ShouldEmitDebugFrame(void) const {LIMITED_METHOD_CONTRACT; return fGDBJitEmitDebugFrame;}
+#endif // FEATURE_GDBJIT_FRAME
     BOOL PInvokeRestoreEsp(BOOL fDefault) const
     {
         LIMITED_METHOD_CONTRACT;
@@ -474,7 +489,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    bool VerifyModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fVerifyAllOnLoad; }
 #ifdef _DEBUG
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
@@ -934,8 +948,6 @@ private: //----------------------------------------------------------------
     bool   m_fDeveloperInstallation;      // We are on a developers machine
     bool   fAppDomainUnload;            // Enable appdomain unloading
     
-    bool fVerifyAllOnLoad;              // True if we want to verify all methods in an assembly at load time.
-
     DWORD  dwADURetryCount;
 
 #ifdef _DEBUG
@@ -1101,6 +1113,13 @@ private: //----------------------------------------------------------------
     bool fTieredCompilation;
 #endif
 
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    LPCUTF8 pszGDBJitElfDump;
+#endif // FEATURE_GDBJIT && _DEBUG
+
+#if defined(FEATURE_GDBJIT_FRAME)
+    bool fGDBJitEmitDebugFrame;
+#endif
 public:
 
     HRESULT GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* value);

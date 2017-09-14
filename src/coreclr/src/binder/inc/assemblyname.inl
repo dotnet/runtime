@@ -133,7 +133,7 @@ void AssemblyName::SetHave(DWORD dwIdentityFlags)
 
 BOOL AssemblyName::HaveAssemblyVersion()
 {
-    return (m_version.GetMajor() != static_cast<DWORD>(-1));
+    return m_version.HasMajor();
 }
 
 BOOL AssemblyName::HaveNeutralCulture()

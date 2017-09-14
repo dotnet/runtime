@@ -251,12 +251,3 @@ DumpDataTarget::Request(
     assert(false);
     return E_NOTIMPL;
 }
-
-HRESULT STDMETHODCALLTYPE 
-DumpDataTarget::VirtualUnwind(
-    /* [in] */ DWORD threadId,
-    /* [in] */ ULONG32 contextSize,
-    /* [in, out, size_is(contextSize)] */ PBYTE context)
-{
-    return E_NOTIMPL;
-}

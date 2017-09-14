@@ -21,19 +21,19 @@ namespace System.Threading
         public ThreadStateException()
             : base(SR.Arg_ThreadStateException)
         {
-            HResult = __HResults.COR_E_THREADSTATE;
+            HResult = HResults.COR_E_THREADSTATE;
         }
 
         public ThreadStateException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_THREADSTATE;
+            HResult = HResults.COR_E_THREADSTATE;
         }
 
         public ThreadStateException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_THREADSTATE;
+            HResult = HResults.COR_E_THREADSTATE;
         }
 
         protected ThreadStateException(SerializationInfo info, StreamingContext context)

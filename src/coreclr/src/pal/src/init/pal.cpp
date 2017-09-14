@@ -99,6 +99,9 @@ Volatile<LONG> g_coreclrInitialized = 0;
 static BOOL g_fThreadDataAvailable = FALSE;
 static pthread_mutex_t init_critsec_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// The default minimum stack size
+SIZE_T g_defaultStackSize = 0;
+
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
 static PCRITICAL_SECTION init_critsec = NULL;
@@ -167,6 +170,66 @@ PALAPI
 PAL_InitializeDLL()
 {
     return Initialize(0, NULL, PAL_INITIALIZE_DLL);
+}
+
+#ifndef __GLIBC__
+/*++
+Function:
+  EnsureStackSize
+
+Abstract:
+  This fixes a problem on MUSL where the initial stack size reported by the
+  pthread_attr_getstack is about 128kB, but this limit is not fixed and
+  the stack can grow dynamically. The problem is that it makes the 
+  functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack 
+  to fail for real life scenarios like e.g. compilation of corefx.
+  Since there is no real fixed limit for the stack, the code below
+  ensures moving the stack limit to a value that makes reasonable
+  real life scenarios work.
+
+--*/
+__attribute__((noinline,optnone))
+void
+EnsureStackSize(SIZE_T stackSize)
+{
+    volatile uint8_t *s = (uint8_t *)_alloca(stackSize);
+    *s = 0;
+}
+#endif // __GLIBC__
+
+/*++
+Function:
+  InitializeDefaultStackSize
+
+Abstract:
+  Initializes the default stack size. 
+
+--*/
+void
+InitializeDefaultStackSize()
+{
+    char* defaultStackSizeStr = getenv("COMPlus_DefaultStackSize");
+    if (defaultStackSizeStr != NULL)
+    {
+        errno = 0;
+        // Like all numeric values specific by the COMPlus_xxx variables, it is a 
+        // hexadecimal string without any prefix.
+        long int size = strtol(defaultStackSizeStr, NULL, 16);
+
+        if (errno == 0)
+        {
+            g_defaultStackSize = max(size, PTHREAD_STACK_MIN);
+        }
+    }
+
+#ifndef __GLIBC__
+    if (g_defaultStackSize == 0)
+    {
+        // Set the default minimum stack size for MUSL to the same value as we
+        // use on Windows.
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif // __GLIBC__
 }
 
 /*++
@@ -244,6 +307,12 @@ Initialize(
         gSID = getsid(gPID);
 
         fFirstTimeInit = true;
+
+        InitializeDefaultStackSize();
+
+#ifndef __GLIBC__
+        EnsureStackSize(g_defaultStackSize);
+#endif // __GLIBC__
 
         // Initialize the TLS lookaside cache
         if (FALSE == TLSInitialize())

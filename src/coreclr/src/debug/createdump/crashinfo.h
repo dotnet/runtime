@@ -10,7 +10,7 @@ typedef Elf32_auxv_t elf_aux_entry;
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(__x86_64) || defined(__aarch64__)
+#elif defined(__x86_64__) || defined(__aarch64__)
 typedef Elf64_auxv_t elf_aux_entry;
 #define PRIx PRIx64
 #define PRIu PRIu64
@@ -40,6 +40,7 @@ private:
     std::set<MemoryRegion> m_moduleMappings;        // module memory mappings
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
+    std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
 
 public:
     CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos);
@@ -47,21 +48,24 @@ public:
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType);
     void ResumeThreads();
+    bool ReadMemory(void* address, void* buffer, size_t size);
+    uint64_t GetBaseAddress(uint64_t ip);
+    void InsertMemoryRegion(uint64_t address, size_t size);
     static bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char** name);
-    static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, uint64_t start);
+    static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
-    const pid_t Pid() const { return m_pid; }
-    const pid_t Ppid() const { return m_ppid; }
-    const pid_t Tgid() const { return m_tgid; }
-    const char* Name() const { return m_name; }
-    ICLRDataTarget* DataTarget() const { return m_dataTarget; }
+    inline const pid_t Pid() const { return m_pid; }
+    inline const pid_t Ppid() const { return m_ppid; }
+    inline const pid_t Tgid() const { return m_tgid; }
+    inline const char* Name() const { return m_name; }
+    inline ICLRDataTarget* DataTarget() const { return m_dataTarget; }
 
-    const std::vector<ThreadInfo*> Threads() const { return m_threads; }
-    const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }
-    const std::set<MemoryRegion> OtherMappings() const { return m_otherMappings; }
-    const std::set<MemoryRegion> MemoryRegions() const { return m_memoryRegions; }
-    const std::vector<elf_aux_entry> AuxvEntries() const { return m_auxvEntries; }
-    const size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
+    inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }
+    inline const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }
+    inline const std::set<MemoryRegion> OtherMappings() const { return m_otherMappings; }
+    inline const std::set<MemoryRegion> MemoryRegions() const { return m_memoryRegions; }
+    inline const std::vector<elf_aux_entry> AuxvEntries() const { return m_auxvEntries; }
+    inline const size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
 
     // IUnknown
     STDMETHOD(QueryInterface)(___in REFIID InterfaceId, ___out PVOID* Interface);
@@ -77,11 +81,10 @@ private:
     bool GetDSOInfo();
     bool GetELFInfo(uint64_t baseAddress);
     bool EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType);
-    bool EnumerateManagedModules(IXCLRDataProcess* clrDataProcess);
+    bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
+    bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
     void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, const char* pszName);
-    bool ReadMemory(void* address, void* buffer, size_t size);
     void InsertMemoryBackedRegion(const MemoryRegion& region);
-    void InsertMemoryRegion(uint64_t address, size_t size);
     void InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);

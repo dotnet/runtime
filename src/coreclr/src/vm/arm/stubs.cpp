@@ -19,7 +19,6 @@
 #include "eeconfig.h"
 #include "cgensys.h"
 #include "asmconstants.h"
-#include "security.h"
 #include "virtualcallstub.h"
 #include "gcdump.h"
 #include "rtlfunctions.h"
@@ -2522,6 +2521,12 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
+void UMEntryThunkCode::Poison()
+{
+    // Insert 'udf 0xff' at the entry point
+    m_code[0] = 0xdeff;
+}
+
 ///////////////////////////// UNIMPLEMENTED //////////////////////////////////
 
 #ifndef DACCESS_COMPILE
@@ -3599,10 +3604,8 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     END_DYNAMIC_HELPER_EMIT();
 }
 
-PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
-    BEGIN_DYNAMIC_HELPER_EMIT(18);
-
     // mov r1, arg
     MovRegImm(p, 1, arg);
     p += 8;
@@ -3614,6 +3617,13 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
     // bx r12
     *(WORD *)p = 0x4760;
     p += 2;
+}
+
+PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+{
+    BEGIN_DYNAMIC_HELPER_EMIT(18);
+
+    EmitHelperWithArg(p, pAllocator, arg, target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -3762,8 +3772,26 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    // TODO (NYI)
-    ThrowHR(E_NOTIMPL);
+    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
+        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
+        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+
+    GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
+    pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
+    pArgs->signature = pLookup->signature;
+    pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+
+    // It's available only via the run-time helper function,
+    // since optimization cases are not yet implemented.
+    assert(pLookup->indirections == CORINFO_USEHELPER);
+
+    BEGIN_DYNAMIC_HELPER_EMIT(18);
+
+    EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+
+    END_DYNAMIC_HELPER_EMIT();
+
+    // @TODO : Additional implementation is required for optimization cases.
 }
 #endif // FEATURE_READYTORUN
 

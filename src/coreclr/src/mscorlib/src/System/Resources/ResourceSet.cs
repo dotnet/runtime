@@ -13,16 +13,10 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Collections;
 using System.IO;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Reflection;
-using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
-using System.Collections.Generic;
 
 namespace System.Resources
 {
@@ -34,7 +28,7 @@ namespace System.Resources
     //
     public class ResourceSet : IDisposable, IEnumerable
     {
-        [NonSerialized] protected IResourceReader Reader;
+        protected IResourceReader Reader;
         internal Hashtable Table;
 
         private Hashtable _caseInsensitiveTable;  // For case-insensitive lookups.

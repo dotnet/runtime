@@ -1293,7 +1293,7 @@ namespace System.Threading.Tasks
 
             /// <summary>
             /// Completes the asynchronous operation using information in the IAsyncResult.  
-            /// IAsyncResult.AsyncState neeeds to be the FromAsyncTrimPromise to complete.
+            /// IAsyncResult.AsyncState needs to be the FromAsyncTrimPromise to complete.
             /// </summary>
             /// <param name="asyncResult">The IAsyncResult for the async operation.</param>
             internal static void CompleteFromAsyncResult(IAsyncResult asyncResult)

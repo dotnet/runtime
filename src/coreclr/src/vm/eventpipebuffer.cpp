@@ -4,6 +4,7 @@
 
 
 #include "common.h"
+#include "eventpipe.h"
 #include "eventpipeeventinstance.h"
 #include "eventpipebuffer.h"
 
@@ -46,7 +47,7 @@ EventPipeBuffer::~EventPipeBuffer()
     }
 }
 
-bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *pData, unsigned int dataLength, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack)
+bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack)
 {
     CONTRACTL
     {
@@ -58,7 +59,7 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *p
     CONTRACTL_END;
 
     // Calculate the size of the event.
-    unsigned int eventSize = sizeof(EventPipeEventInstance) + dataLength;
+    unsigned int eventSize = sizeof(EventPipeEventInstance) + payload.GetSize();
 
     // Make sure we have enough space to write the event.
     if(m_pCurrent + eventSize >= m_pLimit)
@@ -77,7 +78,7 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *p
             event,
             pThread->GetOSThreadId(),
             pDataDest,
-            dataLength,
+            payload.GetSize(),
             pActivityId,
             pRelatedActivityId);
 
@@ -89,9 +90,9 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *p
         }
 
         // Write the event payload data to the buffer.
-        if(dataLength > 0)
+        if(payload.GetSize() > 0)
         {
-            memcpy(pDataDest, pData, dataLength);
+            payload.CopyData(pDataDest);
         }
 
         // Save the most recent event timestamp.

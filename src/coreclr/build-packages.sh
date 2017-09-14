@@ -10,6 +10,26 @@ usage()
     exit 1
 }
 
+initHostDistroRid()
+{
+    __HostDistroRid=""
+    if [ "$__HostOS" == "Linux" ]; then
+        if [ -e /etc/os-release ]; then
+            source /etc/os-release
+            __HostDistroRid="$ID.$VERSION_ID-$__Arch"
+        elif [ -e /etc/redhat-release ]; then
+            local redhatRelease=$(</etc/redhat-release)
+            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
+               __HostDistroRid="rhel.6-$__Arch"
+            fi
+        fi
+    fi
+
+    if [ "$__HostDistroRid" == "" ]; then
+        echo "WARNING: Can not determine runtime id for current distro."
+    fi
+}
+
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __IsPortableBuild=1
 
@@ -70,7 +90,7 @@ while :; do
         __Arch=$(echo $1| cut -d'=' -f 2)
         ;;
 
-        -PortableBuild=false)
+        -portablebuild=false)
             unprocessedBuildArgs="$unprocessedBuildArgs $1"
             __IsPortableBuild=0
             ;;
@@ -88,7 +108,9 @@ if [ $__IsPortableBuild == 1 ]; then
         export __DistroRid="osx-$__Arch"
     fi
 else
-    export __DistroRid="\${OSRid}-$__Arch"
+    # init the host distro name
+    initHostDistroRid
+    export __DistroRid="$__HostDistroRid"
 fi
 
 $__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/packages.builds -DistroRid=$__DistroRid -UseSharedCompilation=false -BuildNugetPackage=false $unprocessedBuildArgs

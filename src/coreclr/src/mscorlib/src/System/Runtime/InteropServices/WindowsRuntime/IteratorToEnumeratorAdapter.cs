@@ -182,7 +182,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (Exception e)
             {
                 // Translate E_CHANGED_STATE into an InvalidOperationException for an updated enumeration
-                if (Marshal.GetHRForException(e) == __HResults.E_CHANGED_STATE)
+                if (Marshal.GetHRForException(e) == HResults.E_CHANGED_STATE)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }

@@ -18,19 +18,19 @@ namespace System
         public DataMisalignedException()
             : base(SR.Arg_DataMisalignedException)
         {
-            HResult = __HResults.COR_E_DATAMISALIGNED;
+            HResult = HResults.COR_E_DATAMISALIGNED;
         }
 
         public DataMisalignedException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_DATAMISALIGNED;
+            HResult = HResults.COR_E_DATAMISALIGNED;
         }
 
         public DataMisalignedException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_DATAMISALIGNED;
+            HResult = HResults.COR_E_DATAMISALIGNED;
         }
     }
 }

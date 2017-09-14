@@ -4,7 +4,7 @@
 
 namespace System.Reflection
 {
-    public abstract class MethodInfo : MethodBase
+    public abstract partial class MethodInfo : MethodBase
     {
         protected MethodInfo() { }
 

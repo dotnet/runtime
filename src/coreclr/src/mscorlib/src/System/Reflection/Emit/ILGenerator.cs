@@ -1622,7 +1622,7 @@ namespace System.Reflection.Emit
 
         /***************************
         *
-        * Find the current active lexcial scope. For example, if we have
+        * Find the current active lexical scope. For example, if we have
         * "Open Open Open Close",
         * we will return 1 as the second BeginScope is currently active.
         *

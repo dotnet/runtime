@@ -272,11 +272,8 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
-    // NonRandomizedStringEqualityComparer is the comparer used by default with the Dictionary<string,...> 
-    // As the randomized string hashing is turned on by default on coreclr, we need to keep the performance not affected 
-    // as much as possible in the main stream scenarios like Dictionary<string,>
     // We use NonRandomizedStringEqualityComparer as default comparer as it doesnt use the randomized string hashing which 
-    // keep the perofrmance not affected till we hit collision threshold and then we switch to the comparer which is using 
+    // keeps the performance unaffected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing GenericEqualityComparer<string>
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 

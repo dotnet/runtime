@@ -18,19 +18,19 @@ namespace System
         public FieldAccessException()
             : base(SR.Arg_FieldAccessException)
         {
-            HResult = __HResults.COR_E_FIELDACCESS;
+            HResult = HResults.COR_E_FIELDACCESS;
         }
 
         public FieldAccessException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_FIELDACCESS;
+            HResult = HResults.COR_E_FIELDACCESS;
         }
 
         public FieldAccessException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_FIELDACCESS;
+            HResult = HResults.COR_E_FIELDACCESS;
         }
 
         protected FieldAccessException(SerializationInfo info, StreamingContext context) : base(info, context)

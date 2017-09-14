@@ -16,19 +16,19 @@ namespace System
         public MulticastNotSupportedException()
             : base(SR.Arg_MulticastNotSupportedException)
         {
-            HResult = __HResults.COR_E_MULTICASTNOTSUPPORTED;
+            HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }
 
         public MulticastNotSupportedException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_MULTICASTNOTSUPPORTED;
+            HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }
 
         public MulticastNotSupportedException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_MULTICASTNOTSUPPORTED;
+            HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }
     }
 }

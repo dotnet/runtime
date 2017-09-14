@@ -517,7 +517,8 @@ struct BasicBlock : private LIR::Range
                         bool      showFlags = false,
                         bool showPreds = true); // Print a simple basic block header for various output, including a
                                                 // list of predecessors and successors.
-#endif                                          // DEBUG
+    const char* dspToString(int blockNumPadding = 0);
+#endif // DEBUG
 
     typedef unsigned weight_t; // Type used to hold block and edge weights
                                // Note that for CLR v2.0 and earlier our
@@ -1052,6 +1053,7 @@ struct BasicBlock : private LIR::Range
     // in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are
     // still in the BB list by whether they have the same stamp (with high probability).
     unsigned bbTraversalStamp;
+    unsigned bbID;
 #endif // DEBUG
 
     ThisInitState bbThisOnEntry();

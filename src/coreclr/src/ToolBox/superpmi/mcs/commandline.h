@@ -27,7 +27,6 @@ public:
             , actionInteg(false)
             , actionMerge(false)
             , actionRemoveDup(false)
-            , actionSmarty(false)
             , actionStat(false)
             , actionStrip(false)
             , actionTOC(false)
@@ -53,7 +52,6 @@ public:
         bool  actionInteg;
         bool  actionMerge;
         bool  actionRemoveDup;
-        bool  actionSmarty;
         bool  actionStat;
         bool  actionStrip;
         bool  actionTOC;

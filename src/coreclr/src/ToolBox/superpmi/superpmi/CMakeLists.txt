@@ -5,6 +5,7 @@ remove_definitions(-D_UNICODE)
 
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
+add_definitions(-DUSE_COREDISTOOLS)
 
 if(WIN32)
   #use static crt
@@ -13,10 +14,6 @@ endif(WIN32)
 
 include_directories(.)
 include_directories(../superpmi-shared)
-
-# When it is ready (the build works on all platforms, referencing the coredistools
-# package), define this:
-# add_definitions(-DUSE_COREDISTOOLS)
 
 set(SUPERPMI_SOURCES
     commandline.cpp

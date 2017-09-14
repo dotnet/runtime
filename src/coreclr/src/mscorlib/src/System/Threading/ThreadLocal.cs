@@ -712,7 +712,7 @@ namespace System.Threading
         /// A class that facilitates ThreadLocal cleanup after a thread exits.
         /// 
         /// After a thread with an associated thread-local table has exited, the FinalizationHelper 
-        /// is reponsible for removing back-references to the table. Since an instance of FinalizationHelper 
+        /// is responsible for removing back-references to the table. Since an instance of FinalizationHelper 
         /// is only referenced from a single thread-local slot, the FinalizationHelper will be GC'd once
         /// the thread has exited.
         /// 
