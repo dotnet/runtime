@@ -2486,7 +2486,7 @@ void fgArgInfo::EvalArgsToTemps()
             tmpRegArgNext->gtOp.gtOp2 = compiler->gtNewArgList(defArg);
 
             tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
-            tmpRegArgNext             = tmpRegArgNext->Rest();
+            tmpRegArgNext = tmpRegArgNext->Rest();
         }
 
         tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
