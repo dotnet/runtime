@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations
@@ -60,16 +59,13 @@ namespace System.ComponentModel.DataAnnotations
             {
                 length = str.Length;
             }
+            else if (CountPropertyHelper.TryGetCount(value, out var count))
+            {
+                length = count;
+            }
             else
             {
-                if (value is ICollection collection)
-                {
-                    length = collection.Count;
-                }
-                else
-                {
-                    throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
-                }
+                throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
             }
 
             return length >= Length;
