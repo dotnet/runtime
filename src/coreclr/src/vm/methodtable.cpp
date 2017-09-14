@@ -7074,7 +7074,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     InterfaceMapIterator it = this->IterateInterfaceMap();
 
     CQuickArray<MatchCandidate> candidates;
-    int candidatesCount = 0;
+    unsigned candidatesCount = 0;
     candidates.AllocThrows(this->GetNumInterfaces());
     
     //
@@ -7193,7 +7193,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
                     // We need to maintain the invariant that the candidates are always the most specific
                     // in all path scaned so far. There might be multiple incompatible candidates 
-                    for (int i = 0; i < candidatesCount; ++i)
+                    for (unsigned i = 0; i < candidatesCount; ++i)
                     {
                         MethodTable *pCandidateMT = candidates[i].pMT;
                         if (pCandidateMT == NULL)
@@ -7255,7 +7255,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     // scan to see if there are any conflicts
     MethodTable *pBestCandidateMT = NULL;
     MethodDesc *pBestCandidateMD = NULL;
-    for (int i = 0; i < candidatesCount; ++i)
+    for (unsigned i = 0; i < candidatesCount; ++i)
     {
         if (candidates[i].pMT == NULL)
             continue;
