@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+VisualStudioVersion = 15.0.26911.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Common.Tests", "tests\System.Drawing.Common.Tests.csproj", "{4B93E684-0630-45F4-8F63-6C7788C9892F}"
 	ProjectSection(ProjectDependencies) = postProject
