@@ -3438,14 +3438,15 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     genConsumeOperands(tree);
 
-    emitAttr cmpSize = EA_UNKNOWN;
+    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+
+    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
     if (varTypeIsFloating(op1Type))
     {
         assert(varTypeIsFloating(op2Type));
         assert(!op1->isContained());
         assert(op1Type == op2Type);
-        cmpSize = EA_ATTR(genTypeSize(op1Type));
 
         if (op2->IsIntegralConst(0))
         {
@@ -3463,30 +3464,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         // We don't support swapping op1 and op2 to generate cmp reg, imm
         assert(!op1->isContainedIntOrIImmed());
 
-        unsigned op1Size = genTypeSize(op1Type);
-        unsigned op2Size = genTypeSize(op2Type);
-
-        cmpSize = EA_4BYTE;
-        if ((op1Size == EA_8BYTE) || (op2Size == EA_8BYTE))
-        {
-            cmpSize = EA_8BYTE;
-        }
-
         instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
-
-        if (op1Size < cmpSize)
-        {
-            assert(op1Size == 4);
-            bool isTest          = (ins == INS_tst);
-            bool testNeedsExtend = isTest && (!op2->isContainedIntOrIImmed() ||
-                                              (op2->AsIntConCommon()->IconValue() & (~0UL << (8 * op1Size))));
-            if (!isTest || testNeedsExtend)
-            {
-                // We need to sign/zero extend op1 up to 64 bits.
-                instruction ins = ins_Move_Extend(op1Type, true);
-                inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
-            }
-        }
 
         if (op2->isContainedIntOrIImmed())
         {
@@ -3495,23 +3473,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         }
         else
         {
-            insOpts extendOpt = INS_OPTS_NONE;
-            if (op2Size < cmpSize)
-            {
-                if (ins == INS_tst)
-                {
-                    // We need to sign/zero extend op1 up to 64 bits.
-                    instruction ins = ins_Move_Extend(op1Type, true);
-                    inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
-                }
-                else
-                {
-                    assert(op2Size == 4);
-                    // Use cmp extended register form to sign/zero extend op2 up to 64 bits
-                    extendOpt = varTypeIsUnsigned(op2Type) ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-                }
-            }
-            emit->emitIns_R_R_I(ins, cmpSize, op1->gtRegNum, op2->gtRegNum, 0, extendOpt);
+            emit->emitIns_R_R(ins, cmpSize, op1->gtRegNum, op2->gtRegNum);
         }
     }
 
