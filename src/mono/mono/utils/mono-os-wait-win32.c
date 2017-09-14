@@ -1,3 +1,13 @@
+/**
+* \file
+* Win32 OS wait wrappers and interrupt/abort APC handling.
+*
+* Author:
+*   Johan Lorensson (lateralusx.github@gmail.com)
+*
+* Licensed under the MIT license. See LICENSE file in the project root for full license information.
+*/
+
 #include <mono/utils/mono-os-wait.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-debug.h>
@@ -11,17 +21,17 @@ static inline void
 reqeust_interrupt (gpointer thread_info, HANDLE native_thread_handle, gint32 pending_apc_slot, PAPCFUNC apc_callback, DWORD tid)
 {
 	/*
-	* On Windows platforms the async interrupt/abort requests might need to process
-	* APC on target thread before the thread can return back from OS wait calls
-	* and complete the mono interrupt/abort request. In such cases, just keep on
-	* queuing APC over again again will flood the APC queue preventing the target thread
-	* to return from it's alertable OS wait call. This check makes sure not to issue an APC
-	* as long as there is a pending requests in requested APC slot for the targeted thread.
-	* NOTE, this code will executed regardless if thread is currently in an alertable wait or not.
-	* This is done to prevent races between interrupt/abort occurring just before thread enters an
-	* alertable wait. Threads entering waits already need to handle WAIT_IO_COMPLETION scenarios and
-	* if that happens due to a previous pending interrupt/abort APC, the calling thread should already
-	* have logic to restart the alertable wait operation.
+	* On Windows platforms, an async interrupt/abort request queues an APC
+	* that needs to be processed by target thread before it can return from an
+	* alertable OS wait call and complete the mono interrupt/abort request.
+	* Uncontrolled queuing of APC's could flood the APC queue preventing the target thread
+	* to return from its alertable OS wait call, blocking the interrupt/abort requests to complete
+	* This check makes sure that only one APC per type gets queued, preventing potential flooding
+	* of the APC queue. NOTE, this code will execute regardless if targeted thread is currently in
+	* an alertable wait or not. This is done to prevent races between interrupt/abort requests and
+	* alertable wait calls. Threads already in an alertable wait should handle WAIT_IO_COMPLETION
+	* return scenarios and restart the alertable wait operation if needed or take other actions
+	* (like service the interrupt/abort request).
 	*/
 	MonoThreadInfo *info = (MonoThreadInfo *)thread_info;
 	gboolean queue_apc = FALSE;
@@ -95,7 +105,7 @@ mono_win32_sleep_ex (DWORD timeout, BOOL alertable)
 	result = SleepEx (timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
-	// if changed, last error need to be preserved and reset before returning.
+	// if changed, GetLastError needs to be preserved and reset before returning.
 	if (alertable && info) {
 		leave_alertable_wait (info);
 	}
@@ -116,7 +126,7 @@ mono_win32_wait_for_single_object_ex (HANDLE handle, DWORD timeout, BOOL alertab
 	result = WaitForSingleObjectEx (handle, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
-	// if changed, last error need to be preserved and reset before returning.
+	// if changed, GetLastError needs to be preserved and reset before returning.
 	if (alertable && info) {
 		leave_alertable_wait (info);
 	}
@@ -137,7 +147,7 @@ mono_win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOO
 	result = WaitForMultipleObjectsEx (count, handles, waitAll, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
-	// if changed, last error need to be preserved and reset before returning.
+	// if changed, GetLastError needs to be preserved and reset before returning.
 	if (alertable && info) {
 		leave_alertable_wait (info);
 	}
@@ -158,7 +168,7 @@ mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout
 	result = SignalObjectAndWait (toSignal, toWait, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
-	// if changed, last error need to be preserved and reset before returning.
+	// if changed, GetLastError needs to be preserved and reset before returning.
 	if (alertable && info) {
 		leave_alertable_wait (info);
 	}
@@ -180,7 +190,7 @@ mono_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles,
 	result = MsgWaitForMultipleObjectsEx (count, handles, timeout, wakeMask, flags);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
-	// if changed, last error need to be preserved and reset before returning.
+	// if changed, GetLastError needs to be preserved and reset before returning.
 	if (alertable && info) {
 		leave_alertable_wait (info);
 	}
@@ -201,7 +211,7 @@ mono_win32_wsa_wait_for_multiple_events (DWORD count, const WSAEVENT FAR *handle
 	result = WSAWaitForMultipleEvents (count, handles, waitAll, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
-	// if changed, last error need to be preserved and reset before returning.
+	// if changed, GetLastError needs to be preserved and reset before returning.
 	if (alertable && info) {
 		leave_alertable_wait (info);
 	}
