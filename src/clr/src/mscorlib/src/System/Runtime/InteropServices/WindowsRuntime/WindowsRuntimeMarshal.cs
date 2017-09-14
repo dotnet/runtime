@@ -826,7 +826,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             /// for more than a few instructions (in particular, we never call event APIs
             /// or in fact any non-trivial API while holding the spin lock).   
             /// 
-            /// Currently this ReaderWriterLock does not support recurision, however it is 
+            /// Currently this ReaderWriterLock does not support recursion, however it is 
             /// not hard to add 
             /// </summary>
             internal class MyReaderWriterLock

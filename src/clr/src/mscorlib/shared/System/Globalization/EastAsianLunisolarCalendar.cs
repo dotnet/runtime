@@ -67,7 +67,7 @@ namespace System.Globalization
             return ((sexagenaryYear - 1) % 10) + 1;
         }
 
-        // Return the Terrestial Branch from the the 60-year cycle.
+        // Return the Terrestial Branch from the 60-year cycle.
         // The returned value is from 1 ~ 12.
         //
 

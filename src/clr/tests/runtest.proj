@@ -338,8 +338,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Import Project="publishdependency.targets" />
 
   <PropertyGroup>
-    <TargetRid Condition="'$(RuntimeId)' != ''">$(RuntimeId)</TargetRid>
-    <TargetRid Condition="'$(RuntimeId)' == ''">$(TestNugetRuntimeId)</TargetRid>
     <DesiredPackageVersionArg Condition="'$(DesiredPackageVersionArg)' == ''">$(CoreClrPackageVersion)</DesiredPackageVersionArg>
   </PropertyGroup>
 

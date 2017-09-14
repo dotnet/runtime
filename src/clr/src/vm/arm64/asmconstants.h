@@ -23,6 +23,13 @@
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond)
 #endif
 
+// Some contants are different in _DEBUG builds.  This macro factors out ifdefs from below.
+#ifdef _DEBUG
+#define DBG_FRE(dbg,fre) dbg
+#else
+#define DBG_FRE(dbg,fre) fre
+#endif
+
 #define DynamicHelperFrameFlags_Default     0
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
@@ -75,6 +82,11 @@ ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
                       == CORINFO_NullReferenceException);
 
 
+#define                  CORINFO_IndexOutOfRangeException_ASM 3
+ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
+                      == CORINFO_IndexOutOfRangeException);
+
+
 // Offset of the array containing the address of captured registers in MachState
 #define MachState__captureX19_X29 0x0
 ASMCONSTANTS_C_ASSERT(MachState__captureX19_X29 == offsetof(MachState, captureX19_X29))
@@ -112,6 +124,28 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 
 #define SIZEOF__CONTEXT               0x390
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
+
+
+//=========================================
+#define MethodTable__m_dwFlags         0x0
+ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
+
+#define MethodTable__m_BaseSize         0x04
+ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
+
+#define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
+ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMultipurposeSlot1));
+
+#define ArrayBase__m_NumComponents     0x8
+ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
+
+#define PtrArray__m_Array              0x10
+ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
+
+#define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
+
+//=========================================
+
 
 
 #ifdef FEATURE_COMINTEROP

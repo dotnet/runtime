@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region Private Data Mebers
+        #region Private Data Members
         internal MethodInfo m_method;
         private Type[] m_inst;
         #endregion

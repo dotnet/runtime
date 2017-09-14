@@ -25,7 +25,6 @@
 #cmakedefine01 HAVE_PTHREAD_NP_H
 
 #cmakedefine01 HAVE_KQUEUE
-#cmakedefine01 HAVE_GETPWUID_R
 #cmakedefine01 HAVE_PTHREAD_SUSPEND
 #cmakedefine01 HAVE_PTHREAD_SUSPEND_NP
 #cmakedefine01 HAVE_PTHREAD_CONTINUE
@@ -78,6 +77,7 @@
 #cmakedefine01 HAVE_PT_REGS
 #cmakedefine01 HAVE_GREGSET_T
 #cmakedefine01 HAVE___GREGSET_T
+#cmakedefine01 HAVE_FPSTATE_GLIBC_RESERVED1
 #cmakedefine01 HAVE_SIGINFO_T
 #cmakedefine01 HAVE_UCONTEXT_T
 #cmakedefine01 HAVE_PTHREAD_RWLOCK_T

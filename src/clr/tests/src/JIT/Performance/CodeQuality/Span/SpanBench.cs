@@ -1011,11 +1011,11 @@ namespace Span
         }
         #endregion
 
-        #region TestSpanAsSpanStringChar<T>
+        #region TestSpanAsReadOnlySpanStringChar<T>
 
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanAsSpanStringCharWrapper(int length)
+        public static void TestSpanAsReadOnlySpanStringCharWrapper(int length)
         {
             StringBuilder sb = new StringBuilder();
             Random rand = new Random(42);
@@ -1027,12 +1027,12 @@ namespace Span
             }
             string s = sb.ToString();
 
-            Invoke((int innerIterationCount) => TestSpanAsSpanStringChar(s, innerIterationCount, false),
-                "TestSpanAsSpanStringChar({0})", length);
+            Invoke((int innerIterationCount) => TestSpanAsReadOnlySpanStringChar(s, innerIterationCount, false),
+                "TestSpanAsReadOnlySpanStringChar({0})", length);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestSpanAsSpanStringChar(string s, int iterationCount, bool untrue)
+        static void TestSpanAsReadOnlySpanStringChar(string s, int iterationCount, bool untrue)
         {
             var sink = Sink<char>.Instance;
 

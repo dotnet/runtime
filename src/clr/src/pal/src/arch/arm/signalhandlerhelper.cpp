@@ -45,11 +45,22 @@ void ExecuteHandlerOnOriginalStack(int code, siginfo_t *siginfo, void *context, 
     // preserve 8 bytes long red zone and align stack pointer
     size_t* sp = (size_t*)ALIGN_DOWN(faultSp - 8, 8);
 
+#ifndef __linux__
+    size_t cpsr = (size_t)MCREG_Cpsr(ucontext->uc_mcontext);
+
     // Build fake stack frame to enable the stack unwinder to unwind from signal_handler_worker to the faulting instruction
-    // pushed LR
-    *--sp = (size_t)MCREG_Pc(ucontext->uc_mcontext);
+    // align
+    --sp;
+    // pushed LR with correct mode bit
+    *--sp = (size_t)MCREG_Pc(ucontext->uc_mcontext) | ((cpsr & (1 << 5)) >> 5);
     // pushed frame pointer
+    *--sp = (size_t)MCREG_R11(ucontext->uc_mcontext);
     *--sp = (size_t)MCREG_R7(ucontext->uc_mcontext); 
+#else
+    size_t size = ALIGN_UP(sizeof(ucontext->uc_mcontext), 8);
+    sp -= size / sizeof(size_t);
+    *(sigcontext *)sp = ucontext->uc_mcontext;
+#endif
 
     // Switch the current context to the signal_handler_worker and the original stack
     CONTEXT context2;

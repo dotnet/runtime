@@ -48,6 +48,18 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Casts the given object to the specified type.
+        /// </summary>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T As<T>(object o) where T : class
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
         /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
         /// </summary>
         [NonVersionable]
@@ -55,7 +67,7 @@ namespace System.Runtime.CompilerServices
         public static ref TTo As<TFrom, TTo>(ref TFrom source)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            // See getILIntrinsicImplementationForUnsafe for how this happens.
             throw new InvalidOperationException();
         }
 
@@ -65,6 +77,19 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void* Add<T>(void* source, int elementOffset)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForUnsafe for how this happens.

@@ -47,6 +47,8 @@
 #include "readytoruninfo.h"
 #endif
 
+#include "ilinstrumentation.h"
+
 class PELoader;
 class Stub;
 class MethodDesc;
@@ -77,7 +79,9 @@ class CerNgenRootTable;
 struct MethodContextElement;
 class TypeHandleList;
 class ProfileEmitter;
-class ReJitManager;
+class CodeVersionManager;
+class CallCounter;
+class TieredCompilationManager;
 class TrackingMap;
 struct MethodInModule;
 class PersistentInlineTrackingMapNGen;
@@ -618,7 +622,7 @@ struct ModuleCtorInfo
     DWORD                   numElements;
     DWORD                   numLastAllocated;
     DWORD                   numElementsHot;
-    DPTR(PTR_MethodTable)   ppMT;           // size is numElements
+    DPTR(RelativePointer<PTR_MethodTable>) ppMT; // size is numElements
     PTR_ClassCtorInfoEntry  cctorInfoHot;   // size is numElementsHot
     PTR_ClassCtorInfoEntry  cctorInfoCold;  // size is numElements-numElementsHot
 
@@ -627,8 +631,8 @@ struct ModuleCtorInfo
     DWORD                   numHotHashes;
     DWORD                   numColdHashes;
 
-    ArrayDPTR(FixupPointer<PTR_MethodTable>) ppHotGCStaticsMTs;            // hot table
-    ArrayDPTR(FixupPointer<PTR_MethodTable>) ppColdGCStaticsMTs;           // cold table
+    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppHotGCStaticsMTs;            // hot table
+    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppColdGCStaticsMTs;           // cold table
 
     DWORD                   numHotGCStaticsMTs;
     DWORD                   numColdGCStaticsMTs;
@@ -664,7 +668,13 @@ struct ModuleCtorInfo
         return hashVal;
     };
 
-    ArrayDPTR(FixupPointer<PTR_MethodTable>) GetGCStaticMTs(DWORD index);
+    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) GetGCStaticMTs(DWORD index);
+
+    PTR_MethodTable GetMT(DWORD i)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return ppMT[i].GetValue(dac_cast<TADDR>(ppMT) + i * sizeof(RelativePointer<PTR_MethodTable>));
+    }
 
 #ifdef FEATURE_PREJIT
 
@@ -675,11 +685,11 @@ struct ModuleCtorInfo
     class ClassCtorInfoEntryArraySort : public CQuickSort<DWORD>
     {
     private:
-        PTR_MethodTable *m_pBase1;
+        DPTR(RelativePointer<PTR_MethodTable>) m_pBase1;
 
     public:
         //Constructor
-        ClassCtorInfoEntryArraySort(DWORD *base, PTR_MethodTable *base1, int count)
+        ClassCtorInfoEntryArraySort(DWORD *base, DPTR(RelativePointer<PTR_MethodTable>) base1, int count)
           : CQuickSort<DWORD>(base, count)
         {
             WRAPPER_NO_CONTRACT;
@@ -700,6 +710,7 @@ struct ModuleCtorInfo
                 return 1;
         }
         
+#ifndef DACCESS_COMPILE
         // Swap is overwriten so that we can sort both the MethodTable pointer
         // array and the ClassCtorInfoEntry array in parrallel.
         FORCEINLINE void Swap(SSIZE_T iFirst, SSIZE_T iSecond)
@@ -715,10 +726,11 @@ struct ModuleCtorInfo
             m_pBase[iFirst] = m_pBase[iSecond];
             m_pBase[iSecond] = sTemp;
 
-            sTemp1 = m_pBase1[iFirst];
-            m_pBase1[iFirst] = m_pBase1[iSecond];
-            m_pBase1[iSecond] = sTemp1;
+            sTemp1 = m_pBase1[iFirst].GetValueMaybeNull();
+            m_pBase1[iFirst].SetValueMaybeNull(m_pBase1[iSecond].GetValueMaybeNull());
+            m_pBase1[iSecond].SetValueMaybeNull(sTemp1);
         }
+#endif // !DACCESS_COMPILE
     };
 #endif // FEATURE_PREJIT
 };
@@ -1085,104 +1097,6 @@ typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 
 
-// declare an array type of COR_IL_MAP entries
-typedef ArrayDPTR(COR_IL_MAP) ARRAY_PTR_COR_IL_MAP;
-
-//---------------------------------------------------------------------------------------
-//
-// A profiler may instrument a method by changing the IL.  This is typically done when the profiler receives
-// a JITCompilationStarted notification.  The profiler also has the option to provide the runtime with 
-// a mapping between original IL offsets and instrumented IL offsets.  This struct is a simple container
-// for storing the mapping information.  We store the mapping information on the Module class, where it can
-// be accessed by the debugger from out-of-process.
-//
-
-class InstrumentedILOffsetMapping
-{
-public:
-    InstrumentedILOffsetMapping();
-
-    // Check whether there is any mapping information stored in this object.
-    BOOL IsNull();
-
-#if !defined(DACCESS_COMPILE)
-    // Release the memory used by the array of COR_IL_MAPs.
-    void Clear();
-
-    void SetMappingInfo(SIZE_T cMap, COR_IL_MAP * rgMap);
-#endif // !DACCESS_COMPILE
-
-    SIZE_T               GetCount()   const;
-    ARRAY_PTR_COR_IL_MAP GetOffsets() const;
-
-private:
-    SIZE_T               m_cMap;        // the number of elements in m_rgMap
-    ARRAY_PTR_COR_IL_MAP m_rgMap;       // an array of COR_IL_MAPs
-};
-
-//---------------------------------------------------------------------------------------
-//
-// Hash table entry for storing InstrumentedILOffsetMapping.  This is keyed by the MethodDef token.
-//
-
-struct ILOffsetMappingEntry
-{
-    ILOffsetMappingEntry()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        m_methodToken = mdMethodDefNil; 
-        // No need to initialize m_mapping.  The default ctor of InstrumentedILOffsetMapping does the job.
-    }
-
-    ILOffsetMappingEntry(mdMethodDef token, InstrumentedILOffsetMapping mapping)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        m_methodToken = token;
-        m_mapping     = mapping;
-    }
-
-    mdMethodDef                 m_methodToken;
-    InstrumentedILOffsetMapping m_mapping;
-};
-
-//---------------------------------------------------------------------------------------
-//
-// This class is used to create the hash table for the instrumented IL offset mapping.
-// It encapsulates the desired behaviour of the templated hash table and implements 
-// the various functions needed by the hash table.
-//
-
-class ILOffsetMappingTraits : public NoRemoveSHashTraits<DefaultSHashTraits<ILOffsetMappingEntry> >
-{
-public:
-    typedef mdMethodDef key_t;
-
-    static key_t GetKey(element_t e)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return e.m_methodToken;
-    }
-    static BOOL Equals(key_t k1, key_t k2)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (k1 == k2);
-    }
-    static count_t Hash(key_t k)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (count_t)(size_t)k;
-    }
-    static const element_t Null() 
-    { 
-        LIMITED_METHOD_DAC_CONTRACT; 
-        ILOffsetMappingEntry e; 
-        return e; 
-    }
-    static bool IsNull(const element_t &e) { LIMITED_METHOD_DAC_CONTRACT; return e.m_methodToken == mdMethodDefNil; }
-};
-
 // ESymbolFormat specified the format used by a symbol stream
 typedef enum 
 {
@@ -1190,11 +1104,6 @@ typedef enum
     eSymbolFormatPDB,       /* PDB format from diasymreader.dll - only safe for trusted scenarios */
     eSymbolFormatILDB       /* ILDB format from ildbsymbols.dll */
 }ESymbolFormat;
-
-
-// Hash table of profiler-provided instrumented IL offset mapping, keyed by the MethodDef token
-typedef SHash<ILOffsetMappingTraits> ILOffsetMappingTable;
-typedef DPTR(ILOffsetMappingTable) PTR_ILOffsetMappingTable;
 
 
 #ifdef FEATURE_COMINTEROP
@@ -1885,7 +1794,12 @@ protected:
 
     ClassLoader *GetClassLoader();
     PTR_BaseDomain GetDomain();
-    ReJitManager * GetReJitManager();
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager * GetCodeVersionManager();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCounter * GetCallCounter();
+#endif
 
     mdFile GetModuleRef()
     {
@@ -2902,6 +2816,10 @@ public:
                                          ClassLoadLevel level = CLASS_LOADED);
     static void RestoreFieldDescPointer(RelativeFixupPointer<PTR_FieldDesc> * ppFD);
 
+    static void RestoreMethodTablePointer(PlainPointer<PTR_MethodTable> * ppMT,
+                                          Module *pContainingModule = NULL,
+                                          ClassLoadLevel level = CLASS_LOADED);
+
     static void RestoreModulePointer(RelativeFixupPointer<PTR_Module> * ppModule, Module *pContainingModule);
 
     static PTR_Module RestoreModulePointerIfLoaded(DPTR(RelativeFixupPointer<PTR_Module>) ppModule, Module *pContainingModule);
@@ -3352,8 +3270,6 @@ protected:
     void                    InitializeDynamicILCrst();
 
 public:
-
-    void VerifyAllMethods();
 
     CrstBase *GetLookupTableCrst()
     {

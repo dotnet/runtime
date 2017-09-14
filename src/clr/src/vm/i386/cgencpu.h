@@ -504,6 +504,7 @@ struct DECLSPEC_ALIGN(4) UMEntryThunkCode
     const BYTE *    m_execstub; // pointer to destination code  // make sure the backpatched portion is dword aligned.
 
     void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Poison();
 
     LPCBYTE GetEntryPoint() const
     {

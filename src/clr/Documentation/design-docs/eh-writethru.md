@@ -103,6 +103,39 @@ On the IR directly before SSA build:
 At end no proxy should be live across EH flow and all value updates will be
 written back to the stack location.
 
+### Alternate Algorithm: In LSRA
+
+* Add a flag to identify Intervals as "WriteThru". This would be set on all lclVars
+  considered by liveness to be exceptVars.
+* Additionally, add a flag to identify RefPositions as "WriteThru". The motivation
+  for having both, is that in the exception var case, we want to create all defs as
+  write-thru, but for other purposes we may want to make some defs write-thru
+  (i.e. they spill but the target register remains live), but not all defs for a given lclVar.
+* During liveness, mark exception vars as `lvLiveInOutOfHndlr`, but not `lvDoNotEnregister`.
+* During interval creation, if a lclVar is marked `lvLiveInOutOfHndlr`, set `isWriteThru` on the interval.
+* Set handler entry blocks as having no predecessor for register-mapping purposes.
+  - Leave the inVarToRegMaps empty (all incoming vars on stack)
+* Set the outVarToRegMap to empty for EH exit blocks.
+* During allocation, treat isWriteThru interval defs and uses differently:
+  - A def is always marked writeThru if it is assigned a register. If it doesn't get a register
+    at all, it is marked spillAfter as per usual.
+  - A use is never marked spillAfter (as the stack location is always valid at a use).
+* During resolution/writeback:
+  - Mark all isWriteThru defs with `GTF_SPILL`, as for `spillAfter`, but keep the reg assignment,
+    and the interval stays active.
+  - Assert that uses of isWriteThru intervals are never marked spillAfter
+* During `genFnProlog()`, ensure that incoming reg parameters that have register assoginments also
+  get stored to stack if they are marked lvLiveInOutOfHndlr.
+
+#### Challenges/Issues with the LSRA approach above:
+
+* Liveness currently adds all exceptVars to the live-in for blocks where `ehBlockHasExnFlowDsc` returns true.
+  This results in more "artificial" liveness than strictly entry to and exit from EH regions.
+* In some cases, write-thru may be worse, performance-wise, than always using memory, if the EH local is
+  infrequently referenced in non-EH code. This is a slightly different issue than known spill placement
+  and allocation issues, but is related (i.e. when to choose not to keep the register live, and simply
+  create the value in memory if that doesn't require a register).
+
 ## Next steps
 
 The initial prototype that produced the example bellow is currently being

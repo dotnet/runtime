@@ -26,7 +26,7 @@ namespace System
         public ArrayTypeMismatchException()
             : base(SR.Arg_ArrayTypeMismatchException)
         {
-            HResult = __HResults.COR_E_ARRAYTYPEMISMATCH;
+            HResult = HResults.COR_E_ARRAYTYPEMISMATCH;
         }
 
         // Creates a new ArrayMismatchException with its message string set to
@@ -36,13 +36,13 @@ namespace System
         public ArrayTypeMismatchException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_ARRAYTYPEMISMATCH;
+            HResult = HResults.COR_E_ARRAYTYPEMISMATCH;
         }
 
         public ArrayTypeMismatchException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ARRAYTYPEMISMATCH;
+            HResult = HResults.COR_E_ARRAYTYPEMISMATCH;
         }
 
         protected ArrayTypeMismatchException(SerializationInfo info, StreamingContext context) : base(info, context)

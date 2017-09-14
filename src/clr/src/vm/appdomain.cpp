@@ -8,7 +8,6 @@
 #include "appdomain.hpp"
 #include "peimagelayout.inl"
 #include "field.h"
-#include "security.h"
 #include "strongnameinternal.h"
 #include "excep.h"
 #include "eeconfig.h"
@@ -58,7 +57,6 @@
 #include "typeequivalencehash.hpp"
 #endif
 
-#include "listlock.inl"
 #include "appdomain.inl"
 #include "typeparse.h"
 #include "mdaassistants.h"
@@ -80,12 +78,10 @@
 #include "clrprivtypecachewinrt.h"
 
 
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
 #pragma warning(push)
 #pragma warning(disable:4324) 
 #include "marvin32.h"
 #pragma warning(pop)
-#endif
 
 // this file handles string conversion errors for itself
 #undef  MAKE_TRANSLATIONFAILED
@@ -711,10 +707,6 @@ OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
 //*****************************************************************************
 void BaseDomain::Attach()
 {
-#ifdef  FEATURE_RANDOMIZED_STRING_HASHING
-    // Randomized string hashing is on by default for String.GetHashCode in coreclr.
-    COMNlsHashProvider::s_NlsHashProvider.SetUseRandomHashing((CorHost2::GetStartupFlags() & STARTUP_DISABLE_RANDOMIZED_STRING_HASHING) == 0);
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
     m_SpecialStaticsCrst.Init(CrstSpecialStatics);
 }
 
@@ -758,8 +750,8 @@ BaseDomain::BaseDomain()
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
 
-#ifdef FEATURE_REJIT
-    m_reJitMgr.PreInit(this == (BaseDomain *) g_pSharedDomainMemory);
+#ifdef FEATURE_CODE_VERSIONING
+    m_codeVersionManager.PreInit(this == (BaseDomain *)g_pSharedDomainMemory);
 #endif
 
 } //BaseDomain::BaseDomain
@@ -874,22 +866,23 @@ void BaseDomain::Terminate()
     m_DomainLocalBlockCrst.Destroy();
     m_InteropDataCrst.Destroy();
 
+    JitListLockEntry* pJitElement;
     ListLockEntry* pElement;
 
     // All the threads that are in this domain had better be stopped by this
     // point.
     //
     // We might be jitting or running a .cctor so we need to empty that queue.
-    pElement = m_JITLock.Pop(TRUE);
-    while (pElement)
+    pJitElement = m_JITLock.Pop(TRUE);
+    while (pJitElement)
     {
 #ifdef STRICT_JITLOCK_ENTRY_LEAK_DETECTION
         _ASSERTE ((m_JITLock.m_pHead->m_dwRefCount == 1
             && m_JITLock.m_pHead->m_hrResultCode == E_FAIL) ||
             dbg_fDrasticShutdown || g_fInControlC);
 #endif // STRICT_JITLOCK_ENTRY_LEAK_DETECTION
-        delete(pElement);
-        pElement = m_JITLock.Pop(TRUE);
+        delete(pJitElement);
+        pJitElement = m_JITLock.Pop(TRUE);
 
     }
     m_JITLock.Destroy();
@@ -2715,9 +2708,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // Load Object
     g_pObjectClass = MscorlibBinder::GetClass(CLASS__OBJECT);
 
-    // get the Object::.ctor method desc so we can special-case it
-    g_pObjectCtorMD = MscorlibBinder::GetMethod(METHOD__OBJECT__CTOR);
-
     // Now that ObjectClass is loaded, we can set up
     // the system for finalizers.  There is no point in deferring this, since we need
     // to know this before we allocate our first object.
@@ -3741,10 +3731,6 @@ StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
     /* We asked to be called back only for functions */
     _ASSERTE(pFunc);
 
-    // Ignore intercepted frames
-    if(pFunc->IsInterceptedForDeclSecurity())
-        return SWA_CONTINUE;
-
     CallersData* pCaller = (CallersData*) data;
     if(pCaller->skip == 0) {
         pCaller->pMethod = pFunc;
@@ -4280,7 +4266,6 @@ void AppDomain::Init()
 #endif //FEATURE_COMINTEROP
 
 #ifdef FEATURE_TIERED_COMPILATION
-    m_callCounter.SetTieredCompilationManager(GetTieredCompilationManager());
     m_tieredCompilationManager.Init(GetId());
 #endif
 #endif // CROSSGEN_COMPILE
@@ -5040,7 +5025,7 @@ FileLoadLock::~FileLoadLock()
         MODE_ANY;
     }
     CONTRACTL_END;
-    ((PEFile *) m_pData)->Release();
+    ((PEFile *) m_data)->Release();
 }
 
 DomainFile *FileLoadLock::GetDomainFile()
@@ -7078,18 +7063,26 @@ EndTry2:;
                     }
                     else if (!fIsWellKnown)
                     {
-                        // Trigger the resolve event also for non-throw situation.
-                        // However, this code path will behave as if the resolve handler has thrown,
-                        // that is, not trigger an MDA.
                         _ASSERTE(fThrowOnFileNotFound == FALSE);
 
-                        AssemblySpec NewSpec(this);
-                        AssemblySpec *pFailedSpec = NULL;
+                        // Don't trigger the resolve event for the CoreLib satellite assembly. A misbehaving resolve event may
+                        // return an assembly that does not match, and this can cause recursive resource lookups during error
+                        // reporting. The CoreLib satellite assembly is loaded from relative locations based on the culture, see
+                        // AssemblySpec::Bind().
+                        if (!pSpec->IsMscorlibSatellite())
+                        {
+                            // Trigger the resolve event also for non-throw situation.
+                            // However, this code path will behave as if the resolve handler has thrown,
+                            // that is, not trigger an MDA.
 
-                        fForceReThrow = TRUE; // Managed resolve event handler can throw
+                            AssemblySpec NewSpec(this);
+                            AssemblySpec *pFailedSpec = NULL;
 
-                        // Purposly ignore return value
-                        PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
+                            fForceReThrow = TRUE; // Managed resolve event handler can throw
+
+                            // Purposly ignore return value
+                            PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
+                        }
                     }
                 }
             }
@@ -8104,7 +8097,7 @@ void AppDomain::Exit(BOOL fRunFinalizers, BOOL fAsyncExit)
     // have exited the domain.
     //
 #ifdef FEATURE_TIERED_COMPILATION
-    m_tieredCompilationManager.OnAppDomainShutdown();
+    m_tieredCompilationManager.Shutdown(FALSE);
 #endif
 
     //
@@ -8145,13 +8138,13 @@ void AppDomain::Exit(BOOL fRunFinalizers, BOOL fAsyncExit)
     LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Domain [%d] %#08x %ls is exited.\n",
          GetId().m_dwId, this, GetFriendlyNameForLogging()));
 
-    ReJitManager::OnAppDomainExit(this);
-
     // Send ETW events for this domain's unload and potentially iterate through this
     // domain's modules & assemblies to send events for their unloads as well.  This
     // needs to occur before STAGE_FINALIZED (to ensure everything is there), so we do
     // this before any finalization occurs at all.
     ETW::LoaderLog::DomainUnload(this);
+
+    CodeVersionManager::OnAppDomainExit(this);
 
     //
     // Spin running finalizers until we flush them all.  We need to make multiple passes

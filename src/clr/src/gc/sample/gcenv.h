@@ -29,6 +29,7 @@
 #include "gcenv.object.h"
 #include "gcenv.sync.h"
 #include "gcenv.ee.h"
+#include "volatile.h"
 
 #ifdef PLATFORM_UNIX
 #include "gcenv.unix.inl"

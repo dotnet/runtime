@@ -17,10 +17,6 @@
  */
 #include "handletable.h"
 
-#ifdef FEATURE_COMINTEROP
-#include <weakreference.h>
-#endif // FEATURE_COMINTEROP
-
 typedef DPTR(struct HandleTableMap) PTR_HandleTableMap;
 typedef DPTR(struct HandleTableBucket) PTR_HandleTableBucket;
 typedef DPTR(PTR_HandleTableBucket) PTR_PTR_HandleTableBucket;
@@ -32,9 +28,7 @@ struct HandleTableMap
     uint32_t                    dwMaxIndex;
 };
 
-GVAL_DECL(HandleTableMap, g_HandleTableMap);
-
-#define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
+extern HandleTableMap g_HandleTableMap;
 
 // struct containing g_SystemInfo.dwNumberOfProcessors HHANDLETABLEs and current table index
 // instead of just single HHANDLETABLE for on-fly balancing while adding handles on multiproc machines
@@ -61,6 +55,7 @@ struct HandleTableBucket
                                     (flag == VHT_STRONG)     || \
                                     (flag == VHT_PINNED))
 
+GC_DAC_VISIBLE
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle);
 
 #ifndef DACCESS_COMPILE

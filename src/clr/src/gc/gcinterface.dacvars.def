@@ -60,6 +60,7 @@ GC_DAC_ARRAY_VAR  (size_t,                interesting_data_per_heap)
 GC_DAC_ARRAY_VAR  (size_t,                compact_reasons_per_heap)
 GC_DAC_ARRAY_VAR  (size_t,                expand_mechanisms_per_heap)
 GC_DAC_ARRAY_VAR  (size_t,                interesting_mechanism_bits_per_heap)
+GC_DAC_VAR        (dac_handle_table_map,  handle_table_map)
 
 #undef GC_DAC_VAR
 #undef GC_DAC_ARRAY_VAR

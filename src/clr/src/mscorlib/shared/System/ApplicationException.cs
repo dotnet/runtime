@@ -31,7 +31,7 @@ namespace System
         public ApplicationException()
             : base(SR.Arg_ApplicationException)
         {
-            HResult = __HResults.COR_E_APPLICATION;
+            HResult = HResults.COR_E_APPLICATION;
         }
 
         // Creates a new ApplicationException with its message string set to
@@ -41,13 +41,13 @@ namespace System
         public ApplicationException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_APPLICATION;
+            HResult = HResults.COR_E_APPLICATION;
         }
 
         public ApplicationException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_APPLICATION;
+            HResult = HResults.COR_E_APPLICATION;
         }
 
         protected ApplicationException(SerializationInfo info, StreamingContext context) : base(info, context)

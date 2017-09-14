@@ -267,7 +267,7 @@ namespace SuperPMICollection
             {
                 @"JIT\Performance\CodeQuality\Bytemark\Bytemark\Bytemark.cmd",
                 @"JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.cmd",
-                @"JIT\Generics\Coverage\chaos65204782cs\chaos65204782cs.cmd"
+                @"JIT\Generics\Coverage\chaos56200037cs\chaos56200037cs.cmd"
             };
 
             // Figure out the root of the test binaries directory.

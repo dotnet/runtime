@@ -23,23 +23,6 @@ CallCounter::CallCounter()
     m_lock.Init(LOCK_TYPE_DEFAULT);
 }
 
-// Init our connection to the tiered compilation manager during
-// AppDomain startup. This pointer will remain valid for the lifetime
-// of the AppDomain.
-void CallCounter::SetTieredCompilationManager(TieredCompilationManager* pTieredCompilationManager)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CAN_TAKE_LOCK;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    m_pTieredCompilationManager.Store(pTieredCompilationManager);
-}
-
 // This is called by the prestub each time the method is invoked in a particular
 // AppDomain (the AppDomain for which AppDomain.GetCallCounter() == this). These
 // calls continue until we backpatch the prestub to avoid future calls. This allows
@@ -92,7 +75,7 @@ BOOL CallCounter::OnMethodCalled(MethodDesc* pMethodDesc)
         }
     }
 
-    return m_pTieredCompilationManager.Load()->OnMethodCalled(pMethodDesc, callCount);
+    return GetAppDomain()->GetTieredCompilationManager()->OnMethodCalled(pMethodDesc, callCount);
 }
 
 #endif // FEATURE_TIERED_COMPILATION

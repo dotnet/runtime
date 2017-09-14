@@ -134,10 +134,11 @@ CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE me
 // vtable of it's owning class or interface.
 void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                              unsigned*             offsetOfIndirection,   /* OUT */
-                                             unsigned*             offsetAfterIndirection /* OUT */
+                                             unsigned*             offsetAfterIndirection,/* OUT */
+                                             bool*                 isRelative             /* OUT */
                                              )
 {
-    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
+    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
@@ -971,6 +972,14 @@ const char* interceptor_ICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* 
                                             )
 {
     return original_ICorJitInfo->getMethodName(ftn, moduleName);
+}
+
+const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,          /* IN */
+                                                        const char**          className,    /* OUT */
+                                                        const char**          namespaceName /* OUT */
+                                                        )
+{
+    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName);
 }
 
 // this function is for debugging only.  It returns a value that

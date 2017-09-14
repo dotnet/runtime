@@ -1502,53 +1502,44 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
-    assert(!(treeNode->gtFlags & GTF_UNSIGNED));
     assert(!treeNode->gtOverflowEx());
-
-#if 0
-    regNumber targetReg  = treeNode->gtRegNum;
-    var_types targetType = treeNode->TypeGet();
-    emitter *emit        = getEmitter();
-    emitAttr size        = emitTypeSize(treeNode);
-    GenTree *op1         = treeNode->gtOp1;
-    GenTree *op2         = treeNode->gtOp2;
-
-    // to get the high bits of the multiply, we are constrained to using the
-    // 1-op form:  RDX:RAX = RAX * rm
-    // The 3-op form (Rx=Ry*Rz) does not support it.
 
     genConsumeOperands(treeNode);
 
-    GenTree* regOp = op1;
-    GenTree* rmOp  = op2; 
-            
-    // Set rmOp to the contained memory operand (if any)
-    //
-    if (op1->isContained() || (!op2->isContained() && (op2->gtRegNum == targetReg)))
+    regNumber targetReg  = treeNode->gtRegNum;
+    var_types targetType = treeNode->TypeGet();
+    emitter*  emit       = getEmitter();
+    emitAttr  attr       = emitTypeSize(treeNode);
+    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+
+    GenTreePtr op1 = treeNode->gtGetOp1();
+    GenTreePtr op2 = treeNode->gtGetOp2();
+
+    assert(!varTypeIsFloating(targetType));
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(targetReg != REG_NA);
+
+    if (EA_SIZE(attr) == EA_8BYTE)
     {
-        regOp = op2;
-        rmOp  = op1;
+        instruction ins = isUnsigned ? INS_umulh : INS_smulh;
+
+        regNumber r = emit->emitInsTernary(ins, attr, treeNode, op1, op2);
+
+        assert(r == targetReg);
     }
-    assert(!regOp->isContained());
-            
-    // Setup targetReg when neither of the source operands was a matching register
-    if (regOp->gtRegNum != targetReg)
+    else
     {
-        inst_RV_RV(ins_Copy(targetType), targetReg, regOp->gtRegNum, targetType);
-    }
-            
-    emit->emitInsBinary(INS_imulEAX, size, treeNode, rmOp);
-            
-    // Move the result to the desired register, if necessary
-    if (targetReg != REG_RDX)
-    {
-        inst_RV_RV(INS_mov, targetReg, REG_RDX, targetType);
+        assert(EA_SIZE(attr) == EA_4BYTE);
+
+        instruction ins = isUnsigned ? INS_umull : INS_smull;
+
+        regNumber r = emit->emitInsTernary(ins, EA_4BYTE, treeNode, op1, op2);
+
+        emit->emitIns_R_R_I(isUnsigned ? INS_lsr : INS_asr, EA_8BYTE, targetReg, targetReg, 32);
     }
 
     genProduceReg(treeNode);
-#else  // !0
-    NYI("genCodeForMulHi");
-#endif // !0
 }
 
 // Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
@@ -1568,10 +1559,10 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
     // The arithmetic node must be sitting in a register (since it's not contained)
-    noway_assert(targetReg != REG_NA);
+    assert(targetReg != REG_NA);
 
     regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
-    noway_assert(r == targetReg);
+    assert(r == targetReg);
 
     genProduceReg(treeNode);
 }
@@ -3501,14 +3492,16 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             cmpSize = EA_8BYTE;
         }
 
+        instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
+
         if (op2->isContainedIntOrIImmed())
         {
             GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-            emit->emitIns_R_I(INS_cmp, cmpSize, op1->gtRegNum, intConst->IconValue());
+            emit->emitIns_R_I(ins, cmpSize, op1->gtRegNum, intConst->IconValue());
         }
         else
         {
-            emit->emitIns_R_R(INS_cmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+            emit->emitIns_R_R(ins, cmpSize, op1->gtRegNum, op2->gtRegNum);
         }
     }
 

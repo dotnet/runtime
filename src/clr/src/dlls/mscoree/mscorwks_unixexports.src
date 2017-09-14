@@ -44,8 +44,6 @@ FlushFileBuffers
 FormatMessageW
 FreeEnvironmentStringsW
 GetACP
-GetComputerNameW
-GetConsoleCP
 GetConsoleOutputCP
 GetCurrentDirectoryW
 GetCurrentProcess
@@ -55,7 +53,6 @@ GetEnvironmentStringsW
 GetEnvironmentVariableW
 GetFileAttributesExW
 GetFileSize
-GetFileType
 GetFullPathNameW
 GetLongPathNameW
 GetProcAddress
@@ -67,7 +64,6 @@ GetTempPathW
 LocalAlloc
 LocalReAlloc
 LocalFree
-LockFile
 lstrlenA
 lstrlenW
 MapViewOfFile
@@ -87,7 +83,6 @@ ReleaseMutex
 ReleaseSemaphore
 RemoveDirectoryW
 ResetEvent
-RtlZeroMemory
 SetCurrentDirectoryW
 SetEndOfFile
 SetEnvironmentVariableW
@@ -95,11 +90,9 @@ SetErrorMode
 SetEvent
 SetFileAttributesW
 SetFilePointer
-SetFileTime
 SysAllocStringLen
 SysFreeString
 SysStringLen
-UnlockFile
 UnmapViewOfFile
 VirtualAlloc
 VirtualFree
@@ -113,5 +106,3 @@ SetThreadAffinityMask
 GetThreadGroupAffinity
 GetCurrentProcessorNumberEx
 
-; Function for initializing a standalone GC
-InitializeGarbageCollector

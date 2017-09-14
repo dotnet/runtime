@@ -10,19 +10,14 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.ExceptionServices;
-using System.Security;
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using Microsoft.Win32;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using Internal.Runtime.Augments;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -440,7 +435,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Initializes a new <see cref="Task"/> with the specified action, state, snd options.
+        /// Initializes a new <see cref="Task"/> with the specified action, state, and options.
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute in the task.</param>
         /// <param name="state">An object representing data to be used by the action.</param>
@@ -457,7 +452,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Initializes a new <see cref="Task"/> with the specified action, state, snd options.
+        /// Initializes a new <see cref="Task"/> with the specified action, state, and options.
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute in the task.</param>
         /// <param name="state">An object representing data to be used by the action.</param>
@@ -478,7 +473,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Initializes a new <see cref="Task"/> with the specified action, state, snd options.
+        /// Initializes a new <see cref="Task"/> with the specified action, state, and options.
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute in the task.</param>
         /// <param name="state">An object representing data to be used by the action.</param>
@@ -613,7 +608,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Handles everything needed for associating a CancellationToken with a task which is being constructed.
-        /// This method is meant to be be called either from the TaskConstructorCore or from ContinueWithCore.
+        /// This method is meant to be called either from the TaskConstructorCore or from ContinueWithCore.
         /// </summary>
         private void AssignCancellationToken(CancellationToken cancellationToken, Task antecedent, TaskContinuation continuation)
         {
@@ -2489,7 +2484,7 @@ namespace System.Threading.Tasks
         private static readonly ContextCallback s_ecCallback = obj => ((Task)obj).InnerInvoke();
 
         /// <summary>
-        /// The actual code which invokes the body of the task. This can be overriden in derived types.
+        /// The actual code which invokes the body of the task. This can be overridden in derived types.
         /// </summary>
         internal virtual void InnerInvoke()
         {
@@ -2827,11 +2822,16 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// The core wait function, which is only accesible internally. It's meant to be used in places in TPL code where 
+        /// The core wait function, which is only accessible internally. It's meant to be used in places in TPL code where 
         /// the current context is known or cached.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        internal bool InternalWait(int millisecondsTimeout, CancellationToken cancellationToken)
+        internal bool InternalWait(int millisecondsTimeout, CancellationToken cancellationToken) =>
+            InternalWaitCore(millisecondsTimeout, cancellationToken);
+
+        // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
+        // to be able to see the method on the stack and inspect arguments).
+        private bool InternalWaitCore(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             // ETW event for Task Wait Begin
             var etwLog = TplEtwProvider.Log;
@@ -2966,26 +2966,19 @@ namespace System.Threading.Tasks
                 return false;
             }
 
-            //This code is pretty similar to the custom spinning in MRES except there is no yieling after we exceed the spin count
-            int spinCount = PlatformHelper.IsSingleProcessor ? 1 : System.Threading.SpinWait.YIELD_THRESHOLD; //spin only once if we are running on a single CPU
-            for (int i = 0; i < spinCount; i++)
+            int spinCount = Threading.SpinWait.SpinCountforSpinBeforeWait;
+            var spinner = new SpinWait();
+            while (spinner.Count < spinCount)
             {
+                spinner.SpinOnce(Threading.SpinWait.Sleep1ThresholdForSpinBeforeWait);
+
                 if (IsCompleted)
                 {
                     return true;
                 }
-
-                if (i == spinCount / 2)
-                {
-                    Thread.Yield();
-                }
-                else
-                {
-                    Thread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
-                }
             }
 
-            return IsCompleted;
+            return false;
         }
 
         /// <summary>
@@ -3222,7 +3215,7 @@ namespace System.Threading.Tasks
 
             // Skip synchronous execution of continuations if this task's thread was aborted
             bool bCanInlineContinuations = !(((m_stateFlags & TASK_STATE_THREAD_WAS_ABORTED) != 0) ||
-                                              (Thread.CurrentThread.ThreadState == ThreadState.AbortRequested) ||
+                                              (RuntimeThread.CurrentThread.ThreadState == ThreadState.AbortRequested) ||
                                               ((m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) != 0));
 
             // Handle the single-Action case
@@ -4458,7 +4451,7 @@ namespace System.Threading.Tasks
 #if DEBUG
             bool waitResult =
 #endif
-            WaitAll(tasks, Timeout.Infinite);
+            WaitAllCore(tasks, Timeout.Infinite, default(CancellationToken));
 
 #if DEBUG
             Debug.Assert(waitResult, "expected wait to succeed");
@@ -4503,7 +4496,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
 
-            return WaitAll(tasks, (int)totalMilliseconds);
+            return WaitAllCore(tasks, (int)totalMilliseconds, default(CancellationToken));
         }
 
         /// <summary>
@@ -4535,7 +4528,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
-            return WaitAll(tasks, millisecondsTimeout, default(CancellationToken));
+            return WaitAllCore(tasks, millisecondsTimeout, default(CancellationToken));
         }
 
         /// <summary>
@@ -4567,7 +4560,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
-            WaitAll(tasks, Timeout.Infinite, cancellationToken);
+            WaitAllCore(tasks, Timeout.Infinite, cancellationToken);
         }
 
         /// <summary>
@@ -4605,7 +4598,12 @@ namespace System.Threading.Tasks
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
+            WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+
+        // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
+        // to be able to see the method on the stack and inspect arguments).
+        private static bool WaitAllCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             if (tasks == null)
             {
@@ -4847,7 +4845,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static int WaitAny(params Task[] tasks)
         {
-            int waitResult = WaitAny(tasks, Timeout.Infinite);
+            int waitResult = WaitAnyCore(tasks, Timeout.Infinite, default(CancellationToken));
             Debug.Assert(tasks.Length == 0 || waitResult != -1, "expected wait to succeed");
             return waitResult;
         }
@@ -4886,7 +4884,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
 
-            return WaitAny(tasks, (int)totalMilliseconds);
+            return WaitAnyCore(tasks, (int)totalMilliseconds, default(CancellationToken));
         }
 
         /// <summary>
@@ -4913,7 +4911,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static int WaitAny(Task[] tasks, CancellationToken cancellationToken)
         {
-            return WaitAny(tasks, Timeout.Infinite, cancellationToken);
+            return WaitAnyCore(tasks, Timeout.Infinite, cancellationToken);
         }
 
         /// <summary>
@@ -4943,7 +4941,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static int WaitAny(Task[] tasks, int millisecondsTimeout)
         {
-            return WaitAny(tasks, millisecondsTimeout, default(CancellationToken));
+            return WaitAnyCore(tasks, millisecondsTimeout, default(CancellationToken));
         }
 
         /// <summary>
@@ -4977,7 +4975,12 @@ namespace System.Threading.Tasks
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        public static int WaitAny(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        public static int WaitAny(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
+            WaitAnyCore(tasks, millisecondsTimeout, cancellationToken);
+
+        // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
+        // to be able to inspect arguments).
+        private static int WaitAnyCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             if (tasks == null)
             {

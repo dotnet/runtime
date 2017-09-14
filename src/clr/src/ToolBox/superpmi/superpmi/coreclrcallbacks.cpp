@@ -8,7 +8,7 @@
 #include "coreclrcallbacks.h"
 #include "iexecutionengine.h"
 
-IExecutionEngine* IEE_t()
+IExecutionEngine* STDMETHODCALLTYPE IEE_t()
 {
     MyIEE* iee = InitIExecutionEngine();
     return iee;
@@ -24,7 +24,7 @@ HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer,
 
 HANDLE ourHeap = nullptr;
 
-LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
+LPVOID STDMETHODCALLTYPE EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
 {
     if (ourHeap == nullptr)
         ourHeap = HeapCreate(0, 4096, 0);
@@ -39,13 +39,13 @@ LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
     return result;
 }
 
-BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
+BOOL STDMETHODCALLTYPE EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
 {
     //  return true;
     return HeapFree(ourHeap, dwFlags, lpMem);
 }
 
-void* GetCLRFunction(LPCSTR functionName)
+void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName)
 {
     if (strcmp(functionName, "EEHeapAllocInProcessHeap") == 0)
         return (void*)EEHeapAllocInProcessHeap;

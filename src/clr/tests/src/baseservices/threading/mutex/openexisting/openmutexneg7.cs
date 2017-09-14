@@ -46,6 +46,8 @@ class OpenMutexNeg
                 e.ToString());
         }
 
+        GC.KeepAlive(mut);
+
         Console.WriteLine(100 == iRet ? "Test Passed" : "Test Failed");
         return iRet;
     }

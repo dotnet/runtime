@@ -16,7 +16,6 @@
 
 #include "comdelegate.h"
 #include "compile.h"
-#include "security.h"
 #include "invokeutil.h"
 #include "comcallablewrapper.h"
 
@@ -435,8 +434,4 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
 BOOL AppDomain::BindingByManifestFile()
 {
     return FALSE;
-}
-
-ReJitManager::ReJitManager()
-{ 
 }

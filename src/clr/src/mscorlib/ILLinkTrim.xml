@@ -1,0 +1,40 @@
+<linker>
+  <!-- To run illink casually on S.P.CoreLib to find dead code, use a command similar to:
+
+C:\git\corefx\Tools/dotnetcli/dotnet.exe "C:\git\corefx\Tools/ILLink/illink.dll" -r System.Private.CoreLib -d C:\git\coreclr\bin\Product\Windows_NT.x64.Debug\ -t -out C:\out\ -b true -v true -h LdtokenTypeMethods,InstanceConstructors -x illinktrim.xml 
+
+Then compare the result with an assembly differ.
+
+Note: it will retain all internal members unless you temporarily remove all InternalsVisibleTo attributes (in mscorlib.Friends.cs). Of course, you're then responsible for determining whether those internals were among those the other assemblies use.
+
+Also take care to not remove code that is Unix only, release only, etc.
+
+-->
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.AccessViolationException">
+      <!-- set by runtime -->
+      <field signature="System.Int32 _accessType"/>
+      <field signature="System.IntPtr _ip"/>
+      <field signature="System.IntPtr _target"/>
+    </type>
+    <type fullname="System.Threading.Tasks.Task">
+      <!-- used by debugger -->
+      <field signature="System.Threading.Task ParentForDebugger"/>
+      <field signature="System.Int32 StateFlagsForDebugger"/>
+    </type>
+    <type fullname="System.Runtime.Loader.AssemblyLoadContext">
+      <!-- invoked by runtime -->
+      <method signature="System.Reflection.Assembly Resolve(System.IntPtr,System.Reflection.AssemblyName)"/>
+      <method signature="System.Reflection.Assembly ResolveUsingResolvingEvent(System.IntPtr,System.Reflection.AssemblyName)"/>
+      <method signature="System.IntPtr ResolveUnmanagedDll(System.String,System.IntPtr)"/>
+    </type>
+    <type fullname="System.BadImageFormatException">
+      <!-- invoked by runtime -->
+      <method signature="System.Void .ctor(System.String,System.String,System.Int32)"/>
+    </type>
+    <type fullname="System.Environment">
+      <!-- invoked by runtime -->
+      <method signature="System.Void SetCommandLineArgs(string[])"/>
+    </type>
+  </assembly>
+</linker>

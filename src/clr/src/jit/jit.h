@@ -514,11 +514,10 @@ const bool dspGCtbls = true;
 #endif // !DEBUG
 
 #ifdef DEBUG
-void JitDump(const char* pcFormat, ...);
 #define JITDUMP(...)                                                                                                   \
     {                                                                                                                  \
         if (JitTls::GetCompiler()->verbose)                                                                            \
-            JitDump(__VA_ARGS__);                                                                                      \
+            logf(__VA_ARGS__);                                                                                         \
     }
 #define JITLOG(x)                                                                                                      \
     {                                                                                                                  \

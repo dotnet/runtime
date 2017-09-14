@@ -52,7 +52,7 @@ namespace System.Threading
         /// <remarks>
         /// <para>
         /// This property indicates whether cancellation has been requested for this token, 
-        /// either through the token initially being construted in a canceled state, or through
+        /// either through the token initially being constructed in a canceled state, or through
         /// calling <see cref="System.Threading.CancellationTokenSource.Cancel()">Cancel</see> 
         /// on the token's associated <see cref="CancellationTokenSource"/>.
         /// </para>

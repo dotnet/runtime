@@ -69,6 +69,25 @@ Name | Description | Type | Class | Default Value | Flags
 EOF
 
 #################################
+# PAL section of the document
+#
+# This section contains a table of COMPlus configurations that are
+# used in the PAL on Unix
+#################################
+read -r -d '' PALCONFIGSECTIONCONTENTS << "EOF"
+## PAL Configuration Knobs
+All the names below need to be prefixed by `COMPlus_`.
+
+Name | Description | Type | Default Value
+-----|-------------|------|---------------
+`DefaultStackSize` | Overrides the default stack size for secondary threads | STRING | 0
+`DbgEnableMiniDump` | If set to 1, enables this core dump generation. The default is NOT to generate a dump | DWORD | 0
+`DbgMiniDumpName` | If set, use as the template to create the dump path and file name. The pid can be placed in the name with %d. | STRING | _/tmp/coredump.%d_
+`DbgMiniDumpType` | If set to 1 generates _MiniDumpNormal_, 2 _MiniDumpWithPrivateReadWriteMemory_, 3 _MiniDumpFilterTriage_, 4 _MiniDumpWithFullMemory_ | DWORD | 1
+`CreateDumpDiagnostics` | If set to 1, enables the _createdump_ utilities diagnostic messages (TRACE macro) | DWORD | 0
+EOF
+
+#################################
 # M4 script for processing macros
 #################################
 
@@ -103,3 +122,6 @@ cat <(echo "$INTROSECTION") <(echo)\
 cat <(echo "$M4SCRIPT") \
     <(echo "$CLRCONFIGSECTIONCONTENTS") <(cat "$1" | sed "/^\/\//d" | sed "/^#/d" | sed "s/\\\\\"/'/g" | sed "/^$/d"  ) \
     | m4 | sed "s/;$//" >> "$2";
+
+cat <(echo "$PALCONFIGSECTIONCONTENTS") >> "$2";
+	

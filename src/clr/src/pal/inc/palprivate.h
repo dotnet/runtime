@@ -61,13 +61,6 @@ DeleteFileA(
 PALIMPORT
 BOOL
 PALAPI
-MoveFileA(
-     IN LPCSTR lpExistingFileName,
-     IN LPCSTR lpNewFileName);
-
-PALIMPORT
-BOOL
-PALAPI
 MoveFileExA(
         IN LPCSTR lpExistingFileName,
         IN LPCSTR lpNewFileName,

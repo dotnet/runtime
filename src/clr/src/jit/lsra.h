@@ -672,6 +672,8 @@ public:
     // Used by Lowering when considering whether to split Longs, as well as by identifyCandidates().
     bool isRegCandidate(LclVarDsc* varDsc);
 
+    bool isContainableMemoryOp(GenTree* node);
+
 private:
     // Determine which locals are candidates for allocation
     void identifyCandidates();
@@ -697,11 +699,23 @@ private:
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
+    bool canSpillDoubleReg(RegRecord*   physRegRecord,
+                           LsraLocation refLocation,
+                           unsigned*    recentAssignedRefWeight,
+                           unsigned     farthestRefPosWeight);
+    void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
+    bool checkActiveInterval(Interval* interval, LsraLocation refLocation);
+    bool checkActiveIntervals(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType);
+    bool canSpillReg(RegRecord*   physRegRecord,
+                     LsraLocation refLocation,
+                     unsigned*    recentAssignedRefWeight,
+                     unsigned     farthestRefPosWeight);
+    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLocation* nextLocation);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
@@ -736,29 +750,6 @@ private:
 
     // Update reg state for an incoming register argument
     void updateRegStateForArg(LclVarDsc* argDsc);
-
-    inline void setTreeNodeInfo(GenTree* tree, TreeNodeInfo info)
-    {
-        tree->gtLsraInfo = info;
-        tree->gtClearReg(compiler);
-
-        DBEXEC(VERBOSE, info.dump(this));
-    }
-
-    inline void clearDstCount(GenTree* tree)
-    {
-        tree->gtLsraInfo.dstCount = 0;
-    }
-
-    inline void clearOperandCounts(GenTree* tree)
-    {
-        TreeNodeInfo& info = tree->gtLsraInfo;
-        info.srcCount      = 0;
-        info.dstCount      = 0;
-
-        info.internalIntCount   = 0;
-        info.internalFloatCount = 0;
-    }
 
     inline bool isLocalDefUse(GenTree* tree)
     {
@@ -909,7 +900,10 @@ private:
         assignPhysReg(getRegisterRecord(reg), interval);
     }
 
+    bool isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType));
+    bool isAssigned(RegRecord* regRec, LsraLocation lastLocation ARM_ARG(RegisterType newRegType));
     void checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefPosition);
+    void unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType));
     void unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPosition);
     void unassignPhysRegNoSpill(RegRecord* reg);
     void unassignPhysReg(regNumber reg)
@@ -1220,6 +1214,57 @@ private:
     // Set of large vector (TYP_SIMD32 on AVX) variables to consider for callee-save registers.
     VARSET_TP largeVectorCalleeSaveCandidateVars;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+    //-----------------------------------------------------------------------
+    // TreeNodeInfo methods
+    //-----------------------------------------------------------------------
+
+    void TreeNodeInfoInit(GenTree* stmt);
+
+    void TreeNodeInfoInitCheckByteable(GenTree* tree);
+
+    void SetDelayFree(GenTree* delayUseSrc);
+
+    void TreeNodeInfoInitSimple(GenTree* tree);
+    int GetOperandSourceCount(GenTree* node);
+    int GetIndirSourceCount(GenTreeIndir* indirTree);
+    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
+
+    void TreeNodeInfoInitStoreLoc(GenTree* tree);
+    void TreeNodeInfoInitReturn(GenTree* tree);
+    void TreeNodeInfoInitShiftRotate(GenTree* tree);
+    void TreeNodeInfoInitPutArgReg(GenTreeUnOp* node);
+    void TreeNodeInfoInitCall(GenTreeCall* call);
+    void TreeNodeInfoInitCmp(GenTreePtr tree);
+    void TreeNodeInfoInitStructArg(GenTreePtr structArg);
+    void TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode);
+    void TreeNodeInfoInitModDiv(GenTree* tree);
+    void TreeNodeInfoInitIntrinsic(GenTree* tree);
+    void TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* tree);
+    void TreeNodeInfoInitIndir(GenTreeIndir* indirTree);
+    void TreeNodeInfoInitGCWriteBarrier(GenTree* tree);
+    void TreeNodeInfoInitCast(GenTree* tree);
+
+#ifdef _TARGET_X86_
+    bool ExcludeNonByteableRegisters(GenTree* tree);
+#endif
+
+#if defined(_TARGET_XARCH_)
+    // returns true if the tree can use the read-modify-write memory instruction form
+    bool isRMWRegOper(GenTreePtr tree);
+    void TreeNodeInfoInitMul(GenTreePtr tree);
+    void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
+#endif // defined(_TARGET_XARCH_)
+
+#ifdef FEATURE_SIMD
+    void TreeNodeInfoInitSIMD(GenTreeSIMD* tree);
+#endif // FEATURE_SIMD
+
+    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode);
+#ifdef _TARGET_ARM_
+    void TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* tree);
+#endif
+    void TreeNodeInfoInitLclHeap(GenTree* tree);
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

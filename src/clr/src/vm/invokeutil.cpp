@@ -18,7 +18,6 @@
 #include "method.hpp"
 #include "threads.h"
 #include "excep.h"
-#include "security.h"
 #include "field.h"
 #include "customattribute.h"
 #include "eeconfig.h"
@@ -601,11 +600,9 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
                 if (!srcTH.CanCastTo(th))
                     COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
             }
-            Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
             return;
         }
         else if (MscorlibBinder::IsClass((*value)->GetMethodTable(), CLASS__INTPTR)) {
-            Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
             return;
         }
 

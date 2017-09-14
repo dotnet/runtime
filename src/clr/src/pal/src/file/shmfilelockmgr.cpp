@@ -102,7 +102,7 @@ CSharedMemoryFileLockMgr::GetLockControllerForFile(
     )
 {
     PAL_ERROR palError = NO_ERROR;
-    SHMPTR shmFileLocks = SHMNULL;
+    SHMPTR shmFileLocks = NULL;
     SHMFILELOCKS* fileLocks = NULL;
     CSharedMemoryFileLockController *pController = NULL;
 
@@ -214,7 +214,7 @@ CSharedMemoryFileLockMgr::GetLockControllerForFile(
     // don't attempt to free it below.
     //
 
-    shmFileLocks = SHMNULL;
+    shmFileLocks = NULL;
 
     /* set the share mode again, it's possible that the share mode is now more
     restrictive than the previous mode set. */
@@ -247,7 +247,7 @@ GetLockControllerForFileExit:
             pController->ReleaseController();
         }
 
-        if (SHMNULL != shmFileLocks)
+        if (NULL != shmFileLocks)
         {
             FILECleanUpLockedRgn(
                 shmFileLocks,
@@ -269,13 +269,13 @@ CSharedMemoryFileLockMgr::GetFileShareModeForFile(
 {
     PAL_ERROR palError = NO_ERROR;
     *pdwShareMode = SHARE_MODE_NOT_INITALIZED;
-    SHMPTR shmFileLocks = SHMNULL;
+    SHMPTR shmFileLocks = NULL;
     SHMFILELOCKS* fileLocks = NULL;
 
     SHMLock();
 
     palError = FILEGetSHMFileLocks(szFileName, &shmFileLocks, TRUE);
-    if (NO_ERROR != palError || shmFileLocks == SHMNULL)
+    if (NO_ERROR != palError || shmFileLocks == NULL)
     {
         goto GetLockControllerForFileExit;
     }
@@ -291,7 +291,7 @@ CSharedMemoryFileLockMgr::GetFileShareModeForFile(
 
 GetLockControllerForFileExit:
 
-    if (SHMNULL != shmFileLocks)
+    if (NULL != shmFileLocks)
     {
       FILECleanUpLockedRgn(
                 shmFileLocks,
@@ -425,7 +425,7 @@ CSharedMemoryFileLockController::ReleaseFileLock(
 void
 CSharedMemoryFileLockController::ReleaseController()
 {
-    if (SHMNULL != m_shmFileLocks)
+    if (NULL != m_shmFileLocks)
     {
         FILECleanUpLockedRgn(
             m_shmFileLocks,
@@ -667,7 +667,7 @@ FILEUnlockFileRegion(
         {
             prevLock->next = curLockRgn->next;
         }
-        SHMfree(shmcurLockRgn);
+        free(shmcurLockRgn);
     }
     else
     {
@@ -735,7 +735,7 @@ FILEGetSHMFileLocks(
     TRACE("Create a new entry in the file lock list in SHM\n");
 
     /* Create a new entry in the file lock list in SHM */
-    if ((shmPtrRet = SHMalloc(sizeof(SHMFILELOCKS))) == 0)
+    if ((shmPtrRet = malloc(sizeof(SHMFILELOCKS))) == 0)
     {
         ERROR("Can't allocate SHMFILELOCKS structure\n");
         palError = ERROR_NOT_ENOUGH_MEMORY;
@@ -749,7 +749,7 @@ FILEGetSHMFileLocks(
         goto CLEANUP1;
     }
 
-    filelocksPtr->unix_filename = SHMStrDup(filename);
+    filelocksPtr->unix_filename = strdup(filename);
     if (filelocksPtr->unix_filename == 0)
     {
         ERROR("Can't allocate shared memory for filename\n");
@@ -781,9 +781,9 @@ FILEGetSHMFileLocks(
     goto EXIT;
 
 CLEANUP2:
-    SHMfree(filelocksPtr->unix_filename);
+    free(filelocksPtr->unix_filename);
 CLEANUP1:
-    SHMfree(shmPtrRet);
+    free(shmPtrRet);
     shmPtrRet = 0;
 EXIT:    
     SHMRelease();
@@ -808,7 +808,7 @@ FILEAddNewLockedRgn(
 {
     PAL_ERROR palError = NO_ERROR;
     SHMFILELOCKRGNS *newLockRgn, *lockRgnPtr;
-    SHMPTR shmNewLockRgn = SHMNULL;
+    SHMPTR shmNewLockRgn = NULL;
 
     if ((fileLocks == NULL) || (pvControllerInstance == NULL))
     {
@@ -822,7 +822,7 @@ FILEAddNewLockedRgn(
     TRACE("Create a new entry for the new lock region (%I64u %I64u)\n", 
           lockRgnStart, nbBytesToLock);
     
-    if ((shmNewLockRgn = SHMalloc(sizeof(SHMFILELOCKRGNS))) == SHMNULL)
+    if ((shmNewLockRgn = malloc(sizeof(SHMFILELOCKRGNS))) == NULL)
     {
         ERROR("Can't allocate SHMFILELOCKRGNS structure\n");
         palError = ERROR_NOT_ENOUGH_MEMORY;
@@ -897,9 +897,9 @@ FILEAddNewLockedRgn(
 
 EXIT:
 
-    if (NO_ERROR != palError && SHMNULL != shmNewLockRgn)
+    if (NO_ERROR != palError && NULL != shmNewLockRgn)
     {
-        SHMfree(shmNewLockRgn);
+        free(shmNewLockRgn);
     }
    
     SHMRelease();
@@ -950,7 +950,7 @@ FILECleanUpLockedRgn(
                     {
                         /* removing the first lock */
                         fileLocks->fileLockedRgns = curLockRgn->next;
-                        SHMfree(shmcurLockRgn);
+                        free(shmcurLockRgn);
                         shmcurLockRgn = fileLocks->fileLockedRgns;
                         if (SHMPTR_TO_TYPED_PTR_BOOL(SHMFILELOCKRGNS, curLockRgn, shmcurLockRgn) == FALSE)
                         {
@@ -961,7 +961,7 @@ FILECleanUpLockedRgn(
                     else
                     {
                         prevLock->next = curLockRgn->next;
-                        SHMfree(shmcurLockRgn);
+                        free(shmcurLockRgn);
                         shmcurLockRgn = prevLock->next;
                         if (SHMPTR_TO_TYPED_PTR_BOOL(SHMFILELOCKRGNS, curLockRgn, shmcurLockRgn) == FALSE)
                         {
@@ -1020,9 +1020,9 @@ FILECleanUpLockedRgn(
             }
 
             if (fileLocks->unix_filename)
-                SHMfree(fileLocks->unix_filename);
+                free(fileLocks->unix_filename);
 
-            SHMfree(shmFileLocks);
+            free(shmFileLocks);
         }
     }    
 EXIT:

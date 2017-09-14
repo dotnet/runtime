@@ -106,6 +106,19 @@
 #define VOLATILE_MEMORY_BARRIER()
 #endif // __GNUC__
 
+template<typename T>
+struct RemoveVolatile
+{
+   typedef T type;
+};
+
+template<typename T>
+struct RemoveVolatile<volatile T>
+{
+   typedef T type;
+};
+
+
 //
 // VolatileLoad loads a T from a pointer to T.  It is guaranteed that this load will not be optimized
 // away by the compiler, and that any operation that occurs after this load, in program order, will
@@ -113,6 +126,10 @@
 // this is the case for most aligned scalar data types.  If you need atomic loads or stores, you need
 // to consult the compiler and CPU manuals to find which circumstances allow atomicity.
 //
+// Starting at version 3.8, clang errors out on initializing of type int * to volatile int *. To fix this, we add two templates to cast away volatility
+// Helper structures for casting away volatileness
+
+
 template<typename T>
 inline
 T VolatileLoad(T const * pt)
@@ -125,7 +142,7 @@ T VolatileLoad(T const * pt)
     static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
     if((1 << sizeof(T)) & lockFreeAtomicSizeMask)
     {
-        __atomic_load((T volatile const *)pt, &val, __ATOMIC_ACQUIRE);
+        __atomic_load((T const *)pt, const_cast<typename RemoveVolatile<T>::type *>(&val), __ATOMIC_ACQUIRE);
     }
     else
     {

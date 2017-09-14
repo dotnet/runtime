@@ -39,6 +39,8 @@ void PALCommonCleanup();
 
 extern Volatile<INT> init_count;
 
+extern SIZE_T g_defaultStackSize;
+
 /*++
 MACRO:
   PALIsInitialized

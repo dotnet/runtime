@@ -65,6 +65,9 @@ namespace CorUnix
         SHMPTR shmObjImmutableData;
         SHMPTR shmObjSharedData;
 
+        OBJECT_IMMUTABLE_DATA_COPY_ROUTINE pCopyRoutine;
+        OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pCleanupRoutine;
+
         LONG lProcessRefCount;
         DWORD dwNameLength;
 
@@ -121,8 +124,7 @@ namespace CorUnix
         // m_fSharedDataDereferenced will be TRUE if DereferenceSharedData
         // has already been called. (N.B. -- this is a LONG instead of a bool
         // because it is passed to InterlockedExchange). If the shared data blob
-        // should be freed in the object's destructor (i.e., SHMfree should be
-        // called on the appropriate SHMPTRs) DereferenceSharedData will
+        // should be freed in the object's destructor DereferenceSharedData will
         // set m_fDeleteSharedData to TRUE.
         //
 
@@ -139,12 +141,6 @@ namespace CorUnix
         void
         FreeSharedDataAreas(
             SHMPTR shmObjData
-            );
-
-        void
-        PromoteSharedData(
-            SHMPTR shmObjData,
-            SHMObjData *psmod
             );
 
         bool
@@ -178,7 +174,7 @@ namespace CorUnix
             :
             CPalObjectBase(pot),
             m_pcsObjListLock(pcsObjListLock),
-            m_shmod(SHMNULL),
+            m_shmod(NULL),
             m_pvSharedData(NULL),
             m_ObjectDomain(ProcessLocalObject),
             m_fSharedDataDereferenced(FALSE),
@@ -227,12 +223,6 @@ namespace CorUnix
         InitializeFromExistingSharedData(
             CPalThread *pthr,
             CObjectAttributes *poa
-            );
-
-        virtual
-        PAL_ERROR
-        EnsureObjectIsShared(
-            CPalThread *pthr
             );
 
         void
@@ -352,12 +342,6 @@ namespace CorUnix
         Initialize(
             CPalThread *pthr,
             CObjectAttributes *poa
-            );
-
-        virtual
-        PAL_ERROR
-        EnsureObjectIsShared(
-            CPalThread *pthr
             );
 
         //
