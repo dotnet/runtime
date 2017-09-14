@@ -15,72 +15,81 @@
 
 using System;
 
-class BinaryTrees
+namespace BenchmarksGame
 {
-   const int minDepth = 4;
+    class BinaryTrees
+    {
+        const int minDepth = 4;
 
-   public static void Main(String[] args)
-   {
-      int n = 0;
-      if (args.Length > 0) n = Int32.Parse(args[0]);
+        public static void Main(String[] args)
+        {
+            int n = 0;
+            if (args.Length > 0) n = Int32.Parse(args[0]);
 
-      int maxDepth = Math.Max(minDepth + 2, n);
-      int stretchDepth = maxDepth + 1;
+            int maxDepth = Math.Max(minDepth + 2, n);
+            int stretchDepth = maxDepth + 1;
 
-      int check = (TreeNode.bottomUpTree(stretchDepth)).itemCheck();
-      Console.WriteLine("stretch tree of depth {0}\t check: {1}", stretchDepth, check);
+            int check = (TreeNode.bottomUpTree(stretchDepth)).itemCheck();
+            Console.WriteLine("stretch tree of depth {0}\t check: {1}", stretchDepth, check);
 
-      TreeNode longLivedTree = TreeNode.bottomUpTree(maxDepth);
+            TreeNode longLivedTree = TreeNode.bottomUpTree(maxDepth);
 
-      for (int depth=minDepth; depth<=maxDepth; depth+=2){
-         int iterations = 1 << (maxDepth - depth + minDepth);
+            for (int depth = minDepth; depth <= maxDepth; depth += 2)
+            {
+                int iterations = 1 << (maxDepth - depth + minDepth);
 
-         check = 0;
-         for (int i=1; i<=iterations; i++)
-         {
-            check += (TreeNode.bottomUpTree(depth)).itemCheck();
-         }
+                check = 0;
+                for (int i = 1; i <= iterations; i++)
+                {
+                    check += (TreeNode.bottomUpTree(depth)).itemCheck();
+                }
 
-         Console.WriteLine("{0}\t trees of depth {1}\t check: {2}",
-            iterations, depth, check);
-      }
+                Console.WriteLine("{0}\t trees of depth {1}\t check: {2}",
+                   iterations, depth, check);
+            }
 
-      Console.WriteLine("long lived tree of depth {0}\t check: {1}",
-         maxDepth, longLivedTree.itemCheck());
-   }
+            Console.WriteLine("long lived tree of depth {0}\t check: {1}",
+               maxDepth, longLivedTree.itemCheck());
+        }
 
 
-   struct TreeNode
-   {
-      class Next
-   	  {
-	      public TreeNode left, right;
-      }
-   	
-      private Next next;
+        struct TreeNode
+        {
+            class Next
+            {
+                public TreeNode left, right;
+            }
 
-      internal static TreeNode bottomUpTree(int depth){
-         if (depth>0){
-            return new TreeNode(
-                 bottomUpTree(depth-1)
-               , bottomUpTree(depth-1)
-               );
-         }
-         else {
-            return new TreeNode();
-         }
-      }
+            private Next next;
 
-      TreeNode(TreeNode left, TreeNode right){
-      	 this.next = new Next ();
-         this.next.left = left;
-         this.next.right = right;
-      }
+            internal static TreeNode bottomUpTree(int depth)
+            {
+                if (depth > 0)
+                {
+                    return new TreeNode(
+                         bottomUpTree(depth - 1)
+                       , bottomUpTree(depth - 1)
+                       );
+                }
+                else
+                {
+                    return new TreeNode();
+                }
+            }
 
-      internal int itemCheck(){
-         // if necessary deallocate here
-         if (next==null) return 1;
-         else return 1 + next.left.itemCheck() + next.right.itemCheck();
-      }
-   }
+            TreeNode(TreeNode left, TreeNode right)
+            {
+                this.next = new Next();
+                this.next.left = left;
+                this.next.right = right;
+            }
+
+            internal int itemCheck()
+            {
+                // if necessary deallocate here
+                if (next == null) return 1;
+                else return 1 + next.left.itemCheck() + next.right.itemCheck();
+            }
+        }
+    }
 }
