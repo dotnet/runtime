@@ -270,6 +270,15 @@ extern "C" int32_t GlobalizationNative_LoadICU()
     return 1;
 }
 
+// GlobalizationNative_GetICUVersion
+// return the current loaded ICU version
+extern "C" int32_t GlobalizationNative_GetICUVersion()
+{
+    int32_t version;
+    u_getVersion((uint8_t *) &version);
+    return version; 
+}
+
 __attribute__((destructor))
 void ShutdownICUShim()
 {

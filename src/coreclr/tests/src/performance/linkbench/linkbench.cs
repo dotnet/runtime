@@ -119,7 +119,7 @@ namespace LinkBench
             return size;
         }
 
-        // Get the total size difference for all certificates in all managed binaries 
+        // Get the total size difference for all certificates in all managed binaries
         // in the unlinked and linked directories.
         private double ComputeCertDiff()
         {
@@ -158,7 +158,7 @@ namespace LinkBench
                 // We should check only for BadImageFormatException.
                 // But Checking for any exception until the following
                 // issue is fixed:
-                // https://github.com/dotnet/coreclr/issues/11499 
+                // https://github.com/dotnet/coreclr/issues/11499
 
                 return false;
             }
@@ -187,7 +187,7 @@ namespace LinkBench
                 xdoc.Root.Add(new XElement(ns + "ItemGroup",
                     new XElement(ns + "PackageReference",
                         new XAttribute("Include", "ILLink.Tasks"),
-                        new XAttribute("Version", "0.1.4-preview"))));
+                        new XAttribute("Version", "0.1.4-preview-737646"))));
                 added = true;
             }
             using (var fs = new FileStream(csproj, FileMode.Create))
@@ -262,17 +262,18 @@ namespace LinkBench
             new Benchmark("Corefx",
                 "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\pretrimmed",
                 "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\trimmed"),
-            /*new Benchmark("Roslyn",
+            new Benchmark("Roslyn",
                 "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\publish",
-                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked") */
+                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked")
         };
 
         static int UsageError()
         {
             Console.WriteLine("Usage: LinkBench [--nosetup] [--nobuild] [--perf:runid <id>] [<benchmarks>]");
             Console.WriteLine("  --nosetup: Don't clone and fixup benchmark repositories");
-            Console.WriteLine("  --nosetup: Don't build and link benchmarks");
+            Console.WriteLine("  --nobuild: Don't build and link benchmarks");
             Console.WriteLine("  --perf:runid: Specify the ID to append to benchmark result files");
+            Console.WriteLine("  --perf:outputdir: Specify the output directory used by xUnit Performance");
             Console.WriteLine("    Benchmarks: HelloWorld, WebAPI, MusicStore, MusicStore_R2R, CoreFX, Roslyn");
             Console.WriteLine("                Default is to run all the above benchmarks.");
             return -4;
@@ -283,6 +284,7 @@ namespace LinkBench
             bool doSetup = true;
             bool doBuild = true;
             string runId = "";
+            string outputdir = "";
             string runOne = null;
             bool benchmarkSpecified = false;
 
@@ -306,6 +308,30 @@ namespace LinkBench
                     else
                     {
                         Console.WriteLine("Missing runID ");
+                        return UsageError();
+                    }
+                }
+                else if (String.Compare(args[i], "--perf:outputdir", true) == 0)
+                {
+                    if (i + 1 < args.Length)
+                    {
+                        outputdir = args[++i];
+                    }
+                    else
+                    {
+                        Console.WriteLine("Missing output directory.");
+                        return UsageError();
+                    }
+                }
+                else if (args[i].Equals("--target-architecture", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < args.Length)
+                    {
+                        ++i; // Ignore this argument.
+                    }
+                    else
+                    {
+                        Console.WriteLine("Missing target architecture.");
                         return UsageError();
                     }
                 }
@@ -341,7 +367,7 @@ namespace LinkBench
                     if (String.Compare(benchmark.Name, "CoreFX", true) == 0)
                     {
                         // CoreFX is not enabled by default, because the lab cannot run it yet.
-                        // Jenkins runs on an older OS with path-length limit, which causes 
+                        // Jenkins runs on an older OS with path-length limit, which causes
                         // CoreFX build to fail.
                         continue;
                     }
@@ -370,8 +396,8 @@ namespace LinkBench
             AssetsDir = linkBenchSrcDir + "assets\\";
 
             Environment.SetEnvironmentVariable("LinkBenchRoot", LinkBenchRoot);
+            Environment.SetEnvironmentVariable("__dotnet", LinkBenchRoot + "\\.Net\\dotnet.exe");
             Environment.SetEnvironmentVariable("__dotnet1", LinkBenchRoot + "\\.Net1\\dotnet.exe");
-            Environment.SetEnvironmentVariable("__dotnet2", LinkBenchRoot + "\\.Net2\\dotnet.exe");
 
             // Update the build files to facilitate the link step
             if (doSetup)
@@ -417,7 +443,7 @@ namespace LinkBench
                 }
             }
 
-            // Since this is a size measurement scenario, there are no iterations 
+            // Since this is a size measurement scenario, there are no iterations
             // to perform. So, create a process that does nothing, to satisfy XUnit.
             // All size measurements are performed PostRun()
             var emptyCmd = new ProcessStartInfo()
@@ -433,7 +459,10 @@ namespace LinkBench
                     continue;
                 }
 
-                string[] scriptArgs = { "--perf:runid", runId + CurrentBenchmark.Name };
+                string[] scriptArgs = {
+                    "--perf:runid", runId + CurrentBenchmark.Name,
+                    "--perf:outputdir", outputdir
+                };
                 using (var h = new XunitPerformanceHarness(scriptArgs))
                 {
                     h.RunScenario(emptyCmd, null, null, PostRun, scenarioConfiguration);

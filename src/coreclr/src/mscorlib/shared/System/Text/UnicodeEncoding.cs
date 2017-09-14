@@ -20,6 +20,9 @@ namespace System.Text
         internal static readonly UnicodeEncoding s_bigEndianDefault = new UnicodeEncoding(bigEndian: true, byteOrderMark: true);
         internal static readonly UnicodeEncoding s_littleEndianDefault = new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
 
+        private static readonly byte[] s_bigEndianPreamble = new byte[2] { 0xfe, 0xff };
+        private static readonly byte[] s_littleEndianPreamble = new byte[2] { 0xff, 0xfe };
+
         internal bool isThrowException = false;
 
         internal bool bigEndian = false;
@@ -1898,6 +1901,10 @@ namespace System.Text
             return Array.Empty<Byte>();
         }
 
+        public override ReadOnlySpan<byte> Preamble =>
+            GetType() != typeof(UnicodeEncoding) ? GetPreamble() : // in case a derived UnicodeEncoding overrode GetPreamble
+            byteOrderMark ? (bigEndian ? s_bigEndianPreamble : s_littleEndianPreamble) :
+            Array.Empty<byte>();
 
         public override int GetMaxByteCount(int charCount)
         {

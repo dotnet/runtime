@@ -437,11 +437,6 @@ namespace System.IO
             return IsDirectorySeparator(ch) || VolumeSeparatorChar == ch;
         }
 
-        internal static string TrimEndingDirectorySeparator(string path) =>
-            EndsInDirectorySeparator(path) ?
-            path.Substring(0, path.Length - 1) :
-            path;
-
         /// <summary>
         /// Returns true if the path is effectively empty for the current OS.
         /// For unix, this is empty or null. For Windows, this is empty, null, or 

@@ -51,6 +51,9 @@ namespace System.IO
         /// </summary>
         private readonly bool _useAsyncIO;
 
+        /// <summary>cached task for read ops that complete synchronously</summary>
+        private Task<int> _lastSynchronouslyCompletedTask = null;
+
         /// <summary>
         /// Currently cached position in the stream.  This should always mirror the underlying file's actual position,
         /// and should only ever be out of sync if another stream with access to this same file manipulates it, at which
@@ -292,6 +295,36 @@ namespace System.IO
             return FlushAsyncInternal(cancellationToken);
         }
 
+        public override int Read(byte[] array, int offset, int count)
+        {
+            ValidateReadWriteArgs(array, offset, count);
+            return _useAsyncIO ?
+                ReadAsyncTask(array, offset, count, CancellationToken.None).GetAwaiter().GetResult() :
+                ReadSpan(new Span<byte>(array, offset, count));
+        }
+
+        public override int Read(Span<byte> destination)
+        {
+            if (GetType() == typeof(FileStream) && !_useAsyncIO)
+            {
+                if (_fileHandle.IsClosed)
+                {
+                    throw Error.GetFileNotOpen();
+                }
+                return ReadSpan(destination);
+            }
+            else
+            {
+                // This type is derived from FileStream and/or the stream is in async mode.  If this is a 
+                // derived type, it may have overridden Read(byte[], int, int) prior to this Read(Span<byte>)
+                // overload being introduced.  In that case, this Read(Span<byte>) overload should use the behavior
+                // of Read(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
+                // synchronous ReadSpan, so we similarly call the base Read, which will turn delegate to
+                // Read(byte[],int,int), which will do the right thing if we're in async mode.
+                return base.Read(destination);
+            }
+        }
+
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -304,10 +337,12 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() or ReadAsync() which a subclass might have overridden.  
+            // since it does not call through to Read() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
-            if (GetType() != typeof(FileStream))
+            // Similarly, if we weren't opened for asynchronous I/O, call to the base implementation so that
+            // Read is invoked asynchronously.
+            if (GetType() != typeof(FileStream) || !_useAsyncIO)
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
@@ -316,7 +351,86 @@ namespace System.IO
             if (IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return ReadAsyncInternal(buffer, offset, count, cancellationToken);
+            return ReadAsyncTask(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_useAsyncIO || GetType() != typeof(FileStream))
+            {
+                // If we're not using async I/O, delegate to the base, which will queue a call to Read.
+                // Or if this isn't a concrete FileStream, a derived type may have overridden ReadAsync(byte[],...),
+                // which was introduced first, so delegate to the base which will delegate to that.
+                return base.ReadAsync(destination, cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+            }
+
+            if (IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
+
+            Task<int> t = ReadAsyncInternal(destination, cancellationToken, out int synchronousResult);
+            return t != null ?
+                new ValueTask<int>(t) :
+                new ValueTask<int>(synchronousResult);
+        }
+
+        private Task<int> ReadAsyncTask(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        {
+            Task<int> t = ReadAsyncInternal(new Memory<byte>(array, offset, count), cancellationToken, out int synchronousResult);
+
+            if (t == null)
+            {
+                t = _lastSynchronouslyCompletedTask;
+                Debug.Assert(t == null || t.IsCompletedSuccessfully, "Cached task should have completed successfully");
+
+                if (t == null || t.Result != synchronousResult)
+                {
+                    _lastSynchronouslyCompletedTask = t = Task.FromResult(synchronousResult);
+                }
+            }
+
+            return t;
+        }
+
+        public override void Write(byte[] array, int offset, int count)
+        {
+            ValidateReadWriteArgs(array, offset, count);
+            if (_useAsyncIO)
+            {
+                WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+            }
+            else
+            {
+                WriteSpan(new ReadOnlySpan<byte>(array, offset, count));
+            }
+        }
+
+        public override void Write(ReadOnlySpan<byte> destination)
+        {
+            if (GetType() == typeof(FileStream) && !_useAsyncIO)
+            {
+                if (_fileHandle.IsClosed)
+                {
+                    throw Error.GetFileNotOpen();
+                }
+                WriteSpan(destination);
+            }
+            else
+            {
+                // This type is derived from FileStream and/or the stream is in async mode.  If this is a 
+                // derived type, it may have overridden Write(byte[], int, int) prior to this Write(ReadOnlySpan<byte>)
+                // overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload should use the behavior
+                // of Write(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
+                // synchronous WriteSpan, so we similarly call the base Write, which will turn delegate to
+                // Write(byte[],int,int), which will do the right thing if we're in async mode.
+                base.Write(destination);
+            }
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -334,7 +448,7 @@ namespace System.IO
             // since it does not call through to Write() or WriteAsync() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write/WriteAsync) when we are not sure.
-            if (GetType() != typeof(FileStream))
+            if (!_useAsyncIO || GetType() != typeof(FileStream))
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
@@ -343,7 +457,30 @@ namespace System.IO
             if (IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return WriteAsyncInternal(buffer, offset, count, cancellationToken);
+            return WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_useAsyncIO || GetType() != typeof(FileStream))
+            {
+                // If we're not using async I/O, delegate to the base, which will queue a call to Write.
+                // Or if this isn't a concrete FileStream, a derived type may have overridden WriteAsync(byte[],...),
+                // which was introduced first, so delegate to the base which will delegate to that.
+                return base.WriteAsync(source, cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            if (IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
+
+            return WriteAsyncInternal(source, cancellationToken);
         }
 
         /// <summary>
@@ -594,7 +731,11 @@ namespace System.IO
             _readPos = _readLength = 0;
         }
 
-        private int ReadByteCore()
+        /// <summary>
+        /// Reads a byte from the file stream.  Returns the byte cast to an int
+        /// or -1 if reading from the end of the stream.
+        /// </summary>
+        public override int ReadByte()
         {
             PrepareForReading();
 
@@ -602,9 +743,7 @@ namespace System.IO
             if (_readPos == _readLength)
             {
                 FlushWriteBuffer();
-                Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
-
-                _readLength = ReadNative(buffer, 0, _bufferLength);
+                _readLength = FillReadBufferForReadByte();
                 _readPos = 0;
                 if (_readLength == 0)
                 {
@@ -615,13 +754,18 @@ namespace System.IO
             return buffer[_readPos++];
         }
 
-        private void WriteByteCore(byte value)
+        /// <summary>
+        /// Writes a byte to the current position in the stream and advances the position
+        /// within the stream by one byte.
+        /// </summary>
+        /// <param name="value">The byte to write to the stream.</param>
+        public override void WriteByte(byte value)
         {
             PrepareForWriting();
 
             // Flush the write buffer if it's full
             if (_writePos == _bufferLength)
-                FlushWriteBuffer();
+                FlushWriteBufferForWriteByte();
 
             // We now have space in the buffer. Store the byte.
             GetBuffer()[_writePos++] = value;
@@ -672,7 +816,7 @@ namespace System.IO
             if (!IsAsync)
                 return base.BeginRead(array, offset, numBytes, callback, state);
             else
-                return TaskToApm.Begin(ReadAsyncInternal(array, offset, numBytes, CancellationToken.None), callback, state);
+                return TaskToApm.Begin(ReadAsyncTask(array, offset, numBytes, CancellationToken.None), callback, state);
         }
 
         public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
@@ -692,7 +836,7 @@ namespace System.IO
             if (!IsAsync)
                 return base.BeginWrite(array, offset, numBytes, callback, state);
             else
-                return TaskToApm.Begin(WriteAsyncInternal(array, offset, numBytes, CancellationToken.None), callback, state);
+                return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, numBytes), CancellationToken.None), callback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)

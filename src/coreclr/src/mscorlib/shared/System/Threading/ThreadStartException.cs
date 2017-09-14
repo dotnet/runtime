@@ -11,13 +11,13 @@ namespace System.Threading
         internal ThreadStartException()
             : base(SR.Arg_ThreadStartException)
         {
-            HResult = __HResults.COR_E_THREADSTART;
+            HResult = HResults.COR_E_THREADSTART;
         }
 
         internal ThreadStartException(Exception reason)
             : base(SR.Arg_ThreadStartException, reason)
         {
-            HResult = __HResults.COR_E_THREADSTART;
+            HResult = HResults.COR_E_THREADSTART;
         }
     }
 }

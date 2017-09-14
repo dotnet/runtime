@@ -22,7 +22,6 @@
 #include "compile.h"
 #include "excep.h"
 #include "field.h"
-#include "security.h"
 #include "eeconfig.h"
 #include "zapsig.h"
 #include "gcrefmap.h"

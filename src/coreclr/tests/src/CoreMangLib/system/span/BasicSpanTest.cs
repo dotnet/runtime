@@ -41,10 +41,8 @@ class My
         int failedTestsCount = 0;
 
         Test(CanAccessItemsViaIndexer, "CanAccessItemsViaIndexer", ref failedTestsCount);
-        Test(CanAccessItemsViaIndexerStartCtor, "CanAccessItemsViaIndexerStartCtor", ref failedTestsCount);
         Test(CanAccessItemsViaIndexerStartLengthCtor, "CanAccessItemsViaIndexerStartLengthCtor", ref failedTestsCount);
 
-        Test(TestBoundaryEmptySpanStartCtor, "TestBoundaryEmptySpanStartCtor", ref failedTestsCount);
         Test(TestBoundaryEmptySpanStartLengthCtor, "TestBoundaryEmptySpanStartLengthCtor", ref failedTestsCount);
 
         Test(ReferenceTypesAreSupported, "ReferenceTypesAreSupported", ref failedTestsCount);
@@ -54,7 +52,6 @@ class My
         Test(MustNotMoveGcTypesToUnmanagedMemory, "MustNotMoveGcTypesToUnmanagedMemory", ref failedTestsCount);
 
         Test(TestArrayCoVariance, "TestArrayCoVariance", ref failedTestsCount);
-        Test(TestArrayCoVarianceStartCtor, "TestArrayCoVarianceStartCtor", ref failedTestsCount);
         Test(TestArrayCoVarianceStartLengthCtor, "TestArrayCoVarianceStartLengthCtor", ref failedTestsCount);
 
         Test(TestArrayCoVarianceReadOnly, "TestArrayCoVarianceReadOnly", ref failedTestsCount);
@@ -83,7 +80,6 @@ class My
         Test(WhenSourceTypeLargerThanTargetAndOverflowsInt32ThrowsException, "WhenSourceTypeLargerThanTargetAndOverflowsInt32ThrowsException", ref failedTestsCount);
         Test(CanCreateSpanFromString, "CanCreateSpanFromString", ref failedTestsCount);
 
-        Test(WhenStartLargerThanLengthThrowsExceptionStartCtor, "WhenStartLargerThanLengthThrowsExceptionStartCtor", ref failedTestsCount);
         Test(WhenStartLargerThanLengthThrowsExceptionStartLengthCtor, "WhenStartLargerThanLengthThrowsExceptionStartLengthCtor", ref failedTestsCount);
         Test(WhenStartAndLengthLargerThanLengthThrowsExceptionStartLengthCtor, "WhenStartAndLengthLargerThanLengthThrowsExceptionStartLengthCtor", ref failedTestsCount);
 
@@ -101,26 +97,11 @@ class My
         AssertTrue(Sum(subslice) == 5, "Failed to sum subslice");
     }
 
-    static void CanAccessItemsViaIndexerStartCtor()
-    {
-        int[] a = new int[] { 1, 2, 3 };
-        Span<int> slice = new Span<int>(a, start: 1);
-        AssertTrue(Sum(slice) == 5, "Failed to sum slice");
-    }
-
     static void CanAccessItemsViaIndexerStartLengthCtor()
     {
         int[] a = new int[] { 1, 2, 3 };
         Span<int> slice = new Span<int>(a, start: 1, length: 1);
         AssertTrue(Sum(slice) == 2, "Failed to sum slice");
-    }
-
-    static void TestBoundaryEmptySpanStartCtor()
-    {
-        int[] a = new int[5];
-
-        Span<int> slice = new Span<int>(a, start: a.Length);
-        AssertEqual(slice.Length, 0);
     }
 
     static void TestBoundaryEmptySpanStartLengthCtor()
@@ -190,30 +171,6 @@ class My
         try
         {
             new Span<object>(objEmptyArray);
-            AssertTrue(false, "Expected exception not thrown");
-        }
-        catch (ArrayTypeMismatchException)
-        {
-        }
-    }
-
-    static void TestArrayCoVarianceStartCtor()
-    {
-        var array = new ReferenceType[1];
-        var objArray = (object[])array;
-        try
-        {
-            new Span<object>(objArray, start: 0);
-            AssertTrue(false, "Expected exception not thrown");
-        }
-        catch (ArrayTypeMismatchException)
-        {
-        }
-
-        var objEmptyArray = Array.Empty<ReferenceType>();
-        try
-        {
-            new Span<object>(objEmptyArray, start: 0);
             AssertTrue(false, "Expected exception not thrown");
         }
         catch (ArrayTypeMismatchException)
@@ -715,19 +672,6 @@ class My
         string secondHalfOfString = fullText.Substring(fullText.Length / 2);
         var spanFromSecondHalf = fullText.Slice(fullText.Length / 2);
         AssertEqualContent(secondHalfOfString, spanFromSecondHalf);
-    }
-
-    static void WhenStartLargerThanLengthThrowsExceptionStartCtor()
-    {
-        try
-        {
-            var data = new byte[10];
-            var slice = new Span<byte>(data, start: 11);
-            AssertTrue(false, "Expected exception for Argument Out of Range not thrown");
-        }
-        catch (System.ArgumentOutOfRangeException)
-        {
-        }
     }
     
     static void WhenStartLargerThanLengthThrowsExceptionStartLengthCtor()

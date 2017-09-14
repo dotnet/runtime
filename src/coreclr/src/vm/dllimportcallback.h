@@ -326,10 +326,6 @@ public:
         {
             DestroyLongWeakHandle(GetObjectHandle());
         }
-
-#ifdef _DEBUG
-        FillMemory(this, sizeof(*this), 0xcc);
-#endif
     }
 
     void Terminate();

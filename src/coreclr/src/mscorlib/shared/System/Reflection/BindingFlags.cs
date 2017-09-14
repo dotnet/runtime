@@ -46,5 +46,6 @@ namespace System.Reflection
 
         // These are a couple of misc attributes used
         IgnoreReturn = 0x01000000,  // This is used in COM Interop
+        DoNotWrapExceptions = 0x02000000, // Disables wrapping exceptions in TargetInvocationException
     }
 }

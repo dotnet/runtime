@@ -515,6 +515,8 @@ typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 // Each thread has a stack that tracks all enter and leave requests
 struct Dbg_TrackSync
 {
+    virtual ~Dbg_TrackSync() = default;
+
     virtual void EnterSync    (UINT_PTR caller, void *pAwareLock) = 0;
     virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
 };
@@ -1944,7 +1946,7 @@ public:
     // Create all new threads here.  The thread is created as suspended, so
     // you must ::ResumeThread to kick it off.  It is guaranteed to create the
     // thread, or throw.
-    BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
+    BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
 
 
     enum StackSizeBucket
@@ -5249,11 +5251,9 @@ public:
     // object associated with them (e.g., the bgc thread).
     void SetGCSpecial(bool fGCSpecial);
 
-#ifndef FEATURE_PAL
 private:
     WORD m_wCPUGroup;
     DWORD_PTR m_pAffinityMask;
-#endif // !FEATURE_PAL
 
 public:
     void ChooseThreadCPUGroupAffinity();
@@ -5362,6 +5362,71 @@ public:
         m_HijackReturnKind = returnKind;
     }
 #endif // FEATURE_HIJACK
+
+private:
+    static CrstStatic s_initializeYieldProcessorNormalizedCrst;
+    static int s_yieldsPerNormalizedYield;
+    static int s_optimalMaxNormalizedYieldsPerSpinIteration;
+
+private:
+    static void InitializeYieldProcessorNormalized();
+
+public:
+    static bool IsYieldProcessorNormalizedInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_yieldsPerNormalizedYield != 0 && s_optimalMaxNormalizedYieldsPerSpinIteration != 0;
+    }
+
+public:
+    static void EnsureYieldProcessorNormalizedInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (!IsYieldProcessorNormalizedInitialized())
+        {
+            InitializeYieldProcessorNormalized();
+        }
+    }
+
+public:
+    static int GetOptimalMaxNormalizedYieldsPerSpinIteration()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        return s_optimalMaxNormalizedYieldsPerSpinIteration;
+    }
+
+public:
+    static void YieldProcessorNormalized()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        int n = s_yieldsPerNormalizedYield;
+        while (--n >= 0)
+        {
+            YieldProcessor();
+        }
+    }
+
+    static void YieldProcessorNormalizedWithBackOff(unsigned int spinIteration)
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        int n = s_optimalMaxNormalizedYieldsPerSpinIteration;
+        if (spinIteration <= 30 && (1 << spinIteration) < n)
+        {
+            n = 1 << spinIteration;
+        }
+        n *= s_yieldsPerNormalizedYield;
+        while (--n >= 0)
+        {
+            YieldProcessor();
+        }
+    }
 };
 
 // End of class Thread

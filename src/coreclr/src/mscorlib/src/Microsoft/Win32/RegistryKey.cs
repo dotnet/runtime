@@ -119,27 +119,6 @@ namespace Microsoft.Win32
         private volatile RegistryView regView = RegistryView.Default;
 
         /**
-         * RegistryInternalCheck values.  Useful only for CheckPermission
-         */
-        private enum RegistryInternalCheck
-        {
-            CheckSubKeyWritePermission = 0,
-            CheckSubKeyReadPermission = 1,
-            CheckSubKeyCreatePermission = 2,
-            CheckSubTreeReadPermission = 3,
-            CheckSubTreeWritePermission = 4,
-            CheckSubTreeReadWritePermission = 5,
-            CheckValueWritePermission = 6,
-            CheckValueCreatePermission = 7,
-            CheckValueReadPermission = 8,
-            CheckKeyReadPermission = 9,
-            CheckSubTreePermission = 10,
-            CheckOpenSubKeyWithWritablePermission = 11,
-            CheckOpenSubKeyPermission = 12
-        };
-
-
-        /**
          * Creates a RegistryKey.
          *
          * This key is bound to hkey, if writable is <b>false</b> then no write operations
@@ -318,29 +297,6 @@ namespace Microsoft.Win32
             return null;
         }
 
-        // This required no security checks. This is to get around the Deleting SubKeys which only require
-        // write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
-        internal RegistryKey InternalOpenSubKey(String name, bool writable)
-        {
-            ValidateKeyName(name);
-            EnsureNotDisposed();
-
-            SafeRegistryHandle result = null;
-            int ret = Win32Native.RegOpenKeyEx(hkey,
-                name,
-                0,
-                GetRegistryKeyAccess(writable) | (int)regView,
-                out result);
-
-            if (ret == 0 && !result.IsInvalid)
-            {
-                RegistryKey key = new RegistryKey(result, writable, false, remoteKey, false, regView);
-                key.keyName = keyName + "\\" + name;
-                return key;
-            }
-            return null;
-        }
-
         /**
          * Returns a subkey with read only permissions.
          *
@@ -502,9 +458,7 @@ namespace Microsoft.Win32
          * Note that <var>name</var> can be null or "", at which point the
          * unnamed or default value of this Registry key is returned, if any.
          * The default values for RegistryKeys are OS-dependent.  NT doesn't
-         * have them by default, but they can exist and be of any type.  On
-         * Win95, the default value is always an empty key of type REG_SZ.
-         * Win98 supports default values of any type, but defaults to REG_SZ.
+         * have them by default, but they can exist and be of any type. 
          *
          * @param name Name of value to retrieve.
          * @param defaultValue Value to return if <i>name</i> doesn't exist.
@@ -1036,7 +990,7 @@ namespace Microsoft.Win32
                     throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:
-                    throw new IOException(Win32Native.GetMessage(errorCode), errorCode);
+                    throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
             }
         }
 
@@ -1100,14 +1054,6 @@ namespace Microsoft.Win32
                 }
                 path.Length += j - i;
             }
-        }
-
-        private bool ContainsRegistryValue(string name)
-        {
-            int type = 0;
-            int datasize = 0;
-            int retval = Win32Native.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
-            return retval == 0;
         }
 
         private void EnsureNotDisposed()

@@ -126,6 +126,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_AND:
             case GT_OR:
             case GT_XOR:
+            case GT_TEST_EQ:
+            case GT_TEST_NE:
                 return emitter::emitIns_valid_imm_for_alu(immVal, size);
                 break;
 #elif defined(_TARGET_ARM_)
@@ -215,6 +217,21 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
             }
         }
     }
+    ContainCheckStoreLoc(storeLoc);
+}
+
+//------------------------------------------------------------------------
+// LowerStoreIndir: Determine addressing mode for an indirection, and whether operands are contained.
+//
+// Arguments:
+//    node       - The indirect store node (GT_STORE_IND) of interest
+//
+// Return Value:
+//    None.
+//
+void Lowering::LowerStoreIndir(GenTreeIndir* node)
+{
+    ContainCheckStoreIndir(node);
 }
 
 //------------------------------------------------------------------------
@@ -255,6 +272,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         GenTreePtr initVal = source;
         if (initVal->OperIsInitVal())
         {
+            initVal->SetContained();
             initVal = initVal->gtGetOp1();
         }
         srcAddrOrFill = initVal;
@@ -276,7 +294,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the largest width store of the desired inline expansion.
 
             ssize_t fill = initVal->gtIntCon.gtIconVal & 0xFF;
-            if (size < REGSIZE_BYTES)
+            if (fill == 0)
+            {
+                MakeSrcContained(blkNode, source);
+            }
+            else if (size < REGSIZE_BYTES)
             {
                 initVal->gtIntCon.gtIconVal = 0x01010101 * fill;
             }
@@ -348,6 +370,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
             }
         }
+        // CopyObj or CopyBlk
+        if (source->gtOper == GT_IND)
+        {
+            MakeSrcContained(blkNode, source);
+        }
+        else if (!source->IsMultiRegCall() && !source->OperIsSIMD())
+        {
+            assert(source->IsLocal());
+            MakeSrcContained(blkNode, source);
+        }
     }
 }
 
@@ -418,6 +450,9 @@ void Lowering::LowerCast(GenTree* tree)
         tree->gtOp.gtOp1 = tmp;
         BlockRange().InsertAfter(op1, tmp);
     }
+
+    // Now determine if we have operands that should be contained.
+    ContainCheckCast(tree->AsCast());
 }
 
 //------------------------------------------------------------------------
@@ -453,6 +488,7 @@ void Lowering::LowerRotate(GenTreePtr tree)
         }
         tree->ChangeOper(GT_ROR);
     }
+    ContainCheckShiftRotate(tree->AsOp());
 }
 
 //------------------------------------------------------------------------
@@ -460,10 +496,58 @@ void Lowering::LowerRotate(GenTreePtr tree)
 //------------------------------------------------------------------------
 
 //------------------------------------------------------------------------
+// ContainCheckCallOperands: Determine whether operands of a call should be contained.
+//
+// Arguments:
+//    call       - The call node of interest
+//
+// Return Value:
+//    None.
+//
+void Lowering::ContainCheckCallOperands(GenTreeCall* call)
+{
+    GenTree* ctrlExpr = call->gtControlExpr;
+    // If there is an explicit this pointer, we don't want that node to produce anything
+    // as it is redundant
+    if (call->gtCallObjp != nullptr)
+    {
+        GenTreePtr thisPtrNode = call->gtCallObjp;
+
+        if (thisPtrNode->canBeContained())
+        {
+            MakeSrcContained(call, thisPtrNode);
+            if (thisPtrNode->gtOper == GT_PUTARG_REG)
+            {
+                MakeSrcContained(call, thisPtrNode->gtOp.gtOp1);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckStoreIndir: determine whether the sources of a STOREIND node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
+{
+#ifdef _TARGET_ARM64_
+    GenTree* src = node->gtOp.gtOp2;
+    if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
+    {
+        // an integer zero for 'src' can be contained.
+        MakeSrcContained(node, src);
+    }
+#endif // _TARGET_ARM64_
+    ContainCheckIndir(node);
+}
+
+//------------------------------------------------------------------------
 // ContainCheckIndir: Determine whether operands of an indir should be contained.
 //
 // Arguments:
-//    node       - The indirection node of interest
+//    indirNode - The indirection node of interest
 //
 // Notes:
 //    This is called for both store and load indirections.
@@ -473,18 +557,6 @@ void Lowering::LowerRotate(GenTreePtr tree)
 //
 void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 {
-#ifdef _TARGET_ARM64_
-    if (indirNode->OperIs(GT_STOREIND))
-    {
-        GenTree* src = indirNode->gtOp.gtOp2;
-        if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
-        {
-            // an integer zero for 'src' can be contained.
-            MakeSrcContained(indirNode, src);
-        }
-    }
-#endif // _TARGET_ARM64_
-
     // If this is the rhs of a block copy it will be handled when we handle the store.
     if (indirNode->TypeGet() == TYP_STRUCT)
     {
@@ -498,7 +570,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         GenTreeAddrMode* lea   = addr->AsAddrMode();
         GenTree*         base  = lea->Base();
         GenTree*         index = lea->Index();
-        unsigned         cns   = lea->gtOffset;
+        int              cns   = lea->Offset();
 
 #ifdef _TARGET_ARM_
         // ARM floating-point load/store doesn't support a form similar to integer

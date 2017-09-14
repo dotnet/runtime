@@ -14,6 +14,7 @@
 #include "softwarewritewatch.h"
 #include "handletable.h"
 #include "handletable.inl"
+#include "gcenv.inl"
 
 #ifdef SERVER_GC
 #undef SERVER_GC

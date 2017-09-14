@@ -14,6 +14,7 @@ JitConfigValues JitConfig;
 void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* host)
 {
     assert(m_list == nullptr);
+    assert(m_names == nullptr);
 
     enum State
     {
@@ -45,7 +46,7 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
     {
         // Failed to convert the list. Free the memory and ignore the list.
         host->freeMemory(reinterpret_cast<void*>(const_cast<char*>(m_list)));
-        m_list = "";
+        m_list = nullptr;
         return;
     }
 
@@ -230,11 +231,12 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
         next = name->m_next;
         host->freeMemory(reinterpret_cast<void*>(const_cast<MethodName*>(name)));
     }
-
-    host->freeMemory(reinterpret_cast<void*>(const_cast<char*>(m_list)));
-
+    if (m_list != nullptr)
+    {
+        host->freeMemory(reinterpret_cast<void*>(const_cast<char*>(m_list)));
+        m_list = nullptr;
+    }
     m_names = nullptr;
-    m_list  = nullptr;
 }
 
 static bool matchesName(const char* const name, int nameLen, const char* const s2)

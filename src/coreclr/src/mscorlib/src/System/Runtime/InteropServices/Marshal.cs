@@ -930,7 +930,6 @@ namespace System.Runtime.InteropServices
         // Creates a new instance of "structuretype" and marshals data from a
         // native memory block to it.
         //====================================================================
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Object PtrToStructure(IntPtr ptr, Type structureType)
         {
             if (ptr == IntPtr.Zero) return null;
@@ -946,9 +945,7 @@ namespace System.Runtime.InteropServices
             if (rt == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(structureType));
 
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            Object structure = rt.CreateInstanceDefaultCtor(false /*publicOnly*/, false /*skipCheckThis*/, false /*fillCache*/, ref stackMark);
+            Object structure = rt.CreateInstanceDefaultCtor(false /*publicOnly*/, false /*skipCheckThis*/, false /*fillCache*/, true /*wrapExceptions*/);
             PtrToStructureHelper(ptr, structure, true);
             return structure;
         }
@@ -1742,15 +1739,15 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
+        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
 
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
+        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
 
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
+        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
 

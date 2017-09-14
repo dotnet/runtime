@@ -25,7 +25,7 @@ namespace System.Threading
         /// Initializes a target reference type with the type's default constructor if the target has not
         /// already been initialized.
         /// </summary>
-        /// <typeparam name="T">The refence type of the reference to be initialized.</typeparam>
+        /// <typeparam name="T">The reference type of the reference to be initialized.</typeparam>
         /// <param name="target">A reference of type <typeparamref name="T"/> to initialize if it has not
         /// already been initialized.</param>
         /// <returns>The initialized reference of type <typeparamref name="T"/>.</returns>

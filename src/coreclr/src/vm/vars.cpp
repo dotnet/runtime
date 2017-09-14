@@ -99,7 +99,6 @@ GPTR_IMPL(MethodTable,      g_pICastableInterface);
 
 GPTR_IMPL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
-GPTR_IMPL(MethodDesc,       g_pObjectCtorMD);
 GPTR_IMPL(MethodDesc,       g_pObjectFinalizerMD);
 
 GPTR_IMPL(Thread,g_pFinalizerThread);

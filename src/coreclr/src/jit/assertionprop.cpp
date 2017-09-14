@@ -524,7 +524,7 @@ ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
 
 void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 {
-    apTraits = new (getAllocator()) BitVecTraits(assertionCount, this);
+    apTraits = new (this, CMK_AssertionProp) BitVecTraits(assertionCount, this);
     apFull   = BitVecOps::MakeFull(apTraits);
 }
 
@@ -547,9 +547,9 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
 
     optLocalAssertionProp  = isLocalProp;
-    optAssertionTabPrivate = new (getAllocator()) AssertionDsc[optMaxAssertionCount];
+    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
     optComplementaryAssertionMap =
-        new (getAllocator()) AssertionIndex[optMaxAssertionCount](); // zero-inited (NO_ASSERTION_INDEX.)
+        new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     assert(NO_ASSERTION_INDEX == 0);
 
     if (!isLocalProp)
@@ -559,7 +559,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     if (optAssertionDep == nullptr)
     {
-        optAssertionDep = new (getAllocator()) ExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
+        optAssertionDep = new (this, CMK_AssertionProp) ExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
     }
 
     optAssertionTraitsInit(optMaxAssertionCount);
@@ -2150,6 +2150,10 @@ void Compiler::optMapComplementary(AssertionIndex assertionIndex, AssertionIndex
     {
         return;
     }
+
+    assert(assertionIndex <= optMaxAssertionCount);
+    assert(index <= optMaxAssertionCount);
+
     optComplementaryAssertionMap[assertionIndex] = index;
     optComplementaryAssertionMap[index]          = assertionIndex;
 }
@@ -3417,7 +3421,7 @@ GenTreePtr Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, const G
     if ((tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK) &&
         ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
     {
-        optRemoveRangeCheck(tree, stmt, true, GTF_ASG, true /* force remove */);
+        optRemoveRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
     }
     return nullptr;
@@ -3471,6 +3475,7 @@ GenTreePtr Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, const Gen
         }
 #endif
         tree->gtFlags &= ~GTF_EXCEPT;
+        tree->gtFlags |= GTF_IND_NONFAULTING;
 
         // Set this flag to prevent reordering
         tree->gtFlags |= GTF_ORDER_SIDEEFF;

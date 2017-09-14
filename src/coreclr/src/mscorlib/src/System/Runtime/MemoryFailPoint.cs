@@ -241,24 +241,20 @@ namespace System.Runtime
                         // Attempt to grow the OS's page file.  Note that we ignore
                         // any allocation routines from the host intentionally.
                         RuntimeHelpers.PrepareConstrainedRegions();
-                        try
+
+                        // This shouldn't overflow due to the if clauses above.
+                        UIntPtr numBytes = new UIntPtr(segmentSize);
+                        unsafe
                         {
-                        }
-                        finally
-                        {
-                            // This shouldn't overflow due to the if clauses above.
-                            UIntPtr numBytes = new UIntPtr(segmentSize);
-                            unsafe
+                            void* pMemory = Win32Native.VirtualAlloc(null, numBytes, Win32Native.MEM_COMMIT, Win32Native.PAGE_READWRITE);
+                            if (pMemory != null)
                             {
-                                void* pMemory = Win32Native.VirtualAlloc(null, numBytes, Win32Native.MEM_COMMIT, Win32Native.PAGE_READWRITE);
-                                if (pMemory != null)
-                                {
-                                    bool r = Win32Native.VirtualFree(pMemory, UIntPtr.Zero, Win32Native.MEM_RELEASE);
-                                    if (!r)
-                                        __Error.WinIOError();
-                                }
+                                bool r = Win32Native.VirtualFree(pMemory, UIntPtr.Zero, Win32Native.MEM_RELEASE);
+                                if (!r)
+                                    throw Win32Marshal.GetExceptionForLastWin32Error();
                             }
                         }
+
                         continue;
 
                     case 2:
@@ -304,14 +300,9 @@ namespace System.Runtime
                 CheckForFreeAddressSpace(segmentSize, true);
 
             RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-            }
-            finally
-            {
-                SharedStatics.AddMemoryFailPointReservation((long)size);
-                _mustSubtractReservation = true;
-            }
+
+            SharedStatics.AddMemoryFailPointReservation((long)size);
+            _mustSubtractReservation = true;
 #endif
         }
 
@@ -321,7 +312,7 @@ namespace System.Runtime
             Win32Native.MEMORYSTATUSEX memory = new Win32Native.MEMORYSTATUSEX();
             r = Win32Native.GlobalMemoryStatusEx(ref memory);
             if (!r)
-                __Error.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             availPageFile = memory.availPageFile;
             totalAddressSpaceFree = memory.availVirtual;
             //Console.WriteLine("Memory gate:  Mem load: {0}%  Available memory (physical + page file): {1} MB  Total free address space: {2} MB  GC Heap: {3} MB", memory.memoryLoad, memory.availPageFile >> 20, memory.availVirtual >> 20, GC.GetTotalMemory(true) >> 20);
@@ -370,7 +361,7 @@ namespace System.Runtime
             {
                 UIntPtr r = Win32Native.VirtualQuery(address, ref memInfo, sizeOfMemInfo);
                 if (r == UIntPtr.Zero)
-                    __Error.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 ulong regionSize = memInfo.RegionSize.ToUInt64();
                 if (memInfo.State == Win32Native.MEM_FREE)
@@ -414,14 +405,9 @@ namespace System.Runtime
             if (_mustSubtractReservation)
             {
                 RuntimeHelpers.PrepareConstrainedRegions();
-                try
-                {
-                }
-                finally
-                {
-                    SharedStatics.AddMemoryFailPointReservation(-((long)_reservedMemory));
-                    _mustSubtractReservation = false;
-                }
+
+                SharedStatics.AddMemoryFailPointReservation(-((long)_reservedMemory));
+                _mustSubtractReservation = false;
             }
 
             /*

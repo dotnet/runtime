@@ -11,19 +11,19 @@ namespace System
         public SystemException()
             : base(SR.Arg_SystemException)
         {
-            HResult = __HResults.COR_E_SYSTEM;
+            HResult = HResults.COR_E_SYSTEM;
         }
 
         public SystemException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_SYSTEM;
+            HResult = HResults.COR_E_SYSTEM;
         }
 
         public SystemException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_SYSTEM;
+            HResult = HResults.COR_E_SYSTEM;
         }
 
         protected SystemException(SerializationInfo info, StreamingContext context) : base(info, context)

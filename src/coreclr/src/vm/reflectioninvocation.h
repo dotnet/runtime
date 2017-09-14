@@ -38,6 +38,7 @@
 #define BINDER_OptionalParamBinding 0x040000
 
 #define BINDER_IgnoreReturn         0x1000000
+#define BINDER_DoNotWrapExceptions  0x2000000
 
 #define BINDER_DefaultLookup        (BINDER_Instance | BINDER_Static | BINDER_Public)
 #define BINDER_AllLookup            (BINDER_Instance | BINDER_Static | BINDER_Public | BINDER_Instance)
@@ -79,8 +80,6 @@ public:
 
     static FCDECL4(void, PerformSecurityCheck, Object *target, MethodDesc *pMeth, ReflectClassBaseObject *pParent, DWORD dwFlags);
     static FCDECL2(void, CheckArgs, PTRArray *objs, SignatureNative sig);
-
-    static FCDECL5(void, PerformVisibilityCheckOnField, FieldDesc *fieldDesc, Object *target, ReflectClassBaseObject *pDeclaringType, DWORD attr, DWORD invocationFlags);
 
     static void PrepareDelegateHelper(OBJECTREF* pDelegate, BOOL onlyContractedMethod);
     static void CanCacheTargetAndCrackedSig(MethodDesc* pMD);

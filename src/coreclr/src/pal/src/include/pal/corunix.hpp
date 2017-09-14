@@ -173,6 +173,15 @@ namespace CorUnix
         void *          // pProcessLocalData
         );
 
+    typedef void (*OBJECT_IMMUTABLE_DATA_COPY_ROUTINE) (
+        void *,
+        void *);
+    typedef void (*OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE) (
+        void *);
+    typedef void (*OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE) (
+        CPalThread *,   // pThread
+        IPalObject *);
+
     enum PalObjectTypeId
     {
         otiAutoResetEvent = 0,
@@ -315,7 +324,10 @@ namespace CorUnix
         OBJECTCLEANUPROUTINE m_pCleanupRoutine;
         OBJECTINITROUTINE m_pInitRoutine;
         DWORD m_dwImmutableDataSize;
+        OBJECT_IMMUTABLE_DATA_COPY_ROUTINE m_pImmutableDataCopyRoutine;
+        OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE m_pImmutableDataCleanupRoutine;
         DWORD m_dwProcessLocalDataSize;
+        OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE m_pProcessLocalDataCleanupRoutine;
         DWORD m_dwSharedDataSize;
         DWORD m_dwSupportedAccessRights;
         // Generic access rights mapping
@@ -335,7 +347,10 @@ namespace CorUnix
             OBJECTCLEANUPROUTINE pCleanupRoutine,
             OBJECTINITROUTINE pInitRoutine,
             DWORD dwImmutableDataSize,
+            OBJECT_IMMUTABLE_DATA_COPY_ROUTINE pImmutableDataCopyRoutine,
+            OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pImmutableDataCleanupRoutine,
             DWORD dwProcessLocalDataSize,
+            OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE pProcessLocalDataCleanupRoutine,
             DWORD dwSharedDataSize,
             DWORD dwSupportedAccessRights,
             SecuritySupport eSecuritySupport,
@@ -352,7 +367,10 @@ namespace CorUnix
             m_pCleanupRoutine(pCleanupRoutine),
             m_pInitRoutine(pInitRoutine),
             m_dwImmutableDataSize(dwImmutableDataSize),
+            m_pImmutableDataCopyRoutine(pImmutableDataCopyRoutine),
+            m_pImmutableDataCleanupRoutine(pImmutableDataCleanupRoutine),
             m_dwProcessLocalDataSize(dwProcessLocalDataSize),
+            m_pProcessLocalDataCleanupRoutine(pProcessLocalDataCleanupRoutine),
             m_dwSharedDataSize(dwSharedDataSize),
             m_dwSupportedAccessRights(dwSupportedAccessRights),
             m_eSecuritySupport(eSecuritySupport),
@@ -408,6 +426,38 @@ namespace CorUnix
             return  m_dwImmutableDataSize;
         };
         
+        void
+        SetImmutableDataCopyRoutine(
+            OBJECT_IMMUTABLE_DATA_COPY_ROUTINE ptr
+            )
+        {
+            m_pImmutableDataCopyRoutine = ptr;
+        };
+
+        OBJECT_IMMUTABLE_DATA_COPY_ROUTINE
+        GetImmutableDataCopyRoutine(
+            void
+            )
+        {
+            return m_pImmutableDataCopyRoutine;
+        };
+
+        void
+        SetImmutableDataCleanupRoutine(
+            OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE ptr
+            )
+        {
+            m_pImmutableDataCleanupRoutine = ptr;
+        };
+
+        OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE
+        GetImmutableDataCleanupRoutine(
+            void
+            )
+        {
+            return m_pImmutableDataCleanupRoutine;
+        }
+
         DWORD
         GetProcessLocalDataSize(
             void
@@ -415,7 +465,15 @@ namespace CorUnix
         {
             return m_dwProcessLocalDataSize;
         };
-        
+
+        OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE
+        GetProcessLocalDataCleanupRoutine(
+            void
+            )
+        {
+            return m_pProcessLocalDataCleanupRoutine;
+        }
+
         DWORD
         GetSharedDataSize(
             void

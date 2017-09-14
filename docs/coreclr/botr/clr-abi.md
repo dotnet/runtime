@@ -585,9 +585,9 @@ The CLR unwinder assumes any non-leaf frame was unwound as a result of a call. T
 
 If the JIT gets passed `CORJIT_FLG_PROF_ENTERLEAVE`, then the JIT might need to insert native entry/exit/tail call probes. To determine for sure, the JIT must call GetProfilingHandle. This API returns as out parameters, the true dynamic boolean indicating if the JIT should actually insert the probes and a parameter to pass to the callbacks (typed as void*), with an optional indirection (used for NGEN). This parameter is always the first argument to all of the call-outs (thus placed in the usual first argument register `RCX` (AMD64) or `R0` (ARM, ARM64)).
 
-Outside of the prolog (in a GC interruptible location), the JIT injects a call to `CORINFO_HELP_PROF_FCN_ENTER`. For AMD64, all argument registers will be homed into their caller-allocated stack locations (similar to varargs). For ARM and ARM64, all arguments are prespilled (again similar to varargs).
+Outside of the prolog (in a GC interruptible location), the JIT injects a call to `CORINFO_HELP_PROF_FCN_ENTER`. For AMD64,  on Windows all argument registers will be homed into their caller-allocated stack locations (similar to varargs), on Unix all argument registers will be stored in the inner structure. For ARM and ARM64, all arguments are prespilled (again similar to varargs).
 
-After computing the return value and storing it in the correct register, but before any epilog code (including before a possible GS cookie check), the JIT injects a call to `CORINFO_HELP_PROF_FCN_LEAVE`. For AMD64 this call must preserve the return register: `RAX` or `XMM0`. For ARM, the return value will be moved from `R0` to `R2` (if it was in `R0`), `R1`, `R2`, and `S0/D0` must be preserved by the callee (longs will be `R2`, `R1` - note the unusual ordering of the registers, floats in `S0`, doubles in `D0`, smaller integrals in `R2`).
+After computing the return value and storing it in the correct register, but before any epilog code (including before a possible GS cookie check), the JIT injects a call to `CORINFO_HELP_PROF_FCN_LEAVE`. For AMD64 this call must preserve the return register: `RAX` or `XMM0` on Windows and `RAX` and `RDX` or `XMM0` and `XMM1` on Unix. For ARM, the return value will be moved from `R0` to `R2` (if it was in `R0`), `R1`, `R2`, and `S0/D0` must be preserved by the callee (longs will be `R2`, `R1` - note the unusual ordering of the registers, floats in `S0`, doubles in `D0`, smaller integrals in `R2`).
 
 TODO: describe ARM64 profile leave conventions.
 
@@ -667,3 +667,35 @@ The general rules outlined in the System V x86_64 ABI (described at http://www.x
 3. The JIT proactively generates frame register frames (with `RBP` as a frame register) in order to aid the native OS tooling for stack unwinding and the like.
 4. All the other internal VM contracts for PInvoke, EH, and generic support remains in place. Please see the relevant sections above for more details. Note, however, that the registers used are different on System V due to the different calling convention. For example, the integer argument registers are, in order, RDI, RSI, RDX, RCX, R8, and R9. Thus, where the first argument (typically, the "this" pointer) on Windows AMD64 goes in RCX, on System V it goes in RDI, and so forth.   
 5. Structs with explicit layout are always passed by value on the stack.
+6. The following table describes register usage according to the System V x86_64 ABI
+
+```
+| Register     | Usage                                   | Preserved across  |
+|              |                                         | function calls    |
+|--------------|-----------------------------------------|-------------------|
+| %rax         | temporary register; with variable argu- | No                |
+|              | ments passes information about the      |                   |
+|              | number of SSE registers used;           |                   |
+|              | 1st return argument                     |                   |
+| %rbx         | callee-saved register; optionally used  | Yes               |
+|              | as base pointer                         |                   |
+| %rcx         | used to pass 4st integer argument to    | No                |
+|              | to functions                            |                   |
+| %rdx         | used to pass 3rd argument to functions  | No                |
+|              | 2nd return register                     |                   |
+| %rsp         | stack pointer                           | Yes               |
+| %rbp         | callee-saved register; optionally used  | Yes               |
+|              | as frame pointer                        |                   |
+| %rsi         | used to pass 2nd argument to functions  | No                |
+| %rdi         | used to pass 1st argument to functions  | No                |
+| %r8          | used to pass 5th argument to functions  | No                |
+| %r9          | used to pass 6th argument to functions  | No                |
+| %r10         | temporary register, used for passing a  | No                |
+|              | function's static chain pointer         |                   |
+| %r11         | temporary register                      | No                |
+| %r12-%r15    | callee-saved registers                  | Yes               |
+| %xmm0-%xmm1  | used to pass and return floating point  | No                |
+|              | arguments                               |                   |
+| %xmm2-%xmm7  | used to pass floating point arguments   | No                |
+| %xmm8-%xmm15 | temporary registers                     | No                |
+```

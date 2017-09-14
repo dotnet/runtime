@@ -607,7 +607,8 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             // check provided by codegen.
             //
 
-            loResult = loSrcOp;
+            const bool signExtend = (cast->gtFlags & GTF_UNSIGNED) == 0;
+            loResult              = EnsureIntSized(loSrcOp, signExtend);
 
             hiResult                       = cast;
             hiResult->gtType               = TYP_INT;
@@ -657,7 +658,9 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             }
             else if (varTypeIsUnsigned(srcType))
             {
-                loResult = cast->gtGetOp1();
+                const bool signExtend = (cast->gtFlags & GTF_UNSIGNED) == 0;
+                loResult              = EnsureIntSized(cast->gtGetOp1(), signExtend);
+
                 hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
 
                 Range().InsertAfter(cast, hiResult);
@@ -989,10 +992,13 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
 
     if ((oper == GT_ADD) || (oper == GT_SUB))
     {
+        loResult->gtFlags |= GTF_SET_FLAGS;
+        hiResult->gtFlags |= GTF_USE_FLAGS;
+
         if (loResult->gtOverflow())
         {
-            hiResult->gtFlags |= GTF_OVERFLOW;
-            loResult->gtFlags &= ~GTF_OVERFLOW;
+            hiResult->gtFlags |= GTF_OVERFLOW | GTF_EXCEPT;
+            loResult->gtFlags &= ~(GTF_OVERFLOW | GTF_EXCEPT);
         }
         if (loResult->gtFlags & GTF_UNSIGNED)
         {
@@ -1423,7 +1429,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
         GenTreeArgList* argList = m_compiler->gtNewArgList(loOp1, hiOp1, shiftByOp);
 
-        GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
+        GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())
@@ -1915,6 +1921,43 @@ GenTree* DecomposeLongs::RepresentOpAsLocalVar(GenTree* op, GenTree* user, GenTr
         opUse.ReplaceWithLclVar(m_compiler, m_blockWeight);
         return *edge;
     }
+}
+
+//------------------------------------------------------------------------
+// DecomposeLongs::EnsureIntSized:
+//    Checks to see if the given node produces an int-sized value and
+//    performs the appropriate widening if it does not.
+//
+// Arguments:
+//    node       - The node that may need to be widened.
+//    signExtend - True if the value should be sign-extended; false if it
+//                 should be zero-extended.
+//
+// Return Value:
+//    The node that produces the widened value.
+GenTree* DecomposeLongs::EnsureIntSized(GenTree* node, bool signExtend)
+{
+    assert(node != nullptr);
+    if (!varTypeIsSmall(node))
+    {
+        assert(genTypeSize(node) == genTypeSize(TYP_INT));
+        return node;
+    }
+
+    if (node->OperIs(GT_LCL_VAR) && !m_compiler->lvaTable[node->AsLclVarCommon()->gtLclNum].lvNormalizeOnLoad())
+    {
+        node->gtType = TYP_INT;
+        return node;
+    }
+
+    GenTree* const cast = m_compiler->gtNewCastNode(TYP_INT, node, node->TypeGet());
+    if (!signExtend)
+    {
+        cast->gtFlags |= GTF_UNSIGNED;
+    }
+
+    Range().InsertAfter(node, cast);
+    return cast;
 }
 
 //------------------------------------------------------------------------

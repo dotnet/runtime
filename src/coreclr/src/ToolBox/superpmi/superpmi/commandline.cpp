@@ -8,6 +8,7 @@
 //----------------------------------------------------------
 
 #include "standardpch.h"
+#include "lightweightmap.h"
 #include "commandline.h"
 #include "superpmi.h"
 #include "mclist.h"
@@ -108,11 +109,22 @@ void CommandLine::DumpHelp(const char* program)
     printf("     Used by the assembly differences calculator. This specifies the target\n");
     printf("     architecture for cross-compilation. Currently allowed <target> value: arm64\n");
     printf("\n");
-#ifdef USE_COREDISTOOLS
     printf(" -coredistools\n");
     printf("     Use disassembly tools from the CoreDisTools library\n");
-    printf("\n");
+#if defined(USE_MSVCDIS)
+    printf("     Default: use MSVCDIS.\n");
+#elif defined(USE_COREDISTOOLS)
+    printf("     Ignored: MSVCDIS is not available, so CoreDisTools will be used.\n");
+#else
+    printf("     Ignored: neither MSVCDIS nor CoreDisTools is available.\n");
 #endif // USE_COREDISTOOLS
+    printf("\n");
+    printf(" -jitoption key=value\n");
+    printf("     Set the JIT option named \"key\" to \"value\" for JIT 1. NOTE: do not use a \"COMPlus_\" prefix!\n");
+    printf("\n");
+    printf(" -jit2option key=value\n");
+    printf("     Set the JIT option named \"key\" to \"value\" for JIT 2. NOTE: do not use a \"COMPlus_\" prefix!\n");
+    printf("\n");
     printf("Inputs are case sensitive.\n");
     printf("\n");
     printf("SuperPMI method contexts are stored in files with extension .MC, implying\n");
@@ -133,6 +145,40 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; same as above, but use all available processors to compile in parallel\n");
     printf(" %s -f fail.mcl " MAKEDLLNAME_A("clrjit") " test.mch\n", program);
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
+}
+
+static bool ParseJitOption(const char* optionString, wchar_t** key, wchar_t **value)
+{
+    char tempKey[1024];
+
+    unsigned i;
+    for (i = 0; optionString[i] != '='; i++)
+    {
+        if ((i >= 1023) || (optionString[i] == '\0'))
+        {
+            return false;
+        }
+        tempKey[i] = optionString[i];
+    }
+    tempKey[i] = '\0';
+
+    const char* tempVal = &optionString[i + 1];
+    if (tempVal[0] == '\0')
+    {
+        return false;
+    }
+
+    const unsigned keyLen = i;
+    wchar_t* keyBuf = new wchar_t[keyLen + 1];
+    MultiByteToWideChar(CP_UTF8, 0, tempKey, keyLen + 1, keyBuf, keyLen + 1);
+
+    const unsigned valLen = (unsigned)strlen(tempVal);
+    wchar_t* valBuf = new wchar_t[valLen + 1];
+    MultiByteToWideChar(CP_UTF8, 0, tempVal, valLen + 1, valBuf, valLen + 1);
+
+    *key = keyBuf;
+    *value = valBuf;
+    return true;
 }
 
 // Assumption: All inputs are initialized to default or real value.  we'll just set the stuff we see on the command
@@ -353,12 +399,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 o->compileList = argv[i]; // Save this in case we need it for -parallel.
             }
-#ifdef USE_COREDISTOOLS
             else if ((_strnicmp(&argv[i][1], "coredistools", argLen) == 0))
             {
+#ifndef USE_COREDISTOOLS // If USE_COREDISTOOLS is not defined, then allow the switch, but ignore it.
                 o->useCoreDisTools = true;
-            }
 #endif // USE_COREDISTOOLS
+            }
             else if ((_strnicmp(&argv[i][1], "matchHash", argLen) == 0))
             {
                 if (++i >= argc)
@@ -475,6 +521,52 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     DumpHelp(argv[0]);
                     return false;
                 }
+            }
+            else if ((_strnicmp(&argv[i][1], "jitoption", argLen) == 0))
+            {
+                i++;
+
+                wchar_t *key, *value;
+                if ((i >= argc) || !ParseJitOption(argv[i], &key, &value))
+                {
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                if (o->jitOptions == nullptr)
+                {
+                    o->jitOptions = new LightWeightMap<DWORD, DWORD>();
+                }
+
+                DWORD keyIndex = (DWORD)o->jitOptions->AddBuffer((unsigned char*)key, sizeof(wchar_t) * ((unsigned int)wcslen(key) + 1));
+                DWORD valueIndex = (DWORD)o->jitOptions->AddBuffer((unsigned char*)value, sizeof(wchar_t) * ((unsigned int)wcslen(value) + 1));
+                o->jitOptions->Add(keyIndex, valueIndex);
+
+                delete[] key;
+                delete[] value;
+            }
+            else if ((_strnicmp(&argv[i][1], "jit2option", argLen) == 0))
+            {
+                i++;
+
+                wchar_t *key, *value;
+                if ((i >= argc) || !ParseJitOption(argv[i], &key, &value))
+                {
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                if (o->jit2Options == nullptr)
+                {
+                    o->jit2Options = new LightWeightMap<DWORD, DWORD>();
+                }
+
+                DWORD keyIndex = (DWORD)o->jit2Options->AddBuffer((unsigned char*)key, sizeof(wchar_t) * ((unsigned int)wcslen(key) + 1));
+                DWORD valueIndex = (DWORD)o->jit2Options->AddBuffer((unsigned char*)value, sizeof(wchar_t) * ((unsigned int)wcslen(value) + 1));
+                o->jit2Options->Add(keyIndex, valueIndex);
+
+                delete[] key;
+                delete[] value;
             }
             else
             {

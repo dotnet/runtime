@@ -88,7 +88,11 @@ private:
         kMaxCodeBuffer = 2 + 3 + 1, // WORD slots in our redirect buffer (2 for current instruction, 3 for
                                     // breakpoint instructions used to pad out slots in an IT block and one
                                     // for the final breakpoint)
+#ifdef __linux__
+        kBreakpointOp = 0xde01,     // Opcode for the breakpoint instruction used on ARM Linux
+#else
         kBreakpointOp = 0xdefe,     // Opcode for the breakpoint instruction used on CoreARM
+#endif
     };
 
     // Bit numbers of the condition flags in the CPSR.

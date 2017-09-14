@@ -18,9 +18,9 @@ namespace System.Globalization
 
             const uint LCMAP_SORTHANDLE = 0x20000000;
 
-            long handle;
+            IntPtr handle;
             int ret = Interop.Kernel32.LCMapStringEx(_textInfoName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
-            _sortHandle = ret > 0 ? (IntPtr)handle : IntPtr.Zero;
+            _sortHandle = ret > 0 ? handle : IntPtr.Zero;
         }
 
         private unsafe string ChangeCase(string s, bool toUpper)

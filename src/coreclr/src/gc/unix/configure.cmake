@@ -54,4 +54,4 @@ check_cxx_source_runs("
 
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

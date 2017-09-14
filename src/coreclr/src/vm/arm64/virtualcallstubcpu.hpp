@@ -217,8 +217,8 @@ struct ResolveHolder
          //w13- this._hashedToken
          //ldr w13, [x10 + DATA_OFFSET(_hashedToken)]
          offset = DATA_OFFSET(_hashedToken);
-         _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._resolveEntryPoint[n++] = 0xB940014D | offset<<7;
+         _ASSERTE(offset >=0 && offset%4 == 0);
+         _stub._resolveEntryPoint[n++] = 0xB940014D | offset<<8;
 
          //eor x9,x9,x13
          _stub._resolveEntryPoint[n++] = 0xCA0D0129;

@@ -22,6 +22,7 @@ PAL_GetResourceString
 PAL_get_stdout
 PAL_get_stderr
 PAL_GetCurrentThread
+PAL_GetCpuLimit
 PAL_GetSymbolModuleBase
 PAL_GetTransportPipeName
 PAL_InitializeDLL
@@ -40,6 +41,7 @@ PAL__wcstoui64
 PAL_wcstoul
 PAL_iswprint
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange
+PAL_VirtualUnwindOutOfProc
 PAL_wcslen
 PAL_wcsncmp
 PAL_wcsrchr

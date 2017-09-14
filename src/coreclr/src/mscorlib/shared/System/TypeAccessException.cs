@@ -13,19 +13,19 @@ namespace System
         public TypeAccessException()
             : base(SR.Arg_TypeAccessException)
         {
-            HResult = __HResults.COR_E_TYPEACCESS;
+            HResult = HResults.COR_E_TYPEACCESS;
         }
 
         public TypeAccessException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_TYPEACCESS;
+            HResult = HResults.COR_E_TYPEACCESS;
         }
 
         public TypeAccessException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_TYPEACCESS;
+            HResult = HResults.COR_E_TYPEACCESS;
         }
 
         protected TypeAccessException(SerializationInfo info, StreamingContext context) : base(info, context)

@@ -163,7 +163,7 @@ public class StringCompareOrdinal2
                 int ActualResult = string.CompareOrdinal(strA, indexA, strB, indexB, length);
                 if (ActualResult < 0 || ActualResult == 0)
                 {
-                    TestLibrary.TestFramework.LogError("005", "Null string and not null string CompareOrdinal Expected Result is less 0£¬Actual Result is ( " + ActualResult + ")");
+                    TestLibrary.TestFramework.LogError("005", "Null string and not null string CompareOrdinal Expected Result is less 0,Actual Result is ( " + ActualResult + ")");
                     retVal = false;
                 }
             }
@@ -195,7 +195,7 @@ public class StringCompareOrdinal2
             int ActualResult = string.CompareOrdinal(strA, indexA, strB, indexB, length);
             if (ActualResult != 0)
             {
-                TestLibrary.TestFramework.LogError("007", "Two like not NullStrings CompareOrdinal one ExpectResult is 0,ActulResult is (" + ActualResult + ")");
+                TestLibrary.TestFramework.LogError("007", "Two like not NullStrings CompareOrdinal one ExpectResult is 0,ActualResult is (" + ActualResult + ")");
                 retVal = false;
             }
         }

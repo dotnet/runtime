@@ -6,7 +6,7 @@
 #ifndef _JITHOST
 #define _JITHOST
 
-class JitHost : public ICorJitHost
+class JitHost final: public ICorJitHost
 {
 public:
     JitHost(JitInstance& jitInstance);

@@ -20,19 +20,19 @@ namespace System
         public FormatException()
             : base(SR.Arg_FormatException)
         {
-            HResult = __HResults.COR_E_FORMAT;
+            HResult = HResults.COR_E_FORMAT;
         }
 
         public FormatException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_FORMAT;
+            HResult = HResults.COR_E_FORMAT;
         }
 
         public FormatException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_FORMAT;
+            HResult = HResults.COR_E_FORMAT;
         }
 
         protected FormatException(SerializationInfo info, StreamingContext context) : base(info, context)

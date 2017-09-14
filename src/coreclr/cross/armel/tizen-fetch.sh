@@ -155,7 +155,7 @@ fetch_tizen_pkgs()
 }
 
 Inform "Initialize base"
-fetch_tizen_pkgs_init arm base
+fetch_tizen_pkgs_init standard base
 Inform "fetch common packages"
 fetch_tizen_pkgs armv7l gcc glibc glibc-devel
 fetch_tizen_pkgs noarch linux-glibc-devel

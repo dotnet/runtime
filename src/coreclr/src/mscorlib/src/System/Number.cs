@@ -286,12 +286,8 @@ namespace System
     //
     //This class contains only static members and does not need to be serializable 
     [System.Runtime.CompilerServices.FriendAccessAllowed]
-    internal class Number
+    internal static class Number
     {
-        private Number()
-        {
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern String FormatDecimal(Decimal value, String format, NumberFormatInfo info);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -666,7 +662,7 @@ namespace System
             return null;
         }
 
-        internal unsafe static Decimal ParseDecimal(String value, NumberStyles options, NumberFormatInfo numfmt)
+        internal unsafe static Decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -681,13 +677,8 @@ namespace System
             return result;
         }
 
-        internal unsafe static Double ParseDouble(String value, NumberStyles options, NumberFormatInfo numfmt)
+        internal unsafe static Double ParseDouble(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
             Double d = 0;
@@ -697,16 +688,16 @@ namespace System
                 //If we failed TryStringToNumber, it may be from one of our special strings.
                 //Check the three with which we're concerned and rethrow if it's not one of
                 //those strings.
-                String sTrim = value.Trim();
-                if (sTrim.Equals(numfmt.PositiveInfinitySymbol))
+                ReadOnlySpan<char> sTrim = value.Trim();
+                if (StringSpanHelpers.Equals(sTrim, numfmt.PositiveInfinitySymbol))
                 {
                     return Double.PositiveInfinity;
                 }
-                if (sTrim.Equals(numfmt.NegativeInfinitySymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NegativeInfinitySymbol))
                 {
                     return Double.NegativeInfinity;
                 }
-                if (sTrim.Equals(numfmt.NaNSymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NaNSymbol))
                 {
                     return Double.NaN;
                 }
@@ -721,7 +712,7 @@ namespace System
             return d;
         }
 
-        internal unsafe static Int32 ParseInt32(String s, NumberStyles style, NumberFormatInfo info)
+        internal unsafe static Int32 ParseInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -746,7 +737,7 @@ namespace System
             return i;
         }
 
-        internal unsafe static Int64 ParseInt64(String value, NumberStyles options, NumberFormatInfo numfmt)
+        internal unsafe static Int64 ParseInt64(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -985,13 +976,8 @@ namespace System
             return false;
         }
 
-        internal unsafe static Single ParseSingle(String value, NumberStyles options, NumberFormatInfo numfmt)
+        internal unsafe static Single ParseSingle(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
             Double d = 0;
@@ -1001,16 +987,16 @@ namespace System
                 //If we failed TryStringToNumber, it may be from one of our special strings.
                 //Check the three with which we're concerned and rethrow if it's not one of
                 //those strings.
-                String sTrim = value.Trim();
-                if (sTrim.Equals(numfmt.PositiveInfinitySymbol))
+                ReadOnlySpan<char> sTrim = value.Trim();
+                if (StringSpanHelpers.Equals(sTrim, numfmt.PositiveInfinitySymbol))
                 {
                     return Single.PositiveInfinity;
                 }
-                if (sTrim.Equals(numfmt.NegativeInfinitySymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NegativeInfinitySymbol))
                 {
                     return Single.NegativeInfinity;
                 }
-                if (sTrim.Equals(numfmt.NaNSymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NaNSymbol))
                 {
                     return Single.NaN;
                 }
@@ -1029,7 +1015,7 @@ namespace System
             return castSingle;
         }
 
-        internal unsafe static UInt32 ParseUInt32(String value, NumberStyles options, NumberFormatInfo numfmt)
+        internal unsafe static UInt32 ParseUInt32(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1055,7 +1041,7 @@ namespace System
             return i;
         }
 
-        internal unsafe static UInt64 ParseUInt64(String value, NumberStyles options, NumberFormatInfo numfmt)
+        internal unsafe static UInt64 ParseUInt64(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1079,15 +1065,10 @@ namespace System
             return i;
         }
 
-        private unsafe static void StringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal)
+        private unsafe static void StringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(String));
-            }
-            Contract.EndContractBlock();
             Debug.Assert(info != null, "");
-            fixed (char* stringPointer = str)
+            fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {
                 char* p = stringPointer;
                 if (!ParseNumber(ref p, options, ref number, null, info, parseDecimal)
@@ -1098,7 +1079,7 @@ namespace System
             }
         }
 
-        private static Boolean TrailingZeros(String s, Int32 index)
+        private static Boolean TrailingZeros(ReadOnlySpan<char> s, Int32 index)
         {
             // For compatibility, we need to allow trailing zeros at the end of a number string
             for (int i = index; i < s.Length; i++)
@@ -1111,7 +1092,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static Boolean TryParseDecimal(String value, NumberStyles options, NumberFormatInfo numfmt, out Decimal result)
+        internal unsafe static Boolean TryParseDecimal(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out Decimal result)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1129,7 +1110,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static Boolean TryParseDouble(String value, NumberStyles options, NumberFormatInfo numfmt, out Double result)
+        internal unsafe static Boolean TryParseDouble(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out Double result)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1147,7 +1128,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static Boolean TryParseInt32(String s, NumberStyles style, NumberFormatInfo info, out Int32 result)
+        internal unsafe static Boolean TryParseInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out Int32 result)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1175,7 +1156,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static Boolean TryParseInt64(String s, NumberStyles style, NumberFormatInfo info, out Int64 result)
+        internal unsafe static Boolean TryParseInt64(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out Int64 result)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1203,7 +1184,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static Boolean TryParseSingle(String value, NumberStyles options, NumberFormatInfo numfmt, out Single result)
+        internal unsafe static Boolean TryParseSingle(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out Single result)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1228,7 +1209,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static Boolean TryParseUInt32(String s, NumberStyles style, NumberFormatInfo info, out UInt32 result)
+        internal unsafe static Boolean TryParseUInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out UInt32 result)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1256,7 +1237,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static Boolean TryParseUInt64(String s, NumberStyles style, NumberFormatInfo info, out UInt64 result)
+        internal unsafe static Boolean TryParseUInt64(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out UInt64 result)
         {
             Byte* numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
             NumberBuffer number = new NumberBuffer(numberBufferBytes);
@@ -1284,24 +1265,19 @@ namespace System
             return true;
         }
 
-        internal static Boolean TryStringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, Boolean parseDecimal)
-        {
-            return TryStringToNumber(str, options, ref number, null, numfmt, parseDecimal);
-        }
-
         [System.Runtime.CompilerServices.FriendAccessAllowed]
-        internal unsafe static Boolean TryStringToNumber(String str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, Boolean parseDecimal)
-        {
-            if (str == null)
-            {
-                return false;
-            }
-            Debug.Assert(numfmt != null, "");
+        internal unsafe static Boolean TryStringToNumber(String str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, Boolean parseDecimal) =>
+            str != null ?
+                TryStringToNumber(str.AsReadOnlySpan(), options, ref number, numfmt, parseDecimal) :
+                false;
 
-            fixed (char* stringPointer = str)
+        internal static unsafe Boolean TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, Boolean parseDecimal)
+        {
+            Debug.Assert(numfmt != null, "");
+            fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {
                 char* p = stringPointer;
-                if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal)
+                if (!ParseNumber(ref p, options, ref number, null, numfmt, parseDecimal)
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
                 {
                     return false;

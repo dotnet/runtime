@@ -106,19 +106,19 @@ namespace System.Text
         public DecoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ARGUMENT;
+            HResult = HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message, byte[] bytesUnknown, int index)

@@ -33,8 +33,6 @@ struct DhContext
 
 class GCScan
 {
-    friend struct ::_DacGlobals;
-
   public:
 
     static void GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc);

@@ -22,7 +22,7 @@ namespace System.Threading
     {
         internal ThreadAbortException()
         {
-            HResult = __HResults.COR_E_THREADABORTED;
+            HResult = HResults.COR_E_THREADABORTED;
         }
 
         public object ExceptionState => null;

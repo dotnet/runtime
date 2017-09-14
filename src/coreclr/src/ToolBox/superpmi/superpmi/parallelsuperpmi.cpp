@@ -7,6 +7,7 @@
 #include "superpmi.h"
 #include "simpletimer.h"
 #include "mclist.h"
+#include "lightweightmap.h"
 #include "commandline.h"
 #include "errorhandling.h"
 
@@ -359,6 +360,26 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     ADDARG_STRING(o.hash, "-matchHash");
     ADDARG_STRING(o.targetArchitecture, "-target");
     ADDARG_STRING(o.compileList, "-compile");
+
+    if (o.jitOptions != nullptr)
+    {
+        for (unsigned i = 0; i < o.jitOptions->GetCount(); i++)
+        {
+            wchar_t* key = (wchar_t*)o.jitOptions->GetBuffer(o.jitOptions->GetKey(i));
+            wchar_t* value = (wchar_t*)o.jitOptions->GetBuffer(o.jitOptions->GetItem(i));
+            bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -jitoption %S=%S", key, value);
+        }
+    }
+
+    if (o.jit2Options != nullptr)
+    {
+        for (unsigned i = 0; i < o.jit2Options->GetCount(); i++)
+        {
+            wchar_t* key = (wchar_t*)o.jit2Options->GetBuffer(o.jit2Options->GetKey(i));
+            wchar_t* value = (wchar_t*)o.jit2Options->GetBuffer(o.jit2Options->GetItem(i));
+            bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -jit2option %S=%S", key, value);
+        }
+    }
 
     ADDSTRING(o.nameOfJit);
     ADDSTRING(o.nameOfJit2);
