@@ -154,7 +154,16 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         {
             string newTitle = new string('a', int.Parse(lengthOfTitleString));
             Console.Title = newTitle;
-            Assert.Equal(newTitle, Console.Title);
+
+            if (newTitle.Length > 513 && PlatformDetection.IsWindowsRedStone2)
+            {
+                // RS2 has a bug when getting the window title when the title length is longer than 513 character
+                Assert.Throws<IOException>(() => Console.Title);
+            }
+            else
+            {
+                Assert.Equal(newTitle, Console.Title);
+            }
             return SuccessExitCode;
         }, lengthOfTitle.ToString()).Dispose();
     }
