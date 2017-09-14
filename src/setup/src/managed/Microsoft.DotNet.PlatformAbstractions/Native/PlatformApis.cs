@@ -151,11 +151,17 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
         private static DistroInfo NormalizeDistroInfo(DistroInfo distroInfo)
         {
             // Handle if VersionId is null by just setting the index to -1.
-            int minorVersionNumberSeparatorIndex = distroInfo.VersionId?.IndexOf('.') ?? -1;
+            int lastVersionNumberSeparatorIndex = distroInfo.VersionId?.IndexOf('.') ?? -1;
 
-            if (distroInfo.Id == "rhel" && minorVersionNumberSeparatorIndex != -1)
+            if (lastVersionNumberSeparatorIndex != -1 && distroInfo.Id == "alpine")
             {
-                distroInfo.VersionId = distroInfo.VersionId.Substring(0, minorVersionNumberSeparatorIndex);
+                // For Alpine, the version reported has three components, so we need to find the second version separator
+                lastVersionNumberSeparatorIndex = distroInfo.VersionId.IndexOf('.', lastVersionNumberSeparatorIndex + 1);
+            }
+
+            if (lastVersionNumberSeparatorIndex != -1 && (distroInfo.Id == "rhel" || distroInfo.Id == "alpine"))
+            {
+                distroInfo.VersionId = distroInfo.VersionId.Substring(0, lastVersionNumberSeparatorIndex);
             }
 
             return distroInfo;

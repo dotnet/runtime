@@ -22,13 +22,14 @@ init_rid_plat()
         __rid_plat=""
         if [ -e /etc/os-release ]; then
             source /etc/os-release
-            if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
-                __rid_plat="rhel.7"
-            elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
-                __rid_plat="rhel.7"
-            else
-                __rid_plat="$ID.$VERSION_ID"
+            if [[ "$ID" == "centos" ]]; then
+                ID="rhel"
             fi
+            if [[ "$ID" == "rhel" || "$ID" == "alpine" ]]; then
+                # remove the last version number
+                VERSION_ID=${VERSION_ID%.*}
+            fi
+            __rid_plat="$ID.$VERSION_ID"
         elif [ -e /etc/redhat-release ]; then
             local redhatRelease=$(</etc/redhat-release)
             if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
