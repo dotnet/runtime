@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IVectorView<T> _this = JitHelpers.UnsafeCast<IVectorView<T>>(this);
+            IVectorView<T> _this = Unsafe.As<IVectorView<T>>(this);
 
             try
             {
@@ -68,12 +68,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (target != null)
             {
-                return (JitHelpers.UnsafeCast<Indexer_Get_Delegate<T>>(target))(index);
+                return (Unsafe.As<Indexer_Get_Delegate<T>>(target))(index);
             }
 
             if (fUseString)
             {
-                return JitHelpers.UnsafeCast<T>(Indexer_Get<string>(index));
+                return Unsafe.As<T>(Indexer_Get<string>(index));
             }
 
             return Indexer_Get<T>(index);

@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [Pure]
         internal int Count()
         {
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
             uint size = _this.Size;
             if (((uint)Int32.MaxValue) < size)
             {
@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentException(SR.Argument_IndexOutOfArrayBounds);
 
             // We need to verify the index as we;
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
 
             for (uint i = 0; i < srcLen; i++)
             {
