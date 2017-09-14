@@ -2135,6 +2135,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 //    - Narrow operands to enable memory operand containment (XARCH specific).
 //    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH/Arm64 specific but could
 //      be used for ARM as well if support for GT_TEST_EQ/GT_TEST_NE is added).
+//    - Transform TEST(x, LSH(1, y)) into BT(x, y) (XARCH specific)
 
 void Lowering::LowerCompare(GenTree* cmp)
 {
@@ -2532,6 +2533,54 @@ void Lowering::LowerCompare(GenTree* cmp)
 #endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 
 #ifdef _TARGET_XARCH_
+    if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
+    {
+        //
+        // Transform TEST_EQ|NE(x, LSH(1, y)) into BT(x, y) when possible. Using BT
+        // results in smaller and faster code. It also doesn't have special register
+        // requirements, unlike LSH that requires the shift count to be in ECX.
+        // Note that BT has the same behavior as LSH when the bit index exceeds the
+        // operand bit size - it uses (bit_index MOD bit_size).
+        //
+
+        GenTree* lsh = cmp->gtGetOp2();
+        LIR::Use cmpUse;
+
+        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh->TypeGet()) && lsh->gtGetOp1()->IsIntegralConst(1) &&
+            BlockRange().TryGetUse(cmp, &cmpUse))
+        {
+            genTreeOps condition = cmp->OperIs(GT_TEST_NE) ? GT_LT : GT_GE;
+
+            cmp->SetOper(GT_BT);
+            cmp->gtType = TYP_VOID;
+            cmp->gtFlags |= GTF_SET_FLAGS;
+            cmp->gtOp.gtOp2 = lsh->gtGetOp2();
+            cmp->gtGetOp2()->ClearContained();
+
+            BlockRange().Remove(lsh->gtGetOp1());
+            BlockRange().Remove(lsh);
+
+            GenTreeCC* cc;
+
+            if (cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                cmpUse.User()->ChangeOper(GT_JCC);
+                cc              = cmpUse.User()->AsCC();
+                cc->gtCondition = condition;
+            }
+            else
+            {
+                cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
+                BlockRange().InsertAfter(cmp, cc);
+                cmpUse.ReplaceWith(comp, cc);
+            }
+
+            cc->gtFlags |= GTF_USE_FLAGS | GTF_UNSIGNED;
+
+            return;
+        }
+    }
+
     if (cmp->gtGetOp1()->TypeGet() == cmp->gtGetOp2()->TypeGet())
     {
         if (varTypeIsSmall(cmp->gtGetOp1()->TypeGet()) && varTypeIsUnsigned(cmp->gtGetOp1()->TypeGet()))

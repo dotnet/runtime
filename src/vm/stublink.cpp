@@ -888,7 +888,9 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
     int globalsize = 0;
     int size = CalculateSize(&globalsize);
 
+#ifndef CROSSGEN_COMPILE
     _ASSERTE(!pHeap || pHeap->IsExecutable());
+#endif
 
     StubHolder<Stub> pStub;
 
