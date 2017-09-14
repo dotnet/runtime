@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
@@ -31,6 +33,19 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new object[] { new MinLengthAttribute(0), new List<int>(new int[0]) };
             yield return new object[] { new MinLengthAttribute(12), new List<int>(new int[14]) };
             yield return new object[] { new MinLengthAttribute(16), new List<string>(new string[16]) };
+
+            //ICollection<T> but not ICollection
+            yield return new object[] { new MinLengthAttribute(0), new HashSet<int>() };
+            yield return new object[] { new MinLengthAttribute(12), new HashSet<int>(Enumerable.Range(1, 14)) };
+            yield return new object[] { new MinLengthAttribute(16), new HashSet<string>(Enumerable.Range(1, 16).Select(i => i.ToString())) };
+
+            //ICollection but not ICollection<T>
+            yield return new object[] { new MinLengthAttribute(0), new ArrayList(new int[0]) };
+            yield return new object[] { new MinLengthAttribute(12), new ArrayList(new int[14]) };
+            yield return new object[] { new MinLengthAttribute(16), new ArrayList(new string[16]) };
+
+            //Multi ICollection<T>
+            yield return new object[] { new MinLengthAttribute(0), new MultiCollection() };
         }
 
         protected override IEnumerable<TestCase> InvalidValues()
@@ -98,9 +113,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public static void GetValidationResult_ValueGenericICollection_ThrowsInvalidCastException()
+        public static void GetValidationResult_ValueGenericIEnumerable_ThrowsInvalidCastException()
         {
-            Assert.Throws<InvalidCastException>(() => new MinLengthAttribute(0).GetValidationResult(new GenericICollectionClass(), new ValidationContext(new object())));
+            Assert.Throws<InvalidCastException>(() => new MinLengthAttribute(0).GetValidationResult(new GenericIEnumerableClass(), new ValidationContext(new object())));
         }
     }
 }
