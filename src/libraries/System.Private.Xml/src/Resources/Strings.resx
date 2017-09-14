@@ -3346,19 +3346,19 @@
     <value>Uppercase-First sorting option is not supported.</value>
   </data>
   <data name="XmlPregenTypeDynamic" xml:space="preserve">
-    <value>Cannot pre-generate serialization assembly for type '{0}'. Pre-generation of serialization assemblies is not supported for dynamic types. Save the assembly and load it from disk to use it with XmlSerialization.</value>
+    <value>Cannot pre-generate serialization code for type '{0}'. Pre-generation of serialization assemblies is not supported for dynamic types. Save the assembly and load it from disk to use it with XmlSerialization.</value>
   </data>
   <data name="XmlPregenOrphanType" xml:space="preserve">
     <value>Cannot pre-generate serializer for multiple assemblies. Type '{0}' does not belong to assembly {1}.</value>
   </data>
   <data name="ErrSerializerExists" xml:space="preserve">
-    <value>Cannot generate serialization assembly {0} because it already exists. Use /{1} to force an overwrite of the existing assembly.</value>
+    <value>Cannot generate serialization code {0} because the code file already exists. Use /{1} to force an overwrite of the existing file.</value>
   </data>
   <data name="ErrDirectoryExists" xml:space="preserve">
-    <value>Cannot generate serialization assembly '{0}' because a directory with the same name already exists.</value>
+    <value>Cannot generate serialization code '{0}' because a directory with the same name already exists.</value>
   </data>
   <data name="ErrDirectoryNotExists" xml:space="preserve">
-    <value>Cannot generate serialization assembly '{0}' because directory {1} doesn't exist.</value>
+    <value>Cannot generate serialization code '{0}' because directory {1} doesn't exist.</value>
   </data>
   <data name="ErrInvalidArgument" xml:space="preserve">
     <value>Ignoring invalid command line argument: '{0}'.</value>
@@ -3372,14 +3372,14 @@
   <data name="ErrAssembly" xml:space="preserve">
     <value>The name of the source assembly.</value>
   </data>
-  <data name="InfoGeneratedAssembly" xml:space="preserve">
-    <value>Generated serialization assembly for assembly {0} --&gt; '{1}'.</value>
+  <data name="InfoGeneratedFile" xml:space="preserve">
+    <value>Generated serialization code for assembly {0} --&gt; '{1}'.</value>
   </data>
-  <data name="InfoAssemblyName" xml:space="preserve">
-    <value>Serialization Assembly Name: {0}.</value>
+  <data name="InfoFileName" xml:space="preserve">
+    <value>Serialization Code File Name: {0}.</value>
   </data>
   <data name="ErrGenerationFailed" xml:space="preserve">
-    <value>Sgen utility failed to pregenerate serialization assembly for {0}.</value>
+    <value>Sgen utility failed to pregenerate serialization code for {0}.</value>
   </data>
   <data name="ErrorDetails" xml:space="preserve">
     <value>Error: {0}.</value>
