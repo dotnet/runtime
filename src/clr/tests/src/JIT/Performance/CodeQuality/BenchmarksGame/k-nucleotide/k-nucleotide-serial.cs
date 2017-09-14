@@ -16,9 +16,15 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
+[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
+
     public struct ByteString : IEquatable<ByteString>
     {
         public byte[] Array;
@@ -78,14 +84,44 @@ namespace BenchmarksGame
         }
     }
 
-    public class program
+    public class KNucleotide_1
     {
 
+        public static int Main(string[] args)
+        {
+            var helpers = new TestHarnessHelpers(bigInput: false);
 
-        public static void Main(string[] args)
+            using (var inputFile = new FileStream(helpers.InputFile, FileMode.Open))
+            {
+                if (!Bench(inputFile, helpers, true))
+                {
+                    return -1;
+                }
+            }
+
+            return 100;
+        }
+
+        [Benchmark(InnerIterationCount = 3)]
+        public static void RunBench()
+        {
+            var helpers = new TestHarnessHelpers(bigInput: true);
+            bool ok = true;
+
+            Benchmark.Iterate(() =>
+            {
+                using (var inputFile = new FileStream(helpers.InputFile, FileMode.Open))
+                {
+                    ok &= Bench(inputFile, helpers, false);
+                }
+            });
+            Assert.True(ok);
+        }
+
+        static bool Bench(Stream inputStream, TestHarnessHelpers helpers, bool verbose)
         {
             string line;
-            StreamReader source = new StreamReader(Console.OpenStandardInput());
+            StreamReader source = new StreamReader(inputStream);
             var input = new List<string>();
 
             while ((line = source.ReadLine()) != null)
@@ -101,12 +137,16 @@ namespace BenchmarksGame
 
             KNucleotide kn = new KNucleotide(input.GetBytes());
             input = null;
-            for (int f = 1; f < 3; f++) kn.WriteFrequencies(f);
+            bool ok = true;
+            for (int f = 1; f < 3; f++)
+                ok &= kn.WriteFrequencies(f, helpers.expectedFrequencies[f - 1], verbose);
+            int i = 0;
             foreach (var seq in
                      new[] { "GGT", "GGTA", "GGTATT", "GGTATTTTAATT",
                          "GGTATTTTAATTTATAGT"})
-                kn.WriteCount(seq);
+                ok &= kn.WriteCount(seq, helpers.expectedCountFragments[i++], verbose);
 
+            return ok;
         }
     }
 
@@ -125,25 +165,35 @@ namespace BenchmarksGame
 
         public KNucleotide(byte[] s) { sequence = s; }
 
-        public void WriteFrequencies(int length)
+        public bool WriteFrequencies(int length, int[] expectedCounts, bool verbose)
         {
             GenerateFrequencies(length);
             var items = new List<KeyValuePair<ByteString, Count>>(frequencies);
             items.Sort(SortByFrequencyAndCode);
             double percent = 100.0 / (sequence.Length - length + 1);
+            bool ok = true;
+            int i = 0;
             foreach (var item in items)
-                Console.WriteLine("{0} {1:f3}",
-                            item.Key.ToString(), item.Value.V * percent);
-            Console.WriteLine();
+            {
+                ok &= (item.Value.V == expectedCounts[i++]);
+                if (verbose)
+                {
+                    Console.WriteLine("{0} {1:f3}",
+                                item.Key.ToString(), item.Value.V * percent);
+                }
+            }
+            if (verbose) Console.WriteLine();
+            return ok;
         }
 
-        public void WriteCount(string fragment)
+        public bool WriteCount(string fragment, int expectedCount, bool verbose)
         {
             GenerateFrequencies(fragment.Length);
             Count count;
             if (!frequencies.TryGetValue(new ByteString(fragment), out count))
                 count = new Count(0);
-            Console.WriteLine("{0}\t{1}", count.V, fragment);
+            if (verbose) Console.WriteLine("{0}\t{1}", count.V, fragment);
+            return (count.V == expectedCount);
         }
 
         private void GenerateFrequencies(int length)

@@ -16,19 +16,34 @@
 using System;
 using System.IO;
 using System.Text;
+using Microsoft.Xunit.Performance;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    class Fasta
+    public class Fasta_2
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
+        {
+            int n = args.Length > 0 ? Int32.Parse(args[0]) : 1000;
+
+            Bench(n, true);
+            return 100;
+        }
+
+        [Benchmark(InnerIterationCount = 2500)]
+        public static void RunBench()
+        {
+            Benchmark.Iterate(() => Bench(5000, false));
+        }
+
+        static void Bench(int n, bool verbose)
         {
             MakeCumulative(HomoSapiens);
             MakeCumulative(IUB);
 
-            int n = args.Length > 0 ? Int32.Parse(args[0]) : 1000;
-
-            using (Stream s = Console.OpenStandardOutput())
+            using (Stream s = (verbose ? Console.OpenStandardOutput() : Stream.Null))
             {
                 MakeRepeatFasta("ONE", "Homo sapiens alu", Encoding.ASCII.GetBytes(ALU), n * 2, s);
                 MakeRandomFasta("TWO", "IUB ambiguity codes", IUB, n * 3, s);

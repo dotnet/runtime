@@ -23,10 +23,13 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Xunit.Performance;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    class Fasta
+    public class Fasta_1
     {
         const int LineLength = 60;
 
@@ -35,14 +38,26 @@ namespace BenchmarksGame
         const int IC = 29573;
         static int seed = 42;
 
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             int n = args.Length > 0 ? Int32.Parse(args[0]) : 1000;
 
+            Bench(n, true);
+            return 100;
+        }
+
+        [Benchmark(InnerIterationCount = 4000)]
+        public static void RunBench()
+        {
+            Benchmark.Iterate(() => Bench(5000, false));
+        }
+
+        static void Bench(int n, bool verbose)
+        {
             MakeCumulative(IUB);
             MakeCumulative(HomoSapiens);
 
-            using (var s = Console.OpenStandardOutput())
+            using (var s = (verbose ? Console.OpenStandardOutput() : Stream.Null))
             {
                 MakeRepeatFasta("ONE", "Homo sapiens alu", Encoding.ASCII.GetBytes(ALU), n * 2, s);
                 MakeRandomFasta("TWO", "IUB ambiguity codes", IUB, n * 3, s);

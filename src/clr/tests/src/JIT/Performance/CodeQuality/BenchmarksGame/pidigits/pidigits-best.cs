@@ -6,6 +6,8 @@
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=pidigits&lang=csharpcore&id=3
 // Best-scoring C# .NET Core version as of 2017-09-01
 // (also best-scoring single-threaded C# .NET Core version as of 2017-09-01)
+// **** Version #3 on website pinvokes to native GMP library; this has been modified to
+//      use .NET's System.Numerics.BigInteger type instead ****
 
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
@@ -16,19 +18,23 @@
  * 	java port by Stefan Krause
 */
 using System;
+using System.Numerics;
 using System.Text;
-using System.Runtime.InteropServices;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
+
     public class pidigits
     {
-
-        GmpInteger q = new GmpInteger(), r = new GmpInteger(), s = new GmpInteger(), t = new GmpInteger();
-        GmpInteger u = new GmpInteger(), v = new GmpInteger(), w = new GmpInteger();
+        BigInteger q = new BigInteger(), r = new BigInteger(), s = new BigInteger(), t = new BigInteger();
+        BigInteger u = new BigInteger(), v = new BigInteger(), w = new BigInteger();
 
         int i;
-        StringBuilder strBuf = new StringBuilder(40);
+        StringBuilder strBuf = new StringBuilder(40), lastBuf = null;
         int n;
 
         pidigits(int n)
@@ -38,74 +44,78 @@ namespace BenchmarksGame
 
         private void compose_r(int bq, int br, int bs, int bt)
         {
-            u.mul(r, bs);
-            r.mul(r, bq);
-            v.mul(t, br);
-            r.add(r, v);
-            t.mul(t, bt);
-            t.add(t, u);
-            s.mul(s, bt);
-            u.mul(q, bs);
-            s.add(s, u);
-            q.mul(q, bq);
+            u = r * bs;
+            r *= bq;
+            v = t * br;
+            r += v;
+            t *= bt;
+            t += u;
+            s *= bt;
+            u = q * bs;
+            s += u;
+            q *= bq;
         }
 
         /* Compose matrix with numbers on the left. */
         private void compose_l(int bq, int br, int bs, int bt)
         {
-            r.mul(r, bt);
-            u.mul(q, br);
-            r.add(r, u);
-            u.mul(t, bs);
-            t.mul(t, bt);
-            v.mul(s, br);
-            t.add(t, v);
-            s.mul(s, bq);
-            s.add(s, u);
-            q.mul(q, bq);
+            r *= bt;
+            u = q * br;
+            r += u;
+            u = t * bs;
+            t *= bt;
+            v = s * br;
+            t += v;
+            s *= bq;
+            s += u;
+            q *= bq;
         }
 
         /* Extract one digit. */
         private int extract(int j)
         {
-            u.mul(q, j);
-            u.add(u, r);
-            v.mul(s, j);
-            v.add(v, t);
-            w.div(u, v);
-            return w.intValue();
+            u = q * j;
+            u += r;
+            v = s * j;
+            v += t;
+            w = u / v;
+            return (int)w;
         }
 
         /* Print one digit. Returns 1 for the last digit. */
-        private bool prdigit(int y)
+        private bool prdigit(int y, bool verbose)
         {
             strBuf.Append(y);
             if (++i % 10 == 0 || i == n)
             {
-                if (i % 10 != 0) for (int j = 10 - (i % 10); j > 0; j--) { strBuf.Append(" "); }
+                if (i % 10 != 0)
+                    for (int j = 10 - (i % 10); j > 0; j--)
+                    { strBuf.Append(" "); }
                 strBuf.Append("\t:");
                 strBuf.Append(i);
-                Console.WriteLine(strBuf);
+                if (verbose) Console.WriteLine(strBuf);
+                lastBuf = strBuf;
                 strBuf = new StringBuilder(40);
             }
             return i == n;
         }
 
         /* Generate successive digits of PI. */
-        void Run()
+        void Run(bool verbose)
         {
             int k = 1;
             i = 0;
-            q.set(1);
-            r.set(0);
-            s.set(0);
-            t.set(1);
+            q = 1;
+            r = 0;
+            s = 0;
+            t = 1;
             for (; ; )
             {
                 int y = extract(3);
                 if (y == extract(4))
                 {
-                    if (prdigit(y)) return;
+                    if (prdigit(y, verbose))
+                        return;
                     compose_r(10, -10 * y, 0, 1);
                 }
                 else
@@ -116,71 +126,34 @@ namespace BenchmarksGame
             }
         }
 
-        public static void Main(String[] args)
+        public static int Main(String[] args)
         {
-            pidigits m = new pidigits(Int32.Parse(args[0]));
-            m.Run();
+            int n = (args.Length > 0 ? Int32.Parse(args[0]) : 10);
+            string result = Bench(n, true).ToString();
+            if (result != "3141592653\t:10")
+            {
+                return -1;
+            }
+            return 100;
+        }
+
+        public static StringBuilder Bench(int n, bool verbose)
+        {
+            pidigits m = new pidigits(n);
+            m.Run(verbose);
+            return m.lastBuf;
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    struct mpz_t
+    public class PiDigits_3
     {
-        public int _mp_alloc;
-        public int _mp_size;
-        public IntPtr ptr;
-    }
-
-    class GmpInteger
-    {
-
-        // Public methods
-
-        public GmpInteger()
+        [Benchmark]
+        [InlineData(3000, "8649423196\t:3000")]
+        public static void RunBench(int n, string expected)
         {
-            mpz_init(ref pointer);
+            StringBuilder result = null;
+            Benchmark.Iterate(() => result = pidigits.Bench(n, false));
+            Assert.Equal(expected, result.ToString());
         }
-
-        public GmpInteger(int value)
-        {
-            mpz_set_si(ref pointer, value);
-        }
-
-        public void set(int value) { mpz_set_si(ref pointer, value); }
-
-        public void mul(GmpInteger src, int val) { mpz_mul_si(ref pointer, ref src.pointer, val); }
-
-        public void add(GmpInteger op1, GmpInteger op2) { mpz_add(ref pointer, ref op1.pointer, ref op2.pointer); }
-
-        public void div(GmpInteger op1, GmpInteger op2) { mpz_tdiv_q(ref pointer, ref op1.pointer, ref op2.pointer); }
-
-        public int intValue() { return mpz_get_si(ref pointer); }
-
-        public double doubleValue() { return mpz_get_d(ref pointer); }
-
-        // Non public stuff
-
-        mpz_t pointer;
-
-        [DllImport("gmp", EntryPoint = "__gmpz_init")]
-        extern static void mpz_init(ref mpz_t value);
-
-        [DllImport("gmp", EntryPoint = "__gmpz_mul_si")]
-        extern static void mpz_mul_si(ref mpz_t dest, ref mpz_t src, int val);
-
-        [DllImport("gmp", EntryPoint = "__gmpz_add")]
-        extern static void mpz_add(ref mpz_t dest, ref mpz_t src, ref mpz_t src2);
-
-        [DllImport("gmp", EntryPoint = "__gmpz_tdiv_q")]
-        extern static void mpz_tdiv_q(ref mpz_t dest, ref mpz_t src, ref mpz_t src2);
-
-        [DllImport("gmp", EntryPoint = "__gmpz_set_si")]
-        extern static void mpz_set_si(ref mpz_t src, int value);
-
-        [DllImport("gmp", EntryPoint = "__gmpz_get_si")]
-        extern static int mpz_get_si(ref mpz_t src);
-
-        [DllImport("gmp", EntryPoint = "__gmpz_get_d")]
-        extern static double mpz_get_d(ref mpz_t src);
     }
 }
