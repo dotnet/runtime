@@ -18662,7 +18662,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
 #ifdef _TARGET_ARM_
         // Ensure that we don't trash any of these registers if we have to load
         // the helper call target into a register to invoke it.
-        regMaskTP regsUsed;
+        regMaskTP regsUsed = 0;
 
         if ((call->gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV))
         {
