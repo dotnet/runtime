@@ -12,7 +12,7 @@ namespace System.IO.Pipes
 
         // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
         internal ConnectionCompletionSource(NamedPipeServerStream server, CancellationToken cancellationToken)
-            : base(server._threadPoolBinding, cancellationToken, pinData: null)
+            : base(server._threadPoolBinding, cancellationToken, ReadOnlyMemory<byte>.Empty)
         {
             _serverStream = server;
         }

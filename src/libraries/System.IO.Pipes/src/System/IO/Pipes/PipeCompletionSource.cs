@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 
 namespace System.IO.Pipes
 {
@@ -24,6 +25,7 @@ namespace System.IO.Pipes
         private CancellationTokenRegistration _cancellationRegistration;
         private int _errorCode;
         private NativeOverlapped* _overlapped;
+        private MemoryHandle _pinnedMemory;
         private int _state;
 
 #if DEBUG
@@ -31,7 +33,7 @@ namespace System.IO.Pipes
 #endif
 
         // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
-        protected PipeCompletionSource(ThreadPoolBoundHandle handle, CancellationToken cancellationToken, object pinData)
+        protected PipeCompletionSource(ThreadPoolBoundHandle handle, CancellationToken cancellationToken, ReadOnlyMemory<byte> bufferToPin)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
             Debug.Assert(handle != null, "handle is null");
@@ -40,13 +42,14 @@ namespace System.IO.Pipes
             _cancellationToken = cancellationToken;
             _state = NoResult;
 
+            _pinnedMemory = bufferToPin.Retain(pin: true);
             _overlapped = _threadPoolBinding.AllocateNativeOverlapped((errorCode, numBytes, pOverlapped) =>
             {
                 var completionSource = (PipeCompletionSource<TResult>)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
                 Debug.Assert(completionSource.Overlapped == pOverlapped);
 
                 completionSource.AsyncCallback(errorCode, numBytes);
-            }, this, pinData);
+            }, this, null);
         }
 
         internal NativeOverlapped* Overlapped
@@ -96,11 +99,13 @@ namespace System.IO.Pipes
 
             // NOTE: The cancellation must *NOT* be running at this point, or it may observe freed memory
             // (this is why we disposed the registration above)
-            if (Overlapped != null)
+            if (_overlapped != null)
             {
                 _threadPoolBinding.FreeNativeOverlapped(Overlapped);
                 _overlapped = null;
             }
+
+            _pinnedMemory.Dispose();
         }
 
         internal abstract void SetCompletedSynchronously();
