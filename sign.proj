@@ -19,6 +19,7 @@
       <OutDir Condition="'$(OutDir)' == ''">$(BaseOutputRootPath)/</OutDir>
       <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)</IntermediateOutputPath>
     </PropertyGroup>
+    <Error Condition="!Exists('$(OutDir)')" Text="'OutDir' folder '$(OutDir)' does not exist."/>
   </Target>
 
   <Target Name="SignBinaries" DependsOnTargets="GetSignBinaryFiles">
@@ -49,6 +50,7 @@
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
+    <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
   <Target Name="SignMsiAndCab" DependsOnTargets="GetSignMsiAndCabFiles">
@@ -64,6 +66,7 @@
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
+    <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
   <Target Name="SignEngine" DependsOnTargets="GetSignEngineFiles">
@@ -76,6 +79,7 @@
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
+    <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
   <Target Name="SignBundle" DependsOnTargets="GetSignBundleFiles">
@@ -88,6 +92,7 @@
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
+    <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
 </Project>
