@@ -2507,6 +2507,18 @@ NO_MORE_LOOPS:
     }
 #endif // COUNT_LOOPS
 
+    bool mod = search.ChangedFlowGraph();
+
+    if (mod)
+    {
+        // Need to renumber blocks now since loop canonicalization
+        // depends on it; can defer the rest of fgUpdateChangedFlowGraph()
+        // until after canonicalizing loops.  Dominator information is
+        // recorded in terms of block numbers, so flag it invalid.
+        fgDomsComputed = false;
+        fgRenumberBlocks();
+    }
+
     // Now the loop indices are stable.  We can figure out parent/child relationships
     // (using table indices to name loops), and label blocks.
     for (unsigned char loopInd = 1; loopInd < optLoopCount; loopInd++)
@@ -2541,8 +2553,6 @@ NO_MORE_LOOPS:
             assert(blk->bbNext != nullptr); // We should never reach nullptr.
         }
     }
-
-    bool mod = search.ChangedFlowGraph();
 
     // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
     // one, if necessary, for loops containing others that share a "top."
@@ -2617,7 +2627,12 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
             // If any redirections happend, invalidate the switch table map for the switch.
             if (redirected)
             {
-                GetSwitchDescMap()->Remove(blk);
+                // Don't create a new map just to try to remove an entry.
+                BlockToSwitchDescMap* switchMap = GetSwitchDescMap(/* createIfNull */ false);
+                if (switchMap != nullptr)
+                {
+                    switchMap->Remove(blk);
+                }
             }
         }
         break;
@@ -2797,7 +2812,10 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         newT->copyEHRegion(b);
     }
 
-    BlockSetOps::Assign(this, newT->bbReach, t->bbReach);
+    // The new block can reach the same set of blocks as the old one, but don't try to reflect
+    // that in its reachability set here -- creating the new block may have changed the BlockSet
+    // representation from short to long, and canonicalizing loops is immediately followed by
+    // a call to fgUpdateChangedFlowGraph which will recompute the reachability sets anyway.
 
     // Redirect the "bottom" of the current loop to "newT".
     BlockToBlockMap* blockMap = new (getAllocatorLoopHoist()) BlockToBlockMap(getAllocatorLoopHoist());
