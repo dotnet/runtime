@@ -40,6 +40,7 @@ namespace System
         public static bool IsWindowsNanoServer => false;
         public static bool IsWindowsServerCore => false;
         public static bool IsWindowsAndElevated => false;
+        public static bool IsWindowsRedStone2 => false; 
 
         public static bool IsRedHat => IsDistroAndVersion("rhel") || IsDistroAndVersion("rhl");
         public static bool IsNotRedHat => !IsRedHat;
