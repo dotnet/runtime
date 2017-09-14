@@ -257,14 +257,25 @@ static
 pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
+    pal::string_t alpinePrefix(_X("alpine."));
+    size_t lastVersionSeparatorIndex = std::string::npos;
 
     if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
     {
-        size_t minorVersionSeparatorIndex = rid.find(_X("."), rhelPrefix.length());
-        if (minorVersionSeparatorIndex != std::string::npos)
+        lastVersionSeparatorIndex = rid.find(_X("."), rhelPrefix.length());
+    }
+    else if (rid.compare(0, alpinePrefix.length(), alpinePrefix) == 0)
+    {
+        size_t secondVersionSeparatorIndex = rid.find(_X("."), alpinePrefix.length());
+        if (secondVersionSeparatorIndex != std::string::npos)
         {
-            rid.erase(minorVersionSeparatorIndex, rid.length() - minorVersionSeparatorIndex);
+            lastVersionSeparatorIndex = rid.find(_X("."), secondVersionSeparatorIndex + 1);
         }
+    }
+
+    if (lastVersionSeparatorIndex != std::string::npos)
+    {
+        rid.erase(lastVersionSeparatorIndex, rid.length() - lastVersionSeparatorIndex);
     }
 
     return rid;
