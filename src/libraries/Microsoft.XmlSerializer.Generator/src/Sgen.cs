@@ -268,8 +268,8 @@ namespace Microsoft.XmlSerializer.Generator
 
                 if (success)
                 {
-                    Console.Out.WriteLine(SR.Format(SR.InfoAssemblyName, codePath));
-                    Console.Out.WriteLine(SR.Format(SR.InfoGeneratedAssembly, assembly.Location, codePath));
+                    Console.Out.WriteLine(SR.Format(SR.InfoFileName, codePath));
+                    Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, assembly.Location, codePath));
                 }
                 else
                 {
