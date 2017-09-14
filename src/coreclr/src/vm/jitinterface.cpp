@@ -6746,18 +6746,7 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
     // Compare tokens to cover all generic instantiations
     // The body of the first method is simply ret Arg0. The second one first casts the arg to I4.
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__UNSAFE_CAST)->GetMemberDef())
-    {
-        // Return the argument that was passed in.
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__UNSAFE_CAST_TO_STACKPTR)->GetMemberDef())
+    if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__UNSAFE_CAST_TO_STACKPTR)->GetMemberDef())
     {
         // Return the argument that was passed in converted to IntPtr
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_CONV_I, CEE_RET };
