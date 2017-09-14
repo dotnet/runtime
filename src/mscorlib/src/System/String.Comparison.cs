@@ -100,19 +100,19 @@ namespace System
 
                 while (length >= 12)
                 {
-                    if (*(long*)a != *(long*)b) goto ReturnFalse;
-                    if (*(long*)(a + 4) != *(long*)(b + 4)) goto ReturnFalse;
-                    if (*(long*)(a + 8) != *(long*)(b + 8)) goto ReturnFalse;
+                    if (*(long*)a != *(long*)b) return false;
+                    if (*(long*)(a + 4) != *(long*)(b + 4)) return false;
+                    if (*(long*)(a + 8) != *(long*)(b + 8)) return false;
                     length -= 12; a += 12; b += 12;
                 }
 #else
                 while (length >= 10)
                 {
-                    if (*(int*)a != *(int*)b) goto ReturnFalse;
-                    if (*(int*)(a + 2) != *(int*)(b + 2)) goto ReturnFalse;
-                    if (*(int*)(a + 4) != *(int*)(b + 4)) goto ReturnFalse;
-                    if (*(int*)(a + 6) != *(int*)(b + 6)) goto ReturnFalse;
-                    if (*(int*)(a + 8) != *(int*)(b + 8)) goto ReturnFalse;
+                    if (*(int*)a != *(int*)b) return false;
+                    if (*(int*)(a + 2) != *(int*)(b + 2)) return false;
+                    if (*(int*)(a + 4) != *(int*)(b + 4)) return false;
+                    if (*(int*)(a + 6) != *(int*)(b + 6)) return false;
+                    if (*(int*)(a + 8) != *(int*)(b + 8)) return false;
                     length -= 10; a += 10; b += 10;
                 }
 #endif
@@ -123,14 +123,11 @@ namespace System
                 // the zero terminator.
                 while (length > 0)
                 {
-                    if (*(int*)a != *(int*)b) goto ReturnFalse;
+                    if (*(int*)a != *(int*)b) return false;
                     length -= 2; a += 2; b += 2;
                 }
 
                 return true;
-
-            ReturnFalse:
-                return false;
             }
         }
 
@@ -190,31 +187,31 @@ namespace System
                 // Single int read aligns pointers for the following long reads
                 // No length check needed as this method is called when length >= 2
                 Debug.Assert(length >= 2);
-                if (*(int*)a != *(int*)b) goto ReturnFalse;
+                if (*(int*)a != *(int*)b) return false;
                 length -= 2; a += 2; b += 2;
 
                 while (length >= 12)
                 {
-                    if (*(long*)a != *(long*)b) goto ReturnFalse;
-                    if (*(long*)(a + 4) != *(long*)(b + 4)) goto ReturnFalse;
-                    if (*(long*)(a + 8) != *(long*)(b + 8)) goto ReturnFalse;
+                    if (*(long*)a != *(long*)b) return false;
+                    if (*(long*)(a + 4) != *(long*)(b + 4)) return false;
+                    if (*(long*)(a + 8) != *(long*)(b + 8)) return false;
                     length -= 12; a += 12; b += 12;
                 }
 #else
                 while (length >= 10)
                 {
-                    if (*(int*)a != *(int*)b) goto ReturnFalse;
-                    if (*(int*)(a+2) != *(int*)(b+2)) goto ReturnFalse;
-                    if (*(int*)(a+4) != *(int*)(b+4)) goto ReturnFalse;
-                    if (*(int*)(a+6) != *(int*)(b+6)) goto ReturnFalse;
-                    if (*(int*)(a+8) != *(int*)(b+8)) goto ReturnFalse;
+                    if (*(int*)a != *(int*)b) return false;
+                    if (*(int*)(a+2) != *(int*)(b+2)) return false;
+                    if (*(int*)(a+4) != *(int*)(b+4)) return false;
+                    if (*(int*)(a+6) != *(int*)(b+6)) return false;
+                    if (*(int*)(a+8) != *(int*)(b+8)) return false;
                     length -= 10; a += 10; b += 10;
                 }
 #endif
 
                 while (length >= 2)
                 {
-                    if (*(int*)a != *(int*)b) goto ReturnFalse;
+                    if (*(int*)a != *(int*)b) return false;
                     length -= 2; a += 2; b += 2;
                 }
 
@@ -222,9 +219,6 @@ namespace System
                 // and that the terminating zero is not included in the length. For even string sizes
                 // this compare can include the zero terminator. Bitwise OR avoids a branch.
                 return length == 0 | *a == *b;
-
-            ReturnFalse:
-                return false;
             }
         }
 
