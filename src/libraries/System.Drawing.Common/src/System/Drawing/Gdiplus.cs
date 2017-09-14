@@ -83,7 +83,7 @@ namespace System.Drawing
 
                 s_gdipModule = LoadNativeLibrary();
                 LoadSharedFunctionPointers();
-                LoadPlatformFunctionPointers(); // This should be combined with the above call when Windows/Unix implementations are unified.
+                PlatformInitialize();
 
                 StartupInput input = StartupInput.GetDefault();
                 StartupOutput output;
