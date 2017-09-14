@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // object GetAt(uint index)
         internal object GetAt(uint index)
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             EnsureIndexInt32(index, _this.Count);
 
             try
@@ -51,21 +51,21 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // uint Size { get }
         internal uint Size()
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             return (uint)_this.Count;
         }
 
         // IBindableVectorView GetView()
         internal IBindableVectorView GetView()
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             return new ListToBindableVectorViewAdapter(_this);
         }
 
         // bool IndexOf(object value, out uint index)
         internal bool IndexOf(object value, out uint index)
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             int ind = _this.IndexOf(value);
 
             if (-1 == ind)
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void SetAt(uint index, object value)
         internal void SetAt(uint index, object value)
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             EnsureIndexInt32(index, _this.Count);
 
             try
@@ -97,7 +97,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void InsertAt(uint index, object value)
         internal void InsertAt(uint index, object value)
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
 
             // Inserting at an index one past the end of the list is equivalent to appending
             // so we need to ensure that we're within (0, count + 1).
@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void RemoveAt(uint index)
         internal void RemoveAt(uint index)
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             EnsureIndexInt32(index, _this.Count);
 
             try
@@ -136,14 +136,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void Append(object value)
         internal void Append(object value)
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             _this.Add(value);
         }
 
         // void RemoveAtEnd()
         internal void RemoveAtEnd()
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             if (_this.Count == 0)
             {
                 Exception e = new InvalidOperationException(SR.InvalidOperation_CannotRemoveLastFromEmptyCollection);
@@ -158,7 +158,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void Clear()
         internal void Clear()
         {
-            IList _this = JitHelpers.UnsafeCast<IList>(this);
+            IList _this = Unsafe.As<IList>(this);
             _this.Clear();
         }
 

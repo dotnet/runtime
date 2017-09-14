@@ -67,7 +67,7 @@ namespace System
             // the types are the same, obj should also be a
             // MulticastDelegate
             Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
-            var d = JitHelpers.UnsafeCast<MulticastDelegate>(obj);
+            var d = Unsafe.As<MulticastDelegate>(obj);
 
             if (_invocationCount != (IntPtr)0)
             {

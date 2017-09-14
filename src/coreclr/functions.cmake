@@ -258,12 +258,12 @@ function(verify_dependencies targetName errorMessage)
 endfunction()
 
 function(add_library_clr)
-    add_dependencies(${ARGV0} GeneratedEventingFiles)
     _add_library(${ARGV})
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
 endfunction()
 
 function(add_executable_clr)
-    add_dependencies(${ARGV0} GeneratedEventingFiles)
     _add_executable(${ARGV})
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
 endfunction()
 
