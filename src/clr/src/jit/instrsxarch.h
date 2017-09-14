@@ -82,6 +82,10 @@ INST4(lea    , "lea"          , 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, 0x00008D, B
 
 //    enum     name            FP  updmode rf wf R/M,R/M[reg]  R/M,icon  reg,R/M
 
+// Note that emitter has only partial support for BT. It can only emit the reg,reg form
+// and the registers need to be reversed to get the correct encoding.
+INST3(bt     , "bt"           , 0, IUM_RD, 0, 1, 0x0F00A3, BAD_CODE, 0x0F00A3)
+
 INST3(movsx  , "movsx"        , 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, 0x0F00BE)
 #ifdef _TARGET_AMD64_
 INST3(movsxd , "movsxd"       , 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, 0x4800000063LL )
