@@ -14,23 +14,43 @@
 */
 
 using System;
+using Microsoft.Xunit.Performance;
+
+[assembly: OptimizeForBenchmarks]
+[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
-    class BinaryTrees
+    public class BinaryTrees_2
     {
         const int minDepth = 4;
 
-        public static void Main(String[] args)
+        public static int Main(String[] args)
         {
             int n = 0;
             if (args.Length > 0) n = Int32.Parse(args[0]);
 
+            int check = Bench(n, true);
+            int expected = 4398;
+
+            // Return 100 on success, anything else on failure.
+            return check - expected + 100;
+        }
+
+        [Benchmark(InnerIterationCount = 7)]
+        public static void RunBench()
+        {
+            Benchmark.Iterate(() => Bench(16, false));
+        }
+
+        static int Bench(int n, bool verbose)
+        {
             int maxDepth = Math.Max(minDepth + 2, n);
             int stretchDepth = maxDepth + 1;
 
             int check = (TreeNode.bottomUpTree(stretchDepth)).itemCheck();
-            Console.WriteLine("stretch tree of depth {0}\t check: {1}", stretchDepth, check);
+            int checkSum = check;
+            if (verbose) Console.WriteLine("stretch tree of depth {0}\t check: {1}", stretchDepth, check);
 
             TreeNode longLivedTree = TreeNode.bottomUpTree(maxDepth);
 
@@ -43,13 +63,19 @@ namespace BenchmarksGame
                 {
                     check += (TreeNode.bottomUpTree(depth)).itemCheck();
                 }
+                checkSum += check;
 
-                Console.WriteLine("{0}\t trees of depth {1}\t check: {2}",
-                   iterations, depth, check);
+                if (verbose)
+                    Console.WriteLine("{0}\t trees of depth {1}\t check: {2}", iterations, depth, check);
             }
 
-            Console.WriteLine("long lived tree of depth {0}\t check: {1}",
-               maxDepth, longLivedTree.itemCheck());
+            check = longLivedTree.itemCheck();
+            checkSum += check;
+
+            if (verbose)
+                Console.WriteLine("long lived tree of depth {0}\t check: {1}", maxDepth, check);
+
+            return checkSum;
         }
 
 

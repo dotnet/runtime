@@ -15,10 +15,15 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    static class revcomp
+    public static class ReverseComplement_1
     {
         struct Block
         {
@@ -43,15 +48,59 @@ namespace BenchmarksGame
         const byte Gt = (byte)'>';
         const byte Lf = (byte)'\n';
 
-        static void Main(string[] args)
+        static int Main(string[] args)
+        {
+            var helpers = new TestHarnessHelpers(bigInput: false);
+            var outBytes = new byte[helpers.FileLength];
+            using (var input = new FileStream(helpers.InputFile, FileMode.Open))
+            using (var output = new MemoryStream(outBytes))
+            {
+                Bench(input, output);
+            }
+            Console.WriteLine(System.Text.Encoding.UTF8.GetString(outBytes));
+            if (!MatchesChecksum(outBytes, helpers.CheckSum))
+            {
+                return -1;
+            }
+            return 100;
+        }
+
+        [Benchmark(InnerIterationCount = 1500)]
+        public static void RunBench()
+        {
+            var helpers = new TestHarnessHelpers(bigInput: true);
+            var outBytes = new byte[helpers.FileLength];
+
+            Benchmark.Iterate(() =>
+            {
+                using (var input = new FileStream(helpers.InputFile, FileMode.Open))
+                using (var output = new MemoryStream(outBytes))
+                {
+                    Bench(input, output);
+                }
+            });
+
+            Assert.True(MatchesChecksum(outBytes, helpers.CheckSum));
+        }
+
+        static bool MatchesChecksum(byte[] bytes, string checksum)
+        {
+            using (var md5 = MD5.Create())
+            {
+                byte[] hash = md5.ComputeHash(bytes);
+                return (checksum == BitConverter.ToString(hash));
+            }
+        }
+
+        static void Bench(Stream input, Stream output)
         {
             InitComplements();
             var seq = new List<byte[]>();
             var b = new Block { Count = -1 };
             Index line = Index.None, start = Index.None, end = Index.None;
-            using (var r = new BinaryReader(Console.OpenStandardInput()))
+            using (var r = new BinaryReader(input))
             {
-                using (var w = Console.OpenStandardOutput())
+                using (var w = output)
                 {
                     while (b.Read(r) > 0)
                     {

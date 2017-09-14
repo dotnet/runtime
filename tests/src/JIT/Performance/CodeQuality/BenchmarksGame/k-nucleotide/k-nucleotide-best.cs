@@ -20,11 +20,16 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
+[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
     class Wrapper { public int v = 1; }
-    public static class KNucleotide
+    public static class KNucleotide_9
     {
         const int BLOCK_SIZE = 1024 * 1024 * 8;
         static List<byte[]> threeBlocks = new List<byte[]>();
@@ -64,10 +69,8 @@ namespace BenchmarksGame
             }
         }
 
-        static void loadThreeData()
+        static void loadThreeData(Stream stream)
         {
-            var stream = Console.OpenStandardInput();
-
             // find three sequence
             int matchIndex = 0;
             var toFind = new[] { (byte)'>', (byte)'T', (byte)'H', (byte)'R', (byte)'E', (byte)'E' };
@@ -221,12 +224,14 @@ namespace BenchmarksGame
                 });
         }
 
-        static string writeFrequencies(Dictionary<long, Wrapper> freq, int fragmentLength)
+        static string writeFrequencies(Dictionary<long, Wrapper> freq, int fragmentLength, int[] expected, ref bool ok)
         {
             var sb = new StringBuilder();
             double percent = 100.0 / freq.Values.Sum(i => i.v);
+            int idx = 0;
             foreach (var kv in freq.OrderByDescending(i => i.Value.v))
             {
+                ok &= (kv.Value.v == expected[idx++]);
                 var keyChars = new char[fragmentLength];
                 var key = kv.Key;
                 for (int i = keyChars.Length - 1; i >= 0; --i)
@@ -241,24 +246,49 @@ namespace BenchmarksGame
             return sb.ToString();
         }
 
-        static string writeCount(Dictionary<long, Wrapper> dictionary, string fragment)
+        static string writeCount(Dictionary<long, Wrapper> dictionary, string fragment, int expected, ref bool ok)
         {
             long key = 0;
             for (int i = 0; i < fragment.Length; ++i)
                 key = (key << 2) | tonum[fragment[i]];
             Wrapper w;
             var n = dictionary.TryGetValue(key, out w) ? w.v : 0;
+            ok &= (n == expected);
             return string.Concat(n.ToString(), "\t", fragment);
         }
 
-        public static void Main(string[] args)
+        public static int Main(string[] args)
+        {
+            var helpers = new TestHarnessHelpers(bigInput: false);
+            bool ok = Bench(helpers, true);
+
+            return (ok ? 100 : -1);
+        }
+
+        [Benchmark(InnerIterationCount = 1)]
+        public static void RunBench()
+        {
+            var helpers = new TestHarnessHelpers(bigInput: true);
+            bool ok = true;
+
+            Benchmark.Iterate(() =>
+            {
+                ok &= Bench(helpers, false);
+            });
+            Assert.True(ok);
+        }
+
+        static bool Bench(TestHarnessHelpers helpers, bool verbose)
         {
             tonum['c'] = 1; tonum['C'] = 1;
             tonum['g'] = 2; tonum['G'] = 2;
             tonum['t'] = 3; tonum['T'] = 3;
             tonum['\n'] = 255; tonum['>'] = 255; tonum[255] = 255;
 
-            loadThreeData();
+            using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+            {
+                loadThreeData(inputStream);
+            }
 
             Parallel.ForEach(threeBlocks, bytes =>
             {
@@ -266,21 +296,32 @@ namespace BenchmarksGame
                     bytes[i] = tonum[bytes[i]];
             });
 
-            var task18 = count4(18, 34359738367, d => writeCount(d, "GGTATTTTAATTTATAGT"));
-            var task12 = count4(12, 8388607, d => writeCount(d, "GGTATTTTAATT"));
-            var task6 = count(6, 0b1111111111, d => writeCount(d, "GGTATT"));
-            var task4 = count(4, 0b111111, d => writeCount(d, "GGTA"));
-            var task3 = count(3, 0b1111, d => writeCount(d, "GGT"));
-            var task2 = count(2, 0b11, d => writeFrequencies(d, 2));
-            var task1 = count(1, 0, d => writeFrequencies(d, 1));
+            bool ok = true;
 
-            Console.Out.WriteLineAsync(task1.Result);
-            Console.Out.WriteLineAsync(task2.Result);
-            Console.Out.WriteLineAsync(task3.Result);
-            Console.Out.WriteLineAsync(task4.Result);
-            Console.Out.WriteLineAsync(task6.Result);
-            Console.Out.WriteLineAsync(task12.Result);
-            Console.Out.WriteLineAsync(task18.Result);
+            var task18 = count4(18, 34359738367, d => writeCount(d, "GGTATTTTAATTTATAGT", helpers.expectedCountFragments[4], ref ok));
+            var task12 = count4(12, 8388607, d => writeCount(d, "GGTATTTTAATT", helpers.expectedCountFragments[3], ref ok));
+            var task6 = count(6, 0b1111111111, d => writeCount(d, "GGTATT", helpers.expectedCountFragments[2], ref ok));
+            var task4 = count(4, 0b111111, d => writeCount(d, "GGTA", helpers.expectedCountFragments[1], ref ok));
+            var task3 = count(3, 0b1111, d => writeCount(d, "GGT", helpers.expectedCountFragments[0], ref ok));
+            var task2 = count(2, 0b11, d => writeFrequencies(d, 2, helpers.expectedFrequencies[1], ref ok));
+            var task1 = count(1, 0, d => writeFrequencies(d, 1, helpers.expectedFrequencies[0], ref ok));
+
+            if (verbose)
+            {
+                Console.Out.WriteLineAsync(task1.Result);
+                Console.Out.WriteLineAsync(task2.Result);
+                Console.Out.WriteLineAsync(task3.Result);
+                Console.Out.WriteLineAsync(task4.Result);
+                Console.Out.WriteLineAsync(task6.Result);
+                Console.Out.WriteLineAsync(task12.Result);
+                Console.Out.WriteLineAsync(task18.Result);
+            }
+            else
+            {
+                Task.WaitAll(task1, task2, task3, task4, task6, task12, task18);
+            }
+
+            return ok;
         }
     }
 }

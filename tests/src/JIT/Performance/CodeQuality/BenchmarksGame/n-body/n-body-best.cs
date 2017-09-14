@@ -14,18 +14,39 @@
 */
 
 using System;
+using Microsoft.Xunit.Performance;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    class NBody
+    public class NBody_3
     {
-        public static void Main(String[] args)
+        public static int Main(String[] args)
         {
             int n = args.Length > 0 ? Int32.Parse(args[0]) : 10000;
+            bool success = Bench(n, true);
+            return (success ? 100 : -1);
+        }
+
+        [Benchmark(InnerIterationCount = 2)]
+        public static void RunBench()
+        {
+            Benchmark.Iterate(() => Bench(5000000, false));
+        }
+
+        static bool Bench(int n, bool verbose)
+        {
             NBodySystem bodies = new NBodySystem();
-            Console.WriteLine("{0:f9}", bodies.Energy());
+            double initialEnergy = bodies.Energy();
+            if (verbose) Console.WriteLine("{0:f9}", initialEnergy);
             for (int i = 0; i < n; i++) bodies.Advance(0.01);
-            Console.WriteLine("{0:f9}", bodies.Energy());
+            double finalEnergy = bodies.Energy();
+            if (verbose) Console.WriteLine("{0:f9}", finalEnergy);
+            double deltaEnergy = Math.Abs(initialEnergy - finalEnergy);
+            bool result = deltaEnergy < 1e-4;
+            if (verbose) Console.WriteLine("Energy {0} conserved", result ? "was" : "was not");
+            return result;
         }
     }
 

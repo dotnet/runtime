@@ -17,18 +17,23 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Threading;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
     class RevCompSequence { public List<byte[]> Pages; public int StartHeader, EndExclusive; public Thread ReverseThread; }
 
-    public static class revcomp
+    public static class ReverseComplement_6
     {
         const int READER_BUFFER_SIZE = 1024 * 1024;
         const byte LF = 10, GT = (byte)'>', SP = 32;
-        static BlockingCollection<byte[]> readQue = new BlockingCollection<byte[]>();
-        static BlockingCollection<RevCompSequence> writeQue = new BlockingCollection<RevCompSequence>();
+        static BlockingCollection<byte[]> readQue;
+        static BlockingCollection<RevCompSequence> writeQue;
         static byte[] map;
 
         static int read(Stream stream, byte[] buffer, int offset, int count)
@@ -38,9 +43,10 @@ namespace BenchmarksGame
                  : bytesRead == 0 ? offset
                  : read(stream, buffer, offset + bytesRead, count - bytesRead);
         }
+        static Stream ReaderStream;
         static void Reader()
         {
-            using (var stream = Console.OpenStandardInput())
+            using (var stream = ReaderStream)
             {
                 int bytesRead;
                 do
@@ -56,7 +62,8 @@ namespace BenchmarksGame
         static bool tryTake<T>(BlockingCollection<T> q, out T t) where T : class
         {
             t = null;
-            while (!q.IsCompleted && !q.TryTake(out t)) Thread.SpinWait(0);
+            var wait = new SpinWait();
+            while (!q.IsCompleted && !q.TryTake(out t)) wait.SpinOnce();
             return t != null;
         }
 
@@ -190,9 +197,10 @@ namespace BenchmarksGame
             if (startIndex == endIndex) startBytes[startIndex] = map[startBytes[startIndex]];
         }
 
+        static Stream WriterStream;
         static void Writer()
         {
-            using (var stream = Console.OpenStandardOutput())
+            using (var stream = WriterStream)
             {
                 bool first = true;
                 RevCompSequence sequence;
@@ -220,8 +228,56 @@ namespace BenchmarksGame
             }
         }
 
-        public static void Main(string[] args)
+        static int Main(string[] args)
         {
+            var helpers = new TestHarnessHelpers(bigInput: false);
+            var outBytes = new byte[helpers.FileLength];
+            using (var input = new FileStream(helpers.InputFile, FileMode.Open))
+            using (var output = new MemoryStream(outBytes))
+            {
+                Bench(input, output);
+            }
+            Console.WriteLine(System.Text.Encoding.UTF8.GetString(outBytes));
+            if (!MatchesChecksum(outBytes, helpers.CheckSum))
+            {
+                return -1;
+            }
+            return 100;
+        }
+
+        [Benchmark(InnerIterationCount = 33)]
+        public static void RunBench()
+        {
+            var helpers = new TestHarnessHelpers(bigInput: true);
+            var outBytes = new byte[helpers.FileLength];
+
+            Benchmark.Iterate(() =>
+            {
+                var input = new FileStream(helpers.InputFile, FileMode.Open);
+                var output = new MemoryStream(outBytes);
+                {
+                    Bench(input, output);
+                }
+            });
+
+            Assert.True(MatchesChecksum(outBytes, helpers.CheckSum));
+        }
+
+        static bool MatchesChecksum(byte[] bytes, string checksum)
+        {
+            using (var md5 = MD5.Create())
+            {
+                byte[] hash = md5.ComputeHash(bytes);
+                return (checksum == BitConverter.ToString(hash));
+            }
+        }
+
+        static void Bench(Stream input, Stream output)
+        {
+            readQue = new BlockingCollection<byte[]>();
+            writeQue = new BlockingCollection<RevCompSequence>();
+            ReaderStream = input;
+            WriterStream = output;
             new Thread(Reader).Start();
             new Thread(Grouper).Start();
             Writer();

@@ -69,6 +69,8 @@ src/pal/tests/palsuite/paltestlist_to_be_reviewed.txt text eol=lf
 
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/regexdna/regexdna-input25.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/regexdna/regexdna-input25000.txt text eol=lf
+tests/src/JIT/Performance/CodeQuality/BenchmarksGame/regex-redux/regexdna-input25.txt text eol=lf
+tests/src/JIT/Performance/CodeQuality/BenchmarksGame/regex-redux/regexdna-input25000.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/revcomp-input25.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/revcomp-input25000.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input.txt text eol=lf

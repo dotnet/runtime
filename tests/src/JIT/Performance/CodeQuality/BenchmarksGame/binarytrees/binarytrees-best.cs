@@ -18,16 +18,36 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.Xunit.Performance;
+
+[assembly: OptimizeForBenchmarks]
+[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
-    public sealed class BinaryTrees
+    public sealed class BinaryTrees_5
     {
         public const int MinDepth = 4;
 
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             var n = args.Length == 0 ? 0 : int.Parse(args[0]);
+
+            int check = Bench(n, true);
+            int expected = 4398;
+
+            // Return 100 on success, anything else on failure.
+            return check - expected + 100;
+        }
+
+        [Benchmark(InnerIterationCount = 7)]
+        public static void RunBench()
+        {
+            Benchmark.Iterate(() => Bench(16, false));
+        }
+
+        static int Bench(int n, bool verbose)
+        {
             var maxDepth = n < (MinDepth + 2) ? MinDepth + 2 : n;
             var stretchDepth = maxDepth + 1;
 
@@ -44,8 +64,8 @@ namespace BenchmarksGame
                     var count = 0;
                     if (depthCopy >= 17)
                     {
-                    // Parallelized computation for relatively large tasks
-                    var miniTasks = new Task<int>[iterationCount];
+                        // Parallelized computation for relatively large tasks
+                        var miniTasks = new Task<int>[iterationCount];
                         for (var i = 0; i < iterationCount; i++)
                             miniTasks[i] = Task.Run(() => TreeNode.CreateTree(depthCopy).CountNodes());
                         Task.WaitAll(miniTasks);
@@ -54,8 +74,8 @@ namespace BenchmarksGame
                     }
                     else
                     {
-                    // Sequential computation for smaller tasks
-                    for (var i = 0; i < iterationCount; i++)
+                        // Sequential computation for smaller tasks
+                        for (var i = 0; i < iterationCount; i++)
                             count += TreeNode.CreateTree(depthCopy).CountNodes();
                     }
                     return $"{iterationCount}\t trees of depth {depthCopy}\t check: {count}";
@@ -63,12 +83,26 @@ namespace BenchmarksGame
             }
             Task.WaitAll(tasks);
 
-            Console.WriteLine("stretch tree of depth {0}\t check: {1}",
-                stretchDepth, stretchDepthTask.Result);
-            foreach (var task in tasks)
-                Console.WriteLine(task.Result);
-            Console.WriteLine("long lived tree of depth {0}\t check: {1}",
-                maxDepth, maxDepthTask.Result);
+            if (verbose)
+            {
+                int count = 0;
+                Action<string> printAndSum = (string s) =>
+                {
+                    Console.WriteLine(s);
+                    count += int.Parse(s.Substring(s.LastIndexOf(':') + 1).TrimStart());
+                };
+
+                printAndSum(String.Format("stretch tree of depth {0}\t check: {1}",
+                    stretchDepth, stretchDepthTask.Result));
+                foreach (var task in tasks)
+                    printAndSum(task.Result);
+                printAndSum(String.Format("long lived tree of depth {0}\t check: {1}",
+                    maxDepth, maxDepthTask.Result));
+
+                return count;
+            }
+
+            return 0;
         }
     }
 
