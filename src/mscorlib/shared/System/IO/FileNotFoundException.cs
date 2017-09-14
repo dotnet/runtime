@@ -12,32 +12,32 @@ namespace System.IO
         public FileNotFoundException()
             : base(SR.IO_FileNotFound)
         {
-            HResult = __HResults.COR_E_FILENOTFOUND;
+            HResult = HResults.COR_E_FILENOTFOUND;
         }
 
         public FileNotFoundException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_FILENOTFOUND;
+            HResult = HResults.COR_E_FILENOTFOUND;
         }
 
         public FileNotFoundException(string message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_FILENOTFOUND;
+            HResult = HResults.COR_E_FILENOTFOUND;
         }
 
         public FileNotFoundException(string message, string fileName) 
             : base(message)
         {
-            HResult = __HResults.COR_E_FILENOTFOUND;
+            HResult = HResults.COR_E_FILENOTFOUND;
             FileName = fileName;
         }
 
         public FileNotFoundException(string message, string fileName, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_FILENOTFOUND;
+            HResult = HResults.COR_E_FILENOTFOUND;
             FileName = fileName;
         }
 
@@ -55,7 +55,7 @@ namespace System.IO
             if (_message == null)
             {
                 if ((FileName == null) &&
-                    (HResult == System.__HResults.COR_E_EXCEPTION))
+                    (HResult == System.HResults.COR_E_EXCEPTION))
                     _message = SR.IO_FileNotFound;
 
                 else if (FileName != null)

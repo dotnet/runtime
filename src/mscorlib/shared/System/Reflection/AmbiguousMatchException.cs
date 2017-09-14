@@ -11,19 +11,19 @@ namespace System.Reflection
         public AmbiguousMatchException()
             : base(SR.RFLCT_Ambiguous)
         {
-            HResult = __HResults.COR_E_AMBIGUOUSMATCH;
+            HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }
 
         public AmbiguousMatchException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_AMBIGUOUSMATCH;
+            HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }
 
         public AmbiguousMatchException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_AMBIGUOUSMATCH;
+            HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }
     }
 }

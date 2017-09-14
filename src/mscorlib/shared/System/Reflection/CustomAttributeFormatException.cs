@@ -21,7 +21,7 @@ namespace System.Reflection
         public CustomAttributeFormatException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_CUSTOMATTRIBUTEFORMAT;
+            HResult = HResults.COR_E_CUSTOMATTRIBUTEFORMAT;
         }
 
         protected CustomAttributeFormatException(SerializationInfo info, StreamingContext context)

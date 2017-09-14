@@ -54,15 +54,19 @@ namespace System.Text
         internal sealed class UTF8EncodingSealed : UTF8Encoding
         {
             public UTF8EncodingSealed(bool encoderShouldEmitUTF8Identifier) : base(encoderShouldEmitUTF8Identifier) { }
+
+            public override ReadOnlySpan<byte> Preamble => _emitUTF8Identifier ? s_preamble : Array.Empty<byte>();
         }
 
         // Used by Encoding.UTF8 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly UTF8EncodingSealed s_default = new UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: true);
 
+        internal static readonly byte[] s_preamble = new byte[3] { 0xEF, 0xBB, 0xBF };
+
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
-        private bool _emitUTF8Identifier = false;
+        internal readonly bool _emitUTF8Identifier = false;
 
         private bool _isThrowException = false;
 
@@ -2497,6 +2501,10 @@ namespace System.Text
                 return Array.Empty<byte>();
         }
 
+        public override ReadOnlySpan<byte> Preamble =>
+            GetType() != typeof(UTF8Encoding) ? GetPreamble() : // in case a derived UTF8Encoding overrode GetPreamble
+            _emitUTF8Identifier ? s_preamble :
+            Array.Empty<byte>();
 
         public override bool Equals(Object value)
         {

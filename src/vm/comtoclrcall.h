@@ -29,10 +29,10 @@ enum ComCallFlags
     enum_NativeHResultRetVal        = 0x0040,   // Native ret val is an HRESULT
     enum_NativeBoolRetVal           = 0x0080,   // Native ret val is 0 in the case of failure
     enum_NativeVoidRetVal           = 0x0100,   // Native ret val is void
-    enum_IsEarlyBoundUnsafe         = 0x0200,   // Is unsafe to be called early-bound
+    // unused                       = 0x0200,
     enum_HasMarshalError            = 0x0400,   // The signature is not marshalable and m_StackBytes is a guess
     enum_IsDelegateInvoke           = 0x0800,   // The method is an 'Invoke' on a delegate
-    enum_NeedsSecurityCheck         = 0x1000,   // Security check is needed at every invocation
+    // unused                       = 0x1000,
     enum_IsWinRTCall                = 0x2000,   // The method is declared on a WinRT interface/delegate
     enum_IsWinRTCtor                = 0x4000,   // The method is a WinRT constructor
     enum_IsWinRTStatic              = 0x8000,   // The method is a WinRT static
@@ -117,18 +117,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (m_flags & enum_IsFieldCall);
-    }
-
-    BOOL IsEarlyBoundUnsafe()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_IsEarlyBoundUnsafe);
-    }
-
-    BOOL NeedsSecurityCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_NeedsSecurityCheck);
     }
 
     BOOL IsMethodCall()

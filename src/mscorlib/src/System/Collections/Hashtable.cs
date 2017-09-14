@@ -1392,10 +1392,7 @@ namespace System.Collections
     [FriendAccessAllowed]
     internal static class HashHelpers
     {
-#if FEATURE_RANDOMIZED_STRING_HASHING
         public const int HashCollisionThreshold = 100;
-        public static bool s_UseRandomizedStringHashing = String.UseRandomizedHashing();
-#endif
 
         // Table of prime numbers to use as hash table sizes. 
         // A typical resize algorithm would pick the smallest prime number in this array

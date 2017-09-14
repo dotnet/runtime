@@ -2424,77 +2424,77 @@ namespace System.Globalization
         /// </remarks>
         private enum LocaleStringData : uint
         {
-            /// <summary>localized name of locale, eg "German (Germany)" in UI language (coresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
+            /// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
             LocalizedDisplayName = 0x00000002,
-            /// <summary>Display name (language + country usually) in English, eg "German (Germany)" (coresponds to LOCALE_SENGLISHDISPLAYNAME)</summary>
+            /// <summary>Display name (language + country usually) in English, eg "German (Germany)" (corresponds to LOCALE_SENGLISHDISPLAYNAME)</summary>
             EnglishDisplayName = 0x00000072,
-            /// <summary>Display name in native locale language, eg "Deutsch (Deutschland) (coresponds to LOCALE_SNATIVEDISPLAYNAME)</summary>
+            /// <summary>Display name in native locale language, eg "Deutsch (Deutschland) (corresponds to LOCALE_SNATIVEDISPLAYNAME)</summary>
             NativeDisplayName = 0x00000073,
-            /// <summary>Language Display Name for a language, eg "German" in UI language (coresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
+            /// <summary>Language Display Name for a language, eg "German" in UI language (corresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
             LocalizedLanguageName = 0x0000006f,
-            /// <summary>English name of language, eg "German" (coresponds to LOCALE_SENGLISHLANGUAGENAME)</summary>
+            /// <summary>English name of language, eg "German" (corresponds to LOCALE_SENGLISHLANGUAGENAME)</summary>
             EnglishLanguageName = 0x00001001,
-            /// <summary>native name of language, eg "Deutsch" (coresponds to LOCALE_SNATIVELANGUAGENAME)</summary>
+            /// <summary>native name of language, eg "Deutsch" (corresponds to LOCALE_SNATIVELANGUAGENAME)</summary>
             NativeLanguageName = 0x00000004,
-            /// <summary>localized name of country, eg "Germany" in UI language (coresponds to LOCALE_SLOCALIZEDCOUNTRYNAME)</summary>
+            /// <summary>localized name of country, eg "Germany" in UI language (corresponds to LOCALE_SLOCALIZEDCOUNTRYNAME)</summary>
             LocalizedCountryName = 0x00000006,
-            /// <summary>English name of country, eg "Germany" (coresponds to LOCALE_SENGLISHCOUNTRYNAME)</summary>
+            /// <summary>English name of country, eg "Germany" (corresponds to LOCALE_SENGLISHCOUNTRYNAME)</summary>
             EnglishCountryName = 0x00001002,
-            /// <summary>native name of country, eg "Deutschland" (coresponds to LOCALE_SNATIVECOUNTRYNAME)</summary>
+            /// <summary>native name of country, eg "Deutschland" (corresponds to LOCALE_SNATIVECOUNTRYNAME)</summary>
             NativeCountryName = 0x00000008,
-            /// <summary>abbreviated language name (coresponds to LOCALE_SABBREVLANGNAME)</summary>
+            /// <summary>abbreviated language name (corresponds to LOCALE_SABBREVLANGNAME)</summary>
             AbbreviatedWindowsLanguageName = 0x00000003,
-            /// <summary>list item separator (coresponds to LOCALE_SLIST)</summary>
+            /// <summary>list item separator (corresponds to LOCALE_SLIST)</summary>
             ListSeparator = 0x0000000C,
-            /// <summary>decimal separator (coresponds to LOCALE_SDECIMAL)</summary>
+            /// <summary>decimal separator (corresponds to LOCALE_SDECIMAL)</summary>
             DecimalSeparator = 0x0000000E,
-            /// <summary>thousand separator (coresponds to LOCALE_STHOUSAND)</summary>
+            /// <summary>thousand separator (corresponds to LOCALE_STHOUSAND)</summary>
             ThousandSeparator = 0x0000000F,
-            /// <summary>digit grouping (coresponds to LOCALE_SGROUPING)</summary>
+            /// <summary>digit grouping (corresponds to LOCALE_SGROUPING)</summary>
             Digits = 0x00000013,
-            /// <summary>local monetary symbol (coresponds to LOCALE_SCURRENCY)</summary>
+            /// <summary>local monetary symbol (corresponds to LOCALE_SCURRENCY)</summary>
             MonetarySymbol = 0x00000014,
-            /// <summary>English currency name (coresponds to LOCALE_SENGCURRNAME)</summary>
+            /// <summary>English currency name (corresponds to LOCALE_SENGCURRNAME)</summary>
             CurrencyEnglishName = 0x00001007,
-            /// <summary>Native currency name (coresponds to LOCALE_SNATIVECURRNAME)</summary>
+            /// <summary>Native currency name (corresponds to LOCALE_SNATIVECURRNAME)</summary>
             CurrencyNativeName = 0x00001008,
-            /// <summary>uintl monetary symbol (coresponds to LOCALE_SINTLSYMBOL)</summary>
+            /// <summary>uintl monetary symbol (corresponds to LOCALE_SINTLSYMBOL)</summary>
             Iso4217MonetarySymbol = 0x00000015,
-            /// <summary>monetary decimal separator (coresponds to LOCALE_SMONDECIMALSEP)</summary>
+            /// <summary>monetary decimal separator (corresponds to LOCALE_SMONDECIMALSEP)</summary>
             MonetaryDecimalSeparator = 0x00000016,
-            /// <summary>monetary thousand separator (coresponds to LOCALE_SMONTHOUSANDSEP)</summary>
+            /// <summary>monetary thousand separator (corresponds to LOCALE_SMONTHOUSANDSEP)</summary>
             MonetaryThousandSeparator = 0x00000017,
-            /// <summary>AM designator (coresponds to LOCALE_S1159)</summary>
+            /// <summary>AM designator (corresponds to LOCALE_S1159)</summary>
             AMDesignator = 0x00000028,
-            /// <summary>PM designator (coresponds to LOCALE_S2359)</summary>
+            /// <summary>PM designator (corresponds to LOCALE_S2359)</summary>
             PMDesignator = 0x00000029,
-            /// <summary>positive sign (coresponds to LOCALE_SPOSITIVESIGN)</summary>
+            /// <summary>positive sign (corresponds to LOCALE_SPOSITIVESIGN)</summary>
             PositiveSign = 0x00000050,
-            /// <summary>negative sign (coresponds to LOCALE_SNEGATIVESIGN)</summary>
+            /// <summary>negative sign (corresponds to LOCALE_SNEGATIVESIGN)</summary>
             NegativeSign = 0x00000051,
-            /// <summary>ISO abbreviated language name (coresponds to LOCALE_SISO639LANGNAME)</summary>
+            /// <summary>ISO abbreviated language name (corresponds to LOCALE_SISO639LANGNAME)</summary>
             Iso639LanguageTwoLetterName = 0x00000059,
-            /// <summary>ISO abbreviated country name (coresponds to LOCALE_SISO639LANGNAME2)</summary>
+            /// <summary>ISO abbreviated country name (corresponds to LOCALE_SISO639LANGNAME2)</summary>
             Iso639LanguageThreeLetterName = 0x00000067,
-            /// <summary>ISO abbreviated language name (coresponds to LOCALE_SISO639LANGNAME)</summary>
+            /// <summary>ISO abbreviated language name (corresponds to LOCALE_SISO639LANGNAME)</summary>
             Iso639LanguageName = 0x00000059,
-            /// <summary>ISO abbreviated country name (coresponds to LOCALE_SISO3166CTRYNAME)</summary>
+            /// <summary>ISO abbreviated country name (corresponds to LOCALE_SISO3166CTRYNAME)</summary>
             Iso3166CountryName = 0x0000005A,
-            /// <summary>3 letter ISO country code (coresponds to LOCALE_SISO3166CTRYNAME2)</summary>
+            /// <summary>3 letter ISO country code (corresponds to LOCALE_SISO3166CTRYNAME2)</summary>
             Iso3166CountryName2 = 0x00000068,   // 3 character ISO country name
-            /// <summary>Not a Number (coresponds to LOCALE_SNAN)</summary>
+            /// <summary>Not a Number (corresponds to LOCALE_SNAN)</summary>
             NaNSymbol = 0x00000069,
-            /// <summary>+ Infinity (coresponds to LOCALE_SPOSINFINITY)</summary>
+            /// <summary>+ Infinity (corresponds to LOCALE_SPOSINFINITY)</summary>
             PositiveInfinitySymbol = 0x0000006a,
-            /// <summary>- Infinity (coresponds to LOCALE_SNEGINFINITY)</summary>
+            /// <summary>- Infinity (corresponds to LOCALE_SNEGINFINITY)</summary>
             NegativeInfinitySymbol = 0x0000006b,
-            /// <summary>Fallback name for resources (coresponds to LOCALE_SPARENT)</summary>
+            /// <summary>Fallback name for resources (corresponds to LOCALE_SPARENT)</summary>
             ParentName = 0x0000006d,
-            /// <summary>Fallback name for within the console (coresponds to LOCALE_SCONSOLEFALLBACKNAME)</summary>
+            /// <summary>Fallback name for within the console (corresponds to LOCALE_SCONSOLEFALLBACKNAME)</summary>
             ConsoleFallbackName = 0x0000006e,
-            /// <summary>Returns the percent symbol (coresponds to LOCALE_SPERCENT)</summary>
+            /// <summary>Returns the percent symbol (corresponds to LOCALE_SPERCENT)</summary>
             PercentSymbol = 0x00000076,
-            /// <summary>Returns the permille (U+2030) symbol (coresponds to LOCALE_SPERMILLE)</summary>
+            /// <summary>Returns the permille (U+2030) symbol (corresponds to LOCALE_SPERMILLE)</summary>
             PerMilleSymbol = 0x00000077
         }
 
@@ -2504,9 +2504,9 @@ namespace System.Globalization
         /// </remarks>
         private enum LocaleGroupingData : uint
         {
-            /// <summary>digit grouping (coresponds to LOCALE_SGROUPING)</summary>
+            /// <summary>digit grouping (corresponds to LOCALE_SGROUPING)</summary>
             Digit = 0x00000010,
-            /// <summary>monetary grouping (coresponds to LOCALE_SMONGROUPING)</summary>
+            /// <summary>monetary grouping (corresponds to LOCALE_SMONGROUPING)</summary>
             Monetary = 0x00000018,
         }
 
@@ -2516,29 +2516,29 @@ namespace System.Globalization
         /// </remarks>
         private enum LocaleNumberData : uint
         {
-            /// <summary>language id (coresponds to LOCALE_ILANGUAGE)</summary>
+            /// <summary>language id (corresponds to LOCALE_ILANGUAGE)</summary>
             LanguageId = 0x00000001,
-            /// <summary>geographical location id, (coresponds to LOCALE_IGEOID)</summary>
+            /// <summary>geographical location id, (corresponds to LOCALE_IGEOID)</summary>
             GeoId = 0x0000005B,
-            /// <summary>0 = context, 1 = none, 2 = national (coresponds to LOCALE_IDIGITSUBSTITUTION)</summary>
+            /// <summary>0 = context, 1 = none, 2 = national (corresponds to LOCALE_IDIGITSUBSTITUTION)</summary>
             DigitSubstitution = 0x00001014,
-            /// <summary>0 = metric, 1 = US (coresponds to LOCALE_IMEASURE)</summary>
+            /// <summary>0 = metric, 1 = US (corresponds to LOCALE_IMEASURE)</summary>
             MeasurementSystem = 0x0000000D,
-            /// <summary>number of fractional digits (coresponds to LOCALE_IDIGITS)</summary>
+            /// <summary>number of fractional digits (corresponds to LOCALE_IDIGITS)</summary>
             FractionalDigitsCount = 0x00000011,
-            /// <summary>negative number mode (coresponds to LOCALE_INEGNUMBER)</summary>
+            /// <summary>negative number mode (corresponds to LOCALE_INEGNUMBER)</summary>
             NegativeNumberFormat = 0x00001010,
-            /// <summary># local monetary digits (coresponds to LOCALE_ICURRDIGITS)</summary>
+            /// <summary># local monetary digits (corresponds to LOCALE_ICURRDIGITS)</summary>
             MonetaryFractionalDigitsCount = 0x00000019,
-            /// <summary>positive currency mode (coresponds to LOCALE_ICURRENCY)</summary>
+            /// <summary>positive currency mode (corresponds to LOCALE_ICURRENCY)</summary>
             PositiveMonetaryNumberFormat = 0x0000001B,
-            /// <summary>negative currency mode (coresponds to LOCALE_INEGCURR)</summary>
+            /// <summary>negative currency mode (corresponds to LOCALE_INEGCURR)</summary>
             NegativeMonetaryNumberFormat = 0x0000001C,
-            /// <summary>type of calendar specifier (coresponds to LOCALE_ICALENDARTYPE)</summary>
+            /// <summary>type of calendar specifier (corresponds to LOCALE_ICALENDARTYPE)</summary>
             CalendarType = 0x00001009,
-            /// <summary>first day of week specifier (coresponds to LOCALE_IFIRSTDAYOFWEEK)</summary>
+            /// <summary>first day of week specifier (corresponds to LOCALE_IFIRSTDAYOFWEEK)</summary>
             FirstDayOfWeek = 0x0000100C,
-            /// <summary>first week of year specifier (coresponds to LOCALE_IFIRSTWEEKOFYEAR)</summary>
+            /// <summary>first week of year specifier (corresponds to LOCALE_IFIRSTWEEKOFYEAR)</summary>
             FirstWeekOfYear = 0x0000100D,
             /// <summary>
             /// Returns one of the following 4 reading layout values:
@@ -2546,20 +2546,20 @@ namespace System.Globalization
             ///  1 - Right to left (eg arabic locales)
             ///  2 - Vertical top to bottom with columns to the left and also left to right (ja-JP locales)
             ///  3 - Vertical top to bottom with columns proceeding to the right
-            /// (coresponds to LOCALE_IREADINGLAYOUT)
+            /// (corresponds to LOCALE_IREADINGLAYOUT)
             /// </summary>
             ReadingLayout = 0x00000070,
-            /// <summary>Returns 0-11 for the negative percent format (coresponds to LOCALE_INEGATIVEPERCENT)</summary>
+            /// <summary>Returns 0-11 for the negative percent format (corresponds to LOCALE_INEGATIVEPERCENT)</summary>
             NegativePercentFormat = 0x00000074,
-            /// <summary>Returns 0-3 for the positive percent format (coresponds to LOCALE_IPOSITIVEPERCENT)</summary>
+            /// <summary>Returns 0-3 for the positive percent format (corresponds to LOCALE_IPOSITIVEPERCENT)</summary>
             PositivePercentFormat = 0x00000075,
-            /// <summary>default ansi code page (coresponds to LOCALE_IDEFAULTCODEPAGE)</summary>
+            /// <summary>default ansi code page (corresponds to LOCALE_IDEFAULTCODEPAGE)</summary>
             OemCodePage = 0x0000000B,
-            /// <summary>default ansi code page (coresponds to LOCALE_IDEFAULTANSICODEPAGE)</summary>
+            /// <summary>default ansi code page (corresponds to LOCALE_IDEFAULTANSICODEPAGE)</summary>
             AnsiCodePage = 0x00001004,
-            /// <summary>default mac code page (coresponds to LOCALE_IDEFAULTMACCODEPAGE)</summary>
+            /// <summary>default mac code page (corresponds to LOCALE_IDEFAULTMACCODEPAGE)</summary>
             MacCodePage = 0x00001011,
-            /// <summary>default ebcdic code page (coresponds to LOCALE_IDEFAULTEBCDICCODEPAGE)</summary>
+            /// <summary>default ebcdic code page (corresponds to LOCALE_IDEFAULTEBCDICCODEPAGE)</summary>
             EbcdicCodePage = 0x00001012,
         }
     }

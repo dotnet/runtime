@@ -3221,8 +3221,11 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
         {
             printf("<END>");
         }
-        printf(", BB=%08XH (BB%02u)", dspPtr(igPh->igPhData->igPhBB),
-               (igPh->igPhData->igPhBB != nullptr) ? igPh->igPhData->igPhBB->bbNum : 0);
+
+        if (igPh->igPhData->igPhBB != nullptr)
+        {
+            printf(", %s", igPh->igPhData->igPhBB->dspToString());
+        }
 
         emitDispIGflags(igPh->igFlags);
 

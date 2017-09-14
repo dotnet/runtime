@@ -404,7 +404,6 @@ GPTR_DECL(MethodTable,      g_pICastableInterface);
 
 GPTR_DECL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
-GPTR_DECL(MethodDesc,       g_pObjectCtorMD);
 GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 
 //<TODO> @TODO Remove eventually - determines whether the verifier throws an exception when something fails</TODO>

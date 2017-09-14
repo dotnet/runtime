@@ -196,7 +196,7 @@ namespace System.IO
                             if (!error)
                             {
                                 Debug.Assert(false, "File::FillAttributeInfo - FindClose failed!");
-                                __Error.WinIOError();
+                                throw Win32Marshal.GetExceptionForLastWin32Error();
                             }
                         }
                     }

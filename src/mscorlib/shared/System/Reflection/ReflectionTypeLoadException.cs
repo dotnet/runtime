@@ -13,7 +13,7 @@ namespace System.Reflection
         {
             Types = classes;
             LoaderExceptions = exceptions;
-            HResult = __HResults.COR_E_REFLECTIONTYPELOAD;
+            HResult = HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
         public ReflectionTypeLoadException(Type[] classes, Exception[] exceptions, string message)
@@ -21,7 +21,7 @@ namespace System.Reflection
         {
             Types = classes;
             LoaderExceptions = exceptions;
-            HResult = __HResults.COR_E_REFLECTIONTYPELOAD;
+            HResult = HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

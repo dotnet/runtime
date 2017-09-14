@@ -132,7 +132,7 @@ namespace System
                 _dateStart.Year == _dateEnd.Year;
 
             /// <summary>
-            /// Helper function that performs all of the validation checks for the actory methods and deserialization callback.
+            /// Helper function that performs all of the validation checks for the factory methods and deserialization callback.
             /// </summary>
             private static void ValidateAdjustmentRule(
                 DateTime dateStart,

@@ -238,35 +238,30 @@ namespace System.Globalization
 
         public static NumberFormatInfo GetInstance(IFormatProvider formatProvider)
         {
-            // Fast case for a regular CultureInfo
-            NumberFormatInfo info;
-            CultureInfo cultureProvider = formatProvider as CultureInfo;
-            if (cultureProvider != null && !cultureProvider._isInherited)
+            if (formatProvider != null)
             {
-                info = cultureProvider.numInfo;
+                // Fast case for a regular CultureInfo
+                NumberFormatInfo info;
+                CultureInfo cultureProvider = formatProvider as CultureInfo;
+                if (cultureProvider != null && !cultureProvider._isInherited)
+                {
+                    return cultureProvider.numInfo ?? cultureProvider.NumberFormat;
+                }
+
+                // Fast case for an NFI;
+                info = formatProvider as NumberFormatInfo;
                 if (info != null)
                 {
                     return info;
                 }
-                else
-                {
-                    return cultureProvider.NumberFormat;
-                }
-            }
-            // Fast case for an NFI;
-            info = formatProvider as NumberFormatInfo;
-            if (info != null)
-            {
-                return info;
-            }
-            if (formatProvider != null)
-            {
+
                 info = formatProvider.GetFormat(typeof(NumberFormatInfo)) as NumberFormatInfo;
                 if (info != null)
                 {
                     return info;
                 }
             }
+
             return CurrentInfo;
         }
 

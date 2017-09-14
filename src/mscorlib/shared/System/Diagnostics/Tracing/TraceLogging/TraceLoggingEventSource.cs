@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tracing
         /// 
         /// Also specify a list of key-value pairs called traits (you must pass an even number of strings).   
         /// The first string is the key and the second is the value.   These are not interpreted by EventSource
-        /// itself but may be interprated the listeners.  Can be fetched with GetTrait(string).   
+        /// itself but may be interpreted the listeners.  Can be fetched with GetTrait(string).   
         /// </summary>
         /// <param name="eventSourceName">
         /// The name of the event source. Must not be null.
@@ -442,7 +442,10 @@ namespace System.Diagnostics.Tracing
             var pinCount = eventTypes.pinCount;
             var scratch = stackalloc byte[eventTypes.scratchSize];
             var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
+
             var pins = stackalloc GCHandle[pinCount];
+            for (int i = 0; i < pinCount; i++)
+                pins[i] = default(GCHandle);
 
             fixed (byte*
                 pMetadata0 = this.providerMetadata,
@@ -619,7 +622,10 @@ namespace System.Diagnostics.Tracing
                     var pinCount = eventTypes.pinCount;
                     var scratch = stackalloc byte[eventTypes.scratchSize];
                     var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
+
                     var pins = stackalloc GCHandle[pinCount];
+                    for (int i = 0; i < pinCount; i++)
+                        pins[i] = default(GCHandle);
 
                     fixed (byte*
                         pMetadata0 = this.providerMetadata,
@@ -744,9 +750,9 @@ namespace System.Diagnostics.Tracing
         {
             DataCollector.ThreadInstance.Disable();
 
-            for (int i = 0; i != cPins; i++)
+            for (int i = 0; i < cPins; i++)
             {
-                if (IntPtr.Zero != (IntPtr)pPins[i])
+                if (pPins[i].IsAllocated)
                 {
                     pPins[i].Free();
                 }

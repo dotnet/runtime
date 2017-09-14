@@ -22,19 +22,19 @@ namespace System.Runtime.InteropServices
         public SafeArrayTypeMismatchException()
             : base(SR.Arg_SafeArrayTypeMismatchException)
         {
-            HResult = __HResults.COR_E_SAFEARRAYTYPEMISMATCH;
+            HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }
 
         public SafeArrayTypeMismatchException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_SAFEARRAYTYPEMISMATCH;
+            HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }
 
         public SafeArrayTypeMismatchException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_SAFEARRAYTYPEMISMATCH;
+            HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }
 
         protected SafeArrayTypeMismatchException(SerializationInfo info, StreamingContext context) : base(info, context)

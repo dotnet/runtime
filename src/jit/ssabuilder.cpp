@@ -264,7 +264,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
             block->bbPostOrderNum = postIndex;
             postIndex += 1;
 
-            DBG_SSA_JITDUMP("postOrder[%d] = [%p] and BB%02u\n", postIndex, dspPtr(block), block->bbNum);
+            DBG_SSA_JITDUMP("postOrder[%d] = %s\n", postIndex, block->dspToString());
         }
     }
 
@@ -381,7 +381,7 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
  */
 void SsaBuilder::DomTreeWalk(BasicBlock* curBlock, BlkToBlkSetMap* domTree, int* preIndex, int* postIndex)
 {
-    JITDUMP("[SsaBuilder::DomTreeWalk] block [%p], BB%02u:\n", dspPtr(curBlock), curBlock->bbNum);
+    JITDUMP("[SsaBuilder::DomTreeWalk] block %s:\n", curBlock->dspToString());
 
     // Store the order number at the block number in the pre order list.
     m_pDomPreOrder[curBlock->bbNum] = *preIndex;

@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Diagnostics;
+using System.Buffers;
 
 namespace System.IO
 {
@@ -386,6 +387,41 @@ namespace System.IO
 #if DEBUG
                 Debug.Assert(totalBytes == len, "BinaryWriter::Write(String) - Didn't write out all the bytes!");
 #endif
+            }
+        }
+
+        public virtual void Write(ReadOnlySpan<byte> value)
+        {
+            if (GetType() == typeof(BinaryWriter))
+            {
+                OutStream.Write(value);
+            }
+            else
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(value.Length);
+                try
+                {
+                    value.CopyTo(buffer);
+                    Write(buffer, 0, value.Length);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+        }
+
+        public virtual void Write(ReadOnlySpan<char> value)
+        {
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(_encoding.GetMaxByteCount(value.Length));
+            try
+            {
+                int bytesWritten = _encoding.GetBytes(value, bytes);
+                Write(bytes, 0, bytesWritten);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
             }
         }
 

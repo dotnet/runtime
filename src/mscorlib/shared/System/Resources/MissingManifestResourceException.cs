@@ -12,19 +12,19 @@ namespace System.Resources
         public MissingManifestResourceException()
             : base(SR.Arg_MissingManifestResourceException)
         {
-            HResult = System.__HResults.COR_E_MISSINGMANIFESTRESOURCE;
+            HResult = System.HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }
 
         public MissingManifestResourceException(string message)
             : base(message)
         {
-            HResult = System.__HResults.COR_E_MISSINGMANIFESTRESOURCE;
+            HResult = System.HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }
 
         public MissingManifestResourceException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = System.__HResults.COR_E_MISSINGMANIFESTRESOURCE;
+            HResult = System.HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }
 
         protected MissingManifestResourceException(SerializationInfo info, StreamingContext context)

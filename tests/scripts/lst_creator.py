@@ -31,7 +31,8 @@ PARSER = argparse.ArgumentParser(description=DESCRIPTION)
 
 PARSER.add_argument("--test", dest="testing", action="store_true", default=False)
 PARSER.add_argument("-lst_file", dest="old_list_file", nargs='?', default=None)
-PARSER.add_argument("-test_dir", dest="test_dir", nargs='?', default=None)
+PARSER.add_argument("-pri0_test_dir", dest="pri0_test_dir", nargs='?', default=None)
+PARSER.add_argument("-pri1_test_dir", dest="pri1_test_dir", nargs='?', default=None)
 PARSER.add_argument("-commit_hash", dest="commit_hash", nargs='?', default=None)
 PARSER.add_argument("-failures_csv", dest="failures_csv", nargs='?', default=None)
 PARSER.add_argument("--unset_new", dest="unset_new", action="store_true", default=False)
@@ -108,7 +109,8 @@ def create_metadata(tests):
     """ Given a set of tests create the metadata around them
 
     Args:
-        tests ([str]): List of tests for which to determine metadata
+        tests ({str : int}): List of tests for which to determine metadata
+                           : int represents the priority
 
     Returns:
         test_metadata ({ str: { str: str } }): Dictionary mapping test name to
@@ -140,12 +142,20 @@ def create_metadata(tests):
             raise Exception("Error. CSV format expects: relativepath,category")
 
     for test in tests:
-        working_directory = os.path.dirname(test).replace("/", "\\")
+        test_name = test
+        priority = tests[test]
+
+        working_directory = os.path.dirname(test_name).replace("/", "\\")
 
         # Make sure the tests use the windows \ seperator.
-        relative_path = test.replace("/", "\\")
+        relative_path = test_name.replace("/", "\\")
         max_duration = "600"
-        categories = "EXPECTED_PASS"
+        
+        if priority == 0:
+            categories = "EXPECTED_PASS"
+        else:
+            categories = "EXPECTED_PASS;Pri%d" % priority
+        
         expected = "0"
         host_style = "0"
 
@@ -193,7 +203,6 @@ def get_all_tests(base_dir):
         items = [os.path.join(working_dir, item) for item in items]
         dirs = [item for item in items if os.path.isdir(item)]
         tests = [item for item in items if ".cmd" in item]
-
 
         for item in dirs:
             tests += get_all_tests_helper(item)
@@ -280,7 +289,8 @@ def main(args):
     """
 
     # Assign all of the passed variables.
-    test_dir = args.test_dir
+    pri0_test_dir = args.pri0_test_dir
+    pri1_test_dir = args.pri1_test_dir
     old_list_file = args.old_list_file
     commit_hash = args.commit_hash
     unset_new = args.unset_new
@@ -289,13 +299,27 @@ def main(args):
         print "Error please provide a commit hash."
         sys.exit(1)
 
-    if test_dir is None or not os.path.isdir(test_dir):
-        print "Error the test directory passed is not a valid directory."
+    if pri0_test_dir is None or not os.path.isdir(pri0_test_dir):
+        print "Error the Pri1 test directory passed is not a valid directory."
         sys.exit(1)
 
-    tests = get_all_tests(test_dir)
-    print "Found %d tests in the test directory." % (len(tests))
+    if pri1_test_dir is None or not os.path.isdir(pri1_test_dir):
+        print "Error the Pri1 test directory passed is not a valid directory."
+        sys.exit(1)
+
+    pri0_tests = get_all_tests(pri0_test_dir)
+    print "Found %d tests in the pri0 test directory." % (len(pri0_tests))
+
+    pri1_tests = get_all_tests(pri1_test_dir)
+    print "Found %d tests in the pri1 test directory." % (len(pri1_tests))
     print
+
+    priority_marked_tests = defaultdict(lambda: None)
+    
+    for test in pri1_tests:
+        priority_marked_tests[test] = 1
+    for test in pri0_tests:
+        priority_marked_tests[test] = 0
 
     old_test_metadata = None
     # If we are updating an old lstFile. Get all of the tests from that
@@ -304,8 +328,9 @@ def main(args):
         old_test_metadata = parse_lst_file(old_list_file)
 
         print "Found %d tests in the old lstFile." % (len(old_test_metadata))
+        print
 
-    test_metadata = create_metadata(tests)
+    test_metadata = create_metadata(priority_marked_tests)
 
     # Make sure the tuples are set up correctly.
     for item in test_metadata:
@@ -324,8 +349,8 @@ def main(args):
             attributes = None
             if old_test_metadata[test_name] is None:
                 new_test_count += 1
-                new_metadata["Categories"] += ";NEW"
-                old_test_metadata[test_name] = (new_metadata, -1)
+                new_metadata[0]["Categories"] += ";NEW"
+                old_test_metadata[test_name] = (new_metadata[0], -1)
 
             else:
                 index = old_metadata[1]

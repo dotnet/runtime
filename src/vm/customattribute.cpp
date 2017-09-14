@@ -10,7 +10,6 @@
 #include "threads.h"
 #include "excep.h"
 #include "corerror.h"
-#include "security.h"
 #include "classnames.h"
 #include "fcall.h"
 #include "assemblynative.hpp"

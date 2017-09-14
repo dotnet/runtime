@@ -433,7 +433,7 @@ namespace System.IO
         private void HandleError(int hr, String path)
         {
             Dispose();
-            __Error.WinIOError(hr, path);
+            throw Win32Marshal.GetExceptionForWin32Error(hr, path);
         }
 
         private void AddSearchableDirsToStack(Directory.SearchData localSearchData)

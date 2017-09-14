@@ -26,7 +26,7 @@ public:
 
     ~NearDiffer();
 
-    void InitAsmDiff();
+    bool InitAsmDiff();
 
     bool compare(MethodContext* mc, CompileResult* cr1, CompileResult* cr2);
 
@@ -74,7 +74,12 @@ private:
         const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2);
 
 #ifdef USE_COREDISTOOLS
+
+    static bool __cdecl CoreDisCompareOffsetsCallback(
+        const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2);
+
     CorAsmDiff* corAsmDiff;
+
 #endif // USE_COREDISTOOLS
 
 #ifdef USE_MSVCDIS

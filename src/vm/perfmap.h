@@ -28,6 +28,9 @@ private:
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
 
+    // Set to true if an error is encountered when writing to the file.
+    unsigned m_StubsMapped;
+
     // Construct a new map for the specified pid.
     PerfMap(int pid);
 
@@ -63,6 +66,9 @@ public:
 
     // Log a JIT compiled method to the map.
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize);
+
+    // Log a set of stub to the map.
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize);
 
     // Close the map and flush any remaining data.
     static void Destroy();

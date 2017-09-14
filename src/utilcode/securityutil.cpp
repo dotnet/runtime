@@ -336,7 +336,7 @@ HRESULT SecurityUtil::GetMandatoryLabelFromProcess(HANDLE hProcess, LPBYTE * ppb
     HandleHolder hToken;
     DWORD err = 0;
 
-    if(!OpenProcessToken(hProcess, TOKEN_READ, &hToken))
+    if(!OpenProcessToken(hProcess, TOKEN_QUERY, &hToken))
     {
         return HRESULT_FROM_GetLastError();
     }

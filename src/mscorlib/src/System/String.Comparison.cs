@@ -44,7 +44,7 @@ namespace System
 
                     //Return the (case-insensitive) difference between them.
                     if (charA != charB)
-                        goto ReturnCharAMinusCharB; // TODO: Workaround for https://github.com/dotnet/coreclr/issues/9692
+                        return charA - charB;
 
                     // Next char
                     a++; b++;
@@ -52,9 +52,6 @@ namespace System
                 }
 
                 return strA.Length - strB.Length;
-
-                ReturnCharAMinusCharB:
-                return charA - charB;
             }
         }
 
@@ -168,14 +165,11 @@ namespace System
                     }
                     else
                     {
-                        goto ReturnFalse;
+                        return false;
                     }
                 }
 
                 return true;
-
-            ReturnFalse:
-                return false;
             }
         }
 
@@ -745,7 +739,7 @@ namespace System
             return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
-        // Determines whether a specified string is a suffix of the the current instance.
+        // Determines whether a specified string is a suffix of the current instance.
         //
         // The case-sensitive and culture-sensitive option is set by options,
         // and the default culture is used.
@@ -1008,34 +1002,14 @@ namespace System
             return !String.Equals(a, b);
         }
 
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        // Do not remove!
-        // This method is called by reflection in System.Xml
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int InternalMarvin32HashString(string s, int strLen, long additionalEntropy);
-
-        internal static bool UseRandomizedHashing()
-        {
-            return InternalUseRandomizedHashing();
-        }
-
-        [System.Security.SuppressUnmanagedCodeSecurity]
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool InternalUseRandomizedHashing();
-#endif
+        private static extern int InternalMarvin32HashString(string s);
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
         public override int GetHashCode()
         {
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            if (HashHelpers.s_UseRandomizedStringHashing)
-            {
-                return InternalMarvin32HashString(this, this.Length, 0);
-            }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-
-            return GetLegacyNonRandomizedHashCode();
+            return InternalMarvin32HashString(this);
         }
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparition C are such

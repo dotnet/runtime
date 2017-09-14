@@ -742,7 +742,7 @@ Dictionary::PopulateEntry(
         }
         
         // MethodTable is expected to be normalized      
-        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex]);
+        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex].GetValueMaybeNull());
     }
     else
     {

@@ -247,9 +247,6 @@ namespace System.Diagnostics
 
     // Class which represents a description of a stack trace
     // There is no good reason for the methods of this class to be virtual.  
-    // In order to ensure trusted code can trust the data it gets from a 
-    // StackTrace, we use an InheritanceDemand to prevent partially-trusted
-    // subclasses.
     public class StackTrace
     {
         private StackFrame[] frames;

@@ -637,6 +637,9 @@ typedef enum _TimeConversionConstants
 #ifdef __cplusplus
 }
 
+bool
+ReadMemoryValueFromFile(const char* filename, size_t* val);
+
 /* This is duplicated in utilcode.h for CLR, with cooler type-traits */
 template <typename T>
 inline

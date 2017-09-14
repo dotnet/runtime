@@ -145,41 +145,6 @@ namespace System
         }
 #endif // FEATURE_COMINTEROP
 
-        internal bool NeedsReflectionSecurityCheck
-        {
-            get
-            {
-                if (!IsVisible)
-                {
-                    // Types which are not externally visible require security checks
-                    return true;
-                }
-                else if (IsSecurityCritical && !IsSecuritySafeCritical)
-                {
-                    // Critical types require security checks
-                    return true;
-                }
-                else if (IsGenericType)
-                {
-                    // If any of the generic arguments to this type require a security check, then this type
-                    // also requires one.
-                    foreach (Type genericArgument in GetGenericArguments())
-                    {
-                        if (genericArgument.NeedsReflectionSecurityCheck)
-                        {
-                            return true;
-                        }
-                    }
-                }
-                else if (IsArray || IsPointer)
-                {
-                    return GetElementType().NeedsReflectionSecurityCheck;
-                }
-
-                return false;
-            }
-        }
-
         // This is only ever called on RuntimeType objects.
         internal string FormatTypeName()
         {

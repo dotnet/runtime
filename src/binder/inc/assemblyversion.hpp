@@ -22,9 +22,18 @@ namespace BINDER_SPACE
 {
     class AssemblyVersion
     {
+    private:
+        static const DWORD Unspecified = (DWORD)-1;
+        static const USHORT UnspecifiedShort = (USHORT)-1;
+
     public:
         inline AssemblyVersion();
         inline ~AssemblyVersion();
+
+        inline BOOL HasMajor();
+        inline BOOL HasMinor();
+        inline BOOL HasBuild();
+        inline BOOL HasRevision();
 
         inline DWORD GetMajor();
         inline DWORD GetMinor();
@@ -35,19 +44,10 @@ namespace BINDER_SPACE
                                       /* in */ DWORD dwMinor);
         inline void SetServiceVersion(/* in */ DWORD dwBuild,
                                       /* in */ DWORD dwRevision);
-        inline BOOL SetServiceVersion(/* in */ LPCWSTR pwzVersionStr);
-        inline BOOL SetVersion(/* in */ LPCWSTR pwzVersionStr);
         inline void SetVersion(AssemblyVersion *pAssemblyVersion);
 
-        inline BOOL IsLargerFeatureVersion(/* in */ AssemblyVersion *pAssemblyVersion);
-        inline BOOL IsEqualFeatureVersion(/* in */ AssemblyVersion *pAssemblyVersion);
-        inline BOOL IsSmallerFeatureVersion(/* in */ AssemblyVersion *pAssemblyVersion);
-        inline BOOL IsEqualServiceVersion(/* in */ AssemblyVersion *pAssemblyVersion);
-        inline BOOL IsLargerServiceVersion(/* in */ AssemblyVersion *pAssemblyVersion);
         inline BOOL Equals(AssemblyVersion *pAssemblyVersion);
-        inline BOOL IsSmallerOrEqual(AssemblyVersion *pAssemblyVersion);
-        inline BOOL IsLargerOrEqual(AssemblyVersion *pAssemblyVersion);
-    protected:
+    private:
         DWORD m_dwMajor;
         DWORD m_dwMinor;
         DWORD m_dwBuild;

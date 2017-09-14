@@ -159,9 +159,10 @@ namespace System.Globalization
             int month;
             int day;
 
-            if (!Int32.TryParse(value.Substring(0, 4), NumberStyles.None, NumberFormatInfo.InvariantInfo, out year) ||
-                !Int32.TryParse(value.Substring(5, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out month) ||
-                !Int32.TryParse(value.Substring(8, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out day))
+            ReadOnlySpan<char> valueSpan = value.AsReadOnlySpan();
+            if (!Int32.TryParse(valueSpan.Slice(0, 4), out year, style:NumberStyles.None, provider: NumberFormatInfo.InvariantInfo) ||
+                !Int32.TryParse(valueSpan.Slice(5, 2), out month, style:NumberStyles.None, provider: NumberFormatInfo.InvariantInfo) ||
+                !Int32.TryParse(valueSpan.Slice(8, 2), out day, style:NumberStyles.None, provider: NumberFormatInfo.InvariantInfo))
             {
                 // Couldn't convert integer, fail
                 return null;

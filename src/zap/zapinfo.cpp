@@ -448,25 +448,6 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
-    if (!m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))
-    {
-        BOOL raiseVerificationException, unverifiableGenericCode;
-
-        m_jitFlags = GetCompileFlagsIfGenericInstantiation(
-                        m_currentMethodHandle,
-                        m_jitFlags,
-                        this,
-                        &raiseVerificationException,
-                        &unverifiableGenericCode);
-
-        // Instead of raising a VerificationException, we will leave the method
-        // uncompiled. If it gets called at runtime, we will raise the
-        // VerificationException at that time while trying to compile the method.
-        if (raiseVerificationException)
-            return;
-    }
-
-
     if (m_pImage->m_stats)
     {
         m_pImage->m_stats->m_methods++;
@@ -3564,6 +3545,11 @@ const char* ZapInfo::getMethodName(CORINFO_METHOD_HANDLE ftn, const char **modul
     return m_pEEJitInfo->getMethodName(ftn, moduleName);
 }
 
+const char* ZapInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char** namespaceName)
+{
+    return m_pEEJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName);
+}
+
 unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
 {
     return m_pEEJitInfo->getMethodHash(ftn);
@@ -3702,10 +3688,11 @@ CORINFO_MODULE_HANDLE ZapInfo::getMethodModule(CORINFO_METHOD_HANDLE method)
 }
 
 void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
-                                                  unsigned * pOffsetOfIndirection,
-                                                  unsigned * pOffsetAfterIndirection)
+                                    unsigned * pOffsetOfIndirection,
+                                    unsigned * pOffsetAfterIndirection,
+                                    bool * isRelative)
 {
-    m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection);
+    m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection, isRelative);
 }
 
 CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(

@@ -37,7 +37,6 @@
 #include "dispex.h"
 #include "perfcounters.h"
 #include "guidfromname.h"
-#include "security.h"
 #include "comconnectionpoints.h"
 #include <objsafe.h>    // IID_IObjctSafe
 #include "virtualcallstub.h"
@@ -3274,9 +3273,7 @@ inline IUnknown * ComCallWrapper::GetComIPFromCCW_VisibilityCheck(
     }
     CONTRACT_END;
 
-        // Ensure that the interface we are passing out was defined in trusted code.
-    if ((!(flags & GetComIPFromCCW::SuppressSecurityCheck) && pIntfComMT->IsDefinedInUntrustedCode()) ||
-        // Do a visibility check if needed.
+    if (// Do a visibility check if needed.
         ((flags & GetComIPFromCCW::CheckVisibility) && (!pIntfComMT->IsComVisible())))
     {
         //  If not, fail to return the interface.
@@ -3698,10 +3695,8 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     ComMethodTable * pIntfComMT = ComMethodTable::ComMethodTableFromIP(pIntf);
 
     // Manual inlining of GetComIPFromCCW_VisibilityCheck() for common case.
-    if (// Ensure that the interface we are passing out was defined in trusted code.
-        (!(flags & GetComIPFromCCW::SuppressSecurityCheck) && pIntfComMT->IsDefinedInUntrustedCode())
-        // Do a visibility check if needed.
-        || ((flags & GetComIPFromCCW::CheckVisibility) && (!pIntfComMT->IsComVisible())))
+    if (// Do a visibility check if needed.
+        ((flags & GetComIPFromCCW::CheckVisibility) && (!pIntfComMT->IsComVisible())))
     {
         //  If not, fail to return the interface.
         SafeRelease(pIntf);
@@ -5452,12 +5447,6 @@ ComMethodTable* ComCallWrapperTemplate::GetClassComMT()
 
     MethodTable *pMT = m_thClass.GetMethodTable();
 
-    // Preload the policy for these classes before we take the lock.
-    for (MethodTable* pMethodTable = pMT; pMethodTable != NULL; pMethodTable = pMethodTable->GetParentMethodTable())
-    {
-        Security::CanCallUnmanagedCode(pMethodTable->GetModule());
-    }
-
     // We haven't set it up yet, generate one.
     ComMethodTable* pClassComMT; 
     if (pMT->IsDelegate() && (pMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pMT)))
@@ -5887,12 +5876,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
     if (IsTypeVisibleFromCom(TypeHandle(pComMT->m_pMT)))
         pComMT->m_Flags |= enum_ComVisible;
 
-    if (!Security::CanCallUnmanagedCode(pComMT->m_pMT->GetModule()))
-    {
-        pComMT->m_Flags |= enum_IsUntrusted;
-    }
-
-
 #if _DEBUG
     {
         // In debug set all the vtable slots to 0xDEADCA11.
@@ -5973,11 +5956,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
     // Determine if the interface is a COM imported class interface.
     if (pItfClass->GetClass()->IsComClassInterface())
         pComMT->m_Flags |= enum_ComClassItf;
-
-    if (!Security::CanCallUnmanagedCode(pComMT->m_pMT->GetModule()))
-    {
-        pComMT->m_Flags |= enum_IsUntrusted;
-    }
 
 #ifdef _DEBUG
     {
@@ -6064,11 +6042,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
     if (pMT->GetClass()->IsComClassInterface())
         pComMT->m_Flags |= enum_ComClassItf;
 
-    if (!Security::CanCallUnmanagedCode(pMT->GetModule()))
-    {
-        pComMT->m_Flags |= enum_IsUntrusted;
-    }
-
 #ifdef MDA_SUPPORTED
 #ifdef _DEBUG
     {
@@ -6149,11 +6122,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForDelegate(MethodTa
     pMTForIID->GetGuid(&pComMT->m_IID, TRUE);
 
     pComMT->m_Flags |= enum_GuidGenerated;
-
-    if (!Security::CanCallUnmanagedCode(pComMT->m_pMT->GetModule()))
-    {
-        pComMT->m_Flags |= enum_IsUntrusted;
-    }
 
 #if _DEBUG
     {
@@ -6287,11 +6255,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
     // Preload the policy for this interface
     CCWInterfaceMapIterator it(thClass, pClsFact, true);
-    while (it.Next())
-    {
-        Module *pModule = it.GetInterface()->GetModule();
-        Security::CanCallUnmanagedCode(pModule);
-    }
 
     // Num interfaces in the template.
     unsigned numInterfaces = it.GetCount();

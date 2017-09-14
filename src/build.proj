@@ -38,4 +38,18 @@
         DestinationFolder="$(BinDir)PDB" />
   </Target>
 
+  <PropertyGroup>
+    <RunEnforcePGO Condition="$(__EnforcePgo) == '1'">true</RunEnforcePGO>
+    <RunEnforcePGO Condition="$(__BuildArch) == 'arm' OR $(__BuildArch) == 'arm64'">false</RunEnforcePGO>
+  </PropertyGroup>
+
+  <Target Name="EnforcePGO" Condition="$(RunEnforcePGO) == 'true'" AfterTargets="Build">
+    <ItemGroup>
+      <PGOEnforcedFiles Include="$(BinDir)coreclr.dll" />
+      <PGOEnforcedFiles Include="$(BinDir)clrjit.dll" />
+    </ItemGroup>
+
+    <Message Text="Checking if the following DLLs are properly compiled with PGO" Importance="High" />
+    <Exec Command="python $(MSBuildThisFileDirectory)scripts\pgocheck.py @(PGOEnforcedFiles)" />
+  </Target>
 </Project>

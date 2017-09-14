@@ -207,6 +207,106 @@ LEAF_END ThePreStubPatch, _TEXT
     LEAF_END_MARKED \name, _TEXT
 .endmacro
 
+// ------------------------------------------------------------------
+// Start of the writeable code region
+LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
+    ret  lr
+LEAF_END JIT_PatchedCodeStart, _TEXT
+
+// void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck)
+//
+// Update shadow copies of the various state info required for barrier
+//
+// State info is contained in a literal pool at the end of the function
+// Placed in text section so that it is close enough to use ldr literal and still
+// be relocatable. Eliminates need for PREPARE_EXTERNAL_VAR in hot code.
+//
+// Align and group state info together so it fits in a single cache line
+// and each entry can be written atomically
+//
+WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
+
+    // x0-x7 will contain intended new state
+    // x8 will preserve skipEphemeralCheck
+    // x12 will be used for pointers
+
+    mov x8, x0
+
+    PREPARE_EXTERNAL_VAR g_card_table, x12
+    ldr  x0, [x12]
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    PREPARE_EXTERNAL_VAR g_card_bundle_table, x12
+    ldr  x1, [x12]
+#endif
+
+#ifdef WRITE_BARRIER_CHECK
+    PREPARE_EXTERNAL_VAR g_GCShadow, x12
+    ldr  x2, [x12]
+#endif
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
+    ldr  x3, [x12]
+#endif
+
+    PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
+    ldr  x4, [x12]
+
+    PREPARE_EXTERNAL_VAR g_ephemeral_high, x12
+    ldr  x5, [x12]
+
+    cbz  x8, LOCAL_LABEL(EphemeralCheckEnabled)
+    movz x4, #0
+    movn x5, #0
+LOCAL_LABEL(EphemeralCheckEnabled):
+
+    PREPARE_EXTERNAL_VAR g_lowest_address, x12
+    ldr  x6, [x12]
+
+    PREPARE_EXTERNAL_VAR g_highest_address, x12
+    ldr  x7, [x12]
+
+    // Update wbs state
+    adr  x12, LOCAL_LABEL(wbs_begin)
+
+    stp  x0, x1, [x12], 16
+    stp  x2, x3, [x12], 16
+    stp  x4, x5, [x12], 16
+    stp  x6, x7, [x12], 16
+
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+    EPILOG_RETURN
+
+    // Begin patchable literal pool
+    .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
+LOCAL_LABEL(wbs_begin):
+LOCAL_LABEL(wbs_card_table):
+    .quad 0
+LOCAL_LABEL(wbs_card_bundle_table):
+    .quad 0
+LOCAL_LABEL(wbs_GCShadow):
+    .quad 0
+LOCAL_LABEL(wbs_sw_ww_table):
+    .quad 0
+LOCAL_LABEL(wbs_ephemeral_low):
+    .quad 0
+LOCAL_LABEL(wbs_ephemeral_high):
+    .quad 0
+LOCAL_LABEL(wbs_lowest_address):
+    .quad 0
+LOCAL_LABEL(wbs_highest_address):
+    .quad 0
+WRITE_BARRIER_END JIT_UpdateWriteBarrierState
+
+
+// ------------------------------------------------------------------
+// End of the writeable code region
+LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
+    ret  lr
+LEAF_END JIT_PatchedCodeLast, _TEXT
+
 // void JIT_ByRefWriteBarrier
 // On entry:
 //   x13  : the source address (points to object reference to write)
@@ -235,19 +335,16 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //
 // On exit:
 //   x12  : trashed
-//   x14  : incremented by 8
+//   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //   x15  : trashed
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-    PREPARE_EXTERNAL_VAR g_lowest_address, x12
-    ldr  x12,  [x12]
+    ldr  x12,  LOCAL_LABEL(wbs_lowest_address)
     cmp  x14,  x12
-    blt  LOCAL_LABEL(NotInHeap)
 
-    PREPARE_EXTERNAL_VAR g_highest_address, x12
-    ldr  x12, [x12] 
-    cmp  x14, x12
+    ldr  x12, LOCAL_LABEL(wbs_highest_address)
+    ccmp x14, x12, #0x0, ge
     blt  C_FUNC(JIT_WriteBarrier)
 
 LOCAL_LABEL(NotInHeap):
@@ -262,7 +359,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //
 // On exit:
 //   x12  : trashed
-//   x14  : incremented by 8
+//   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //   x15  : trashed
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
@@ -272,23 +369,24 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 #ifdef WRITE_BARRIER_CHECK
     // Update GC Shadow Heap
 
-    // need temporary registers. Save them before using.
-    stp  x12, x13, [sp, #-16]!
+    // Do not perform the work if g_GCShadow is 0
+    ldr  x12, LOCAL_LABEL(wbs_GCShadow)
+    cbz  x12, LOCAL_LABEL(ShadowUpdateDisabled)
+
+    // need temporary register. Save before using.
+    str  x13, [sp, #-16]!
 
     // Compute address of shadow heap location:
     //   pShadow = g_GCShadow + (x14 - g_lowest_address)
-    PREPARE_EXTERNAL_VAR g_lowest_address, x12
-    ldr  x12, [x12]
-    sub  x12, x14, x12
-    PREPARE_EXTERNAL_VAR g_GCShadow, x13
-    ldr  x13, [x13]
+    ldr  x13, LOCAL_LABEL(wbs_lowest_address)
+    sub  x13, x14, x13
     add  x12, x13, x12
 
     // if (pShadow >= g_GCShadowEnd) goto end
     PREPARE_EXTERNAL_VAR g_GCShadowEnd, x13
     ldr  x13, [x13]
     cmp  x12, x13
-    bhs  LOCAL_LABEL(shadowupdateend)
+    bhs  LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = x15
     str  x15, [x12]
@@ -300,25 +398,22 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // if ([x14] == x15) goto end
     ldr  x13, [x14]
     cmp  x13, x15
-    beq LOCAL_LABEL(shadowupdateend)
+    beq LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = INVALIDGCVALUE (0xcccccccd)
-    mov  x13, #0
-    movk x13, #0xcccd
+    movz x13, #0xcccd
     movk x13, #0xcccc, LSL #16
     str  x13, [x12]
 
-LOCAL_LABEL(shadowupdateend):
-    ldp  x12, x13, [sp],#16
+LOCAL_LABEL(ShadowUpdateEnd):
+    ldr  x13, [sp], #16
+LOCAL_LABEL(ShadowUpdateDisabled):
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
-    PREPARE_EXTERNAL_VAR g_sw_ww_enabled_for_gc_heap, x12
-    ldrb w12, [x12]
+    ldr  x12, LOCAL_LABEL(wbs_sw_ww_table)
     cbz  x12, LOCAL_LABEL(CheckCardTable)
-    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
-    ldr  x12, [x12]
     add  x12, x12, x14, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
     ldrb w17, [x12]
     cbnz x17, LOCAL_LABEL(CheckCardTable)
@@ -329,20 +424,18 @@ LOCAL_LABEL(shadowupdateend):
 LOCAL_LABEL(CheckCardTable):
     // Branch to Exit if the reference is not in the Gen0 heap
     //
-    PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
-    ldr  x12,  [x12]
+    ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
+    cbz  x12, LOCAL_LABEL(SkipEphemeralCheck)
     cmp  x15,  x12
-    blt  LOCAL_LABEL(Exit)
 
-    PREPARE_EXTERNAL_VAR g_ephemeral_high, x12
-    ldr  x12, [x12]
-    cmp  x15,  x12
+    ldr  x12, LOCAL_LABEL(wbs_ephemeral_high)
+    ccmp x15, x12, 0x0, ge
     bgt  LOCAL_LABEL(Exit)
 
+LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
-    PREPARE_EXTERNAL_VAR g_card_table, x12
-    ldr  x12, [x12]
-    add  x15,  x12, x14, lsr #11
+    ldr  x12, LOCAL_LABEL(wbs_card_table)
+    add  x15, x12, x14, lsr #11
     ldrb w12, [x15]
     cmp  x12, 0xFF
     beq  LOCAL_LABEL(Exit)
@@ -352,10 +445,9 @@ LOCAL_LABEL(UpdateCardTable):
     strb w12, [x15]
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    // Check if we need to update the card table
-    PREPARE_EXTERNAL_VAR g_card_bundle_table, x12
-    ldr  x12, [x12]
-    add  x15,  x12, x14, lsr #21
+    // Check if we need to update the card bundle table
+    ldr  x12, LOCAL_LABEL(wbs_card_bundle_table)
+    add  x15, x12, x14, lsr #21
     ldrb w12, [x15]
     cmp  x12, 0xFF
     beq  LOCAL_LABEL(Exit)
@@ -369,18 +461,6 @@ LOCAL_LABEL(Exit):
     add  x14, x14, 8
     ret  lr  
 WRITE_BARRIER_END JIT_WriteBarrier
-
-// ------------------------------------------------------------------
-// Start of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
-    ret  lr
-LEAF_END JIT_PatchedCodeStart, _TEXT
-
-// ------------------------------------------------------------------
-// End of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
-    ret  lr
-LEAF_END JIT_PatchedCodeLast, _TEXT
 
 //------------------------------------------------
 // VirtualMethodFixupStub
@@ -1112,6 +1192,7 @@ LOCAL_LABEL(Promote):
     mov     x16, #256
     str     x16, [x13]         // be quick to reset the counter so we don't get a bunch of contending threads
     orr     x11, x11, #PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG
+    mov     x12, x9           // We pass the ResolveCacheElem to ResolveWorkerAsmStub instead of the DispatchToken
 
 LOCAL_LABEL(Fail):
     b       ResolveWorkerAsmStub // call the ResolveWorkerAsmStub method to transition into the VM
@@ -1301,3 +1382,100 @@ LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
     ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
     ret lr
 LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
+LEAF_ENTRY JIT_Stelem_Ref, _TEXT
+    // We retain arguments as they were passed and use x0 == array x1 == idx x2 == val
+
+    // check for null array
+    cbz     x0, LOCAL_LABEL(ThrowNullReferenceException)
+
+    // idx bounds check
+    ldr     x3,[x0,#ArrayBase__m_NumComponents]
+    cmp     x3, x1
+    bls     LOCAL_LABEL(ThrowIndexOutOfRangeException)
+
+    // fast path to null assignment (doesn't need any write-barriers)
+    cbz     x2, LOCAL_LABEL(AssigningNull)
+
+    // Verify the array-type and val-type matches before writing
+    ldr     x12, [x0] // x12 = array MT
+    ldr     x3, [x2] // x3 = val->GetMethodTable()
+    ldr     x12, [x12, #MethodTable__m_ElementType] // array->GetArrayElementTypeHandle()
+    cmp     x3, x12
+    beq     C_FUNC(JIT_Stelem_DoWrite)
+
+    // Types didnt match but allow writing into an array of objects
+    ldr     x3, =g_pObjectClass
+    ldr     x3, [x3]  // x3 = *g_pObjectClass
+    cmp     x3, x12   // array type matches with Object*
+    beq     C_FUNC(JIT_Stelem_DoWrite)
+
+    // array type and val type do not exactly match. Raise frame and do detailed match
+    b       C_FUNC(JIT_Stelem_Ref_NotExactMatch)
+
+LOCAL_LABEL(AssigningNull):
+    // Assigning null doesn't need write barrier
+    add     x0, x0, x1, LSL #3           // x0 = x0 + (x1 x 8) = array->m_array[idx]
+    str     x2, [x0, #PtrArray__m_Array] // array->m_array[idx] = val
+    ret
+
+LOCAL_LABEL(ThrowNullReferenceException):
+    // Tail call JIT_InternalThrow(NullReferenceException)
+    ldr     x0, =CORINFO_NullReferenceException_ASM
+    b       C_FUNC(JIT_InternalThrow)
+
+LOCAL_LABEL(ThrowIndexOutOfRangeException):
+    // Tail call JIT_InternalThrow(NullReferenceException)
+    ldr     x0, =CORINFO_IndexOutOfRangeException_ASM
+    b       C_FUNC(JIT_InternalThrow)
+
+LEAF_END JIT_Stelem_Ref, _TEXT
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref_NotExactMatch(PtrArray* array,
+//                                                       unsigned idx, Object* val)
+//   x12 = array->GetArrayElementTypeHandle()
+//
+NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -48
+    // Spill callee saved registers
+    PROLOG_SAVE_REG_PAIR   x0, x1, 16
+    PROLOG_SAVE_REG        x2, 32
+
+    // allow in case val can be casted to array element type
+    // call ObjIsInstanceOfNoGC(val, array->GetArrayElementTypeHandle())
+    mov     x1, x12 // array->GetArrayElementTypeHandle()
+    mov     x0, x2
+    bl      C_FUNC(ObjIsInstanceOfNoGC)
+    cmp     x0, TypeHandle_CanCast
+    beq     LOCAL_LABEL(DoWrite)             // ObjIsInstance returned TypeHandle::CanCast
+
+    // check via raising frame
+LOCAL_LABEL(NeedFrame):
+    add     x1, sp, #16             // x1 = &array
+    add     x0, sp, #32             // x0 = &val
+
+    bl      C_FUNC(ArrayStoreCheck) // ArrayStoreCheck(&val, &array)
+
+LOCAL_LABEL(DoWrite):
+    EPILOG_RESTORE_REG_PAIR           x0, x1, 16
+    EPILOG_RESTORE_REG                x2, 32
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   48
+    b C_FUNC(JIT_Stelem_DoWrite)
+NESTED_END JIT_Stelem_Ref_NotExactMatch, _TEXT
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)
+LEAF_ENTRY  JIT_Stelem_DoWrite, _TEXT
+
+    // Setup args for JIT_WriteBarrier. x14 = &array->m_array[idx] x15 = val
+    add     x14, x0, #PtrArray__m_Array // x14 = &array->m_array
+    add     x14, x14, x1, LSL #3
+    mov     x15, x2                     // x15 = val
+
+    // Branch to the write barrier (which is already correctly overwritten with
+    // single or multi-proc code based on the current CPU
+    b       C_FUNC(JIT_WriteBarrier)
+LEAF_END JIT_Stelem_DoWrite, _TEXT

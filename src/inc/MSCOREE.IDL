@@ -164,7 +164,7 @@ typedef enum {
   STARTUP_ARM                   = 0x400000,                     // Enable the ARM feature.
   STARTUP_SINGLE_APPDOMAIN      = 0x800000,                      // application runs in default domain, no more domains are created 
   STARTUP_APPX_APP_MODEL        = 0x1000000,                     // jupiter app
-  STARTUP_DISABLE_RANDOMIZED_STRING_HASHING     = 0x2000000      // Disable the randomized string hashing
+  STARTUP_DISABLE_RANDOMIZED_STRING_HASHING     = 0x2000000      // Disable the randomized string hashing (not supported)
 } STARTUP_FLAGS;
 
 typedef enum {

@@ -114,7 +114,7 @@ public class Int32ToString3
         retVal &= VerifyToString("PostTest4", -1, "d", "@1");
         retVal &= VerifyToString("PostTest5", -00000765, "f", "@765,000");
         retVal &= VerifyToString("PostTest6", -76500, "c", "USD@7.65.00,000");
-        retVal &= VerifyToString("PostTest7", -1800000000, "e", TestLibrary.Utilities.IsWindows ? "@1,800000e++009" : "@1,800000e9");
+        retVal &= VerifyToString("PostTest7", -1800000000, "e", "@1,800000e++009");
         retVal &= VerifyToString("PostTest8", 1886000000, "n", "18#86#00#00#00,000");
         retVal &= VerifyToString("PostTest9", -1987, "p", "@~198,700,0000");
 

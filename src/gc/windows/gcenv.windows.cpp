@@ -12,6 +12,7 @@
 #include "env/gcenv.base.h"
 #include "env/gcenv.os.h"
 #include "env/gcenv.windows.inl"
+#include "env/volatile.h"
 
 GCSystemInfo g_SystemInfo;
 

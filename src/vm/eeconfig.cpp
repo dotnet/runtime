@@ -241,7 +241,6 @@ HRESULT EEConfig::Init()
     
     INDEBUG(fStressLog = true;)
 
-    fVerifyAllOnLoad = false;
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
     fDebuggable = false;
@@ -382,6 +381,14 @@ HRESULT EEConfig::Init()
     fTieredCompilation = false;
 #endif
     
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    pszGDBJitElfDump = NULL;
+#endif // FEATURE_GDBJIT && _DEBUG
+
+#if defined(FEATURE_GDBJIT_FRAME)
+    fGDBJitEmitDebugFrame = false;
+#endif
+
     // After initialization, register the code:#GetConfigValueCallback method with code:CLRConfig to let
     // CLRConfig access config files. This is needed because CLRConfig lives outside the VM and can't
     // statically link to EEConfig.
@@ -1096,9 +1103,6 @@ HRESULT EEConfig::sync()
     fEnableRCWCleanupOnSTAShutdown = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableRCWCleanupOnSTAShutdown) != 0);
 #endif // FEATURE_COMINTEROP
 
-    //Eager verification of all assemblies.
-    fVerifyAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_VerifyAllOnLoad, fVerifyAllOnLoad) != 0);
-
 #ifdef _DEBUG
     fExpandAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ExpandAllOnLoad, fExpandAllOnLoad) != 0);
 #endif //_DEBUG
@@ -1240,6 +1244,17 @@ HRESULT EEConfig::sync()
     fTieredCompilation = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredCompilation) != 0;
 #endif
 
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    {
+        LPWSTR pszGDBJitElfDumpW = NULL;
+        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitElfDump, &pszGDBJitElfDumpW);
+        pszGDBJitElfDump = NarrowWideChar(pszGDBJitElfDumpW);
+    }
+#endif // FEATURE_GDBJIT && _DEBUG
+
+#if defined(FEATURE_GDBJIT_FRAME)
+    fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
+#endif
     return hr;
 }
 

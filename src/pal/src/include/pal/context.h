@@ -151,15 +151,21 @@ using asm_sigcontext::_xstate;
 
 #ifdef XSTATE_SUPPORTED
 
+#if HAVE_FPSTATE_GLIBC_RESERVED1
+#define FPSTATE_RESERVED __glibc_reserved1
+#else
+#define FPSTATE_RESERVED padding
+#endif
+
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
 {
     // Bytes 464..511 in the FXSAVE format are available for software to use for any purpose. In this case, they are used to
     // indicate information about extended state.
-    _ASSERTE(reinterpret_cast<UINT8 *>(&FPREG_Fpstate(uc)->padding[12]) - reinterpret_cast<UINT8 *>(FPREG_Fpstate(uc)) == 464);
+    _ASSERTE(reinterpret_cast<UINT8 *>(&FPREG_Fpstate(uc)->FPSTATE_RESERVED[12]) - reinterpret_cast<UINT8 *>(FPREG_Fpstate(uc)) == 464);
 
     _ASSERTE(FPREG_Fpstate(uc) != nullptr);
 
-    return reinterpret_cast<_fpx_sw_bytes *>(&FPREG_Fpstate(uc)->padding[12]);
+    return reinterpret_cast<_fpx_sw_bytes *>(&FPREG_Fpstate(uc)->FPSTATE_RESERVED[12]);
 }
 
 inline UINT32 FPREG_ExtendedSize(const ucontext_t *uc)

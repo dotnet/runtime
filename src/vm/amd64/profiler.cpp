@@ -36,6 +36,18 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
     UINT64      flt1;
     UINT64      flt2;
     UINT64      flt3;
+#if defined(UNIX_AMD64_ABI)
+    UINT64      flt4;
+    UINT64      flt5;
+    UINT64      flt6;
+    UINT64      flt7;
+    UINT64      rdi;
+    UINT64      rsi;
+    UINT64      rdx;
+    UINT64      rcx;
+    UINT64      r8;
+    UINT64      r9;
+#endif
     UINT32      flags;
 } PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
 
@@ -157,7 +169,16 @@ ProfileArgIterator::ProfileArgIterator(MetaSig * pSig, void * platformSpecificHa
                     index++;
                 }
 
+#ifdef UNIX_AMD64_ABI
+                switch (index)
+               {
+                case 0: pData->hiddenArg = (LPVOID)pData->rdi; break;
+                case 1: pData->hiddenArg = (LPVOID)pData->rsi; break;
+                case 2: pData->hiddenArg = (LPVOID)pData->rdx; break;
+                }
+#else
                 pData->hiddenArg = *(LPVOID*)((LPBYTE)pData->profiledRsp + (index * sizeof(SIZE_T)));
+#endif // UNIX_AMD64_ABI
             }
         }
         else
@@ -309,7 +330,11 @@ LPVOID ProfileArgIterator::GetThis(void)
     {
         if (m_argIterator.HasThis())
         {
+#ifdef UNIX_AMD64_ABI
+            return (LPVOID)pData->rdi;
+#else
             return *(LPVOID*)((LPBYTE)pData->profiledRsp);
+#endif // UNIX_AMD64_ABI
         }
     }
 

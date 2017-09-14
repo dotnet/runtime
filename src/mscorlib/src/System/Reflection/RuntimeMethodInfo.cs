@@ -54,29 +54,6 @@ namespace System.Reflection
                     {
                         // this should be an invocable method, determine the other flags that participate in invocation
                         invocationFlags = RuntimeMethodHandle.GetSecurityFlags(this);
-
-                        if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) == 0)
-                        {
-                            if ((Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public ||
-                                 (declaringType != null && declaringType.NeedsReflectionSecurityCheck))
-                            {
-                                // If method is non-public, or declaring type is not visible
-                                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-                            }
-                            else if (IsGenericMethod)
-                            {
-                                Type[] genericArguments = GetGenericArguments();
-
-                                for (int i = 0; i < genericArguments.Length; i++)
-                                {
-                                    if (genericArguments[i].NeedsReflectionSecurityCheck)
-                                    {
-                                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
                     }
 
                     m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
@@ -207,6 +184,7 @@ namespace System.Reflection
             return m_declaringType;
         }
 
+        internal sealed override int GenericParameterCount => RuntimeMethodHandle.GetGenericParameterCount(this);
         #endregion
 
         #region Object Overrides
@@ -488,7 +466,7 @@ namespace System.Reflection
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
-            return UnsafeInvokeInternal(obj, parameters, arguments);
+            return UnsafeInvokeInternal(obj, invokeAttr, parameters, arguments);
         }
 
         [DebuggerStepThroughAttribute]
@@ -497,18 +475,19 @@ namespace System.Reflection
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
-            return UnsafeInvokeInternal(obj, parameters, arguments);
+            return UnsafeInvokeInternal(obj, invokeAttr, parameters, arguments);
         }
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        private object UnsafeInvokeInternal(Object obj, Object[] parameters, Object[] arguments)
+        private object UnsafeInvokeInternal(Object obj, BindingFlags invokeAttr, Object[] parameters, Object[] arguments)
         {
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (arguments == null || arguments.Length == 0)
-                return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false);
+                return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false, wrapExceptions);
             else
             {
-                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false);
+                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
 
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)

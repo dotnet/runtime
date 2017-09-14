@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)  // Still may hit this case due to a race condition
             {
-                if (__HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex._HResult)
                 {
                     value = default(V);
                     return false;
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)
             {
-                if (__HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex._HResult)
                     throw new KeyNotFoundException(SR.Arg_KeyNotFound);
                 throw;
             }

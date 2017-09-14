@@ -252,7 +252,7 @@ namespace CorUnix
 
         SharedID Get(CPalThread * pthrCurrent)
         {
-            SharedID shridObj = NULLSharedID;
+            SharedID shridObj = NULL;
 
             Get(pthrCurrent, 1, &shridObj);
             return shridObj;
@@ -291,8 +291,8 @@ namespace CorUnix
             {
                 for (k=0; k<m_iMaxDepth/PreAllocFactor-n+i; k++)
                 {
-                    shridObj = RawSharedObjectAlloc(sizeof(USHRSynchCacheStackNode), DefaultSharedPool);
-                    if (NULLSharedID == shridObj)
+                    shridObj = malloc(sizeof(USHRSynchCacheStackNode));
+                    if (NULL == shridObj)
                     {
                         Flush(pthrCurrent, true);
                         break;
@@ -312,8 +312,8 @@ namespace CorUnix
 
             for (j=i;j<n;j++)
             {
-                shridObj = RawSharedObjectAlloc(sizeof(USHRSynchCacheStackNode), DefaultSharedPool);
-                if (NULLSharedID == shridObj)
+                shridObj = malloc(sizeof(USHRSynchCacheStackNode));
+                if (NULL == shridObj)
                     break;
 #ifdef _DEBUG
                 pvObjRaw = SharedIDToPointer(shridObj);                
@@ -333,7 +333,7 @@ namespace CorUnix
 
         void Add(CPalThread * pthrCurrent, SharedID shridObj)
         {
-            if (NULLSharedID == shridObj)
+            if (NULL == shridObj)
             {
                 return;
             }
@@ -360,7 +360,7 @@ namespace CorUnix
             }
             else
             {
-                RawSharedObjectFree(shridObj);
+                free(shridObj);
             }
             Unlock(pthrCurrent);       
         }
@@ -387,7 +387,7 @@ namespace CorUnix
                 pTemp = pNode;
                 pNode = pNode->pointers.pNext;
                 shridTemp = pTemp->pointers.shrid;
-                RawSharedObjectFree(shridTemp);
+                free(shridTemp);
             } 
         }    
     };

@@ -63,10 +63,16 @@ namespace System.IO
                     return new IOException(SR.Format(SR.IO_AlreadyExists_Name, path), MakeHRFromErrorCode(errorCode));
 
                 case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
-                    return new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
+                    if (path.Length == 0)
+                        return new PathTooLongException(SR.IO_PathTooLong);
+                    else
+                        return new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
+
+                case Interop.Errors.ERROR_INVALID_DRIVE:
+                    throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, path));                    
 
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
-                    return new IOException(GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
+                    return new IOException(Interop.Kernel32.GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
 
                 case Interop.Errors.ERROR_SHARING_VIOLATION:
                     if (path.Length == 0)
@@ -84,7 +90,7 @@ namespace System.IO
                     return new OperationCanceledException();
 
                 default:
-                    return new IOException(GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
+                    return new IOException(Interop.Kernel32.GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
             }
         }
 
@@ -96,14 +102,6 @@ namespace System.IO
             Debug.Assert((0xFFFF0000 & errorCode) == 0, "This is an HRESULT, not an error code!");
 
             return unchecked(((int)0x80070000) | errorCode);
-        }
-
-        /// <summary>
-        ///     Returns a string message for the specified Win32 error code.
-        /// </summary>
-        internal static string GetMessage(int errorCode)
-        {
-            return Interop.Kernel32.GetMessage(errorCode);
         }
     }
 }

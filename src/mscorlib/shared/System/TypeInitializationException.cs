@@ -28,7 +28,7 @@ namespace System
         private TypeInitializationException()
             : base(SR.TypeInitialization_Default)
         {
-            HResult = __HResults.COR_E_TYPEINITIALIZATION;
+            HResult = HResults.COR_E_TYPEINITIALIZATION;
         }
 
 
@@ -41,14 +41,14 @@ namespace System
         // for Interop only, though it's not particularly useful.
         internal TypeInitializationException(String message) : base(message)
         {
-            HResult = __HResults.COR_E_TYPEINITIALIZATION;
+            HResult = HResults.COR_E_TYPEINITIALIZATION;
         }
 
         internal TypeInitializationException(String fullTypeName, String message, Exception innerException)
             : base(message, innerException)
         {
             _typeName = fullTypeName;
-            HResult = __HResults.COR_E_TYPEINITIALIZATION;
+            HResult = HResults.COR_E_TYPEINITIALIZATION;
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

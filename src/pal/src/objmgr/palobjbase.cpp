@@ -314,6 +314,16 @@ CPalObjectBase::ReleaseReference(
                 );
         }
 
+        if (NULL != m_pot->GetImmutableDataCleanupRoutine())
+        {
+            (*m_pot->GetImmutableDataCleanupRoutine())(m_pvImmutableData);
+        }
+
+        if (NULL != m_pot->GetProcessLocalDataCleanupRoutine())
+        {
+            (*m_pot->GetProcessLocalDataCleanupRoutine())(pthr, static_cast<IPalObject*>(this));
+        }
+
         InternalDelete(this);
 
         pthr->ReleaseThreadReference();

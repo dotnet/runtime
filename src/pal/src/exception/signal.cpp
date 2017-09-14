@@ -722,6 +722,42 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 
 /*++
 Function :
+    signal_ignore_handler
+
+    Simple signal handler which does nothing
+
+Parameters :
+    POSIX signal handler parameter list ("man sigaction" for details)
+
+(no return value)
+--*/
+static void signal_ignore_handler(int code, siginfo_t *siginfo, void *context)
+{
+}
+
+
+void PAL_IgnoreProfileSignal(int signalNum)
+{
+#if !HAVE_MACH_EXCEPTIONS
+    // Add a signal handler which will ignore signals
+    // This will allow signal to be used as a marker in perf recording.
+    // This will be used as an aid to synchronize recorded profile with
+    // test cases
+    //
+    // signal(signalNum, SGN_IGN) can not be used here.  It will ignore
+    // the signal in kernel space and therefore generate no recordable
+    // event for profiling. Preventing it being used for profile
+    // synchronization
+    //
+    // Since this is only used in rare circumstances no attempt to
+    // restore the old handler will be made
+    handle_signal(signalNum, signal_ignore_handler, 0);
+#endif
+}
+
+
+/*++
+Function :
     SEHSetSafeState
 
     specify whether the current thread is in a state where exception handling 

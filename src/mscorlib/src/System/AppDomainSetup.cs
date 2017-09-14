@@ -14,7 +14,6 @@ namespace System
 {
     using System.Text;
     using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
     using System.Security;
     using Path = System.IO.Path;
     using System.Diagnostics;
@@ -62,19 +61,7 @@ namespace System
 
         // A collection of strings used to indicate which breaking changes shouldn't be applied
         // to an AppDomain. We only use the keys, the values are ignored.
-        [OptionalField(VersionAdded = 4)]
         private Dictionary<string, object> _CompatFlags;
-
-        [OptionalField(VersionAdded = 5)] // This was added in .NET FX v4.5
-        private String _TargetFrameworkName;
-
-        [OptionalField(VersionAdded = 5)] // This was added in .NET FX v4.5
-        private bool _CheckedForTargetFrameworkName;
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        [OptionalField(VersionAdded = 5)] // This was added in .NET FX v4.5
-        private bool _UseRandomizedStringHashing;
-#endif
 
         internal AppDomainSetup(AppDomainSetup copy, bool copyDomainBoundData)
         {
@@ -101,13 +88,6 @@ namespace System
                 {
                     SetCompatibilitySwitches(copy._CompatFlags.Keys);
                 }
-
-                _TargetFrameworkName = copy._TargetFrameworkName;
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-                _UseRandomizedStringHashing = copy._UseRandomizedStringHashing;
-#endif
-
             }
         }
 
@@ -168,20 +148,11 @@ namespace System
 
         public void SetCompatibilitySwitches(IEnumerable<String> switches)
         {
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            _UseRandomizedStringHashing = false;
-#endif
             if (switches != null)
             {
                 _CompatFlags = new Dictionary<string, object>();
                 foreach (String str in switches)
                 {
-#if FEATURE_RANDOMIZED_STRING_HASHING
-                    if (StringComparer.OrdinalIgnoreCase.Equals("UseRandomizedStringHashAlgorithm", str))
-                    {
-                        _UseRandomizedStringHashing = true;
-                    }
-#endif
                     _CompatFlags.Add(str, null);
                 }
             }
@@ -196,11 +167,7 @@ namespace System
         {
             get
             {
-                return _TargetFrameworkName;
-            }
-            set
-            {
-                _TargetFrameworkName = value;
+                return null;
             }
         }
 

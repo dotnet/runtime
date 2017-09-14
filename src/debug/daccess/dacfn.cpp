@@ -203,8 +203,7 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
 
     HRESULT status;
 
-    status = g_dacImpl->m_pMutableTarget->
-        WriteVirtual(addr, (PBYTE)buffer, size);
+    status = g_dacImpl->m_pMutableTarget->WriteVirtual(addr, (PBYTE)buffer, size);
     if (status != S_OK)
     {
         if (throwEx)
@@ -218,6 +217,34 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
 }
 
 #ifdef FEATURE_PAL
+
+static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    DAC_INSTANCE* inst = g_dacImpl->m_instances.Find((TADDR)address);
+    if (inst == nullptr || inst->size < size)
+    {
+        inst = g_dacImpl->m_instances.Alloc((TADDR)address, size, DAC_PAL);
+        if (inst == nullptr)
+        {
+            return FALSE;
+        }
+        inst->noReport = 0;
+        HRESULT hr = DacReadAll((TADDR)address, inst + 1, size, false);
+        if (FAILED(hr))
+        {
+            g_dacImpl->m_instances.ReturnAlloc(inst);
+            return FALSE;
+        }
+        if (!g_dacImpl->m_instances.Add(inst))
+        {
+            g_dacImpl->m_instances.ReturnAlloc(inst);
+            return FALSE;
+        }
+    }
+    memcpy(buffer, inst + 1, size);
+    return TRUE;
+}
+
 HRESULT 
 DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
@@ -233,15 +260,28 @@ DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POI
         memset(contextPointers, 0, sizeof(T_KNONVOLATILE_CONTEXT_POINTERS));
     }
 
+    HRESULT hr = S_OK;
+
+#ifdef FEATURE_DATATARGET4
     ReleaseHolder<ICorDebugDataTarget4> dt;
-    HRESULT hr = g_dacImpl->m_pTarget->QueryInterface(IID_ICorDebugDataTarget4, (void **)&dt);
+    hr = g_dacImpl->m_pTarget->QueryInterface(IID_ICorDebugDataTarget4, (void **)&dt);
     if (SUCCEEDED(hr))
     {
         hr = dt->VirtualUnwind(threadId, sizeof(CONTEXT), (BYTE*)context);
     }
+    else 
+#endif
+    {
+        SIZE_T baseAddress = DacGlobalBase();
+        if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, baseAddress, DacReadAllAdapter))
+        {
+            hr = E_FAIL;
+        }
+    }
 
     return hr;
 }
+
 #endif // FEATURE_PAL
 
 // DacAllocVirtual - Allocate memory from the target process

@@ -1119,10 +1119,11 @@ bool Compiler::optExtractInitTestIncr(
 
 /*****************************************************************************
  *
- *  Record the loop in the loop table.
+ *  Record the loop in the loop table.  Return true if successful, false if
+ *  out of entries in loop table.
  */
 
-void Compiler::optRecordLoop(BasicBlock*   head,
+bool Compiler::optRecordLoop(BasicBlock*   head,
                              BasicBlock*   first,
                              BasicBlock*   top,
                              BasicBlock*   entry,
@@ -1138,7 +1139,7 @@ void Compiler::optRecordLoop(BasicBlock*   head,
 #if COUNT_LOOPS
         loopOverflowThisMethod = true;
 #endif
-        return;
+        return false;
     }
 
     // Assumed preconditions on the loop we're adding.
@@ -1318,6 +1319,7 @@ void Compiler::optRecordLoop(BasicBlock*   head,
 DONE_LOOP:
     DBEXEC(verbose, optPrintLoopRecording(loopInd));
     optLoopCount++;
+    return true;
 }
 
 #ifdef DEBUG
@@ -1416,6 +1418,1001 @@ void Compiler::optCheckPreds()
 
 #endif // DEBUG
 
+namespace
+{
+//------------------------------------------------------------------------
+// LoopSearch: Class that handles scanning a range of blocks to detect a loop,
+//             moving blocks to make the loop body contiguous, and recording
+//             the loop.
+//
+// We will use the following terminology:
+//   HEAD    - the basic block that flows into the loop ENTRY block (Currently MUST be lexically before entry).
+//             Not part of the looping of the loop.
+//   FIRST   - the lexically first basic block (in bbNext order) within this loop.
+//   TOP     - the target of the backward edge from BOTTOM. In most cases FIRST and TOP are the same.
+//   BOTTOM  - the lexically last block in the loop (i.e. the block from which we jump to the top)
+//   EXIT    - the predecessor of loop's unique exit edge, if it has a unique exit edge; else nullptr
+//   ENTRY   - the entry in the loop (not necessarly the TOP), but there must be only one entry
+//
+//   We (currently) require the body of a loop to be a contiguous (in bbNext order) sequence of basic blocks.
+//   When the loop is identified, blocks will be moved out to make it a compact contiguous region if possible,
+//   and in cases where compaction is not possible, we'll subsequently treat all blocks in the lexical range
+//   between TOP and BOTTOM as part of the loop even if they aren't part of the SCC.
+//   Regarding nesting:  Since a given block can only have one back-edge (we only detect loops with back-edges
+//   from BBJ_COND or BBJ_ALWAYS blocks), no two loops will share the same BOTTOM.  Two loops may share the
+//   same FIRST/TOP/ENTRY as reported by LoopSearch, and optCanonicalizeLoopNest will subsequently re-write
+//   the CFG so that no two loops share the same FIRST/TOP/ENTRY anymore.
+//
+//        |
+//        v
+//      head
+//        |
+//        |  top/first <--+
+//        |       |       |
+//        |      ...      |
+//        |       |       |
+//        |       v       |
+//        +---> entry     |
+//                |       |
+//               ...      |
+//                |       |
+//                v       |
+//         +-- exit/tail  |
+//         |      |       |
+//         |     ...      |
+//         |      |       |
+//         |      v       |
+//         |    bottom ---+
+//         |
+//         +------+
+//                |
+//                v
+//
+class LoopSearch
+{
+
+    // Keeping track of which blocks are in the loop requires two block sets since we may add blocks
+    // as we go but the BlockSet type's max ID doesn't increase to accomodate them.  Define a helper
+    // struct to make the ensuing code more readable.
+    struct LoopBlockSet
+    {
+    private:
+        // Keep track of blocks with bbNum <= oldBlockMaxNum in a regular BlockSet, since
+        // it can hold all of them.
+        BlockSet oldBlocksInLoop; // Blocks with bbNum <= oldBlockMaxNum
+
+        // Keep track of blocks with bbNum > oldBlockMaxNum in a separate BlockSet, but
+        // indexing them by (blockNum - oldBlockMaxNum); since we won't generate more than
+        // one new block per old block, this must be sufficient to track any new blocks.
+        BlockSet newBlocksInLoop; // Blocks with bbNum > oldBlockMaxNum
+
+        Compiler*    comp;
+        unsigned int oldBlockMaxNum;
+
+    public:
+        LoopBlockSet(Compiler* comp)
+            : oldBlocksInLoop(BlockSetOps::UninitVal())
+            , newBlocksInLoop(BlockSetOps::UninitVal())
+            , comp(comp)
+            , oldBlockMaxNum(comp->fgBBNumMax)
+        {
+        }
+
+        void Reset(unsigned int seedBlockNum)
+        {
+            if (BlockSetOps::MayBeUninit(oldBlocksInLoop))
+            {
+                // Either the block sets are uninitialized (and long), so we need to initialize
+                // them (and allocate their backing storage), or they are short and empty, so
+                // assigning MakeEmpty to them is as cheap as ClearD.
+                oldBlocksInLoop = BlockSetOps::MakeEmpty(comp);
+                newBlocksInLoop = BlockSetOps::MakeEmpty(comp);
+            }
+            else
+            {
+                // We know the backing storage is already allocated, so just clear it.
+                BlockSetOps::ClearD(comp, oldBlocksInLoop);
+                BlockSetOps::ClearD(comp, newBlocksInLoop);
+            }
+            assert(seedBlockNum <= oldBlockMaxNum);
+            BlockSetOps::AddElemD(comp, oldBlocksInLoop, seedBlockNum);
+        }
+
+        bool CanRepresent(unsigned int blockNum)
+        {
+            // We can represent old blocks up to oldBlockMaxNum, and
+            // new blocks up to 2 * oldBlockMaxNum.
+            return (blockNum <= 2 * oldBlockMaxNum);
+        }
+
+        bool IsMember(unsigned int blockNum)
+        {
+            if (blockNum > oldBlockMaxNum)
+            {
+                return BlockSetOps::IsMember(comp, newBlocksInLoop, blockNum - oldBlockMaxNum);
+            }
+            return BlockSetOps::IsMember(comp, oldBlocksInLoop, blockNum);
+        }
+
+        void Insert(unsigned int blockNum)
+        {
+            if (blockNum > oldBlockMaxNum)
+            {
+                BlockSetOps::AddElemD(comp, newBlocksInLoop, blockNum - oldBlockMaxNum);
+            }
+            else
+            {
+                BlockSetOps::AddElemD(comp, oldBlocksInLoop, blockNum);
+            }
+        }
+
+        bool TestAndInsert(unsigned int blockNum)
+        {
+            if (blockNum > oldBlockMaxNum)
+            {
+                unsigned int shiftedNum = blockNum - oldBlockMaxNum;
+                if (!BlockSetOps::IsMember(comp, newBlocksInLoop, shiftedNum))
+                {
+                    BlockSetOps::AddElemD(comp, newBlocksInLoop, shiftedNum);
+                    return false;
+                }
+            }
+            else
+            {
+                if (!BlockSetOps::IsMember(comp, oldBlocksInLoop, blockNum))
+                {
+                    BlockSetOps::AddElemD(comp, oldBlocksInLoop, blockNum);
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+
+    LoopBlockSet loopBlocks; // Set of blocks identified as part of the loop
+    Compiler*    comp;
+
+    // See LoopSearch class comment header for a diagram relating these fields:
+    BasicBlock* head;   // Predecessor of unique entry edge
+    BasicBlock* first;  // Lexically first in-loop block
+    BasicBlock* top;    // Successor of back-edge from BOTTOM
+    BasicBlock* bottom; // Predecessor of back-edge to TOP, also lexically last in-loop block
+    BasicBlock* entry;  // Successor of unique entry edge
+
+    BasicBlock*   lastExit;       // Most recently discovered exit block
+    unsigned char exitCount;      // Number of discovered exit edges
+    unsigned int  oldBlockMaxNum; // Used to identify new blocks created during compaction
+    BlockSet      bottomBlocks;   // BOTTOM blocks of already-recorded loops
+#ifdef DEBUG
+    bool forgotExit = false; // Flags a rare case where lastExit gets nulled out, for assertions
+#endif
+    bool changedFlowGraph = false; // Signals that loop compaction has modified the flow graph
+
+public:
+    LoopSearch(Compiler* comp)
+        : loopBlocks(comp), comp(comp), oldBlockMaxNum(comp->fgBBNumMax), bottomBlocks(BlockSetOps::MakeEmpty(comp))
+    {
+        // Make sure we've renumbered such that the bitsets can hold all the bits
+        assert(comp->fgBBNumMax <= comp->fgCurBBEpochSize);
+    }
+
+    //------------------------------------------------------------------------
+    // RecordLoop: Notify the Compiler that a loop has been found.
+    //
+    // Return Value:
+    //    true  - Loop successfully recorded.
+    //    false - Compiler has run out of loop descriptors; loop not recorded.
+    //
+    bool RecordLoop()
+    {
+        /* At this point we have a compact loop - record it in the loop table
+        * If we found only one exit, record it in the table too
+        * (otherwise an exit = nullptr in the loop table means multiple exits) */
+
+        BasicBlock* onlyExit = (exitCount == 1 ? lastExit : nullptr);
+        if (comp->optRecordLoop(head, first, top, entry, bottom, onlyExit, exitCount))
+        {
+            // Record the BOTTOM block for future reference before returning.
+            assert(bottom->bbNum <= oldBlockMaxNum);
+            BlockSetOps::AddElemD(comp, bottomBlocks, bottom->bbNum);
+            return true;
+        }
+
+        // Unable to record this loop because the loop descriptor table overflowed.
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // ChangedFlowGraph: Determine whether loop compaction has modified the flow graph.
+    //
+    // Return Value:
+    //    true  - The flow graph has been modified; fgUpdateChangedFlowGraph should
+    //            be called (which is the caller's responsibility).
+    //    false - The flow graph has not been modified by this LoopSearch.
+    //
+    bool ChangedFlowGraph()
+    {
+        return changedFlowGraph;
+    }
+
+    //------------------------------------------------------------------------
+    // FindLoop: Search for a loop with the given HEAD block and back-edge.
+    //
+    // Arguments:
+    //    head - Block to be the HEAD of any loop identified
+    //    top - Block to be the TOP of any loop identified
+    //    bottom - Block to be the BOTTOM of any loop identified
+    //
+    // Return Value:
+    //    true  - Found a valid loop.
+    //    false - Did not find a valid loop.
+    //
+    // Notes:
+    //    May modify flow graph to make loop compact before returning.
+    //    Will set instance fields to track loop's extent and exits if a valid
+    //    loop is found, and potentially trash them otherwise.
+    //
+    bool FindLoop(BasicBlock* head, BasicBlock* top, BasicBlock* bottom)
+    {
+        /* Is this a loop candidate? - We look for "back edges", i.e. an edge from BOTTOM
+        * to TOP (note that this is an abuse of notation since this is not necessarily a back edge
+        * as the definition says, but merely an indication that we have a loop there).
+        * Thus, we have to be very careful and after entry discovery check that it is indeed
+        * the only place we enter the loop (especially for non-reducible flow graphs).
+        */
+
+        if (top->bbNum > bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
+        {
+            // Edge from BOTTOM to TOP is not a backward edge
+            return false;
+        }
+
+        if (bottom->bbNum > oldBlockMaxNum)
+        {
+            // Not a true back-edge; bottom is a block added to reconnect fall-through during
+            // loop processing, so its block number does not reflect its position.
+            return false;
+        }
+
+        if ((bottom->bbJumpKind == BBJ_EHFINALLYRET) || (bottom->bbJumpKind == BBJ_EHFILTERRET) ||
+            (bottom->bbJumpKind == BBJ_EHCATCHRET) || (bottom->bbJumpKind == BBJ_CALLFINALLY) ||
+            (bottom->bbJumpKind == BBJ_SWITCH))
+        {
+            /* BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
+            * BBJ_SWITCH that has a backward jump appears only for labeled break. */
+            return false;
+        }
+
+        /* The presence of a "back edge" is an indication that a loop might be present here
+        *
+        * LOOP:
+        *        1. A collection of STRONGLY CONNECTED nodes i.e. there is a path from any
+        *           node in the loop to any other node in the loop (wholly within the loop)
+        *        2. The loop has a unique ENTRY, i.e. there is only one way to reach a node
+        *           in the loop from outside the loop, and that is through the ENTRY
+        */
+
+        /* Let's find the loop ENTRY */
+        BasicBlock* entry = FindEntry(head, top, bottom);
+
+        if (entry == nullptr)
+        {
+            // For now, we only recognize loops where HEAD has some successor ENTRY in the loop.
+            return false;
+        }
+
+        // Passed the basic checks; initialize instance state for this back-edge.
+        this->head      = head;
+        this->top       = top;
+        this->entry     = entry;
+        this->bottom    = bottom;
+        this->lastExit  = nullptr;
+        this->exitCount = 0;
+
+        // Now we find the "first" block -- the earliest block reachable within the loop.
+        // With our current algorithm, this is always the same as "top".
+        this->first = top;
+
+        if (!HasSingleEntryCycle())
+        {
+            // There isn't actually a loop between TOP and BOTTOM
+            return false;
+        }
+
+        if (!loopBlocks.IsMember(top->bbNum))
+        {
+            // The "back-edge" we identified isn't actually part of the flow cycle containing ENTRY
+            return false;
+        }
+
+        // Disqualify loops where the first block of the loop is less nested in EH than
+        // the bottom block. That is, we don't want to handle loops where the back edge
+        // goes from within an EH region to a first block that is outside that same EH
+        // region. Note that we *do* handle loops where the first block is the *first*
+        // block of a more nested EH region (since it is legal to branch to the first
+        // block of an immediately more nested EH region). So, for example, disqualify
+        // this:
+        //
+        // BB02
+        // ...
+        // try {
+        // ...
+        // BB10 BBJ_COND => BB02
+        // ...
+        // }
+        //
+        // Here, BB10 is more nested than BB02.
+
+        if (bottom->hasTryIndex() && !comp->bbInTryRegions(bottom->getTryIndex(), first))
+        {
+            JITDUMP("Loop 'first' BB%02u is in an outer EH region compared to loop 'bottom' BB%02u. Rejecting "
+                    "loop.\n",
+                    first->bbNum, bottom->bbNum);
+            return false;
+        }
+
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+        // Disqualify loops where the first block of the loop is a finally target.
+        // The main problem is when multiple loops share a 'first' block that is a finally
+        // target and we canonicalize the loops by adding a new loop head. In that case, we
+        // need to update the blocks so the finally target bit is moved to the newly created
+        // block, and removed from the old 'first' block. This is 'hard', so at this point
+        // in the RyuJIT codebase (when we don't expect to keep the "old" ARM32 code generator
+        // long-term), it's easier to disallow the loop than to update the flow graph to
+        // support this case.
+
+        if ((first->bbFlags & BBF_FINALLY_TARGET) != 0)
+        {
+            JITDUMP("Loop 'first' BB%02u is a finally target. Rejecting loop.\n", first->bbNum);
+            return false;
+        }
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+
+        // Compact the loop (sweep through it and move out any blocks that aren't part of the
+        // flow cycle), and find the exits.
+        if (!MakeCompactAndFindExits())
+        {
+            // Unable to preserve well-formed loop during compaction.
+            return false;
+        }
+
+        // We have a valid loop.
+        return true;
+    }
+
+private:
+    //------------------------------------------------------------------------
+    // FindEntry: See if given HEAD flows to valid ENTRY between given TOP and BOTTOM
+    //
+    // Arguments:
+    //    head - Block to be the HEAD of any loop identified
+    //    top - Block to be the TOP of any loop identified
+    //    bottom - Block to be the BOTTOM of any loop identified
+    //
+    // Return Value:
+    //    Block to be the ENTRY of any loop identified, or nullptr if no
+    //    such entry meeting our criteria can be found.
+    //
+    // Notes:
+    //    Returns main entry if one is found, does not check for side-entries.
+    //
+    BasicBlock* FindEntry(BasicBlock* head, BasicBlock* top, BasicBlock* bottom)
+    {
+        if (head->bbJumpKind == BBJ_ALWAYS)
+        {
+            if (head->bbJumpDest->bbNum <= bottom->bbNum && head->bbJumpDest->bbNum >= top->bbNum)
+            {
+                /* OK - we enter somewhere within the loop */
+
+                /* some useful asserts
+                * Cannot enter at the top - should have being caught by redundant jumps */
+
+                assert((head->bbJumpDest != top) || (head->bbFlags & BBF_KEEP_BBJ_ALWAYS));
+
+                return head->bbJumpDest;
+            }
+            else
+            {
+                /* special case - don't consider now */
+                // assert (!"Loop entered in weird way!");
+                return nullptr;
+            }
+        }
+        // Can we fall through into the loop?
+        else if (head->bbJumpKind == BBJ_NONE || head->bbJumpKind == BBJ_COND)
+        {
+            /* The ENTRY is at the TOP (a do-while loop) */
+            return top;
+        }
+        else
+        {
+            return nullptr; // head does not flow into the loop bail for now
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // HasSingleEntryCycle: Perform a reverse flow walk from ENTRY, visiting
+    //    only blocks between TOP and BOTTOM, to determine if such a cycle
+    //    exists and if it has a single entry.
+    //
+    // Return Value:
+    //    true  - Found a single-entry cycle.
+    //    false - Did not find a single-entry cycle.
+    //
+    // Notes:
+    //    Will mark (in `loopBlocks`) all blocks found to participate in the
+    //    cycle.
+    //
+    bool HasSingleEntryCycle()
+    {
+        // Now do a backwards flow walk from entry to see if we have a single-entry loop
+        bool foundCycle = false;
+
+        // Seed the loop block set and worklist with the entry block.
+        loopBlocks.Reset(entry->bbNum);
+        jitstd::list<BasicBlock*> worklist(comp->getAllocator());
+        worklist.push_back(entry);
+
+        while (!worklist.empty())
+        {
+            BasicBlock* block = worklist.back();
+            worklist.pop_back();
+
+            /* Make sure ENTRY dominates all blocks in the loop
+            * This is necessary to ensure condition 2. above
+            */
+            if (block->bbNum > oldBlockMaxNum)
+            {
+                // This is a new block we added to connect fall-through, so the
+                // recorded dominator information doesn't cover it.  Just continue,
+                // and when we process its unique predecessor we'll abort if ENTRY
+                // doesn't dominate that.
+            }
+            else if (!comp->fgDominate(entry, block))
+            {
+                return false;
+            }
+
+            // Add preds to the worklist, checking for side-entries.
+            for (flowList* predIter = block->bbPreds; predIter != nullptr; predIter = predIter->flNext)
+            {
+                BasicBlock* pred = predIter->flBlock;
+
+                unsigned int testNum = PositionNum(pred);
+
+                if ((testNum < top->bbNum) || (testNum > bottom->bbNum))
+                {
+                    // Pred is out of loop range
+                    if (block == entry)
+                    {
+                        if (pred == head)
+                        {
+                            // This is the single entry we expect.
+                            continue;
+                        }
+                        // ENTRY has some pred other than head outside the loop.  If ENTRY does not
+                        // dominate this pred, we'll consider this a side-entry and skip this loop;
+                        // otherwise the loop is still valid and this may be a (flow-wise) back-edge
+                        // of an outer loop.  For the dominance test, if `pred` is a new block, use
+                        // its unique predecessor since the dominator tree has info for that.
+                        BasicBlock* effectivePred = (pred->bbNum > oldBlockMaxNum ? pred->bbPrev : pred);
+                        if (comp->fgDominate(entry, effectivePred))
+                        {
+                            // Outer loop back-edge
+                            continue;
+                        }
+                    }
+
+                    // There are multiple entries to this loop, don't consider it.
+                    return false;
+                }
+
+                bool isFirstVisit;
+                if (pred == entry)
+                {
+                    // We have indeed found a cycle in the flow graph.
+                    isFirstVisit = !foundCycle;
+                    foundCycle   = true;
+                    assert(loopBlocks.IsMember(pred->bbNum));
+                }
+                else if (loopBlocks.TestAndInsert(pred->bbNum))
+                {
+                    // Already visited this pred
+                    isFirstVisit = false;
+                }
+                else
+                {
+                    // Add this pred to the worklist
+                    worklist.push_back(pred);
+                    isFirstVisit = true;
+                }
+
+                if (isFirstVisit && (pred->bbNext != nullptr) && (PositionNum(pred->bbNext) == pred->bbNum))
+                {
+                    // We've created a new block immediately after `pred` to
+                    // reconnect what was fall-through.  Mark it as in-loop also;
+                    // it needs to stay with `prev` and if it exits the loop we'd
+                    // just need to re-create it if we tried to move it out.
+                    loopBlocks.Insert(pred->bbNext->bbNum);
+                }
+            }
+        }
+
+        return foundCycle;
+    }
+
+    //------------------------------------------------------------------------
+    // PositionNum: Get the number identifying a block's position per the
+    //    lexical ordering that existed before searching for (and compacting)
+    //    loops.
+    //
+    // Arguments:
+    //    block - Block whose position is desired.
+    //
+    // Return Value:
+    //    A number indicating that block's position relative to others.
+    //
+    // Notes:
+    //    When the given block is a new one created during loop compaction,
+    //    the number of its unique predecessor is returned.
+    //
+    unsigned int PositionNum(BasicBlock* block)
+    {
+        if (block->bbNum > oldBlockMaxNum)
+        {
+            // This must be a block we inserted to connect fall-through after moving blocks.
+            // To determine if it's in the loop or not, use the number of its unique predecessor
+            // block.
+            assert(block->bbPreds->flBlock == block->bbPrev);
+            assert(block->bbPreds->flNext == nullptr);
+            return block->bbPrev->bbNum;
+        }
+        return block->bbNum;
+    }
+
+    //------------------------------------------------------------------------
+    // MakeCompactAndFindExits: Compact the loop (sweep through it and move out
+    //   any blocks that aren't part of the flow cycle), and find the exits (set
+    //   lastExit and exitCount).
+    //
+    // Return Value:
+    //    true  - Loop successfully compacted (or `loopBlocks` expanded to
+    //            include all blocks in the lexical range), exits enumerated.
+    //    false - Loop cannot be made compact and remain well-formed.
+    //
+    bool MakeCompactAndFindExits()
+    {
+        // Compaction (if it needs to happen) will require an insertion point.
+        BasicBlock* moveAfter = nullptr;
+
+        for (BasicBlock* previous = top->bbPrev; previous != bottom;)
+        {
+            BasicBlock* block = previous->bbNext;
+
+            if (loopBlocks.IsMember(block->bbNum))
+            {
+                // This block is a member of the loop.  Check to see if it may exit the loop.
+                CheckForExit(block);
+
+                // Done processing this block; move on to the next.
+                previous = block;
+                continue;
+            }
+
+            // This blocks is lexically between TOP and BOTTOM, but it does not
+            // participate in the flow cycle.  Check for a run of consecutive
+            // such blocks.
+            BasicBlock* lastNonLoopBlock = block;
+            BasicBlock* nextLoopBlock    = block->bbNext;
+            while (!loopBlocks.IsMember(nextLoopBlock->bbNum))
+            {
+                lastNonLoopBlock = nextLoopBlock;
+                nextLoopBlock    = nextLoopBlock->bbNext;
+                // This loop must terminate because we know BOTTOM is in loopBlocks.
+            }
+
+            // Choose an insertion point for non-loop blocks if we haven't yet done so.
+            if (moveAfter == nullptr)
+            {
+                moveAfter = FindInsertionPoint();
+            }
+
+            if (!BasicBlock::sameEHRegion(previous, nextLoopBlock) || !BasicBlock::sameEHRegion(previous, moveAfter))
+            {
+                // EH regions would be ill-formed if we moved these blocks out.
+                // See if we can consider them loop blocks without introducing
+                // a side-entry.
+                if (CanTreatAsLoopBlocks(block, lastNonLoopBlock))
+                {
+                    // The call to `canTreatAsLoop` marked these blocks as part of the loop;
+                    // iterate without updating `previous` so that we'll analyze them as part
+                    // of the loop.
+                    continue;
+                }
+                else
+                {
+                    // We can't move these out of the loop or leave them in, so just give
+                    // up on this loop.
+                    return false;
+                }
+            }
+
+            // Now physically move the blocks.
+            BasicBlock* moveBefore = moveAfter->bbNext;
+
+            comp->fgUnlinkRange(block, lastNonLoopBlock);
+            comp->fgMoveBlocksAfter(block, lastNonLoopBlock, moveAfter);
+            comp->ehUpdateLastBlocks(moveAfter, lastNonLoopBlock);
+
+            // Apply any adjustments needed for fallthrough at the boundaries of the moved region.
+            FixupFallThrough(moveAfter, moveBefore, block);
+            FixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore);
+            // Also apply any adjustments needed where the blocks were snipped out of the loop.
+            BasicBlock* newBlock = FixupFallThrough(previous, block, nextLoopBlock);
+            if (newBlock != nullptr)
+            {
+                // This new block is in the loop and is a loop exit.
+                loopBlocks.Insert(newBlock->bbNum);
+                lastExit = newBlock;
+                ++exitCount;
+            }
+
+            // Update moveAfter for the next insertion.
+            moveAfter = lastNonLoopBlock;
+
+            // Note that we've changed the flow graph, and continue without updating
+            // `previous` so that we'll process nextLoopBlock.
+            changedFlowGraph = true;
+        }
+
+        if ((exitCount == 1) && (lastExit == nullptr))
+        {
+            // If we happen to have a loop with two exits, one of which goes to an
+            // infinite loop that's lexically nested inside it, where the inner loop
+            // can't be moved out,  we can end up in this situation (because
+            // CanTreatAsLoopBlocks will have decremented the count expecting to find
+            // another exit later).  Bump the exit count to 2, since downstream code
+            // will not be prepared for null lastExit with exitCount of 1.
+            assert(forgotExit);
+            exitCount = 2;
+        }
+
+        // Loop compaction was successful
+        return true;
+    }
+
+    //------------------------------------------------------------------------
+    // FindInsertionPoint: Find an appropriate spot to which blocks that are
+    //    lexically between TOP and BOTTOM but not part of the flow cycle
+    //    can be moved.
+    //
+    // Return Value:
+    //    Block after which to insert moved blocks.
+    //
+    BasicBlock* FindInsertionPoint()
+    {
+        // Find an insertion point for blocks we're going to move.  Move them down
+        // out of the loop, and if possible find a spot that won't break up fall-through.
+        BasicBlock* moveAfter = bottom;
+        while (moveAfter->bbFallsThrough())
+        {
+            // Keep looking for a better insertion point if we can.
+            BasicBlock* newMoveAfter = TryAdvanceInsertionPoint(moveAfter);
+
+            if (newMoveAfter == nullptr)
+            {
+                // Ran out of candidate insertion points, so just split up the fall-through.
+                return moveAfter;
+            }
+
+            moveAfter = newMoveAfter;
+        }
+
+        return moveAfter;
+    }
+
+    //------------------------------------------------------------------------
+    // TryAdvanceInsertionPoint: Find the next legal insertion point after
+    //    the given one, if one exists.
+    //
+    // Arguments:
+    //    oldMoveAfter - Prior insertion point; find the next after this.
+    //
+    // Return Value:
+    //    The next block after `oldMoveAfter` that is a legal insertion point
+    //    (i.e. blocks being swept out of the loop can be moved immediately
+    //    after it), if one exists, else nullptr.
+    //
+    BasicBlock* TryAdvanceInsertionPoint(BasicBlock* oldMoveAfter)
+    {
+        BasicBlock* newMoveAfter = oldMoveAfter->bbNext;
+
+        if (!BasicBlock::sameEHRegion(oldMoveAfter, newMoveAfter))
+        {
+            // Don't cross an EH region boundary.
+            return nullptr;
+        }
+
+        if ((newMoveAfter->bbJumpKind == BBJ_ALWAYS) || (newMoveAfter->bbJumpKind == BBJ_COND))
+        {
+            unsigned int destNum = newMoveAfter->bbJumpDest->bbNum;
+            if ((destNum >= top->bbNum) && (destNum <= bottom->bbNum) && !loopBlocks.IsMember(destNum))
+            {
+                // Reversing this branch out of block `newMoveAfter` could confuse this algorithm
+                // (in particular, the edge would still be numerically backwards but no longer be
+                // lexically backwards, so a lexical forward walk from TOP would not find BOTTOM),
+                // so don't do that.
+                // We're checking for BBJ_ALWAYS and BBJ_COND only here -- we don't need to
+                // check for BBJ_SWITCH because we'd never consider it a loop back-edge.
+                return nullptr;
+            }
+        }
+
+        // Similarly check to see if advancing to `newMoveAfter` would reverse the lexical order
+        // of an edge from the run of blocks being moved to `newMoveAfter` -- doing so would
+        // introduce a new lexical back-edge, which could (maybe?) confuse the loop search
+        // algorithm, and isn't desirable layout anyway.
+        for (flowList* predIter = newMoveAfter->bbPreds; predIter != nullptr; predIter = predIter->flNext)
+        {
+            unsigned int predNum = predIter->flBlock->bbNum;
+
+            if ((predNum >= top->bbNum) && (predNum <= bottom->bbNum) && !loopBlocks.IsMember(predNum))
+            {
+                // Don't make this forward edge a backwards edge.
+                return nullptr;
+            }
+        }
+
+        if (IsRecordedBottom(newMoveAfter))
+        {
+            // This is the BOTTOM of another loop; don't move any blocks past it, to avoid moving them
+            // out of that loop (we should have already done so when processing that loop if it were legal).
+            return nullptr;
+        }
+
+        // Advancing the insertion point is ok, except that we can't split up any CallFinally/BBJ_ALWAYS
+        // pair, so if we've got such a pair recurse to see if we can move past the whole thing.
+        return (newMoveAfter->isBBCallAlwaysPair() ? TryAdvanceInsertionPoint(newMoveAfter) : newMoveAfter);
+    }
+
+    //------------------------------------------------------------------------
+    // isOuterBottom: Determine if the given block is the BOTTOM of a previously
+    //    recorded loop.
+    //
+    // Arguments:
+    //    block - Block to check for BOTTOM-ness.
+    //
+    // Return Value:
+    //    true - The blocks was recorded as `bottom` of some earlier-processed loop.
+    //    false - No loops yet recorded have this block as their `bottom`.
+    //
+    bool IsRecordedBottom(BasicBlock* block)
+    {
+        if (block->bbNum > oldBlockMaxNum)
+        {
+            // This is a new block, which can't be an outer bottom block because we only allow old blocks
+            // as BOTTOM.
+            return false;
+        }
+        return BlockSetOps::IsMember(comp, bottomBlocks, block->bbNum);
+    }
+
+    //------------------------------------------------------------------------
+    // CanTreatAsLoopBlocks: If the given range of blocks can be treated as
+    //    loop blocks, add them to loopBlockSet and return true.  Otherwise,
+    //    return false.
+    //
+    // Arguments:
+    //    firstNonLoopBlock - First block in the run to be subsumed.
+    //    lastNonLoopBlock - Last block in the run to be subsumed.
+    //
+    // Return Value:
+    //    true - The blocks from `fistNonLoopBlock` to `lastNonLoopBlock` were
+    //           successfully added to `loopBlocks`.
+    //    false - Treating the blocks from `fistNonLoopBlock` to `lastNonLoopBlock`
+    //            would not be legal (it would induce a side-entry).
+    //
+    // Notes:
+    //    `loopBlocks` may be modified even if `false` is returned.
+    //    `exitCount` and `lastExit` may be modified if this process identifies
+    //    in-loop edges that were previously counted as exits.
+    //
+    bool CanTreatAsLoopBlocks(BasicBlock* firstNonLoopBlock, BasicBlock* lastNonLoopBlock)
+    {
+        BasicBlock* nextLoopBlock = lastNonLoopBlock->bbNext;
+        for (BasicBlock* testBlock = firstNonLoopBlock; testBlock != nextLoopBlock; testBlock = testBlock->bbNext)
+        {
+            for (flowList* predIter = testBlock->bbPreds; predIter != nullptr; predIter = predIter->flNext)
+            {
+                BasicBlock*  testPred           = predIter->flBlock;
+                unsigned int predPosNum         = PositionNum(testPred);
+                unsigned int firstNonLoopPosNum = PositionNum(firstNonLoopBlock);
+                unsigned int lastNonLoopPosNum  = PositionNum(lastNonLoopBlock);
+
+                if (loopBlocks.IsMember(predPosNum) ||
+                    ((predPosNum >= firstNonLoopPosNum) && (predPosNum <= lastNonLoopPosNum)))
+                {
+                    // This pred is in the loop (or what will be the loop if we determine this
+                    // run of exit blocks doesn't include a side-entry).
+
+                    if (predPosNum < firstNonLoopPosNum)
+                    {
+                        // We've already counted this block as an exit, so decrement the count.
+                        --exitCount;
+                        if (lastExit == testPred)
+                        {
+                            // Erase this now-bogus `lastExit` entry.
+                            lastExit = nullptr;
+                            INDEBUG(forgotExit = true);
+                        }
+                    }
+                }
+                else
+                {
+                    // This pred is not in the loop, so this constitutes a side-entry.
+                    return false;
+                }
+            }
+
+            // Either we're going to abort the loop on a subsequent testBlock, or this
+            // testBlock is part of the loop.
+            loopBlocks.Insert(testBlock->bbNum);
+        }
+
+        // All blocks were ok to leave in the loop.
+        return true;
+    }
+
+    //------------------------------------------------------------------------
+    // FixupFallThrough: Re-establish any broken control flow connectivity
+    //    and eliminate any "goto-next"s that were created by changing the
+    //    given block's lexical follower.
+    //
+    // Arguments:
+    //    block - Block whose `bbNext` has changed.
+    //    oldNext - Previous value of `block->bbNext`.
+    //    newNext - New value of `block->bbNext`.
+    //
+    // Return Value:
+    //    If a new block is created to reconnect flow, the new block is
+    //    returned; otherwise, nullptr.
+    //
+    BasicBlock* FixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
+    {
+        // If we create a new block, that will be our return value.
+        BasicBlock* newBlock = nullptr;
+
+        if (block->bbFallsThrough())
+        {
+            // Need to reconnect the flow from `block` to `oldNext`.
+
+            if ((block->bbJumpKind == BBJ_COND) && (block->bbJumpDest == newNext))
+            {
+                /* Reverse the jump condition */
+                GenTree* test = block->lastNode();
+                noway_assert(test->OperIsConditionalJump());
+
+                if (test->OperGet() == GT_JTRUE)
+                {
+                    GenTree* cond = comp->gtReverseCond(test->gtOp.gtOp1);
+                    assert(cond == test->gtOp.gtOp1); // Ensure `gtReverseCond` did not create a new node.
+                    test->gtOp.gtOp1 = cond;
+                }
+                else
+                {
+                    comp->gtReverseCond(test);
+                }
+
+                // Redirect the Conditional JUMP to go to `oldNext`
+                block->bbJumpDest = oldNext;
+            }
+            else
+            {
+                // Insert an unconditional jump to `oldNext` just after `block`.
+                newBlock = comp->fgConnectFallThrough(block, oldNext);
+                noway_assert((newBlock == nullptr) || loopBlocks.CanRepresent(newBlock->bbNum));
+            }
+        }
+        else if ((block->bbJumpKind == BBJ_ALWAYS) && (block->bbJumpDest == newNext))
+        {
+            // We've made `block`'s jump target its bbNext, so remove the jump.
+            if (!comp->fgOptimizeBranchToNext(block, newNext, block->bbPrev))
+            {
+                // If optimizing away the goto-next failed for some reason, mark it KEEP_BBJ_ALWAYS to
+                // prevent assertions from complaining about it.
+                block->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
+            }
+        }
+
+        // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
+        assert((block->bbJumpKind != BBJ_COND) || (block->bbJumpKind != BBJ_ALWAYS) || (block->bbJumpDest != newNext) ||
+               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
+        return newBlock;
+    }
+
+    //------------------------------------------------------------------------
+    // CheckForExit: Check if the given block has any successor edges that are
+    //    loop exits, and update `lastExit` and `exitCount` if so.
+    //
+    // Arguments:
+    //    block - Block whose successor edges are to be checked.
+    //
+    // Notes:
+    //    If one block has multiple exiting successor edges, those are counted
+    //    as multiple exits in `exitCount`.
+    //
+    void CheckForExit(BasicBlock* block)
+    {
+        BasicBlock* exitPoint;
+
+        switch (block->bbJumpKind)
+        {
+            case BBJ_COND:
+            case BBJ_CALLFINALLY:
+            case BBJ_ALWAYS:
+            case BBJ_EHCATCHRET:
+                assert(block->bbJumpDest);
+                exitPoint = block->bbJumpDest;
+
+                if (!loopBlocks.IsMember(exitPoint->bbNum))
+                {
+                    /* exit from a block other than BOTTOM */
+                    lastExit = block;
+                    exitCount++;
+                }
+                break;
+
+            case BBJ_NONE:
+                break;
+
+            case BBJ_EHFINALLYRET:
+            case BBJ_EHFILTERRET:
+                /* The "try" associated with this "finally" must be in the
+                * same loop, so the finally block will return control inside the loop */
+                break;
+
+            case BBJ_THROW:
+            case BBJ_RETURN:
+                /* those are exits from the loop */
+                lastExit = block;
+                exitCount++;
+                break;
+
+            case BBJ_SWITCH:
+
+                unsigned jumpCnt;
+                jumpCnt = block->bbJumpSwt->bbsCount;
+                BasicBlock** jumpTab;
+                jumpTab = block->bbJumpSwt->bbsDstTab;
+
+                do
+                {
+                    noway_assert(*jumpTab);
+                    exitPoint = *jumpTab;
+
+                    if (!loopBlocks.IsMember(exitPoint->bbNum))
+                    {
+                        lastExit = block;
+                        exitCount++;
+                    }
+                } while (++jumpTab, --jumpCnt);
+                break;
+
+            default:
+                noway_assert(!"Unexpected bbJumpKind");
+                break;
+        }
+
+        if (block->bbFallsThrough() && !loopBlocks.IsMember(block->bbNext->bbNum))
+        {
+            // Found a fall-through exit.
+            lastExit = block;
+            exitCount++;
+        }
+    }
+};
+}
+
 /*****************************************************************************
  * Find the natural loops, using dominators. Note that the test for
  * a loop is slightly different from the standard one, because we have
@@ -1431,10 +2428,6 @@ void Compiler::optFindNaturalLoops()
     }
 #endif // DEBUG
 
-    flowList* pred;
-    flowList* predTop;
-    flowList* predEntry;
-
     noway_assert(fgDomsComputed);
     assert(fgHasLoops);
 
@@ -1444,57 +2437,11 @@ void Compiler::optFindNaturalLoops()
     loopOverflowThisMethod = false;
 #endif
 
-    /* We will use the following terminology:
-     * HEAD    - the basic block that flows into the loop ENTRY block (Currently MUST be lexically before entry).
-                 Not part of the looping of the loop.
-     * FIRST   - the lexically first basic block (in bbNext order) within this loop.  (May be part of a nested loop,
-     *           but not the outer loop. ???)
-     * TOP     - the target of the backward edge from BOTTOM. In most cases FIRST and TOP are the same.
-     * BOTTOM  - the lexically last block in the loop (i.e. the block from which we jump to the top)
-     * EXIT    - the loop exit or the block right after the bottom
-     * ENTRY   - the entry in the loop (not necessarly the TOP), but there must be only one entry
-     *
-     * We (currently) require the body of a loop to be a contiguous (in bbNext order) sequence of basic blocks.
+    LoopSearch search(this);
 
-            |
-            v
-          head
-            |
-            |    top/beg <--+
-            |       |       |
-            |      ...      |
-            |       |       |
-            |       v       |
-            +---> entry     |
-                    |       |
-                   ...      |
-                    |       |
-                    v       |
-             +-- exit/tail  |
-             |      |       |
-             |     ...      |
-             |      |       |
-             |      v       |
-             |    bottom ---+
-             |
-             +------+
-                    |
-                    v
-
-     */
-
-    BasicBlock*   head;
-    BasicBlock*   top;
-    BasicBlock*   bottom;
-    BasicBlock*   entry;
-    BasicBlock*   exit;
-    unsigned char exitCount;
-
-    for (head = fgFirstBB; head->bbNext; head = head->bbNext)
+    for (BasicBlock* head = fgFirstBB; head->bbNext; head = head->bbNext)
     {
-        top       = head->bbNext;
-        exit      = nullptr;
-        exitCount = 0;
+        BasicBlock* top = head->bbNext;
 
         //  Blocks that are rarely run have a zero bbWeight and should
         //  never be optimized here
@@ -1504,342 +2451,14 @@ void Compiler::optFindNaturalLoops()
             continue;
         }
 
-        for (pred = top->bbPreds; pred; pred = pred->flNext)
+        for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
         {
-            /* Is this a loop candidate? - We look for "back edges", i.e. an edge from BOTTOM
-             * to TOP (note that this is an abuse of notation since this is not necessarily a back edge
-             * as the definition says, but merely an indication that we have a loop there).
-             * Thus, we have to be very careful and after entry discovery check that it is indeed
-             * the only place we enter the loop (especially for non-reducible flow graphs).
-             */
-
-            bottom    = pred->flBlock;
-            exitCount = 0;
-
-            if (top->bbNum <= bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
+            if (search.FindLoop(head, top, pred->flBlock))
             {
-                if ((bottom->bbJumpKind == BBJ_EHFINALLYRET) || (bottom->bbJumpKind == BBJ_EHFILTERRET) ||
-                    (bottom->bbJumpKind == BBJ_EHCATCHRET) || (bottom->bbJumpKind == BBJ_CALLFINALLY) ||
-                    (bottom->bbJumpKind == BBJ_SWITCH))
-                {
-                    /* BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
-                     * BBJ_SWITCH that has a backward jump appears only for labeled break. */
-                    goto NO_LOOP;
-                }
+                // Found a loop; record it and see if we've hit the limit.
+                bool recordedLoop = search.RecordLoop();
 
-                BasicBlock* loopBlock;
-
-                /* The presence of a "back edge" is an indication that a loop might be present here
-                 *
-                 * LOOP:
-                 *        1. A collection of STRONGLY CONNECTED nodes i.e. there is a path from any
-                 *           node in the loop to any other node in the loop (wholly within the loop)
-                 *        2. The loop has a unique ENTRY, i.e. there is only one way to reach a node
-                 *           in the loop from outside the loop, and that is through the ENTRY
-                 */
-
-                /* Let's find the loop ENTRY */
-
-                if (head->bbJumpKind == BBJ_ALWAYS)
-                {
-                    if (head->bbJumpDest->bbNum <= bottom->bbNum && head->bbJumpDest->bbNum >= top->bbNum)
-                    {
-                        /* OK - we enter somewhere within the loop */
-                        entry = head->bbJumpDest;
-
-                        /* some useful asserts
-                         * Cannot enter at the top - should have being caught by redundant jumps */
-
-                        assert((entry != top) || (head->bbFlags & BBF_KEEP_BBJ_ALWAYS));
-                    }
-                    else
-                    {
-                        /* special case - don't consider now */
-                        // assert (!"Loop entered in weird way!");
-                        goto NO_LOOP;
-                    }
-                }
-                // Can we fall through into the loop?
-                else if (head->bbJumpKind == BBJ_NONE || head->bbJumpKind == BBJ_COND)
-                {
-                    /* The ENTRY is at the TOP (a do-while loop) */
-                    entry = top;
-                }
-                else
-                {
-                    goto NO_LOOP; // head does not flow into the loop bail for now
-                }
-
-                // Now we find the "first" block -- the earliest block reachable within the loop.
-                // This is usually the same as "top", but can differ in rare cases where "top" is
-                // the entry block of a nested loop, and that nested loop branches backwards to a
-                // a block before "top".  We find this by searching for such backwards branches
-                // in the loop known so far.
-                BasicBlock* first = top;
-                BasicBlock* newFirst;
-                bool        blocksToSearch = true;
-                BasicBlock* validatedAfter = bottom->bbNext;
-                while (blocksToSearch)
-                {
-                    blocksToSearch = false;
-                    newFirst       = nullptr;
-                    blocksToSearch = false;
-                    for (loopBlock = first; loopBlock != validatedAfter; loopBlock = loopBlock->bbNext)
-                    {
-                        unsigned nSucc = loopBlock->NumSucc();
-                        for (unsigned j = 0; j < nSucc; j++)
-                        {
-                            BasicBlock* succ = loopBlock->GetSucc(j);
-                            if ((newFirst == nullptr && succ->bbNum < first->bbNum) ||
-                                (newFirst != nullptr && succ->bbNum < newFirst->bbNum))
-                            {
-                                newFirst = succ;
-                            }
-                        }
-                    }
-                    if (newFirst != nullptr)
-                    {
-                        validatedAfter = first;
-                        first          = newFirst;
-                        blocksToSearch = true;
-                    }
-                }
-
-                // Is "head" still before "first"?  If not, we don't have a valid loop...
-                if (head->bbNum >= first->bbNum)
-                {
-                    JITDUMP(
-                        "Extending loop [BB%02u..BB%02u] 'first' to BB%02u captures head BB%02u.  Rejecting loop.\n",
-                        top->bbNum, bottom->bbNum, first->bbNum, head->bbNum);
-                    goto NO_LOOP;
-                }
-
-                /* Make sure ENTRY dominates all blocks in the loop
-                 * This is necessary to ensure condition 2. above
-                 * At the same time check if the loop has a single exit
-                 * point - those loops are easier to optimize */
-
-                for (loopBlock = top; loopBlock != bottom->bbNext; loopBlock = loopBlock->bbNext)
-                {
-                    if (!fgDominate(entry, loopBlock))
-                    {
-                        goto NO_LOOP;
-                    }
-
-                    if (loopBlock == bottom)
-                    {
-                        if (bottom->bbJumpKind != BBJ_ALWAYS)
-                        {
-                            /* there is an exit at the bottom */
-
-                            noway_assert(bottom->bbJumpDest == top);
-                            exit = bottom;
-                            exitCount++;
-                            continue;
-                        }
-                    }
-
-                    BasicBlock* exitPoint;
-
-                    switch (loopBlock->bbJumpKind)
-                    {
-                        case BBJ_COND:
-                        case BBJ_CALLFINALLY:
-                        case BBJ_ALWAYS:
-                        case BBJ_EHCATCHRET:
-                            assert(loopBlock->bbJumpDest);
-                            exitPoint = loopBlock->bbJumpDest;
-
-                            if (exitPoint->bbNum < top->bbNum || exitPoint->bbNum > bottom->bbNum)
-                            {
-                                /* exit from a block other than BOTTOM */
-                                exit = loopBlock;
-                                exitCount++;
-                            }
-                            break;
-
-                        case BBJ_NONE:
-                            break;
-
-                        case BBJ_EHFINALLYRET:
-                        case BBJ_EHFILTERRET:
-                            /* The "try" associated with this "finally" must be in the
-                             * same loop, so the finally block will return control inside the loop */
-                            break;
-
-                        case BBJ_THROW:
-                        case BBJ_RETURN:
-                            /* those are exits from the loop */
-                            exit = loopBlock;
-                            exitCount++;
-                            break;
-
-                        case BBJ_SWITCH:
-
-                            unsigned jumpCnt;
-                            jumpCnt = loopBlock->bbJumpSwt->bbsCount;
-                            BasicBlock** jumpTab;
-                            jumpTab = loopBlock->bbJumpSwt->bbsDstTab;
-
-                            do
-                            {
-                                noway_assert(*jumpTab);
-                                exitPoint = *jumpTab;
-
-                                if (exitPoint->bbNum < top->bbNum || exitPoint->bbNum > bottom->bbNum)
-                                {
-                                    exit = loopBlock;
-                                    exitCount++;
-                                }
-                            } while (++jumpTab, --jumpCnt);
-                            break;
-
-                        default:
-                            noway_assert(!"Unexpected bbJumpKind");
-                            break;
-                    }
-                }
-
-                /* Make sure we can iterate the loop (i.e. there is a way back to ENTRY)
-                 * This is to ensure condition 1. above which prevents marking fake loops
-                 *
-                 * Below is an example:
-                 *          for (....)
-                 *          {
-                 *            ...
-                 *              computations
-                 *            ...
-                 *            break;
-                 *          }
-                 * The example above is not a loop since we bail after the first iteration
-                 *
-                 * The condition we have to check for is
-                 *  1. ENTRY must have at least one predecessor inside the loop. Since we know that that block is
-                 *     reachable, it can only be reached through ENTRY, therefore we have a way back to ENTRY
-                 *
-                 *  2. If we have a GOTO (BBJ_ALWAYS) outside of the loop and that block dominates the
-                 *     loop bottom then we cannot iterate
-                 *
-                 * NOTE that this doesn't entirely satisfy condition 1. since "break" statements are not
-                 * part of the loop nodes (as per definition they are loop exits executed only once),
-                 * but we have no choice but to include them because we consider all blocks within TOP-BOTTOM */
-
-                for (loopBlock = top; loopBlock != bottom; loopBlock = loopBlock->bbNext)
-                {
-                    switch (loopBlock->bbJumpKind)
-                    {
-                        case BBJ_ALWAYS:
-                        case BBJ_THROW:
-                        case BBJ_RETURN:
-                            if (fgDominate(loopBlock, bottom))
-                            {
-                                goto NO_LOOP;
-                            }
-                        default:
-                            break;
-                    }
-                }
-
-                bool canIterateLoop = false;
-
-                for (predEntry = entry->bbPreds; predEntry; predEntry = predEntry->flNext)
-                {
-                    if (predEntry->flBlock->bbNum >= top->bbNum && predEntry->flBlock->bbNum <= bottom->bbNum)
-                    {
-                        canIterateLoop = true;
-                        break;
-                    }
-                    else if (predEntry->flBlock != head)
-                    {
-                        // The entry block has multiple predecessors outside the loop; the 'head'
-                        // block isn't the only one. We only support a single 'head', so bail.
-                        goto NO_LOOP;
-                    }
-                }
-
-                if (!canIterateLoop)
-                {
-                    goto NO_LOOP;
-                }
-
-                /* Double check - make sure that all loop blocks except ENTRY
-                 * have no predecessors outside the loop - this ensures only one loop entry and prevents
-                 * us from considering non-loops due to incorrectly assuming that we had a back edge
-                 *
-                 * OBSERVATION:
-                 *    Loops of the form "while (a || b)" will be treated as 2 nested loops (with the same header)
-                 */
-
-                for (loopBlock = top; loopBlock != bottom->bbNext; loopBlock = loopBlock->bbNext)
-                {
-                    if (loopBlock == entry)
-                    {
-                        continue;
-                    }
-
-                    for (predTop = loopBlock->bbPreds; predTop != nullptr; predTop = predTop->flNext)
-                    {
-                        if (predTop->flBlock->bbNum < top->bbNum || predTop->flBlock->bbNum > bottom->bbNum)
-                        {
-                            // noway_assert(!"Found loop with multiple entries");
-                            goto NO_LOOP;
-                        }
-                    }
-                }
-
-                // Disqualify loops where the first block of the loop is less nested in EH than
-                // the bottom block. That is, we don't want to handle loops where the back edge
-                // goes from within an EH region to a first block that is outside that same EH
-                // region. Note that we *do* handle loops where the first block is the *first*
-                // block of a more nested EH region (since it is legal to branch to the first
-                // block of an immediately more nested EH region). So, for example, disqualify
-                // this:
-                //
-                // BB02
-                // ...
-                // try {
-                // ...
-                // BB10 BBJ_COND => BB02
-                // ...
-                // }
-                //
-                // Here, BB10 is more nested than BB02.
-
-                if (bottom->hasTryIndex() && !bbInTryRegions(bottom->getTryIndex(), first))
-                {
-                    JITDUMP("Loop 'first' BB%02u is in an outer EH region compared to loop 'bottom' BB%02u. Rejecting "
-                            "loop.\n",
-                            first->bbNum, bottom->bbNum);
-                    goto NO_LOOP;
-                }
-
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-                // Disqualify loops where the first block of the loop is a finally target.
-                // The main problem is when multiple loops share a 'first' block that is a finally
-                // target and we canonicalize the loops by adding a new loop head. In that case, we
-                // need to update the blocks so the finally target bit is moved to the newly created
-                // block, and removed from the old 'first' block. This is 'hard', so at this point
-                // in the RyuJIT codebase (when we don't expect to keep the "old" ARM32 code generator
-                // long-term), it's easier to disallow the loop than to update the flow graph to
-                // support this case.
-
-                if ((first->bbFlags & BBF_FINALLY_TARGET) != 0)
-                {
-                    JITDUMP("Loop 'first' BB%02u is a finally target. Rejecting loop.\n", first->bbNum);
-                    goto NO_LOOP;
-                }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-
-                /* At this point we have a loop - record it in the loop table
-                 * If we found only one exit, record it in the table too
-                 * (otherwise an exit = 0 in the loop table means multiple exits) */
-
-                assert(pred);
-                if (exitCount != 1)
-                {
-                    exit = nullptr;
-                }
-                optRecordLoop(head, first, top, entry, bottom, exit, exitCount);
+                (void)recordedLoop; // avoid unusued variable warnings in COUNT_LOOPS and !DEBUG
 
 #if COUNT_LOOPS
                 if (!hasMethodLoops)
@@ -1855,13 +2474,26 @@ void Compiler::optFindNaturalLoops()
 
                 /* keep track of the number of exits */
                 loopExitCountTable.record(static_cast<unsigned>(exitCount));
+#else  // COUNT_LOOPS
+                assert(recordedLoop);
+                if (optLoopCount == MAX_LOOP_NUM)
+                {
+                    // We won't be able to record any more loops, so stop looking.
+                    goto NO_MORE_LOOPS;
+                }
 #endif // COUNT_LOOPS
-            }
 
-        /* current predecessor not good for a loop - continue with another one, if any */
-        NO_LOOP:;
+                // Continue searching preds of `top` to see if any other are
+                // back-edges (this can happen for nested loops).  The iteration
+                // is safe because the compaction we do only modifies predecessor
+                // lists of blocks that gain or lose fall-through from their
+                // `bbPrev`, but since the motion is from within the loop to below
+                // it, we know we're not altering the relationship between `top`
+                // and its `bbPrev`.
+            }
         }
     }
+NO_MORE_LOOPS:
 
 #if COUNT_LOOPS
     loopCountTable.record(loopsThisMethod);
@@ -1910,9 +2542,10 @@ void Compiler::optFindNaturalLoops()
         }
     }
 
+    bool mod = search.ChangedFlowGraph();
+
     // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
     // one, if necessary, for loops containing others that share a "top."
-    bool mod = false;
     for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
         // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
@@ -4288,8 +4921,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
             {
                 LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
                 compCurBB                          = arrIndexInfo->arrIndex.useBlock;
-                optRemoveRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt, true,
-                                    GTF_ASG, true);
+                optRemoveRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt);
                 DBEXEC(dynamicPath, optDebugLogLoopCloning(arrIndexInfo->arrIndex.useBlock, arrIndexInfo->stmt));
             }
             break;
@@ -7291,35 +7923,25 @@ void Compiler::optRemoveTree(GenTreePtr deadTree, GenTreePtr keepList)
     fgWalkTreePre(&deadTree, optRemoveTreeVisitor, (void*)keepList);
 }
 
-/*****************************************************************************
- *
- *  Given an array index node, mark it as not needing a range check.
- */
+//------------------------------------------------------------------------------
+// optRemoveRangeCheck : Given an array index node, mark it as not needing a range check.
+//
+// Arguments:
+//    tree   -  Range check tree
+//    stmt   -  Statement the tree belongs to
 
-void Compiler::optRemoveRangeCheck(
-    GenTreePtr tree, GenTreePtr stmt, bool updateCSEcounts, unsigned sideEffFlags, bool forceRemove)
+void Compiler::optRemoveRangeCheck(GenTreePtr tree, GenTreePtr stmt)
 {
-    GenTreePtr  add1;
-    GenTreePtr* addp;
-
-    GenTreePtr  nop1;
-    GenTreePtr* nopp;
-
-    GenTreePtr icon;
-    GenTreePtr mult;
-
-    GenTreePtr base;
-
-    ssize_t ival;
-
 #if !REARRANGE_ADDS
     noway_assert(!"can't remove range checks without REARRANGE_ADDS right now");
 #endif
 
     noway_assert(stmt->gtOper == GT_STMT);
     noway_assert(tree->gtOper == GT_COMMA);
-    noway_assert(tree->gtOp.gtOp1->OperIsBoundsCheck());
-    noway_assert(forceRemove || optIsRangeCheckRemovable(tree->gtOp.gtOp1));
+
+    GenTree* bndsChkTree = tree->gtOp.gtOp1;
+
+    noway_assert(bndsChkTree->OperIsBoundsCheck());
 
     GenTreeBoundsChk* bndsChk = tree->gtOp.gtOp1->AsBoundsChk();
 
@@ -7332,20 +7954,19 @@ void Compiler::optRemoveRangeCheck(
 #endif
 
     GenTreePtr sideEffList = nullptr;
-    if (sideEffFlags)
-    {
-        gtExtractSideEffList(tree->gtOp.gtOp1, &sideEffList, sideEffFlags);
-    }
+
+    gtExtractSideEffList(bndsChkTree, &sideEffList, GTF_ASG);
 
     // Decrement the ref counts for any LclVars that are being deleted
     //
-    optRemoveTree(tree->gtOp.gtOp1, sideEffList);
+    optRemoveTree(bndsChkTree, sideEffList);
 
     // Just replace the bndsChk with a NOP as an operand to the GT_COMMA, if there are no side effects.
     tree->gtOp.gtOp1 = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();
-
     // TODO-CQ: We should also remove the GT_COMMA, but in any case we can no longer CSE the GT_COMMA.
     tree->gtFlags |= GTF_DONT_CSE;
+
+    gtUpdateSideEffects(stmt, tree);
 
     /* Recalculate the gtCostSz, etc... */
     gtSetStmtInfo(stmt);
@@ -7618,8 +8239,11 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
         compCurBB = block;
         for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
-            info.stmt = stmt;
-            fgWalkTreePre(&stmt->gtStmt.gtStmtExpr, optCanOptimizeByLoopCloningVisitor, &info, false, false);
+            info.stmt               = stmt;
+            const bool lclVarsOnly  = false;
+            const bool computeStack = false;
+            fgWalkTreePre(&stmt->gtStmt.gtStmtExpr, optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
+                          computeStack);
         }
     }
 
@@ -8285,7 +8909,7 @@ void Compiler::optOptimizeBools()
                         B2: brtrue(t2, BX)
                         B3:
                    we will try to fold it to :
-                        B1: brtrue((!t1)&&t2, B3)
+                        B1: brtrue((!t1)&&t2, BX)
                         B3:
                 */
 

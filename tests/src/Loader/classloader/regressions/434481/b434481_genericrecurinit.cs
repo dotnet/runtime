@@ -17,7 +17,7 @@ internal class Program
 			if( tstr != "Program+S`1[System.Int32]" ) 
 			{
 				Console.WriteLine( "Err_01: Expected type: Program+S`1[System.Int32]" );
-				Console.WriteLine( "Err_01: Actualy get type: " + tstr );
+				Console.WriteLine( "Err_01: Actually get type: " + tstr );
 				iErrorCount++;
 			}
 			S<object> o = new S<object>();
@@ -26,7 +26,7 @@ internal class Program
 			if( tstr != "Program+S`1[System.Object]" ) 
 			{
 				Console.WriteLine( "Err_02: Expected type:  Program+S`1[System.Object]" );
-				Console.WriteLine( "Err_02: Actualy get type: " + tstr );
+				Console.WriteLine( "Err_02: Actually get type: " + tstr );
 				iErrorCount++;
 			}
 			
@@ -36,7 +36,7 @@ internal class Program
 			if( tstr != "Program+S`1[System.String]" ) 
 			{
 				Console.WriteLine( "Err_01: Expected type:  Program+S`1[System.String]" );
-				Console.WriteLine( "Err_01: Actualy get type: " + tstr );
+				Console.WriteLine( "Err_01: Actually get type: " + tstr );
 				iErrorCount++;
 			}			
 			S<Program> p = new S<Program>();
@@ -45,7 +45,7 @@ internal class Program
 			if( tstr != "Program+S`1[Program]" ) 
 			{
 				Console.WriteLine( "Err_01: Expected type:  Program+S`1[Program]" );
-				Console.WriteLine( "Err_01: Actualy get type: " + tstr );
+				Console.WriteLine( "Err_01: Actually get type: " + tstr );
 				iErrorCount++;
 			}						
 		}catch( Exception e)

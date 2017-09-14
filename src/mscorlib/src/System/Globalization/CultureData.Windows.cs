@@ -326,20 +326,14 @@ namespace System.Globalization
 #if ENABLE_WINRT
             return WinRTInterop.Callbacks.GetRegionDisplayName(isoCountryCode);
 #else
-            // Usually the UI culture shouldn't be different than what we got from WinRT except
-            // if DefaultThreadCurrentUICulture was set
-            CultureInfo ci;
-
-            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                ((ci = GetUserDefaultCulture()) != null) &&
-                !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
-            {
-                return SNATIVECOUNTRY;
-            }
-            else
+            // If the current UI culture matching the OS UI language, we'll get the display name from the OS. 
+            // otherwise, we use the native name as we don't carry resources for the region display names anyway.
+            if (CultureInfo.CurrentUICulture.Name.Equals(CultureInfo.UserDefaultUICulture.Name))
             {
                 return GetLocaleInfo(LocaleStringData.LocalizedCountryName);
             }
+
+            return SNATIVECOUNTRY;
 #endif // ENABLE_WINRT
         }
 
