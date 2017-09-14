@@ -95,23 +95,6 @@ namespace System.Runtime.CompilerServices
         }
 
 #if _DEBUG
-        [FriendAccessAllowed]
-        static internal T UnsafeCast<T>(Object o) where T : class
-        {
-            T ret = UnsafeCastInternal<T>(o);
-            Debug.Assert(ret == (o as T), "Invalid use of JitHelpers.UnsafeCast!");
-            return ret;
-        }
-
-        // The IL body of this method is not critical, but its body will be replaced with unsafe code, so
-        // this method is effectively critical
-        static private T UnsafeCastInternal<T>(Object o) where T : class
-        {
-            // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
-
         static internal int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
         {
             Debug.Assert(typeof(T).IsEnum
@@ -203,12 +186,7 @@ namespace System.Runtime.CompilerServices
         // Used for unsafe pinning of arbitrary objects.
         static internal PinningHelper GetPinningHelper(Object o)
         {
-            // This cast is really unsafe - call the private version that does not assert in debug
-#if _DEBUG
-            return UnsafeCastInternal<PinningHelper>(o);
-#else
-            return UnsafeCast<PinningHelper>(o);
-#endif
+            return Unsafe.As<PinningHelper>(o);
         }
 
 #if _DEBUG
