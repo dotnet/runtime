@@ -240,14 +240,17 @@ public class Tests
 
 	public static int test_0_unload_inside_appdomain_sync () {
 		AppDomain domain = AppDomain.CreateDomain ("Test3");
+		bool caught = false;
 
 		try {
 			domain.DoCallBack (new CrossAppDomainDelegate (SyncCallback));
 		}
-		catch (Exception ex) {
-			/* Should throw a ThreadAbortException */
-			Thread.ResetAbort ();
+		catch (AppDomainUnloadedException ex) {
+			caught = true;
 		}
+
+		if (!caught)
+			return 1;
 
 		return 0;
 	}

@@ -430,6 +430,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 
 	if (exc) {
 		error_init (&error);
+		exc = (MonoObject*) mono_remoting_update_exception ((MonoException*)exc);
 		mono_error_set_exception_instance (&error, (MonoException *)exc);
 		goto fail;
 	}
@@ -449,11 +450,18 @@ fail:
 	return NULL;
 } 
 
+/*
+ * Handles exception transformation at appdomain call boundary.
+ * Note this is called from target appdomain inside xdomain wrapper, but from
+ * source domain in the mono_remoting_wrapper slowpath.
+ */
 static MonoException *
 mono_remoting_update_exception (MonoException *exc)
 {
+	MonoInternalThread *thread;
 	MonoClass *klass = mono_object_get_class ((MonoObject*)exc);
 
+	/* Serialization error can only happen when still in the target appdomain */
 	if (!(mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SERIALIZABLE)) {
 		MonoException *ret;
 		char *aname = mono_stringify_assembly_name (&klass->image->assembly->aname);
@@ -462,6 +470,13 @@ mono_remoting_update_exception (MonoException *exc)
 		g_free (aname);
 		g_free (message);
 		return ret;
+	}
+
+	thread = mono_thread_internal_current ();
+	if (mono_object_get_class ((MonoObject*)exc) == mono_defaults.threadabortexception_class &&
+			thread->flags & MONO_THREAD_FLAG_APPDOMAIN_ABORT) {
+		mono_thread_internal_reset_abort (thread);
+		return mono_get_exception_appdomain_unloaded ();
 	}
 
 	return exc;
