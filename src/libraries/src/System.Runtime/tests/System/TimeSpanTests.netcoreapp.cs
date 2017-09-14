@@ -175,9 +175,9 @@ namespace System.Tests
             else
             {
                 // Inputs that can be parsed in standard formats with ParseExact should also be parsable with Parse
-                Assert.Equal(expected, TimeSpan.Parse(input));
+                Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
 
-                Assert.True(TimeSpan.TryParse(input, out result));
+                Assert.True(TimeSpan.TryParse(input, out result, CultureInfo.InvariantCulture));
                 Assert.Equal(expected, result);
             }
         }
@@ -219,16 +219,16 @@ namespace System.Tests
             Span<char> dst;
 
             dst = new char[expected.Length - 1];
-            Assert.False(input.TryFormat(dst, out charsWritten, format));
+            Assert.False(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
             Assert.Equal(0, charsWritten);
 
             dst = new char[expected.Length];
-            Assert.True(input.TryFormat(dst, out charsWritten, format));
+            Assert.True(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
             Assert.Equal(expected.Length, charsWritten);
             Assert.Equal(expected, new string(dst));
 
             dst = new char[expected.Length + 1];
-            Assert.True(input.TryFormat(dst, out charsWritten, format));
+            Assert.True(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
             Assert.Equal(expected.Length, charsWritten);
             Assert.Equal(expected, new string(dst.Slice(0, dst.Length - 1)));
             Assert.Equal(0, dst[dst.Length - 1]);

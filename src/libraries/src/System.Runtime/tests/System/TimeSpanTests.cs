@@ -526,19 +526,19 @@ namespace System.Tests
             yield return new object[] { "12.03:04", null, new TimeSpan(12, 3, 4, 0, 0) };
 
             // HH:MM:SS.FF
-            yield return new object[] { "12:24:02.01", null, new TimeSpan(0, 12, 24, 2, 10) };
+            yield return new object[] { "12:24:02.01", CultureInfo.InvariantCulture, new TimeSpan(0, 12, 24, 2, 10) };
 
             // HH:MM:SS.FF w/ varying length zero prefixes on the fraction
-            yield return new object[] { "1:1:1.0", null, new TimeSpan(1, 1, 1) };
-            yield return new object[] { "1:1:1.0000000", null, new TimeSpan(1, 1, 1) };
-            yield return new object[] { "1:1:1.1", null, new TimeSpan(0, 1, 1, 1, 100) };
-            yield return new object[] { "1:1:1.01", null, new TimeSpan(0, 1, 1, 1, 10) };
-            yield return new object[] { "1:1:1.001", null, new TimeSpan(0, 1, 1, 1, 1) };
-            yield return new object[] { "1:1:1.0001", null, new TimeSpan(36610001000) };
-            yield return new object[] { "1:1:1.00001", null, new TimeSpan(36610000100) };
-            yield return new object[] { "1:1:1.000001", null, new TimeSpan(36610000010) };
-            yield return new object[] { "1:1:1.0000001", null, new TimeSpan(36610000001) };
-            yield return new object[] { "1:1:1.00000001", null, new TimeSpan(36610000001) };
+            yield return new object[] { "1:1:1.0", CultureInfo.InvariantCulture, new TimeSpan(1, 1, 1) };
+            yield return new object[] { "1:1:1.0000000", CultureInfo.InvariantCulture, new TimeSpan(1, 1, 1) };
+            yield return new object[] { "1:1:1.1", CultureInfo.InvariantCulture, new TimeSpan(0, 1, 1, 1, 100) };
+            yield return new object[] { "1:1:1.01", CultureInfo.InvariantCulture, new TimeSpan(0, 1, 1, 1, 10) };
+            yield return new object[] { "1:1:1.001", CultureInfo.InvariantCulture, new TimeSpan(0, 1, 1, 1, 1) };
+            yield return new object[] { "1:1:1.0001", CultureInfo.InvariantCulture, new TimeSpan(36610001000) };
+            yield return new object[] { "1:1:1.00001", CultureInfo.InvariantCulture, new TimeSpan(36610000100) };
+            yield return new object[] { "1:1:1.000001", CultureInfo.InvariantCulture, new TimeSpan(36610000010) };
+            yield return new object[] { "1:1:1.0000001", CultureInfo.InvariantCulture, new TimeSpan(36610000001) };
+            yield return new object[] { "1:1:1.00000001", CultureInfo.InvariantCulture, new TimeSpan(36610000001) };
 
             // DD.HH:MM:SS
             yield return new object[] { "1.12:24:02", null, new TimeSpan(1, 12, 24, 2, 0) };
@@ -547,20 +547,20 @@ namespace System.Tests
             yield return new object[] { "1:12:24:02", null, new TimeSpan(1, 12, 24, 2, 0) };
 
             // DD.HH:MM:.FF
-            yield return new object[] { "01.23:45:.67", null, new TimeSpan(1, 23, 45, 0, 670) };
+            yield return new object[] { "01.23:45:.67", CultureInfo.InvariantCulture, new TimeSpan(1, 23, 45, 0, 670) };
 
             // DD.HH.MM:SS.FFF
-            yield return new object[] { "1.12:24:02.999", null, new TimeSpan(1, 12, 24, 2, 999) };
+            yield return new object[] { "1.12:24:02.999", CultureInfo.InvariantCulture, new TimeSpan(1, 12, 24, 2, 999) };
 
             // HH:MM::.FF w/ varying length zero prefixes on the fraction
-            yield return new object[] { "1:1:.1", null, new TimeSpan(36601000000) };
-            yield return new object[] { "1:1:.01", null, new TimeSpan(36600100000) };
-            yield return new object[] { "1:1:.001", null, new TimeSpan(36600010000) };
-            yield return new object[] { "1:1:.0001", null, new TimeSpan(36600001000) };
-            yield return new object[] { "1:1:.00001", null, new TimeSpan(36600000100) };
-            yield return new object[] { "1:1:.000001", null, new TimeSpan(36600000010) };
-            yield return new object[] { "1:1:.0000001", null, new TimeSpan(36600000001) };
-            yield return new object[] { "1:1:.00000001", null, new TimeSpan(36600000001) };
+            yield return new object[] { "1:1:.1", CultureInfo.InvariantCulture, new TimeSpan(36601000000) };
+            yield return new object[] { "1:1:.01", CultureInfo.InvariantCulture, new TimeSpan(36600100000) };
+            yield return new object[] { "1:1:.001", CultureInfo.InvariantCulture, new TimeSpan(36600010000) };
+            yield return new object[] { "1:1:.0001", CultureInfo.InvariantCulture, new TimeSpan(36600001000) };
+            yield return new object[] { "1:1:.00001", CultureInfo.InvariantCulture, new TimeSpan(36600000100) };
+            yield return new object[] { "1:1:.000001", CultureInfo.InvariantCulture, new TimeSpan(36600000010) };
+            yield return new object[] { "1:1:.0000001", CultureInfo.InvariantCulture, new TimeSpan(36600000001) };
+            yield return new object[] { "1:1:.00000001", CultureInfo.InvariantCulture, new TimeSpan(36600000001) };
 
             // Just below overflow on various components
             yield return new object[] { "10675199", null, new TimeSpan(9223371936000000000) };
@@ -568,7 +568,7 @@ namespace System.Tests
             yield return new object[] { "10675199:02:00:00", null, new TimeSpan(9223372008000000000) };
             yield return new object[] { "10675199:02:48:00", null, new TimeSpan(9223372036800000000) };
             yield return new object[] { "10675199:02:48:05", null, new TimeSpan(9223372036850000000) };
-            yield return new object[] { "10675199:02:48:05.4775", null, new TimeSpan(9223372036854775000) };
+            yield return new object[] { "10675199:02:48:05.4775", CultureInfo.InvariantCulture, new TimeSpan(9223372036854775000) };
             yield return new object[] { "00:00:59", null, new TimeSpan(0, 0, 59) };
             yield return new object[] { "00:59:00", null, new TimeSpan(0, 59, 0) };
             yield return new object[] { "23:00:00", null, new TimeSpan(23, 0, 0) };
@@ -634,8 +634,8 @@ namespace System.Tests
             yield return new object[] { "10675199:02:49:00", null, typeof(OverflowException) }; // overflowing number of days + hours + minutes
             yield return new object[] { "10675199:02:48:06", null, typeof(OverflowException) }; // overflowing number of days + hours + minutes + seconds
             yield return new object[] { "-10675199:02:48:06", null, typeof(OverflowException) }; // negative overflowing d + h + m + s
-            yield return new object[] { "10675199:02:48:05.4776", null, typeof(OverflowException) }; // overflowing days + hours + minutes + seconds + fraction
-            yield return new object[] { "-10675199:02:48:05.4776", null, typeof(OverflowException) }; // negative overflowing d + h + m + s +f
+            yield return new object[] { "10675199:02:48:05.4776", CultureInfo.InvariantCulture, typeof(OverflowException) }; // overflowing days + hours + minutes + seconds + fraction
+            yield return new object[] { "-10675199:02:48:05.4776", CultureInfo.InvariantCulture, typeof(OverflowException) }; // negative overflowing d + h + m + s +f
             yield return new object[] { "00:00:60", null, typeof(OverflowException) }; // overflowing seconds
             yield return new object[] { "00:60:00", null, typeof(OverflowException) }; // overflowing minutes
             yield return new object[] { "24:00", null, typeof(OverflowException) }; // overflowing hours
@@ -730,9 +730,9 @@ namespace System.Tests
             else
             {
                 // Inputs that can be parsed in standard formats with ParseExact should also be parsable with Parse
-                Assert.Equal(expected, TimeSpan.Parse(input));
+                Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
 
-                Assert.True(TimeSpan.TryParse(input, out result));
+                Assert.True(TimeSpan.TryParse(input, CultureInfo.InvariantCulture, out result));
                 Assert.Equal(expected, result);
             }
         }
@@ -877,7 +877,7 @@ namespace System.Tests
         [MemberData(nameof(ToString_MemberData))]
         public static void ToString_Valid(TimeSpan input, string format, string expected)
         {
-            Assert.Equal(expected, input.ToString(format));
+            Assert.Equal(expected, input.ToString(format, CultureInfo.InvariantCulture));
             if (format == null)
             {
                 Assert.Equal(expected, input.ToString());
