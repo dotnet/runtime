@@ -944,8 +944,12 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     m_pPrivatePerfCounter_LoaderBytes = pPrivatePerfCounter_LoaderBytes;
 
     m_Options                    = 0;
+
+#ifndef CROSSGEN_COMPILE
     if (fMakeExecutable)
         m_Options                |= LHF_EXECUTABLE;
+#endif // CROSSGEN_COMPILE
+
     if (fZeroInit)
         m_Options                |= LHF_ZEROINIT;
 

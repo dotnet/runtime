@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // V Lookup(K key)
         internal V Lookup<K, V>(K key)
         {
-            IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);
+            IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
             V value;
             bool keyFound = _this.TryGetValue(key, out value);
 
@@ -51,21 +51,21 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // uint Size { get }
         internal uint Size<K, V>()
         {
-            IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);
+            IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
             return (uint)_this.Count;
         }
 
         // bool HasKey(K key)
         internal bool HasKey<K, V>(K key)
         {
-            IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);
+            IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
             return _this.ContainsKey(key);
         }
 
         // void Split(out IMapView<K, V> first, out IMapView<K, V> second)
         internal void Split<K, V>(out IMapView<K, V> first, out IMapView<K, V> second)
         {
-            IReadOnlyDictionary<K, V> _this = JitHelpers.UnsafeCast<IReadOnlyDictionary<K, V>>(this);
+            IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
 
             if (_this.Count < 2)
             {

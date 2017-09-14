@@ -439,7 +439,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private IBindableVector GetIBindableVectorNoThrow()
         {
             if ((_flags & InterfaceForwardingSupport.IBindableVector) != 0)
-                return JitHelpers.UnsafeCast<IBindableVector>(_target);
+                return Unsafe.As<IBindableVector>(_target);
             else
                 return null;
         }
@@ -447,7 +447,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private IVector_Raw<T1> GetVectorOfT()
         {
             if ((_flags & InterfaceForwardingSupport.IVector) != 0)
-                return JitHelpers.UnsafeCast<IVector_Raw<T1>>(_target);
+                return Unsafe.As<IVector_Raw<T1>>(_target);
             else
                 throw new InvalidOperationException();  // We should not go down this path, unless Jupiter pass this out to managed code
                                                         // and managed code use reflection to do the cast
@@ -513,7 +513,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private IBindableVectorView GetIBindableVectorViewNoThrow()
         {
             if ((_flags & InterfaceForwardingSupport.IBindableVectorView) != 0)
-                return JitHelpers.UnsafeCast<IBindableVectorView>(_target);
+                return Unsafe.As<IBindableVectorView>(_target);
             else
                 return null;
         }
@@ -521,7 +521,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private IVectorView<T2> GetVectorViewOfT()
         {
             if ((_flags & InterfaceForwardingSupport.IVectorView) != 0)
-                return JitHelpers.UnsafeCast<IVectorView<T2>>(_target);
+                return Unsafe.As<IVectorView<T2>>(_target);
             else
                 throw new InvalidOperationException();  // We should not go down this path, unless Jupiter pass this out to managed code
                                                         // and managed code use reflection to do the cast

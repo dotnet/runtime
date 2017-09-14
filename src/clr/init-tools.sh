@@ -38,7 +38,15 @@ if [ -z "$__DOTNET_PKG" ]; then
             __DOTNET_PKG=dotnet-dev-linux-x64
             OS=Linux
 
-            if [ -e /etc/redhat-release ]; then
+            if [ -e /etc/os-release ]; then
+                source /etc/os-release
+                if [[ $ID == "alpine" ]]; then
+                    # remove the last version digit
+                    VERSION_ID=${VERSION_ID%.*}
+                    __DOTNET_PKG=dotnet-dev-alpine.$VERSION_ID-x64
+                fi
+
+            elif [ -e /etc/redhat-release ]; then
                 redhatRelease=$(</etc/redhat-release)
                 if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
                     __DOTNET_PKG=dotnet-dev-rhel.6-x64
