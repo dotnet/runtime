@@ -16,14 +16,14 @@
     <CoreFxCurrentRef>ab762a3c35e208cd698988fb7761bc92be417be9</CoreFxCurrentRef>
     <CoreClrCurrentRef>2a83ae1685d323e6bd206dd2596b953488479922</CoreClrCurrentRef>
     <BuildToolsCurrentRef>2a83ae1685d323e6bd206dd2596b953488479922</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>2a83ae1685d323e6bd206dd2596b953488479922</PgoDataCurrentRef>
+    <PgoDataCurrentRef>1a2306063659d9704d06119325ff7c2652b1af0b</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxPackageVersion>4.5.0-preview1-25712-02</CoreFxPackageVersion>
     <PlatformPackageVersion>2.1.0-preview1-25712-02</PlatformPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20170913-0045</PgoDataPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20170914-0028</PgoDataPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
