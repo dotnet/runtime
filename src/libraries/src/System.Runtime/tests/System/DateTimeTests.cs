@@ -987,9 +987,8 @@ namespace System.Tests
                 yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
             }
 
-            // [ActiveIssue(23922)] // This is failing on Windows 8.1
-            //var mongolianCulture = new CultureInfo("mn-MN");
-            //yield return new object[] { today.ToString(mongolianCulture.DateTimeFormat.FullDateTimePattern, mongolianCulture), mongolianCulture, today };
+            var mongolianCulture = new CultureInfo("mn-MN");
+            yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
         }
 
         [Theory]
