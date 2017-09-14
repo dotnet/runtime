@@ -1005,6 +1005,35 @@ namespace System.Net.Sockets.Tests
             Assert.True(receiveTask.IsCompleted);
             await receiveTask;
         }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)] // All data is sent, even when very large (100M).
+        public void SocketSendWouldBlock_ReturnsBytesSent()
+        {
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                // listen
+                server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen(1);
+                // connect
+                client.Connect(server.LocalEndPoint);
+                // accept
+                using (Socket socket = server.Accept())
+                {
+                    // We send a large amount of data but don't read it.
+                    // A chunck will be sent, attempts to send more will return SocketError.WouldBlock.
+                    // Socket.Send must return the success of the partial send.
+                    socket.Blocking = false;
+                    var data = new byte[5_000_000];
+                    SocketError error;
+                    int bytesSent = socket.Send(data, 0, data.Length, SocketFlags.None, out error);
+
+                    Assert.Equal(SocketError.Success, error);
+                    Assert.InRange(bytesSent, 1, data.Length - 1);
+                }
+            }
+        }
     }
 
     public sealed class SendReceiveUdpClient : MemberDatas

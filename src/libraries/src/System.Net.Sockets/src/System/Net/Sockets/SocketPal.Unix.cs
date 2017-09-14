@@ -714,6 +714,7 @@ namespace System.Net.Sockets
 
         public static bool TryCompleteSendTo(SafeCloseSocket socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
+            bool successfulSend = false;
             for (;;)
             {
                 int sent;
@@ -733,16 +734,17 @@ namespace System.Net.Sockets
 
                 if (sent == -1)
                 {
-                    if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
+                    if (!successfulSend && errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
                     {
                         errorCode = GetSocketErrorForErrorCode(errno);
                         return true;
                     }
 
-                    errorCode = SocketError.Success;
+                    errorCode = successfulSend ? SocketError.Success : SocketError.WouldBlock;
                     return false;
                 }
 
+                successfulSend = true;
                 bytesSent += sent;
 
                 bool isComplete = sent == 0 ||
@@ -890,8 +892,8 @@ namespace System.Net.Sockets
             int bufferIndex = 0;
             int offset = 0;
             SocketError errorCode;
-            bool completed = TryCompleteSendTo(handle, bufferList, ref bufferIndex, ref offset, socketFlags, null, 0, ref bytesTransferred, out errorCode);
-            return completed ? errorCode : SocketError.WouldBlock;
+            TryCompleteSendTo(handle, bufferList, ref bufferIndex, ref offset, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            return errorCode;
         }
 
         public static SocketError Send(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, out int bytesTransferred)
@@ -903,8 +905,8 @@ namespace System.Net.Sockets
 
             bytesTransferred = 0;
             SocketError errorCode;
-            bool completed = TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, null, 0, ref bytesTransferred, out errorCode);
-            return completed ? errorCode : SocketError.WouldBlock;
+            TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            return errorCode;
         }
 
         public static SocketError Send(SafeCloseSocket handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
@@ -916,8 +918,8 @@ namespace System.Net.Sockets
 
             bytesTransferred = 0;
             SocketError errorCode;
-            bool completed = TryCompleteSendTo(handle, buffer, socketFlags, null, 0, ref bytesTransferred, out errorCode);
-            return completed ? errorCode : SocketError.WouldBlock;
+            TryCompleteSendTo(handle, buffer, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            return errorCode;
         }
 
         public static SocketError SendFile(SafeCloseSocket handle, FileStream fileStream)
@@ -948,8 +950,8 @@ namespace System.Net.Sockets
 
             bytesTransferred = 0;
             SocketError errorCode;
-            bool completed = TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, socketAddress, socketAddressLen, ref bytesTransferred, out errorCode);
-            return completed ? errorCode : SocketError.WouldBlock;
+            TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, socketAddress, socketAddressLen, ref bytesTransferred, out errorCode);
+            return errorCode;
         }
 
         public static SocketError Receive(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, ref SocketFlags socketFlags, out int bytesTransferred)
