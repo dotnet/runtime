@@ -9,6 +9,7 @@
     </OfficialBuildRID>
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="rhel.6-x64" />
+    <OfficialBuildRID Include="alpine.3.6-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="win-arm">
       <Platform>arm</Platform>

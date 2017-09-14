@@ -26,7 +26,20 @@
         "android.21-arm64": {
             "#import": [ "android.21", "android-arm64" ]
         },
+        "alpine": {
+            "#import": [ "any" ]
+        },
 
+        "alpine-x64": {
+            "#import": [ "alpine" ]
+        },
+
+        "alpine.3.6": {
+            "#import": [ "alpine" ]
+        },
+        "alpine.3.6-x64": {
+            "#import": [ "alpine.3.6", "alpine-x64" ]
+        },
         "win": {
             "#import": [ "any" ]
         },
