@@ -13,10 +13,14 @@
 */
 
 using System;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    class FannkuchRedux
+    public class FannkuchRedux_2
     {
         public static int[] fannkuch(int n)
         {
@@ -71,11 +75,27 @@ namespace BenchmarksGame
             } while (true);
         }
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             int n = (args.Length > 0) ? Int32.Parse(args[0]) : 7;
             var pf = fannkuch(n);
             Console.Write("{0}\nPfannkuchen({1}) = {2}\n", pf[0], n, pf[1]);
+
+            int expected = 228;
+
+            // Return 100 on success, anything else on failure.
+            return pf[0] - expected + 100;
+        }
+
+        [Benchmark(InnerIterationCount = 7)]
+        [InlineData(10, 73196)]
+        public static void RunBench(int n, int expectedSum)
+        {
+            Benchmark.Iterate(() =>
+            {
+                var pf = fannkuch(n);
+                Assert.Equal(expectedSum, pf[0]);
+            });
         }
     }
 }

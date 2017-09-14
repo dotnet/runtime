@@ -14,22 +14,43 @@
 */
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Xunit.Performance;
+using Xunit;
 
-namespace SpectralNorms
+[assembly: OptimizeForBenchmarks]
+
+namespace BenchmarksGame
 {
-    class SpectralNorm
+    public class SpectralNorm_3
     {
-        public static void Main(String[] args)
+        public static int Main(String[] args)
         {
             int n = 100;
             if (args.Length > 0) n = Int32.Parse(args[0]);
 
-            Console.WriteLine("{0:f9}", spectralnormGame(n));
+            double norm = Bench(n);
+            Console.WriteLine("{0:f9}", norm);
+
+            double expected = 1.274219991;
+            bool result = Math.Abs(norm - expected) < 1e-4;
+            return (result ? 100 : -1);
         }
 
-        private static double spectralnormGame(int n)
+        [Benchmark(InnerIterationCount = 1400)]
+        public static void RunBench()
+        {
+            double norm = 0.0;
+            Benchmark.Iterate(() => { norm = Bench(100); });
+
+            double expected = 1.274219991;
+            Assert.True(Math.Abs(norm - expected) < 1e-4);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static double Bench(int n)
         {
             double[] u = new double[n];
             double[] v = new double[n];

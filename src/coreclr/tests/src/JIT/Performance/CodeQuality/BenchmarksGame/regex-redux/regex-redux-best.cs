@@ -14,12 +14,17 @@
 */
 
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using Microsoft.Xunit.Performance;
+using Xunit;
+
+[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-    public static class regexredux
+    public class RegexRedux_5
     {
         static Regex regex(string re)
         {
@@ -35,9 +40,40 @@ namespace BenchmarksGame
             return r + " " + c;
         }
 
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
-            var sequences = Console.In.ReadToEnd();
+            var helpers = new TestHarnessHelpers(bigInput: false);
+
+            using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+            using (var input = new StreamReader(inputStream))
+            {
+                if (Bench(input, true) != helpers.ExpectedLength)
+                {
+                    return -1;
+                }
+            }
+
+            return 100;
+        }
+
+        [Benchmark(InnerIterationCount = 14)]
+        public static void RunBench()
+        {
+            var helpers = new TestHarnessHelpers(bigInput: true);
+
+            Benchmark.Iterate(() =>
+            {
+                using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+                using (var input = new StreamReader(inputStream))
+                {
+                    Assert.Equal(helpers.ExpectedLength, Bench(input, false));
+                }
+            });
+        }
+
+        static int Bench(TextReader inputReader, bool verbose)
+        {
+            var sequences = inputReader.ReadToEnd();
             var initialLength = sequences.Length;
             sequences = Regex.Replace(sequences, ">.*\n|\n", "");
 
@@ -61,17 +97,26 @@ namespace BenchmarksGame
             var variant9 = Task.Run(() => regexCount(sequences, "agggtaa[cgt]|[acg]ttaccct"));
             var variant8 = Task.Run(() => regexCount(sequences, "agggta[cgt]a|t[acg]taccct"));
 
-            Console.Out.WriteLineAsync(variant1.Result);
-            Console.Out.WriteLineAsync(variant2.Result);
-            Console.Out.WriteLineAsync(variant3.Result);
-            Console.Out.WriteLineAsync(variant4.Result);
-            Console.Out.WriteLineAsync(variant5.Result);
-            Console.Out.WriteLineAsync(variant6.Result);
-            Console.Out.WriteLineAsync(variant7.Result);
-            Console.Out.WriteLineAsync(variant8.Result);
-            Console.Out.WriteLineAsync(variant9.Result);
-            Console.Out.WriteLineAsync("\n" + initialLength + "\n" + sequences.Length);
-            Console.Out.WriteLineAsync(magicTask.Result.ToString());
+            if (verbose)
+            {
+                Console.Out.WriteLineAsync(variant1.Result);
+                Console.Out.WriteLineAsync(variant2.Result);
+                Console.Out.WriteLineAsync(variant3.Result);
+                Console.Out.WriteLineAsync(variant4.Result);
+                Console.Out.WriteLineAsync(variant5.Result);
+                Console.Out.WriteLineAsync(variant6.Result);
+                Console.Out.WriteLineAsync(variant7.Result);
+                Console.Out.WriteLineAsync(variant8.Result);
+                Console.Out.WriteLineAsync(variant9.Result);
+                Console.Out.WriteLineAsync("\n" + initialLength + "\n" + sequences.Length);
+                Console.Out.WriteLineAsync(magicTask.Result.ToString());
+            }
+            else
+            {
+                Task.WaitAll(variant1, variant2, variant3, variant4, variant5, variant6, variant7, variant8, variant9);
+            }
+
+            return magicTask.Result;
         }
     }
 }
