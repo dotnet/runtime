@@ -393,13 +393,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //    None.
 //
 // Notes:
-//    Casts from small int type to float/double are transformed as follows:
-//    GT_CAST(byte, float/double)     =   GT_CAST(GT_CAST(byte, int32), float/double)
-//    GT_CAST(sbyte, float/double)    =   GT_CAST(GT_CAST(sbyte, int32), float/double)
-//    GT_CAST(int16, float/double)    =   GT_CAST(GT_CAST(int16, int32), float/double)
-//    GT_CAST(uint16, float/double)   =   GT_CAST(GT_CAST(uint16, int32), float/double)
-//
-//    Similarly casts from float/double to a smaller int type are transformed as follows:
+//    Casts from float/double to a smaller int type are transformed as follows:
 //    GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
 //    GT_CAST(float/double, sbyte)    =   GT_CAST(GT_CAST(float/double, int32), sbyte)
 //    GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
@@ -419,7 +413,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     GenTreePtr op1     = tree->gtOp.gtOp1;
     var_types  dstType = tree->CastToType();
-    var_types  srcType = op1->TypeGet();
+    var_types  srcType = genActualType(op1->TypeGet());
     var_types  tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
@@ -427,15 +421,10 @@ void Lowering::LowerCast(GenTree* tree)
         noway_assert(!tree->gtOverflow());
     }
 
-    // Case of src is a small type and dst is a floating point type.
-    if (varTypeIsSmall(srcType) && varTypeIsFloating(dstType))
-    {
-        // These conversions can never be overflow detecting ones.
-        noway_assert(!tree->gtOverflow());
-        tmpType = TYP_INT;
-    }
+    assert(!varTypeIsSmall(srcType));
+
     // case of src is a floating point type and dst is a small type.
-    else if (varTypeIsFloating(srcType) && varTypeIsSmall(dstType))
+    if (varTypeIsFloating(srcType) && varTypeIsSmall(dstType))
     {
         NYI_ARM("Lowering for cast from float to small type"); // Not tested yet.
         tmpType = TYP_INT;
