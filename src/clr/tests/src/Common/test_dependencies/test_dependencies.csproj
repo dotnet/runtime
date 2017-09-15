@@ -22,6 +22,9 @@
     <PackageReference Include="System.Security.Permissions">
       <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="System.Runtime.Intrinsics.X86">
+      <Version>4.5.0-preview1-25718-03</Version>
+    </PackageReference>
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>

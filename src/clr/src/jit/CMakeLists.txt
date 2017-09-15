@@ -100,6 +100,7 @@ set( JIT_AMD64_SOURCES
   simdcodegenxarch.cpp
   targetamd64.cpp
   unwindamd64.cpp
+  hwintrinsicxarch.cpp
 )
 
 set( JIT_ARM_SOURCES
@@ -127,6 +128,7 @@ set( JIT_I386_SOURCES
   simdcodegenxarch.cpp
   targetx86.cpp
   unwindx86.cpp
+  hwintrinsicxarch.cpp
 )
 
 set( JIT_ARM64_SOURCES
