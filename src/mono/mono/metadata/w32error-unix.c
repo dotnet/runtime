@@ -69,6 +69,9 @@ mono_w32error_unix_to_win32 (guint32 error)
 #ifdef ENODEV
 	case ENODEV: return ERROR_DEV_NOT_EXIST;
 #endif
+#ifdef ENXIO
+	case ENXIO: return ERROR_DEV_NOT_EXIST;
+#endif
 
 	default:
 		g_error ("%s: unknown error (%d) \"%s\"", __FILE__, error, g_strerror (error));
