@@ -22,7 +22,7 @@ using Windows.Web;
 using RTCertificate = Windows.Security.Cryptography.Certificates.Certificate;
 using RTCertificateQuery = Windows.Security.Cryptography.Certificates.CertificateQuery;
 using RTCertificateStores = Windows.Security.Cryptography.Certificates.CertificateStores;
-using RTWeb​Socket​Error = Windows.Networking.Sockets.Web​Socket​Error;
+using RTWebSocketError = Windows.Networking.Sockets.WebSocketError;
 
 namespace System.Net.WebSockets
 {
@@ -400,7 +400,7 @@ namespace System.Net.WebSockets
             {
                 // WinRT WebSockets always throw exceptions of type System.Exception. However, we can determine whether
                 // or not we're dealing with a known error by using WinRT's WebSocketError.GetStatus method.
-                WebErrorStatus status = RTWeb​Socket​Error.GetStatus(exc.HResult);
+                WebErrorStatus status = RTWebSocketError.GetStatus(exc.HResult);
                 WebSocketError actualError = WebSocketError.Faulted;
                 switch (status)
                 {
