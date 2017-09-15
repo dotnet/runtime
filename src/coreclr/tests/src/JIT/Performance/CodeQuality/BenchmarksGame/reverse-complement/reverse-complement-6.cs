@@ -27,7 +27,12 @@ using Xunit;
 
 namespace BenchmarksGame
 {
-    class RevCompSequence { public List<byte[]> Pages; public int StartHeader, EndExclusive; public Thread ReverseThread; }
+    class RevCompSequence
+    {
+        public List<byte[]> Pages;
+        public int StartHeader, EndExclusive;
+        public Thread ReverseThread;
+    }
 
     public static class ReverseComplement_6
     {
@@ -110,8 +115,7 @@ namespace BenchmarksGame
                 {
                     var sequence = new RevCompSequence
                     {
-                        Pages = data
-                        ,
+                        Pages = data,
                         StartHeader = startHeader,
                         EndExclusive = i
                     };
@@ -127,8 +131,7 @@ namespace BenchmarksGame
             i = Array.IndexOf<byte>(data[data.Count - 1], 0, 0);
             var lastSequence = new RevCompSequence
             {
-                Pages = data
-                ,
+                Pages = data,
                 StartHeader = startHeader,
                 EndExclusive = i == -1 ? data[data.Count - 1].Length : i
             };
