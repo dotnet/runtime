@@ -16,8 +16,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
-        private const string s_xdg_open = "xdg-open";
-        private const int s_exit_code_kill = 137;  // using exit code 137 to show the process was killed
+        private const int ExitCodeKill  = 137;  // using exit code 137 to show the process was killed
 
         [Fact]
         private void TestWindowApisUnix()
@@ -64,40 +63,57 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, p.Id);
         }
 
-        [Theory, InlineData(false), InlineData(true)] // Expected behavior varies on Windows and Unix. Refer to #23969
-        public void ProcessStart_TryOpenFolder_ThrowsWin32Exception(bool useShellExecute)
-        {
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = useShellExecute, FileName = Path.GetTempPath() }));
-        }
-
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
-        public void ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise()
+        public void ProcessStart_UseShellExecute_OnUnix_ThrowsIfNoProgramInstalled(bool isFolder)
         {
-            string fileToOpen = GetTestFilePath() + ".txt";
-            File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise)}");
-
-            string[] allowedProgramsToRun = { s_xdg_open, "gnome-open", "kfmclient" };
-            foreach (var program in allowedProgramsToRun)
+            string fileToOpen;
+            string programToOpen = null;
+            if (isFolder)
             {
-                if (IsProgramInstalled(program))
-                {
-                    var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen };
-                    using (var px = Process.Start(startInfo))
-                    {
-                        Assert.NotNull(px);
-                        Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenFile_ThrowsIfNoDefaultProgramInstalledSucceedsOtherwise)}(): {program} was used to open file on this machine. ProcessName: {px.ProcessName}");
-                        Assert.Equal(program, px.ProcessName);
-                        px.Kill();
-                        px.WaitForExit();
-                        Assert.True(px.HasExited);
-                        Assert.Equal(s_exit_code_kill, px.ExitCode);
-                    }
-                    return;
-                }
+                fileToOpen = Environment.CurrentDirectory;
+            }
+            else
+            {
+                fileToOpen = GetTestFilePath() + ".txt";
+                File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_UseShellExecute_OnUnix_ThrowsIfNoProgramInstalled)}");
             }
 
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
+                foreach (var program in allowedProgramsToRun)
+                {
+                    if (IsProgramInstalled(program))
+                    {
+                        programToOpen = program;
+                        break;
+                    }
+                }
+                if (programToOpen == null)
+                {
+                    Console.WriteLine($"None of the following programs were installed on this machine: {string.Join(",", allowedProgramsToRun)}.");
+                    Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+                }
+            }
+            
+            using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
+            {
+                Assert.NotNull(px); // on Windows px is null for some reason
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    Assert.Equal(programToOpen, px.ProcessName);
+                }
+                else
+                {
+                    // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to #23972
+                    Console.WriteLine($"{nameof(ProcessStart_UseShellExecute_OnUnix_ThrowsIfNoProgramInstalled)}(isFolder: {isFolder}), ProcessName: {px.ProcessName}");
+                }
+                px.Kill();
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+                Assert.Equal(ExitCodeKill , px.ExitCode);
+            }
         }
 
         [Theory, InlineData("nano"), InlineData("vi")]
@@ -115,48 +131,12 @@ namespace System.Diagnostics.Tests
                     px.Kill();
                     px.WaitForExit();
                     Assert.True(px.HasExited);
-                    Assert.Equal(s_exit_code_kill, px.ExitCode);
+                    Assert.Equal(ExitCodeKill , px.ExitCode);
                 }
             }
             else
             {
                 Console.WriteLine($"Program specified to open file with {programToOpenWith} is not installed on this machine.");
-            }
-        }
-
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]
-        [OuterLoop("Opens program")]
-        public void ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2()
-        {
-            // The exit code is coming from xdg-open. Which is why I split this test for OSX and Linux to assert against two different exit code values.
-            if (IsProgramInstalled(s_xdg_open))
-            {
-                string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-                using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
-                {
-                    Assert.NotNull(p);
-                    Assert.Equal(s_xdg_open, p.ProcessName);
-                    p.WaitForExit();
-                    Assert.True(p.HasExited);
-                    Assert.Equal(2, p.ExitCode); // Exit Code 2 from xdg-open means file was not found 
-                }
-            }
-            else
-            {
-                Console.WriteLine($"{nameof(ProcessStart_UseShellExecuteTrue_OpenMissingFile_XdgOpenReturnsExitCode2)}(): {s_xdg_open} is not installed on this machine.");
-            }
-        }
-
-        [Fact, PlatformSpecific(TestPlatforms.OSX)]
-        [OuterLoop("Opens program")]
-        public void ProcessStart_UseShellExecuteTrue_TryOpenFileThatDoesntExist_ReturnsExitCode1()
-        {
-            // The exit code is coming from open. Which is why I split this test for OSX and Linux to assert against two different exit code values.
-            string file = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = file }))
-            {
-                Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(1, p.ExitCode); // Exit Code 1 from open means something went wrong
             }
         }
 
@@ -169,12 +149,12 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram)}");
             using (var px = Process.Start(programToOpenWith, fileToOpen))
             {
-                Console.WriteLine($"in OSX, {nameof(programToOpenWith)} is {programToOpenWith}, while {nameof(px.ProcessName)} is {px.ProcessName}.");
                 // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to #23972
+                Console.WriteLine($"in OSX, {nameof(programToOpenWith)} is {programToOpenWith}, while {nameof(px.ProcessName)} is {px.ProcessName}.");
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(s_exit_code_kill, px.ExitCode);
+                Assert.Equal(ExitCodeKill , px.ExitCode);
             }
         }
 
@@ -189,7 +169,7 @@ namespace System.Diagnostics.Tests
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(s_exit_code_kill, px.ExitCode);
+                Assert.Equal(ExitCodeKill , px.ExitCode);
             }
         }
 
@@ -205,7 +185,7 @@ namespace System.Diagnostics.Tests
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(s_exit_code_kill, px.ExitCode);
+                Assert.Equal(ExitCodeKill , px.ExitCode);
             }
         }
 
