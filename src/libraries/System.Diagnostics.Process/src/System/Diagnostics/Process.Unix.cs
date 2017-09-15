@@ -241,7 +241,13 @@ namespace System.Diagnostics
             string[] envp = CreateEnvp(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
-            if (!startInfo.UseShellExecute)
+            if (startInfo.UseShellExecute)
+            {
+                // use default program to open file/url
+                filename = GetPathToOpenFile();
+                argv = ParseArgv(startInfo, filename);
+            }
+            else
             {
                 filename = ResolvePath(startInfo.FileName);
                 argv = ParseArgv(startInfo);
@@ -249,12 +255,6 @@ namespace System.Diagnostics
                 {
                     throw new Win32Exception(SR.DirectoryNotValidAsInput);
                 }
-            }
-            else
-            {
-                // use default program to open file/url
-                filename = GetPathToOpenFile();
-                argv = ParseArgv(startInfo, filename);
             }
 
             if (string.IsNullOrEmpty(filename))
