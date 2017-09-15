@@ -54,8 +54,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IDictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEqualityComparer.cs" />
