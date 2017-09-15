@@ -11,7 +11,7 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetInstance_TestData()
         {
-            CultureInfo frFRCulture = new CultureInfo("fr-FR");
+            CultureInfo frFRCulture = CultureInfo.GetCultureInfo("fr-FR");
             yield return new object[] { frFRCulture, frFRCulture.NumberFormat };
             yield return new object[] { frFRCulture.NumberFormat, frFRCulture.NumberFormat };
             yield return new object[] { new CustomFormatProvider(), CustomFormatProvider.CustomFormat };
@@ -55,7 +55,7 @@ namespace System.Globalization.Tests
 
         private class CustomFormatProvider : IFormatProvider
         {
-            public static NumberFormatInfo CustomFormat { get; } = new CultureInfo("fr-FR").NumberFormat;
+            public static NumberFormatInfo CustomFormat { get; } = CultureInfo.GetCultureInfo("fr-FR").NumberFormat;
 
             public object GetFormat(Type formatType) => CustomFormat;
         }

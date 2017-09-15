@@ -14,7 +14,7 @@ namespace System.Globalization.Tests
         [InlineData("", "\x00a4")] // international
         public void CurrencySymbol_Get(string name, string expected)
         {
-            Assert.Equal(expected, new CultureInfo(name).NumberFormat.CurrencySymbol);
+            Assert.Equal(expected, CultureInfo.GetCultureInfo(name).NumberFormat.CurrencySymbol);
         }
 
         [Theory]

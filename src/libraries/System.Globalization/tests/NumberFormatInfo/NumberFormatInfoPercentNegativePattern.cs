@@ -12,9 +12,9 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> PercentNegativePattern_TestData()
         {
-            yield return new object[] { new CultureInfo("en-US").NumberFormat, 1 };
-            yield return new object[] { new CultureInfo("en-MY").NumberFormat, 1 };
-            yield return new object[] { new CultureInfo("tr").NumberFormat, 2 };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, 1 };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-MY").NumberFormat, 1 };
+            yield return new object[] { CultureInfo.GetCultureInfo("tr").NumberFormat, 2 };
         }
 
         /// <summary>
