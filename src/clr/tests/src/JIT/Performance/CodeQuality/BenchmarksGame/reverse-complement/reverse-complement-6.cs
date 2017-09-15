@@ -4,6 +4,7 @@
 
 // Adapted from reverse-complement C# .NET Core #6
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=revcomp&lang=csharpcore&id=6
+// aka (as of 2017-09-01) rev 1.4 of https://alioth.debian.org/scm/viewvc.php/benchmarksgame/bench/revcomp/revcomp.csharp-6.csharp?root=benchmarksgame&view=log
 // Best-scoring C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
