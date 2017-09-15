@@ -2105,48 +2105,27 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
 
         void* addr = nullptr;
-        if (callType == CT_HELPER)
-        {
-// Direct call to a helper method.
 #ifdef FEATURE_READYTORUN_COMPILER
-            if (call->gtEntryPoint.addr != NULL)
-            {
-                addr = call->gtEntryPoint.addr;
-                assert(call->gtEntryPoint.accessType == IAT_VALUE);
-            }
-            else
+        if (call->gtEntryPoint.addr != NULL)
+        {
+            assert(call->gtEntryPoint.accessType == IAT_VALUE);
+            addr = call->gtEntryPoint.addr;
+        }
+        else
 #endif // FEATURE_READYTORUN_COMPILER
-            {
-                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            if (callType == CT_HELPER)
+        {
+            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                void* pAddr = nullptr;
-                addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-
-                if (addr == nullptr)
-                {
-                    addr = pAddr;
-                }
-            }
+            void* pAddr = nullptr;
+            addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+            assert(pAddr == nullptr);
         }
         else
         {
             // Direct call to a non-virtual user function.
-            CORINFO_ACCESS_FLAGS aflags = CORINFO_ACCESS_ANY;
-            if (call->IsSameThis())
-            {
-                aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_THIS);
-            }
-
-            if ((call->NeedsNullCheck()) == 0)
-            {
-                aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_NONNULL);
-            }
-
-            CORINFO_CONST_LOOKUP addrInfo;
-            compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo, aflags);
-
-            addr = addrInfo.addr;
+            addr = call->gtDirectCallAddress;
         }
 
         assert(addr != nullptr);
