@@ -147,15 +147,6 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #else // _DEBUG
-        // The IL body of this method is not critical, but its body will be replaced with unsafe code, so
-        // this method is effectively critical
-        [FriendAccessAllowed]
-        static internal T UnsafeCast<T>(Object o) where T : class
-        {
-            // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
 
         static internal int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
         {
