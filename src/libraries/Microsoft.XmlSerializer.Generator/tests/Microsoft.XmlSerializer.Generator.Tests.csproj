@@ -54,9 +54,9 @@
       <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
     </PropertyGroup>
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec Command="$(GeneratorCliPath)dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
+    <Exec Command="$(GeneratorCliPath)dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force"  />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs"/>
-    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' != 'core'" ContinueOnError="true" 
+    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' != 'core'" 
          OutputAssembly="$(OutputPath)$(SerializerName).dll" 
          References="@(ReferencePath);@(IntermediateAssembly)" 
          EmitDebugInformation="$(DebugSymbols)"  
@@ -68,7 +68,7 @@
          DisabledWarnings="$(NoWarn), 219" 
          UseSharedCompilation="true" />
     <!-- when building on core CSC requires the OverrideToolHost parameter, but this is not supported by desktop csc -->
-    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' == 'core'" ContinueOnError="true" 
+    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true' AND '$(MSBuildRuntimeType)' == 'core'" 
          OutputAssembly="$(OutputPath)$(SerializerName).dll" 
          References="@(ReferencePath);@(IntermediateAssembly)" 
          EmitDebugInformation="$(DebugSymbols)"  
