@@ -3572,6 +3572,12 @@
         "4.0.2.0": "4.3.0"
       }
     },
+    "System.Runtime.Intrinsics.X86": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "System.Runtime.Loader": {
       "StableVersions": [
         "4.0.0",
