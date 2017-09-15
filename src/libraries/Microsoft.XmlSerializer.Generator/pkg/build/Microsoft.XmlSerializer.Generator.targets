@@ -4,7 +4,7 @@
     <SerializerDllImmediatePath>$(IntermediateOutputPath)$(SerializerName).dll</SerializerDllImmediatePath>
     <SerializerPdbImmediatePath>$(IntermediateOutputPath)$(SerializerName).pdb</SerializerPdbImmediatePath>
     <SerializerCsImmediatePath>$(IntermediateOutputPath)$(SerializerName).cs</SerializerCsImmediatePath>
-    <SGenWarningText>SGEN : warning SGEN1: Fail to generate the serializer for $(AssemblyName).dll. Please check the build log for the details.</SGenWarningText>
+    <SGenWarningText>SGEN : warning SGEN1: Fail to generate the serializer for $(AssemblyName).dll. Please follow the instructions in https://go.microsoft.com/fwlink/?linkid=858594 and try again.</SGenWarningText>
   </PropertyGroup>
   <Target Name="GenerateSerializationAssembly" AfterTargets="Build">
     <Delete Condition="Exists('$(SerializerDllImmediatePath)') == 'true'" Files="$(SerializerDllImmediatePath)" />
