@@ -2218,7 +2218,12 @@ public:
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
     {
-        return (call->gtCallMethHnd == impInlineRoot()->info.compMethodHnd);
+        return gtIsRecursiveCall(call->gtCallMethHnd);
+    }
+
+    bool gtIsRecursiveCall(CORINFO_METHOD_HANDLE callMethodHandle)
+    {
+        return (callMethodHandle == impInlineRoot()->info.compMethodHnd);
     }
 
     //-------------------------------------------------------------------------
