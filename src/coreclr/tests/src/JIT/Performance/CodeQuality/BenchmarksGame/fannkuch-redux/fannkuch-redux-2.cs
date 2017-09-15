@@ -4,6 +4,7 @@
 
 // Adapted from fannkuch-redux C# .NET Core #2 program
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=fannkuchredux&lang=csharpcore&id=2
+// aka (as of 2017-09-01) rev 1.2 of https://alioth.debian.org/scm/viewvc.php/benchmarksgame/bench/fannkuchredux/fannkuchredux.csharp-2.csharp?root=benchmarksgame&view=log
 // Best-scoring single-threaded C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
