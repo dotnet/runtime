@@ -1558,6 +1558,24 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     GenTreePtr  op2 = treeNode->gtGetOp2();
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
+    if ((treeNode->gtFlags & GTF_SET_FLAGS) != 0)
+    {
+        switch (oper)
+        {
+            case GT_ADD:
+                ins = INS_adds;
+                break;
+            case GT_SUB:
+                ins = INS_subs;
+                break;
+            case GT_AND:
+                ins = INS_ands;
+                break;
+            default:
+                assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
+        }
+    }
+
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
 
@@ -3272,10 +3290,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     regNumber targetReg = tree->gtRegNum;
     emitter*  emit      = getEmitter();
 
-    // TODO-ARM64-CQ: Check if we can use the currently set flags.
-    // TODO-ARM64-CQ: Check for the case where we can simply transfer the carry bit to a register
-    //         (signed < or >= where targetReg != REG_NA)
-
     GenTreePtr op1     = tree->gtOp1;
     GenTreePtr op2     = tree->gtOp2;
     var_types  op1Type = genActualType(op1->TypeGet());
@@ -3286,42 +3300,45 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     genConsumeOperands(tree);
 
-    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
-
-    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
-
-    if (varTypeIsFloating(op1Type))
+    if ((tree->gtFlags & GTF_USE_FLAGS) == 0)
     {
-        assert(varTypeIsFloating(op2Type));
-        assert(!op1->isContained());
-        assert(op1Type == op2Type);
+        emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
 
-        if (op2->IsIntegralConst(0))
+        assert(genTypeSize(op1Type) == genTypeSize(op2Type));
+
+        if (varTypeIsFloating(op1Type))
         {
-            emit->emitIns_R_F(INS_fcmp, cmpSize, op1->gtRegNum, 0.0);
+            assert(varTypeIsFloating(op2Type));
+            assert(!op1->isContained());
+            assert(op1Type == op2Type);
+
+            if (op2->IsIntegralConst(0))
+            {
+                emit->emitIns_R_F(INS_fcmp, cmpSize, op1->gtRegNum, 0.0);
+            }
+            else
+            {
+                assert(!op2->isContained());
+                emit->emitIns_R_R(INS_fcmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+            }
         }
         else
         {
-            assert(!op2->isContained());
-            emit->emitIns_R_R(INS_fcmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
-        }
-    }
-    else
-    {
-        assert(!varTypeIsFloating(op2Type));
-        // We don't support swapping op1 and op2 to generate cmp reg, imm
-        assert(!op1->isContainedIntOrIImmed());
+            assert(!varTypeIsFloating(op2Type));
+            // We don't support swapping op1 and op2 to generate cmp reg, imm
+            assert(!op1->isContainedIntOrIImmed());
 
-        instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
+            instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
 
-        if (op2->isContainedIntOrIImmed())
-        {
-            GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-            emit->emitIns_R_I(ins, cmpSize, op1->gtRegNum, intConst->IconValue());
-        }
-        else
-        {
-            emit->emitIns_R_R(ins, cmpSize, op1->gtRegNum, op2->gtRegNum);
+            if (op2->isContainedIntOrIImmed())
+            {
+                GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+                emit->emitIns_R_I(ins, cmpSize, op1->gtRegNum, intConst->IconValue());
+            }
+            else
+            {
+                emit->emitIns_R_R(ins, cmpSize, op1->gtRegNum, op2->gtRegNum);
+            }
         }
     }
 
