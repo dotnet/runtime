@@ -76,7 +76,7 @@
         <Authenticode>Appx</Authenticode>
       </FilesToSign>
     </ItemGroup>
-    <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
+    <Error Condition="'@(FilesToSign)' == '' AND '$(TargetRid)' != 'win-arm64'" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
   <Target Name="SignMsiAndCab" DependsOnTargets="GetSignMsiAndCabFiles">
