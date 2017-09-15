@@ -12525,13 +12525,28 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     GenTree* boxTypeHandle = nullptr;
     if (options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
     {
-        // Note we might see GenTreeAllocObj here, if impImportAndPushBox
-        // starts using it instead of a bare helper call.
-        GenTree* asgSrc = asg->gtOp.gtOp2;
-        assert(asgSrc->IsCall());
-        GenTreeCall*    newobjCall = asgSrc->AsCall();
-        GenTreeArgList* newobjArgs = newobjCall->gtCallArgs->AsArgList();
-        boxTypeHandle              = newobjArgs->Current();
+        GenTree*   asgSrc     = asg->gtOp.gtOp2;
+        genTreeOps asgSrcOper = asgSrc->OperGet();
+
+        // Allocation may be via AllocObj or via helper call, depending
+        // on when this is invoked and whether the jit is using AllocObj
+        // for R2R allocations.
+        if (asgSrcOper == GT_ALLOCOBJ)
+        {
+            GenTreeAllocObj* allocObj = asgSrc->AsAllocObj();
+            boxTypeHandle             = allocObj->gtOp.gtOp1;
+        }
+        else if (asgSrcOper == GT_CALL)
+        {
+            GenTreeCall*    newobjCall = asgSrc->AsCall();
+            GenTreeArgList* newobjArgs = newobjCall->gtCallArgs->AsArgList();
+            boxTypeHandle              = newobjArgs->Current();
+        }
+        else
+        {
+            unreached();
+        }
+
         assert(boxTypeHandle != nullptr);
     }
 
