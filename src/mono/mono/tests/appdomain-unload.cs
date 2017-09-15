@@ -83,6 +83,40 @@ public class BThread : MarshalByRefObject {
 	}
 }
 
+public interface IRunnable {
+	void Run ();
+}
+
+public class MBRObject : MarshalByRefObject, IRunnable {
+	/* XDomain wrappers for invocation */
+	public void Run () {
+		while (true) {
+			try {
+				while (true)
+					Thread.Sleep (100);
+			}
+			catch (ThreadAbortException ex) {
+				Thread.ResetAbort ();
+			}
+		}
+	}
+}
+
+public class CBObject : ContextBoundObject, IRunnable {
+	/* Slow corlib path for invocation */
+	public void Run () {
+		while (true) {
+			try {
+				while (true)
+					Thread.Sleep (100);
+			}
+			catch (ThreadAbortException ex) {
+				Thread.ResetAbort ();
+			}
+		}
+	}
+}
+
 public class UnloadThread {
 
 	AppDomain domain;
@@ -190,6 +224,32 @@ public class Tests
 		return 1;
 	}
 	*/
+
+	public static void ThreadStart (object obj)
+	{
+		IRunnable runnable = (IRunnable)obj;
+
+		try {
+			runnable.Run ();
+		} catch (AppDomainUnloadedException) {
+			Console.WriteLine ("OK");
+		} catch (ThreadAbortException) {
+			throw new Exception ();
+		}
+	}
+
+	public static int test_0_unload_reset_abort () {
+		AppDomain domain = AppDomain.CreateDomain ("test_0_unload_reset_abort");
+		MBRObject mbro = (MBRObject) domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "MBRObject");
+		CBObject cbo = (CBObject) domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "CBObject");
+
+		new Thread (ThreadStart).Start (mbro);
+		new Thread (ThreadStart).Start (cbo);
+		Thread.Sleep (100);
+
+		AppDomain.Unload (domain);
+		return 0;
+	}
 
 	static void Worker (object x) {
 		Thread.Sleep (100000);
