@@ -583,7 +583,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Dictionary.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\DebugView.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\List.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentStack.cs" />

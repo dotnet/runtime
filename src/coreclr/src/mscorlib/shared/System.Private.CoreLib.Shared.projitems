@@ -65,6 +65,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyValuePair.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\List.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ICollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IDictionary.cs" />
