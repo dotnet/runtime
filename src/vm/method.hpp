@@ -1243,7 +1243,8 @@ public:
             !IsEnCMethod() &&
             HasNativeCodeSlot() &&
             !IsUnboxingStub() &&
-            !IsInstantiatingStub();
+            !IsInstantiatingStub() &&
+            !IsDynamicMethod();
 
         // We should add an exclusion for modules with debuggable code gen flags
 
