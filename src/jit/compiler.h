@@ -3016,6 +3016,28 @@ protected:
                               CorInfoIntrinsics     intrinsicID,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+
+#ifdef _TARGET_XARCH_
+    InstructionSet lookupHWIntrinsicISA(const char* className);
+    NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
+    InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
+    GenTree* impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impSSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impSSE41Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impAVXIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impAVX2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impAESIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impBMI1Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impFMAIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+    GenTree* impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method);
+#endif
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,
                                        int                  memberRef,
@@ -7914,6 +7936,19 @@ public:
         bool compCanUseAVX; // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
 #endif                      // FEATURE_AVX_SUPPORT
 #endif                      // _TARGET_XARCH_
+
+#ifdef _TARGET_XARCH_
+        // only for Intel hardware intrinsics
+        uint64_t compSupportsISA;
+        void setSupportedISA(InstructionSet isa)
+        {
+            compSupportsISA |= 1 << isa;
+        }
+        bool compSupports(InstructionSet isa)
+        {
+            return (compSupportsISA & (1 << isa)) != 0;
+        }
+#endif
 
 // optimize maximally and/or favor speed over size?
 
