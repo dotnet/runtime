@@ -4,6 +4,7 @@
 
 // Adapted from k-nucleotide C# .NET Core #9 program
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=knucleotide&lang=csharpcore&id=9
+// aka (as of 2017-09-01) rev 1.1 of https://alioth.debian.org/scm/viewvc.php/benchmarksgame/bench/knucleotide/knucleotide.csharp-9.csharp?root=benchmarksgame&view=log
 // Best-scoring C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
