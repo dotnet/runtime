@@ -979,13 +979,9 @@ namespace System.Tests
             yield return new object[] { "#10/10/2095#\0", CultureInfo.InvariantCulture, new DateTime(2095, 10, 10, 0, 0, 0) };
 
             DateTime today = DateTime.Today;
-
-            if (PlatformDetection.IsWindows) // [ActiveIssue(23923)]
-            {
-                var hebrewCulture = new CultureInfo("he-IL");
-                hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
-                yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
-            }
+            var hebrewCulture = new CultureInfo("he-IL");
+            hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
+            yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
 
             var mongolianCulture = new CultureInfo("mn-MN");
             yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
