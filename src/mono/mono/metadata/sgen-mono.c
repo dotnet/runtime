@@ -398,6 +398,7 @@ get_array_fill_vtable (void)
 		klass.rank = 1;
 		klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
 		klass.sizes.element_size = 1;
+		klass.size_inited = 1;
 		klass.name = "array_filler_type";
 
 		vtable->klass = &klass;
