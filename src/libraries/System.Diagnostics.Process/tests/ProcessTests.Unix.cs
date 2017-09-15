@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
-        private const int ExitCodeKill  = 137;  // using exit code 137 to show the process was killed
+        private const int ExitCodeKill = 137;  // using exit code 137 to show the process was killed
 
         [Fact]
         private void TestWindowApisUnix()
@@ -112,7 +112,7 @@ namespace System.Diagnostics.Tests
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(ExitCodeKill , px.ExitCode);
+                Assert.Equal(ExitCodeKill, px.ExitCode);
             }
         }
 
@@ -131,7 +131,7 @@ namespace System.Diagnostics.Tests
                     px.Kill();
                     px.WaitForExit();
                     Assert.True(px.HasExited);
-                    Assert.Equal(ExitCodeKill , px.ExitCode);
+                    Assert.Equal(ExitCodeKill, px.ExitCode);
                 }
             }
             else
@@ -154,7 +154,7 @@ namespace System.Diagnostics.Tests
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(ExitCodeKill , px.ExitCode);
+                Assert.Equal(ExitCodeKill, px.ExitCode);
             }
         }
 
@@ -169,7 +169,7 @@ namespace System.Diagnostics.Tests
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(ExitCodeKill , px.ExitCode);
+                Assert.Equal(ExitCodeKill, px.ExitCode);
             }
         }
 
@@ -185,7 +185,7 @@ namespace System.Diagnostics.Tests
                 px.Kill();
                 px.WaitForExit();
                 Assert.True(px.HasExited);
-                Assert.Equal(ExitCodeKill , px.ExitCode);
+                Assert.Equal(ExitCodeKill, px.ExitCode);
             }
         }
 
