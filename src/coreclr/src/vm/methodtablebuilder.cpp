@@ -5094,6 +5094,19 @@ MethodTableBuilder::InitNewMethodDesc(
         {
             pNewMD->SetIsJitIntrinsic();
         }
+
+        // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
+        // We specially treat them here to reduce the disk footprint of mscorlib.
+        LPCUTF8 className;
+        LPCUTF8 nameSpace;
+
+        HRESULT hrns = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
+
+        if (hrns == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0)
+        {
+            pNewMD->SetIsJitIntrinsic();
+        }
+
     }
 
     pNewMD->SetSlot(pMethod->GetSlotIndex());

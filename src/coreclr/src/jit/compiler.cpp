@@ -2560,6 +2560,72 @@ void Compiler::compSetProcessor()
 #endif // DEBUG
 
 #endif // _TARGET_X86_
+
+// Instruction set flags fo// Instruction set flags for Intel hardware intrinsics
+#ifdef _TARGET_XARCH_
+    opts.compSupportsISA = 0;
+
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        if (opts.compCanUseSSE2)
+        {
+            opts.setSupportedISA(InstructionSet_SSE);
+            opts.setSupportedISA(InstructionSet_SSE2);
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES))
+            {
+                opts.setSupportedISA(InstructionSet_AES);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX))
+            {
+                opts.setSupportedISA(InstructionSet_AVX);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
+            {
+                opts.setSupportedISA(InstructionSet_AVX2);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1))
+            {
+                opts.setSupportedISA(InstructionSet_BMI1);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2))
+            {
+                opts.setSupportedISA(InstructionSet_BMI2);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FMA))
+            {
+                opts.setSupportedISA(InstructionSet_FMA);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT))
+            {
+                opts.setSupportedISA(InstructionSet_LZCNT);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_PCLMULQDQ))
+            {
+                opts.setSupportedISA(InstructionSet_PCLMULQDQ);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT))
+            {
+                opts.setSupportedISA(InstructionSet_POPCNT);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3))
+            {
+                opts.setSupportedISA(InstructionSet_SSE3);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41))
+            {
+                opts.setSupportedISA(InstructionSet_SSE41);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
+            {
+                opts.setSupportedISA(InstructionSet_SSE42);
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3))
+            {
+                opts.setSupportedISA(InstructionSet_SSSE3);
+            }
+        }
+    }
+#endif
 }
 
 #ifdef PROFILING_SUPPORTED

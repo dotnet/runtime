@@ -88,6 +88,37 @@ public:
 #endif // !defined(_TARGET_ARM_)
 
         JIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+
+        JIT_FLAG_USE_SSE3                = 43,
+        JIT_FLAG_USE_SSSE3               = 44,
+        JIT_FLAG_USE_SSE41               = 45,
+        JIT_FLAG_USE_SSE42               = 46,
+        JIT_FLAG_USE_AES                 = 47,
+        JIT_FLAG_USE_BMI1                = 48,
+        JIT_FLAG_USE_BMI2                = 49,
+        JIT_FLAG_USE_FMA                 = 50,
+        JIT_FLAG_USE_LZCNT               = 51,
+        JIT_FLAG_USE_PCLMULQDQ           = 52,
+        JIT_FLAG_USE_POPCNT              = 53
+        
+
+#else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+
+        JIT_FLAG_UNUSED12                = 43,
+        JIT_FLAG_UNUSED13                = 44,
+        JIT_FLAG_UNUSED14                = 45,
+        JIT_FLAG_UNUSED15                = 46,
+        JIT_FLAG_UNUSED16                = 47,
+        JIT_FLAG_UNUSED17                = 48,
+        JIT_FLAG_UNUSED18                = 49,
+        JIT_FLAG_UNUSED19                = 50,
+        JIT_FLAG_UNUSED20                = 51,
+        JIT_FLAG_UNUSED21                = 52,
+        JIT_FLAG_UNUSED22                = 53
+
+#endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
     };
     // clang-format on
 
@@ -207,6 +238,20 @@ public:
 #endif // _TARGET_ARM_
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING, JIT_FLAG_NO_INLINING);
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3, JIT_FLAG_USE_SSE3);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3, JIT_FLAG_USE_SSSE3);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41, JIT_FLAG_USE_SSE41);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42, JIT_FLAG_USE_SSE42);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AES, JIT_FLAG_USE_AES);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1, JIT_FLAG_USE_BMI1);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2, JIT_FLAG_USE_BMI2);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA, JIT_FLAG_USE_FMA);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT, JIT_FLAG_USE_LZCNT);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ, JIT_FLAG_USE_PCLMULQDQ);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT, JIT_FLAG_USE_POPCNT);
+#endif // _TARGET_X86_ || _TARGET_AMD64_
 
 #undef FLAGS_EQUAL
     }
