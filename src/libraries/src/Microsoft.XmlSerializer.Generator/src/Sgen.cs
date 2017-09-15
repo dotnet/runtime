@@ -334,14 +334,23 @@ namespace Microsoft.XmlSerializer.Generator
         private void WriteHeader()
         {
             // do not localize Copyright header
-            Console.WriteLine(String.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Framework, Version {0}]", ThisAssembly.InformationalVersion));
+            Console.WriteLine(String.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Core Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
             Console.WriteLine("Copyright (C) Microsoft Corporation. All rights reserved.");
         }
 
         private void WriteHelp()
         {
-            //TBD
-            Console.WriteLine("In Development");
+            Console.Out.WriteLine(SR.Format(SR.HelpDescription));
+            Console.Out.WriteLine(SR.Format(SR.HelpUsage, this.GetType().Assembly.GetName().Name));
+            Console.Out.WriteLine(SR.Format(SR.HelpDevOptions));
+            Console.Out.WriteLine(SR.Format(SR.HelpAssembly, "/assembly:", "/a:"));
+            Console.Out.WriteLine(SR.Format(SR.HelpType, "/type:", "/t:"));
+            Console.Out.WriteLine(SR.Format(SR.HelpProxy, "/proxytypes", "/p"));
+            Console.Out.WriteLine(SR.Format(SR.HelpForce, "/force", "/f"));
+            Console.Out.WriteLine(SR.Format(SR.HelpOut, "/out:", "/o:"));
+
+            Console.Out.WriteLine(SR.Format(SR.HelpMiscOptions));
+            Console.Out.WriteLine(SR.Format(SR.HelpHelp, "/?", "/help"));
         }
 
         private static string FormatMessage(bool warning, string message)
