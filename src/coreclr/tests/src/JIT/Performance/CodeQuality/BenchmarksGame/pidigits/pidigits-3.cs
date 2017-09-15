@@ -4,6 +4,7 @@
 
 // Adapted from pidigits C# .NET Core #3 program
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=pidigits&lang=csharpcore&id=3
+// aka (as of 2017-09-01) rev 1.2 of https://alioth.debian.org/scm/viewvc.php/benchmarksgame/bench/pidigits/pidigits.csharp-3.csharp?root=benchmarksgame&view=log
 // Best-scoring C# .NET Core version as of 2017-09-01
 // (also best-scoring single-threaded C# .NET Core version as of 2017-09-01)
 // **** Version #3 on website pinvokes to native GMP library; this has been modified to

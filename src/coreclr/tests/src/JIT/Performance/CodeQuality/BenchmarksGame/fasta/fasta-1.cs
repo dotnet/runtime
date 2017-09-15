@@ -4,6 +4,7 @@
 
 // Adapted from fasta C# .NET Core program
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=fasta&lang=csharpcore&id=1
+// aka (as of 2017-09-01) rev 1.1 of https://alioth.debian.org/scm/viewvc.php/benchmarksgame/bench/fasta/fasta.csharp?root=benchmarksgame&view=log
 // Best-scoring C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game

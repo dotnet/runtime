@@ -4,6 +4,7 @@
 
 // Adapted from spectral-norm C# .NET Core #3 program
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=spectralnorm&lang=csharpcore&id=3
+// aka (as of 2017-09-01) rev 1.1 of https://alioth.debian.org/scm/viewvc.php/benchmarksgame/bench/spectralnorm/spectralnorm.csharp-3.csharp?root=benchmarksgame&view=log
 // Best-scoring C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
