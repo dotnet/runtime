@@ -12538,9 +12538,19 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         }
         else if (asgSrcOper == GT_CALL)
         {
-            GenTreeCall*    newobjCall = asgSrc->AsCall();
-            GenTreeArgList* newobjArgs = newobjCall->gtCallArgs->AsArgList();
-            boxTypeHandle              = newobjArgs->Current();
+            GenTreeCall* newobjCall = asgSrc->AsCall();
+            GenTree*     newobjArgs = newobjCall->gtCallArgs;
+
+            // In R2R expansions the handle may not be an explicit operand to the helper,
+            // so we can't remove the box.
+            if (newobjArgs == nullptr)
+            {
+                assert(newobjCall->IsHelperCall(this, CORINFO_HELP_READYTORUN_NEW));
+                JITDUMP("bailing; newobj via R2R helper\n");
+                return nullptr;
+            }
+
+            boxTypeHandle = newobjArgs->AsArgList()->Current();
         }
         else
         {
