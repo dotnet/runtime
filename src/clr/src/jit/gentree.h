@@ -680,6 +680,8 @@ public:
     void CopyReg(GenTreePtr from);
     bool gtHasReg() const;
 
+    int GetRegisterDstCount() const;
+
     regMaskTP gtGetRegMask() const;
 
     unsigned gtFlags; // see GTF_xxxx below
@@ -701,10 +703,6 @@ public:
 #ifdef LEGACY_BACKEND
     regMaskSmall gtUsedRegs; // set of used (trashed) registers
 #endif                       // LEGACY_BACKEND
-
-#ifndef LEGACY_BACKEND
-    TreeNodeInfo gtLsraInfo;
-#endif // !LEGACY_BACKEND
 
     void SetVNsFromNode(GenTreePtr tree)
     {
@@ -1022,8 +1020,9 @@ public:
 #define GTF_DEBUG_NODE_LARGE        0x00000004
 #define GTF_DEBUG_NODE_CG_PRODUCED  0x00000008 // genProduceReg has been called on this node
 #define GTF_DEBUG_NODE_CG_CONSUMED  0x00000010 // genConsumeReg has been called on this node
+#define GTF_DEBUG_NODE_LSRA_ADDED   0x00000020 // This node was added by LSRA
 
-#define GTF_DEBUG_NODE_MASK         0x0000001F // These flags are all node (rather than operation) properties.
+#define GTF_DEBUG_NODE_MASK         0x0000003F // These flags are all node (rather than operation) properties.
 
 #define GTF_DEBUG_VAR_CSE_REF       0x00800000 // GT_LCL_VAR -- This is a CSE LCL_VAR node
 #endif // defined(DEBUG)
@@ -1133,10 +1132,20 @@ public:
         }
     }
 
-    // NOTE: the three UnusedValue helpers immediately below are defined in lir.h.
+    // LIR flags
+    //   These helper methods, along with the flag values they manipulate, are defined in lir.h
+    //
+    // UnusedValue indicates that, although this node produces a value, it is unused.
     inline void SetUnusedValue();
     inline void ClearUnusedValue();
     inline bool IsUnusedValue() const;
+    // RegOptional indicates that codegen can still generate code even if it isn't allocated a register.
+    inline bool IsRegOptional() const;
+    inline void SetRegOptional();
+    inline void ClearRegOptional();
+#ifdef DEBUG
+    void dumpLIRFlags();
+#endif
 
     bool OperIs(genTreeOps oper) const
     {
@@ -2134,17 +2143,6 @@ public:
     // cast operations
     inline var_types  CastFromType();
     inline var_types& CastToType();
-
-    // Returns true if this gentree node is marked by lowering to indicate
-    // that codegen can still generate code even if it wasn't allocated a
-    // register.
-    bool IsRegOptional() const;
-#ifndef LEGACY_BACKEND
-    void ClearRegOptional()
-    {
-        gtLsraInfo.regOptional = false;
-    }
-#endif
 
     // Returns "true" iff "this" is a phi-related node (i.e. a GT_PHI_ARG, GT_PHI, or a PhiDefn).
     bool IsPhiNode();

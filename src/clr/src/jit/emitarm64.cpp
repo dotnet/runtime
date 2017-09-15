@@ -10070,11 +10070,13 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
         printf("#");
     }
 
-    // Munge any pointers if we want diff-able disassembly
+    // Munge any pointers if we want diff-able disassembly.
+    // Since some may be emitted as partial words, print as diffable anything that has
+    // significant bits beyond the lowest 8-bits.
     if (emitComp->opts.disDiffable)
     {
-        ssize_t top44bits = (imm >> 20);
-        if ((top44bits != 0) && (top44bits != -1))
+        ssize_t top56bits = (imm >> 8);
+        if ((top56bits != 0) && (top56bits != -1))
             imm = 0xD1FFAB1E;
     }
 
