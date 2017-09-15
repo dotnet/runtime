@@ -690,7 +690,35 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    ContainCheckBinary(cmp);
+    if (CheckImmedAndMakeContained(cmp, cmp->gtOp2))
+    {
+#ifdef _TARGET_ARM64_
+        GenTreePtr op1 = cmp->gtOp.gtOp1;
+        GenTreePtr op2 = cmp->gtOp.gtOp2;
+
+        // If op1 codegen can set flags op2 is an immediate 0
+        // we don't need to generate cmp instruction,
+        // provided we don't have another GenTree node between op1
+        // and cmp that could potentially modify flags.
+        //
+        // TODO-CQ: right now the below peep is inexpensive and
+        // gets the benefit in most of cases because in majority
+        // of cases op1, op2 and cmp would be in that order in
+        // execution.  In general we should be able to check that all
+        // the nodes that come after op1 in execution order do not
+        // modify the flags so that it is safe to avoid generating a
+        // test instruction.  Such a check requires that on each
+        // GenTree node we need to set the info whether its codegen
+        // will modify flags.
+        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
+            cmp->OperIs(GT_EQ, GT_NE, GT_GT, GT_GE, GT_LT, GT_LE) && op1->OperIs(GT_ADD, GT_AND, GT_SUB))
+        {
+            assert(!op1->gtSetFlags());
+            op1->gtFlags |= GTF_SET_FLAGS;
+            cmp->gtFlags |= GTF_USE_FLAGS;
+        }
+#endif // _TARGET_ARM64_
+    }
 }
 
 //------------------------------------------------------------------------
