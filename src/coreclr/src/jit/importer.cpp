@@ -3735,7 +3735,12 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
     {
         assert(retNode == nullptr);
         const NamedIntrinsic ni = lookupNamedIntrinsic(method);
-
+#ifdef _TARGET_XARCH_
+        if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
+        {
+            retNode = impX86HWIntrinsic(ni, method);
+        }
+#endif
         switch (ni)
         {
             case NI_System_Enum_HasFlag:
@@ -3958,6 +3963,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 
+#ifdef _TARGET_XARCH_
+    if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
+    {
+        InstructionSet isa = lookupHWIntrinsicISA(className);
+        result             = lookupHWIntrinsic(methodName, isa);
+    }
+#endif
     return result;
 }
 
