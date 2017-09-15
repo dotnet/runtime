@@ -6993,7 +6993,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup == TRUE;
 
         // Recursive call is treated as a loop to the begining of the method.
-        if (methHnd == info.compMethodHnd)
+        if (gtIsRecursiveCall(methHnd))
         {
 #ifdef DEBUG
             if (verbose)
