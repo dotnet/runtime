@@ -19,7 +19,7 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections.ObjectModel
 {
-    [DebuggerTypeProxy(typeof(Mscorlib_DictionaryDebugView<,>))]
+    [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     internal class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
@@ -428,7 +428,7 @@ namespace System.Collections.ObjectModel
 
         #endregion IReadOnlyDictionary members
 
-        [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
+        [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
@@ -538,7 +538,7 @@ namespace System.Collections.ObjectModel
             #endregion
         }
 
-        [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
+        [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
