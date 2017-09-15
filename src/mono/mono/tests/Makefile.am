@@ -958,6 +958,7 @@ INTERP_DISABLED_TESTS = \
 	array_load_exception.exe \
 	assembly_append_ordering.exe \
 	assemblyresolve_event4.exe \
+	assemblyresolve_event6.exe \
 	async-exc-compilation.exe \
 	async-with-cb-throws.exe \
 	async_read.exe \
