@@ -12,8 +12,8 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> CurrencyPositivePattern_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, 0 };
-            yield return new object[] { new CultureInfo("en-US").NumberFormat, 0 };
-            yield return new object[] { new CultureInfo("fr-FR").NumberFormat, 3 };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, 0 };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").NumberFormat, 3 };
         }
 
         [Theory]

@@ -68,7 +68,7 @@ namespace System.Globalization.Tests
                     return PlatformDetection.IsWindows ? new int[] { 15 } : new int[] { 8, 15 };
             }
 
-            throw DateTimeFormatInfoData.GetCultureNotSupportedException(new CultureInfo(localeName));
+            throw DateTimeFormatInfoData.GetCultureNotSupportedException(CultureInfo.GetCultureInfo(localeName));
         }
     }
 }
