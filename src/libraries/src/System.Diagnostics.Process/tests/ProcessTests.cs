@@ -146,7 +146,9 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell)), InlineData(true), InlineData(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
+        [InlineData(true)]
+        [InlineData(false)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "not supported on UAP")]
         [OuterLoop("Launches File Explorer")]
         public void ProcessStart_UseShellExecute_OnWindows_DoesNotThrow(bool isFolder)
@@ -170,16 +172,12 @@ namespace System.Diagnostics.Tests
                 }
                 else
                 {
-                    if (px != null)
+                    if (px != null) // sometimes process is null: tracked by #24048
                     {
                         Assert.Equal("notepad", px.ProcessName);
 
                         px.Kill();
                         Assert.True(px.WaitForExit(WaitInMS));
-                    }
-                    else
-                    {
-                        Console.WriteLine("Warning: Need to investigate why process is null when opening file on this machine. Refer to #24048");
                     }
                 }
             }
