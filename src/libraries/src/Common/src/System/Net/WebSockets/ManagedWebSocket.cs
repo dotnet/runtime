@@ -399,12 +399,11 @@ namespace System.Net.WebSockets
                 writeTask = _stream.WriteAsync(_sendBuffer, 0, sendBytes, CancellationToken.None);
 
                 // If the operation happens to complete synchronously (or, more specifically, by
-                // the time we get from the previous line to here, release the semaphore, propagate
-                // exceptions, and we're done.
+                // the time we get from the previous line to here), release the semaphore, return
+                // the task, and we're done.
                 if (writeTask.IsCompleted)
                 {
-                    writeTask.GetAwaiter().GetResult(); // propagate any exceptions
-                    return Task.CompletedTask;
+                    return writeTask;
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
@@ -516,7 +515,16 @@ namespace System.Net.WebSockets
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
                 // The call will handle releasing the lock.
-                SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, new ArraySegment<byte>(Array.Empty<byte>()));
+                Task t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, new ArraySegment<byte>(Array.Empty<byte>()));
+
+                // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
+                if (!t.IsCompletedSuccessfully)
+                {
+                    t.ContinueWith(p => { Exception ignored = p.Exception; },
+                        CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+                }
             }
             else
             {
