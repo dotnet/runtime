@@ -2,21 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-** Purpose: Implements a generic, dynamically sized list as an 
-**          array.
-**
-** 
-===========================================================*/
-
-using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
@@ -33,24 +21,24 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class List<T> : IList<T>, System.Collections.IList, IReadOnlyList<T>
     {
-        private const int _defaultCapacity = 4;
+        private const int DefaultCapacity = 4;
 
         private T[] _items; // Do not rename (binary serialization)
         [ContractPublicPropertyName("Count")]
         private int _size; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
         [NonSerialized]
-        private Object _syncRoot;
+        private object _syncRoot;
 
-        private static readonly T[] _emptyArray = new T[0];
+        private static readonly T[] s_emptyArray = new T[0];
 
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
-        // increased to _defaultCapacity, and then increased in multiples of two
+        // increased to DefaultCapacity, and then increased in multiples of two
         // as required.
         public List()
         {
-            _items = _emptyArray;
+            _items = s_emptyArray;
         }
 
         // Constructs a List with a given initial capacity. The list is
@@ -59,11 +47,12 @@ namespace System.Collections.Generic
         // 
         public List(int capacity)
         {
-            if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            if (capacity < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             if (capacity == 0)
-                _items = _emptyArray;
+                _items = s_emptyArray;
             else
                 _items = new T[capacity];
         }
@@ -84,7 +73,7 @@ namespace System.Collections.Generic
                 int count = c.Count;
                 if (count == 0)
                 {
-                    _items = _emptyArray;
+                    _items = s_emptyArray;
                 }
                 else
                 {
@@ -96,7 +85,7 @@ namespace System.Collections.Generic
             else
             {
                 _size = 0;
-                _items = _emptyArray;
+                _items = s_emptyArray;
                 AddEnumerable(collection);
             }
         }
@@ -133,7 +122,7 @@ namespace System.Collections.Generic
                     }
                     else
                     {
-                        _items = _emptyArray;
+                        _items = s_emptyArray;
                     }
                 }
             }
@@ -154,7 +143,6 @@ namespace System.Collections.Generic
             get { return false; }
         }
 
-
         // Is this List read-only?
         bool ICollection<T>.IsReadOnly
         {
@@ -173,19 +161,19 @@ namespace System.Collections.Generic
         }
 
         // Synchronization root for this object.
-        Object System.Collections.ICollection.SyncRoot
+        object System.Collections.ICollection.SyncRoot
         {
             get
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    System.Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }
         }
+
         // Sets or Gets the element at the given index.
-        // 
         public T this[int index]
         {
             get
@@ -218,7 +206,7 @@ namespace System.Collections.Generic
             return ((value is T) || (value == null && default(T) == null));
         }
 
-        Object System.Collections.IList.this[int index]
+        object System.Collections.IList.this[int index]
         {
             get
             {
@@ -242,6 +230,7 @@ namespace System.Collections.Generic
         // Adds the given object to the end of this list. The size of the list is
         // increased by one. If required, the capacity of the list is doubled
         // before adding the new element.
+        //
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(T item)
         {
@@ -284,7 +273,6 @@ namespace System.Collections.Generic
 
             return Count - 1;
         }
-
 
         // Adds the elements of the given collection to the end of this list. If
         // required, the capacity of the list is increased to twice the previous
@@ -374,7 +362,7 @@ namespace System.Collections.Generic
         // Contains returns true if the specified element is in the List.
         // It does a linear, O(n) search.  Equality is determined by calling
         // EqualityComparer<T>.Default.Equals().
-
+        //
         public bool Contains(T item)
         {
             // PERF: IndexOf calls Array.IndexOf, which internally
@@ -388,7 +376,7 @@ namespace System.Collections.Generic
             return _size != 0 && IndexOf(item) != -1;
         }
 
-        bool System.Collections.IList.Contains(Object item)
+        bool System.Collections.IList.Contains(object item)
         {
             if (IsCompatibleObject(item))
             {
@@ -403,7 +391,6 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
             }
-
             Contract.EndContractBlock();
 
             List<TOutput> list = new List<TOutput>(_size);
@@ -417,7 +404,6 @@ namespace System.Collections.Generic
 
         // Copies this List into array, which must be of a 
         // compatible array type.  
-        //
         public void CopyTo(T[] array)
         {
             CopyTo(array, 0);
@@ -425,7 +411,6 @@ namespace System.Collections.Generic
 
         // Copies this List into array, which must be of a 
         // compatible array type.  
-        //
         void System.Collections.ICollection.CopyTo(Array array, int arrayIndex)
         {
             if ((array != null) && (array.Rank != 1))
@@ -471,11 +456,12 @@ namespace System.Collections.Generic
         // value. If the current capacity of the list is less than min, the
         // capacity is increased to twice the current capacity or to min,
         // whichever is larger.
+        //
         private void EnsureCapacity(int min)
         {
             if (_items.Length < min)
             {
-                int newCapacity = _items.Length == 0 ? _defaultCapacity : _items.Length * 2;
+                int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
                 // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
                 // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
                 if ((uint)newCapacity > Array.MaxArrayLength) newCapacity = Array.MaxArrayLength;
@@ -620,7 +606,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                // Make sure we're not out of range            
+                // Make sure we're not out of range
                 if ((uint)startIndex >= (uint)_size)
                 {
                     ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
@@ -728,7 +714,7 @@ namespace System.Collections.Generic
             return Array.IndexOf(_items, item, 0, _size);
         }
 
-        int System.Collections.IList.IndexOf(Object item)
+        int System.Collections.IList.IndexOf(object item)
         {
             if (IsCompatibleObject(item))
             {
@@ -770,7 +756,8 @@ namespace System.Collections.Generic
             if (index > _size)
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
 
-            if (count < 0 || index > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+            if (count < 0 || index > _size - count)
+                ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < Count);
             Contract.EndContractBlock();
@@ -963,7 +950,6 @@ namespace System.Collections.Generic
 
         // Removes the element at the given index. The size of the list is
         // decreased by one.
-        // 
         public bool Remove(T item)
         {
             int index = IndexOf(item);
@@ -976,7 +962,7 @@ namespace System.Collections.Generic
             return false;
         }
 
-        void System.Collections.IList.Remove(Object item)
+        void System.Collections.IList.Remove(object item)
         {
             if (IsCompatibleObject(item))
             {
@@ -985,7 +971,7 @@ namespace System.Collections.Generic
         }
 
         // This method removes all items which matches the predicate.
-        // The complexity is O(n).   
+        // The complexity is O(n).
         public int RemoveAll(Predicate<T> match)
         {
             if (match == null)
@@ -1028,7 +1014,6 @@ namespace System.Collections.Generic
 
         // Removes the element at the given index. The size of the list is
         // decreased by one.
-        // 
         public void RemoveAt(int index)
         {
             if ((uint)index >= (uint)_size)
@@ -1049,7 +1034,6 @@ namespace System.Collections.Generic
         }
 
         // Removes a range of elements from this list.
-        // 
         public void RemoveRange(int index, int count)
         {
             if (index < 0)
@@ -1093,7 +1077,7 @@ namespace System.Collections.Generic
         // method, an element in the range given by index and count
         // which was previously located at index i will now be located at
         // index index + (index + count - i - 1).
-        // 
+        //
         public void Reverse(int index, int count)
         {
             if (index < 0)
@@ -1186,7 +1170,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                return _emptyArray;
+                return s_emptyArray;
             }
 
             T[] array = new T[_size];
@@ -1257,17 +1241,17 @@ namespace System.Collections.Generic
 
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
-            private List<T> list;
-            private int index;
-            private int version;
-            private T current;
+            private List<T> _list;
+            private int _index;
+            private int _version;
+            private T _current;
 
             internal Enumerator(List<T> list)
             {
-                this.list = list;
-                index = 0;
-                version = list._version;
-                current = default(T);
+                _list = list;
+                _index = 0;
+                _version = list._version;
+                _current = default(T);
             }
 
             public void Dispose()
@@ -1276,12 +1260,12 @@ namespace System.Collections.Generic
 
             public bool MoveNext()
             {
-                List<T> localList = list;
+                List<T> localList = _list;
 
-                if (version == localList._version && ((uint)index < (uint)localList._size))
+                if (_version == localList._version && ((uint)_index < (uint)localList._size))
                 {
-                    current = localList._items[index];
-                    index++;
+                    _current = localList._items[_index];
+                    _index++;
                     return true;
                 }
                 return MoveNextRare();
@@ -1289,13 +1273,13 @@ namespace System.Collections.Generic
 
             private bool MoveNextRare()
             {
-                if (version != list._version)
+                if (_version != _list._version)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                index = list._size + 1;
-                current = default(T);
+                _index = _list._size + 1;
+                _current = default(T);
                 return false;
             }
 
@@ -1303,15 +1287,15 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    return current;
+                    return _current;
                 }
             }
 
-            Object System.Collections.IEnumerator.Current
+            object System.Collections.IEnumerator.Current
             {
                 get
                 {
-                    if (index == 0 || index == list._size + 1)
+                    if (_index == 0 || _index == _list._size + 1)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
@@ -1321,15 +1305,14 @@ namespace System.Collections.Generic
 
             void System.Collections.IEnumerator.Reset()
             {
-                if (version != list._version)
+                if (_version != _list._version)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                index = 0;
-                current = default(T);
+                _index = 0;
+                _current = default(T);
             }
         }
     }
 }
-
