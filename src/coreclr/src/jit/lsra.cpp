@@ -13,7 +13,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   Preconditions
     - All register requirements are expressed in the code stream, either as destination
       registers of tree nodes, or as internal registers.  These requirements are
-      expressed in the TreeNodeInfo (gtLsraInfo) on each node, which includes:
+      expressed in the TreeNodeInfo computed for each node, which includes:
       - The number of register sources and destinations.
       - The register restrictions (candidates) of the target register, both from itself,
         as producer of the value (dstCandidates), and from its consuming node (srcCandidates).
@@ -787,9 +787,7 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                 regMaskTP newAssignment  = (prevAssignment & rp->registerAssignment);
                 if (newAssignment != RBM_NONE)
                 {
-                    if (!isSingleRegister(newAssignment) ||
-                        (!theInterval->hasNonCommutativeRMWDef && (prevRefPosition->treeNode != nullptr) &&
-                         !prevRefPosition->treeNode->gtLsraInfo.isInternalRegDelayFree))
+                    if (!isSingleRegister(newAssignment) || !theInterval->hasInterferingUses)
                     {
                         prevRefPosition->registerAssignment = newAssignment;
                     }
@@ -1762,9 +1760,6 @@ BasicBlock* LinearScan::getNextBlock()
 // Return Value:
 //    None.
 //
-// Assumptions:
-//    Lowering must have set the NodeInfo (gtLsraInfo) on each node to communicate
-//    the register requirements.
 
 void LinearScan::doLinearScan()
 {
@@ -2842,7 +2837,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
                 // usual kill location which is the same as the defs at tree loc+1.
                 // Note that we don't have to add interference for the live vars, because that
                 // will be done below, and is not sensitive to the precise location.
-                LsraLocation currentLoc = tree->gtLsraInfo.loc;
                 assert(currentLoc != 0);
                 addRefsForPhysRegMask(RBM_RDX, currentLoc, RefTypeKill, true);
                 // Both RAX and RDX are killed by the operation
@@ -3101,7 +3095,6 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 //                               DEBUG only arg.
 RefPosition* LinearScan::defineNewInternalTemp(GenTree*     tree,
                                                RegisterType regType,
-                                               LsraLocation currentLoc,
                                                regMaskTP regMask DEBUGARG(unsigned minRegCandidateCount))
 {
     Interval* current   = newInterval(regType);
@@ -3115,7 +3108,6 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree*     tree,
 //
 // Arguments:
 //   tree                  -   Gentree node that needs internal registers
-//   currentLoc            -   Location at which Def positions need to be defined
 //   temps                 -   in-out array which is populated with ref positions
 //                             created for Def of internal registers
 //   minRegCandidateCount  -   Minimum registers to be ensured in candidate
@@ -3124,14 +3116,14 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree*     tree,
 //
 // Returns:
 //   The total number of Def positions created for internal registers of tree node.
-int LinearScan::buildInternalRegisterDefsForNode(GenTree*     tree,
-                                                 LsraLocation currentLoc,
-                                                 RefPosition* temps[] // populates
+int LinearScan::buildInternalRegisterDefsForNode(GenTree*      tree,
+                                                 TreeNodeInfo* info,
+                                                 RefPosition*  temps[] // populates
                                                  DEBUGARG(unsigned minRegCandidateCount))
 {
     int       count;
-    int       internalIntCount = tree->gtLsraInfo.internalIntCount;
-    regMaskTP internalCands    = tree->gtLsraInfo.getInternalCandidates(this);
+    int       internalIntCount = info->internalIntCount;
+    regMaskTP internalCands    = info->getInternalCandidates(this);
 
     // If the number of internal integer registers required is the same as the number of candidate integer registers in
     // the candidate set, then they must be handled as fixed registers.
@@ -3151,16 +3143,15 @@ int LinearScan::buildInternalRegisterDefsForNode(GenTree*     tree,
             internalIntCands = genFindLowestBit(internalIntCands);
             internalCands &= ~internalIntCands;
         }
-        temps[count] =
-            defineNewInternalTemp(tree, IntRegisterType, currentLoc, internalIntCands DEBUG_ARG(minRegCandidateCount));
+        temps[count] = defineNewInternalTemp(tree, IntRegisterType, internalIntCands DEBUG_ARG(minRegCandidateCount));
     }
 
-    int internalFloatCount = tree->gtLsraInfo.internalFloatCount;
+    int internalFloatCount = info->internalFloatCount;
     for (int i = 0; i < internalFloatCount; i++)
     {
         regMaskTP internalFPCands = (internalCands & internalFloatRegCandidates());
         temps[count++] =
-            defineNewInternalTemp(tree, FloatRegisterType, currentLoc, internalFPCands DEBUG_ARG(minRegCandidateCount));
+            defineNewInternalTemp(tree, FloatRegisterType, internalFPCands DEBUG_ARG(minRegCandidateCount));
     }
 
     assert(count < MaxInternalRegisters);
@@ -3174,7 +3165,6 @@ int LinearScan::buildInternalRegisterDefsForNode(GenTree*     tree,
 //
 // Arguments:
 //   tree                  -   Gentree node that needs internal registers
-//   currentLoc            -   Location at which Use positions need to be defined
 //   defs                  -   int array containing Def positions of internal
 //                             registers.
 //   total                 -   Total number of Def positions in 'defs' array.
@@ -3184,9 +3174,9 @@ int LinearScan::buildInternalRegisterDefsForNode(GenTree*     tree,
 //
 // Returns:
 //   Void.
-void LinearScan::buildInternalRegisterUsesForNode(GenTree*     tree,
-                                                  LsraLocation currentLoc,
-                                                  RefPosition* defs[],
+void LinearScan::buildInternalRegisterUsesForNode(GenTree*      tree,
+                                                  TreeNodeInfo* info,
+                                                  RefPosition*  defs[],
                                                   int total DEBUGARG(unsigned minRegCandidateCount))
 {
     assert(total < MaxInternalRegisters);
@@ -3207,7 +3197,7 @@ void LinearScan::buildInternalRegisterUsesForNode(GenTree*     tree,
             RefPosition* newest = newRefPosition(defs[i]->getInterval(), currentLoc, RefTypeUse, tree, mask,
                                                  0 DEBUG_ARG(minRegCandidateCount));
 
-            if (tree->gtLsraInfo.isInternalRegDelayFree)
+            if (info->isInternalRegDelayFree)
             {
                 newest->delayRegFree = true;
             }
@@ -3215,145 +3205,10 @@ void LinearScan::buildInternalRegisterUsesForNode(GenTree*     tree,
     }
 }
 
-regMaskTP LinearScan::getUseCandidates(GenTree* useNode)
-{
-    TreeNodeInfo info = useNode->gtLsraInfo;
-    return info.getSrcCandidates(this);
-}
-
-regMaskTP LinearScan::getDefCandidates(GenTree* tree)
-{
-    TreeNodeInfo info = tree->gtLsraInfo;
-    return info.getDstCandidates(this);
-}
-
 RegisterType LinearScan::getDefType(GenTree* tree)
 {
     return tree->TypeGet();
 }
-
-//------------------------------------------------------------------------
-// LocationInfoListNode: used to store a single `LocationInfo` value for a
-//                       node during `buildIntervals`.
-//
-// This is the node type for `LocationInfoList` below.
-//
-class LocationInfoListNode final : public LocationInfo
-{
-    friend class LocationInfoList;
-    friend class LocationInfoListNodePool;
-
-    LocationInfoListNode* m_next; // The next node in the list
-
-public:
-    LocationInfoListNode(LsraLocation l, Interval* i, GenTree* t, unsigned regIdx = 0) : LocationInfo(l, i, t, regIdx)
-    {
-    }
-
-    //------------------------------------------------------------------------
-    // LocationInfoListNode::Next: Returns the next node in the list.
-    LocationInfoListNode* Next() const
-    {
-        return m_next;
-    }
-};
-
-//------------------------------------------------------------------------
-// LocationInfoList: used to store a list of `LocationInfo` values for a
-//                   node during `buildIntervals`.
-//
-// Given an IR node that either directly defines N registers or that is a
-// contained node with uses that define a total of N registers, that node
-// will map to N `LocationInfo` values. These values are stored as a
-// linked list of `LocationInfoListNode` values.
-//
-class LocationInfoList final
-{
-    friend class LocationInfoListNodePool;
-
-    LocationInfoListNode* m_head; // The head of the list
-    LocationInfoListNode* m_tail; // The tail of the list
-
-public:
-    LocationInfoList() : m_head(nullptr), m_tail(nullptr)
-    {
-    }
-
-    LocationInfoList(LocationInfoListNode* node) : m_head(node), m_tail(node)
-    {
-        assert(m_head->m_next == nullptr);
-    }
-
-    //------------------------------------------------------------------------
-    // LocationInfoList::IsEmpty: Returns true if the list is empty.
-    //
-    bool IsEmpty() const
-    {
-        return m_head == nullptr;
-    }
-
-    //------------------------------------------------------------------------
-    // LocationInfoList::Begin: Returns the first node in the list.
-    //
-    LocationInfoListNode* Begin() const
-    {
-        return m_head;
-    }
-
-    //------------------------------------------------------------------------
-    // LocationInfoList::End: Returns the position after the last node in the
-    //                        list. The returned value is suitable for use as
-    //                        a sentinel for iteration.
-    //
-    LocationInfoListNode* End() const
-    {
-        return nullptr;
-    }
-
-    //------------------------------------------------------------------------
-    // LocationInfoList::Append: Appends a node to the list.
-    //
-    // Arguments:
-    //    node - The node to append. Must not be part of an existing list.
-    //
-    void Append(LocationInfoListNode* node)
-    {
-        assert(node->m_next == nullptr);
-
-        if (m_tail == nullptr)
-        {
-            assert(m_head == nullptr);
-            m_head = node;
-        }
-        else
-        {
-            m_tail->m_next = node;
-        }
-
-        m_tail = node;
-    }
-
-    //------------------------------------------------------------------------
-    // LocationInfoList::Append: Appends another list to this list.
-    //
-    // Arguments:
-    //    other - The list to append.
-    //
-    void Append(LocationInfoList other)
-    {
-        if (m_tail == nullptr)
-        {
-            assert(m_head == nullptr);
-            m_head = other.m_head;
-        }
-        else
-        {
-            m_tail->m_next = other.m_head;
-        }
-
-        m_tail = other.m_tail;
-    }
-};
 
 //------------------------------------------------------------------------
 // LocationInfoListNodePool: manages a pool of `LocationInfoListNode`
@@ -3428,11 +3283,10 @@ public:
             m_freeList = head->m_next;
         }
 
-        head->loc         = l;
-        head->interval    = i;
-        head->treeNode    = t;
-        head->multiRegIdx = regIdx;
-        head->m_next      = nullptr;
+        head->loc      = l;
+        head->interval = i;
+        head->treeNode = t;
+        head->m_next   = nullptr;
 
         return head;
     }
@@ -3452,6 +3306,9 @@ public:
         LocationInfoListNode* head = m_freeList;
         list.m_tail->m_next        = head;
         m_freeList                 = list.m_head;
+
+        list.m_head = nullptr;
+        list.m_tail = nullptr;
     }
 };
 
@@ -3541,44 +3398,15 @@ void LinearScan::buildUpperVectorRestoreRefPositions(GenTree*         tree,
 //
 static int ComputeOperandDstCount(GenTree* operand)
 {
-    TreeNodeInfo& operandInfo = operand->gtLsraInfo;
-
-    if (operandInfo.isLocalDefUse)
+    // GT_ARGPLACE is the only non-LIR node that is currently in the trees at this stage, though
+    // note that it is not in the linear order. It seems best to check for !IsLIR() rather than
+    // GT_ARGPLACE directly, since it's that characteristic that makes it irrelevant for this method.
+    if (!operand->IsLIR())
     {
-        // Operands that define an unused value do not produce any registers.
         return 0;
     }
-    else if (operandInfo.dstCount != 0)
+    if (operand->isContained())
     {
-        // Operands that have a specified number of destination registers consume all of their operands
-        // and therefore produce exactly that number of registers.
-        return operandInfo.dstCount;
-    }
-    else if (operandInfo.srcCount != 0)
-    {
-        // If an operand has no destination registers but does have source registers, it must be a store
-        // or a compare.
-        assert(operand->OperIsStore() || operand->OperIsBlkOp() || operand->OperIsPutArgStk() ||
-               operand->OperIsCompare() || operand->OperIs(GT_CMP, GT_JCMP) || operand->IsSIMDEqualityOrInequality());
-        return 0;
-    }
-    else if (!operand->OperIsFieldListHead() && (operand->OperIsStore() || operand->TypeGet() == TYP_VOID))
-    {
-        // Stores and void-typed operands may be encountered when processing call nodes, which contain
-        // pointers to argument setup stores.
-        return 0;
-    }
-    else if (operand->OperIsPutArgStk())
-    {
-        // A PUTARG_STK argument is an operand of a call, but is neither contained, nor does it produce
-        // a result.
-        assert(!operand->isContained());
-        return 0;
-    }
-    else
-    {
-        // If a field list or non-void-typed operand is not an unused value and does not have source registers,
-        // that argument is contained within its parent and produces `sum(operand_dst_count)` registers.
         int dstCount = 0;
         for (GenTree* op : operand->Operands())
         {
@@ -3586,6 +3414,27 @@ static int ComputeOperandDstCount(GenTree* operand)
         }
 
         return dstCount;
+    }
+    if (operand->IsUnusedValue())
+    {
+        // Operands that define an unused value do not produce any registers.
+        return 0;
+    }
+    if (operand->IsValue())
+    {
+        // Operands that are values and are not contained consume all of their operands
+        // and produce one or more registers.
+        return operand->GetRegisterDstCount();
+    }
+    else
+    {
+        // This must be one of the operand types that are neither contained nor produce a value.
+        // Stores and void-typed operands may be encountered when processing call nodes, which contain
+        // pointers to argument setup stores.
+        assert(operand->OperIsStore() || operand->OperIsBlkOp() || operand->OperIsPutArgStk() ||
+               operand->OperIsCompare() || operand->OperIs(GT_CMP) || operand->IsSIMDEqualityOrInequality() ||
+               operand->TypeGet() == TYP_VOID);
+        return 0;
     }
 }
 
@@ -3614,21 +3463,10 @@ static int ComputeAvailableSrcCount(GenTree* node)
 }
 #endif // DEBUG
 
-static GenTree* GetFirstOperand(GenTree* node)
-{
-    GenTree* firstOperand = nullptr;
-    node->VisitOperands([&firstOperand](GenTree* operand) -> GenTree::VisitResult {
-        firstOperand = operand;
-        return GenTree::VisitResult::Abort;
-    });
-    return firstOperand;
-}
-
 void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                                           BasicBlock*               block,
                                           LocationInfoListNodePool& listNodePool,
-                                          HashTableBase<GenTree*, LocationInfoList>& operandToLocationInfoMap,
-                                          LsraLocation currentLoc)
+                                          LsraLocation              currentLoc)
 {
 #ifdef _TARGET_ARM_
     assert(!isRegPairType(tree->TypeGet()));
@@ -3647,48 +3485,60 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // gtRsvdRegs register mask. Clear it out.
     tree->gtRsvdRegs = RBM_NONE;
 
-    TreeNodeInfo info = tree->gtLsraInfo;
-    assert(info.IsValid(this));
-    int consume = info.srcCount;
-    int produce = info.dstCount;
+#ifdef DEBUG
+    if (VERBOSE)
+    {
+        dumpOperandToLocationInfoMap();
+        compiler->gtDispTree(tree, nullptr, nullptr, true);
+    }
+#endif // DEBUG
+
+    // If the node produces a value that will be consumed by a parent node, its TreeNodeInfo will
+    // be allocated in the LocationInfoListNode. Otherwise, we'll just use a local value that will
+    // be thrown away when we're done.
+    LocationInfoListNode* locationInfo = nullptr;
+    TreeNodeInfo          tempInfo;
+    TreeNodeInfo*         info = nullptr;
+    if (!tree->isContained() && tree->IsValue())
+    {
+        locationInfo = listNodePool.GetNode(currentLoc, nullptr, tree);
+        info         = &locationInfo->info;
+    }
+    else
+    {
+        info = &tempInfo;
+    }
+    info->Initialize(this, tree);
+    TreeNodeInfoInit(tree, info);
 
 #ifdef DEBUG
     if (VERBOSE)
     {
-        lsraDispNode(tree, LSRA_DUMP_REFPOS, (produce != 0));
-        JITDUMP("\n");
+        printf("    +");
+        info->dump(this);
+        tree->dumpLIRFlags();
+        printf("\n");
+    }
+#endif // DEBUG
+
+    assert(info->IsValid(this));
+    int consume = info->srcCount;
+    int produce = info->dstCount;
+
+#ifdef DEBUG
+    if (VERBOSE)
+    {
         if (tree->isContained())
         {
             JITDUMP("Contained\n");
         }
-        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && info.isLocalDefUse)
+        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && info->isLocalDefUse)
         {
             JITDUMP("Unused\n");
         }
         else
         {
             JITDUMP("  consume=%d produce=%d\n", consume, produce);
-        }
-
-        if (consume != 0)
-        {
-            JITDUMP("at start of tree, map contains: { ");
-            bool first = true;
-            for (auto kvp : operandToLocationInfoMap)
-            {
-                GenTree*         node    = kvp.Key();
-                LocationInfoList defList = kvp.Value();
-
-                JITDUMP("%sN%03u. %s -> (", first ? "" : "; ", node->gtSeqNum, GenTree::OpName(node->OperGet()));
-                for (LocationInfoListNode *def = defList.Begin(), *end = defList.End(); def != end; def = def->Next())
-                {
-                    JITDUMP("%s%d.N%03u", def == defList.Begin() ? "" : ", ", def->loc, def->treeNode->gtSeqNum);
-                }
-                JITDUMP(")");
-
-                first = false;
-            }
-            JITDUMP(" }\n");
         }
     }
 #endif // DEBUG
@@ -3728,53 +3578,16 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                 VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
             }
 
-            if (!info.isLocalDefUse && !tree->isContained())
+            if (!info->isLocalDefUse && !tree->isContained())
             {
                 assert(produce != 0);
 
-                LocationInfoList list(listNodePool.GetNode(currentLoc, getIntervalForLocalVar(varIndex), tree));
-                bool             added = operandToLocationInfoMap.AddOrUpdate(tree, list);
+                locationInfo->interval = getIntervalForLocalVar(varIndex);
+                bool added             = operandToLocationInfoMap->AddOrUpdate(tree, locationInfo);
                 assert(added);
-
-                tree->gtLsraInfo.definesAnyRegisters = true;
             }
             return;
         }
-    }
-
-    if (tree->isContained())
-    {
-        assert(!info.isLocalDefUse);
-        assert(consume == 0);
-        assert(produce == 0);
-        assert(info.internalIntCount == 0);
-        assert(info.internalFloatCount == 0);
-
-        // Contained nodes map to the concatenated lists of their operands.
-        LocationInfoList locationInfoList;
-        tree->VisitOperands([&](GenTree* op) -> GenTree::VisitResult {
-            if (!op->gtLsraInfo.definesAnyRegisters)
-            {
-                assert(ComputeOperandDstCount(op) == 0);
-                return GenTree::VisitResult::Continue;
-            }
-
-            LocationInfoList operandList;
-            bool             removed = operandToLocationInfoMap.TryRemove(op, &operandList);
-            assert(removed);
-
-            locationInfoList.Append(operandList);
-            return GenTree::VisitResult::Continue;
-        });
-
-        if (!locationInfoList.IsEmpty())
-        {
-            bool added = operandToLocationInfoMap.AddOrUpdate(tree, locationInfoList);
-            assert(added);
-            tree->gtLsraInfo.definesAnyRegisters = true;
-        }
-        JITDUMP("\n");
-        return;
     }
 
     // Handle the case of local variable assignment
@@ -3785,9 +3598,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
     // noAdd means the node creates a def but for purposes of map
     // management do not add it because data is not flowing up the
-    // tree but over (as in ASG nodes)
+    // tree
 
-    bool         noAdd   = info.isLocalDefUse;
+    bool         noAdd   = info->isLocalDefUse;
     RefPosition* prevPos = nullptr;
 
     bool isSpecialPutArg = false;
@@ -3817,15 +3630,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             if (consume == 1)
             {
                 // Get the location info for the register defined by the first operand.
-                LocationInfoList operandDefs;
-                bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(tree), &operandDefs);
-                assert(found);
-
-                // Since we only expect to consume one register, we should only have a single register to
-                // consume.
-                assert(operandDefs.Begin()->Next() == operandDefs.End());
-
-                LocationInfo& operandInfo = *static_cast<LocationInfo*>(operandDefs.Begin());
+                LocationInfoListNode& operandInfo = *(useList.Begin());
+                assert(operandInfo.treeNode == tree->gtGetOp1());
 
                 Interval* srcInterval = operandInfo.interval;
                 if (srcInterval->relatedInterval == nullptr)
@@ -3855,14 +3661,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             store->gtType = store->gtOp1->gtType = store->gtOp1->AsUnOp()->gtOp1->TypeGet();
 
             // Get the location info for the register defined by the first operand.
-            LocationInfoList operandDefs;
-            bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(store), &operandDefs);
-            assert(found);
-
-            // Since we only expect to consume one register, we should only have a single register to consume.
-            assert(operandDefs.Begin()->Next() == operandDefs.End());
-
-            LocationInfo& operandInfo = *static_cast<LocationInfo*>(operandDefs.Begin());
+            LocationInfoListNode& operandInfo = *(useList.Begin());
+            assert(operandInfo.treeNode == tree->gtGetOp1());
 
             Interval* srcInterval     = operandInfo.interval;
             srcInterval->registerType = regType(store->TypeGet());
@@ -3873,23 +3673,15 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             assert(srcDefPosition->treeNode == store->gtOp1);
 
             srcDefPosition->registerAssignment = allRegs(store->TypeGet());
-            store->gtOp1->gtLsraInfo.setSrcCandidates(this, allRegs(store->TypeGet()));
+            operandInfo.info.setSrcCandidates(this, allRegs(store->TypeGet()));
         }
     }
     else if (noAdd && produce == 0)
     {
-        // This is the case for dead nodes that occur after
-        // tree rationalization
+        // Dead nodes may remain after tree rationalization, decomposition or lowering.
+        // They should be marked as UnusedValue.
         // TODO-Cleanup: Identify and remove these dead nodes prior to register allocation.
-        if (tree->IsMultiRegCall())
-        {
-            // In case of multi-reg call node, produce = number of return registers
-            produce = tree->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
-        }
-        else
-        {
-            produce = 1;
-        }
+        assert(!noAdd || (produce != 0));
     }
 
     Interval* prefSrcInterval = nullptr;
@@ -3897,7 +3689,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // If this is a binary operator that will be encoded with 2 operand fields
     // (i.e. the target is read-modify-write), preference the dst to op1.
 
-    bool hasDelayFreeSrc = tree->gtLsraInfo.hasDelayFreeSrc;
+    bool hasDelayFreeSrc = info->hasDelayFreeSrc;
 
 #if defined(DEBUG) && defined(_TARGET_X86_)
     // On x86, `LSRA_LIMIT_CALLER` is too restrictive to allow the use of special put args: this stress mode
@@ -3951,12 +3743,11 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         JITDUMP("Setting putarg_reg as a pass-through of a non-last use lclVar\n");
 
         // Get the register information for the first operand of the node.
-        LocationInfoList operandDefs;
-        bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(tree), &operandDefs);
-        assert(found);
+        LocationInfoListNode* operandDef = useList.Begin();
+        assert(operandDef->treeNode == tree->gtGetOp1());
 
         // Preference the destination to the interval of the first register defined by the first operand.
-        Interval* srcInterval = operandDefs.Begin()->interval;
+        Interval* srcInterval = operandDef->interval;
         assert(srcInterval->isLocalVar);
         prefSrcInterval = srcInterval;
         isSpecialPutArg = true;
@@ -3969,121 +3760,126 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // consume + produce + internalCount.  This is the minimum
     // set of registers that needs to be ensured in candidate
     // set of ref positions created.
-    unsigned minRegCount = consume + produce + info.internalIntCount + info.internalFloatCount;
+    unsigned minRegCount = consume + produce + info->internalIntCount + info->internalFloatCount;
 #endif // DEBUG
 
-    // make intervals for all the 'internal' register requirements for this node
-    // where internal means additional registers required temporarily
-    int internalCount = buildInternalRegisterDefsForNode(tree, currentLoc, internalRefs DEBUG_ARG(minRegCount));
+    // Make intervals for all the 'internal' register requirements for this node,
+    // where internal means additional registers required temporarily.
+    // Create a RefTypeDef RefPosition for each such interval.
+    int internalCount = buildInternalRegisterDefsForNode(tree, info, internalRefs DEBUG_ARG(minRegCount));
 
-    // pop all ref'd tree temps
-    tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-        // Skip operands that do not define any registers, whether directly or indirectly.
-        if (!operand->gtLsraInfo.definesAnyRegisters)
+    // Make use RefPositions for all used values.
+    int consumed = 0;
+    for (LocationInfoListNode *listNode = useList.Begin(), *end = useList.End(); listNode != end;
+         listNode = listNode->Next())
+    {
+        LocationInfo& locInfo = *static_cast<LocationInfo*>(listNode);
+
+        // For tree temps, a use is always a last use and the end of the range;
+        // this is set by default in newRefPosition
+        GenTree* const useNode = locInfo.treeNode;
+        assert(useNode != nullptr);
+
+        Interval*     srcInterval = locInfo.interval;
+        TreeNodeInfo& useNodeInfo = locInfo.info;
+        if (useNodeInfo.isTgtPref)
         {
-            return GenTree::VisitResult::Continue;
+            prefSrcInterval = srcInterval;
         }
 
-        // Remove the list of registers defined by the current operand from the map. Note that this
-        // is only correct because tree nodes are singly-used: if this property ever changes (e.g.
-        // if tree nodes are eventually allowed to be multiply-used), then the removal is only
-        // correct at the last use.
-        LocationInfoList operandDefs;
-        bool             removed = operandToLocationInfoMap.TryRemove(operand, &operandDefs);
-        assert(removed);
-        assert(!operandDefs.IsEmpty());
-
-#ifdef _TARGET_ARM_
-        regMaskTP currCandidates = RBM_NONE;
-#endif // _TARGET_ARM_
-
-        LocationInfoListNode* const operandDefsEnd = operandDefs.End();
-        for (LocationInfoListNode* operandDefsIterator = operandDefs.Begin(); operandDefsIterator != operandDefsEnd;
-             operandDefsIterator                       = operandDefsIterator->Next())
-        {
-            LocationInfo& locInfo = *static_cast<LocationInfo*>(operandDefsIterator);
-
-            // for interstitial tree temps, a use is always last and end; this is set by default in newRefPosition
-            GenTree* const useNode = locInfo.treeNode;
-            assert(useNode != nullptr);
-
-            Interval* const i = locInfo.interval;
-            if (useNode->gtLsraInfo.isTgtPref)
-            {
-                prefSrcInterval = i;
-            }
-
-            const bool delayRegFree = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
+        const bool delayRegFree = (hasDelayFreeSrc && useNodeInfo.isDelayFree);
 
 #ifdef DEBUG
-            // If delayRegFree, then Use will interfere with the destination of
-            // the consuming node.  Therefore, we also need add the kill set of
-            // consuming node to minRegCount.
-            //
-            // For example consider the following IR on x86, where v01 and v02
-            // are method args coming in ecx and edx respectively.
-            //   GT_DIV(v01, v02)
-            //
-            // For GT_DIV minRegCount will be 3 without adding kill set
-            // of GT_DIV node.
-            //
-            // Assume further JitStressRegs=2, which would constrain
-            // candidates to callee trashable regs { eax, ecx, edx } on
-            // use positions of v01 and v02.  LSRA allocates ecx for v01.
-            // Use position of v02 cannot be allocated a regs since it
-            // is marked delay-reg free and {eax,edx} are getting killed
-            // before the def of GT_DIV.  For this reason, minRegCount
-            // for Use position of v02 also needs to take into account
-            // of kill set of its consuming node.
-            unsigned minRegCountForUsePos = minRegCount;
-            if (delayRegFree && (lsraStressMask != 0))
+        // If delayRegFree, then Use will interfere with the destination of
+        // the consuming node.  Therefore, we also need add the kill set of
+        // consuming node to minRegCount.
+        //
+        // For example consider the following IR on x86, where v01 and v02
+        // are method args coming in ecx and edx respectively.
+        //   GT_DIV(v01, v02)
+        //
+        // For GT_DIV minRegCount will be 3 without adding kill set
+        // of GT_DIV node.
+        //
+        // Assume further JitStressRegs=2, which would constrain
+        // candidates to callee trashable regs { eax, ecx, edx } on
+        // use positions of v01 and v02.  LSRA allocates ecx for v01.
+        // Use position of v02 cannot be allocated a regs since it
+        // is marked delay-reg free and {eax,edx} are getting killed
+        // before the def of GT_DIV.  For this reason, minRegCount
+        // for Use position of v02 also needs to take into account
+        // of kill set of its consuming node.
+        unsigned minRegCountForUsePos = minRegCount;
+        if (delayRegFree && (lsraStressMask != 0))
+        {
+            regMaskTP killMask = getKillSetForNode(tree);
+            if (killMask != RBM_NONE)
             {
-                regMaskTP killMask = getKillSetForNode(tree);
-                if (killMask != RBM_NONE)
-                {
-                    minRegCountForUsePos += genCountBits(killMask);
-                }
-            }
-#endif // DEBUG
-
-            regMaskTP candidates = getUseCandidates(useNode);
-#ifdef _TARGET_ARM_
-            if (useNode->OperIsPutArgSplit() || useNode->OperIsMultiRegOp())
-            {
-                // get i-th candidate, set bits in useCandidates must be in sequential order.
-                candidates = genFindLowestReg(candidates & ~currCandidates);
-                currCandidates |= candidates;
-            }
-#endif // _TARGET_ARM_
-
-            assert((candidates & allRegs(i->registerType)) != 0);
-
-            // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
-            GenTree* const refPosNode = i->isLocalVar ? useNode : nullptr;
-            RefPosition*   pos        = newRefPosition(i, currentLoc, RefTypeUse, refPosNode, candidates,
-                                              locInfo.multiRegIdx DEBUG_ARG(minRegCountForUsePos));
-
-            if (delayRegFree)
-            {
-                pos->delayRegFree = true;
-            }
-
-            if (useNode->IsRegOptional())
-            {
-                pos->setAllocateIfProfitable(true);
+                minRegCountForUsePos += genCountBits(killMask);
             }
         }
+#endif // DEBUG
 
-        listNodePool.ReturnNodes(operandDefs);
+        regMaskTP candidates = useNodeInfo.getSrcCandidates(this);
+#ifdef _TARGET_ARM_
+        regMaskTP allCandidates = candidates;
 
-        return GenTree::VisitResult::Continue;
-    });
+        if (useNode->OperIsPutArgSplit() || useNode->OperIsMultiRegOp())
+        {
+            // get i-th candidate, set bits in useCandidates must be in sequential order.
+            candidates = genFindLowestReg(allCandidates);
+            allCandidates &= ~candidates;
+        }
+#endif // _TARGET_ARM_
 
-    buildInternalRegisterUsesForNode(tree, currentLoc, internalRefs, internalCount DEBUG_ARG(minRegCount));
+        assert((candidates & allRegs(srcInterval->registerType)) != 0);
+
+        // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
+        GenTree* const refPosNode = srcInterval->isLocalVar ? useNode : nullptr;
+        RefPosition*   pos        = newRefPosition(srcInterval, currentLoc, RefTypeUse, refPosNode, candidates,
+                                          0 DEBUG_ARG(minRegCountForUsePos));
+        if (delayRegFree)
+        {
+            pos->delayRegFree = true;
+        }
+
+        if (useNode->IsRegOptional())
+        {
+            pos->setAllocateIfProfitable(true);
+        }
+        consumed++;
+
+        // Create additional use RefPositions for multi-reg nodes.
+        for (int idx = 1; idx < locInfo.info.dstCount; idx++)
+        {
+            noway_assert(srcInterval->relatedInterval != nullptr);
+            srcInterval = srcInterval->relatedInterval;
+#ifdef _TARGET_ARM_
+            if (useNode->OperIsPutArgSplit() ||
+                (compiler->opts.compUseSoftFP && (useNode->OperIsPutArgReg() || useNode->OperGet() == GT_BITCAST)))
+            {
+                // get first candidate, set bits in useCandidates must be in sequential order.
+                candidates = genFindLowestReg(allCandidates);
+                allCandidates &= ~candidates;
+            }
+#endif // _TARGET_ARM_
+            RefPosition* pos = newRefPosition(srcInterval, currentLoc, RefTypeUse, refPosNode, candidates,
+                                              idx DEBUG_ARG(minRegCountForUsePos));
+            consumed++;
+        }
+    }
+
+    assert(consumed == consume);
+    if (consume != 0)
+    {
+        listNodePool.ReturnNodes(useList);
+    }
+
+    buildInternalRegisterUsesForNode(tree, info, internalRefs, internalCount DEBUG_ARG(minRegCount));
 
     RegisterType registerType  = getDefType(tree);
-    regMaskTP    candidates    = getDefCandidates(tree);
-    regMaskTP    useCandidates = getUseCandidates(tree);
+    regMaskTP    candidates    = info->getDstCandidates(this);
+    regMaskTP    useCandidates = info->getSrcCandidates(this);
 
 #ifdef DEBUG
     if (VERBOSE && produce)
@@ -4126,10 +3922,13 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // push defs
     LocationInfoList locationInfoList;
     LsraLocation     defLocation = currentLoc + 1;
+    Interval*        interval    = varDefInterval;
+    // For nodes that define multiple registers, subsequent intervals will be linked using the 'relatedInterval' field.
+    // Keep track of the previous interval allocated, for that purpose.
+    Interval* prevInterval = nullptr;
     for (int i = 0; i < produce; i++)
     {
         regMaskTP currCandidates = candidates;
-        Interval* interval       = varDefInterval;
 
         // In case of multi-reg call node, registerType is given by
         // the type of ith position return register.
@@ -4154,9 +3953,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         {
             // Make a new interval
             interval = newInterval(registerType);
-            if (hasDelayFreeSrc)
+            if (hasDelayFreeSrc || info->isInternalRegDelayFree)
             {
-                interval->hasNonCommutativeRMWDef = true;
+                interval->hasInterferingUses = true;
             }
             else if (tree->OperIsConst())
             {
@@ -4188,12 +3987,28 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         // but not push it
         if (!noAdd)
         {
-            locationInfoList.Append(listNodePool.GetNode(defLocation, interval, tree, (unsigned)i));
+            if (i == 0)
+            {
+                locationInfo->interval = interval;
+                prevInterval           = interval;
+                bool added             = operandToLocationInfoMap->AddOrUpdate(tree, locationInfo);
+                assert(added);
+            }
+            else
+            {
+                // This is the 2nd or subsequent register defined by a multi-reg node.
+                // Connect them using 'relatedInterval'.
+                noway_assert((prevInterval != nullptr) && (prevInterval->relatedInterval == nullptr));
+                prevInterval->relatedInterval = interval;
+                prevInterval                  = interval;
+                prevInterval->isMultiReg      = true;
+                interval->isMultiReg          = true;
+            }
         }
 
         RefPosition* pos = newRefPosition(interval, defLocation, defRefType, defNode, currCandidates,
                                           (unsigned)i DEBUG_ARG(minRegCount));
-        if (info.isLocalDefUse)
+        if (info->isLocalDefUse)
         {
             // This must be an unused value, OR it is a special node for which we allocate
             // a target register even though it produces no value.
@@ -4203,6 +4018,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
         interval->updateRegisterPreferences(currCandidates);
         interval->updateRegisterPreferences(useCandidates);
+        interval = nullptr;
     }
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -4213,12 +4029,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-    if (!locationInfoList.IsEmpty())
-    {
-        bool added = operandToLocationInfoMap.AddOrUpdate(tree, locationInfoList);
-        assert(added);
-        tree->gtLsraInfo.definesAnyRegisters = true;
-    }
     JITDUMP("\n");
 }
 
@@ -4578,7 +4388,7 @@ void LinearScan::buildIntervals()
 
     // second part:
     JITDUMP("\nbuildIntervals second part ========\n");
-    LsraLocation currentLoc = 0;
+    currentLoc = 0;
     // TODO-Cleanup: This duplicates prior behavior where entry (ParamDef) RefPositions were
     // being assigned the bbNum of the last block traversed in the 2nd phase of Lowering.
     // Previously, the block sequencing was done for the (formerly separate) TreeNodeInfoInit pass,
@@ -4695,7 +4505,8 @@ void LinearScan::buildIntervals()
     }
 
     LocationInfoListNodePool listNodePool(compiler, 8);
-    SmallHashTable<GenTree*, LocationInfoList, 32> operandToLocationInfoMap(compiler);
+    OperandToLocationInfoMap theOperandToLocationInfoMap(compiler);
+    operandToLocationInfoMap = &theOperandToLocationInfoMap;
 
     BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
@@ -4803,30 +4614,7 @@ void LinearScan::buildIntervals()
             node->gtRegNum = node->gtRegNum;
 #endif
 
-            node->gtLsraInfo.Initialize(this, node, currentLoc);
-
-            TreeNodeInfoInit(node);
-
-            // If the node produces an unused value, mark it as a local def-use
-            if (node->IsValue() && node->IsUnusedValue())
-            {
-                node->gtLsraInfo.isLocalDefUse = true;
-                node->gtLsraInfo.dstCount      = 0;
-            }
-
-#ifdef DEBUG
-            if (VERBOSE)
-            {
-                compiler->gtDispTree(node, nullptr, nullptr, true);
-                printf("    +");
-                node->gtLsraInfo.dump(this);
-            }
-#endif // DEBUG
-
-            // Only nodes that produce values should have a non-zero dstCount.
-            assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
-
-            buildRefPositionsForNode(node, block, listNodePool, operandToLocationInfoMap, currentLoc);
+            buildRefPositionsForNode(node, block, listNodePool, currentLoc);
 
 #ifdef DEBUG
             if (currentLoc > maxNodeLocation)
@@ -4839,6 +4627,7 @@ void LinearScan::buildIntervals()
 
         // Note: the visited set is cleared in LinearScan::doLinearScan()
         markBlockVisited(block);
+        assert(operandToLocationInfoMap->Count() == 0);
 
         if (enregisterLocalVars)
         {
@@ -5483,8 +5272,10 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         RefPosition* nextRelatedRefPosition = relatedInterval->getNextRefPosition();
         if (nextRelatedRefPosition != nullptr)
         {
-            // Don't use the relatedInterval for preferencing if its next reference is not a new definition.
-            if (!RefTypeIsDef(nextRelatedRefPosition->refType))
+            // Don't use the relatedInterval for preferencing if its next reference is not a new definition,
+            // or if it is only related because they are multi-reg targets of the same node.
+            if (!RefTypeIsDef(nextRelatedRefPosition->refType) ||
+                isMultiRegRelated(nextRelatedRefPosition, refPosition->nodeLocation))
             {
                 relatedInterval = nullptr;
             }
@@ -7694,6 +7485,18 @@ bool LinearScan::registerIsFree(regNumber regNum, RegisterType regType)
     return isFree;
 }
 
+// isMultiRegRelated: is this RefPosition defining part of a multi-reg value
+//                    at the given location?
+//
+bool LinearScan::isMultiRegRelated(RefPosition* refPosition, LsraLocation location)
+{
+#ifdef FEATURE_MULTIREG_ARGS_OR_RET
+    return ((refPosition->nodeLocation == location) && refPosition->getInterval()->isMultiReg);
+#else
+    return false;
+#endif
+}
+
 //------------------------------------------------------------------------
 // LinearScan::freeRegister: Make a register available for use
 //
@@ -8981,9 +8784,8 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTreePtr tree, unsigned
 
         GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, treeType, tree);
         assert(refPosition->registerAssignment != RBM_NONE);
+        SetLsraAdded(newNode);
         newNode->SetRegNumByIdx(refPosition->assignedReg(), multiRegIdx);
-        newNode->gtLsraInfo.isLsraAdded   = true;
-        newNode->gtLsraInfo.isLocalDefUse = false;
         if (refPosition->copyReg)
         {
             // This is a TEMPORARY copy
@@ -9030,16 +8832,15 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     // First, insert the save before the call.
 
-    GenTreePtr saveLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
-    saveLcl->gtLsraInfo.isLsraAdded   = true;
-    saveLcl->gtRegNum                 = lclVarReg;
-    saveLcl->gtLsraInfo.isLocalDefUse = false;
+    GenTreePtr saveLcl = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
+    saveLcl->gtRegNum  = lclVarReg;
+    SetLsraAdded(saveLcl);
 
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
                                             varDsc->lvBaseType, genTypeSize(varDsc->lvType));
-    simdNode->gtLsraInfo.isLsraAdded = true;
-    simdNode->gtRegNum               = spillReg;
+    SetLsraAdded(simdNode);
+    simdNode->gtRegNum = spillReg;
     if (spillToMem)
     {
         simdNode->gtFlags |= GTF_SPILL;
@@ -9049,15 +8850,14 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     // Now insert the restore after the call.
 
-    GenTreePtr restoreLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
-    restoreLcl->gtLsraInfo.isLsraAdded   = true;
-    restoreLcl->gtRegNum                 = lclVarReg;
-    restoreLcl->gtLsraInfo.isLocalDefUse = false;
+    GenTreePtr restoreLcl = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
+    restoreLcl->gtRegNum  = lclVarReg;
+    SetLsraAdded(restoreLcl);
 
     simdNode = new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
                                                    varDsc->lvBaseType, genTypeSize(varDsc->lvType));
-    simdNode->gtLsraInfo.isLsraAdded = true;
-    simdNode->gtRegNum               = spillReg;
+    simdNode->gtRegNum = spillReg;
+    SetLsraAdded(simdNode);
     if (spillToMem)
     {
         simdNode->gtFlags |= GTF_SPILLED;
@@ -9487,9 +9287,6 @@ void LinearScan::resolveRegisters()
                 continue;
             }
 
-            LsraLocation loc = treeNode->gtLsraInfo.loc;
-            assert(treeNode->IsLocal() || currentLocation == loc || currentLocation == loc + 1);
-
             if (currentRefPosition->isIntervalRef() && currentRefPosition->getInterval()->isInternal)
             {
                 treeNode->gtRsvdRegs |= currentRefPosition->registerAssignment;
@@ -9813,8 +9610,8 @@ void LinearScan::insertMove(
     // This var can't be marked lvRegister now
     varDsc->lvRegNum = REG_STK;
 
-    GenTreePtr src              = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-    src->gtLsraInfo.isLsraAdded = true;
+    GenTreePtr src = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+    SetLsraAdded(src);
 
     // There are three cases we need to handle:
     // - We are loading a lclVar from the stack.
@@ -9848,12 +9645,10 @@ void LinearScan::insertMove(
         // This is the new home of the lclVar - indicate that by clearing the GTF_VAR_DEATH flag.
         // Note that if src is itself a lastUse, this will have no effect.
         dst->gtFlags &= ~(GTF_VAR_DEATH);
-        src->gtRegNum                 = fromReg;
-        dst->gtRegNum                 = toReg;
-        src->gtLsraInfo.isLocalDefUse = false;
-        dst->gtLsraInfo.isLsraAdded   = true;
+        src->gtRegNum = fromReg;
+        dst->gtRegNum = toReg;
+        SetLsraAdded(dst);
     }
-    dst->gtLsraInfo.isLocalDefUse = true;
     dst->SetUnusedValue();
 
     LIR::Range  treeRange  = LIR::SeqTree(compiler, dst);
@@ -9905,20 +9700,17 @@ void LinearScan::insertSwap(
     LclVarDsc* varDsc2 = compiler->lvaTable + lclNum2;
     assert(reg1 != REG_STK && reg1 != REG_NA && reg2 != REG_STK && reg2 != REG_NA);
 
-    GenTreePtr lcl1                = compiler->gtNewLclvNode(lclNum1, varDsc1->TypeGet());
-    lcl1->gtLsraInfo.isLsraAdded   = true;
-    lcl1->gtLsraInfo.isLocalDefUse = false;
-    lcl1->gtRegNum                 = reg1;
+    GenTreePtr lcl1 = compiler->gtNewLclvNode(lclNum1, varDsc1->TypeGet());
+    lcl1->gtRegNum  = reg1;
+    SetLsraAdded(lcl1);
 
-    GenTreePtr lcl2                = compiler->gtNewLclvNode(lclNum2, varDsc2->TypeGet());
-    lcl2->gtLsraInfo.isLsraAdded   = true;
-    lcl2->gtLsraInfo.isLocalDefUse = false;
-    lcl2->gtRegNum                 = reg2;
+    GenTreePtr lcl2 = compiler->gtNewLclvNode(lclNum2, varDsc2->TypeGet());
+    lcl2->gtRegNum  = reg2;
+    SetLsraAdded(lcl2);
 
-    GenTreePtr swap                = compiler->gtNewOperNode(GT_SWAP, TYP_VOID, lcl1, lcl2);
-    swap->gtLsraInfo.isLsraAdded   = true;
-    swap->gtLsraInfo.isLocalDefUse = false;
-    swap->gtRegNum                 = REG_NA;
+    GenTreePtr swap = compiler->gtNewOperNode(GT_SWAP, TYP_VOID, lcl1, lcl2);
+    swap->gtRegNum  = REG_NA;
+    SetLsraAdded(swap);
 
     lcl1->gtNext = lcl2;
     lcl2->gtPrev = lcl1;
@@ -11025,7 +10817,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 }
 
 //------------------------------------------------------------------------
-// GetIndirSourceCount: Get the source registers for an indirection that might be contained.
+// GetIndirInfo: Get the source registers for an indirection that might be contained.
 //
 // Arguments:
 //    node      - The node of interest
@@ -11033,11 +10825,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 // Return Value:
 //    The number of source registers used by the *parent* of this node.
 //
-int LinearScan::GetIndirSourceCount(GenTreeIndir* indirTree)
+// Notes:
+//    Adds the defining node for each register to the useList.
+//
+int LinearScan::GetIndirInfo(GenTreeIndir* indirTree)
 {
     GenTree* const addr = indirTree->gtOp1;
     if (!addr->isContained())
     {
+        appendLocationInfoToList(addr);
         return 1;
     }
     if (!addr->OperIs(GT_LEA))
@@ -11050,19 +10846,94 @@ int LinearScan::GetIndirSourceCount(GenTreeIndir* indirTree)
     unsigned srcCount = 0;
     if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
     {
+        appendLocationInfoToList(addrMode->Base());
         srcCount++;
     }
-    if (addrMode->Index() != nullptr)
+    if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
     {
-        // We never have a contained index.
-        assert(!addrMode->Index()->isContained());
+        appendLocationInfoToList(addrMode->Index());
         srcCount++;
     }
     return srcCount;
 }
 
-void TreeNodeInfo::Initialize(LinearScan* lsra, GenTree* node, LsraLocation location)
+//------------------------------------------------------------------------
+// GetOperandInfo: Get the source registers for an operand that might be contained.
+//
+// Arguments:
+//    node      - The node of interest
+//    useList   - The list of uses for the node that we're currently processing
+//
+// Return Value:
+//    The number of source registers used by the *parent* of this node.
+//
+// Notes:
+//    Adds the defining node for each register to the given useList.
+//
+int LinearScan::GetOperandInfo(GenTree* node)
 {
+    if (!node->isContained())
+    {
+        appendLocationInfoToList(node);
+        return 1;
+    }
+
+#if !defined(_TARGET_64BIT_)
+    if (node->OperIs(GT_LONG))
+    {
+        return appendBinaryLocationInfoToList(node->AsOp());
+    }
+#endif // !defined(_TARGET_64BIT_)
+    if (node->OperIsIndir())
+    {
+        const unsigned srcCount = GetIndirInfo(node->AsIndir());
+        return srcCount;
+    }
+
+    return 0;
+}
+
+//------------------------------------------------------------------------
+// GetOperandInfo: Get the source registers for an operand that might be contained.
+//
+// Arguments:
+//    node      - The node of interest
+//    useList   - The list of uses for the node that we're currently processing
+//
+// Return Value:
+//    The number of source registers used by the *parent* of this node.
+//
+// Notes:
+//    Adds the defining node for each register to the useList.
+//
+int LinearScan::GetOperandInfo(GenTree* node, LocationInfoListNode** pFirstInfo)
+{
+    LocationInfoListNode* prevLast = useList.Last();
+    int                   srcCount = GetOperandInfo(node);
+    if (prevLast == nullptr)
+    {
+        *pFirstInfo = useList.Begin();
+    }
+    else
+    {
+        *pFirstInfo = prevLast->Next();
+    }
+    return srcCount;
+}
+
+void TreeNodeInfo::Initialize(LinearScan* lsra, GenTree* node)
+{
+    _dstCount           = 0;
+    _srcCount           = 0;
+    _internalIntCount   = 0;
+    _internalFloatCount = 0;
+
+    isLocalDefUse          = false;
+    isDelayFree            = false;
+    hasDelayFreeSrc        = false;
+    isTgtPref              = false;
+    isInternalRegDelayFree = false;
+
     regMaskTP dstCandidates;
 
     // if there is a reg indicated on the tree node, use that for dstCandidates
@@ -11090,18 +10961,11 @@ void TreeNodeInfo::Initialize(LinearScan* lsra, GenTree* node, LsraLocation loca
         dstCandidates = genRegMask(node->gtRegNum);
     }
 
-    internalIntCount    = 0;
-    internalFloatCount  = 0;
-    isLocalDefUse       = false;
-    isLsraAdded         = false;
-    definesAnyRegisters = false;
-
     setDstCandidates(lsra, dstCandidates);
     srcCandsIndex = dstCandsIndex;
 
     setInternalCandidates(lsra, lsra->allRegs(TYP_INT));
 
-    loc = location;
 #ifdef DEBUG
     isInitialized = true;
 #endif
@@ -11431,6 +11295,18 @@ void Interval::dump()
     {
         printf(" (struct)");
     }
+    if (isPromotedStruct)
+    {
+        printf(" (promoted struct)");
+    }
+    if (hasConflictingDefUse)
+    {
+        printf(" (def-use conflict)");
+    }
+    if (hasInterferingUses)
+    {
+        printf(" (interfering uses)");
+    }
     if (isSpecialPutArg)
     {
         printf(" (specialPutArg)");
@@ -11438,6 +11314,10 @@ void Interval::dump()
     if (isConstant)
     {
         printf(" (constant)");
+    }
+    if (isMultiReg)
+    {
+        printf(" (multireg)");
     }
 
     printf(" RefPositions {");
@@ -11508,7 +11388,7 @@ void RegRecord::tinyDump()
 
 void TreeNodeInfo::dump(LinearScan* lsra)
 {
-    printf("<TreeNodeInfo @ %2u %d=%d %di %df", loc, dstCount, srcCount, internalIntCount, internalFloatCount);
+    printf("<TreeNodeInfo %d=%d %di %df", dstCount, srcCount, internalIntCount, internalFloatCount);
     printf(" src=");
     dumpRegMask(getSrcCandidates(lsra));
     printf(" int=");
@@ -11523,10 +11403,6 @@ void TreeNodeInfo::dump(LinearScan* lsra)
     {
         printf(" I");
     }
-    if (isLsraAdded)
-    {
-        printf(" A");
-    }
     if (isDelayFree)
     {
         printf(" D");
@@ -11535,15 +11411,27 @@ void TreeNodeInfo::dump(LinearScan* lsra)
     {
         printf(" P");
     }
-    if (regOptional)
-    {
-        printf(" O");
-    }
     if (isInternalRegDelayFree)
     {
         printf(" ID");
     }
-    printf(">\n");
+    printf(">");
+}
+
+void LinearScan::dumpOperandToLocationInfoMap()
+{
+    JITDUMP("OperandToLocationInfoMap: { ");
+    bool first = true;
+    for (auto kvp : *operandToLocationInfoMap)
+    {
+        GenTree*              node = kvp.Key();
+        LocationInfoListNode* def  = kvp.Value();
+
+        JITDUMP("%sN%03u.t%d. %s", first ? "" : "; ", node->gtSeqNum, node->gtTreeID, GenTree::OpName(node->OperGet()));
+
+        first = false;
+    }
+    JITDUMP(" }\n");
 }
 
 void LinearScan::lsraDumpIntervals(const char* msg)
@@ -11721,16 +11609,17 @@ void LinearScan::DumpOperandDefs(
 {
     assert(operand != nullptr);
     assert(operandString != nullptr);
-
-    if (ComputeOperandDstCount(operand) == 0)
+    if (!operand->IsLIR())
     {
         return;
     }
 
-    if (operand->gtLsraInfo.dstCount != 0)
+    int dstCount = ComputeOperandDstCount(operand);
+
+    if (dstCount != 0)
     {
         // This operand directly produces registers; print it.
-        for (int i = 0; i < operand->gtLsraInfo.dstCount; i++)
+        for (int i = 0; i < dstCount; i++)
         {
             if (!first)
             {
@@ -11743,7 +11632,7 @@ void LinearScan::DumpOperandDefs(
             first = false;
         }
     }
-    else
+    else if (operand->isContained())
     {
         // This is a contained node. Dump the defs produced by its operands.
         for (GenTree* op : operand->Operands())
@@ -11884,52 +11773,11 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         {
             GenTree* tree = node;
 
-            genTreeOps    oper = tree->OperGet();
-            TreeNodeInfo& info = tree->gtLsraInfo;
-            if (tree->gtLsraInfo.isLsraAdded)
-            {
-                // This must be one of the nodes that we add during LSRA
-
-                if (oper == GT_LCL_VAR)
-                {
-                    info.srcCount = 0;
-                    info.dstCount = 1;
-                }
-                else if (oper == GT_RELOAD || oper == GT_COPY)
-                {
-                    info.srcCount = 1;
-                    info.dstCount = 1;
-                }
-#ifdef FEATURE_SIMD
-                else if (oper == GT_SIMD)
-                {
-                    if (tree->gtSIMD.gtSIMDIntrinsicID == SIMDIntrinsicUpperSave)
-                    {
-                        info.srcCount = 1;
-                        info.dstCount = 1;
-                    }
-                    else
-                    {
-                        assert(tree->gtSIMD.gtSIMDIntrinsicID == SIMDIntrinsicUpperRestore);
-                        info.srcCount = 2;
-                        info.dstCount = 0;
-                    }
-                }
-#endif // FEATURE_SIMD
-                else
-                {
-                    assert(oper == GT_SWAP);
-                    info.srcCount = 2;
-                    info.dstCount = 0;
-                }
-                info.internalIntCount   = 0;
-                info.internalFloatCount = 0;
-            }
-
-            int       consume   = info.srcCount;
-            int       produce   = info.dstCount;
-            regMaskTP killMask  = RBM_NONE;
-            regMaskTP fixedMask = RBM_NONE;
+            genTreeOps oper      = tree->OperGet();
+            int        produce   = tree->IsValue() ? ComputeOperandDstCount(tree) : 0;
+            int        consume   = ComputeAvailableSrcCount(tree);
+            regMaskTP  killMask  = RBM_NONE;
+            regMaskTP  fixedMask = RBM_NONE;
 
             lsraDispNode(tree, mode, produce != 0 && mode != LSRA_DUMP_REFPOS);
 
@@ -12046,32 +11894,6 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 }
             }
             printf("\n");
-            if (info.internalIntCount != 0 && mode != LSRA_DUMP_REFPOS)
-            {
-                printf("\tinternal (%d):\t", info.internalIntCount);
-                if (mode == LSRA_DUMP_POST)
-                {
-                    dumpRegMask(tree->gtRsvdRegs);
-                }
-                else if ((info.getInternalCandidates(this) & allRegs(TYP_INT)) != allRegs(TYP_INT))
-                {
-                    dumpRegMask(info.getInternalCandidates(this) & allRegs(TYP_INT));
-                }
-                printf("\n");
-            }
-            if (info.internalFloatCount != 0 && mode != LSRA_DUMP_REFPOS)
-            {
-                printf("\tinternal (%d):\t", info.internalFloatCount);
-                if (mode == LSRA_DUMP_POST)
-                {
-                    dumpRegMask(tree->gtRsvdRegs);
-                }
-                else if ((info.getInternalCandidates(this) & allRegs(TYP_INT)) != allRegs(TYP_INT))
-                {
-                    dumpRegMask(info.getInternalCandidates(this) & allRegs(TYP_INT));
-                }
-                printf("\n");
-            }
         }
         if (enregisterLocalVars && mode == LSRA_DUMP_POST)
         {
@@ -12575,7 +12397,7 @@ void LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* curr
 //
 bool LinearScan::IsResolutionMove(GenTree* node)
 {
-    if (!node->gtLsraInfo.isLsraAdded)
+    if (!IsLsraAdded(node))
     {
         return false;
     }
@@ -12584,7 +12406,7 @@ bool LinearScan::IsResolutionMove(GenTree* node)
     {
         case GT_LCL_VAR:
         case GT_COPY:
-            return node->gtLsraInfo.isLocalDefUse;
+            return node->IsUnusedValue();
 
         case GT_SWAP:
             return true;
@@ -12612,7 +12434,7 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
             return true;
         }
 
-        if (!node->gtLsraInfo.isLsraAdded || (node->OperGet() != GT_LCL_VAR))
+        if (!IsLsraAdded(node) || (node->OperGet() != GT_LCL_VAR))
         {
             return false;
         }
