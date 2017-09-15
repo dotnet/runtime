@@ -221,19 +221,13 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Starts the process using the supplied start info. 
-        /// Even with UseShellExecute option, we try first running fileName just in case the caller is giving executable which we should run
-        /// Then if we couldn't run it we'll try the shell tools to launch it(e.g. "open fileName")
+        /// With UseShellExecute option, we'll try the shell tools to launch it(e.g. "open fileName")
         /// </summary>
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
             string filename;
             string[] argv;
-
-            if (Directory.Exists(startInfo.FileName))
-            {
-                throw new Win32Exception(SR.DirectoryNotValidAsInput);
-            }
 
             if (startInfo.UseShellExecute)
             {
@@ -243,48 +237,41 @@ namespace System.Diagnostics
                 }
             }
 
-            int childPid = -1, stdinFd = -1, stdoutFd = -1, stderrFd = -1, result = -1;
+            int childPid, stdinFd, stdoutFd, stderrFd;
             string[] envp = CreateEnvp(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
-            filename = ResolvePath(startInfo.FileName); 
-            if (!string.IsNullOrEmpty(filename))
+            if (!startInfo.UseShellExecute)
             {
+                filename = ResolvePath(startInfo.FileName);
                 argv = ParseArgv(startInfo);
-
-                // Invoke the shim fork/execve routine.  It will create pipes for all requested
-                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
-                // descriptors, and execve to execute the requested process.  The shim implementation
-                // is used to fork/execve as executing managed code in a forked process is not safe (only
-                // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
-                result = Interop.Sys.ForkAndExecProcess(
-                    filename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
-                    out childPid,
-                    out stdinFd, out stdoutFd, out stderrFd, shouldThrow: !startInfo.UseShellExecute);
+                if (Directory.Exists(startInfo.FileName))
+                {
+                    throw new Win32Exception(SR.DirectoryNotValidAsInput);
+                }
+            }
+            else
+            {
+                // use default program to open file/url
+                filename = GetPathToOpenFile();
+                argv = ParseArgv(startInfo, filename);
             }
 
-            if (result != 0)
+            if (string.IsNullOrEmpty(filename))
             {
-                if (!startInfo.UseShellExecute)
-                {
-                    // Could not find the file
-                    Debug.Assert(string.IsNullOrEmpty(filename));
-                    throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
-                }
+                throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
+            }
 
-                // this time, set the filename as default program to open file/url
-                filename = GetPathToOpenFile();
-                argv = ParseArgv(startInfo, GetPathToOpenFile());
-
-                result = Interop.Sys.ForkAndExecProcess(
+            // Invoke the shim fork/execve routine.  It will create pipes for all requested
+            // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+            // descriptors, and execve to execute the requested process.  The shim implementation
+            // is used to fork/execve as executing managed code in a forked process is not safe (only
+            // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
+            Interop.Sys.ForkAndExecProcess(
                     filename, argv, envp, cwd,
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     out childPid,
                     out stdinFd, out stdoutFd, out stderrFd);
-
-                Debug.Assert(result == 0);
-            }
 
             // Store the child's information into this Process object.
             Debug.Assert(childPid >= 0);

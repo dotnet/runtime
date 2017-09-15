@@ -12,7 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static unsafe int ForkAndExecProcess(
+        internal static unsafe void ForkAndExecProcess(
             string filename, string[] argv, string[] envp, string cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
             out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd, bool shouldThrow = true)
@@ -39,8 +39,7 @@ internal static partial class Interop
                     // technically ambiguous, in the case of a failure with a 0 errno.  Simplest
                     // solution then is just to throw here the same exception the Process caller
                     // would have.  This can be revisited if we ever have another call site.
-                    if (shouldThrow)
-                        throw new Win32Exception();
+                    throw new Win32Exception();
                 }
             }
             finally
@@ -48,7 +47,6 @@ internal static partial class Interop
                 FreeArray(envpPtr, envp.Length);
                 FreeArray(argvPtr, argv.Length);
             }
-            return result;
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", SetLastError = true)]
