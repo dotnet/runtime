@@ -7,7 +7,7 @@ namespace System.Net.Sockets.Tests
     public static class TestSettings
     {
         // Timeout values in milliseconds.
-        public const int PassingTestTimeout = 5000;
+        public const int PassingTestTimeout = 10000;
         public const int FailingTestTimeout = 100;
 
         // Number of redundant UDP packets to send to increase test reliability
