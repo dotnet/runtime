@@ -29,7 +29,7 @@ set(CMAKE_REQUIRED_FLAGS -Werror)
 
 # in_pktinfo: Find whether this struct exists
 check_include_files(
-    linux/in.h
+    "sys/socket.h;linux/in.h"
     HAVE_LINUX_IN_H)
 
 if (HAVE_LINUX_IN_H)
@@ -40,6 +40,7 @@ endif ()
 
 check_c_source_compiles(
     "
+    #include <sys/socket.h>
     #include <${SOCKET_INCLUDES}>
     int main()
     {
@@ -51,6 +52,7 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
+    #include <sys/socket.h>
     #include <${SOCKET_INCLUDES}>
     int main()
     {
