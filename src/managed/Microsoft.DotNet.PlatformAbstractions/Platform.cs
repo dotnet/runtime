@@ -8,6 +8,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
         Unknown = 0,
         Windows = 1,
         Linux = 2,
-        Darwin = 3
+        Darwin = 3,
+        FreeBSD = 4
     }
 }
