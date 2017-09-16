@@ -15605,9 +15605,19 @@ bool GenTree::canBeContained() const
 {
     assert(IsLIR());
 
+    if (gtHasReg())
+    {
+        return false;
+    }
+
     // It is not possible for nodes that do not produce values or that are not containable values
     // to be contained.
-    return (OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) == 0;
+    if ((OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) != 0)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -15632,7 +15642,7 @@ bool GenTree::isContained() const
     const bool isMarkedContained = ((gtFlags & GTF_CONTAINED) != 0);
 
 #ifdef DEBUG
-    if (!canBeContained() || gtHasReg())
+    if (!canBeContained())
     {
         assert(!isMarkedContained);
     }
@@ -15666,7 +15676,7 @@ bool GenTree::isContained() const
     // if it's contained it better have a user
     if (isMarkedContained)
     {
-        assert((gtNext != nullptr) || OperIsLocal());
+        assert(gtNext != nullptr);
     }
 #endif // DEBUG
     return isMarkedContained;

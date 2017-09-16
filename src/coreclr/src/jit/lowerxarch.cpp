@@ -1326,25 +1326,10 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 #endif // _TARGET_X86_
                 if (ctrlExpr->isIndir())
             {
-                MakeSrcContained(call, ctrlExpr);
                 // We may have cases where we have set a register target on the ctrlExpr, but if it
                 // contained we must clear it.
                 ctrlExpr->gtRegNum = REG_NA;
-            }
-        }
-    }
-    // If there is an explicit this pointer, we don't want that node to produce anything
-    // as it is redundant
-    if (call->gtCallObjp != nullptr)
-    {
-        GenTreePtr thisPtrNode = call->gtCallObjp;
-
-        if (thisPtrNode->canBeContained())
-        {
-            MakeSrcContained(call, thisPtrNode);
-            if (thisPtrNode->gtOper == GT_PUTARG_REG)
-            {
-                MakeSrcContained(call, thisPtrNode->gtOp.gtOp1);
+                MakeSrcContained(call, ctrlExpr);
             }
         }
     }
