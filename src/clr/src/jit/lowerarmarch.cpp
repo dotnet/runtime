@@ -506,22 +506,7 @@ void Lowering::LowerRotate(GenTreePtr tree)
 //
 void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 {
-    GenTree* ctrlExpr = call->gtControlExpr;
-    // If there is an explicit this pointer, we don't want that node to produce anything
-    // as it is redundant
-    if (call->gtCallObjp != nullptr)
-    {
-        GenTreePtr thisPtrNode = call->gtCallObjp;
-
-        if (thisPtrNode->canBeContained())
-        {
-            MakeSrcContained(call, thisPtrNode);
-            if (thisPtrNode->gtOper == GT_PUTARG_REG)
-            {
-                MakeSrcContained(call, thisPtrNode->gtOp.gtOp1);
-            }
-        }
-    }
+    // There are no contained operands for arm.
 }
 
 //------------------------------------------------------------------------
