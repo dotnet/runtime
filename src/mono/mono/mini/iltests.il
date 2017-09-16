@@ -3023,4 +3023,25 @@ L_3:
 		ldc.i4.0
 		ret
     }
+
+	.method public static bool llvm_regress_59436 () {
+		// Code size	   41 (0x29)
+		.maxstack  3
+		.locals init (float64 V_0,
+					  float64 V_1,
+					  valuetype [mscorlib]System.Decimal V_2)
+		IL_0000:  ldc.r8	 1
+		IL_0009:  stloc.0
+		IL_000a:  ldc.r8	 2
+		IL_0013:  stloc.1
+		IL_0014:  ldloc.0
+		IL_0015:  newobj	 instance void [mscorlib]System.Decimal::.ctor(float64)
+		IL_001a:  ldloca.s   V_2
+		IL_001c:  ldloc.1
+		IL_001d:  call	   instance void [mscorlib]System.Decimal::.ctor(float64)
+		IL_0022:  ldloc.2
+		IL_0023:  call	   bool [mscorlib]System.Decimal::op_LessThanOrEqual(valuetype [mscorlib]System.Decimal,
+																			   valuetype [mscorlib]System.Decimal)
+		IL_0028:  ret
+	}
 }
