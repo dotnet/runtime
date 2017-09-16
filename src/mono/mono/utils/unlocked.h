@@ -7,7 +7,8 @@
  *  * Increment, Decrement, Add, Subtract, Write, Read
  *  * gint32 (""), guint32 ("Unsigned"),
  *      gint64 ("64"), guint64 ("Unsigned64"),
- *      gsize ("Size"), gboolean ("Bool")
+ *      gsize ("Size"), gboolean ("Bool"),
+ *      gpointer ("Pointer")
  *
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
@@ -28,98 +29,105 @@
 
 MONO_UNLOCKED_ATTRS
 gint32
-UnlockedIncrement (gint32 *val)
+UnlockedIncrement (volatile gint32 *val)
 {
 	return ++*val;
 }
 
 MONO_UNLOCKED_ATTRS
 gint64
-UnlockedIncrement64 (gint64 *val)
+UnlockedIncrement64 (volatile gint64 *val)
 {
 	return ++*val;
 }
 
 MONO_UNLOCKED_ATTRS
 gint64
-UnlockedDecrement64 (gint64 *val)
+UnlockedDecrement64 (volatile gint64 *val)
 {
 	return --*val;
 }
 
 MONO_UNLOCKED_ATTRS
 gint32
-UnlockedDecrement (gint32 *val)
+UnlockedDecrement (volatile gint32 *val)
 {
 	return --*val;
 }
 
 MONO_UNLOCKED_ATTRS
 gint32
-UnlockedAdd (gint32 *dest, gint32 add)
+UnlockedAdd (volatile gint32 *dest, gint32 add)
 {
 	return *dest += add;
 }
 
 MONO_UNLOCKED_ATTRS
 gint64
-UnlockedAdd64 (gint64 *dest, gint64 add)
+UnlockedAdd64 (volatile gint64 *dest, gint64 add)
 {
 	return *dest += add;
 }
 
 MONO_UNLOCKED_ATTRS
 gdouble
-UnlockedAddDouble (gdouble *dest, gdouble add)
+UnlockedAddDouble (volatile gdouble *dest, gdouble add)
 {
 	return *dest += add;
 }
 
 MONO_UNLOCKED_ATTRS
 gint64
-UnlockedSubtract64 (gint64 *dest, gint64 sub)
+UnlockedSubtract64 (volatile gint64 *dest, gint64 sub)
 {
 	return *dest -= sub;
 }
 
 MONO_UNLOCKED_ATTRS
 void
-UnlockedWrite (gint32 *dest, gint32 val)
+UnlockedWrite (volatile gint32 *dest, gint32 val)
 {
 	*dest = val;
 }
 
 MONO_UNLOCKED_ATTRS
 void
-UnlockedWrite64 (gint64 *dest, gint64 val)
+UnlockedWrite64 (volatile gint64 *dest, gint64 val)
 {
 	*dest = val;
 }
 
 MONO_UNLOCKED_ATTRS
 void
-UnlockedWriteBool (gboolean *dest, gboolean val)
+UnlockedWriteBool (volatile gboolean *dest, gboolean val)
+{
+	*dest = val;
+}
+
+MONO_UNLOCKED_ATTRS
+void
+UnlockedWritePointer (volatile gpointer *dest, gpointer val)
 {
 	*dest = val;
 }
 
 MONO_UNLOCKED_ATTRS
 gint32
-UnlockedRead (gint32 *src)
+UnlockedRead (volatile gint32 *src)
 {
 	return *src;
 }
 
 MONO_UNLOCKED_ATTRS
 gint64
-UnlockedRead64 (gint64 *src)
+UnlockedRead64 (volatile gint64 *src)
 {
 	return *src;
 }
 
 MONO_UNLOCKED_ATTRS
 gboolean
-UnlockedReadBool (gboolean *src)
+UnlockedReadBool (volatile gboolean *src)
 {
 	return *src;
 }
