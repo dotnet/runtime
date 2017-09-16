@@ -44,6 +44,7 @@ void Lowering::MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode)
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
     childNode->SetContained();
+    assert(childNode->isContained());
 }
 
 //------------------------------------------------------------------------

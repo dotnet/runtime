@@ -292,7 +292,7 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0, GTK_BINOP|GTK_NOVALUE)  // Jump
 GTNODE(REG_VAR          , GenTreeLclVar      ,0,GTK_LEAF|GTK_LOCAL)     // register variable
 GTNODE(CLS_VAR          , GenTreeClsVar      ,0,GTK_LEAF)               // static data member
 GTNODE(CLS_VAR_ADDR     , GenTreeClsVar      ,0,GTK_LEAF)               // static data member address
-GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF)               // placeholder for a register arg
+GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF|GTK_NOVALUE)   // placeholder for a register arg
 GTNODE(NULLCHECK        , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)   // null checks the source
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,GTK_LEAF)               // read from a physical register
 GTNODE(EMITNOP          , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // emitter-placed nop
