@@ -1859,9 +1859,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         }
         else if (op1->IsCnsIntOrI())
         {
-            // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm,
-            // but there is currently an assert in CodeGen::genCompareInt().
-            // https://github.com/dotnet/coreclr/issues/7270
             SetRegOptional(op2);
         }
         else
