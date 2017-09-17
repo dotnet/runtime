@@ -21,4 +21,7 @@
     <Message Text="Cleaning serialization files..." Importance="normal"/>
     <Delete Condition="Exists('$(OutputPath)\$(SerializerName).dll') == 'true'" Files="$(OutputPath)\$(SerializerName).dll" />
   </Target>
+  <Target Name="CopySerializer" AfterTargets="PrepareForPublish">
+    <Copy Condition="Exists('$(OutputPath)\$(AssemblyName).XmlSerializers.dll')=='true'" SourceFiles="$(OutputPath)\$(AssemblyName).XmlSerializers.dll" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="false" />
+  </Target>
 </Project>
