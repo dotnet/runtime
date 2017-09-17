@@ -2049,6 +2049,9 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         case SIMDIntrinsicOpEquality:
         case SIMDIntrinsicOpInEquality:
         {
+            // We're only setting condition flags, if a 0/1 value is desired then Lowering should have inserted a SETCC.
+            assert(targetReg == REG_NA);
+
             var_types simdType = op1->TypeGet();
             // TODO-1stClassStructs: Temporary to minimize asmDiffs
             if (simdType == TYP_DOUBLE)
@@ -2064,9 +2067,9 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
             }
 
             // On SSE4/AVX, we can generate optimal code for (in)equality against zero using ptest.
-            if ((compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4) && op2->IsIntegralConstVector(0))
+            if (op2->isContained())
             {
-                assert(op2->isContained());
+                assert((compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4) && op2->IsIntegralConstVector(0));
                 inst_RV_RV(INS_ptest, op1->gtRegNum, op1->gtRegNum, simdType, emitActualTypeSize(simdType));
             }
             else
@@ -2103,22 +2106,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                     inst_RV_RV(ins, tmpReg1, otherReg, simdType, emitActualTypeSize(simdType));
                 }
 
-                regNumber intReg;
-                if (targetReg == REG_NA)
-                {
-                    // If we are not materializing result into a register,
-                    // we would have reserved an int type internal register.
-                    intReg = simdNode->GetSingleTempReg(RBM_ALLINT);
-                }
-                else
-                {
-                    // We can use targetReg for setting flags.
-                    intReg = targetReg;
-
-                    // Must have not reserved any int type internal registers.
-                    assert(simdNode->AvailableTempRegCount(RBM_ALLINT) == 0);
-                }
-
+                regNumber intReg = simdNode->GetSingleTempReg(RBM_ALLINT);
                 inst_RV_RV(INS_pmovmskb, intReg, tmpReg1, simdType, emitActualTypeSize(simdType));
                 // There's no pmovmskw/pmovmskd/pmovmskq but they're not needed anyway. Vector compare
                 // instructions produce "all ones"/"all zeroes" components and pmovmskb extracts a
@@ -2146,27 +2134,6 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                     mask = 0x0000FFFF;
                 }
                 getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, intReg, mask);
-            }
-
-            if (targetReg != REG_NA)
-            {
-                // If we need to materialize result into a register,  targetReg needs to
-                // be set to 1 on true and zero on false.
-                // Equality:
-                //   cmp targetReg, 0xFFFFFFFF or 0xFFFF
-                //   sete targetReg
-                //   movzx targetReg, targetReg
-                //
-                // InEquality:
-                //   cmp targetReg, 0xFFFFFFFF or 0xFFFF
-                //   setne targetReg
-                //   movzx targetReg, targetReg
-                //
-                assert(simdNode->TypeGet() == TYP_INT);
-                inst_RV((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ? INS_sete : INS_setne, targetReg,
-                        TYP_INT, EA_1BYTE);
-                // Set the higher bytes to 0
-                inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), targetReg, targetReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
             }
         }
         break;

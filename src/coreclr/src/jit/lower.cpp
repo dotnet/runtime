@@ -5606,56 +5606,6 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
     // The compare does not need to be generated into a register.
     GenTree* cmp                   = node->gtGetOp1();
     cmp->gtLsraInfo.isNoRegCompare = true;
-
-#ifdef FEATURE_SIMD
-    assert(node->OperIs(GT_JTRUE));
-
-    // Say we have the following IR
-    //   simdCompareResult = GT_SIMD((In)Equality, v1, v2)
-    //   integerCompareResult = GT_EQ/NE(simdCompareResult, true/false)
-    //   GT_JTRUE(integerCompareResult)
-    //
-    // In this case we don't need to generate code for GT_EQ_/NE, since SIMD (In)Equality
-    // intrinsic will set or clear the Zero flag.
-    genTreeOps cmpOper = cmp->OperGet();
-    if (cmpOper == GT_EQ || cmpOper == GT_NE)
-    {
-        GenTree* cmpOp1 = cmp->gtGetOp1();
-        GenTree* cmpOp2 = cmp->gtGetOp2();
-
-        if (cmpOp1->IsSIMDEqualityOrInequality() && (cmpOp2->IsIntegralConst(0) || cmpOp2->IsIntegralConst(1)))
-        {
-            // We always generate code for a SIMD equality comparison, though it produces no value.
-            // Neither the GT_JTRUE nor the immediate need to be evaluated.
-            MakeSrcContained(cmp, cmpOp2);
-            cmpOp1->gtLsraInfo.isNoRegCompare = true;
-            // We have to reverse compare oper in the following cases:
-            // 1) SIMD Equality: Sets Zero flag on equal otherwise clears it.
-            //    Therefore, if compare oper is == or != against false(0), we will
-            //    be checking opposite of what is required.
-            //
-            // 2) SIMD inEquality: Clears Zero flag on true otherwise sets it.
-            //    Therefore, if compare oper is == or != against true(1), we will
-            //    be checking opposite of what is required.
-            GenTreeSIMD* simdNode = cmpOp1->AsSIMD();
-            if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality)
-            {
-                if (cmpOp2->IsIntegralConst(0))
-                {
-                    cmp->SetOper(GenTree::ReverseRelop(cmpOper));
-                }
-            }
-            else
-            {
-                assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpInEquality);
-                if (cmpOp2->IsIntegralConst(1))
-                {
-                    cmp->SetOper(GenTree::ReverseRelop(cmpOper));
-                }
-            }
-        }
-    }
-#endif // FEATURE_SIMD
 }
 
 #endif // !LEGACY_BACKEND
