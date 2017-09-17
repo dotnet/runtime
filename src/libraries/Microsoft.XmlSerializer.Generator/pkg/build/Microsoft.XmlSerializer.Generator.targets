@@ -11,7 +11,7 @@
     <Delete Condition="Exists('$(SerializerPdbImmediatePath)') == 'true'" Files="$(SerializerPdbImmediatePath)" />
     <Delete Condition="Exists('$(SerializerCsImmediatePath)') == 'true'"  Files="$(SerializerCsImmediatePath)" />
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec Command="dotnet Microsoft.XmlSerializer.Generator $(IntermediateOutputPath)$(AssemblyName).dll /force" ContinueOnError="true"/>
+    <Exec Command="dotnet Microsoft.XmlSerializer.Generator $(IntermediateOutputPath)$(AssemblyName).dll /force /quiet" ContinueOnError="true"/>
     <Warning Condition="Exists('$(SerializerCsImmediatePath)') != 'true'" Text="$(SGenWarningText)" />
     <Csc Condition="Exists('$(SerializerCsImmediatePath)') == 'true'" ContinueOnError="true" OutputAssembly="$(SerializerDllImmediatePath)" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(SerializerCsImmediatePath)" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)"/>
     <Warning Condition="Exists('$(SerializerDllImmediatePath)') != 'true' And Exists('$(SerializerCsImmediatePath)') == 'true'" Text="$(SGenWarningText)"/>
