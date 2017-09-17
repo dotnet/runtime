@@ -254,20 +254,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
             GenTree* cmp = tree->gtGetOp1();
             assert(cmp->gtLsraInfo.dstCount == 0);
-
-#ifdef FEATURE_SIMD
-            GenTree* cmpOp1 = cmp->gtGetOp1();
-            GenTree* cmpOp2 = cmp->gtGetOp2();
-            if (cmpOp1->IsSIMDEqualityOrInequality() && cmpOp2->isContained())
-            {
-                genTreeOps cmpOper = cmp->OperGet();
-
-                // We always generate code for a SIMD equality comparison, but the compare itself produces no value.
-                // Neither the SIMD node nor the immediate need to be evaluated into a register.
-                assert(cmpOp1->gtLsraInfo.dstCount == 0);
-                assert(cmpOp2->gtLsraInfo.dstCount == 0);
-            }
-#endif // FEATURE_SIMD
         }
         break;
 
@@ -2136,41 +2122,26 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicOpEquality:
         case SIMDIntrinsicOpInEquality:
-
-            // On SSE4/AVX, we can generate optimal code for (in)equality
-            // against zero using ptest. We can safely do this optimization
-            // for integral vectors but not for floating-point for the reason
-            // that we have +0.0 and -0.0 and +0.0 == -0.0
             if (simdTree->gtGetOp2()->isContained())
             {
+                // If the second operand is contained then ContainCheckSIMD has determined
+                // that PTEST can be used. We only need a single source register and no
+                // internal registers.
                 info->srcCount = 1;
             }
             else
             {
-                info->srcCount = 2;
-                // Need one SIMD register as scratch.
-                // See genSIMDIntrinsicRelOp() for details on code sequence generated and
-                // the need for one scratch register.
-                //
-                // Note these intrinsics produce a BOOL result, hence internal float
-                // registers reserved are guaranteed to be different from target
-                // integer register without explicitly specifying.
+                // Can't use PTEST so we need 2 source registers, 1 internal SIMD register
+                // (to hold the result of PCMPEQD or other similar SIMD compare instruction)
+                // and one internal INT register (to hold the result of PMOVMSKB).
+                info->srcCount           = 2;
                 info->internalFloatCount = 1;
                 info->setInternalCandidates(this, allSIMDRegs());
+                info->internalIntCount = 1;
+                info->addInternalCandidates(this, allRegs(TYP_INT));
             }
-            if (info->isNoRegCompare)
-            {
-                info->dstCount = 0;
-                // Codegen of SIMD (in)Equality uses target integer reg only for setting flags.
-                // A target reg is not needed on AVX when comparing against Vector Zero.
-                // In all other cases we need to reserve an int type internal register if we
-                // don't have a target register on the compare.
-                if (!compiler->canUseAVX() || !simdTree->gtGetOp2()->IsIntegralConstVector(0))
-                {
-                    info->internalIntCount = 1;
-                    info->addInternalCandidates(this, allRegs(TYP_INT));
-                }
-            }
+            // These SIMD nodes only set the condition flags.
+            info->dstCount = 0;
             break;
 
         case SIMDIntrinsicDotProduct:
