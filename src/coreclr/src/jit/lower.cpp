@@ -142,16 +142,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckBinary(node->AsOp());
             break;
 
-#ifdef _TARGET_XARCH_
-        case GT_NEG:
-            // Codegen of this tree node sets ZF and SF flags.
-            if (!varTypeIsFloating(node))
-            {
-                node->gtFlags |= GTF_ZSF_SET;
-            }
-            break;
-#endif // _TARGET_XARCH_
-
         case GT_MUL:
         case GT_MULHI:
 #if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
@@ -189,8 +179,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_TEST_NE:
         case GT_CMP:
         case GT_JCMP:
-            LowerCompare(node);
-            break;
+            return LowerCompare(node);
 
         case GT_JTRUE:
             ContainCheckJTrue(node->AsOp());
@@ -2148,6 +2137,9 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 // Arguments:
 //    cmp - the compare node
 //
+// Return Value:
+//    The next node to lower.
+//
 // Notes:
 //    - Decomposes long comparisons that feed a GT_JTRUE (32 bit specific).
 //    - Decomposes long comparisons that produce a value (X86 specific).
@@ -2156,8 +2148,11 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 //    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH/Arm64 specific but could
 //      be used for ARM as well if support for GT_TEST_EQ/GT_TEST_NE is added).
 //    - Transform TEST(x, LSH(1, y)) into BT(x, y) (XARCH specific)
+//    - Transform RELOP(OP, 0) into SETCC(OP) or JCC(OP) if OP can set the
+//      condition flags appropriately (XARCH/ARM64 specific but could be extended
+//      to ARM32 as well if ARM32 codegen supports GTF_SET_FLAGS).
 
-void Lowering::LowerCompare(GenTree* cmp)
+GenTree* Lowering::LowerCompare(GenTree* cmp)
 {
 #ifndef _TARGET_64BIT_
     if (cmp->gtGetOp1()->TypeGet() == TYP_LONG)
@@ -2363,7 +2358,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             cmp->AsCC()->gtCondition = condition;
         }
 
-        return;
+        return cmp->gtNext;
     }
 #endif
 
@@ -2567,11 +2562,10 @@ void Lowering::LowerCompare(GenTree* cmp)
             }
         }
     }
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 
-#ifdef _TARGET_XARCH_
     if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
+#ifdef _TARGET_XARCH_
         //
         // Transform TEST_EQ|NE(x, LSH(1, y)) into BT(x, y) when possible. Using BT
         // results in smaller and faster code. It also doesn't have special register
@@ -2614,10 +2608,76 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             cc->gtFlags |= GTF_USE_FLAGS | GTF_UNSIGNED;
 
-            return;
+            return cmp->gtNext;
+        }
+#endif // _TARGET_XARCH_
+    }
+#ifdef _TARGET_XARCH_
+    else if (cmp->OperIs(GT_EQ, GT_NE))
+#else // _TARGET_ARM64_
+    else
+#endif
+    {
+        GenTree* op1 = cmp->gtGetOp1();
+        GenTree* op2 = cmp->gtGetOp2();
+
+        // TODO-CQ: right now the below peep is inexpensive and gets the benefit in most
+        // cases because in majority of cases op1, op2 and cmp would be in that order in
+        // execution. In general we should be able to check that all the nodes that come
+        // after op1 do not modify the flags so that it is safe to avoid generating a
+        // test instruction.
+
+        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
+#ifdef _TARGET_XARCH_
+            op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+#else // _TARGET_ARM64_
+            op1->OperIs(GT_AND, GT_ADD, GT_SUB))
+#endif
+        {
+            op1->gtFlags |= GTF_SET_FLAGS;
+            op1->SetUnusedValue();
+
+            BlockRange().Remove(op2);
+
+            GenTree*   next = cmp->gtNext;
+            GenTree*   cc;
+            genTreeOps ccOp;
+            LIR::Use   cmpUse;
+
+            // Fast check for the common case - relop used by a JTRUE that immediately follows it.
+            if ((next != nullptr) && next->OperIs(GT_JTRUE) && (next->gtGetOp1() == cmp))
+            {
+                cc   = next;
+                ccOp = GT_JCC;
+                next = nullptr;
+                BlockRange().Remove(cmp);
+            }
+            else if (BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                cc   = cmpUse.User();
+                ccOp = GT_JCC;
+                next = nullptr;
+                BlockRange().Remove(cmp);
+            }
+            else // The relop is not used by a JTRUE or it is not used at all.
+            {
+                // Transform the relop node it into a SETCC. If it's not used we could remove
+                // it completely but that means doing more work to handle a rare case.
+                cc   = cmp;
+                ccOp = GT_SETCC;
+            }
+
+            genTreeOps condition = cmp->OperGet();
+            cc->ChangeOper(ccOp);
+            cc->AsCC()->gtCondition = condition;
+            cc->gtFlags |= GTF_USE_FLAGS | (cmp->gtFlags & GTF_UNSIGNED);
+
+            return next;
         }
     }
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 
+#ifdef _TARGET_XARCH_
     if (cmp->gtGetOp1()->TypeGet() == cmp->gtGetOp2()->TypeGet())
     {
         if (varTypeIsSmall(cmp->gtGetOp1()->TypeGet()) && varTypeIsUnsigned(cmp->gtGetOp1()->TypeGet()))
@@ -2635,6 +2695,7 @@ void Lowering::LowerCompare(GenTree* cmp)
     }
 #endif // _TARGET_XARCH_
     ContainCheckCompare(cmp->AsOp());
+    return cmp->gtNext;
 }
 
 // Lower "jmp <method>" tail call to insert PInvoke method epilog if required.
@@ -5376,16 +5437,6 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_XOR:
             ContainCheckBinary(node->AsOp());
             break;
-
-#ifdef _TARGET_XARCH_
-        case GT_NEG:
-            // Codegen of this tree node sets ZF and SF flags.
-            if (!varTypeIsFloating(node))
-            {
-                node->gtFlags |= GTF_ZSF_SET;
-            }
-            break;
-#endif // _TARGET_XARCH_
 
 #if defined(_TARGET_X86_)
         case GT_MUL_LONG:
