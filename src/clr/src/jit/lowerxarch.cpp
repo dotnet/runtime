@@ -1870,41 +1870,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             {
                 MakeSrcContained(cmp, op1);
             }
-            // If op1 codegen sets ZF and SF flags and ==/!= against
-            // zero, we don't need to generate test instruction,
-            // provided we don't have another GenTree node between op1
-            // and cmp that could potentially modify flags.
-            //
-            // TODO-CQ: right now the below peep is inexpensive and
-            // gets the benefit in most of cases because in majority
-            // of cases op1, op2 and cmp would be in that order in
-            // execution.  In general we should be able to check that all
-            // the nodes that come after op1 in execution order do not
-            // modify the flags so that it is safe to avoid generating a
-            // test instruction.  Such a check requires that on each
-            // GenTree node we need to set the info whether its codegen
-            // will modify flags.
-            //
-            // TODO-CQ: We can optimize compare against zero in the
-            // following cases by generating the branch as indicated
-            // against each case.
-            //  1) unsigned compare
-            //        < 0  - always FALSE
-            //       <= 0  - ZF=1 and jne
-            //        > 0  - ZF=0 and je
-            //       >= 0  - always TRUE
-            //
-            // 2) signed compare
-            //        < 0  - SF=1 and js
-            //       >= 0  - SF=0 and jns
-            else if (cmp->OperIs(GT_EQ, GT_NE) && op1->gtSetZSFlags() && op2->IsIntegralConst(0) &&
-                     (op1->gtNext == op2) && (op2->gtNext == cmp))
-            {
-                // Require codegen of op1 to set the flags.
-                assert(!op1->gtSetFlags());
-                op1->gtFlags |= GTF_SET_FLAGS;
-                cmp->gtFlags |= GTF_USE_FLAGS;
-            }
             else
             {
                 SetRegOptional(op1);
@@ -2076,9 +2041,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         ContainCheckFloatBinary(node);
         return;
     }
-
-    // Codegen of these tree nodes sets ZF and SF flags.
-    node->gtFlags |= GTF_ZSF_SET;
 
     // We're not marking a constant hanging on the left of an add
     // as containable so we assign it to a register having CQ impact.
