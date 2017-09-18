@@ -1298,6 +1298,7 @@ namespace System
     {
         public static readonly System.Guid Empty;
         public Guid(byte[] b) { throw null; }
+        public Guid(ReadOnlySpan<byte> b) { throw null; }
         public Guid(int a, short b, short c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw null; }
         public Guid(int a, short b, short c, byte[] d) { throw null; }
         public Guid(string g) { throw null; }
@@ -1314,9 +1315,11 @@ namespace System
         public static System.Guid Parse(string input) { throw null; }
         public static System.Guid ParseExact(string input, string format) { throw null; }
         public byte[] ToByteArray() { throw null; }
+        public bool TryWriteBytes(Span<byte> destination) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format) { throw null; }
         public static bool TryParse(string input, out System.Guid result) { throw null; }
         public static bool TryParseExact(string input, string format, out System.Guid result) { throw null; }
     }
