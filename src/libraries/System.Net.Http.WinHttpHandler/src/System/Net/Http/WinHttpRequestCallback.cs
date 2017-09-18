@@ -270,6 +270,7 @@ namespace System.Net.Http
 
                 X509Chain chain = null;
                 SslPolicyErrors sslPolicyErrors;
+                bool result = false;
 
                 try
                 {
@@ -281,16 +282,16 @@ namespace System.Net.Http
                         out chain,
                         out sslPolicyErrors);
 
-                    bool result = state.ServerCertificateValidationCallback(
+                    result = state.ServerCertificateValidationCallback(
                         state.RequestMessage,
                         serverCertificate,
                         chain,
                         sslPolicyErrors);
-                    if (!result)
-                    {
-                        throw WinHttpException.CreateExceptionUsingError(
-                            (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    throw WinHttpException.CreateExceptionUsingError(
+                        (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE, ex);
                 }
                 finally
                 {
@@ -300,6 +301,12 @@ namespace System.Net.Http
                     }
 
                     serverCertificate.Dispose();
+                }
+
+                if (!result)
+                {
+                    throw WinHttpException.CreateExceptionUsingError(
+                        (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE);
                 }
             }
         }
