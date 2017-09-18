@@ -22,6 +22,7 @@ enum test_method_enums {
 	FOO_BAR,
 	FOO_BARP,
 	GOO_BAR,
+	FOO2_BAR,
 	CONSOLE_WRITELINE,
 };
 
@@ -58,6 +59,7 @@ struct {
     {FOO_BAR, "M:Baz.Foo:Bar", TRUE},
     {FOO_BARP, "M:Baz.Foo:Bar", TRUE},
     {GOO_BAR, "M:Baz.Foo:Bar", FALSE},
+    {FOO2_BAR, "M:Baz.Foo:Bar", FALSE},
     {CONSOLE_WRITELINE, "M:Baz.Foo:Bar", FALSE},
     {FOO_BAR, "all,-M:Baz.Foo:Bar", FALSE},
     {CONSOLE_WRITELINE, "all,-M:Baz.Foo:Bar", TRUE},
@@ -66,6 +68,7 @@ struct {
     {FOO_BAR, "M::Bar", TRUE},
     {FOO_BARP, "M::Bar", TRUE},
     {GOO_BAR, "M::Bar", TRUE},
+    {FOO2_BAR, "M::Bar", TRUE},
 
     {0, NULL, FALSE}};
 
@@ -207,6 +210,20 @@ main (void)
 	if (!meth) {
 		res = 1;
 		printf ("FAILED FINDING Baz.Goo:Bar (string)\n");
+		goto out;
+	}
+	g_array_append_val (test_methods, meth);
+
+	prog_klass = test_mono_class_from_name (prog_image, "Baz", "Foo2");
+	if (!prog_klass) {
+		res = 1;
+		printf ("FAILED FINDING Baz.Foo2\n");
+		goto out;
+	}
+	meth = mono_class_get_method_from_name (prog_klass, "Bar", 1);
+	if (!meth) {
+		res = 1;
+		printf ("FAILED FINDING Baz.Foo2:Bar (string)\n");
 		goto out;
 	}
 	g_array_append_val (test_methods, meth);

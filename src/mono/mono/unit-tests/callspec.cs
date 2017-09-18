@@ -30,6 +30,18 @@ namespace Baz
         }
     }
 
+    class Foo2
+    {
+        public Foo2()
+        {
+        }
+
+        public string Bar(string greet)
+        {
+            return greet + ", World!!!";
+        }
+    }
+
     class MainClass
     {
         public static void Main(string[] args)
@@ -39,6 +51,8 @@ namespace Baz
             System.Console.WriteLine(foo.Bar("World"));
             var goo = new Goo();
             System.Console.WriteLine(goo.Bar("Hello"));
+            var foo2 = new Foo2();
+            System.Console.WriteLine(foo2.Bar("Hello"));
         }
     }
 }
