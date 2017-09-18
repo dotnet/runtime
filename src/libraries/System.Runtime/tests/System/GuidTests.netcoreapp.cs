@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using Xunit;
 
 namespace System.Tests
@@ -28,7 +25,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_ByteArray_TestData))]
-        public static void TryWriteBytes(byte[] b, Guid guid)
+        public static void TryWriteBytes_ValidLength_ReturnsTrue(byte[] b, Guid guid)
         {
             var bytes = new byte[16];
             Assert.True(guid.TryWriteBytes(new Span<byte>(bytes)));
@@ -38,7 +35,7 @@ namespace System.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(15)]
-        public static void TryWriteBytes_ReturnsFalse(int length)
+        public static void TryWriteBytes_LengthTooShort_ReturnsFalse(int length)
         {
             Assert.False(s_testGuid.TryWriteBytes(new Span<byte>(new byte[length])));
         }
@@ -53,17 +50,10 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat_ReturnsTrue(Guid guid, string format, string expected)
-        {
-            Assert.True(guid.TryFormat(new Span<char>(new char[guid.ToString(format).Length]), out int charsWritten, format));
-            Assert.Equal(guid.ToString(format).Length, charsWritten);
-        }
-
-        [Theory]
-        [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat_ReturnsFalse_WhenSpanTooSmall(Guid guid, string format, string expected)
+        public static void TryFormat_LengthTooSmall_ReturnsFalse(Guid guid, string format, string expected)
         {
             Assert.False(guid.TryFormat(new Span<char>(new char[guid.ToString(format).Length - 1]), out int charsWritten, format));
+            Assert.Equal(0, charsWritten);
         }
 
         [Theory]
@@ -76,7 +66,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat_Valid(Guid guid, string format, string expected)
+        public static void TryFormat_ValidLength_ReturnsTrue(Guid guid, string format, string expected)
         {
             char[] chars = new char[guid.ToString(format).Length];
             Assert.True(guid.TryFormat(new Span<char>(chars), out int charsWritten, format));
