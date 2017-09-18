@@ -18,20 +18,26 @@ namespace System.Drawing
         {
             private static IntPtr LoadNativeLibrary()
             {
-                // Various Unix package managers have chosen different names for the "libgdiplus" shared library.
-                // The mono project, where libgdiplus originated, allowed both of the names below to be used, via
-                // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
-                // the name suffixed with ".0".
-                IntPtr lib = Interop.Libdl.dlopen("libgdiplus.so", Interop.Libdl.RTLD_NOW);
-                if (lib == IntPtr.Zero)
+                IntPtr lib = IntPtr.Zero;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    lib = Interop.Libdl.dlopen("libgdiplus.so.0", Interop.Libdl.RTLD_NOW);
+                    lib = Interop.Libdl.dlopen("libgdiplus.dylib", Interop.Libdl.RTLD_NOW);
+                }
+                else
+                {
+                    // Various Unix package managers have chosen different names for the "libgdiplus" shared library.
+                    // The mono project, where libgdiplus originated, allowed both of the names below to be used, via
+                    // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
+                    // the name suffixed with ".0".
+                    lib = Interop.Libdl.dlopen("libgdiplus.so", Interop.Libdl.RTLD_NOW);
                     if (lib == IntPtr.Zero)
                     {
-                        throw new DllNotFoundException(SR.LibgdiplusNotFound);
+                        lib = Interop.Libdl.dlopen("libgdiplus.so.0", Interop.Libdl.RTLD_NOW);
                     }
                 }
 
+                // This function may return a null handle. If it does, individual functions loaded from it will throw a DllNotFoundException,
+                // but not until an attempt is made to actually use the function (rather than load it). This matches how PInvokes behave.
                 return lib;
             }
 
