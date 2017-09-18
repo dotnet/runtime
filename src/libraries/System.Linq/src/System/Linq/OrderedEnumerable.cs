@@ -567,7 +567,7 @@ namespace System.Linq
             {
                 if (_next == null)
                 {
-                    return index1 - index2;
+                    return index1 - index2; // ensure stability of sort
                 }
 
                 return _next.CompareAnyKeys(index1, index2);
@@ -582,63 +582,10 @@ namespace System.Linq
         
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
-        protected override void QuickSort(int[] map, int left, int right)
-        {
-            do
-            {
-                int i = left;
-                int j = right;
-                int x = map[i + ((j - i) >> 1)];
-                do
-                {
-                    while (i < map.Length && CompareKeys(x, map[i]) > 0)
-                    {
-                        i++;
-                    }
+        protected override void QuickSort(int[] keys, int lo, int hi) =>
+            Array.Sort(keys, lo, hi - lo + 1, Comparer<int>.Create(CompareAnyKeys)); // TODO #24115: Remove Create call when delegate-based overload is available
 
-                    while (j >= 0 && CompareKeys(x, map[j]) < 0)
-                    {
-                        j--;
-                    }
 
-                    if (i > j)
-                    {
-                        break;
-                    }
-
-                    if (i < j)
-                    {
-                        int temp = map[i];
-                        map[i] = map[j];
-                        map[j] = temp;
-                    }
-
-                    i++;
-                    j--;
-                }
-                while (i <= j);
-
-                if (j - left <= right - i)
-                {
-                    if (left < j)
-                    {
-                        QuickSort(map, left, j);
-                    }
-
-                    left = i;
-                }
-                else
-                {
-                    if (i < right)
-                    {
-                        QuickSort(map, i, right);
-                    }
-
-                    right = j;
-                }
-            }
-            while (left < right);
-        }
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.
