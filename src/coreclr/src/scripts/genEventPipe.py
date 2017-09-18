@@ -198,7 +198,7 @@ def generateWriteEventBody(template, providerName, eventName):
     }\n\n"""
 
     body = "    EventPipe::WriteEvent(*EventPipeEvent" + \
-        eventName + ", (BYTE *)buffer, size);\n"
+        eventName + ", (BYTE *)buffer, offset);\n"
 
     footer = """
     if (!fixedBuffer)
