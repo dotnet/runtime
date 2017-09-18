@@ -2671,20 +2671,6 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
         info->srcCount += GetOperandSourceCount(op1);
     }
     info->srcCount += GetOperandSourceCount(op2);
-
-#if !defined(_TARGET_64BIT_)
-    // Long compares will consume GT_LONG nodes, each of which produces two results.
-    // Thus for each long operand there will be an additional source.
-    // TODO-X86-CQ: Mark hiOp2 and loOp2 as contained if it is a constant or a memory op.
-    if (varTypeIsLong(op1Type))
-    {
-        info->srcCount++;
-    }
-    if (varTypeIsLong(op2Type))
-    {
-        info->srcCount++;
-    }
-#endif // !defined(_TARGET_64BIT_)
 }
 
 //------------------------------------------------------------------------
