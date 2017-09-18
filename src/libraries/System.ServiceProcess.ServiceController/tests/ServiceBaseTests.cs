@@ -21,6 +21,8 @@ namespace System.ServiceProcess.Tests
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
         protected static bool IsProcessElevated => s_isElevated.Value;
 
+        private bool _disposed;
+
         public ServiceBaseTests()
         {
             _testService = new TestServiceProvider();
@@ -174,7 +176,11 @@ OnStop
 
         public void Dispose()
         {
-            _testService.DeleteTestServices();
+            if (!_disposed)
+            {
+                _testService.DeleteTestServices();
+                _disposed = true;
+            }
         }
     }
 }
