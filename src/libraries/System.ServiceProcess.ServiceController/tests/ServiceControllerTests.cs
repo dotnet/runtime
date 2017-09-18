@@ -19,6 +19,7 @@ namespace System.ServiceProcess.Tests
         protected static bool IsProcessElevated => s_isElevated.Value;
 
         private const int ExpectedDependentServiceCount = 3;
+        private bool _disposed;
 
         public ServiceControllerTests()
         {
@@ -190,7 +191,11 @@ namespace System.ServiceProcess.Tests
 
         public void Dispose()
         {
-            _testService.DeleteTestServices();
+            if (!_disposed)
+            {
+                _testService.DeleteTestServices();
+                _disposed = true;
+            }
         }
 
         private static ServiceController AssertHasDependent(ServiceController controller, string serviceName, string displayName)
