@@ -208,11 +208,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException()
         {
-            if (ManagedHandlerTestHelpers.IsEnabled)
-            {
-                return; // TODO #21904: ManagedHandler is not properly wrapping exception.
-            }
-
             if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
             {
                 Console.WriteLine($"Skipping {nameof(UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException)}()");

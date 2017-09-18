@@ -50,7 +50,14 @@ namespace System.Net.Http
             {
                 callback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
-                    return _settings._serverCertificateCustomValidationCallback(request, certificate as X509Certificate2, chain, sslPolicyErrors);
+                    try
+                    {
+                        return _settings._serverCertificateCustomValidationCallback(request, certificate as X509Certificate2, chain, sslPolicyErrors);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                    }
                 };
             }
 
