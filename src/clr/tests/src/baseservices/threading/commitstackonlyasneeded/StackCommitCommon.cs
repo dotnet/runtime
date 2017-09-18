@@ -236,9 +236,19 @@ namespace StackCommitTest
 
         public static void Run(Action action)
         {
-            new Finalizer(action);
+            //We need to allocate the object inside of a seperate method to ensure that
+            //the reference will be eliminated before GC.Collect is called. Technically
+            //even across methods we probably don't make any formal guarantees but this
+            //is sufficient for current runtime implementations.
+            CreateUnreferencedObject(action);
             GC.Collect();
             GC.WaitForPendingFinalizers();
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void CreateUnreferencedObject(Action action)
+        {
+            new Finalizer(action);
         }
     }
 }
