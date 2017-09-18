@@ -21,6 +21,9 @@ namespace System
         public static bool IsDebian => false;
         public static bool IsDebian8 => false;
         public static bool IsUbuntu1404 => false;
+        public static bool IsUbuntu1604 => false;
+        public static bool IsUbuntu1704 => false;
+        public static bool IsUbuntu1710 => false;
         public static bool IsCentos7 => false;
         public static bool IsTizen => false;
         public static bool IsNotFedoraOrRedHatOrCentos => true;

@@ -77,6 +77,9 @@ namespace System
         public static Version ICUVersion { get { return null; } }
         public static bool IsUbuntu { get { throw null; } }
         public static bool IsUbuntu1404 { get { throw null; } }
+        public static bool IsUbuntu1604 { get { throw null; } }
+        public static bool IsUbuntu1704 { get { throw null; } }
+        public static bool IsUbuntu1710 { get { throw null; } }
         public static bool IsWindows { get { throw null; } }
         public static bool IsWindows10InsiderPreviewBuild16215OrGreater { get { throw null; } }
         public static bool IsWindows10Version1607OrGreater { get { throw null; } }
