@@ -204,14 +204,18 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(21904, ~TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
-        public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsInnerException()
+        public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException()
         {
+            if (ManagedHandlerTestHelpers.IsEnabled)
+            {
+                return; // TODO #21904: ManagedHandler is not properly wrapping exception.
+            }
+
             if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
             {
-                Console.WriteLine($"Skipping {nameof(UseCallback_CallbackThrowsException_ExceptionPropagatesAsInnerException)}()");
+                Console.WriteLine($"Skipping {nameof(UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException)}()");
                 return;
             }
 
@@ -222,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = delegate { throw e; };
                 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
-                Assert.Same(e, ex.InnerException);
+                Assert.Same(e, ex.GetBaseException());
             }
         }
 
