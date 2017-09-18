@@ -56,14 +56,14 @@
   </PropertyGroup>
   <PropertyGroup Label="Static-Mono-Libraries">
     <MONO_RUNTIME_LIBS>libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;$(GC_LIB)</MONO_RUNTIME_LIBS>
-    <MONO_STATIC_LIBMONO_LIB>libmono-static$(MONO_TARGET_SUFFIX).lib;$(MONO_RUNTIME_LIBS)</MONO_STATIC_LIBMONO_LIB>
+    <MONO_STATIC_LIBMONO_LIB>libmono-static$(MONO_TARGET_SUFFIX).lib</MONO_STATIC_LIBMONO_LIB>
     <MONO_DYNAMIC_LIBMONO_LIB>mono-2.0$(MONO_TARGET_SUFFIX).lib</MONO_DYNAMIC_LIBMONO_LIB>
   </PropertyGroup>
   <PropertyGroup Label="Static-libmono-Library" Condition="$(MONO_USE_STATIC_LIBMONO)=='true'">
     <MONO_LIBMONO_LIB>$(MONO_STATIC_LIBMONO_LIB)</MONO_LIBMONO_LIB>
   </PropertyGroup>
   <PropertyGroup Label="Dynamic-libmono-Library" Condition="$(MONO_USE_STATIC_LIBMONO)!='true'">
-    <MONO_LIBMONO_LIB>$(MONO_DYNAMIC_LIBMONO_LIB)</MONO_LIBMONO_LIB>
+    <MONO_LIBMONO_LIB>eglib.lib;$(MONO_DYNAMIC_LIBMONO_LIB)</MONO_LIBMONO_LIB>
   </PropertyGroup>
   <PropertyGroup Label="MonoProfiler">
     <VTUNE_INCLUDE_DIR>$(ProgramFiles)/Intel/VTune Amplifier XE 2013/include</VTUNE_INCLUDE_DIR>
@@ -103,5 +103,8 @@
       <AdditionalDependencies>Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(MONO_BUILD_DIR_PREFIX)$(Platform)/lib/$(Configuration)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(MONO_BUILD_DIR_PREFIX)$(Platform)/lib/$(Configuration)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
 </Project>

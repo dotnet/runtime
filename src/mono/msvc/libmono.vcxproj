@@ -120,7 +120,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -168,7 +168,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -207,7 +207,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -251,7 +251,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>eglib.lib;$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_STATIC_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(MONO_DEF)</ModuleDefinitionFile>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
