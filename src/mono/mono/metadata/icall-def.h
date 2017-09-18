@@ -358,7 +358,7 @@ ICALL(MMAPIMPL_7, "Unmap", mono_mmap_unmap)
 ICALL_TYPE(MONOIO, "System.IO.MonoIO", MONOIO_1)
 ICALL(MONOIO_1, "Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Close)
 #ifndef PLATFORM_RO_FS
-ICALL(MONOIO_2, "CopyFile(string,string,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CopyFile)
+ICALL(MONOIO_2, "CopyFile(char*,char*,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CopyFile)
 ICALL(MONOIO_3, "CreateDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CreateDirectory)
 ICALL(MONOIO_4, "CreatePipe", ves_icall_System_IO_MonoIO_CreatePipe)
 ICALL(MONOIO_5, "DeleteFile(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_DeleteFile)

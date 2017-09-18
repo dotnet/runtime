@@ -45,7 +45,7 @@ mono_w32file_replace (gunichar2 *destinationFileName, gunichar2 *sourceFileName,
 }
 
 gboolean
-mono_w32file_copy (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gint32 *error)
+mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error)
 {
 	gboolean						result = FALSE;
 	COPYFILE2_EXTENDED_PARAMETERS	copy_param = {0};

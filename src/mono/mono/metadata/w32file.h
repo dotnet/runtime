@@ -147,7 +147,7 @@ ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest,
 				     gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest,
+ves_icall_System_IO_MonoIO_CopyFile (const gunichar2 *path, const gunichar2 *dest,
 				     MonoBoolean overwrite, gint32 *error);
 
 extern MonoBoolean
@@ -397,7 +397,7 @@ gboolean
 mono_w32file_move (gunichar2 *path, gunichar2 *dest, gint32 *error);
 
 gboolean
-mono_w32file_copy (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gint32 *error);
+mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error);
 
 gboolean
 mono_w32file_lock (gpointer handle, gint64 position, gint64 length, gint32 *error);

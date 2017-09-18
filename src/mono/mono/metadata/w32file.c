@@ -358,11 +358,11 @@ ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest,
+ves_icall_System_IO_MonoIO_CopyFile (const gunichar2 *path, const gunichar2 *dest,
 				     MonoBoolean overwrite, gint32 *error)
 {
 	*error=ERROR_SUCCESS;
-	return mono_w32file_copy (mono_string_chars (path), mono_string_chars (dest), overwrite, error);
+	return mono_w32file_copy (path, dest, overwrite, error);
 }
 
 MonoBoolean

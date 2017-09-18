@@ -4702,7 +4702,7 @@ mono_w32file_move (gunichar2 *path, gunichar2 *dest, gint32 *error)
 }
 
 gboolean
-mono_w32file_copy (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gint32 *error)
+mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error)
 {
 	gboolean result;
 
