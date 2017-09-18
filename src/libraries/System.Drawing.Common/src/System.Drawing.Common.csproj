@@ -32,6 +32,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Threading" />
