@@ -23,10 +23,18 @@ namespace System.Drawing
             }
             else
             {
-                IntPtr nativeLib = dlopen("libgdiplus.so", RTLD_NOW);
-                if (nativeLib == IntPtr.Zero)
+                IntPtr nativeLib;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    nativeLib = dlopen("libgdiplus.so.0", RTLD_NOW);
+                    nativeLib = dlopen("libgdiplus.dylib", RTLD_NOW);
+                }
+                else
+                {
+                    nativeLib = dlopen("libgdiplus.so", RTLD_NOW);
+                    if (nativeLib == IntPtr.Zero)
+                    {
+                        nativeLib = dlopen("libgdiplus.so.0", RTLD_NOW);
+                    }
                 }
 
                 return nativeLib != IntPtr.Zero;
