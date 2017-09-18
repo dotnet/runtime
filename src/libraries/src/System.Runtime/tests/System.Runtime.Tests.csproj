@@ -184,6 +184,7 @@
     <Compile Include="System\DecimalTests.netcoreapp.cs" />
     <Compile Include="System\EnumTests.netcoreapp.cs" />
     <Compile Include="System\GCTests.netcoreapp.cs" />
+    <Compile Include="System\GuidTests.netcoreapp.cs" />
     <Compile Include="System\Int16Tests.netcoreapp.cs" />
     <Compile Include="System\Int32Tests.netcoreapp.cs" />
     <Compile Include="System\Int64Tests.netcoreapp.cs" />
