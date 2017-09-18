@@ -33,6 +33,9 @@ namespace System
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsDebian8 => IsDistroAndVersion("debian", "8");
         public static bool IsUbuntu1404 => IsDistroAndVersion("ubuntu", "14.04");
+        public static bool IsUbuntu1604 => IsDistroAndVersion("ubuntu", "16.04");
+        public static bool IsUbuntu1704 => IsDistroAndVersion("ubuntu", "17.04");
+        public static bool IsUbuntu1710 => IsDistroAndVersion("ubuntu", "17.10");
         public static bool IsCentos7 => IsDistroAndVersion("centos", "7");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsNotFedoraOrRedHatOrCentos => !IsDistroAndVersion("fedora") && !IsDistroAndVersion("rhel") && !IsDistroAndVersion("centos");
