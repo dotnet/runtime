@@ -14,12 +14,14 @@ internal static partial class Interop
     internal static partial class procfs
     {
         internal const string RootPath = "/proc/";
-        internal const string SelfExeFilePath = RootPath + "self/exe";
-        internal const string ProcUptimeFilePath = RootPath + "uptime";
+        private const string ExeFileName = "/exe";
         private const string StatFileName = "/stat";
         private const string MapsFileName = "/maps";
         private const string FileDescriptorDirectoryName = "/fd/";
         private const string TaskDirectoryName = "/task/";
+
+        internal const string SelfExeFilePath = RootPath + "self" + ExeFileName;
+        internal const string ProcUptimeFilePath = RootPath + "uptime";
 
         internal struct ParsedStat
         {
@@ -78,6 +80,11 @@ internal static partial class Interop
         {
             internal string FileName;
             internal KeyValuePair<long, long> AddressRange;
+        }
+
+        internal static string GetExeFilePathForProcess(int pid)
+        {
+            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + ExeFileName;
         }
 
         internal static string GetStatFilePathForProcess(int pid)
