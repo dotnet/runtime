@@ -6343,6 +6343,27 @@ public:
         return bNeedUpdates;
     }
 
+    BOOL UpdateKnownCodeAddress(TADDR mod, CLRDATA_ADDRESS bpLocation)
+    {
+        PendingBreakpoint *pCur = m_breakpoints;
+        BOOL bpSet = FALSE;
+
+        while(pCur)
+        {
+            PendingBreakpoint *pNext = pCur->pNext;
+            if (pCur->ModuleMatches(mod))
+            {
+                IssueDebuggerBPCommand(bpLocation);
+                bpSet = TRUE;
+                break;
+            }
+
+            pCur = pNext;
+        }
+
+        return bpSet;
+    }
+
     void RemovePendingForModule(TADDR mod)
     {
         PendingBreakpoint *pCur = m_breakpoints;
@@ -6715,7 +6736,7 @@ BOOL g_stopOnNextCatch = FALSE;
 // According to the latest debuggers these callbacks will not get called
 // unless the user (or an extension, like SOS :-)) had previously enabled
 // clrn with "sxe clrn".
-class CNotification : public IXCLRDataExceptionNotification4
+class CNotification : public IXCLRDataExceptionNotification5
 {
     static int s_condemnedGen;
 
@@ -6741,9 +6762,10 @@ public:
             || IsEqualIID(iid, IID_IXCLRDataExceptionNotification)
             || IsEqualIID(iid, IID_IXCLRDataExceptionNotification2)
             || IsEqualIID(iid, IID_IXCLRDataExceptionNotification3)
-            || IsEqualIID(iid, IID_IXCLRDataExceptionNotification4))
+            || IsEqualIID(iid, IID_IXCLRDataExceptionNotification4)
+            || IsEqualIID(iid, IID_IXCLRDataExceptionNotification5))
         {
-            *ppvObject = static_cast<IXCLRDataExceptionNotification4*>(this);
+            *ppvObject = static_cast<IXCLRDataExceptionNotification5*>(this);
             AddRef();
             return S_OK;
         }
@@ -6769,7 +6791,13 @@ public:
      */
     STDMETHODIMP OnCodeGenerated(IXCLRDataMethodInstance* method)
     {
-        // Some method has been generated, make a breakpoint and remove it.
+        m_dbgStatus = DEBUG_STATUS_GO_HANDLED;
+        return S_OK;
+    }
+
+    STDMETHODIMP OnCodeGenerated2(IXCLRDataMethodInstance* method, CLRDATA_ADDRESS nativeCodeLocation)
+    {
+        // Some method has been generated, make a breakpoint.
         ULONG32 len = mdNameLen;
         LPWSTR szModuleName = (LPWSTR)alloca(mdNameLen * sizeof(WCHAR));
         if (method->GetName(0, mdNameLen, &len, g_mdName) == S_OK)
@@ -6782,12 +6810,11 @@ public:
                 if (pMod->GetName(mdNameLen, &len, szModuleName) == S_OK)
                 {
                     ExtOut("JITTED %S!%S\n", szModuleName, g_mdName);
-
-                    // Add breakpoint, perhaps delete pending breakpoint
+                    
                     DacpGetModuleAddress dgma;
                     if (SUCCEEDED(dgma.Request(pMod)))
                     {
-                        g_bpoints.Update(TO_TADDR(dgma.ModulePtr), FALSE);
+                        g_bpoints.UpdateKnownCodeAddress(TO_TADDR(dgma.ModulePtr), nativeCodeLocation);
                     }
                     else
                     {
