@@ -2895,6 +2895,13 @@ public:
     CORINFO_CLASS_HANDLE impGetStringClass();
     CORINFO_CLASS_HANDLE impGetObjectClass();
 
+    // Returns underlying type of handles returned by ldtoken instruction
+    inline var_types GetRuntimeHandleUnderlyingType()
+    {
+        // RuntimeTypeHandle is backed by raw pointer on CoreRT and by object reference on other runtimes
+        return IsTargetAbi(CORINFO_CORERT_ABI) ? TYP_I_IMPL : TYP_REF;
+    }
+
     //=========================================================================
     //                          PROTECTED
     //=========================================================================
