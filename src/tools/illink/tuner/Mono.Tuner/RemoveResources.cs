@@ -33,19 +33,25 @@ namespace Mono.Tuner {
 				if (resource == null)
 					continue;
 
-				switch (resource.Name) {
-				case "collation.core.bin":
-				case "collation.tailoring.bin":
-					continue;
-				default:
-					if (!resource.Name.Contains ("cjk"))
-						continue;
-					if (IncludeCJK ())
-						continue;
+				if (RemoveResource (resource.Name))
+					resources.RemoveAt(i--);
+			}
+		}
 
-					resources.RemoveAt (i--);
-					break;
-				}
+		bool RemoveResource (string name)
+		{
+			switch (name) {
+			case "mscorlib.xml":
+				return true;
+			case "collation.core.bin":
+			case "collation.tailoring.bin":
+				return false;
+			default:
+				if (!name.Contains("cjk"))
+					return false;
+				if (IncludeCJK())
+					return false;
+				return true;
 			}
 		}
 
