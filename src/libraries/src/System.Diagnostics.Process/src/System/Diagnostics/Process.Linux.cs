@@ -186,9 +186,14 @@ namespace System.Diagnostics
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
-        private static string GetExePath()
+        /// <summary>Gets the path to the executable for the process, or null if it could not be retrieved.</summary>
+        /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
+        internal static string GetExePath(int processId = -1)
         {
+            string exeFilePath = processId == -1 ?
+                Interop.procfs.SelfExeFilePath :
+                Interop.procfs.GetExeFilePathForProcess(processId);
+
             // Determine the maximum size of a path
             int maxPath = Interop.Sys.MaxPath;
 
@@ -197,7 +202,7 @@ namespace System.Diagnostics
             {
                 // Read from procfs the symbolic link to this process' executable
                 byte[] buffer = new byte[pathLen + 1]; // +1 for null termination
-                int resultLength = Interop.Sys.ReadLink(Interop.procfs.SelfExeFilePath, buffer, pathLen);
+                int resultLength = Interop.Sys.ReadLink(exeFilePath, buffer, pathLen);
 
                 // If we got one, null terminate it (readlink doesn't do this) and return the string
                 if (resultLength > 0)
