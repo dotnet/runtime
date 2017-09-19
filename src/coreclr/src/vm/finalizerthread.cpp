@@ -744,6 +744,8 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 #endif
             GetFinalizerThread()->SetBackground(TRUE);
 
+            EnsureYieldProcessorNormalizedInitialized();
+
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH 
             // Add the Profiler Attach Event to the array of event handles that the
             // finalizer thread waits on. If the process is not enabled for profiler
