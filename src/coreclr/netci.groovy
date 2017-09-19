@@ -138,6 +138,51 @@ class Constants {
                'gc_reliability_framework',
                'illink'] + r2rJitStressScenarios
 
+    // Knowledge of the "validArmWindowsScenarios" scenario names is embedded in the ARM64 CI code, so when adding any,
+    // make sure that code knows how to process them.
+    def static validArmWindowsScenarios = [
+               'default',
+               'pri1r2r',
+               'zapdisable',
+               'minopts',
+               'tieredcompilation',
+               'tailcallstress',
+               'jitstress1',
+               'jitstress2',
+               'gcstress0x3',
+               'gcstress0xc',
+               'jitstressregs1',
+               'jitstressregs2',
+               'jitstressregs3',
+               'jitstressregs4',
+               'jitstressregs8',
+               'jitstressregs0x10',
+               'jitstressregs0x80',
+               'jitstressregs0x1000',
+               'gcstress0xc_jitstress1',
+               'gcstress0xc_jitstress2',
+               'minopts_zapdisable',
+               'gcstress0x3_jitstress1',
+               'gcstress0x3_jitstress2',
+               'gcstress0xc_jitstress1',
+               'gcstress0xc_jitstress2',
+               'gcstress0x3_jitstressregs1',
+               'gcstress0x3_jitstressregs2',
+               'gcstress0x3_jitstressregs3',
+               'gcstress0x3_jitstressregs4',
+               'gcstress0x3_jitstressregs8',
+               'gcstress0x3_jitstressregs0x10',
+               'gcstress0x3_jitstressregs0x80',
+               'gcstress0x3_jitstressregs0x1000',
+               'gcstress0xc_jitstressregs1',
+               'gcstress0xc_jitstressregs2',
+               'gcstress0xc_jitstressregs3',
+               'gcstress0xc_jitstressregs4',
+               'gcstress0xc_jitstressregs8',
+               'gcstress0xc_jitstressregs0x10',
+               'gcstress0xc_jitstressregs0x80',
+               'gcstress0xc_jitstressregs0x1000']
+  
     def static configurationList = ['Debug', 'Checked', 'Release']
 
     // This is the set of architectures
@@ -591,15 +636,23 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'corefx_jitstressregs0x1000':
         case 'zapdisable':
             if (os != 'CentOS7.1' && !(os in bidailyCrossList)) {
-            assert (os == 'Windows_NT') || (os in Constants.crossList)
-            Utilities.addPeriodicTrigger(job, '@daily')
-        }
-        break
+                assert (os == 'Windows_NT') || (os in Constants.crossList)
+                if ((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) {
+                    if (os == 'Windows_NT') {
+                        // We don't have enough ARM64 machines to run these more frequently than weekly.
+                        Utilities.addPeriodicTrigger(job, '@weekly')
+                    }
+                }
+                else {
+                    Utilities.addPeriodicTrigger(job, '@daily')
+                }
+            }
+            break
         case 'heapverify1':
         case 'gcstress0x3':
             if (os != 'CentOS7.1' && !(os in bidailyCrossList)) {
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
-                if (architecture == 'arm64') {
+                if ((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) {
                     if (os == 'Windows_NT') {
                         Utilities.addPeriodicTrigger(job, '@daily')
                     }
@@ -621,7 +674,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             // GCStress=C is currently not supported on OS X
             if (os != 'CentOS7.1' && os != 'OSX10.12' && !(os in bidailyCrossList)) {
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
-                if (architecture == 'arm64') {
+                if ((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) {
                     // TODO: Enable a periodic trigger after tests are updated.
                     // Utilities.addPeriodicTrigger(job, '@daily')
                     // TODO: Add once external email sending is available again
@@ -641,7 +694,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     Utilities.addPeriodicTrigger(job, '@daily')
                 }
             }
-	    break
+            break
         
         case 'tieredcompilation':
         case 'corefx_tieredcompilation':
@@ -1072,7 +1125,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             break
                         case 'illink':
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
-    			            break
+                            break
                         default:
                             println("Unknown scenario: ${scenario}");
                             assert false
@@ -1133,30 +1186,29 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     if (scenario != 'default')
                         contextString += " ${scenario}"
                     contextString += " Build"
-                    // Debug builds only.
+                    // Debug configuration only does builds, no tests.
                     if (configuration != 'Debug') {
                         contextString += " and Test"
                     }
                     switch (scenario) {
                         case 'default':
-                            // For now only run Debug and Release build jobs on PR Trigger. Note this is not a private trigger.
+                            // Only Checked is a default trigger.
                             if (configuration == 'Debug' || configuration == 'Release')
                             {
                                 Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}.*", null, arm64Users)
                             }
                             else 
                             {
-                                // Checked jobs will run on private trigger and run tests.
                                 Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
                             }
                             break
-                        case 'pri1r2r':
-                        case 'gcstress0x3':
-                        case 'gcstress0xc':
-                            // Stress jobs will will run on private trigger and run tests.
-                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*", null, arm64Users)
+                        default:
+                            // Stress jobs will use this code path.
+                            if (Constants.validArmWindowsScenarios.contains(scenario)) {
+                                Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+${scenario}.*", null, arm64Users)
+                            }
                             break
                     }
                     break
@@ -1168,7 +1220,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             break
         // editor brace matching: }
         case 'arm64': // editor brace matching: {
-            assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0x3') || (scenario == 'gcstress0xc')
+            assert Constants.validArmWindowsScenarios.contains(scenario)
 
             // Set up a private trigger
             def contextString = "${os} ${architecture} Cross ${configuration}"
@@ -1242,11 +1294,12 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
                             }
                             break
-                        case 'pri1r2r':
-                        case 'gcstress0x3':
-                        case 'gcstress0xc':
-                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*", null, arm64Users)
+                        default:
+                            // Stress jobs will use this code path.
+                            if (Constants.validArmWindowsScenarios.contains(scenario)) {
+                                Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*", null, arm64Users)
+                            }
                             break
                     }
                     break
@@ -1656,22 +1709,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     break
                 case 'armlb':
                 case 'arm':
-                    def validArmWindowsScenarios = [ "default",
-                                                     "pri1r2r",
-                                                     "zapdisable",
-                                                     "minopts",
-                                                     "tieredcompilation",
-                                                     "tailcallstress",
-                                                     "jitstress1",
-                                                     "jitstress2",
-                                                     "gcstress0x3",
-                                                     "gcstress0xc",
-                                                     "jitstressregs1",
-                                                     "jitstressregs2",
-                                                     "gcstress0xc_jitstress1",
-                                                     "gcstress0xc_jitstress2"]
-
-                    assert validArmWindowsScenarios.contains(scenario)
+                    assert Constants.validArmWindowsScenarios.contains(scenario)
 
                     // Set time out
                     setTestJobTimeOut(newJob, scenario)
@@ -1682,8 +1720,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // For Debug builds, we will do a P1 test build
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
                     }
-                    else if (lowerConfiguration == "checked") {
-
+                    else {
                         if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc'))
                         {
                            // Up the timeout for arm checked testing only.
@@ -1693,18 +1730,17 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         def machineAffinityOptions = ['use_arm64_build_machine' : true]
                         setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
-                        // For checked runs we will also run testing.
+
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
+
+                        // Also run testing.
                         buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${buildArchitecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -key_location C:\\tools\\key.txt"
-                    }
-                    else if (lowerConfiguration == "release") {
-                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture}"
                     }
                     // Add archival.
                     Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
                     break
                 case 'arm64':
-                    assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0x3') || (scenario == 'gcstress0xc')
+                    assert Constants.validArmWindowsScenarios.contains(scenario)
                    
                     // Set time out
                     setTestJobTimeOut(newJob, scenario)
@@ -1975,23 +2011,8 @@ combinedScenarios.each { scenario ->
                         switch (architecture) {
                             case 'armlb':
                             case 'arm':
-                                if ((scenario != 'gcstress0x3') &&
-                                    (scenario != 'gcstress0xc') &&
-                                    (scenario != 'jitstress1') &&
-                                    (scenario != 'jitstress2') &&
-                                    (scenario != 'jitstressregs1') &&
-                                    (scenario != 'jitstressregs2') &&
-                                    (scenario != 'gcstress0xc_jitstress1') &&
-                                    (scenario != 'gcstress0xc_jitstress2') &&
-                                    (scenario != 'minopts') &&
-                                    (scenario != 'tieredcompilation') &&
-                                    (scenario != 'tailcallstress') &&
-                                    (scenario != 'zapdisable')) {
-                                        return
-                                    }
-                                    break
                             case 'arm64':
-                                if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc')) {
+                                if (!Constants.validArmWindowsScenarios.contains(scenario)) {
                                     return
                                 }
                                 break
