@@ -16,10 +16,10 @@
 
 #include <mono/metadata/object-internals.h>
 
+#ifndef HOST_WIN32
 #define INVALID_SOCKET ((SOCKET)(guint32)(~0))
 #define SOCKET_ERROR (-1)
 
-#ifndef HOST_WIN32
 typedef gint SOCKET;
 
 typedef struct {

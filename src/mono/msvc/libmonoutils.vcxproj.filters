@@ -130,13 +130,7 @@
     <ClCompile Include="..\mono\utils\mono-threads-mach.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\utils\mono-threads-mach-abort-syscall.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\utils\mono-threads-posix.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\utils\mono-threads-posix-abort-syscall.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\utils\mono-threads-posix-signals.c">
@@ -146,9 +140,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\utils\mono-threads-windows.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\utils\mono-threads-windows-abort-syscall.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\utils\mono-time.c">
@@ -197,6 +188,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\utils\os-event-win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\utils\mono-os-mutex.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -382,9 +376,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\utils\mono-threads-coop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mono\utils\mono-threads-posix-signals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\utils\mono-time.h">

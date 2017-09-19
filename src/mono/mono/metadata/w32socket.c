@@ -208,7 +208,7 @@ mono_w32socket_close (SOCKET sock)
 {
 	gboolean ret;
 	MONO_ENTER_GC_SAFE;
-	ret = CloseHandle (sock);
+	ret = closesocket (sock);
 	MONO_EXIT_GC_SAFE;
 	return ret;
 }
