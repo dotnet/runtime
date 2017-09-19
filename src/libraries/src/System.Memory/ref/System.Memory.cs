@@ -7,7 +7,7 @@
 
 namespace System
 {
-    public struct ReadOnlySpan<T>
+    public readonly ref struct ReadOnlySpan<T>
     {
         public static ReadOnlySpan<T> Empty { get { throw null; } }
         public ReadOnlySpan(T[] array) { throw null;}
@@ -39,7 +39,7 @@ namespace System
         public bool TryCopyTo(Span<T> destination) { throw null; }
     }
 
-    public struct Span<T>
+    public readonly ref struct Span<T>
     {
         public static Span<T> Empty { get { throw null; } }
         public Span(T[] array) { throw null;}
