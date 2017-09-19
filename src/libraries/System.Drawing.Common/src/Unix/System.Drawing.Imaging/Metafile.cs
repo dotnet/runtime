@@ -68,7 +68,7 @@ namespace System.Drawing.Imaging
         public Metafile(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentException("stream");
+                throw new ArgumentNullException("stream");
 
             Status status;
             if (GDIPlus.RunningOnUnix())
