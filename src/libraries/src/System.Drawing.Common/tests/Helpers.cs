@@ -13,6 +13,8 @@ namespace System.Drawing
     public static class Helpers
     {        
         public const string GdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetGdiplusIsAvailable);
+        public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
+        public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
 
         public static bool GetGdiplusIsAvailable()
@@ -39,6 +41,27 @@ namespace System.Drawing
 
                 return nativeLib != IntPtr.Zero;
             }
+        }
+
+        public static bool GetGdiPlusIsAvailableNotRedhat73()
+        {
+            if (PlatformDetection.IsRedHat)
+            {
+                return false;
+            }
+
+            return GetGdiplusIsAvailable();
+        }
+
+        public static bool GetRecentGdiPlusIsAvailable()
+        {
+            // CentOS 7, RHEL 7 and Ubuntu 14.04 are running outdated versions of libgdiplus
+            if (PlatformDetection.IsCentos7 || PlatformDetection.IsRedHat || PlatformDetection.IsUbuntu1404)
+            {
+                return false;
+            }
+
+            return GetGdiplusIsAvailable();
         }
 
         public static bool IsAnyInstalledPrinters()
