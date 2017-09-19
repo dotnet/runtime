@@ -29,11 +29,14 @@ namespace System.MemoryTests
 
         protected override bool IsRetained => _referenceCount > 0;
 
-        public override Span<T> AsSpan()
+        public override Span<T> Span
         {
-            if (IsDisposed)
-                throw new ObjectDisposedException(nameof(CustomMemoryForTest<T>));
-            return new Span<T>(_array, 0, _array.Length);
+            get
+            {
+                if (IsDisposed)
+                    throw new ObjectDisposedException(nameof(CustomMemoryForTest<T>));
+                return new Span<T>(_array, 0, _array.Length);
+            }
         }
 
         public override MemoryHandle Pin()
