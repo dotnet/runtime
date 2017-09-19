@@ -270,6 +270,10 @@ namespace System.Drawing
         BitmapData LockBits(Rectangle rect, ImageLockMode flags, PixelFormat format, BitmapData bitmapData)
         {
             int status = SafeNativeMethods.Gdip.GdipBitmapLockBits(nativeObject, ref rect, flags, format, bitmapData);
+            if (status == 7)
+            {
+                status = 8; // libgdiplus has the wrong error code mapping for this state.
+            }
             //NOTE: scan0 points to piece of memory allocated in the unmanaged space
             SafeNativeMethods.Gdip.CheckStatus(status);
 
