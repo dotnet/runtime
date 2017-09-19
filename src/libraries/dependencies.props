@@ -17,7 +17,7 @@
     <ProjectNTfsTestILCCurrentRef>568fb017cade704dcf611a1c991e7b8e2e27972b</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>ed8cf4ba3c0e143c142542aaf53a8cdaa6cb0023</StandardCurrentRef>
-    <BuildToolsCurrentRef>ed8cf4ba3c0e143c142542aaf53a8cdaa6cb0023</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>c56be50f50762d8fc3f889e695873a8bd67e73d2</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
