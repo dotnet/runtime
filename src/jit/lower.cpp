@@ -2348,7 +2348,7 @@ void Lowering::LowerCompare(GenTree* cmp)
     }
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_64BIT_
     if (cmp->gtGetOp1()->TypeGet() != cmp->gtGetOp2()->TypeGet())
     {
         bool op1Is64Bit = (genTypeSize(cmp->gtGetOp1()->TypeGet()) == 8);
@@ -2369,7 +2369,11 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             GenTree*  longOp       = op1Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
             GenTree** smallerOpUse = op2Is64Bit ? &cmp->gtOp.gtOp1 : &cmp->gtOp.gtOp2;
-            var_types smallerType  = (*smallerOpUse)->TypeGet();
+#ifdef _TARGET_AMD64_
+            var_types smallerType = (*smallerOpUse)->TypeGet();
+#elif defined(_TARGET_ARM64_)
+            var_types smallerType = genActualType((*smallerOpUse)->TypeGet());
+#endif // _TARGET_AMD64_
 
             assert(genTypeSize(smallerType) < 8);
 
@@ -2390,7 +2394,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             }
         }
     }
-#endif // _TARGET_AMD64_
+#endif // _TARGET_64BIT_
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
     if (cmp->gtGetOp2()->IsIntegralConst())

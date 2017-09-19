@@ -3430,22 +3430,23 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     GenTreePtr op1     = tree->gtOp1;
     GenTreePtr op2     = tree->gtOp2;
-    var_types  op1Type = op1->TypeGet();
-    var_types  op2Type = op2->TypeGet();
+    var_types  op1Type = genActualType(op1->TypeGet());
+    var_types  op2Type = genActualType(op2->TypeGet());
 
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
 
     genConsumeOperands(tree);
 
-    emitAttr cmpSize = EA_UNKNOWN;
+    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+
+    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
     if (varTypeIsFloating(op1Type))
     {
         assert(varTypeIsFloating(op2Type));
         assert(!op1->isContained());
         assert(op1Type == op2Type);
-        cmpSize = EA_ATTR(genTypeSize(op1Type));
 
         if (op2->IsIntegralConst(0))
         {
@@ -3462,35 +3463,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(!varTypeIsFloating(op2Type));
         // We don't support swapping op1 and op2 to generate cmp reg, imm
         assert(!op1->isContainedIntOrIImmed());
-
-        // TODO-ARM64-CQ: the second register argument of a CMP can be sign/zero
-        // extended as part of the instruction (using "CMP (extended register)").
-        // We should use that if possible, swapping operands
-        // (and reversing the condition) if necessary.
-        unsigned op1Size = genTypeSize(op1Type);
-        unsigned op2Size = genTypeSize(op2Type);
-
-        if ((op1Size < 4) || (op1Size < op2Size))
-        {
-            // We need to sign/zero extend op1 up to 32 or 64 bits.
-            instruction ins = ins_Move_Extend(op1Type, true);
-            inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
-        }
-
-        if (!op2->isContainedIntOrIImmed())
-        {
-            if ((op2Size < 4) || (op2Size < op1Size))
-            {
-                // We need to sign/zero extend op2 up to 32 or 64 bits.
-                instruction ins = ins_Move_Extend(op2Type, true);
-                inst_RV_RV(ins, op2->gtRegNum, op2->gtRegNum);
-            }
-        }
-        cmpSize = EA_4BYTE;
-        if ((op1Size == EA_8BYTE) || (op2Size == EA_8BYTE))
-        {
-            cmpSize = EA_8BYTE;
-        }
 
         instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
 
