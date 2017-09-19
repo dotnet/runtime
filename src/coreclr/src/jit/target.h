@@ -1804,6 +1804,9 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define JCC_DIST_SMALL_MAX_NEG  (-1048576)
   #define JCC_DIST_SMALL_MAX_POS  (+1048575)
 
+  #define TB_DIST_SMALL_MAX_NEG   (-32768)
+  #define TB_DIST_SMALL_MAX_POS   (+32767)
+
   #define JCC_SIZE_SMALL          (4)
   #define JCC_SIZE_LARGE          (8)
 
