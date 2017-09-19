@@ -44,7 +44,6 @@
     <LibraryPackage Include="System.ServiceModel.Http" />
     <LibraryPackage Include="System.ServiceModel.NetTcp" />
     <LibraryPackage Include="System.ServiceModel.Security" />
-    <PrereleaseLibraryPackage Include="System.Drawing.Common" />
   </ItemGroup>
 
   <ItemGroup>
