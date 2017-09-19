@@ -22,7 +22,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns a span wrapping the underlying memory.
         /// </summary>
-        public abstract Span<T> AsSpan();
+        public abstract Span<T> Span { get; }
 
         /// <summary>
         /// Returns a Memory<typeparamref name="T"/> if the underlying memory has not been freed.
@@ -30,7 +30,7 @@ namespace System.Buffers
         /// <exception cref="System.ObjectDisposedException">
         /// Thrown when the underlying memory has already been disposed.
         /// </exception>
-        public Memory<T> AsMemory
+        public Memory<T> Memory
         {
             get 
             {

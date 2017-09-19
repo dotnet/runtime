@@ -393,7 +393,7 @@ namespace System.Net.Http.Functional.Tests
             else
             {
                 ownedMemory = new NativeOwnedMemory(contentLength);
-                memory = ownedMemory.AsMemory;
+                memory = ownedMemory.Memory;
             }
 
             new Random(contentLength).NextBytes(memory.Span);

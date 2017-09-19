@@ -28,7 +28,7 @@ namespace System.MemoryTests
         {
             int[] array = new int[10];
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            Memory<int> memory = owner.AsMemory;
+            Memory<int> memory = owner.Memory;
             Assert.True(memory.TryGetArray(out ArraySegment<int> segment));
             Assert.Equal(array.Length, segment.Count);
 
