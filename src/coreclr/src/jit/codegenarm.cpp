@@ -1555,7 +1555,7 @@ void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     assert(genIsValidIntReg(op1->gtRegNum)); // Must be a valid int reg.
 
     var_types dstType = treeNode->CastToType();
-    var_types srcType = op1->TypeGet();
+    var_types srcType = genActualType(op1->TypeGet());
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
@@ -1565,9 +1565,6 @@ void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     }
 
     // We only expect a srcType whose size is EA_4BYTE.
-    // For conversions from small types (byte/sbyte/int16/uint16) to float/double,
-    // we expect the front-end or lowering phase to have generated two levels of cast.
-    //
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert(srcSize == EA_4BYTE);
 
