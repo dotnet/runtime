@@ -28,19 +28,14 @@ namespace System
         private const int MinRadix = 2;
         private const int MaxRadix = 36;
 
-        public static unsafe long StringToLong(string s, int radix, int flags)
+        public static unsafe long StringToLong(ReadOnlySpan<char> s, int radix, int flags)
         {
             int pos = 0;
             return StringToLong(s, radix, flags, ref pos);
         }
 
-        public static long StringToLong(string s, int radix, int flags, ref int currPos)
+        public static long StringToLong(ReadOnlySpan<char> s, int radix, int flags, ref int currPos)
         {
-            if (s == null)
-            {
-                return 0;
-            }
-
             int i = currPos;
 
             // Do some radix checking.
@@ -120,19 +115,14 @@ namespace System
             return result;
         }
 
-        public static int StringToInt(string s, int radix, int flags)
+        public static int StringToInt(ReadOnlySpan<char> s, int radix, int flags)
         {
             int pos = 0;
             return StringToInt(s, radix, flags, ref pos);
         }
 
-        public static int StringToInt(string s, int radix, int flags, ref int currPos)
+        public static int StringToInt(ReadOnlySpan<char> s, int radix, int flags, ref int currPos)
         {
-            if (s == null)
-            {
-                return 0;
-            }
-
             // They're requied to tell me where to start parsing.
             int i = currPos;
 
@@ -524,14 +514,14 @@ namespace System
             return result;
         }
 
-        private static void EatWhiteSpace(string s, ref int i)
+        private static void EatWhiteSpace(ReadOnlySpan<char> s, ref int i)
         {
             int localIndex = i;
             for (; localIndex < s.Length && char.IsWhiteSpace(s[localIndex]); localIndex++);
             i = localIndex;
         }
 
-        private static long GrabLongs(int radix, string s, ref int i, bool isUnsigned)
+        private static long GrabLongs(int radix, ReadOnlySpan<char> s, ref int i, bool isUnsigned)
         {
             ulong result = 0;
             ulong maxVal;
@@ -592,7 +582,7 @@ namespace System
             return (long)result;
         }
 
-        private static int GrabInts(int radix, string s, ref int i, bool isUnsigned)
+        private static int GrabInts(int radix, ReadOnlySpan<char> s, ref int i, bool isUnsigned)
         {
             uint result = 0;
             uint maxVal;
