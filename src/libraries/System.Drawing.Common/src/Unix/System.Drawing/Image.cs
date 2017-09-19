@@ -283,7 +283,7 @@ namespace System.Drawing
         internal static IntPtr InitFromStream(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             IntPtr imagePtr;
             Status st;
