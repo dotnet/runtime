@@ -108,14 +108,14 @@ namespace BenchmarksGame
             int n = args.Length > 0 ? int.Parse(args[0]) : 7;
             int sum = Bench(n, true);
 
-            int expected = 228;
+            int expected = 16;
 
             // Return 100 on success, anything else on failure.
             return sum - expected + 100;
         }
 
         [Benchmark(InnerIterationCount = 20)]
-        [InlineData(10, 73196)]
+        [InlineData(10, 38)]
         public static void RunBench(int n, int expectedSum)
         {
             Benchmark.Iterate(() =>
@@ -152,7 +152,7 @@ namespace BenchmarksGame
             }
             if (verbose) Console.Out.WriteLineAsync(chksum + "\nPfannkuchen(" + n + ") = " + maxflips);
 
-            return chksum;
+            return maxflips;
         }
     }
 }
