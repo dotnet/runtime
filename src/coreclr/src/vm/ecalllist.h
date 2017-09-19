@@ -89,13 +89,6 @@ FCFuncStart(gSymWrapperCodePunkSafeHandleFuncs)
     FCFuncElement("nGetDReleaseTarget", COMPunkSafeHandle::nGetDReleaseTarget)
 FCFuncEnd()
 
-FCFuncStart(gParseNumbersFuncs)
-    FCFuncElement("IntToString", ParseNumbers::IntToString)
-    FCFuncElement("LongToString", ParseNumbers::LongToString)
-    FCFuncElement("StringToInt", ParseNumbers::StringToInt)
-    FCFuncElement("StringToLong", ParseNumbers::StringToLong)
-FCFuncEnd()
-
 
 FCFuncStart(gObjectFuncs)
     FCIntrinsic("GetType", ObjectNative::GetClass, CORINFO_INTRINSIC_Object_GetType)
@@ -1400,7 +1393,6 @@ FCClassElement("Object", "System", gObjectFuncs)
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
-FCClassElement("ParseNumbers", "System", gParseNumbersFuncs)
 
 
 FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSafeHandleFuncs)
