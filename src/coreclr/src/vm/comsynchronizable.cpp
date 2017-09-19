@@ -1632,8 +1632,9 @@ INT32 QCALLTYPE ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration()
 
     BEGIN_QCALL;
 
-    Thread::EnsureYieldProcessorNormalizedInitialized();
-    optimalMaxNormalizedYieldsPerSpinIteration = Thread::GetOptimalMaxNormalizedYieldsPerSpinIteration();
+    // RuntimeThread calls this function only once lazily and caches the result, so ensure initialization
+    EnsureYieldProcessorNormalizedInitialized();
+    optimalMaxNormalizedYieldsPerSpinIteration = g_optimalMaxNormalizedYieldsPerSpinIteration;
 
     END_QCALL;
 
@@ -1655,10 +1656,11 @@ FCIMPL1(void, ThreadNative::SpinWait, int iterations)
     // spinning for less than that number of cycles, then switching to preemptive
     // mode won't help a GC start any faster.
     //
-    if (iterations <= 100000 && Thread::IsYieldProcessorNormalizedInitialized())
+    if (iterations <= 100000)
     {
+        YieldProcessorNormalizationInfo normalizationInfo;
         for (int i = 0; i < iterations; i++)
-            Thread::YieldProcessorNormalized();
+            YieldProcessorNormalized(normalizationInfo);
         return;
     }
 
@@ -1668,9 +1670,9 @@ FCIMPL1(void, ThreadNative::SpinWait, int iterations)
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
     GCX_PREEMP();
 
-    Thread::EnsureYieldProcessorNormalizedInitialized();
+    YieldProcessorNormalizationInfo normalizationInfo;
     for (int i = 0; i < iterations; i++)
-        Thread::YieldProcessorNormalized();
+        YieldProcessorNormalized(normalizationInfo);
 
     HELPER_METHOD_FRAME_END();
 }
