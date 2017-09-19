@@ -651,16 +651,9 @@ namespace System
             return (int)result;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowOverflowInt32Exception() => throw new OverflowException(SR.Overflow_Int32);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowOverflowInt64Exception() => throw new OverflowException(SR.Overflow_Int64);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowOverflowUInt32Exception() => throw new OverflowException(SR.Overflow_UInt32);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowOverflowUInt64Exception() => throw new OverflowException(SR.Overflow_UInt64);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
