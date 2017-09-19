@@ -360,12 +360,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void FromImage()
-        {
-            Assert.Throws<ArgumentNullException>(() => Graphics.FromImage(null));
-        }
-
         private Graphics Get(int w, int h)
         {
             Bitmap bitmap = new Bitmap(w, h);
@@ -442,13 +436,6 @@ namespace MonoTests.System.Drawing
             Assert.False(matrix.IsInvertible);
             Graphics g = Get(16, 16);
             Assert.Throws<ArgumentException>(() => g.MultiplyTransform(matrix));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Multiply_Null()
-        {
-            Graphics g = Get(16, 16);
-            Assert.Throws<ArgumentNullException>(() => g.MultiplyTransform(null));
         }
 
         private void CheckBounds(string msg, RectangleF bounds, float x, float y, float w, float h)
@@ -717,30 +704,6 @@ namespace MonoTests.System.Drawing
 
         static Point[] TooSmallCurve = new Point[2] { new Point(0, 0), new Point(15, 5) };
         static PointF[] LargeCurveF = new PointF[4] { new PointF(0, 0), new PointF(15, 5), new PointF(5, 15), new PointF(0, 20) };
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawCurve_PenNull()
-        {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentNullException>(() => g.DrawCurve(null, SmallCurveF));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawCurve_PointFNull()
-        {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentNullException>(() => g.DrawCurve(Pens.Black, (PointF[])null));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawCurve_PointNull()
-        {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentNullException>(() => g.DrawCurve(Pens.Black, (Point[])null));
-        }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_NotEnoughPoints()
@@ -1326,7 +1289,6 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        // [Category ("NotOnMac")]
         public void FillDrawRectangle_Width_2()
         {
             // even pen size
@@ -1498,7 +1460,6 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        // [Category ("NotOnMac")]
         public void DrawFillRectangle_Width_2()
         {
             // even pen size
