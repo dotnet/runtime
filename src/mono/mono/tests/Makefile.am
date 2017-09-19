@@ -469,6 +469,7 @@ TESTS_CS_SRC=		\
 	appdomain-unload-callback.cs	\
 	appdomain-unload-doesnot-raise-pending-events.cs	\
 	appdomain-unload-asmload.cs	\
+	appdomain-unload-exception.cs	\
 	unload-appdomain-on-shutdown.cs	\
 	bug-47295.cs	\
 	loader.cs	\
@@ -1907,7 +1908,8 @@ test-process-exit:
 
 # tests that expect a 1 exit code
 TESTS_UNHANDLED_EXCEPTION_1_SRC =	\
-	unhandled-exception-1.cs
+	unhandled-exception-1.cs	\
+	unhandled-exception-9.cs
 
 # tests that expect a 255 exit code
 TESTS_UNHANDLED_EXCEPTION_255_SRC =	\
