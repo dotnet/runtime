@@ -69,8 +69,8 @@ struct LsraBlockInfo
 {
     // bbNum of the predecessor to use for the register location of live-in variables.
     // 0 for fgFirstBB.
-    BasicBlock::weight_t weight;
     unsigned int         predBBNum;
+    BasicBlock::weight_t weight;
     bool                 hasCriticalInEdge;
     bool                 hasCriticalOutEdge;
 
