@@ -663,6 +663,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
             if (compiler->codeGen->gcInfo.gcIsWriteBarrierAsgNode(tree))
             {
+                info->srcCount = 2;
                 TreeNodeInfoInitGCWriteBarrier(tree);
                 break;
             }
