@@ -781,6 +781,8 @@ void emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg);
 
 void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
+void emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg, int imm);
+
 void emitIns_I_AR(
     instruction ins, emitAttr attr, int val, regNumber reg, int offs, int memCookie = 0, void* clsCookie = NULL);
 
@@ -856,17 +858,8 @@ BYTE* emitOutputShortConstant(
 
 inline bool emitIsCondJump(instrDesc* jmp)
 {
-    return ((jmp->idInsFmt() == IF_BI_0B) || (jmp->idInsFmt() == IF_LARGEJMP));
-}
-
-/*****************************************************************************
- *
- *  Given an instrDesc, return true if it's a compare and jump.
- */
-
-inline bool emitIsCmpJump(instrDesc* jmp)
-{
-    return ((jmp->idInsFmt() == IF_BI_1A) || (jmp->idInsFmt() == IF_BI_1B));
+    return ((jmp->idInsFmt() == IF_BI_0B) || (jmp->idInsFmt() == IF_BI_1A) || (jmp->idInsFmt() == IF_BI_1B) ||
+            (jmp->idInsFmt() == IF_LARGEJMP));
 }
 
 /*****************************************************************************
