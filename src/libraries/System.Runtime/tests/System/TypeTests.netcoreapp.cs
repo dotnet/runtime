@@ -233,8 +233,7 @@ namespace System.Tests
             }
         }
 
-        [IsByRefLike]
-        private struct ByRefLikeStruct
+        private ref struct ByRefLikeStruct
         {
             public ByRefLikeStruct(int dummy)
             {
