@@ -294,7 +294,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new TextureBrush(image, WrapMode.Tile, Rectangle.Empty));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(WrapMode.Tile - 1)]
         [InlineData(WrapMode.Clamp + 1)]
@@ -431,7 +430,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_DisposedMatrix_Nop()
         {
@@ -662,7 +660,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_SetNull_ThrowsArgumentNullException()
         {
@@ -786,7 +783,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(WrapMode.Tile - 1)]
         [InlineData(WrapMode.Clamp + 1)]
