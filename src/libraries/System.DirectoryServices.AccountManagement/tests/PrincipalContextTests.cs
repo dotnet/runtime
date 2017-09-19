@@ -170,7 +170,11 @@ namespace System.DirectoryServices.AccountManagement.Tests
         [Fact]
         public void Ctor_DomainContextType_ThrowsPrincipalServerDownException()
         {
-            Assert.Throws<PrincipalServerDownException>(() => new PrincipalContext(ContextType.Domain));
+            if (Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase))
+            {
+                // The machine is not connected to a domain. we expect PrincipalContext(ContextType.Domain) to throw
+                Assert.Throws<PrincipalServerDownException>(() => new PrincipalContext(ContextType.Domain));
+            }
         }
 
         [Fact]
