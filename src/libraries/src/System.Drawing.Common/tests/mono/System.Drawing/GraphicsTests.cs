@@ -29,22 +29,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using Xunit;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
-using System.Security.Permissions;
+using Xunit;
 
 namespace MonoTests.System.Drawing
 {
-
     public class GraphicsTest : IDisposable
     {
-
         private RectangleF[] rects;
         private Font font;
 
@@ -65,23 +60,10 @@ namespace MonoTests.System.Drawing
                 font.Dispose();
         }
 
-
         private bool IsEmptyBitmap(Bitmap bitmap, out int x, out int y)
         {
             bool result = true;
             int empty = Color.Empty.ToArgb();
-#if false
-			for (y = 0; y < bitmap.Height; y++) {
-				for (x = 0; x < bitmap.Width; x++) {
-					if (bitmap.GetPixel (x, y).ToArgb () != empty) {
-						Console.Write ("X");
-						result = false;
-					} else
-						Console.Write (" ");
-				}
-				Console.WriteLine ();
-			}
-#else
             for (y = 0; y < bitmap.Height; y++)
             {
                 for (x = 0; x < bitmap.Width; x++)
@@ -90,7 +72,7 @@ namespace MonoTests.System.Drawing
                         return false;
                 }
             }
-#endif
+
             x = -1;
             y = -1;
             return result;
