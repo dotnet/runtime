@@ -12,13 +12,15 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-debug.h>
 
-#define THREAD_WAIT_INFO_CLEARED 0
-#define THREAD_WAIT_INFO_ALERTABLE_WAIT_SLOT 1
-#define THREAD_WAIT_INFO_PENDING_INTERRUPT_APC_SLOT 2
-#define THREAD_WAIT_INFO_PENDING_ABORT_APC_SLOT 4
+enum ThreadWaitInfo {
+	THREAD_WAIT_INFO_CLEARED = 0,
+	THREAD_WAIT_INFO_ALERTABLE_WAIT_SLOT = 1 << 0,
+	THREAD_WAIT_INFO_PENDING_INTERRUPT_APC_SLOT = 1 << 1,
+	THREAD_WAIT_INFO_PENDING_ABORT_APC_SLOT = 1 << 2
+};
 
 static inline void
-reqeust_interrupt (gpointer thread_info, HANDLE native_thread_handle, gint32 pending_apc_slot, PAPCFUNC apc_callback, DWORD tid)
+request_interrupt (gpointer thread_info, HANDLE native_thread_handle, gint32 pending_apc_slot, PAPCFUNC apc_callback, DWORD tid)
 {
 	/*
 	* On Windows platforms, an async interrupt/abort request queues an APC
@@ -34,23 +36,18 @@ reqeust_interrupt (gpointer thread_info, HANDLE native_thread_handle, gint32 pen
 	* (like service the interrupt/abort request).
 	*/
 	MonoThreadInfo *info = (MonoThreadInfo *)thread_info;
-	gboolean queue_apc = FALSE;
+	gint32 old_wait_info, new_wait_info;
 
-	while (!queue_apc) {
-		gint32 old_wait_info = InterlockedRead (&info->thread_wait_info);
+	do {
+		old_wait_info = InterlockedRead (&info->thread_wait_info);
 		if (old_wait_info & pending_apc_slot)
-			break;
+			return;
 
-		gint32 new_wait_info = old_wait_info | pending_apc_slot;
-		if (InterlockedCompareExchange (&info->thread_wait_info, new_wait_info, old_wait_info) == old_wait_info) {
-			queue_apc = TRUE;
-		}
-	}
+		new_wait_info = old_wait_info | pending_apc_slot;
+	} while (InterlockedCompareExchange (&info->thread_wait_info, new_wait_info, old_wait_info) != old_wait_info);
 
-	if (queue_apc == TRUE) {
-		THREADS_INTERRUPT_DEBUG ("%06d - Interrupting/Aborting syscall in thread %06d", GetCurrentThreadId (), tid);
-		QueueUserAPC (apc_callback, native_thread_handle, (ULONG_PTR)NULL);
-	}
+	THREADS_INTERRUPT_DEBUG ("%06d - Interrupting/Aborting syscall in thread %06d", GetCurrentThreadId (), tid);
+	QueueUserAPC (apc_callback, native_thread_handle, (ULONG_PTR)NULL);
 }
 
 static void CALLBACK
@@ -62,7 +59,7 @@ interrupt_apc (ULONG_PTR param)
 void
 mono_win32_interrupt_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD tid)
 {
-	reqeust_interrupt (thread_info, native_thread_handle, THREAD_WAIT_INFO_PENDING_INTERRUPT_APC_SLOT, interrupt_apc, tid);
+	request_interrupt (thread_info, native_thread_handle, THREAD_WAIT_INFO_PENDING_INTERRUPT_APC_SLOT, interrupt_apc, tid);
 }
 
 static void CALLBACK
@@ -74,7 +71,7 @@ abort_apc (ULONG_PTR param)
 void
 mono_win32_abort_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD tid)
 {
-	reqeust_interrupt (thread_info, native_thread_handle, THREAD_WAIT_INFO_PENDING_ABORT_APC_SLOT, abort_apc, tid);
+	request_interrupt (thread_info, native_thread_handle, THREAD_WAIT_INFO_PENDING_ABORT_APC_SLOT, abort_apc, tid);
 }
 
 static inline void

@@ -4455,7 +4455,7 @@ mono_thread_execute_interruption (void)
 	}
 
 	/* this will consume pending APC calls */
-#ifdef USE_WINDOWS_BACKEND
+#ifdef HOST_WIN32
 	mono_win32_wait_for_single_object_ex (GetCurrentThread (), 0, TRUE);
 #endif
 
@@ -4526,7 +4526,7 @@ mono_thread_request_interruption (gboolean running_managed)
 
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
-#ifdef USE_WINDOWS_BACKEND
+#ifdef HOST_WIN32
 		mono_win32_interrupt_wait (thread->thread_info, thread->native_handle, (DWORD)thread->tid);
 #else
 		mono_thread_info_self_interrupt ();
