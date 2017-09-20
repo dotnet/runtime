@@ -57,8 +57,10 @@ namespace MonoTests.System.Drawing.Imaging
         public void Metafile_String()
         {
             string filename = Helpers.GetTestBitmapPath(WmfPlaceable);
-            Metafile mf = new Metafile(filename);
-            Metafile clone = (Metafile)mf.Clone();
+            using (Metafile mf = new Metafile(filename))
+            using (Metafile clone = (Metafile)mf.Clone())
+            {
+            }
         }
 
         static public void Check_MetaHeader_WmfPlaceable(MetaHeader mh)
@@ -135,32 +137,24 @@ namespace MonoTests.System.Drawing.Imaging
         public void GetMetafileHeader_FromFileStream_WmfPlaceable()
         {
             using (FileStream fs = File.OpenRead(Helpers.GetTestBitmapPath(WmfPlaceable)))
+            using (Metafile mf = new Metafile(fs))
             {
-                using (Metafile mf = new Metafile(fs))
-                {
-                    MetafileHeader header1 = mf.GetMetafileHeader();
-                    Check_MetafileHeader_WmfPlaceable(header1);
+                MetafileHeader header1 = mf.GetMetafileHeader();
+                Check_MetafileHeader_WmfPlaceable(header1);
 
-                    MetaHeader mh1 = header1.WmfHeader;
-                    Check_MetaHeader_WmfPlaceable(mh1);
+                MetaHeader mh1 = header1.WmfHeader;
+                Check_MetaHeader_WmfPlaceable(mh1);
 
-                    MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
-                    Assert.False(Object.ReferenceEquals(mh1, mh2));
-                }
+                MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
+                Assert.False(Object.ReferenceEquals(mh1, mh2));
             }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetMetafileHeader_FromMemoryStream_WmfPlaceable()
         {
-            MemoryStream ms;
             string filename = Helpers.GetTestBitmapPath(WmfPlaceable);
-            using (FileStream fs = File.OpenRead(filename))
-            {
-                byte[] data = new byte[fs.Length];
-                fs.Read(data, 0, data.Length);
-                ms = new MemoryStream(data);
-            }
+            using (MemoryStream ms = new MemoryStream(File.ReadAllBytes(filename)))
             using (Metafile mf = new Metafile(ms))
             {
                 MetafileHeader header1 = mf.GetMetafileHeader();
@@ -172,7 +166,6 @@ namespace MonoTests.System.Drawing.Imaging
                 MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
                 Assert.False(Object.ReferenceEquals(mh1, mh2));
             }
-            ms.Close();
         }
 
         public static void Check_MetafileHeader_Emf(MetafileHeader header)
@@ -222,32 +215,23 @@ namespace MonoTests.System.Drawing.Imaging
         public void GetMetafileHeader_FromFileStream_Emf()
         {
             using (FileStream fs = File.OpenRead(Helpers.GetTestBitmapPath(Emf)))
+            using (Metafile mf = new Metafile(fs))
             {
-                using (Metafile mf = new Metafile(fs))
-                {
-                    MetafileHeader header1 = mf.GetMetafileHeader();
-                    Check_MetafileHeader_Emf(header1);
-                }
+                MetafileHeader header1 = mf.GetMetafileHeader();
+                Check_MetafileHeader_Emf(header1);
             }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetMetafileHeader_FromMemoryStream_Emf()
         {
-            MemoryStream ms;
             string filename = Helpers.GetTestBitmapPath(Emf);
-            using (FileStream fs = File.OpenRead(filename))
-            {
-                byte[] data = new byte[fs.Length];
-                fs.Read(data, 0, data.Length);
-                ms = new MemoryStream(data);
-            }
+            using (MemoryStream ms = new MemoryStream(File.ReadAllBytes(filename)))
             using (Metafile mf = new Metafile(ms))
             {
                 MetafileHeader header1 = mf.GetMetafileHeader();
                 Check_MetafileHeader_Emf(header1);
             }
-            ms.Close();
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -334,19 +318,17 @@ namespace MonoTests.System.Drawing.Imaging
         public void Metafile_IntPtrRectangle_Empty()
         {
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
+                IntPtr hdc = g.GetHdc();
+                try
                 {
-                    IntPtr hdc = g.GetHdc();
-                    try
-                    {
-                        Metafile mf = new Metafile(hdc, new Rectangle());
-                        CheckEmptyHeader(mf, EmfType.EmfPlusDual);
-                    }
-                    finally
-                    {
-                        g.ReleaseHdc(hdc);
-                    }
+                    Metafile mf = new Metafile(hdc, new Rectangle());
+                    CheckEmptyHeader(mf, EmfType.EmfPlusDual);
+                }
+                finally
+                {
+                    g.ReleaseHdc(hdc);
                 }
             }
         }
@@ -355,19 +337,17 @@ namespace MonoTests.System.Drawing.Imaging
         public void Metafile_IntPtrRectangleF_Empty()
         {
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
+                IntPtr hdc = g.GetHdc();
+                try
                 {
-                    IntPtr hdc = g.GetHdc();
-                    try
-                    {
-                        Metafile mf = new Metafile(hdc, new RectangleF());
-                        CheckEmptyHeader(mf, EmfType.EmfPlusDual);
-                    }
-                    finally
-                    {
-                        g.ReleaseHdc(hdc);
-                    }
+                    Metafile mf = new Metafile(hdc, new RectangleF());
+                    CheckEmptyHeader(mf, EmfType.EmfPlusDual);
+                }
+                finally
+                {
+                    g.ReleaseHdc(hdc);
                 }
             }
         }
@@ -375,19 +355,17 @@ namespace MonoTests.System.Drawing.Imaging
         private void Metafile_StreamEmfType(Stream stream, EmfType type)
         {
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
+                IntPtr hdc = g.GetHdc();
+                try
                 {
-                    IntPtr hdc = g.GetHdc();
-                    try
-                    {
-                        Metafile mf = new Metafile(stream, hdc, type);
-                        CheckEmptyHeader(mf, type);
-                    }
-                    finally
-                    {
-                        g.ReleaseHdc(hdc);
-                    }
+                    Metafile mf = new Metafile(stream, hdc, type);
+                    CheckEmptyHeader(mf, type);
+                }
+                finally
+                {
+                    g.ReleaseHdc(hdc);
                 }
             }
         }
@@ -510,37 +488,35 @@ namespace MonoTests.System.Drawing.Imaging
 
             Metafile mf;
             using (Bitmap bmp = new Bitmap(100, 100, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
+                IntPtr hdc = g.GetHdc();
+                try
                 {
-                    IntPtr hdc = g.GetHdc();
-                    try
-                    {
-                        mf = new Metafile(hdc, EmfType.EmfPlusOnly);
-                    }
-                    finally
-                    {
-                        g.ReleaseHdc(hdc);
-                    }
+                    mf = new Metafile(hdc, EmfType.EmfPlusOnly);
                 }
-                using (Graphics g = Graphics.FromImage(mf))
+                finally
                 {
-                    string text = "this\nis a test";
-                    CharacterRange[] ranges = new CharacterRange[2];
-                    ranges[0] = new CharacterRange(0, 5);
-                    ranges[1] = new CharacterRange(5, 9);
-
-                    SizeF size = g.MeasureString(text, test_font);
-                    Assert.False(size.IsEmpty);
-
-                    StringFormat sf = new StringFormat();
-                    sf.FormatFlags = StringFormatFlags.NoClip;
-                    sf.SetMeasurableCharacterRanges(ranges);
-
-                    RectangleF rect = new RectangleF(0, 0, size.Width, size.Height);
-                    Region[] region = g.MeasureCharacterRanges(text, test_font, rect, sf);
-                    Assert.Equal(2, region.Length);
+                    g.ReleaseHdc(hdc);
                 }
+            }
+            using (Graphics g = Graphics.FromImage(mf))
+            {
+                string text = "this\nis a test";
+                CharacterRange[] ranges = new CharacterRange[2];
+                ranges[0] = new CharacterRange(0, 5);
+                ranges[1] = new CharacterRange(5, 9);
+
+                SizeF size = g.MeasureString(text, test_font);
+                Assert.False(size.IsEmpty);
+
+                StringFormat sf = new StringFormat();
+                sf.FormatFlags = StringFormatFlags.NoClip;
+                sf.SetMeasurableCharacterRanges(ranges);
+
+                RectangleF rect = new RectangleF(0, 0, size.Width, size.Height);
+                Region[] region = g.MeasureCharacterRanges(text, test_font, rect, sf);
+                Assert.Equal(2, region.Length);
                 mf.Dispose();
             }
         }
