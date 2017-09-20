@@ -379,7 +379,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void CreateFilename(EmfType type, bool single)
         {
-            string name = String.Format("{0}-{1}.emf", type, single ? "Single" : "Multiple");
+            string name = string.Format("{0}-{1}.emf", type, single ? "Single" : "Multiple");
             string filename = Path.Combine(Path.GetTempPath(), name);
             Metafile mf;
             using (Bitmap bmp = new Bitmap(100, 100, PixelFormat.Format32bppArgb))
@@ -404,16 +404,12 @@ namespace MonoTests.System.Drawing.Imaging
                     size = new FileInfo(filename).Length;
                     Assert.Equal(0, size);
                 }
-                // FIXME / doesn't work on mono yet
-                //				size = new FileInfo (filename).Length;
-                //				Assert.True (size > 0);
+
                 if (!single)
                 {
-                    // can we append stuff ?
                     using (Graphics g = Graphics.FromImage(mf))
                     {
                         g.DrawRectangle(Pens.Azure, 10, 10, 80, 80);
-                        // happily no :)
                     }
                 }
                 mf.Dispose();
