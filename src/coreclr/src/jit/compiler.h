@@ -10287,23 +10287,8 @@ const instruction INS_SQRT  = INS_vsqrt;
 
 #ifdef _TARGET_ARM64_
 
-const instruction INS_SHIFT_LEFT_LOGICAL  = INS_lsl;
-const instruction INS_SHIFT_RIGHT_LOGICAL = INS_lsr;
-const instruction INS_SHIFT_RIGHT_ARITHM  = INS_asr;
-
-const instruction INS_AND             = INS_and;
-const instruction INS_OR              = INS_orr;
-const instruction INS_XOR             = INS_eor;
-const instruction INS_NEG             = INS_neg;
-const instruction INS_TEST            = INS_tst;
-const instruction INS_MUL             = INS_mul;
 const instruction INS_MULADD          = INS_madd;
-const instruction INS_SIGNED_DIVIDE   = INS_sdiv;
-const instruction INS_UNSIGNED_DIVIDE = INS_udiv;
 const instruction INS_BREAKPOINT      = INS_bkpt;
-const instruction INS_ADDC            = INS_adc;
-const instruction INS_SUBC            = INS_sbc;
-const instruction INS_NOT             = INS_mvn;
 
 const instruction INS_ABS   = INS_fabs;
 const instruction INS_ROUND = INS_frintn;
