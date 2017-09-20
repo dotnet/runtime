@@ -145,7 +145,6 @@ class Constants {
                'pri1r2r',
                'zapdisable',
                'minopts',
-               'tieredcompilation',
                'tailcallstress',
                'jitstress1',
                'jitstress2',

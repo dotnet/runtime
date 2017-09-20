@@ -250,7 +250,8 @@ def validate_args(args):
    valid_testarches = ["arm", "armlb", "arm64"]
    valid_build_types = ["debug", "checked", "release"]
 
-   valid_jit_stress_regs_numbers = ["1", "2", "3", "4", "8", "10", "80"]
+   # Use the same naming scheme as netci.groovy, so, e.g., "0x10" instead of just "10".
+   valid_jit_stress_regs_numbers = ["1", "2", "3", "4", "8", "0x10", "0x80", "0x1000"]
 
    jit_stress_scenarios = ["jitstress1", "jitstress2"]
    jitstressregs_scenarios = ["jitstressregs" + item for item in valid_jit_stress_regs_numbers]
@@ -276,7 +277,6 @@ def validate_args(args):
    valid_scenarios = ["default",
                       "pri1r2r",
                       "minopts",
-                      "zapdisable",
                       "tailcallstress",
                       "zapdisable"]
 
