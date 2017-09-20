@@ -47,14 +47,13 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(backColor.ToArgb(), brush.BackgroundColor.ToArgb());
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [Theory]
         [InlineData(HatchStyle.Horizontal -1 )]
         [InlineData(HatchStyle.SolidDiamond + 1)]
         public void Ctor_InvalidHatchStyle_ThrowsArgumentException(HatchStyle hatchStyle)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new HatchBrush(hatchStyle, Color.Empty));
-            AssertExtensions.Throws<ArgumentException>(null, () => new HatchBrush(hatchStyle, Color.Empty, Color.Empty));
+            AssertExtensions.Throws<ArgumentException>("hatchstyle", null, () => new HatchBrush(hatchStyle, Color.Empty));
+            AssertExtensions.Throws<ArgumentException>("hatchstyle", null, () => new HatchBrush(hatchStyle, Color.Empty, Color.Empty));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
