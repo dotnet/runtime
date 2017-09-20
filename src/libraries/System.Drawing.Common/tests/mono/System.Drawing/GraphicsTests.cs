@@ -105,50 +105,50 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DefaultProperties()
         {
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
-            Region r = new Region();
-
-            Assert.Equal(r.GetBounds(g), g.ClipBounds);
-            Assert.Equal(CompositingMode.SourceOver, g.CompositingMode);
-            Assert.Equal(CompositingQuality.Default, g.CompositingQuality);
-            Assert.Equal(InterpolationMode.Bilinear, g.InterpolationMode);
-            Assert.Equal(1, g.PageScale);
-            Assert.Equal(GraphicsUnit.Display, g.PageUnit);
-            Assert.Equal(PixelOffsetMode.Default, g.PixelOffsetMode);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
-            Assert.Equal(SmoothingMode.None, g.SmoothingMode);
-            Assert.Equal(TextRenderingHint.SystemDefault, g.TextRenderingHint);
-
-            r.Dispose();
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (Region r = new Region())
+            {
+                Assert.Equal(r.GetBounds(g), g.ClipBounds);
+                Assert.Equal(CompositingMode.SourceOver, g.CompositingMode);
+                Assert.Equal(CompositingQuality.Default, g.CompositingQuality);
+                Assert.Equal(InterpolationMode.Bilinear, g.InterpolationMode);
+                Assert.Equal(1, g.PageScale);
+                Assert.Equal(GraphicsUnit.Display, g.PageUnit);
+                Assert.Equal(PixelOffsetMode.Default, g.PixelOffsetMode);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                Assert.Equal(SmoothingMode.None, g.SmoothingMode);
+                Assert.Equal(TextRenderingHint.SystemDefault, g.TextRenderingHint);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetGetProperties()
         {
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.CompositingQuality = CompositingQuality.GammaCorrected;
+                g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                g.PageScale = 2;
+                g.PageUnit = GraphicsUnit.Inch;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.RenderingOrigin = new Point(10, 20);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = TextRenderingHint.SystemDefault;
 
-            g.CompositingMode = CompositingMode.SourceCopy;
-            g.CompositingQuality = CompositingQuality.GammaCorrected;
-            g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-            g.PageScale = 2;
-            g.PageUnit = GraphicsUnit.Inch;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.RenderingOrigin = new Point(10, 20);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.SystemDefault;
-
-            //Clipping set/get tested in clipping functions			
-            Assert.Equal(CompositingMode.SourceCopy, g.CompositingMode);
-            Assert.Equal(CompositingQuality.GammaCorrected, g.CompositingQuality);
-            Assert.Equal(InterpolationMode.HighQualityBilinear, g.InterpolationMode);
-            Assert.Equal(2, g.PageScale);
-            Assert.Equal(GraphicsUnit.Inch, g.PageUnit);
-            Assert.Equal(PixelOffsetMode.Half, g.PixelOffsetMode);
-            Assert.Equal(new Point(10, 20), g.RenderingOrigin);
-            Assert.Equal(SmoothingMode.AntiAlias, g.SmoothingMode);
-            Assert.Equal(TextRenderingHint.SystemDefault, g.TextRenderingHint);
+                //Clipping set/get tested in clipping functions			
+                Assert.Equal(CompositingMode.SourceCopy, g.CompositingMode);
+                Assert.Equal(CompositingQuality.GammaCorrected, g.CompositingQuality);
+                Assert.Equal(InterpolationMode.HighQualityBilinear, g.InterpolationMode);
+                Assert.Equal(2, g.PageScale);
+                Assert.Equal(GraphicsUnit.Inch, g.PageUnit);
+                Assert.Equal(PixelOffsetMode.Half, g.PixelOffsetMode);
+                Assert.Equal(new Point(10, 20), g.RenderingOrigin);
+                Assert.Equal(SmoothingMode.AntiAlias, g.SmoothingMode);
+                Assert.Equal(TextRenderingHint.SystemDefault, g.TextRenderingHint);
+            }
         }
 
         // Properties
@@ -156,195 +156,205 @@ namespace MonoTests.System.Drawing
         public void Clip()
         {
             RectangleF[] rects;
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
-            g.Clip = new Region(new Rectangle(50, 40, 210, 220));
-            rects = g.Clip.GetRegionScans(new Matrix());
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.Clip = new Region(new Rectangle(50, 40, 210, 220));
+                rects = g.Clip.GetRegionScans(new Matrix());
 
-            Assert.Equal(1, rects.Length);
-            Assert.Equal(50, rects[0].X);
-            Assert.Equal(40, rects[0].Y);
-            Assert.Equal(210, rects[0].Width);
-            Assert.Equal(220, rects[0].Height);
+                Assert.Equal(1, rects.Length);
+                Assert.Equal(50, rects[0].X);
+                Assert.Equal(40, rects[0].Y);
+                Assert.Equal(210, rects[0].Width);
+                Assert.Equal(220, rects[0].Height);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_NotAReference()
         {
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
-            Assert.True(g.Clip.IsInfinite(g));
-            g.Clip.IsEmpty(g);
-            Assert.False(g.Clip.IsEmpty(g));
-            Assert.True(g.Clip.IsInfinite(g));
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                Assert.True(g.Clip.IsInfinite(g));
+                g.Clip.IsEmpty(g);
+                Assert.False(g.Clip.IsEmpty(g));
+                Assert.True(g.Clip.IsInfinite(g));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ExcludeClip()
         {
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.Clip = new Region(new RectangleF(10, 10, 100, 100));
+                g.ExcludeClip(new Rectangle(40, 60, 100, 20));
+                rects = g.Clip.GetRegionScans(new Matrix());
 
-            g.Clip = new Region(new RectangleF(10, 10, 100, 100));
-            g.ExcludeClip(new Rectangle(40, 60, 100, 20));
-            rects = g.Clip.GetRegionScans(new Matrix());
+                Assert.Equal(3, rects.Length);
 
-            Assert.Equal(3, rects.Length);
+                Assert.Equal(10, rects[0].X);
+                Assert.Equal(10, rects[0].Y);
+                Assert.Equal(100, rects[0].Width);
+                Assert.Equal(50, rects[0].Height);
 
-            Assert.Equal(10, rects[0].X);
-            Assert.Equal(10, rects[0].Y);
-            Assert.Equal(100, rects[0].Width);
-            Assert.Equal(50, rects[0].Height);
+                Assert.Equal(10, rects[1].X);
+                Assert.Equal(60, rects[1].Y);
+                Assert.Equal(30, rects[1].Width);
+                Assert.Equal(20, rects[1].Height);
 
-            Assert.Equal(10, rects[1].X);
-            Assert.Equal(60, rects[1].Y);
-            Assert.Equal(30, rects[1].Width);
-            Assert.Equal(20, rects[1].Height);
-
-            Assert.Equal(10, rects[2].X);
-            Assert.Equal(80, rects[2].Y);
-            Assert.Equal(100, rects[2].Width);
-            Assert.Equal(30, rects[2].Height);
+                Assert.Equal(10, rects[2].X);
+                Assert.Equal(80, rects[2].Y);
+                Assert.Equal(100, rects[2].Width);
+                Assert.Equal(30, rects[2].Height);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void IntersectClip()
         {
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.Clip = new Region(new RectangleF(260, 30, 60, 80));
+                g.IntersectClip(new Rectangle(290, 40, 60, 80));
+                rects = g.Clip.GetRegionScans(new Matrix());
 
-            g.Clip = new Region(new RectangleF(260, 30, 60, 80));
-            g.IntersectClip(new Rectangle(290, 40, 60, 80));
-            rects = g.Clip.GetRegionScans(new Matrix());
+                Assert.Equal(1, rects.Length);
 
-            Assert.Equal(1, rects.Length);
-
-            Assert.Equal(290, rects[0].X);
-            Assert.Equal(40, rects[0].Y);
-            Assert.Equal(30, rects[0].Width);
-            Assert.Equal(70, rects[0].Height);
+                Assert.Equal(290, rects[0].X);
+                Assert.Equal(40, rects[0].Y);
+                Assert.Equal(30, rects[0].Width);
+                Assert.Equal(70, rects[0].Height);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ResetClip()
         {
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.Clip = new Region(new RectangleF(260, 30, 60, 80));
+                g.IntersectClip(new Rectangle(290, 40, 60, 80));
+                g.ResetClip();
+                rects = g.Clip.GetRegionScans(new Matrix());
 
-            g.Clip = new Region(new RectangleF(260, 30, 60, 80));
-            g.IntersectClip(new Rectangle(290, 40, 60, 80));
-            g.ResetClip();
-            rects = g.Clip.GetRegionScans(new Matrix());
+                Assert.Equal(1, rects.Length);
 
-            Assert.Equal(1, rects.Length);
-
-            Assert.Equal(-4194304, rects[0].X);
-            Assert.Equal(-4194304, rects[0].Y);
-            Assert.Equal(8388608, rects[0].Width);
-            Assert.Equal(8388608, rects[0].Height);
+                Assert.Equal(-4194304, rects[0].X);
+                Assert.Equal(-4194304, rects[0].Y);
+                Assert.Equal(8388608, rects[0].Width);
+                Assert.Equal(8388608, rects[0].Height);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetClip()
         {
             RectangleF[] rects;
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
+            using (Bitmap bmp = new Bitmap(200, 200))
+            {
+                Graphics g = Graphics.FromImage(bmp);
+                // Region
+                g.SetClip(new Region(new Rectangle(50, 40, 210, 220)), CombineMode.Replace);
+                rects = g.Clip.GetRegionScans(new Matrix());
+                Assert.Equal(1, rects.Length);
+                Assert.Equal(50, rects[0].X);
+                Assert.Equal(40, rects[0].Y);
+                Assert.Equal(210, rects[0].Width);
+                Assert.Equal(220, rects[0].Height);
+                g.Dispose();
 
-            // Region
-            g.SetClip(new Region(new Rectangle(50, 40, 210, 220)), CombineMode.Replace);
-            rects = g.Clip.GetRegionScans(new Matrix());
-            Assert.Equal(1, rects.Length);
-            Assert.Equal(50, rects[0].X);
-            Assert.Equal(40, rects[0].Y);
-            Assert.Equal(210, rects[0].Width);
-            Assert.Equal(220, rects[0].Height);
+                // RectangleF
+                g = Graphics.FromImage(bmp);
+                g.SetClip(new RectangleF(50, 40, 210, 220));
+                rects = g.Clip.GetRegionScans(new Matrix());
+                Assert.Equal(1, rects.Length);
+                Assert.Equal(50, rects[0].X);
+                Assert.Equal(40, rects[0].Y);
+                Assert.Equal(210, rects[0].Width);
+                Assert.Equal(220, rects[0].Height);
+                g.Dispose();
 
-            // RectangleF
-            g = Graphics.FromImage(bmp);
-            g.SetClip(new RectangleF(50, 40, 210, 220));
-            rects = g.Clip.GetRegionScans(new Matrix());
-            Assert.Equal(1, rects.Length);
-            Assert.Equal(50, rects[0].X);
-            Assert.Equal(40, rects[0].Y);
-            Assert.Equal(210, rects[0].Width);
-            Assert.Equal(220, rects[0].Height);
-
-            // Rectangle
-            g = Graphics.FromImage(bmp);
-            g.SetClip(new Rectangle(50, 40, 210, 220));
-            rects = g.Clip.GetRegionScans(new Matrix());
-            Assert.Equal(1, rects.Length);
-            Assert.Equal(50, rects[0].X);
-            Assert.Equal(40, rects[0].Y);
-            Assert.Equal(210, rects[0].Width);
-            Assert.Equal(220, rects[0].Height);
+                // Rectangle
+                g = Graphics.FromImage(bmp);
+                g.SetClip(new Rectangle(50, 40, 210, 220));
+                rects = g.Clip.GetRegionScans(new Matrix());
+                Assert.Equal(1, rects.Length);
+                Assert.Equal(50, rects[0].X);
+                Assert.Equal(40, rects[0].Y);
+                Assert.Equal(210, rects[0].Width);
+                Assert.Equal(220, rects[0].Height);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetSaveReset()
         {
-            Bitmap bmp = new Bitmap(200, 200);
-            Graphics g = Graphics.FromImage(bmp);
-            GraphicsState state_default, state_modified;
+            using (Bitmap bmp = new Bitmap(200, 200))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                GraphicsState state_default, state_modified;
 
-            state_default = g.Save(); // Default
+                state_default = g.Save(); // Default
 
-            g.CompositingMode = CompositingMode.SourceCopy;
-            g.CompositingQuality = CompositingQuality.GammaCorrected;
-            g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-            g.PageScale = 2;
-            g.PageUnit = GraphicsUnit.Inch;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.Clip = new Region(new Rectangle(0, 0, 100, 100));
-            g.RenderingOrigin = new Point(10, 20);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.CompositingQuality = CompositingQuality.GammaCorrected;
+                g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                g.PageScale = 2;
+                g.PageUnit = GraphicsUnit.Inch;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.Clip = new Region(new Rectangle(0, 0, 100, 100));
+                g.RenderingOrigin = new Point(10, 20);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
 
-            state_modified = g.Save(); // Modified
+                state_modified = g.Save(); // Modified
 
-            g.CompositingMode = CompositingMode.SourceOver;
-            g.CompositingQuality = CompositingQuality.Default;
-            g.InterpolationMode = InterpolationMode.Bilinear;
-            g.PageScale = 5;
-            g.PageUnit = GraphicsUnit.Display;
-            g.PixelOffsetMode = PixelOffsetMode.Default;
-            g.Clip = new Region(new Rectangle(1, 2, 20, 25));
-            g.RenderingOrigin = new Point(5, 6);
-            g.SmoothingMode = SmoothingMode.None;
-            g.TextRenderingHint = TextRenderingHint.SystemDefault;
+                g.CompositingMode = CompositingMode.SourceOver;
+                g.CompositingQuality = CompositingQuality.Default;
+                g.InterpolationMode = InterpolationMode.Bilinear;
+                g.PageScale = 5;
+                g.PageUnit = GraphicsUnit.Display;
+                g.PixelOffsetMode = PixelOffsetMode.Default;
+                g.Clip = new Region(new Rectangle(1, 2, 20, 25));
+                g.RenderingOrigin = new Point(5, 6);
+                g.SmoothingMode = SmoothingMode.None;
+                g.TextRenderingHint = TextRenderingHint.SystemDefault;
 
-            g.Restore(state_modified);
+                g.Restore(state_modified);
 
-            Assert.Equal(CompositingMode.SourceCopy, g.CompositingMode);
-            Assert.Equal(CompositingQuality.GammaCorrected, g.CompositingQuality);
-            Assert.Equal(InterpolationMode.HighQualityBilinear, g.InterpolationMode);
-            Assert.Equal(2, g.PageScale);
-            Assert.Equal(GraphicsUnit.Inch, g.PageUnit);
-            Assert.Equal(PixelOffsetMode.Half, g.PixelOffsetMode);
-            Assert.Equal(new Point(10, 20), g.RenderingOrigin);
-            Assert.Equal(SmoothingMode.AntiAlias, g.SmoothingMode);
-            Assert.Equal(TextRenderingHint.ClearTypeGridFit, g.TextRenderingHint);
-            Assert.Equal(0, (int)g.ClipBounds.X);
-            Assert.Equal(0, (int)g.ClipBounds.Y);
+                Assert.Equal(CompositingMode.SourceCopy, g.CompositingMode);
+                Assert.Equal(CompositingQuality.GammaCorrected, g.CompositingQuality);
+                Assert.Equal(InterpolationMode.HighQualityBilinear, g.InterpolationMode);
+                Assert.Equal(2, g.PageScale);
+                Assert.Equal(GraphicsUnit.Inch, g.PageUnit);
+                Assert.Equal(PixelOffsetMode.Half, g.PixelOffsetMode);
+                Assert.Equal(new Point(10, 20), g.RenderingOrigin);
+                Assert.Equal(SmoothingMode.AntiAlias, g.SmoothingMode);
+                Assert.Equal(TextRenderingHint.ClearTypeGridFit, g.TextRenderingHint);
+                Assert.Equal(0, (int)g.ClipBounds.X);
+                Assert.Equal(0, (int)g.ClipBounds.Y);
 
-            g.Restore(state_default);
+                g.Restore(state_default);
 
-            Assert.Equal(CompositingMode.SourceOver, g.CompositingMode);
-            Assert.Equal(CompositingQuality.Default, g.CompositingQuality);
-            Assert.Equal(InterpolationMode.Bilinear, g.InterpolationMode);
-            Assert.Equal(1, g.PageScale);
-            Assert.Equal(GraphicsUnit.Display, g.PageUnit);
-            Assert.Equal(PixelOffsetMode.Default, g.PixelOffsetMode);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
-            Assert.Equal(SmoothingMode.None, g.SmoothingMode);
-            Assert.Equal(TextRenderingHint.SystemDefault, g.TextRenderingHint);
+                Assert.Equal(CompositingMode.SourceOver, g.CompositingMode);
+                Assert.Equal(CompositingQuality.Default, g.CompositingQuality);
+                Assert.Equal(InterpolationMode.Bilinear, g.InterpolationMode);
+                Assert.Equal(1, g.PageScale);
+                Assert.Equal(GraphicsUnit.Display, g.PageUnit);
+                Assert.Equal(PixelOffsetMode.Default, g.PixelOffsetMode);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                Assert.Equal(SmoothingMode.None, g.SmoothingMode);
+                Assert.Equal(TextRenderingHint.SystemDefault, g.TextRenderingHint);
 
-            Region r = new Region();
-            Assert.Equal(r.GetBounds(g), g.ClipBounds);
-
-            g.Dispose();
+                Region r = new Region();
+                Assert.Equal(r.GetBounds(g), g.ClipBounds);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -379,44 +389,46 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_GetBounds()
         {
-            Graphics g = Get(16, 16);
-            RectangleF bounds = g.Clip.GetBounds(g);
-            Assert.Equal(0, bounds.X);
-            Assert.Equal(0, bounds.Y);
-            Assert.Equal(16, bounds.Width);
-            Assert.Equal(16, bounds.Height);
-            Assert.True(g.Transform.IsIdentity);
-            g.Dispose();
+            using (Graphics g = Get(16, 16))
+            {
+                RectangleF bounds = g.Clip.GetBounds(g);
+                Assert.Equal(0, bounds.X);
+                Assert.Equal(0, bounds.Y);
+                Assert.Equal(16, bounds.Width);
+                Assert.Equal(16, bounds.Height);
+                Assert.True(g.Transform.IsIdentity);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_TranslateTransform()
         {
-            Graphics g = Get(16, 16);
-            g.TranslateTransform(12.22f, 10.10f);
-            RectangleF bounds = g.Clip.GetBounds(g);
-            Compare("translate", bounds, g.ClipBounds);
-            Assert.Equal(-12.2200003f, bounds.X);
-            Assert.Equal(-10.1000004f, bounds.Y);
-            Assert.Equal(16, bounds.Width);
-            Assert.Equal(16, bounds.Height);
-            float[] elements = g.Transform.Elements;
-            Assert.Equal(1, elements[0]);
-            Assert.Equal(0, elements[1]);
-            Assert.Equal(0, elements[2]);
-            Assert.Equal(1, elements[3]);
-            Assert.Equal(12.2200003f, elements[4]);
-            Assert.Equal(10.1000004f, elements[5]);
+            using (Graphics g = Get(16, 16))
+            {
+                g.TranslateTransform(12.22f, 10.10f);
+                RectangleF bounds = g.Clip.GetBounds(g);
+                Compare("translate", bounds, g.ClipBounds);
+                Assert.Equal(-12.2200003f, bounds.X);
+                Assert.Equal(-10.1000004f, bounds.Y);
+                Assert.Equal(16, bounds.Width);
+                Assert.Equal(16, bounds.Height);
+                float[] elements = g.Transform.Elements;
+                Assert.Equal(1, elements[0]);
+                Assert.Equal(0, elements[1]);
+                Assert.Equal(0, elements[2]);
+                Assert.Equal(1, elements[3]);
+                Assert.Equal(12.2200003f, elements[4]);
+                Assert.Equal(10.1000004f, elements[5]);
 
-            g.ResetTransform();
-            bounds = g.Clip.GetBounds(g);
-            Compare("reset", bounds, g.ClipBounds);
-            Assert.Equal(0, bounds.X);
-            Assert.Equal(0, bounds.Y);
-            Assert.Equal(16, bounds.Width);
-            Assert.Equal(16, bounds.Height);
-            Assert.True(g.Transform.IsIdentity);
-            g.Dispose();
+                g.ResetTransform();
+                bounds = g.Clip.GetBounds(g);
+                Compare("reset", bounds, g.ClipBounds);
+                Assert.Equal(0, bounds.X);
+                Assert.Equal(0, bounds.Y);
+                Assert.Equal(16, bounds.Width);
+                Assert.Equal(16, bounds.Height);
+                Assert.True(g.Transform.IsIdentity);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -434,8 +446,10 @@ namespace MonoTests.System.Drawing
         {
             Matrix matrix = new Matrix(123, 24, 82, 16, 47, 30);
             Assert.False(matrix.IsInvertible);
-            Graphics g = Get(16, 16);
-            Assert.Throws<ArgumentException>(() => g.MultiplyTransform(matrix));
+            using (Graphics g = Get(16, 16))
+            {
+                Assert.Throws<ArgumentException>(() => g.MultiplyTransform(matrix));
+            }
         }
 
         private void CheckBounds(string msg, RectangleF bounds, float x, float y, float w, float h)
@@ -449,176 +463,196 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds()
         {
-            Graphics g = Get(16, 16);
-            CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
-            CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
+            using (Graphics g = Get(16, 16))
+            {
+                CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
+                CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
 
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            CheckBounds("clip.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            CheckBounds("clip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                CheckBounds("clip.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                CheckBounds("clip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Rotate()
         {
-            Graphics g = Get(16, 16);
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            g.RotateTransform(90);
-            CheckBounds("rotate.ClipBounds", g.ClipBounds, 0, -8, 8, 8);
-            CheckBounds("rotate.Clip.GetBounds", g.Clip.GetBounds(g), 0, -8, 8, 8);
+            using (Graphics g = Get(16, 16))
+            {
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                g.RotateTransform(90);
+                CheckBounds("rotate.ClipBounds", g.ClipBounds, 0, -8, 8, 8);
+                CheckBounds("rotate.Clip.GetBounds", g.Clip.GetBounds(g), 0, -8, 8, 8);
 
-            g.Transform = new Matrix();
-            CheckBounds("identity.ClipBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
-            CheckBounds("identity.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.Transform = new Matrix();
+                CheckBounds("identity.ClipBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                CheckBounds("identity.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Scale()
         {
             RectangleF clip = new Rectangle(0, 0, 8, 8);
-            Graphics g = Get(16, 16);
-            g.Clip = new Region(clip);
-            g.ScaleTransform(0.25f, 0.5f);
-            CheckBounds("scale.ClipBounds", g.ClipBounds, 0, 0, 32, 16);
-            CheckBounds("scale.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 32, 16);
+            using (Graphics g = Get(16, 16))
+            {
+                g.Clip = new Region(clip);
+                g.ScaleTransform(0.25f, 0.5f);
+                CheckBounds("scale.ClipBounds", g.ClipBounds, 0, 0, 32, 16);
+                CheckBounds("scale.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 32, 16);
 
-            g.SetClip(clip);
-            CheckBounds("setclip.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            CheckBounds("setclip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.SetClip(clip);
+                CheckBounds("setclip.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                CheckBounds("setclip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Translate()
         {
-            Graphics g = Get(16, 16);
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            Region clone = g.Clip.Clone();
-            g.TranslateTransform(8, 8);
-            CheckBounds("translate.ClipBounds", g.ClipBounds, -8, -8, 8, 8);
-            CheckBounds("translate.Clip.GetBounds", g.Clip.GetBounds(g), -8, -8, 8, 8);
+            using (Graphics g = Get(16, 16))
+            {
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                Region clone = g.Clip.Clone();
+                g.TranslateTransform(8, 8);
+                CheckBounds("translate.ClipBounds", g.ClipBounds, -8, -8, 8, 8);
+                CheckBounds("translate.Clip.GetBounds", g.Clip.GetBounds(g), -8, -8, 8, 8);
 
-            g.SetClip(clone, CombineMode.Replace);
-            CheckBounds("setclip.ClipBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
-            CheckBounds("setclip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.SetClip(clone, CombineMode.Replace);
+                CheckBounds("setclip.ClipBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                CheckBounds("setclip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Transform_Translation()
         {
-            Graphics g = Get(16, 16);
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            g.Transform = new Matrix(1, 0, 0, 1, 8, 8);
-            CheckBounds("transform.ClipBounds", g.ClipBounds, -8, -8, 8, 8);
-            CheckBounds("transform.Clip.GetBounds", g.Clip.GetBounds(g), -8, -8, 8, 8);
+            using (Graphics g = Get(16, 16))
+            {
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                g.Transform = new Matrix(1, 0, 0, 1, 8, 8);
+                CheckBounds("transform.ClipBounds", g.ClipBounds, -8, -8, 8, 8);
+                CheckBounds("transform.Clip.GetBounds", g.Clip.GetBounds(g), -8, -8, 8, 8);
 
-            g.ResetTransform();
-            CheckBounds("reset.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            CheckBounds("reset.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.ResetTransform();
+                CheckBounds("reset.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                CheckBounds("reset.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Transform_Scale()
         {
-            Graphics g = Get(16, 16);
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            g.Transform = new Matrix(0.5f, 0, 0, 0.25f, 0, 0);
-            CheckBounds("scale.ClipBounds", g.ClipBounds, 0, 0, 16, 32);
-            CheckBounds("scale.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 32);
+            using (Graphics g = Get(16, 16))
+            {
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                g.Transform = new Matrix(0.5f, 0, 0, 0.25f, 0, 0);
+                CheckBounds("scale.ClipBounds", g.ClipBounds, 0, 0, 16, 32);
+                CheckBounds("scale.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 32);
 
-            g.ResetClip();
-            // see next test for ClipBounds
-            CheckBounds("resetclip.Clip.GetBounds", g.Clip.GetBounds(g), -4194304, -4194304, 8388608, 8388608);
-            Assert.True(g.Clip.IsInfinite(g));
+                g.ResetClip();
+                // see next test for ClipBounds
+                CheckBounds("resetclip.Clip.GetBounds", g.Clip.GetBounds(g), -4194304, -4194304, 8388608, 8388608);
+                Assert.True(g.Clip.IsInfinite(g));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Multiply()
         {
-            Graphics g = Get(16, 16);
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            g.Transform = new Matrix(1, 0, 0, 1, 8, 8);
-            g.MultiplyTransform(g.Transform);
-            CheckBounds("multiply.ClipBounds", g.ClipBounds, -16, -16, 8, 8);
-            CheckBounds("multiply.Clip.GetBounds", g.Clip.GetBounds(g), -16, -16, 8, 8);
+            using (Graphics g = Get(16, 16))
+            {
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                g.Transform = new Matrix(1, 0, 0, 1, 8, 8);
+                g.MultiplyTransform(g.Transform);
+                CheckBounds("multiply.ClipBounds", g.ClipBounds, -16, -16, 8, 8);
+                CheckBounds("multiply.Clip.GetBounds", g.Clip.GetBounds(g), -16, -16, 8, 8);
 
-            g.ResetTransform();
-            CheckBounds("reset.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            CheckBounds("reset.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.ResetTransform();
+                CheckBounds("reset.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                CheckBounds("reset.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Cumulative_Effects()
         {
-            Graphics g = Get(16, 16);
-            CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
-            CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
+            using (Graphics g = Get(16, 16))
+            {
+                CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
+                CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
 
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            CheckBounds("clip.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            CheckBounds("clip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                CheckBounds("clip.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                CheckBounds("clip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
 
-            g.RotateTransform(90);
-            CheckBounds("rotate.ClipBounds", g.ClipBounds, 0, -8, 8, 8);
-            CheckBounds("rotate.Clip.GetBounds", g.Clip.GetBounds(g), 0, -8, 8, 8);
+                g.RotateTransform(90);
+                CheckBounds("rotate.ClipBounds", g.ClipBounds, 0, -8, 8, 8);
+                CheckBounds("rotate.Clip.GetBounds", g.Clip.GetBounds(g), 0, -8, 8, 8);
 
-            g.ScaleTransform(0.25f, 0.5f);
-            CheckBounds("scale.ClipBounds", g.ClipBounds, 0, -16, 32, 16);
-            CheckBounds("scale.Clip.GetBounds", g.Clip.GetBounds(g), 0, -16, 32, 16);
+                g.ScaleTransform(0.25f, 0.5f);
+                CheckBounds("scale.ClipBounds", g.ClipBounds, 0, -16, 32, 16);
+                CheckBounds("scale.Clip.GetBounds", g.Clip.GetBounds(g), 0, -16, 32, 16);
 
-            g.TranslateTransform(8, 8);
-            CheckBounds("translate.ClipBounds", g.ClipBounds, -8, -24, 32, 16);
-            CheckBounds("translate.Clip.GetBounds", g.Clip.GetBounds(g), -8, -24, 32, 16);
+                g.TranslateTransform(8, 8);
+                CheckBounds("translate.ClipBounds", g.ClipBounds, -8, -24, 32, 16);
+                CheckBounds("translate.Clip.GetBounds", g.Clip.GetBounds(g), -8, -24, 32, 16);
 
-            g.MultiplyTransform(g.Transform);
-            CheckBounds("multiply.ClipBounds", g.ClipBounds, -104, -56, 64, 64);
-            CheckBounds("multiply.Clip.GetBounds", g.Clip.GetBounds(g), -104, -56, 64, 64);
+                g.MultiplyTransform(g.Transform);
+                CheckBounds("multiply.ClipBounds", g.ClipBounds, -104, -56, 64, 64);
+                CheckBounds("multiply.Clip.GetBounds", g.Clip.GetBounds(g), -104, -56, 64, 64);
 
-            g.ResetTransform();
-            CheckBounds("reset.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            CheckBounds("reset.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.ResetTransform();
+                CheckBounds("reset.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                CheckBounds("reset.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_TranslateTransform_BoundsChange()
         {
-            Graphics g = Get(16, 16);
-            CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
-            CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
-            g.TranslateTransform(-16, -16);
-            CheckBounds("translated.ClipBounds", g.ClipBounds, 16, 16, 16, 16);
-            CheckBounds("translated.Clip.GetBounds", g.Clip.GetBounds(g), 16, 16, 16, 16);
+            using (Graphics g = Get(16, 16))
+            {
+                CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
+                CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
+                g.TranslateTransform(-16, -16);
+                CheckBounds("translated.ClipBounds", g.ClipBounds, 16, 16, 16, 16);
+                CheckBounds("translated.Clip.GetBounds", g.Clip.GetBounds(g), 16, 16, 16, 16);
 
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            // ClipBounds isn't affected by a previous translation
-            CheckBounds("rectangle.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            // Clip.GetBounds isn't affected by a previous translation
-            CheckBounds("rectangle.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                // ClipBounds isn't affected by a previous translation
+                CheckBounds("rectangle.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                // Clip.GetBounds isn't affected by a previous translation
+                CheckBounds("rectangle.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
 
-            g.ResetTransform();
-            CheckBounds("reseted.ClipBounds", g.ClipBounds, -16, -16, 8, 8);
-            CheckBounds("reseted.Clip.GetBounds", g.Clip.GetBounds(g), -16, -16, 8, 8);
+                g.ResetTransform();
+                CheckBounds("reseted.ClipBounds", g.ClipBounds, -16, -16, 8, 8);
+                CheckBounds("reseted.Clip.GetBounds", g.Clip.GetBounds(g), -16, -16, 8, 8);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_RotateTransform_BoundsChange()
         {
-            Graphics g = Get(16, 16);
-            CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
-            CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
-            // we select a "simple" angle because the region will be converted into
-            // a bitmap (well for libgdiplus) and we would lose precision after that
-            g.RotateTransform(90);
-            CheckBounds("rotated.ClipBounds", g.ClipBounds, 0, -16, 16, 16);
-            CheckBounds("rotated.Clip.GetBounds", g.Clip.GetBounds(g), 0, -16, 16, 16);
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            // ClipBounds isn't affected by a previous rotation (90)
-            CheckBounds("rectangle.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            // Clip.GetBounds isn't affected by a previous rotation
-            CheckBounds("rectangle.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            using (Graphics g = Get(16, 16))
+            {
+                CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
+                CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
+                // we select a "simple" angle because the region will be converted into
+                // a bitmap (well for libgdiplus) and we would lose precision after that
+                g.RotateTransform(90);
+                CheckBounds("rotated.ClipBounds", g.ClipBounds, 0, -16, 16, 16);
+                CheckBounds("rotated.Clip.GetBounds", g.Clip.GetBounds(g), 0, -16, 16, 16);
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                // ClipBounds isn't affected by a previous rotation (90)
+                CheckBounds("rectangle.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                // Clip.GetBounds isn't affected by a previous rotation
+                CheckBounds("rectangle.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
 
-            g.ResetTransform();
-            CheckBounds("reseted.ClipBounds", g.ClipBounds, -8, 0, 8, 8);
-            CheckBounds("reseted.Clip.GetBounds", g.Clip.GetBounds(g), -8, 0, 8, 8);
+                g.ResetTransform();
+                CheckBounds("reseted.ClipBounds", g.ClipBounds, -8, 0, 8, 8);
+                CheckBounds("reseted.Clip.GetBounds", g.Clip.GetBounds(g), -8, 0, 8, 8);
+            }
         }
 
         private void CheckBoundsInt(string msg, RectangleF bounds, int x, int y, int w, int h)
@@ -633,70 +667,78 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_ScaleTransform_NoBoundsChange()
         {
-            Graphics g = Get(16, 16);
-            CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
-            CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
-            g.ScaleTransform(2, 0.5f);
-            CheckBounds("scaled.ClipBounds", g.ClipBounds, 0, 0, 8, 32);
-            CheckBounds("scaled.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 32);
-            g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-            // ClipBounds isn't affected by a previous scaling
-            CheckBounds("rectangle.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
-            // Clip.GetBounds isn't affected by a previous scaling
-            CheckBounds("rectangle.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+            using (Graphics g = Get(16, 16))
+            {
+                CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
+                CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
+                g.ScaleTransform(2, 0.5f);
+                CheckBounds("scaled.ClipBounds", g.ClipBounds, 0, 0, 8, 32);
+                CheckBounds("scaled.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 32);
+                g.Clip = new Region(new Rectangle(0, 0, 8, 8));
+                // ClipBounds isn't affected by a previous scaling
+                CheckBounds("rectangle.ClipBounds", g.ClipBounds, 0, 0, 8, 8);
+                // Clip.GetBounds isn't affected by a previous scaling
+                CheckBounds("rectangle.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
 
-            g.ResetTransform();
-            CheckBounds("reseted.ClipBounds", g.ClipBounds, 0, 0, 16, 4);
-            CheckBounds("reseted.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 4);
+                g.ResetTransform();
+                CheckBounds("reseted.ClipBounds", g.ClipBounds, 0, 0, 16, 4);
+                CheckBounds("reseted.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 4);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ScaleTransform_X0()
         {
-            Graphics g = Get(16, 16);
-            Assert.Throws<ArgumentException>(() => g.ScaleTransform(0, 1));
+            using (Graphics g = Get(16, 16))
+            {
+                Assert.Throws<ArgumentException>(() => g.ScaleTransform(0, 1));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ScaleTransform_Y0()
         {
-            Graphics g = Get(16, 16);
-            Assert.Throws<ArgumentException>(() => g.ScaleTransform(1, 0));
+            using (Graphics g = Get(16, 16))
+            {
+                Assert.Throws<ArgumentException>(() => g.ScaleTransform(1, 0));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TranslateTransform_Order()
         {
-            Graphics g = Get(16, 16);
-            g.Transform = new Matrix(1, 2, 3, 4, 5, 6);
-            g.TranslateTransform(3, -3);
-            float[] elements = g.Transform.Elements;
-            Assert.Equal(1, elements[0]);
-            Assert.Equal(2, elements[1]);
-            Assert.Equal(3, elements[2]);
-            Assert.Equal(4, elements[3]);
-            Assert.Equal(-1, elements[4]);
-            Assert.Equal(0, elements[5]);
+            using (Graphics g = Get(16, 16))
+            {
+                g.Transform = new Matrix(1, 2, 3, 4, 5, 6);
+                g.TranslateTransform(3, -3);
+                float[] elements = g.Transform.Elements;
+                Assert.Equal(1, elements[0]);
+                Assert.Equal(2, elements[1]);
+                Assert.Equal(3, elements[2]);
+                Assert.Equal(4, elements[3]);
+                Assert.Equal(-1, elements[4]);
+                Assert.Equal(0, elements[5]);
 
-            g.Transform = new Matrix(1, 2, 3, 4, 5, 6);
-            g.TranslateTransform(3, -3, MatrixOrder.Prepend);
-            elements = g.Transform.Elements;
-            Assert.Equal(1, elements[0]);
-            Assert.Equal(2, elements[1]);
-            Assert.Equal(3, elements[2]);
-            Assert.Equal(4, elements[3]);
-            Assert.Equal(-1, elements[4]);
-            Assert.Equal(0, elements[5]);
+                g.Transform = new Matrix(1, 2, 3, 4, 5, 6);
+                g.TranslateTransform(3, -3, MatrixOrder.Prepend);
+                elements = g.Transform.Elements;
+                Assert.Equal(1, elements[0]);
+                Assert.Equal(2, elements[1]);
+                Assert.Equal(3, elements[2]);
+                Assert.Equal(4, elements[3]);
+                Assert.Equal(-1, elements[4]);
+                Assert.Equal(0, elements[5]);
 
-            g.Transform = new Matrix(1, 2, 3, 4, 5, 6);
-            g.TranslateTransform(3, -3, MatrixOrder.Append);
-            elements = g.Transform.Elements;
-            Assert.Equal(1, elements[0]);
-            Assert.Equal(2, elements[1]);
-            Assert.Equal(3, elements[2]);
-            Assert.Equal(4, elements[3]);
-            Assert.Equal(8, elements[4]);
-            Assert.Equal(3, elements[5]);
+                g.Transform = new Matrix(1, 2, 3, 4, 5, 6);
+                g.TranslateTransform(3, -3, MatrixOrder.Append);
+                elements = g.Transform.Elements;
+                Assert.Equal(1, elements[0]);
+                Assert.Equal(2, elements[1]);
+                Assert.Equal(3, elements[2]);
+                Assert.Equal(4, elements[3]);
+                Assert.Equal(8, elements[4]);
+                Assert.Equal(3, elements[5]);
+            }
         }
 
         static Point[] SmallCurve = new Point[3] { new Point(0, 0), new Point(15, 5), new Point(5, 15) };
@@ -708,187 +750,227 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_NotEnoughPoints()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            CheckForEmptyBitmap(bitmap);
-            g.DrawCurve(Pens.Black, TooSmallCurve, 0.5f);
-            CheckForNonEmptyBitmap(bitmap);
-            // so a "curve" can be drawn with less than 3 points!
-            // actually I used to call that a line... (and it's not related to tension)
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                CheckForEmptyBitmap(bitmap);
+                g.DrawCurve(Pens.Black, TooSmallCurve, 0.5f);
+                CheckForNonEmptyBitmap(bitmap);
+                // so a "curve" can be drawn with less than 3 points!
+                // actually I used to call that a line... (and it's not related to tension)
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_SinglePoint()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, new Point[1] { new Point(10, 10) }, 0.5f));
-            // a single point isn't enough
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, new Point[1] { new Point(10, 10) }, 0.5f));
+                // a single point isn't enough
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve3_NotEnoughPoints()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, TooSmallCurve, 0, 2, 0.5f));
-            // aha, this is API dependent
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, TooSmallCurve, 0, 2, 0.5f));
+                // aha, this is API dependent
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_NegativeTension()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            // documented as bigger (or equals) to 0
-            g.DrawCurve(Pens.Black, SmallCurveF, -0.9f);
-            CheckForNonEmptyBitmap(bitmap);
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                // documented as bigger (or equals) to 0
+                g.DrawCurve(Pens.Black, SmallCurveF, -0.9f);
+                CheckForNonEmptyBitmap(bitmap);
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_PositiveTension()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            g.DrawCurve(Pens.Black, SmallCurveF, 0.9f);
-            // this is not the same as -1
-            CheckForNonEmptyBitmap(bitmap);
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.DrawCurve(Pens.Black, SmallCurveF, 0.9f);
+                // this is not the same as -1
+                CheckForNonEmptyBitmap(bitmap);
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_ZeroSegments()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, SmallCurveF, 0, 0));
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, SmallCurveF, 0, 0));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_NegativeSegments()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, SmallCurveF, 0, -1));
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, SmallCurveF, 0, -1));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_OffsetTooLarge()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            // starting offset 1 doesn't give 3 points to make a curve
-            Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, SmallCurveF, 1, 2));
-            // and in this case 2 points aren't enough to draw something
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                // starting offset 1 doesn't give 3 points to make a curve
+                Assert.Throws<ArgumentException>(() => g.DrawCurve(Pens.Black, SmallCurveF, 1, 2));
+                // and in this case 2 points aren't enough to draw something
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_Offset_0()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            g.DrawCurve(Pens.Black, LargeCurveF, 0, 2, 0.5f);
-            CheckForNonEmptyBitmap(bitmap);
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.DrawCurve(Pens.Black, LargeCurveF, 0, 2, 0.5f);
+                CheckForNonEmptyBitmap(bitmap);
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_Offset_1()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            g.DrawCurve(Pens.Black, LargeCurveF, 1, 2, 0.5f);
-            CheckForNonEmptyBitmap(bitmap);
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.DrawCurve(Pens.Black, LargeCurveF, 1, 2, 0.5f);
+                CheckForNonEmptyBitmap(bitmap);
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_Offset_2()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            // it works even with two points because we know the previous ones
-            g.DrawCurve(Pens.Black, LargeCurveF, 2, 1, 0.5f);
-            CheckForNonEmptyBitmap(bitmap);
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                // it works even with two points because we know the previous ones
+                g.DrawCurve(Pens.Black, LargeCurveF, 2, 1, 0.5f);
+                CheckForNonEmptyBitmap(bitmap);
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangle_Negative()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Pen pen = new Pen(Color.Red);
-            g.DrawRectangle(pen, 5, 5, -10, -10);
-            g.DrawRectangle(pen, 0.0f, 0.0f, 5.0f, -10.0f);
-            g.DrawRectangle(pen, new Rectangle(15, 0, -10, 5));
-            CheckForEmptyBitmap(bitmap);
-            pen.Dispose();
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            using (Pen pen = new Pen(Color.Red))
+            {
+                g.DrawRectangle(pen, 5, 5, -10, -10);
+                g.DrawRectangle(pen, 0.0f, 0.0f, 5.0f, -10.0f);
+                g.DrawRectangle(pen, new Rectangle(15, 0, -10, 5));
+                CheckForEmptyBitmap(bitmap);
+                pen.Dispose();
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangles_Negative()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Pen pen = new Pen(Color.Red);
-            Rectangle[] rects = new Rectangle[2] {
-                new Rectangle (5, 5, -10, -10), new Rectangle (0, 0, 5, -10)
-            };
-            RectangleF[] rectf = new RectangleF[2] {
-                new RectangleF (0.0f, 5.0f, -10.0f, -10.0f), new RectangleF (15.0f, 0.0f, -10.0f, 5.0f)
-            };
-            g.DrawRectangles(pen, rects);
-            g.DrawRectangles(pen, rectf);
-            CheckForEmptyBitmap(bitmap);
-            pen.Dispose();
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            using (Pen pen = new Pen(Color.Red))
+            {
+                Rectangle[] rects = new Rectangle[2]
+                {
+                    new Rectangle (5, 5, -10, -10),
+                    new Rectangle (0, 0, 5, -10)
+                };
+                RectangleF[] rectf = new RectangleF[2]
+                {
+                    new RectangleF (0.0f, 5.0f, -10.0f, -10.0f),
+                    new RectangleF (15.0f, 0.0f, -10.0f, 5.0f)
+                };
+                g.DrawRectangles(pen, rects);
+                g.DrawRectangles(pen, rectf);
+                CheckForEmptyBitmap(bitmap);
+                pen.Dispose();
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FillRectangle_Negative()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            SolidBrush brush = new SolidBrush(Color.Red);
-            g.FillRectangle(brush, 5, 5, -10, -10);
-            g.FillRectangle(brush, 0.0f, 0.0f, 5.0f, -10.0f);
-            g.FillRectangle(brush, new Rectangle(15, 0, -10, 5));
-            CheckForEmptyBitmap(bitmap);
-            brush.Dispose();
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            using (SolidBrush brush = new SolidBrush(Color.Red))
+            {
+                g.FillRectangle(brush, 5, 5, -10, -10);
+                g.FillRectangle(brush, 0.0f, 0.0f, 5.0f, -10.0f);
+                g.FillRectangle(brush, new Rectangle(15, 0, -10, 5));
+                CheckForEmptyBitmap(bitmap);
+                brush.Dispose();
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FillRectangles_Negative()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            SolidBrush brush = new SolidBrush(Color.Red);
-            Rectangle[] rects = new Rectangle[2] {
-                new Rectangle (5, 5, -10, -10), new Rectangle (0, 0, 5, -10)
-            };
-            RectangleF[] rectf = new RectangleF[2] {
-                new RectangleF (0.0f, 5.0f, -10.0f, -10.0f), new RectangleF (15.0f, 0.0f, -10.0f, 5.0f)
-            };
-            g.FillRectangles(brush, rects);
-            g.FillRectangles(brush, rectf);
-            CheckForEmptyBitmap(bitmap);
-            brush.Dispose();
-            g.Dispose();
-            bitmap.Dispose();
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            using (SolidBrush brush = new SolidBrush(Color.Red))
+            {
+                Rectangle[] rects = new Rectangle[2]
+                {
+                    new Rectangle (5, 5, -10, -10),
+                    new Rectangle (0, 0, 5, -10)
+                };
+
+                RectangleF[] rectf = new RectangleF[2]
+                {
+                    new RectangleF (0.0f, 5.0f, -10.0f, -10.0f),
+                    new RectangleF (15.0f, 0.0f, -10.0f, 5.0f)
+                };
+
+                g.FillRectangles(brush, rects);
+                g.FillRectangles(brush, rectf);
+                CheckForEmptyBitmap(bitmap);
+                brush.Dispose();
+                g.Dispose();
+                bitmap.Dispose();
+            }
         }
 
         private void CheckDefaultProperties(string message, Graphics g)
@@ -936,111 +1018,117 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BeginContainer()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
 
-            CheckDefaultProperties("default", g);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                CheckDefaultProperties("default", g);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
 
-            g.Clip = new Region(new Rectangle(10, 10, 10, 10));
-            g.CompositingMode = CompositingMode.SourceCopy;
-            g.CompositingQuality = CompositingQuality.HighQuality;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.PageScale = 0.5f;
-            g.PageUnit = GraphicsUnit.Inch;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.RenderingOrigin = new Point(-1, -1);
-            g.RotateTransform(45);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextContrast = 0;
-            g.TextRenderingHint = TextRenderingHint.AntiAlias;
-            CheckCustomProperties("modified", g);
-            CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
+                g.Clip = new Region(new Rectangle(10, 10, 10, 10));
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PageScale = 0.5f;
+                g.PageUnit = GraphicsUnit.Inch;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.RenderingOrigin = new Point(-1, -1);
+                g.RotateTransform(45);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextContrast = 0;
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;
+                CheckCustomProperties("modified", g);
+                CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
 
-            GraphicsContainer gc = g.BeginContainer();
-            // things gets reseted after calling BeginContainer
-            CheckDefaultProperties("BeginContainer", g);
-            // but not everything 
-            Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
+                GraphicsContainer gc = g.BeginContainer();
+                // things gets reseted after calling BeginContainer
+                CheckDefaultProperties("BeginContainer", g);
+                // but not everything 
+                Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
 
-            g.EndContainer(gc);
-            CheckCustomProperties("EndContainer", g);
+                g.EndContainer(gc);
+                CheckCustomProperties("EndContainer", g);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BeginContainer_Rect()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                CheckDefaultProperties("default", g);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
 
-            CheckDefaultProperties("default", g);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                g.Clip = new Region(new Rectangle(10, 10, 10, 10));
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PageScale = 0.5f;
+                g.PageUnit = GraphicsUnit.Inch;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.RenderingOrigin = new Point(-1, -1);
+                g.RotateTransform(45);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextContrast = 0;
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;
+                CheckCustomProperties("modified", g);
+                CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
 
-            g.Clip = new Region(new Rectangle(10, 10, 10, 10));
-            g.CompositingMode = CompositingMode.SourceCopy;
-            g.CompositingQuality = CompositingQuality.HighQuality;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.PageScale = 0.5f;
-            g.PageUnit = GraphicsUnit.Inch;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.RenderingOrigin = new Point(-1, -1);
-            g.RotateTransform(45);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextContrast = 0;
-            g.TextRenderingHint = TextRenderingHint.AntiAlias;
-            CheckCustomProperties("modified", g);
-            CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
+                GraphicsContainer gc = g.BeginContainer(new Rectangle(10, 20, 30, 40), new Rectangle(10, 20, 300, 400), GraphicsUnit.Millimeter);
+                // things gets reseted after calling BeginContainer
+                CheckDefaultProperties("BeginContainer", g);
+                // but not everything 
+                Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
 
-            GraphicsContainer gc = g.BeginContainer(new Rectangle(10, 20, 30, 40), new Rectangle(10, 20, 300, 400), GraphicsUnit.Millimeter);
-            // things gets reseted after calling BeginContainer
-            CheckDefaultProperties("BeginContainer", g);
-            // but not everything 
-            Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
-
-            g.EndContainer(gc);
-            CheckCustomProperties("EndContainer", g);
-            CheckMatrix("EndContainer.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
+                g.EndContainer(gc);
+                CheckCustomProperties("EndContainer", g);
+                CheckMatrix("EndContainer.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BeginContainer_RectF()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                CheckDefaultProperties("default", g);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
 
-            CheckDefaultProperties("default", g);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                g.Clip = new Region(new Rectangle(10, 10, 10, 10));
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PageScale = 0.5f;
+                g.PageUnit = GraphicsUnit.Inch;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.RenderingOrigin = new Point(-1, -1);
+                g.RotateTransform(45);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextContrast = 0;
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;
+                CheckCustomProperties("modified", g);
+                CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
 
-            g.Clip = new Region(new Rectangle(10, 10, 10, 10));
-            g.CompositingMode = CompositingMode.SourceCopy;
-            g.CompositingQuality = CompositingQuality.HighQuality;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.PageScale = 0.5f;
-            g.PageUnit = GraphicsUnit.Inch;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.RenderingOrigin = new Point(-1, -1);
-            g.RotateTransform(45);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextContrast = 0;
-            g.TextRenderingHint = TextRenderingHint.AntiAlias;
-            CheckCustomProperties("modified", g);
-            CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
+                GraphicsContainer gc = g.BeginContainer(new RectangleF(40, 30, 20, 10), new RectangleF(10, 20, 30, 40), GraphicsUnit.Inch);
+                // things gets reseted after calling BeginContainer
+                CheckDefaultProperties("BeginContainer", g);
+                // but not everything 
+                Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
 
-            GraphicsContainer gc = g.BeginContainer(new RectangleF(40, 30, 20, 10), new RectangleF(10, 20, 30, 40), GraphicsUnit.Inch);
-            // things gets reseted after calling BeginContainer
-            CheckDefaultProperties("BeginContainer", g);
-            // but not everything 
-            Assert.Equal(new Point(-1, -1), g.RenderingOrigin);
-
-            g.EndContainer(gc);
-            CheckCustomProperties("EndContainer", g);
+                g.EndContainer(gc);
+                CheckCustomProperties("EndContainer", g);
+            }
         }
 
         private void BeginContainer_GraphicsUnit(GraphicsUnit unit)
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            g.BeginContainer(new RectangleF(40, 30, 20, 10), new RectangleF(10, 20, 30, 40), unit);
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.BeginContainer(new RectangleF(40, 30, 20, 10), new RectangleF(10, 20, 30, 40), unit);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -1074,69 +1162,72 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void EndContainer_Null()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<ArgumentNullException>(() => g.EndContainer(null));
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                Assert.Throws<ArgumentNullException>(() => g.EndContainer(null));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Save()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                CheckDefaultProperties("default", g);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
 
-            CheckDefaultProperties("default", g);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                GraphicsState gs1 = g.Save();
+                // nothing is changed after a save
+                CheckDefaultProperties("save1", g);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
 
-            GraphicsState gs1 = g.Save();
-            // nothing is changed after a save
-            CheckDefaultProperties("save1", g);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                g.Clip = new Region(new Rectangle(10, 10, 10, 10));
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PageScale = 0.5f;
+                g.PageUnit = GraphicsUnit.Inch;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.RenderingOrigin = new Point(-1, -1);
+                g.RotateTransform(45);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextContrast = 0;
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;
+                CheckCustomProperties("modified", g);
+                CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
 
-            g.Clip = new Region(new Rectangle(10, 10, 10, 10));
-            g.CompositingMode = CompositingMode.SourceCopy;
-            g.CompositingQuality = CompositingQuality.HighQuality;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.PageScale = 0.5f;
-            g.PageUnit = GraphicsUnit.Inch;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.RenderingOrigin = new Point(-1, -1);
-            g.RotateTransform(45);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextContrast = 0;
-            g.TextRenderingHint = TextRenderingHint.AntiAlias;
-            CheckCustomProperties("modified", g);
-            CheckMatrix("modified.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
+                GraphicsState gs2 = g.Save();
+                CheckCustomProperties("save2", g);
 
-            GraphicsState gs2 = g.Save();
-            CheckCustomProperties("save2", g);
+                g.Restore(gs2);
+                CheckCustomProperties("restored1", g);
+                CheckMatrix("restored1.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
 
-            g.Restore(gs2);
-            CheckCustomProperties("restored1", g);
-            CheckMatrix("restored1.Transform", g.Transform, 0.707f, 0.707f, -0.707f, 0.707f, 0, 0);
-
-            g.Restore(gs1);
-            CheckDefaultProperties("restored2", g);
-            Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+                g.Restore(gs1);
+                CheckDefaultProperties("restored2", g);
+                Assert.Equal(new Point(0, 0), g.RenderingOrigin);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Restore_Null()
         {
-            Bitmap bitmap = new Bitmap(20, 20);
-            Graphics g = Graphics.FromImage(bitmap);
-            Assert.Throws<NullReferenceException>(() => g.Restore(null));
+            using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                Assert.Throws<NullReferenceException>(() => g.Restore(null));
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FillRectangles_BrushNull_Rectangle()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.FillRectangles(null, new Rectangle[1]));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.FillRectangles(null, new Rectangle[1]));
             }
         }
 
@@ -1144,11 +1235,9 @@ namespace MonoTests.System.Drawing
         public void FillRectangles_Rectangle_Null()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.FillRectangles(Brushes.Red, (Rectangle[])null));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.FillRectangles(Brushes.Red, (Rectangle[])null));
             }
         }
 
@@ -1156,11 +1245,9 @@ namespace MonoTests.System.Drawing
         public void FillRectanglesZeroRectangle()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentException>(() => g.FillRectangles(Brushes.Red, new Rectangle[0]));
-                }
+                Assert.Throws<ArgumentException>(() => g.FillRectangles(Brushes.Red, new Rectangle[0]));
             }
         }
 
@@ -1168,11 +1255,9 @@ namespace MonoTests.System.Drawing
         public void FillRectangles_BrushNull_RectangleF()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.FillRectangles(null, new RectangleF[1]));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.FillRectangles(null, new RectangleF[1]));
             }
         }
 
@@ -1180,11 +1265,9 @@ namespace MonoTests.System.Drawing
         public void FillRectangles_RectangleF_Null()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.FillRectangles(Brushes.Red, (RectangleF[])null));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.FillRectangles(Brushes.Red, (RectangleF[])null));
             }
         }
 
@@ -1192,11 +1275,9 @@ namespace MonoTests.System.Drawing
         public void FillRectanglesZeroRectangleF()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentException>(() => g.FillRectangles(Brushes.Red, new RectangleF[0]));
-                }
+                Assert.Throws<ArgumentException>(() => g.FillRectangles(Brushes.Red, new RectangleF[0]));
             }
         }
 
@@ -1626,11 +1707,9 @@ namespace MonoTests.System.Drawing
         public void MeasureString_StringFont_Null()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.MeasureString("a", null));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.MeasureString("a", null));
             }
         }
 
@@ -1638,30 +1717,26 @@ namespace MonoTests.System.Drawing
         public void MeasureString_StringFontSizeF()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    SizeF size = g.MeasureString("a", font, SizeF.Empty);
-                    Assert.False(size.IsEmpty);
+                SizeF size = g.MeasureString("a", font, SizeF.Empty);
+                Assert.False(size.IsEmpty);
 
-                    size = g.MeasureString(String.Empty, font, SizeF.Empty);
-                    Assert.True(size.IsEmpty);
-                }
+                size = g.MeasureString(String.Empty, font, SizeF.Empty);
+                Assert.True(size.IsEmpty);
             }
         }
 
         private void MeasureString_StringFontInt(string s)
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    SizeF size0 = g.MeasureString(s, font, 0);
-                    SizeF sizeN = g.MeasureString(s, font, Int32.MinValue);
-                    SizeF sizeP = g.MeasureString(s, font, Int32.MaxValue);
-                    Assert.Equal(size0, sizeN);
-                    Assert.Equal(size0, sizeP);
-                }
+                SizeF size0 = g.MeasureString(s, font, 0);
+                SizeF sizeN = g.MeasureString(s, font, Int32.MinValue);
+                SizeF sizeP = g.MeasureString(s, font, Int32.MaxValue);
+                Assert.Equal(size0, sizeN);
+                Assert.Equal(size0, sizeP);
             }
         }
 
@@ -1684,24 +1759,22 @@ namespace MonoTests.System.Drawing
             StringFormat string_format = new StringFormat();
 
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    string_format.Alignment = StringAlignment.Near;
-                    SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.Alignment = StringAlignment.Near;
+                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.Alignment = StringAlignment.Center;
-                    SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.Alignment = StringAlignment.Center;
+                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.Alignment = StringAlignment.Far;
-                    SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.Alignment = StringAlignment.Far;
+                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    Assert.Equal(near.Width, center.Width, 1);
-                    Assert.Equal(near.Height, center.Height, 1);
+                Assert.Equal(near.Width, center.Width, 1);
+                Assert.Equal(near.Height, center.Height, 1);
 
-                    Assert.Equal(center.Width, far.Width, 1);
-                    Assert.Equal(center.Height, far.Height, 1);
-                }
+                Assert.Equal(center.Width, far.Width, 1);
+                Assert.Equal(center.Height, far.Height, 1);
             }
         }
 
@@ -1713,24 +1786,22 @@ namespace MonoTests.System.Drawing
             string_format.FormatFlags = StringFormatFlags.DirectionVertical;
 
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    string_format.Alignment = StringAlignment.Near;
-                    SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.Alignment = StringAlignment.Near;
+                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.Alignment = StringAlignment.Center;
-                    SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.Alignment = StringAlignment.Center;
+                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.Alignment = StringAlignment.Far;
-                    SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.Alignment = StringAlignment.Far;
+                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    Assert.Equal(near.Width, center.Width, 0);
-                    Assert.Equal(near.Height, center.Height, 0);
+                Assert.Equal(near.Width, center.Width, 0);
+                Assert.Equal(near.Height, center.Height, 0);
 
-                    Assert.Equal(center.Width, far.Width, 0);
-                    Assert.Equal(center.Height, far.Height, 0);
-                }
+                Assert.Equal(center.Width, far.Width, 0);
+                Assert.Equal(center.Height, far.Height, 0);
             }
         }
 
@@ -1741,24 +1812,22 @@ namespace MonoTests.System.Drawing
             StringFormat string_format = new StringFormat();
 
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    string_format.LineAlignment = StringAlignment.Near;
-                    SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.LineAlignment = StringAlignment.Near;
+                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.LineAlignment = StringAlignment.Center;
-                    SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.LineAlignment = StringAlignment.Center;
+                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.LineAlignment = StringAlignment.Far;
-                    SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.LineAlignment = StringAlignment.Far;
+                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    Assert.Equal(near.Width, center.Width, 1);
-                    Assert.Equal(near.Height, center.Height, 1);
+                Assert.Equal(near.Width, center.Width, 1);
+                Assert.Equal(near.Height, center.Height, 1);
 
-                    Assert.Equal(center.Width, far.Width, 1);
-                    Assert.Equal(center.Height, far.Height, 1);
-                }
+                Assert.Equal(center.Width, far.Width, 1);
+                Assert.Equal(center.Height, far.Height, 1);
             }
         }
 
@@ -1770,24 +1839,22 @@ namespace MonoTests.System.Drawing
             string_format.FormatFlags = StringFormatFlags.DirectionVertical;
 
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    string_format.LineAlignment = StringAlignment.Near;
-                    SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.LineAlignment = StringAlignment.Near;
+                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.LineAlignment = StringAlignment.Center;
-                    SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.LineAlignment = StringAlignment.Center;
+                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    string_format.LineAlignment = StringAlignment.Far;
-                    SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                string_format.LineAlignment = StringAlignment.Far;
+                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
 
-                    Assert.Equal(near.Width, center.Width, 1);
-                    Assert.Equal(near.Height, center.Height, 1);
+                Assert.Equal(near.Width, center.Width, 1);
+                Assert.Equal(near.Height, center.Height, 1);
 
-                    Assert.Equal(center.Width, far.Width, 1);
-                    Assert.Equal(center.Height, far.Height, 1);
-                }
+                Assert.Equal(center.Width, far.Width, 1);
+                Assert.Equal(center.Height, far.Height, 1);
             }
         }
 
@@ -1795,19 +1862,17 @@ namespace MonoTests.System.Drawing
         public void MeasureString_MultlineString_Width()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    StringFormat string_format = new StringFormat();
+                StringFormat string_format = new StringFormat();
 
-                    string text1 = "Test\nTest123\nTest 456\nTest 1,2,3,4,5...";
-                    string text2 = "Test 1,2,3,4,5...";
+                string text1 = "Test\nTest123\nTest 456\nTest 1,2,3,4,5...";
+                string text2 = "Test 1,2,3,4,5...";
 
-                    SizeF size1 = g.MeasureString(text1, font, SizeF.Empty, string_format);
-                    SizeF size2 = g.MeasureString(text2, font, SizeF.Empty, string_format);
+                SizeF size1 = g.MeasureString(text1, font, SizeF.Empty, string_format);
+                SizeF size2 = g.MeasureString(text2, font, SizeF.Empty, string_format);
 
-                    Assert.Equal((int)size1.Width, (int)size2.Width);
-                }
+                Assert.Equal((int)size1.Width, (int)size2.Width);
             }
         }
 
@@ -1815,23 +1880,21 @@ namespace MonoTests.System.Drawing
         public void MeasureString_Bug76664()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    string s = "aaa aa aaaa a aaa";
-                    SizeF size = g.MeasureString(s, font);
+                string s = "aaa aa aaaa a aaa";
+                SizeF size = g.MeasureString(s, font);
 
-                    int chars, lines;
-                    SizeF size2 = g.MeasureString(s, font, new SizeF(80, size.Height), null, out chars, out lines);
+                int chars, lines;
+                SizeF size2 = g.MeasureString(s, font, new SizeF(80, size.Height), null, out chars, out lines);
 
-                    // in pixels
-                    Assert.True(size2.Width < size.Width);
-                    Assert.Equal(size2.Height, size.Height);
+                // in pixels
+                Assert.True(size2.Width < size.Width);
+                Assert.Equal(size2.Height, size.Height);
 
-                    Assert.Equal(1, lines);
-                    // LAMESPEC: documentation seems to suggest chars is total length
-                    Assert.True(chars < s.Length);
-                }
+                Assert.Equal(1, lines);
+                // LAMESPEC: documentation seems to suggest chars is total length
+                Assert.True(chars < s.Length);
             }
         }
 
@@ -1839,46 +1902,44 @@ namespace MonoTests.System.Drawing
         public void MeasureString_Bug80680()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
+                string s = String.Empty;
+                SizeF size = g.MeasureString(s, font);
+                Assert.Equal(0, size.Height);
+                Assert.Equal(0, size.Width);
+
+                s += " ";
+                SizeF expected = g.MeasureString(s, font);
+                for (int i = 1; i < 10; i++)
                 {
-                    string s = String.Empty;
-                    SizeF size = g.MeasureString(s, font);
-                    Assert.Equal(0, size.Height);
-                    Assert.Equal(0, size.Width);
-
                     s += " ";
-                    SizeF expected = g.MeasureString(s, font);
-                    for (int i = 1; i < 10; i++)
-                    {
-                        s += " ";
-                        size = g.MeasureString(s, font);
-                        Assert.Equal(expected.Height, size.Height, 1);
-                        Assert.Equal(expected.Width, size.Width, 1);
-                    }
-
-                    s = "a";
-                    expected = g.MeasureString(s, font);
-                    s = " " + s;
                     size = g.MeasureString(s, font);
-                    float space_width = size.Width - expected.Width;
-                    for (int i = 1; i < 10; i++)
-                    {
-                        size = g.MeasureString(s, font);
-                        Assert.Equal(expected.Height, size.Height, 1);
-                        Assert.Equal(expected.Width + i * space_width, size.Width, 1);
-                        s = " " + s;
-                    }
+                    Assert.Equal(expected.Height, size.Height, 1);
+                    Assert.Equal(expected.Width, size.Width, 1);
+                }
 
-                    s = "a";
-                    expected = g.MeasureString(s, font);
-                    for (int i = 1; i < 10; i++)
-                    {
-                        s = s + " ";
-                        size = g.MeasureString(s, font);
-                        Assert.Equal(expected.Height, size.Height, 1);
-                        Assert.Equal(expected.Width, size.Width, 1);
-                    }
+                s = "a";
+                expected = g.MeasureString(s, font);
+                s = " " + s;
+                size = g.MeasureString(s, font);
+                float space_width = size.Width - expected.Width;
+                for (int i = 1; i < 10; i++)
+                {
+                    size = g.MeasureString(s, font);
+                    Assert.Equal(expected.Height, size.Height, 1);
+                    Assert.Equal(expected.Width + i * space_width, size.Width, 1);
+                    s = " " + s;
+                }
+
+                s = "a";
+                expected = g.MeasureString(s, font);
+                for (int i = 1; i < 10; i++)
+                {
+                    s = s + " ";
+                    size = g.MeasureString(s, font);
+                    Assert.Equal(expected.Height, size.Height, 1);
+                    Assert.Equal(expected.Width, size.Width, 1);
                 }
             }
         }
@@ -1887,19 +1948,17 @@ namespace MonoTests.System.Drawing
         public void MeasureCharacterRanges_NullOrEmptyText()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Region[] regions = g.MeasureCharacterRanges(null, font, new RectangleF(), null);
-                    Assert.Equal(0, regions.Length);
-                    regions = g.MeasureCharacterRanges(String.Empty, font, new RectangleF(), null);
-                    Assert.Equal(0, regions.Length);
-                    // null font is ok with null or empty string
-                    regions = g.MeasureCharacterRanges(null, null, new RectangleF(), null);
-                    Assert.Equal(0, regions.Length);
-                    regions = g.MeasureCharacterRanges(String.Empty, null, new RectangleF(), null);
-                    Assert.Equal(0, regions.Length);
-                }
+                Region[] regions = g.MeasureCharacterRanges(null, font, new RectangleF(), null);
+                Assert.Equal(0, regions.Length);
+                regions = g.MeasureCharacterRanges(String.Empty, font, new RectangleF(), null);
+                Assert.Equal(0, regions.Length);
+                // null font is ok with null or empty string
+                regions = g.MeasureCharacterRanges(null, null, new RectangleF(), null);
+                Assert.Equal(0, regions.Length);
+                regions = g.MeasureCharacterRanges(String.Empty, null, new RectangleF(), null);
+                Assert.Equal(0, regions.Length);
             }
         }
 
@@ -1907,13 +1966,11 @@ namespace MonoTests.System.Drawing
         public void MeasureCharacterRanges_EmptyStringFormat()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    // string format without character ranges
-                    Region[] regions = g.MeasureCharacterRanges("Mono", font, new RectangleF(), new StringFormat());
-                    Assert.Equal(0, regions.Length);
-                }
+                // string format without character ranges
+                Region[] regions = g.MeasureCharacterRanges("Mono", font, new RectangleF(), new StringFormat());
+                Assert.Equal(0, regions.Length);
             }
         }
 
@@ -1921,11 +1978,9 @@ namespace MonoTests.System.Drawing
         public void MeasureCharacterRanges_FontNull()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.MeasureCharacterRanges("a", null, new RectangleF(), null));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.MeasureCharacterRanges("a", null, new RectangleF(), null));
             }
         }
 
@@ -1942,16 +1997,14 @@ namespace MonoTests.System.Drawing
             string_format.SetMeasurableCharacterRanges(ranges);
 
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
-                    RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
-                    Region[] regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
+                SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
+                RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
+                Region[] regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
 
-                    Assert.Equal(2, regions.Length);
-                    Assert.Equal(regions[0].GetBounds(g).Height, regions[1].GetBounds(g).Height);
-                }
+                Assert.Equal(2, regions.Length);
+                Assert.Equal(regions[0].GetBounds(g).Height, regions[1].GetBounds(g).Height);
             }
         }
 
@@ -1965,13 +2018,11 @@ namespace MonoTests.System.Drawing
             string_format.SetMeasurableCharacterRanges(ranges);
 
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
-                    RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
-                    g.MeasureCharacterRanges(text, font, layout_rect, string_format);
-                }
+                SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
+                RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
+                g.MeasureCharacterRanges(text, font, layout_rect, string_format);
             }
         }
 
@@ -2000,29 +2051,27 @@ namespace MonoTests.System.Drawing
             string_format.SetMeasurableCharacterRanges(ranges);
 
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
-                    RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
+                SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
+                RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
 
-                    // here & is part of the measure and visible
-                    string_format.HotkeyPrefix = HotkeyPrefix.None;
-                    Region[] regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
-                    RectangleF bounds_none = regions[0].GetBounds(g);
+                // here & is part of the measure and visible
+                string_format.HotkeyPrefix = HotkeyPrefix.None;
+                Region[] regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
+                RectangleF bounds_none = regions[0].GetBounds(g);
 
-                    // here & is part of the measure (range) but visible as an underline
-                    string_format.HotkeyPrefix = HotkeyPrefix.Show;
-                    regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
-                    RectangleF bounds_show = regions[0].GetBounds(g);
-                    Assert.True(bounds_show.Width < bounds_none.Width);
+                // here & is part of the measure (range) but visible as an underline
+                string_format.HotkeyPrefix = HotkeyPrefix.Show;
+                regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
+                RectangleF bounds_show = regions[0].GetBounds(g);
+                Assert.True(bounds_show.Width < bounds_none.Width);
 
-                    // here & is part of the measure (range) but invisible
-                    string_format.HotkeyPrefix = HotkeyPrefix.Hide;
-                    regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
-                    RectangleF bounds_hide = regions[0].GetBounds(g);
-                    Assert.Equal(bounds_hide.Width, bounds_show.Width);
-                }
+                // here & is part of the measure (range) but invisible
+                string_format.HotkeyPrefix = HotkeyPrefix.Hide;
+                regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
+                RectangleF bounds_hide = regions[0].GetBounds(g);
+                Assert.Equal(bounds_hide.Width, bounds_show.Width);
             }
         }
 
@@ -2030,11 +2079,9 @@ namespace MonoTests.System.Drawing
         public void MeasureCharacterRanges_NullStringFormat()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Assert.Throws<ArgumentException>(() => g.MeasureCharacterRanges("Mono", font, new RectangleF(), null));
-                }
+                Assert.Throws<ArgumentException>(() => g.MeasureCharacterRanges("Mono", font, new RectangleF(), null));
             }
         }
 
@@ -2124,19 +2171,17 @@ namespace MonoTests.System.Drawing
         public void DrawString_EndlessLoop_Bug77699()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Rectangle rect = Rectangle.Empty;
-                    rect.Location = new Point(10, 10);
-                    rect.Size = new Size(1, 20);
-                    StringFormat fmt = new StringFormat();
-                    fmt.Alignment = StringAlignment.Center;
-                    fmt.LineAlignment = StringAlignment.Center;
-                    fmt.FormatFlags = StringFormatFlags.NoWrap;
-                    fmt.Trimming = StringTrimming.EllipsisWord;
-                    g.DrawString("Test String", font, Brushes.Black, rect, fmt);
-                }
+                Rectangle rect = Rectangle.Empty;
+                rect.Location = new Point(10, 10);
+                rect.Size = new Size(1, 20);
+                StringFormat fmt = new StringFormat();
+                fmt.Alignment = StringAlignment.Center;
+                fmt.LineAlignment = StringAlignment.Center;
+                fmt.FormatFlags = StringFormatFlags.NoWrap;
+                fmt.Trimming = StringTrimming.EllipsisWord;
+                g.DrawString("Test String", font, Brushes.Black, rect, fmt);
             }
         }
 
@@ -2144,18 +2189,16 @@ namespace MonoTests.System.Drawing
         public void DrawString_EndlessLoop_Wrapping()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
-                {
-                    Rectangle rect = Rectangle.Empty;
-                    rect.Location = new Point(10, 10);
-                    rect.Size = new Size(1, 20);
-                    StringFormat fmt = new StringFormat();
-                    fmt.Alignment = StringAlignment.Center;
-                    fmt.LineAlignment = StringAlignment.Center;
-                    fmt.Trimming = StringTrimming.EllipsisWord;
-                    g.DrawString("Test String", font, Brushes.Black, rect, fmt);
-                }
+                Rectangle rect = Rectangle.Empty;
+                rect.Location = new Point(10, 10);
+                rect.Size = new Size(1, 20);
+                StringFormat fmt = new StringFormat();
+                fmt.Alignment = StringAlignment.Center;
+                fmt.LineAlignment = StringAlignment.Center;
+                fmt.Trimming = StringTrimming.EllipsisWord;
+                g.DrawString("Test String", font, Brushes.Black, rect, fmt);
             }
         }
 
@@ -2164,16 +2207,14 @@ namespace MonoTests.System.Drawing
         {
             string text = "this is really long text........................................... with a lot o periods.";
             using (Bitmap bitmap = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bitmap))
             {
-                using (Graphics g = Graphics.FromImage(bitmap))
+                using (StringFormat format = new StringFormat())
                 {
-                    using (StringFormat format = new StringFormat())
-                    {
-                        format.Alignment = StringAlignment.Center;
-                        SizeF sz = g.MeasureString(text, font, 80, format);
-                        Assert.True(sz.Width < 80);
-                        Assert.True(sz.Height > font.Height * 2);
-                    }
+                    format.Alignment = StringAlignment.Center;
+                    SizeF sz = g.MeasureString(text, font, 80, format);
+                    Assert.True(sz.Width <= 80);
+                    Assert.True(sz.Height > font.Height * 2);
                 }
             }
         }
@@ -2182,15 +2223,13 @@ namespace MonoTests.System.Drawing
         public void GetReleaseHdcInternal()
         {
             using (Bitmap b = new Bitmap(10, 10))
+            using (Graphics g = Graphics.FromImage(b))
             {
-                using (Graphics g = Graphics.FromImage(b))
-                {
-                    IntPtr hdc1 = g.GetHdc();
-                    g.ReleaseHdcInternal(hdc1);
-                    IntPtr hdc2 = g.GetHdc();
-                    g.ReleaseHdcInternal(hdc2);
-                    Assert.Equal(hdc1, hdc2);
-                }
+                IntPtr hdc1 = g.GetHdc();
+                g.ReleaseHdcInternal(hdc1);
+                IntPtr hdc2 = g.GetHdc();
+                g.ReleaseHdcInternal(hdc2);
+                Assert.Equal(hdc1, hdc2);
             }
         }
 
@@ -2198,11 +2237,9 @@ namespace MonoTests.System.Drawing
         public void ReleaseHdcInternal_IntPtrZero()
         {
             using (Bitmap b = new Bitmap(10, 10))
+            using (Graphics g = Graphics.FromImage(b))
             {
-                using (Graphics g = Graphics.FromImage(b))
-                {
-                    Assert.Throws<ArgumentException>(() => g.ReleaseHdcInternal(IntPtr.Zero));
-                }
+                Assert.Throws<ArgumentException>(() => g.ReleaseHdcInternal(IntPtr.Zero));
             }
         }
 
@@ -2210,28 +2247,24 @@ namespace MonoTests.System.Drawing
         public void ReleaseHdcInternal_TwoTimes()
         {
             using (Bitmap b = new Bitmap(10, 10))
+            using (Graphics g = Graphics.FromImage(b))
             {
-                using (Graphics g = Graphics.FromImage(b))
-                {
-                    IntPtr hdc = g.GetHdc();
-                    g.ReleaseHdcInternal(hdc);
-                    Assert.Throws<ArgumentException>(() => g.ReleaseHdcInternal(hdc));
-                }
+                IntPtr hdc = g.GetHdc();
+                g.ReleaseHdcInternal(hdc);
+                Assert.Throws<ArgumentException>(() => g.ReleaseHdcInternal(hdc));
             }
         }
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TestReleaseHdc()
         {
             using (Bitmap b = new Bitmap(10, 10))
+            using (Graphics g = Graphics.FromImage(b))
             {
-                using (Graphics g = Graphics.FromImage(b))
-                {
-                    IntPtr hdc1 = g.GetHdc();
-                    g.ReleaseHdc();
-                    IntPtr hdc2 = g.GetHdc();
-                    g.ReleaseHdc();
-                    Assert.Equal(hdc1, hdc2);
-                }
+                IntPtr hdc1 = g.GetHdc();
+                g.ReleaseHdc();
+                IntPtr hdc2 = g.GetHdc();
+                g.ReleaseHdc();
+                Assert.Equal(hdc1, hdc2);
             }
         }
 
@@ -2239,11 +2272,9 @@ namespace MonoTests.System.Drawing
         public void TestReleaseHdcException()
         {
             using (Bitmap b = new Bitmap(10, 10))
+            using (Graphics g = Graphics.FromImage(b))
             {
-                using (Graphics g = Graphics.FromImage(b))
-                {
-                    Assert.Throws<ArgumentException>(() => g.ReleaseHdc());
-                }
+                Assert.Throws<ArgumentException>(() => g.ReleaseHdc());
             }
         }
 
@@ -2251,13 +2282,11 @@ namespace MonoTests.System.Drawing
         public void TestReleaseHdcException2()
         {
             using (Bitmap b = new Bitmap(10, 10))
+            using (Graphics g = Graphics.FromImage(b))
             {
-                using (Graphics g = Graphics.FromImage(b))
-                {
-                    g.GetHdc();
-                    g.ReleaseHdc();
-                    Assert.Throws<ArgumentException>(() => g.ReleaseHdc());
-                }
+                g.GetHdc();
+                g.ReleaseHdc();
+                Assert.Throws<ArgumentException>(() => g.ReleaseHdc());
             }
         }
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -2265,30 +2294,28 @@ namespace MonoTests.System.Drawing
         {
             // see #78958
             using (Bitmap bmp = new Bitmap(100, 100))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    RectangleF noclip = g.VisibleClipBounds;
-                    Assert.Equal(0, noclip.X);
-                    Assert.Equal(0, noclip.Y);
-                    Assert.Equal(100, noclip.Width);
-                    Assert.Equal(100, noclip.Height);
+                RectangleF noclip = g.VisibleClipBounds;
+                Assert.Equal(0, noclip.X);
+                Assert.Equal(0, noclip.Y);
+                Assert.Equal(100, noclip.Width);
+                Assert.Equal(100, noclip.Height);
 
-                    // note: libgdiplus regions are precise to multiple of multiple of 8
-                    g.Clip = new Region(new RectangleF(0, 0, 32, 32));
-                    RectangleF clip = g.VisibleClipBounds;
-                    Assert.Equal(0, clip.X);
-                    Assert.Equal(0, clip.Y);
-                    Assert.Equal(32, clip.Width, 4);
-                    Assert.Equal(32, clip.Height, 4);
+                // note: libgdiplus regions are precise to multiple of multiple of 8
+                g.Clip = new Region(new RectangleF(0, 0, 32, 32));
+                RectangleF clip = g.VisibleClipBounds;
+                Assert.Equal(0, clip.X);
+                Assert.Equal(0, clip.Y);
+                Assert.Equal(32, clip.Width, 4);
+                Assert.Equal(32, clip.Height, 4);
 
-                    g.RotateTransform(90);
-                    RectangleF rotclip = g.VisibleClipBounds;
-                    Assert.Equal(0, rotclip.X);
-                    Assert.Equal(-32, rotclip.Y, 4);
-                    Assert.Equal(32, rotclip.Width, 4);
-                    Assert.Equal(32, rotclip.Height, 4);
-                }
+                g.RotateTransform(90);
+                RectangleF rotclip = g.VisibleClipBounds;
+                Assert.Equal(0, rotclip.X);
+                Assert.Equal(-32, rotclip.Y, 4);
+                Assert.Equal(32, rotclip.Width, 4);
+                Assert.Equal(32, rotclip.Height, 4);
             }
         }
 
@@ -2296,42 +2323,40 @@ namespace MonoTests.System.Drawing
         public void VisibleClipBound_BigClip()
         {
             using (Bitmap bmp = new Bitmap(100, 100))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    RectangleF noclip = g.VisibleClipBounds;
-                    Assert.Equal(0, noclip.X);
-                    Assert.Equal(0, noclip.Y);
-                    Assert.Equal(100, noclip.Width);
-                    Assert.Equal(100, noclip.Height);
+                RectangleF noclip = g.VisibleClipBounds;
+                Assert.Equal(0, noclip.X);
+                Assert.Equal(0, noclip.Y);
+                Assert.Equal(100, noclip.Width);
+                Assert.Equal(100, noclip.Height);
 
-                    // clip is larger than bitmap
-                    g.Clip = new Region(new RectangleF(0, 0, 200, 200));
-                    RectangleF clipbound = g.ClipBounds;
-                    Assert.Equal(0, clipbound.X);
-                    Assert.Equal(0, clipbound.Y);
-                    Assert.Equal(200, clipbound.Width);
-                    Assert.Equal(200, clipbound.Height);
+                // clip is larger than bitmap
+                g.Clip = new Region(new RectangleF(0, 0, 200, 200));
+                RectangleF clipbound = g.ClipBounds;
+                Assert.Equal(0, clipbound.X);
+                Assert.Equal(0, clipbound.Y);
+                Assert.Equal(200, clipbound.Width);
+                Assert.Equal(200, clipbound.Height);
 
-                    RectangleF clip = g.VisibleClipBounds;
-                    Assert.Equal(0, clip.X);
-                    Assert.Equal(0, clip.Y);
-                    Assert.Equal(100, clip.Width);
-                    Assert.Equal(100, clip.Height);
+                RectangleF clip = g.VisibleClipBounds;
+                Assert.Equal(0, clip.X);
+                Assert.Equal(0, clip.Y);
+                Assert.Equal(100, clip.Width);
+                Assert.Equal(100, clip.Height);
 
-                    g.RotateTransform(90);
-                    RectangleF rotclipbound = g.ClipBounds;
-                    Assert.Equal(0, rotclipbound.X);
-                    Assert.Equal(-200, rotclipbound.Y, 4);
-                    Assert.Equal(200, rotclipbound.Width, 4);
-                    Assert.Equal(200, rotclipbound.Height, 4);
+                g.RotateTransform(90);
+                RectangleF rotclipbound = g.ClipBounds;
+                Assert.Equal(0, rotclipbound.X);
+                Assert.Equal(-200, rotclipbound.Y, 4);
+                Assert.Equal(200, rotclipbound.Width, 4);
+                Assert.Equal(200, rotclipbound.Height, 4);
 
-                    RectangleF rotclip = g.VisibleClipBounds;
-                    Assert.Equal(0, rotclip.X);
-                    Assert.Equal(-100, rotclip.Y, 4);
-                    Assert.Equal(100, rotclip.Width, 4);
-                    Assert.Equal(100, rotclip.Height, 4);
-                }
+                RectangleF rotclip = g.VisibleClipBounds;
+                Assert.Equal(0, rotclip.X);
+                Assert.Equal(-100, rotclip.Y, 4);
+                Assert.Equal(100, rotclip.Width, 4);
+                Assert.Equal(100, rotclip.Height, 4);
             }
         }
 
@@ -2339,22 +2364,20 @@ namespace MonoTests.System.Drawing
         public void Rotate()
         {
             using (Bitmap bmp = new Bitmap(100, 50))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    RectangleF vcb = g.VisibleClipBounds;
-                    Assert.Equal(0, vcb.X);
-                    Assert.Equal(0, vcb.Y);
-                    Assert.Equal(100, vcb.Width, 4);
-                    Assert.Equal(50, vcb.Height, 4);
+                RectangleF vcb = g.VisibleClipBounds;
+                Assert.Equal(0, vcb.X);
+                Assert.Equal(0, vcb.Y);
+                Assert.Equal(100, vcb.Width, 4);
+                Assert.Equal(50, vcb.Height, 4);
 
-                    g.RotateTransform(90);
-                    RectangleF rvcb = g.VisibleClipBounds;
-                    Assert.Equal(0, rvcb.X);
-                    Assert.Equal(-100, rvcb.Y, 4);
-                    Assert.Equal(50.0f, rvcb.Width, 4);
-                    Assert.Equal(100, rvcb.Height, 4);
-                }
+                g.RotateTransform(90);
+                RectangleF rvcb = g.VisibleClipBounds;
+                Assert.Equal(0, rvcb.X);
+                Assert.Equal(-100, rvcb.Y, 4);
+                Assert.Equal(50.0f, rvcb.Width, 4);
+                Assert.Equal(100, rvcb.Height, 4);
             }
         }
 
@@ -2362,22 +2385,20 @@ namespace MonoTests.System.Drawing
         public void Scale()
         {
             using (Bitmap bmp = new Bitmap(100, 50))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    RectangleF vcb = g.VisibleClipBounds;
-                    Assert.Equal(0, vcb.X);
-                    Assert.Equal(0, vcb.Y);
-                    Assert.Equal(100, vcb.Width);
-                    Assert.Equal(50, vcb.Height);
+                RectangleF vcb = g.VisibleClipBounds;
+                Assert.Equal(0, vcb.X);
+                Assert.Equal(0, vcb.Y);
+                Assert.Equal(100, vcb.Width);
+                Assert.Equal(50, vcb.Height);
 
-                    g.ScaleTransform(2, 0.5f);
-                    RectangleF svcb = g.VisibleClipBounds;
-                    Assert.Equal(0, svcb.X);
-                    Assert.Equal(0, svcb.Y);
-                    Assert.Equal(50, svcb.Width);
-                    Assert.Equal(100, svcb.Height);
-                }
+                g.ScaleTransform(2, 0.5f);
+                RectangleF svcb = g.VisibleClipBounds;
+                Assert.Equal(0, svcb.X);
+                Assert.Equal(0, svcb.Y);
+                Assert.Equal(50, svcb.Width);
+                Assert.Equal(100, svcb.Height);
             }
         }
 
@@ -2385,22 +2406,20 @@ namespace MonoTests.System.Drawing
         public void Translate()
         {
             using (Bitmap bmp = new Bitmap(100, 50))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    RectangleF vcb = g.VisibleClipBounds;
-                    Assert.Equal(0, vcb.X);
-                    Assert.Equal(0, vcb.Y);
-                    Assert.Equal(100, vcb.Width);
-                    Assert.Equal(50, vcb.Height);
+                RectangleF vcb = g.VisibleClipBounds;
+                Assert.Equal(0, vcb.X);
+                Assert.Equal(0, vcb.Y);
+                Assert.Equal(100, vcb.Width);
+                Assert.Equal(50, vcb.Height);
 
-                    g.TranslateTransform(-25, 25);
-                    RectangleF tvcb = g.VisibleClipBounds;
-                    Assert.Equal(25, tvcb.X);
-                    Assert.Equal(-25, tvcb.Y);
-                    Assert.Equal(100, tvcb.Width);
-                    Assert.Equal(50, tvcb.Height);
-                }
+                g.TranslateTransform(-25, 25);
+                RectangleF tvcb = g.VisibleClipBounds;
+                Assert.Equal(25, tvcb.X);
+                Assert.Equal(-25, tvcb.Y);
+                Assert.Equal(100, tvcb.Width);
+                Assert.Equal(50, tvcb.Height);
             }
         }
 
@@ -2408,11 +2427,9 @@ namespace MonoTests.System.Drawing
         public void DrawIcon_NullRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawIcon(null, new Rectangle(0, 0, 32, 32)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawIcon(null, new Rectangle(0, 0, 32, 32)));
             }
         }
 
@@ -2420,19 +2437,17 @@ namespace MonoTests.System.Drawing
         public void DrawIcon_IconRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawIcon(SystemIcons.Application, new Rectangle(0, 0, 40, 20));
-                    // Rectangle is empty when X, Y, Width and Height == 0 
-                    // (yep X and Y too, RectangleF only checks for Width and Height)
-                    g.DrawIcon(SystemIcons.Asterisk, new Rectangle(0, 0, 0, 0));
-                    // so this one is half-empty ;-)
-                    g.DrawIcon(SystemIcons.Error, new Rectangle(20, 40, 0, 0));
-                    // negative width or height isn't empty (for Rectangle)
-                    g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(10, 20, -1, 0));
-                    g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(20, 10, 0, -1));
-                }
+                g.DrawIcon(SystemIcons.Application, new Rectangle(0, 0, 40, 20));
+                // Rectangle is empty when X, Y, Width and Height == 0 
+                // (yep X and Y too, RectangleF only checks for Width and Height)
+                g.DrawIcon(SystemIcons.Asterisk, new Rectangle(0, 0, 0, 0));
+                // so this one is half-empty ;-)
+                g.DrawIcon(SystemIcons.Error, new Rectangle(20, 40, 0, 0));
+                // negative width or height isn't empty (for Rectangle)
+                g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(10, 20, -1, 0));
+                g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(20, 10, 0, -1));
             }
         }
 
@@ -2440,11 +2455,9 @@ namespace MonoTests.System.Drawing
         public void DrawIcon_NullIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawIcon(null, 4, 2));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawIcon(null, 4, 2));
             }
         }
 
@@ -2452,12 +2465,10 @@ namespace MonoTests.System.Drawing
         public void DrawIcon_IconIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawIcon(SystemIcons.Exclamation, 4, 2);
-                    g.DrawIcon(SystemIcons.Hand, 0, 0);
-                }
+                g.DrawIcon(SystemIcons.Exclamation, 4, 2);
+                g.DrawIcon(SystemIcons.Hand, 0, 0);
             }
         }
 
@@ -2465,11 +2476,9 @@ namespace MonoTests.System.Drawing
         public void DrawIconUnstretched_NullRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawIconUnstretched(null, new Rectangle(0, 0, 40, 20)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawIconUnstretched(null, new Rectangle(0, 0, 40, 20)));
             }
         }
 
@@ -2477,19 +2486,17 @@ namespace MonoTests.System.Drawing
         public void DrawIconUnstretched_IconRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawIconUnstretched(SystemIcons.Information, new Rectangle(0, 0, 40, 20));
-                    // Rectangle is empty when X, Y, Width and Height == 0 
-                    // (yep X and Y too, RectangleF only checks for Width and Height)
-                    g.DrawIconUnstretched(SystemIcons.Question, new Rectangle(0, 0, 0, 0));
-                    // so this one is half-empty ;-)
-                    g.DrawIconUnstretched(SystemIcons.Warning, new Rectangle(20, 40, 0, 0));
-                    // negative width or height isn't empty (for Rectangle)
-                    g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(10, 20, -1, 0));
-                    g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(20, 10, 0, -1));
-                }
+                g.DrawIconUnstretched(SystemIcons.Information, new Rectangle(0, 0, 40, 20));
+                // Rectangle is empty when X, Y, Width and Height == 0 
+                // (yep X and Y too, RectangleF only checks for Width and Height)
+                g.DrawIconUnstretched(SystemIcons.Question, new Rectangle(0, 0, 0, 0));
+                // so this one is half-empty ;-)
+                g.DrawIconUnstretched(SystemIcons.Warning, new Rectangle(20, 40, 0, 0));
+                // negative width or height isn't empty (for Rectangle)
+                g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(10, 20, -1, 0));
+                g.DrawIconUnstretched(SystemIcons.WinLogo, new Rectangle(20, 10, 0, -1));
             }
         }
 
@@ -2497,11 +2504,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullRectangleF()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new RectangleF(0, 0, 0, 0)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new RectangleF(0, 0, 0, 0)));
             }
         }
 
@@ -2509,14 +2514,12 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImageRectangleF()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, new RectangleF(0, 0, 0, 0));
-                    g.DrawImage(bmp, new RectangleF(20, 40, 0, 0));
-                    g.DrawImage(bmp, new RectangleF(10, 20, -1, 0));
-                    g.DrawImage(bmp, new RectangleF(20, 10, 0, -1));
-                }
+                g.DrawImage(bmp, new RectangleF(0, 0, 0, 0));
+                g.DrawImage(bmp, new RectangleF(20, 40, 0, 0));
+                g.DrawImage(bmp, new RectangleF(10, 20, -1, 0));
+                g.DrawImage(bmp, new RectangleF(20, 10, 0, -1));
             }
         }
 
@@ -2524,11 +2527,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullPointF()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new PointF(0, 0)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new PointF(0, 0)));
             }
         }
 
@@ -2536,11 +2537,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImagePointF()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, new PointF(0, 0));
-                }
+                g.DrawImage(bmp, new PointF(0, 0));
             }
         }
 
@@ -2548,11 +2547,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullPointFArray()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new PointF[0]));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new PointF[0]));
             }
         }
 
@@ -2572,11 +2569,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImagePointFArrayEmpty()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentException>(() => g.DrawImage(bmp, new PointF[0]));
-                }
+                Assert.Throws<ArgumentException>(() => g.DrawImage(bmp, new PointF[0]));
             }
         }
 
@@ -2584,12 +2579,10 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImagePointFArray()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, new PointF[] {
+                g.DrawImage(bmp, new PointF[] {
                         new PointF (0, 0), new PointF (1, 1), new PointF (2, 2) });
-                }
             }
         }
 
@@ -2597,11 +2590,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Rectangle(0, 0, 0, 0)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Rectangle(0, 0, 0, 0)));
             }
         }
 
@@ -2609,18 +2600,16 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImageRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    // Rectangle is empty when X, Y, Width and Height == 0 
-                    // (yep X and Y too, RectangleF only checks for Width and Height)
-                    g.DrawImage(bmp, new Rectangle(0, 0, 0, 0));
-                    // so this one is half-empty ;-)
-                    g.DrawImage(bmp, new Rectangle(20, 40, 0, 0));
-                    // negative width or height isn't empty (for Rectangle)
-                    g.DrawImage(bmp, new Rectangle(10, 20, -1, 0));
-                    g.DrawImage(bmp, new Rectangle(20, 10, 0, -1));
-                }
+                // Rectangle is empty when X, Y, Width and Height == 0 
+                // (yep X and Y too, RectangleF only checks for Width and Height)
+                g.DrawImage(bmp, new Rectangle(0, 0, 0, 0));
+                // so this one is half-empty ;-)
+                g.DrawImage(bmp, new Rectangle(20, 40, 0, 0));
+                // negative width or height isn't empty (for Rectangle)
+                g.DrawImage(bmp, new Rectangle(10, 20, -1, 0));
+                g.DrawImage(bmp, new Rectangle(20, 10, 0, -1));
             }
         }
 
@@ -2628,11 +2617,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullPoint()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Point(0, 0)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Point(0, 0)));
             }
         }
 
@@ -2640,11 +2627,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImagePoint()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, new Point(0, 0));
-                }
+                g.DrawImage(bmp, new Point(0, 0));
             }
         }
 
@@ -2652,11 +2637,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullPointArray()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Point[0]));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Point[0]));
             }
         }
 
@@ -2664,11 +2647,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImagePointArrayNull()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(bmp, (Point[])null));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(bmp, (Point[])null));
             }
         }
 
@@ -2676,11 +2657,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImagePointArrayEmpty()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentException>(() => g.DrawImage(bmp, new Point[0]));
-                }
+                Assert.Throws<ArgumentException>(() => g.DrawImage(bmp, new Point[0]));
             }
         }
 
@@ -2688,12 +2667,10 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImagePointArray()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, new Point[] {
+                g.DrawImage(bmp, new Point[] {
                         new Point (0, 0), new Point (1, 1), new Point (2, 2) });
-                }
             }
         }
 
@@ -2701,11 +2678,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, Int32.MaxValue, Int32.MinValue));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, Int32.MaxValue, Int32.MinValue));
             }
         }
 
@@ -2713,11 +2688,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImageIntInt_Overflow()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<OverflowException>(() => g.DrawImage(bmp, Int32.MaxValue, Int32.MinValue));
-                }
+                Assert.Throws<OverflowException>(() => g.DrawImage(bmp, Int32.MaxValue, Int32.MinValue));
             }
         }
 
@@ -2725,11 +2698,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImageIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, -40, -40);
-                }
+                g.DrawImage(bmp, -40, -40);
             }
         }
 
@@ -2737,11 +2708,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullFloat()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, Single.MaxValue, Single.MinValue));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, Single.MaxValue, Single.MinValue));
             }
         }
 
@@ -2749,11 +2718,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImageFloatFloat_Overflow()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<OverflowException>(() => g.DrawImage(bmp, Single.MaxValue, Single.MinValue));
-                }
+                Assert.Throws<OverflowException>(() => g.DrawImage(bmp, Single.MaxValue, Single.MinValue));
             }
         }
 
@@ -2761,11 +2728,9 @@ namespace MonoTests.System.Drawing
         public void DrawImage_ImageFloatFloat()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, -40.0f, -40.0f);
-                }
+                g.DrawImage(bmp, -40.0f, -40.0f);
             }
         }
 
@@ -2773,23 +2738,19 @@ namespace MonoTests.System.Drawing
         public void DrawImage_NullRectangleRectangleGraphicsUnit()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Rectangle(), new Rectangle(), GraphicsUnit.Display));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, new Rectangle(), new Rectangle(), GraphicsUnit.Display));
             }
         }
 
         private void DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit unit)
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Rectangle r = new Rectangle(0, 0, 40, 40);
-                    g.DrawImage(bmp, r, r, unit);
-                }
+                Rectangle r = new Rectangle(0, 0, 40, 40);
+                g.DrawImage(bmp, r, r, unit);
             }
         }
 
@@ -2842,11 +2803,9 @@ namespace MonoTests.System.Drawing
             Rectangle r = new Rectangle(1, 2, 3, 4);
             Point[] pts = new Point[3] { new Point(1, 1), new Point(2, 2), new Point(3, 3) };
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, pts, r, GraphicsUnit.Pixel));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, pts, r, GraphicsUnit.Pixel));
             }
         }
 
@@ -2854,11 +2813,9 @@ namespace MonoTests.System.Drawing
         {
             Rectangle r = new Rectangle(1, 2, 3, 4);
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel);
-                }
+                g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel);
             }
         }
 
@@ -2908,11 +2865,9 @@ namespace MonoTests.System.Drawing
             Rectangle r = new Rectangle(1, 2, 3, 4);
             PointF[] pts = new PointF[3] { new PointF(1, 1), new PointF(2, 2), new PointF(3, 3) };
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, pts, r, GraphicsUnit.Pixel));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, pts, r, GraphicsUnit.Pixel));
             }
         }
 
@@ -2920,11 +2875,9 @@ namespace MonoTests.System.Drawing
         {
             Rectangle r = new Rectangle(1, 2, 3, 4);
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel);
-                }
+                g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel);
             }
         }
 
@@ -2975,11 +2928,9 @@ namespace MonoTests.System.Drawing
             Point[] pts = new Point[3] { p, p, p };
             Rectangle r = new Rectangle(1, 2, 3, 4);
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel, null);
-                }
+                g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel, null);
             }
         }
 
@@ -2990,12 +2941,10 @@ namespace MonoTests.System.Drawing
             Point[] pts = new Point[3] { p, p, p };
             Rectangle r = new Rectangle(1, 2, 3, 4);
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    ImageAttributes ia = new ImageAttributes();
-                    g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel, ia);
-                }
+                ImageAttributes ia = new ImageAttributes();
+                g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel, ia);
             }
         }
 
@@ -3003,11 +2952,9 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_NullPoint()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, new Point(0, 0)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, new Point(0, 0)));
             }
         }
 
@@ -3015,11 +2962,9 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_ImagePoint()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImageUnscaled(bmp, new Point(0, 0));
-                }
+                g.DrawImageUnscaled(bmp, new Point(0, 0));
             }
         }
 
@@ -3027,11 +2972,9 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_NullRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, new Rectangle(0, 0, -1, -1)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, new Rectangle(0, 0, -1, -1)));
             }
         }
 
@@ -3039,11 +2982,9 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_ImageRectangle()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImageUnscaled(bmp, new Rectangle(0, 0, -1, -1));
-                }
+                g.DrawImageUnscaled(bmp, new Rectangle(0, 0, -1, -1));
             }
         }
 
@@ -3051,11 +2992,9 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_NullIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, 0, 0));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, 0, 0));
             }
         }
 
@@ -3063,11 +3002,9 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_ImageIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImageUnscaled(bmp, 0, 0);
-                }
+                g.DrawImageUnscaled(bmp, 0, 0);
             }
         }
 
@@ -3075,11 +3012,9 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_NullIntIntIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, 0, 0, -1, -1));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaled(null, 0, 0, -1, -1));
             }
         }
 
@@ -3087,22 +3022,19 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaled_ImageIntIntIntInt()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawImageUnscaled(bmp, 0, 0, -1, -1);
-                }
+                g.DrawImageUnscaled(bmp, 0, 0, -1, -1);
             }
         }
+
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawImageUnscaledAndClipped_Null()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaledAndClipped(null, new Rectangle(0, 0, 0, 0)));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawImageUnscaledAndClipped(null, new Rectangle(0, 0, 0, 0)));
             }
         }
 
@@ -3110,22 +3042,20 @@ namespace MonoTests.System.Drawing
         public void DrawImageUnscaledAndClipped()
         {
             using (Bitmap bmp = new Bitmap(40, 40))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    // Rectangle is empty when X, Y, Width and Height == 0 
-                    // (yep X and Y too, RectangleF only checks for Width and Height)
-                    g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 0, 0));
-                    // so this one is half-empty ;-)
-                    g.DrawImageUnscaledAndClipped(bmp, new Rectangle(20, 40, 0, 0));
-                    // negative width or height isn't empty (for Rectangle)
-                    g.DrawImageUnscaledAndClipped(bmp, new Rectangle(10, 20, -1, 0));
-                    g.DrawImageUnscaledAndClipped(bmp, new Rectangle(20, 10, 0, -1));
-                    // smaller
-                    g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 10, 20));
-                    g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 40, 10));
-                    g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 80, 20));
-                }
+                // Rectangle is empty when X, Y, Width and Height == 0 
+                // (yep X and Y too, RectangleF only checks for Width and Height)
+                g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 0, 0));
+                // so this one is half-empty ;-)
+                g.DrawImageUnscaledAndClipped(bmp, new Rectangle(20, 40, 0, 0));
+                // negative width or height isn't empty (for Rectangle)
+                g.DrawImageUnscaledAndClipped(bmp, new Rectangle(10, 20, -1, 0));
+                g.DrawImageUnscaledAndClipped(bmp, new Rectangle(20, 10, 0, -1));
+                // smaller
+                g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 10, 20));
+                g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 40, 10));
+                g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, 80, 20));
             }
         }
 
@@ -3133,14 +3063,10 @@ namespace MonoTests.System.Drawing
         public void DrawPath_Pen_Null()
         {
             using (Bitmap bmp = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (GraphicsPath path = new GraphicsPath())
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    using (GraphicsPath path = new GraphicsPath())
-                    {
-                        Assert.Throws<ArgumentNullException>(() => g.DrawPath(null, path));
-                    }
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawPath(null, path));
             }
         }
 
@@ -3148,11 +3074,9 @@ namespace MonoTests.System.Drawing
         public void DrawPath_Path_Null()
         {
             using (Bitmap bmp = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.DrawPath(Pens.Black, null));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.DrawPath(Pens.Black, null));
             }
         }
 
@@ -3161,30 +3085,26 @@ namespace MonoTests.System.Drawing
         {
             // based on test case from bug #82202
             using (Bitmap bmp = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (GraphicsPath path = new GraphicsPath())
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    using (GraphicsPath path = new GraphicsPath())
-                    {
-                        int d = 5;
-                        Rectangle baserect = new Rectangle(0, 0, 19, 19);
-                        Rectangle arcrect = new Rectangle(baserect.Location, new Size(d, d));
+                int d = 5;
+                Rectangle baserect = new Rectangle(0, 0, 19, 19);
+                Rectangle arcrect = new Rectangle(baserect.Location, new Size(d, d));
 
-                        path.AddArc(arcrect, 180, 90);
-                        arcrect.X = baserect.Right - d;
-                        path.AddArc(arcrect, 270, 90);
-                        arcrect.Y = baserect.Bottom - d;
-                        path.AddArc(arcrect, 0, 90);
-                        arcrect.X = baserect.Left;
-                        path.AddArc(arcrect, 90, 90);
-                        path.CloseFigure();
-                        g.Clear(Color.White);
-                        g.DrawPath(Pens.SteelBlue, path);
+                path.AddArc(arcrect, 180, 90);
+                arcrect.X = baserect.Right - d;
+                path.AddArc(arcrect, 270, 90);
+                arcrect.Y = baserect.Bottom - d;
+                path.AddArc(arcrect, 0, 90);
+                arcrect.X = baserect.Left;
+                path.AddArc(arcrect, 90, 90);
+                path.CloseFigure();
+                g.Clear(Color.White);
+                g.DrawPath(Pens.SteelBlue, path);
 
-                        Assert.Equal(-12156236, bmp.GetPixel(0, 9).ToArgb());
-                        Assert.Equal(-1, bmp.GetPixel(1, 9).ToArgb());
-                    }
-                }
+                Assert.Equal(-12156236, bmp.GetPixel(0, 9).ToArgb());
+                Assert.Equal(-1, bmp.GetPixel(1, 9).ToArgb());
             }
         }
 
@@ -3192,14 +3112,10 @@ namespace MonoTests.System.Drawing
         public void FillPath_Brush_Null()
         {
             using (Bitmap bmp = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (GraphicsPath path = new GraphicsPath())
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    using (GraphicsPath path = new GraphicsPath())
-                    {
-                        Assert.Throws<ArgumentNullException>(() => g.FillPath(null, path));
-                    }
-                }
+                Assert.Throws<ArgumentNullException>(() => g.FillPath(null, path));
             }
         }
 
@@ -3207,11 +3123,9 @@ namespace MonoTests.System.Drawing
         public void FillPath_Path_Null()
         {
             using (Bitmap bmp = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    Assert.Throws<ArgumentNullException>(() => g.FillPath(Brushes.Black, null));
-                }
+                Assert.Throws<ArgumentNullException>(() => g.FillPath(Brushes.Black, null));
             }
         }
 
@@ -3220,30 +3134,26 @@ namespace MonoTests.System.Drawing
         {
             // based on test case from bug #82202
             using (Bitmap bmp = new Bitmap(20, 20))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (GraphicsPath path = new GraphicsPath())
             {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    using (GraphicsPath path = new GraphicsPath())
-                    {
-                        int d = 5;
-                        Rectangle baserect = new Rectangle(0, 0, 19, 19);
-                        Rectangle arcrect = new Rectangle(baserect.Location, new Size(d, d));
+                int d = 5;
+                Rectangle baserect = new Rectangle(0, 0, 19, 19);
+                Rectangle arcrect = new Rectangle(baserect.Location, new Size(d, d));
 
-                        path.AddArc(arcrect, 180, 90);
-                        arcrect.X = baserect.Right - d;
-                        path.AddArc(arcrect, 270, 90);
-                        arcrect.Y = baserect.Bottom - d;
-                        path.AddArc(arcrect, 0, 90);
-                        arcrect.X = baserect.Left;
-                        path.AddArc(arcrect, 90, 90);
-                        path.CloseFigure();
-                        g.Clear(Color.White);
-                        g.FillPath(Brushes.SteelBlue, path);
+                path.AddArc(arcrect, 180, 90);
+                arcrect.X = baserect.Right - d;
+                path.AddArc(arcrect, 270, 90);
+                arcrect.Y = baserect.Bottom - d;
+                path.AddArc(arcrect, 0, 90);
+                arcrect.X = baserect.Left;
+                path.AddArc(arcrect, 90, 90);
+                path.CloseFigure();
+                g.Clear(Color.White);
+                g.FillPath(Brushes.SteelBlue, path);
 
-                        Assert.Equal(-12156236, bmp.GetPixel(0, 9).ToArgb());
-                        Assert.Equal(-12156236, bmp.GetPixel(1, 9).ToArgb());
-                    }
-                }
+                Assert.Equal(-12156236, bmp.GetPixel(0, 9).ToArgb());
+                Assert.Equal(-12156236, bmp.GetPixel(1, 9).ToArgb());
             }
         }
 
@@ -3251,27 +3161,25 @@ namespace MonoTests.System.Drawing
         public void TransformPoints_349800()
         {
             using (Bitmap bmp = new Bitmap(10, 10))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
+                Point[] pts = new Point[5];
+                PointF[] ptf = new PointF[5];
+                for (int i = 0; i < 5; i++)
                 {
-                    Point[] pts = new Point[5];
-                    PointF[] ptf = new PointF[5];
-                    for (int i = 0; i < 5; i++)
-                    {
-                        pts[i] = new Point(i, i);
-                        ptf[i] = new PointF(i, i);
-                    }
+                    pts[i] = new Point(i, i);
+                    ptf[i] = new PointF(i, i);
+                }
 
-                    g.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Device, pts);
-                    g.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Device, ptf);
+                g.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Device, pts);
+                g.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Device, ptf);
 
-                    for (int i = 0; i < 5; i++)
-                    {
-                        Assert.Equal(i, pts[i].X);
-                        Assert.Equal(i, pts[i].Y);
-                        Assert.Equal(i, ptf[i].X);
-                        Assert.Equal(i, ptf[i].Y);
-                    }
+                for (int i = 0; i < 5; i++)
+                {
+                    Assert.Equal(i, pts[i].X);
+                    Assert.Equal(i, pts[i].Y);
+                    Assert.Equal(i, ptf[i].X);
+                    Assert.Equal(i, ptf[i].Y);
                 }
             }
         }
@@ -3299,7 +3207,6 @@ namespace MonoTests.System.Drawing
 
     public class GraphicsFullTrustTest
     {
-
         // note: this test would fail, on ReleaseHdc, without fulltrust
         // i.e. it's a demand and not a linkdemand
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -3317,6 +3224,5 @@ namespace MonoTests.System.Drawing
                 }
             }
         }
-
     }
 }
