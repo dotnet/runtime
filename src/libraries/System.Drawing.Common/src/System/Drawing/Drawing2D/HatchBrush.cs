@@ -17,7 +17,7 @@ namespace System.Drawing.Drawing2D
         {
             if (hatchstyle < HatchStyle.Min || hatchstyle > HatchStyle.SolidDiamond)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(hatchstyle), hatchstyle, typeof(HatchStyle).Name), nameof(hatchstyle));
+                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(hatchstyle), hatchstyle, nameof(HatchStyle)), nameof(hatchstyle));
             }
 
             IntPtr nativeBrush;
