@@ -53,7 +53,7 @@ public:
     {
         m_baseSize = 3 * sizeof(void *);
         m_componentSize = 1;
-        m_flags = 0;
+        m_flags = MTFlag_HasComponentSize | MTFlag_IsArray;
     }
 
     uint32_t GetBaseSize()
