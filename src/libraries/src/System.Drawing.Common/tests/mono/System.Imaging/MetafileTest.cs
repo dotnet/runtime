@@ -107,7 +107,7 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetafileHeader_WmfPlaceable(header1);
 
                 MetafileHeader header2 = mf.GetMetafileHeader();
-                Assert.False(Object.ReferenceEquals(header1, header2));
+                Assert.NotSame(header1, header2));
             }
         }
 
@@ -123,7 +123,7 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetaHeader_WmfPlaceable(mh1);
 
                 MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
-                Assert.False(Object.ReferenceEquals(mh1, mh2));
+                Assert.NotSame(mh1, mh2));
             }
         }
 
@@ -140,7 +140,7 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetaHeader_WmfPlaceable(mh1);
 
                 MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
-                Assert.False(Object.ReferenceEquals(mh1, mh2));
+                Assert.NotSame(mh1, mh2));
             }
         }
 
@@ -158,7 +158,7 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetaHeader_WmfPlaceable(mh1);
 
                 MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
-                Assert.False(Object.ReferenceEquals(mh1, mh2));
+                Assert.NotSame(mh1, mh2));
             }
         }
 
