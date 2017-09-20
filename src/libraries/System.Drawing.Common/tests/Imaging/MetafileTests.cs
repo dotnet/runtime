@@ -37,7 +37,6 @@ namespace System.Drawing.Imaging.Tests
         private readonly Rectangle _rectangle = new Rectangle(0, 0, 64, 64);
         private readonly RectangleF _rectangleF = new RectangleF(0, 0, 64, 64);
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_IntPtrZero_ThrowsArgumentException()
         {
@@ -64,21 +63,18 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Bitmap_ThrowsExternalException()
         {
             Assert.Throws<ExternalException>(() => new Metafile(GetPath(BmpFile)));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullString_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new Metafile((string)null));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_InvalidPath_ThrowsExternalException()
         {
@@ -112,7 +108,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullStream_ThrowsArgumentException()
         {
@@ -175,7 +170,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Metafile((IntPtr)null, EmfType.EmfOnly));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_ZeroPointerEmfType_ThrowsArgumentException()
         {
@@ -314,7 +308,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_IntPtrZeroI_ThrowsArgumentException()
         {
@@ -933,7 +926,6 @@ namespace System.Drawing.Imaging.Tests
             AssertMetafileHeader(header);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Static_GetMetafileHeader_IntPtr_ThrowsArgumentException()
         {
@@ -960,7 +952,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => Metafile.GetMetafileHeader((string)null));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Static_GetMetafileHeader_Stream_ReturnsExpected()
         {
@@ -971,7 +962,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Static_GetMetafileHeader_NullStream_ThrowsNullReferenceException()
         {
