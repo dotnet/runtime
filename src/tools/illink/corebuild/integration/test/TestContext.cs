@@ -54,7 +54,7 @@ namespace ILLink.Tests
 		public static TestContext CreateDefaultContext()
 		{
 			var packageName = "ILLink.Tasks";
-			var packageSource = "../../../../nupkgs";
+			var packageSource = "../../../../bin/nupkgs";
 			var tasksPackages = Directory.GetFiles(packageSource)
 				.Where(p => Path.GetExtension(p) == ".nupkg")
 				.Select(p => Path.GetFileNameWithoutExtension(p))

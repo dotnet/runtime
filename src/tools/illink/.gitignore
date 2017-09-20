@@ -26,3 +26,6 @@ bin/
 *.FileListAbsolute.txt
 
 **/Dependencies/*.dll
+
+corebuild/Tools
+corebuild/bootstrap.log
