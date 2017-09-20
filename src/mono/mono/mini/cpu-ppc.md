@@ -289,6 +289,12 @@ int_cgt_un: dest:i len:12
 int_clt: dest:i len:12
 int_clt_un: dest:i len:12
 
+int_cneq: dest:i len:12
+int_cge: dest:i len:12
+int_cle: dest:i len:12
+int_cge_un: dest:i len:12
+int_cle_un: dest:i len:12
+
 cond_exc_ieq: len:8
 cond_exc_ine_un: len:8
 cond_exc_ilt: len:8
