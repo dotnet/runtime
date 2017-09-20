@@ -48,12 +48,6 @@ namespace MonoTests.System.Drawing.Imaging
         public const string Emf = "milkmateya01.emf";
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_String_Empty()
-        {
-            Assert.Throws<ArgumentException>(() => new Metafile(String.Empty));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Metafile_String()
         {
             string filename = Helpers.GetTestBitmapPath(WmfPlaceable);
@@ -178,18 +172,7 @@ namespace MonoTests.System.Drawing.Imaging
             Assert.Equal(0, header.Bounds.X);
             Assert.Equal(0, header.Bounds.Y);
 
-            try
-            {
-                Assert.NotNull(header.WmfHeader);
-                Assert.True(false, "WmfHeader didn't throw an ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, "WmfHeader didn't throw an ArgumentException but: " + e.ToString());
-            }
+            Assert.Throws<ArgumentException>(() => header.WmfHeader);
 
             Assert.False(header.IsDisplay());
             Assert.True(header.IsEmf());
