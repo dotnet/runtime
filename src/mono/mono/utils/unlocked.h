@@ -122,4 +122,11 @@ UnlockedReadBool (gboolean *src)
 	return *src;
 }
 
+MONO_UNLOCKED_ATTRS
+gpointer
+UnlockedReadPointer (volatile gpointer *src)
+{
+	return *src;
+}
+
 #endif /* _UNLOCKED_H_ */

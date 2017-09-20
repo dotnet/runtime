@@ -44,6 +44,7 @@
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/unlocked.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -780,7 +781,7 @@ finalize_domain_objects (void)
 	DomainFinalizationReq *req = NULL;
 	MonoDomain *domain;
 
-	if (domains_to_finalize) {
+	if (UnlockedReadPointer ((gpointer)&domains_to_finalize)) {
 		mono_finalizer_lock ();
 		if (domains_to_finalize) {
 			req = (DomainFinalizationReq *)domains_to_finalize->data;
