@@ -15,7 +15,7 @@ namespace System.Drawing.Drawing2D
 
         public HatchBrush(HatchStyle hatchstyle, Color foreColor, Color backColor)
         {
-            if (hatchstyle < HatchStyle.Min || hatchstyle > HatchStyle.Max)
+            if (hatchstyle < HatchStyle.Min || hatchstyle > HatchStyle.SolidDiamond)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(hatchstyle), hatchstyle, typeof(HatchStyle).Name), nameof(hatchstyle));
             }
