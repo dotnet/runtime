@@ -31,6 +31,7 @@
     <Compile Include="Imaging\ImageAttributesTests.cs" />
     <Compile Include="Imaging\MetafileTests.cs" />
     <Compile Include="Imaging\PropertyItemTests.cs" />
+    <Compile Include="mono\System.Drawing\GraphicsTests.cs" />
     <Compile Include="PenTests.cs" />
     <Compile Include="PensTests.cs" />
     <Compile Include="Imaging\BitmapDataTests.cs" />
