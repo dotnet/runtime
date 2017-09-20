@@ -273,9 +273,9 @@ if not exist "%__BinDir%"           md "%__BinDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"          md "%__LogsDir%"
 
-REM It is convinient to have your Nuget search path include the location where the build
-REM will plass packages.  However nuget used during the build will fail if that directory 
-REM does not exist.   Avoid this in at least one case by agressively creating the directory. 
+REM It is convenient to have your Nuget search path include the location where the build
+REM will place packages.  However nuget used during the build will fail if that directory
+REM does not exist.   Avoid this in at least one case by aggressively creating the directory.
 if not exist "%__BinDir%\.nuget\pkg"           md "%__BinDir%\.nuget\pkg"
 
 echo %__MsgPrefix%Commencing CoreCLR Repo build
@@ -296,7 +296,7 @@ echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 @if defined _echo @echo on
 
-@call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs% 
+@call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs%
 
 REM =========================================================================================
 REM ===
@@ -342,7 +342,7 @@ if %__BuildNative% EQU 1 (
     set nativePlatfromArgs=-platform=%__BuildArch%
     if /i "%__BuildArch%" == "arm64" ( set nativePlatfromArgs=-useEnv )
 
-    if /i "%__BuildArch%" == "arm64" ( 
+    if /i "%__BuildArch%" == "arm64" (
         rem arm64 builds currently use private toolset which has not been released yet
         REM TODO, remove once the toolset is open.
         call :PrivateToolSet
@@ -354,7 +354,7 @@ if %__BuildNative% EQU 1 (
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
-        
+
         REM Make CMake pick the highest installed version in the 10.0.* range
         set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
     )
@@ -474,7 +474,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
         echo     !__BuildWrn!
         echo     !__BuildErr!
         exit /b 1
-    )    
+    )
 
 :SkipCrossCompBuild
     REM } Scope environment changes end
@@ -632,7 +632,7 @@ if %__BuildTests% EQU 1 (
 
     rem arm64 builds currently use private toolset which has not been released yet
     REM TODO, remove once the toolset is open.
-    if /i "%__BuildArch%" == "arm64" call :PrivateToolSet 
+    if /i "%__BuildArch%" == "arm64" call :PrivateToolSet
 
     set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
@@ -642,7 +642,7 @@ if %__BuildTests% EQU 1 (
         REM buildtest.cmd has already emitted an error message and mentioned the build log file to examine.
         exit /b 1
     )
-) 
+)
 
 REM =========================================================================================
 REM ===
