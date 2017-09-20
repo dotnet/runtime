@@ -125,7 +125,7 @@ namespace System.IO.MemoryMappedFiles
                     for (int w = 0; canRetry && w < MaxFlushWaits; w++)
                     {
                         int pause = (1 << w);  // MaxFlushRetries should never be over 30
-                        MemoryMappedFile.ThreadSleep(pause);
+                        Thread.Sleep(pause);
 
                         for (int r = 0; canRetry && r < MaxFlushRetriesPerWait; r++)
                         {
