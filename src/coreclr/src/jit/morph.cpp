@@ -7253,8 +7253,8 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee)
     // Note that callee being a vararg method is not a problem since we can account the params being passed.
     unsigned nCallerArgs = info.compArgsCount;
 
-    size_t callerArgRegCount      = info.compArgRegCount;
-    size_t callerFloatArgRegCount = info.compFloatArgRegCount;
+    size_t callerArgRegCount      = codeGen->intRegState.rsCalleeRegArgCount;
+    size_t callerFloatArgRegCount = codeGen->floatRegState.rsCalleeRegArgCount;
 
     // Count the callee args including implicit and hidden.
     // Note that GenericContext and VarargCookie are added by importer while

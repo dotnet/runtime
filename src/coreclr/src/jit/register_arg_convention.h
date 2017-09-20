@@ -26,7 +26,8 @@ struct InitVarDscInfo
     bool      anyFloatStackArgs;
 #endif // _TARGET_ARM_
 
-#ifdef FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL
+    // It is used to calculate argument stack size information in byte
     unsigned stackArgSize;
 #endif // FEATURE_FASTTAILCALL
 
@@ -47,7 +48,7 @@ public:
         anyFloatStackArgs    = false;
 #endif // _TARGET_ARM_
 
-#ifdef FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL
         stackArgSize = 0;
 #endif // FEATURE_FASTTAILCALL
     }
