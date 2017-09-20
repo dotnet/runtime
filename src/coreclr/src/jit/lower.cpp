@@ -549,6 +549,21 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     flowList* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
     comp->fgAddRefPred(jumpTab[jumpCnt - 1], originalSwitchBB, oldEdge);
 
+    bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
+
+#if defined(_TARGET_UNIX_) && defined(_TARGET_ARM_)
+    // Force using an inlined jumping instead switch table generation.
+    // Switch jump table is generated with incorrect values in CoreRT case,
+    // so any large switch will crash after loading to PC any such value.
+    // I think this is due to the fact that we use absolute addressing
+    // instead of relative. But in CoreRT is used as a rule relative
+    // addressing when we generate an executable.
+    // This bug is also present in Legacy JIT.
+    // See also https://github.com/dotnet/coreclr/issues/13194
+    // Also https://github.com/dotnet/coreclr/pull/13197
+    useJumpSequence = useJumpSequence || comp->IsTargetAbi(CORINFO_CORERT_ABI);
+#endif // defined(_TARGET_UNIX_) && defined(_TARGET_ARM_)
+
     // If we originally had 2 unique successors, check to see whether there is a unique
     // non-default case, in which case we can eliminate the switch altogether.
     // Note that the single unique successor case is handled above.
@@ -594,7 +609,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
     // transformation.
-    else if ((jumpCnt < minSwitchTabJumpCnt) || comp->compStressCompile(Compiler::STRESS_SWITCH_CMP_BR_EXPANSION, 50))
+    else if (useJumpSequence || comp->compStressCompile(Compiler::STRESS_SWITCH_CMP_BR_EXPANSION, 50))
     {
         // Lower the switch into a series of compare and branch IR trees.
         //
