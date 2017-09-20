@@ -370,12 +370,17 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        private Graphics Get(int w, int h)
+        class BitmapAndGraphics : IDisposable
         {
-            Bitmap bitmap = new Bitmap(w, h);
-            Graphics g = Graphics.FromImage(bitmap);
-            g.Clip = new Region(new Rectangle(0, 0, w, h));
-            return g;
+            private readonly Bitmap _bitmap;
+            public Graphics Graphics { get; }
+            public BitmapAndGraphics(int width, int height)
+            {
+                _bitmap = new Bitmap(width, height);
+                Graphics = Graphics.FromImage(_bitmap);
+                Graphics.Clip = new Region(new Rectangle(0, 0, width, height));
+            }
+            public void Dispose() { Graphics.Dispose(); _bitmap.Dispose(); }
         }
 
         private void Compare(string msg, RectangleF b1, RectangleF b2)
@@ -389,8 +394,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_GetBounds()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 RectangleF bounds = g.Clip.GetBounds(g);
                 Assert.Equal(0, bounds.X);
                 Assert.Equal(0, bounds.Y);
@@ -403,8 +409,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_TranslateTransform()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.TranslateTransform(12.22f, 10.10f);
                 RectangleF bounds = g.Clip.GetBounds(g);
                 Compare("translate", bounds, g.ClipBounds);
@@ -436,8 +443,12 @@ namespace MonoTests.System.Drawing
         {
             Matrix matrix = new Matrix(123, 24, 82, 16, 47, 30);
             Assert.False(matrix.IsInvertible);
-            Graphics g = Get(16, 16);
-            Assert.Throws<ArgumentException>(() => g.Transform = matrix);
+
+            using (var b = new BitmapAndGraphics(16, 16))
+            {
+                var g = b.Graphics;
+                Assert.Throws<ArgumentException>(() => g.Transform = matrix);
+            }
         }
 
 
@@ -446,8 +457,9 @@ namespace MonoTests.System.Drawing
         {
             Matrix matrix = new Matrix(123, 24, 82, 16, 47, 30);
             Assert.False(matrix.IsInvertible);
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 Assert.Throws<ArgumentException>(() => g.MultiplyTransform(matrix));
             }
         }
@@ -463,8 +475,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
                 CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
 
@@ -477,8 +490,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Rotate()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.Clip = new Region(new Rectangle(0, 0, 8, 8));
                 g.RotateTransform(90);
                 CheckBounds("rotate.ClipBounds", g.ClipBounds, 0, -8, 8, 8);
@@ -494,8 +508,9 @@ namespace MonoTests.System.Drawing
         public void ClipBounds_Scale()
         {
             RectangleF clip = new Rectangle(0, 0, 8, 8);
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.Clip = new Region(clip);
                 g.ScaleTransform(0.25f, 0.5f);
                 CheckBounds("scale.ClipBounds", g.ClipBounds, 0, 0, 32, 16);
@@ -510,8 +525,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Translate()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.Clip = new Region(new Rectangle(0, 0, 8, 8));
                 Region clone = g.Clip.Clone();
                 g.TranslateTransform(8, 8);
@@ -527,8 +543,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Transform_Translation()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.Clip = new Region(new Rectangle(0, 0, 8, 8));
                 g.Transform = new Matrix(1, 0, 0, 1, 8, 8);
                 CheckBounds("transform.ClipBounds", g.ClipBounds, -8, -8, 8, 8);
@@ -543,8 +560,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Transform_Scale()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.Clip = new Region(new Rectangle(0, 0, 8, 8));
                 g.Transform = new Matrix(0.5f, 0, 0, 0.25f, 0, 0);
                 CheckBounds("scale.ClipBounds", g.ClipBounds, 0, 0, 16, 32);
@@ -560,8 +578,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Multiply()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.Clip = new Region(new Rectangle(0, 0, 8, 8));
                 g.Transform = new Matrix(1, 0, 0, 1, 8, 8);
                 g.MultiplyTransform(g.Transform);
@@ -577,8 +596,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ClipBounds_Cumulative_Effects()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
                 CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
 
@@ -611,8 +631,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_TranslateTransform_BoundsChange()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
                 CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
                 g.TranslateTransform(-16, -16);
@@ -634,8 +655,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_RotateTransform_BoundsChange()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
                 CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
                 // we select a "simple" angle because the region will be converted into
@@ -667,8 +689,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clip_ScaleTransform_NoBoundsChange()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 CheckBounds("graphics.ClipBounds", g.ClipBounds, 0, 0, 16, 16);
                 CheckBounds("graphics.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 16, 16);
                 g.ScaleTransform(2, 0.5f);
@@ -689,8 +712,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ScaleTransform_X0()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 Assert.Throws<ArgumentException>(() => g.ScaleTransform(0, 1));
             }
         }
@@ -698,8 +722,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ScaleTransform_Y0()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 Assert.Throws<ArgumentException>(() => g.ScaleTransform(1, 0));
             }
         }
@@ -707,8 +732,9 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TranslateTransform_Order()
         {
-            using (Graphics g = Get(16, 16))
+            using (var b = new BitmapAndGraphics(16, 16))
             {
+                var g = b.Graphics;
                 g.Transform = new Matrix(1, 2, 3, 4, 5, 6);
                 g.TranslateTransform(3, -3);
                 float[] elements = g.Transform.Elements;
