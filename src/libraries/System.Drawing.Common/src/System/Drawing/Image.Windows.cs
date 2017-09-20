@@ -355,12 +355,6 @@ namespace System.Drawing
             }
         }
 
-        private enum ImageTypeEnum
-        {
-            Bitmap = 1,
-            Metafile = 2,
-        }
-
         internal static Image CreateImageObject(IntPtr nativeImage)
         {
             Image image;
@@ -372,13 +366,13 @@ namespace System.Drawing
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
 
-            switch ((ImageTypeEnum)type)
+            switch ((ImageType)type)
             {
-                case ImageTypeEnum.Bitmap:
+                case ImageType.Bitmap:
                     image = Bitmap.FromGDIplus(nativeImage);
                     break;
 
-                case ImageTypeEnum.Metafile:
+                case ImageType.Metafile:
                     image = Metafile.FromGDIplus(nativeImage);
                     break;
 
