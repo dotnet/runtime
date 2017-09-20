@@ -99,19 +99,6 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void GetMetafileHeader_WmfPlaceable()
-        {
-            using (Metafile mf = new Metafile(Helpers.GetTestBitmapPath(WmfPlaceable)))
-            {
-                MetafileHeader header1 = mf.GetMetafileHeader();
-                Check_MetafileHeader_WmfPlaceable(header1);
-
-                MetafileHeader header2 = mf.GetMetafileHeader();
-                Assert.NotSame(header1, header2));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetMetafileHeader_FromFile_WmfPlaceable()
         {
             using (Metafile mf = new Metafile(Helpers.GetTestBitmapPath(WmfPlaceable)))
@@ -123,7 +110,7 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetaHeader_WmfPlaceable(mh1);
 
                 MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
-                Assert.NotSame(mh1, mh2));
+                Assert.NotSame(mh1, mh2);
             }
         }
 
@@ -140,7 +127,7 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetaHeader_WmfPlaceable(mh1);
 
                 MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
-                Assert.NotSame(mh1, mh2));
+                Assert.NotSame(mh1, mh2);
             }
         }
 
@@ -158,7 +145,7 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetaHeader_WmfPlaceable(mh1);
 
                 MetaHeader mh2 = mf.GetMetafileHeader().WmfHeader;
-                Assert.NotSame(mh1, mh2));
+                Assert.NotSame(mh1, mh2);
             }
         }
 
@@ -216,14 +203,6 @@ namespace MonoTests.System.Drawing.Imaging
                 Check_MetafileHeader_Emf(header1);
             }
         }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Static_GetMetafileHeader_Filename()
-        {
-            string filename = Helpers.GetTestBitmapPath(WmfPlaceable);
-            MetafileHeader header = Metafile.GetMetafileHeader(filename);
-            Check_MetafileHeader_WmfPlaceable(header);
-        }
     }
 
     public class MetafileFulltrustTest
@@ -271,30 +250,6 @@ namespace MonoTests.System.Drawing.Imaging
                     }
                 }
             }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrEmfType_Invalid()
-        {
-            Assert.Throws<ArgumentException>(() => Metafile_IntPtrEmfType((EmfType)Int32.MinValue));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrEmfType_EmfOnly()
-        {
-            Metafile_IntPtrEmfType(EmfType.EmfOnly);
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrEmfType_EmfPlusDual()
-        {
-            Metafile_IntPtrEmfType(EmfType.EmfPlusDual);
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrEmfType_EmfPlusOnly()
-        {
-            Metafile_IntPtrEmfType(EmfType.EmfPlusOnly);
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -433,24 +388,6 @@ namespace MonoTests.System.Drawing.Imaging
         public void CreateFilename_SingleGraphics_EmfPlusOnly()
         {
             CreateFilename(EmfType.EmfPlusOnly, true);
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void CreateFilename_MultipleGraphics_EmfOnly()
-        {
-            Assert.Throws<OutOfMemoryException>(() => CreateFilename(EmfType.EmfOnly, false));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void CreateFilename_MultipleGraphics_EmfPlusDual()
-        {
-            Assert.Throws<OutOfMemoryException>(() => CreateFilename(EmfType.EmfPlusDual, false));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void CreateFilename_MultipleGraphics_EmfPlusOnly()
-        {
-            Assert.Throws<OutOfMemoryException>(() => CreateFilename(EmfType.EmfPlusOnly, false));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
