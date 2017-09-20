@@ -34,8 +34,9 @@
 #include "metadata/gc-internals.h"
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/unlocked.h>
 
-int mono_g_hash_table_max_chain_length;
+gint32 mono_g_hash_table_max_chain_length;
 
 #ifdef HAVE_BOEHM_GC
 #define mg_new0(type,n)  ((type *) GC_MALLOC(sizeof(type) * (n)))
@@ -136,10 +137,12 @@ static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoO
 		}
 	}
 
-	if (i > start && (i - start) > mono_g_hash_table_max_chain_length)
-		mono_g_hash_table_max_chain_length = i - start;
-	else if (i < start && (hash->table_size - (start - i)) > mono_g_hash_table_max_chain_length)
-		mono_g_hash_table_max_chain_length = hash->table_size - (start - i);
+	gint32 max_length = UnlockedRead (&mono_g_hash_table_max_chain_length);
+	if (i > start && (i - start) > max_length)
+		UnlockedWrite (&mono_g_hash_table_max_chain_length, i - start);
+	else if (i < start && (hash->table_size - (start - i)) > max_length)
+		UnlockedWrite (&mono_g_hash_table_max_chain_length, hash->table_size - (start - i));
+
 	return i;
 }
 
