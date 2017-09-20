@@ -24,7 +24,12 @@ namespace System.Drawing
                 return s_gdipHandle.DangerousGetHandle();
             }
 
-            private static void LoadPlatformFunctionPointers()
+            private static void PlatformInitialize()
+            {
+                LoadFunctionPointers();
+            }
+
+            private static void LoadFunctionPointers()
             {
                 GdiplusStartup_ptr = FunctionWrapper.Load<GdiplusStartup_delegate>(s_gdipModule, "GdiplusStartup");
                 GdipCreatePath_ptr = FunctionWrapper.Load<GdipCreatePath_delegate>(s_gdipModule, "GdipCreatePath");

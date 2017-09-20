@@ -130,23 +130,9 @@ namespace System.Drawing
             this.handle = handle;
             bitmap = Bitmap.FromHicon(handle);
             iconSize = new Size(bitmap.Width, bitmap.Height);
-            if (GDIPlus.RunningOnUnix())
-            {
-                bitmap = Bitmap.FromHicon(handle);
-                iconSize = new Size(bitmap.Width, bitmap.Height);
-                // FIXME: we need to convert the bitmap into an icon
-            }
-            else
-            {
-                IconInfo ii;
-                GDIPlus.GetIconInfo(handle, out ii);
-                if (!ii.IsIcon)
-                    throw new NotImplementedException("Handle doesn't represent an ICON.");
-
-                // If this structure defines an icon, the hot spot is always in the center of the icon
-                iconSize = new Size(ii.xHotspot * 2, ii.yHotspot * 2);
-                bitmap = (Bitmap)Image.FromHbitmap(ii.hbmColor);
-            }
+            bitmap = Bitmap.FromHicon(handle);
+            iconSize = new Size(bitmap.Width, bitmap.Height);
+            // FIXME: we need to convert the bitmap into an icon
             undisposable = true;
         }
 #endif
@@ -327,13 +313,6 @@ namespace System.Drawing
 
             if (!disposed)
             {
-#if !MONOTOUCH
-                if (GDIPlus.RunningOnWindows() && (handle != IntPtr.Zero))
-                {
-                    GDIPlus.DestroyIcon(handle);
-                    handle = IntPtr.Zero;
-                }
-#endif
                 if (bitmap != null)
                 {
                     bitmap.Dispose();
@@ -624,24 +603,15 @@ namespace System.Drawing
         {
             if (bitmap == null)
             {
-                if (GDIPlus.RunningOnUnix())
+                // Mono's libgdiplus doesn't require to keep the stream alive when loading images
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    // Mono's libgdiplus doesn't require to keep the stream alive when loading images
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        // save the current icon
-                        Save(ms, Width, Height);
-                        ms.Position = 0;
+                    // save the current icon
+                    Save(ms, Width, Height);
+                    ms.Position = 0;
 
-                        // libgdiplus can now decode icons
-                        bitmap = (Bitmap)Image.LoadFromStream(ms, false);
-                    }
-                }
-                else
-                {
-                    // MS GDI+ ICO codec is more limited than the MS Icon class
-                    // so we can't, reliably, get bitmap using it. We need to do this the "slow" way
-                    bitmap = BuildBitmapOnWin32();
+                    // libgdiplus can now decode icons
+                    bitmap = (Bitmap)Image.LoadFromStream(ms, false);
                 }
             }
             return bitmap;
@@ -680,19 +650,7 @@ namespace System.Drawing
                 // note: this handle doesn't survive the lifespan of the icon instance
                 if (handle == IntPtr.Zero)
                 {
-                    if (GDIPlus.RunningOnUnix())
-                    {
-                        handle = GetInternalBitmap().NativeObject;
-                    }
-                    else
-                    {
-                        // remember that this block executes only with MS GDI+
-                        IconInfo ii = new IconInfo();
-                        ii.IsIcon = true;
-                        ii.hbmColor = ToBitmap().GetHbitmap();
-                        ii.hbmMask = ii.hbmColor;
-                        handle = GDIPlus.CreateIconIndirect(ref ii);
-                    }
+                    handle = GetInternalBitmap().NativeObject;
                 }
                 return handle;
             }
