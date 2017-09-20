@@ -2926,6 +2926,10 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, GHashTabl
 			*ifaces = g_hash_table_new (NULL, NULL);
 		if (g_hash_table_lookup (*ifaces, ic))
 			continue;
+		/* A gparam is not an implemented interface for the purposes of
+		 * mono_class_get_implemented_interfaces */
+		if (mono_class_is_gparam (ic))
+			continue;
 		g_ptr_array_add (*res, ic);
 		g_hash_table_insert (*ifaces, ic, ic);
 		mono_class_init (ic);
@@ -3316,7 +3320,9 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 		for (i = 0; i < k->interface_count; i++) {
 			ic = k->interfaces [i];
 
-			mono_class_init (ic);
+			/* A gparam does not have any interface_id set. */
+			if (! mono_class_is_gparam (ic))
+				mono_class_init (ic);
 
 			if (max_iid < ic->interface_id)
 				max_iid = ic->interface_id;
