@@ -55,7 +55,6 @@ init_rid_plat()
             __rid_plat="linux"
         fi
     fi
-    echo __rid_plat=$__rid_plat
 }
 
 usage()
