@@ -333,7 +333,7 @@ my and Ximian's copyright to this code. ;)
 #define ppc_andid(c,S,A,ui) ppc_emit32(c, (28 << 26) | ((S) << 21 ) | ((A) << 16) | ((guint16)(ui)))
 #define ppc_andisd(c,S,A,ui) ppc_emit32(c, (29 << 26) | ((S) << 21 ) | ((A) << 16) | ((guint16)(ui)))
 
-#define ppc_bcx(c,BO,BI,BD,AA,LK) ppc_emit32(c, (16 << 26) | (BO << 21 )| (BI << 16) | (BD << 2) | ((AA) << 1) | LK)
+#define ppc_bcx(c,BO,BI,BD,AA,LK) ppc_emit32(c, (16 << 26) | ((BO) << 21 )| ((BI) << 16) | (BD << 2) | ((AA) << 1) | LK)
 #define ppc_bc(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,0) 
 #define ppc_bca(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,1,0)
 #define ppc_bcl(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,1)

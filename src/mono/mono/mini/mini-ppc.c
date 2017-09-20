@@ -4371,15 +4371,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FCEQ:
+		case OP_FCNEQ:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
-			ppc_li (code, ins->dreg, 0);
-			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 2);
 			ppc_li (code, ins->dreg, 1);
+			ppc_bc (code, ins->opcode == OP_FCEQ ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_EQ, 2);
+			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FCLT:
+		case OP_FCGE:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_bc (code, ins->opcode == OP_FCLT ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_LT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FCLT_UN:
@@ -4390,9 +4392,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FCGT:
+		case OP_FCLE:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_GT, 2);
+			ppc_bc (code, ins->opcode == OP_FCGT ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_GT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FCGT_UN:
