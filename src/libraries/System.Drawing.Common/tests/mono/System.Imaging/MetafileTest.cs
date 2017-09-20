@@ -460,14 +460,7 @@ namespace MonoTests.System.Drawing.Imaging
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Measure()
         {
-            Font test_font = null;
-            try
-            {
-                test_font = new Font(FontFamily.GenericMonospace, 12);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Font test_font = new Font(FontFamily.GenericMonospace, 12);
 
             Metafile mf;
             using (Bitmap bmp = new Bitmap(100, 100, PixelFormat.Format32bppArgb))
