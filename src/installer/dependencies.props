@@ -10,22 +10,22 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>ed8cf4ba3c0e143c142542aaf53a8cdaa6cb0023</CoreFxCurrentRef>
-    <CoreClrCurrentRef>ed8cf4ba3c0e143c142542aaf53a8cdaa6cb0023</CoreClrCurrentRef>
-    <StandardCurrentRef>ed8cf4ba3c0e143c142542aaf53a8cdaa6cb0023</StandardCurrentRef>
-    <WCFCurrentRef>ed8cf4ba3c0e143c142542aaf53a8cdaa6cb0023</WCFCurrentRef>
-    <BuildToolsCurrentRef>ed8cf4ba3c0e143c142542aaf53a8cdaa6cb0023</BuildToolsCurrentRef>
+    <CoreClrCurrentRef>25ba17a5976512ca07a8e746dac1a746a73fa081</CoreClrCurrentRef>
+    <StandardCurrentRef>25ba17a5976512ca07a8e746dac1a746a73fa081</StandardCurrentRef>
+    <WCFCurrentRef>25ba17a5976512ca07a8e746dac1a746a73fa081</WCFCurrentRef>
+    <BuildToolsCurrentRef>25ba17a5976512ca07a8e746dac1a746a73fa081</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25718-03</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25718-03</MicrosoftPrivateCoreFxUAPPackageVersion>
     <PlatformPackageVersion>2.1.0-preview1-25718-03</PlatformPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25718-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25720-03</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
-    <NETStandardVersion>2.1.0-preview1-25718-01</NETStandardVersion>
+    <NETStandardVersion>2.1.0-preview1-25720-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.5.0-preview2-25718-01</WcfVersion>
+    <WcfVersion>4.5.0-preview2-25720-01</WcfVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
