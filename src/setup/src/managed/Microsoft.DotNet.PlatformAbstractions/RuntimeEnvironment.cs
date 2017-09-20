@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
                 case Platform.Darwin:
                     return $".{OperatingSystemVersion}";
                 case Platform.FreeBSD:
-                    return $".{OperatingSystemVersion}";
+                    return $".{OperatingSystemVersion.Split('.')[0]}";
                 default:
                     return string.Empty; // Unknown Platform? Unknown Version!
             }
@@ -104,7 +104,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
                 case Platform.Darwin:
                     return "osx";
                 case Platform.FreeBSD:
-                    return "FreeBSD";
+                    return "freebsd";
                 default:
                     return "unknown";
             }
