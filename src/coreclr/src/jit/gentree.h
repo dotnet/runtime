@@ -1145,9 +1145,8 @@ public:
                 // NOPs may only be present in LIR if they do not produce a value.
                 return IsNothingNode();
 
-            case GT_ARGPLACE:
             case GT_LIST:
-                // ARGPLACE and LIST nodes may not be present in a block's LIR sequence, but they may
+                // LIST nodes may not be present in a block's LIR sequence, but they may
                 // be present as children of an LIR node.
                 return (gtNext == nullptr) && (gtPrev == nullptr);
 
