@@ -257,7 +257,8 @@ pal::string_t pal::get_current_os_rid_platform()
     if (ret == 0)
     {
         char *pos = strchr(str,'.');
-        if (pos) {
+        if (pos)
+        {
             *pos = '\0';
         }
         ridOS.append(_X("freebsd."));
