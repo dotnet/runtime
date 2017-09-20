@@ -235,17 +235,6 @@ void Compiler::lvaInitTypeRef()
 
     lvaInitArgs(&varDscInfo);
 
-#if FEATURE_FASTTAILCALL
-    //-------------------------------------------------------------------------
-    // Save the register usage information and stack size.
-    //-------------------------------------------------------------------------
-
-    info.compArgRegCount      = varDscInfo.intRegArgNum;
-    info.compFloatArgRegCount = varDscInfo.floatRegArgNum;
-    info.compArgStackSize     = varDscInfo.stackArgSize;
-
-#endif // FEATURE_FASTTAILCALL
-
     //-------------------------------------------------------------------------
     // Finally the local variables
     //-------------------------------------------------------------------------
@@ -366,6 +355,13 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 #if !FEATURE_STACK_FP_X87
     codeGen->floatRegState.rsCalleeRegArgCount = varDscInfo->floatRegArgNum;
 #endif // FEATURE_STACK_FP_X87
+
+#if FEATURE_FASTTAILCALL
+    // Save the stack usage information
+    // We can get register usage information using codeGen->intRegState and
+    // codeGen->floatRegState
+    info.compArgStackSize = varDscInfo->stackArgSize;
+#endif // FEATURE_FASTTAILCALL
 
     // The total argument size must be aligned.
     noway_assert((compArgSize % sizeof(void*)) == 0);
@@ -951,7 +947,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 
 #endif // _TARGET_XXX_
 
-#ifdef FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL
             varDscInfo->stackArgSize += (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
 #endif // FEATURE_FASTTAILCALL
         }
@@ -1050,9 +1046,9 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             // For the RyuJIT backend, we need to mark these as being on the stack,
             // as this is not done elsewhere in the case that canEnreg returns false.
             varDsc->lvOnFrame = true;
-#ifdef FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL
             varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
-#endif
+#endif // FEATURE_FASTTAILCALL
         }
 #endif // !LEGACY_BACKEND
 
@@ -1126,9 +1122,9 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
             // For the RyuJIT backend, we need to mark these as being on the stack,
             // as this is not done elsewhere in the case that canEnreg returns false.
             varDsc->lvOnFrame = true;
-#ifdef FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL
             varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
-#endif
+#endif // FEATURE_FASTTAILCALL
         }
 #endif // !LEGACY_BACKEND
 
