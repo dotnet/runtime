@@ -187,8 +187,15 @@ namespace System.Runtime.InteropServices
 
         unsafe public static String PtrToStringUTF8(IntPtr ptr)
         {
-            int nbBytes = System.StubHelpers.StubHelpers.strlen((sbyte*)ptr.ToPointer());
-            return PtrToStringUTF8(ptr, nbBytes);
+            if (IntPtr.Zero == ptr)
+            {
+                return null;
+            }
+            else
+            {
+                int nbBytes = System.StubHelpers.StubHelpers.strlen((sbyte*)ptr.ToPointer());
+                return PtrToStringUTF8(ptr, nbBytes);
+            }
         }
 
         unsafe public static String PtrToStringUTF8(IntPtr ptr, int byteLen)
