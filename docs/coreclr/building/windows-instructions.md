@@ -45,7 +45,8 @@ For Visual Studio 2017:
     * Visual Studio C++ core features
   * Under "SDKs, libraries, and frameworks":
     * Windows 10 SDK or Windows 8.1 SDK
-* To build for Arm32, Make sure that you have the Windows 10 SDK installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads)
+* To build for Arm32, Make sure that you have the Windows 10 SDK installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads).
+  * In addition, ensure you install the ARM tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "Visual C++ compilers and libraries for ARM".
 * **Important:** You must have the `msdia120.dll` COM Library registered in order to build the repository.
   * This binary is registered by default when installing the "VC++ Tools" with Visual Studio 2015
   * You can also manually register the binary by launching the "Developer Command Prompt for VS2017" with Administrative privileges and running `regsvr32.exe "%VSINSTALLDIR%\Common7\IDE\msdia120.dll"`
