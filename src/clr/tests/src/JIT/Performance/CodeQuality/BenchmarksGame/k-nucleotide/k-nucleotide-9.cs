@@ -266,7 +266,7 @@ namespace BenchmarksGame
             return (ok ? 100 : -1);
         }
 
-        [Benchmark(InnerIterationCount = 1)]
+        [Benchmark(InnerIterationCount = 10)]
         public static void RunBench()
         {
             var helpers = new TestHarnessHelpers(bigInput: true);
@@ -281,6 +281,11 @@ namespace BenchmarksGame
 
         static bool Bench(TestHarnessHelpers helpers, bool verbose)
         {
+            // Reset static state
+            threeBlocks.Clear();
+            threeStart = 0;
+            threeEnd = 0;
+
             tonum['c'] = 1; tonum['C'] = 1;
             tonum['g'] = 2; tonum['G'] = 2;
             tonum['t'] = 3; tonum['T'] = 3;
