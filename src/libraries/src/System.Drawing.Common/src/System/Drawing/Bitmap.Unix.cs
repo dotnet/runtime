@@ -71,9 +71,6 @@ namespace System.Drawing
         // (when using MS GDI+ and IStream we must ensure the stream stays alive for all the life of the Image)
         internal Bitmap(IntPtr ptr, Stream stream)
         {
-            // under Win32 stream is owned by SD/GDI+ code
-            if (GDIPlus.RunningOnWindows())
-                this.stream = stream;
             nativeObject = ptr;
         }
 
@@ -87,7 +84,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("g");
 
             IntPtr bmp;
-            Status s = SafeNativeMethods.Gdip.GdipCreateBitmapFromGraphics(width, height, g.nativeObject, out bmp);
+            int s = SafeNativeMethods.Gdip.GdipCreateBitmapFromGraphics(width, height, g.nativeObject, out bmp);
             SafeNativeMethods.Gdip.CheckStatus(s);
             nativeObject = bmp;
         }
@@ -95,7 +92,7 @@ namespace System.Drawing
         public Bitmap(int width, int height, PixelFormat format)
         {
             IntPtr bmp;
-            Status s = SafeNativeMethods.Gdip.GdipCreateBitmapFromScan0(width, height, 0, format, IntPtr.Zero, out bmp);
+            int s = SafeNativeMethods.Gdip.GdipCreateBitmapFromScan0(width, height, 0, format, IntPtr.Zero, out bmp);
             SafeNativeMethods.Gdip.CheckStatus(s);
             nativeObject = bmp;
 
@@ -121,7 +118,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("filename");
 
             IntPtr imagePtr;
-            Status st;
+            int st;
 
             if (useIcm)
                 st = SafeNativeMethods.Gdip.GdipCreateBitmapFromFileICM(filename, out imagePtr);
@@ -149,9 +146,6 @@ namespace System.Drawing
             }
 
             nativeObject = InitFromStream(s);
-            // under Win32 stream is owned by SD/GDI+ code
-            if (GDIPlus.RunningOnWindows())
-                stream = s;
         }
 
         public Bitmap(Image original, int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
@@ -166,7 +160,7 @@ namespace System.Drawing
         {
             IntPtr bmp;
 
-            Status status = SafeNativeMethods.Gdip.GdipCreateBitmapFromScan0(width, height, stride, format, scan0, out bmp);
+            int status = SafeNativeMethods.Gdip.GdipCreateBitmapFromScan0(width, height, stride, format, scan0, out bmp);
             SafeNativeMethods.Gdip.CheckStatus(status);
             nativeObject = bmp;
         }
@@ -182,7 +176,7 @@ namespace System.Drawing
 
             int argb;
 
-            Status s = SafeNativeMethods.Gdip.GdipBitmapGetPixel(nativeObject, x, y, out argb);
+            int s = SafeNativeMethods.Gdip.GdipBitmapGetPixel(nativeObject, x, y, out argb);
             SafeNativeMethods.Gdip.CheckStatus(s);
 
             return Color.FromArgb(argb);
@@ -190,8 +184,8 @@ namespace System.Drawing
 
         public void SetPixel(int x, int y, Color color)
         {
-            Status s = SafeNativeMethods.Gdip.GdipBitmapSetPixel(nativeObject, x, y, color.ToArgb());
-            if (s == Status.InvalidParameter)
+            int s = SafeNativeMethods.Gdip.GdipBitmapSetPixel(nativeObject, x, y, color.ToArgb());
+            if (s == SafeNativeMethods.Gdip.InvalidParameter)
             {
                 // check is done in case of an error only to avoid another
                 // unmanaged call for normal (successful) calls
@@ -207,7 +201,7 @@ namespace System.Drawing
         public Bitmap Clone(Rectangle rect, PixelFormat format)
         {
             IntPtr bmp;
-            Status status = SafeNativeMethods.Gdip.GdipCloneBitmapAreaI(rect.X, rect.Y, rect.Width, rect.Height,
+            int status = SafeNativeMethods.Gdip.GdipCloneBitmapAreaI(rect.X, rect.Y, rect.Width, rect.Height,
                 format, nativeObject, out bmp);
             SafeNativeMethods.Gdip.CheckStatus(status);
             return new Bitmap(bmp);
@@ -216,7 +210,7 @@ namespace System.Drawing
         public Bitmap Clone(RectangleF rect, PixelFormat format)
         {
             IntPtr bmp;
-            Status status = SafeNativeMethods.Gdip.GdipCloneBitmapArea(rect.X, rect.Y, rect.Width, rect.Height,
+            int status = SafeNativeMethods.Gdip.GdipCloneBitmapArea(rect.X, rect.Y, rect.Width, rect.Height,
                 format, nativeObject, out bmp);
             SafeNativeMethods.Gdip.CheckStatus(status);
             return new Bitmap(bmp);
@@ -225,7 +219,7 @@ namespace System.Drawing
         public static Bitmap FromHicon(IntPtr hicon)
         {
             IntPtr bitmap;
-            Status status = SafeNativeMethods.Gdip.GdipCreateBitmapFromHICON(hicon, out bitmap);
+            int status = SafeNativeMethods.Gdip.GdipCreateBitmapFromHICON(hicon, out bitmap);
             SafeNativeMethods.Gdip.CheckStatus(status);
             return new Bitmap(bitmap);
         }
@@ -233,7 +227,7 @@ namespace System.Drawing
         public static Bitmap FromResource(IntPtr hinstance, string bitmapName)  //TODO: Untested
         {
             IntPtr bitmap;
-            Status status = SafeNativeMethods.Gdip.GdipCreateBitmapFromResource(hinstance, bitmapName, out bitmap);
+            int status = SafeNativeMethods.Gdip.GdipCreateBitmapFromResource(hinstance, bitmapName, out bitmap);
             SafeNativeMethods.Gdip.CheckStatus(status);
             return new Bitmap(bitmap);
         }
@@ -249,7 +243,7 @@ namespace System.Drawing
         {
             IntPtr HandleBmp;
 
-            Status status = SafeNativeMethods.Gdip.GdipCreateHBITMAPFromBitmap(nativeObject, out HandleBmp, background.ToArgb());
+            int status = SafeNativeMethods.Gdip.GdipCreateHBITMAPFromBitmap(nativeObject, out HandleBmp, background.ToArgb());
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return HandleBmp;
@@ -260,7 +254,7 @@ namespace System.Drawing
         {
             IntPtr HandleIcon;
 
-            Status status = SafeNativeMethods.Gdip.GdipCreateHICONFromBitmap(nativeObject, out HandleIcon);
+            int status = SafeNativeMethods.Gdip.GdipCreateHICONFromBitmap(nativeObject, out HandleIcon);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return HandleIcon;
@@ -275,7 +269,11 @@ namespace System.Drawing
         public
         BitmapData LockBits(Rectangle rect, ImageLockMode flags, PixelFormat format, BitmapData bitmapData)
         {
-            Status status = SafeNativeMethods.Gdip.GdipBitmapLockBits(nativeObject, ref rect, flags, format, bitmapData);
+            int status = SafeNativeMethods.Gdip.GdipBitmapLockBits(nativeObject, ref rect, flags, format, bitmapData);
+            if (status == 7)
+            {
+                status = 8; // libgdiplus has the wrong error code mapping for this state.
+            }
             //NOTE: scan0 points to piece of memory allocated in the unmanaged space
             SafeNativeMethods.Gdip.CheckStatus(status);
 
@@ -311,13 +309,13 @@ namespace System.Drawing
 
         public void SetResolution(float xDpi, float yDpi)
         {
-            Status status = SafeNativeMethods.Gdip.GdipBitmapSetResolution(nativeObject, xDpi, yDpi);
+            int status = SafeNativeMethods.Gdip.GdipBitmapSetResolution(nativeObject, xDpi, yDpi);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void UnlockBits(BitmapData bitmapdata)
         {
-            Status status = SafeNativeMethods.Gdip.GdipBitmapUnlockBits(nativeObject, bitmapdata);
+            int status = SafeNativeMethods.Gdip.GdipBitmapUnlockBits(nativeObject, bitmapdata);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
     }
