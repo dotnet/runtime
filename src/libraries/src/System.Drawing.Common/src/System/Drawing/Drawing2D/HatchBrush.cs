@@ -15,6 +15,11 @@ namespace System.Drawing.Drawing2D
 
         public HatchBrush(HatchStyle hatchstyle, Color foreColor, Color backColor)
         {
+            if (hatchstyle < HatchStyle.Min || hatchstyle > HatchStyle.SolidDiamond)
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(hatchstyle), hatchstyle, nameof(HatchStyle)), nameof(hatchstyle));
+            }
+
             IntPtr nativeBrush;
             int status = SafeNativeMethods.Gdip.GdipCreateHatchBrush(unchecked((int)hatchstyle), foreColor.ToArgb(), backColor.ToArgb(), out nativeBrush);
             SafeNativeMethods.Gdip.CheckStatus(status);
