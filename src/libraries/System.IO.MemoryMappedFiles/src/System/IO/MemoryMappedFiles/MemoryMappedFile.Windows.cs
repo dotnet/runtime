@@ -146,7 +146,7 @@ namespace System.IO.MemoryMappedFiles
                     }
                     else
                     {
-                        ThreadSleep(waitSleep);
+                        Thread.Sleep(waitSleep);
                         waitSleep *= 2;
                     }
                 }
@@ -255,14 +255,6 @@ namespace System.IO.MemoryMappedFiles
                 secAttrs.bInheritHandle = Interop.BOOL.TRUE;
             }
             return secAttrs;
-        }
-
-        /// <summary>
-        /// Replacement for Thread.Sleep(milliseconds), which isn't available.
-        /// </summary>
-        internal static void ThreadSleep(int milliseconds)
-        {
-            new ManualResetEventSlim(initialState: false).Wait(milliseconds);
         }
     }
 }
