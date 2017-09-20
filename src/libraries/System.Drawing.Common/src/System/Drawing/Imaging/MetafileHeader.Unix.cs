@@ -153,7 +153,16 @@ namespace System.Drawing.Imaging
 
         public Rectangle Bounds
         {
-            get { return new Rectangle(header.x, header.y, header.width, header.height); }
+            get
+            {
+                if (this.MetafileSize == 0)
+                {
+                    // GDI+ compatibility; 
+                    return new Rectangle();
+                }
+
+                return new Rectangle(header.x, header.y, header.width, header.height);
+            }
         }
 
         public float DpiX
