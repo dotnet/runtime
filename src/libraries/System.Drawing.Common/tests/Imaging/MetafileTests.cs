@@ -230,7 +230,7 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { MetafileFrameUnit.Millimeter };
             yield return new object[] { MetafileFrameUnit.GdiCompatible };
         }
-        
+
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_TestData))]
         public void Ctor_IntPtrRectangleFMetafileFrameUnit_Success(MetafileFrameUnit frameUnit)
@@ -342,7 +342,7 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { (MetafileFrameUnit)int.MaxValue };
             yield return new object[] { (MetafileFrameUnit)int.MinValue };
         }
-        
+
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
         public void Ctor_InvalidMetafileFrameUnit_ThrowsArgumentException(MetafileFrameUnit farameUnit)
@@ -1076,8 +1076,13 @@ namespace System.Drawing.Imaging.Tests
             GraphicsUnit graphicsUnit = (GraphicsUnit)int.MaxValue;
 
             AssertMetafileHeaderIsBlank(metafile.GetMetafileHeader());
-            Assert.Equal(new Rectangle(0, 0, 1, 1), metafile.GetBounds(ref graphicsUnit));
-            Assert.Equal(GraphicsUnit.Pixel, graphicsUnit);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // This values are incorrect on libgdiplus.
+                Assert.Equal(new Rectangle(0, 0, 1, 1), metafile.GetBounds(ref graphicsUnit));
+                Assert.Equal(GraphicsUnit.Pixel, graphicsUnit);
+            }
         }
 
         private void AssertMetafileHeaderIsBlank(MetafileHeader metafileHeader)
