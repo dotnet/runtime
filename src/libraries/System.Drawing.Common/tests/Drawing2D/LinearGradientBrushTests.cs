@@ -246,36 +246,6 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.ThrowsAny<ArgumentException>(() => new LinearGradientBrush(new RectangleF(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
         }
 
-        public static IEnumerable<object[]> Ctor_HatchStyle_ForeColor_BackColor_TestData()
-        {
-            yield return new object[] { HatchStyle.Horizontal, new Color(), new Color() };
-            yield return new object[] { HatchStyle.SolidDiamond, Color.PapayaWhip, Color.Plum };
-        }
-
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [MemberData(nameof(Ctor_HatchStyle_ForeColor_BackColor_TestData))]
-        public void Ctor_HatchStyle_ForeColor_BackColor(HatchStyle hatchStyle, Color foreColor, Color backColor)
-        {
-            var brush = new HatchBrush(hatchStyle, foreColor, backColor);
-            Assert.Equal(hatchStyle, brush.HatchStyle);
-
-            Assert.NotEqual(foreColor, brush.ForegroundColor);
-            Assert.Equal(foreColor.ToArgb(), brush.ForegroundColor.ToArgb());
-
-            Assert.NotEqual(backColor, brush.BackgroundColor);
-            Assert.Equal(backColor.ToArgb(), brush.BackgroundColor.ToArgb());
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [InlineData(HatchStyle.Horizontal - 1)]
-        [InlineData(HatchStyle.SolidDiamond + 1)]
-        public void Ctor_InvalidHatchStyle_ThrowsArgumentException(HatchStyle hatchStyle)
-        {
-            AssertExtensions.Throws<ArgumentException>(null, () => new HatchBrush(hatchStyle, Color.Empty));
-            AssertExtensions.Throws<ArgumentException>(null, () => new HatchBrush(hatchStyle, Color.Empty, Color.Empty));
-        }
-
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_Brush_ReturnsClone()
         {
