@@ -757,13 +757,16 @@ NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
 .att_syntax
     pushl       $0
     pushl       $0
+    pushl       $0
 .intel_syntax noprefix
 
     push        eax             // siteAddrForRegisterIndirect (for tailcalls)
     push        esi             // pTransitionBlock
 
+    CHECK_STACK_ALIGNMENT
     call        C_FUNC(StubDispatchFixupWorker)
 
+    mov         esp, esi
     STUB_EPILOG
 
 PATCH_LABEL StubDispatchFixupPatchLabel
