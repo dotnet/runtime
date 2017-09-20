@@ -891,6 +891,10 @@ namespace System.Numerics.Tests
             // ctor(byte[]): array is UInt32.MaxValue + 1
             VerifyCtorByteArray(new byte[] { 0, 0, 0, 0, 1 }, (UInt64)UInt32.MaxValue + 1);
 
+            // ctor(byte[]): array is Int32.MinValue with overlong representation.
+            VerifyCtorByteArray(new byte[] {0, 0, 0, 0x80, 0xFF});
+            Assert.Equal(new BigInteger(new byte[] { 0, 0, 0, 0x80, 0xFF, 0xFF, 0xFF }), int.MinValue);
+
             // ctor(byte[]): array is UInt64.MaxValue
             VerifyCtorByteArray(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 }, UInt64.MaxValue);
 
