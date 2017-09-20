@@ -48,28 +48,9 @@ namespace MonoTests.System.Drawing.Imaging
         public const string Emf = "milkmateya01.emf";
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_Stream_Null()
-        {
-            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Metafile((Stream)null));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_String_Null()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Metafile((string)null));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Metafile_String_Empty()
         {
             Assert.Throws<ArgumentException>(() => new Metafile(String.Empty));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_String_FileDoesNotExists()
-        {
-            string filename = Helpers.GetTestBitmapPath("telescope_02.wmf");
-            Assert.Throws<ExternalException>(() => new Metafile(filename));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -78,12 +59,6 @@ namespace MonoTests.System.Drawing.Imaging
             string filename = Helpers.GetTestBitmapPath(WmfPlaceable);
             Metafile mf = new Metafile(filename);
             Metafile clone = (Metafile)mf.Clone();
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void GetMetafileHeader_Bitmap()
-        {
-            Assert.Throws<ExternalException>(() => new Metafile(Helpers.GetTestBitmapPath(Bitmap)));
         }
 
         static public void Check_MetaHeader_WmfPlaceable(MetaHeader mh)
@@ -209,15 +184,7 @@ namespace MonoTests.System.Drawing.Imaging
 
             Assert.Equal(0, header.Bounds.X);
             Assert.Equal(0, header.Bounds.Y);
-#if false
-			Assert.Equal (759, header.Bounds.Width);
-			Assert.Equal (1073, header.Bounds.Height);
-			Assert.Equal (96f, header.DpiX, 0.5f);
-			Assert.Equal (96f, header.DpiY, 0.5f);
-			Assert.Equal (6619188, header.EmfPlusHeaderSize);
-			Assert.Equal (3670064, header.LogicalDpiX);
-			Assert.Equal (3670064, header.LogicalDpiY);
-#endif
+
             try
             {
                 Assert.NotNull(header.WmfHeader);
@@ -284,29 +251,6 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Static_GetMetafileHeader_Stream_Null()
-        {
-            Assert.Throws<NullReferenceException>(() => Metafile.GetMetafileHeader((Stream)null));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Static_GetMetafileHeader_Stream()
-        {
-            string filename = Helpers.GetTestBitmapPath(WmfPlaceable);
-            using (FileStream fs = File.OpenRead(filename))
-            {
-                MetafileHeader header = Metafile.GetMetafileHeader(fs);
-                Check_MetafileHeader_WmfPlaceable(header);
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Static_GetMetafileHeader_Filename_Null()
-        {
-            Assert.Throws<ArgumentNullException>(() => Metafile.GetMetafileHeader((string)null));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Static_GetMetafileHeader_Filename()
         {
             string filename = Helpers.GetTestBitmapPath(WmfPlaceable);
@@ -317,52 +261,6 @@ namespace MonoTests.System.Drawing.Imaging
 
     public class MetafileFulltrustTest
     {
-
-        private Font test_font;
-
-        public MetafileFulltrustTest()
-        {
-            try
-            {
-                test_font = new Font(FontFamily.GenericMonospace, 12);
-            }
-            catch (ArgumentException)
-            {
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Static_GetMetafileHeader_IntPtr_Zero()
-        {
-            Assert.Throws<ArgumentException>(() => Metafile.GetMetafileHeader(IntPtr.Zero));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Static_GetMetafileHeader_IntPtr()
-        {
-            string filename = Helpers.GetTestBitmapPath(MetafileTest.WmfPlaceable);
-            using (Metafile mf = new Metafile(filename))
-            {
-
-                IntPtr hemf = mf.GetHenhmetafile();
-                Assert.True(hemf != IntPtr.Zero);
-
-                Assert.Throws<ArgumentException>(() => Metafile.GetMetafileHeader(hemf));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrBool_Zero()
-        {
-            Assert.Throws<ArgumentException>(() => new Metafile(IntPtr.Zero, false));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrEmfType_Zero()
-        {
-            Assert.Throws<ArgumentException>(() => new Metafile(IntPtr.Zero, EmfType.EmfOnly));
-        }
-
         private void CheckEmptyHeader(Metafile mf, EmfType type)
         {
             MetafileHeader mh = mf.GetMetafileHeader();
@@ -433,12 +331,6 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrRectangle_Zero()
-        {
-            Assert.Throws<ArgumentException>(() => new Metafile(IntPtr.Zero, new Rectangle(1, 2, 3, 4)));
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Metafile_IntPtrRectangle_Empty()
         {
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
@@ -457,12 +349,6 @@ namespace MonoTests.System.Drawing.Imaging
                     }
                 }
             }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Metafile_IntPtrRectangleF_Zero()
-        {
-            Assert.Throws<ArgumentException>(() => new Metafile(IntPtr.Zero, new RectangleF(1, 2, 3, 4)));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -613,6 +499,15 @@ namespace MonoTests.System.Drawing.Imaging
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Measure()
         {
+            Font test_font = null;
+            try
+            {
+                test_font = new Font(FontFamily.GenericMonospace, 12);
+            }
+            catch (ArgumentException)
+            {
+            }
+
             Metafile mf;
             using (Bitmap bmp = new Bitmap(100, 100, PixelFormat.Format32bppArgb))
             {
