@@ -236,7 +236,6 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new LinearGradientBrush(new RectangleF(1, 2, 3, 0), Color.Empty, Color.Empty, 0, true));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(LinearGradientMode.Horizontal - 1)]
         [InlineData(LinearGradientMode.BackwardDiagonal + 1)]
@@ -339,7 +338,6 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Throws<NullReferenceException>(() => brush.Blend = new Blend { Factors = null });
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Blend_SetNullBlendPositions_ThrowsArgumentNullException()
         {
@@ -347,7 +345,6 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => brush.Blend = new Blend { Factors = new float[2], Positions = null });
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Blend_SetFactorsLengthGreaterThanPositionsLength_ThrowsArgumentOutOfRangeException()
         {
@@ -602,12 +599,11 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(transform, brush.Transform);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_SetNull_ThrowsArgumentNullException()
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.Transform = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", "matrix", () => brush.Transform = null);
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -631,7 +627,6 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(wrapMode, brush.WrapMode);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(WrapMode.Tile - 1)]
         [InlineData(WrapMode.Clamp + 1)]
@@ -929,8 +924,8 @@ namespace System.Drawing.Drawing2D.Tests
         public void SetSigmalBellShape_InvalidFocus_ThrowsArgumentException(float focus)
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(focus));
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(focus, 1));
+            AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetSigmaBellShape(focus));
+            AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetSigmaBellShape(focus, 1));
         }
 
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
@@ -941,7 +936,7 @@ namespace System.Drawing.Drawing2D.Tests
         public void SetSigmalBellShape_InvalidScale_ThrowsArgumentException(float scale)
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(0.1f, scale));
+            AssertExtensions.Throws<ArgumentException>("scale", null, () => brush.SetSigmaBellShape(0.1f, scale));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -989,8 +984,8 @@ namespace System.Drawing.Drawing2D.Tests
         public void SetBlendTriangularShape_InvalidFocus_ThrowsArgumentException(float focus)
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(focus));
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(focus, 1));
+            AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetBlendTriangularShape(focus));
+            AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetBlendTriangularShape(focus, 1));
         }
 
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
@@ -1001,7 +996,7 @@ namespace System.Drawing.Drawing2D.Tests
         public void SetBlendTriangularShape_InvalidScale_ThrowsArgumentException(float scale)
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(0.1f, scale));
+            AssertExtensions.Throws<ArgumentException>("scale", null, () => brush.SetBlendTriangularShape(0.1f, scale));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
