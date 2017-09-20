@@ -74,10 +74,14 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
 
         private static string GetFreeBSDVersion()
         {
-            String verson = RuntimeInformation.OSDescription;
+            // This is same as sysctl kern.version
+            // FreeBSD 11.0-RELEASE-p1 FreeBSD 11.0-RELEASE-p1 #0 r306420: Thu Sep 29 01:43:23 UTC 2016     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC
+            // What we want is major release as minor releases should be compatible.
+            String version = RuntimeInformation.OSDescription;
             try
             {
-                return RuntimeInformation.OSDescription.Split()[1];
+                // second token up to first dot
+                return RuntimeInformation.OSDescription.Split()[1].Split('.')[0];
             }
             catch
             {
@@ -208,6 +212,10 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
                     if (string.Equals(uname, "Linux", StringComparison.OrdinalIgnoreCase))
                     {
                         return Platform.Linux;
+                    }
+                    if (string.Equals(uname, "FreeBSD", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Platform.FreeBSD;
                     }
                 }
                 catch
