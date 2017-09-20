@@ -1241,7 +1241,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)] // see bug #78408
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FillRectanglesZeroRectangle()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -1271,7 +1271,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)] // see bug #78408
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FillRectanglesZeroRectangleF()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -1304,7 +1304,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        // see bug #81737 for details
         private Bitmap FillDrawRectangle(float width)
         {
             Bitmap bitmap = new Bitmap(20, 20);
@@ -1749,7 +1748,7 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MeasureString_StringFontInt_LongString()
         {
-            MeasureString_StringFontInt("A very long string..."); // see bug #79643
+            MeasureString_StringFontInt("A very long string...");
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -1877,7 +1876,7 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void MeasureString_Bug76664()
+        public void MeasureString_CharactersFitted()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
@@ -1899,7 +1898,7 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.GdiPlusIsAvailableNotRedhat73)]
-        public void MeasureString_Bug80680()
+        public void MeasureString_Whitespace()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
@@ -1984,7 +1983,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ConditionalFact(Helpers.GdiPlusIsAvailableNotRedhat73)] // adapted from bug #78777
+        [ConditionalFact(Helpers.GdiPlusIsAvailableNotRedhat73)]
         public void MeasureCharacterRanges_TwoLines()
         {
             string text = "this\nis a test";
@@ -2168,7 +2167,7 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawString_EndlessLoop_Bug77699()
+        public void DrawString_EndlessLoop()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
@@ -3081,9 +3080,8 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawPath_82202()
+        public void DrawPath_Arcs()
         {
-            // based on test case from bug #82202
             using (Bitmap bmp = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bmp))
             using (GraphicsPath path = new GraphicsPath())
@@ -3130,9 +3128,8 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void FillPath_82202()
+        public void FillPath_Arcs()
         {
-            // based on test case from bug #82202
             using (Bitmap bmp = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bmp))
             using (GraphicsPath path = new GraphicsPath())
@@ -3158,7 +3155,7 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void TransformPoints_349800()
+        public void TransformPoints()
         {
             using (Bitmap bmp = new Bitmap(10, 10))
             using (Graphics g = Graphics.FromImage(bmp))
@@ -3185,7 +3182,7 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Dpi_556181()
+        public void Dpi()
         {
             float x, y;
             using (Bitmap bmp = new Bitmap(10, 10))
