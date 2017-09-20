@@ -141,8 +141,9 @@ namespace System.Drawing.Imaging.Tests
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_IntPtrEmfType_Success(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
@@ -162,9 +163,10 @@ namespace System.Drawing.Imaging.Tests
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_IntPtrInvalidEmfType_ThrowsArgumentException(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(bufferGraphics.GetHdc(), emfType));
+                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(g.GetHdc(), emfType));
             }
         }
 
@@ -188,13 +190,13 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { "description" };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_IntPtrEmfTypeString_Success(string description)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), EmfType.EmfOnly, description))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
             }
@@ -208,12 +210,12 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(IntPtr.Zero, EmfType.EmfOnly, description));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_IntPtrRectangleF_Success()
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangleF))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangleF))
             {
                 AssertMetafileIsBlank(metafile);
             }
@@ -228,87 +230,87 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { MetafileFrameUnit.Millimeter };
             yield return new object[] { MetafileFrameUnit.GdiCompatible };
         }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_TestData))]
         public void Ctor_IntPtrRectangleFMetafileFrameUnit_Success(MetafileFrameUnit frameUnit)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangleF, frameUnit))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangleF, frameUnit))
             {
                 AssertMetafileIsBlank(metafile);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_IntPtrRectangleFMetafileFrameUnitEmfType_Success(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangleF, MetafileFrameUnit.Pixel, emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangleF, MetafileFrameUnit.Pixel, emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_IntPtrRectangleFMetafileFrameUnitEmfTypeString_Success(string description)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangleF, MetafileFrameUnit.Pixel, EmfType.EmfOnly, description))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangleF, MetafileFrameUnit.Pixel, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_IntPtrRectangle_Success()
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangle))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangle))
             {
                 AssertMetafileIsBlank(metafile);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_TestData))]
         public void Ctor_IntPtrRectangleMetafileFrameUnit_Success(MetafileFrameUnit frameUnit)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangle, frameUnit))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangle, frameUnit))
             {
                 AssertMetafileIsBlank(metafile);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_IntPtrRectangleMetafileFrameUnitEmfType_Success(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangle, MetafileFrameUnit.Pixel, emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangle, MetafileFrameUnit.Pixel, emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_IntPtrRectangleMetafileFrameUnitEmfTypeString_Success(string description)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), _rectangle, MetafileFrameUnit.Pixel, EmfType.EmfOnly, description))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), _rectangle, MetafileFrameUnit.Pixel, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
             }
@@ -340,15 +342,15 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { (MetafileFrameUnit)int.MaxValue };
             yield return new object[] { (MetafileFrameUnit)int.MinValue };
         }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
         public void Ctor_InvalidMetafileFrameUnit_ThrowsArgumentException(MetafileFrameUnit farameUnit)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(referenceHdc, _rectangleF, farameUnit));
                 AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(referenceHdc, _rectangleF, farameUnit, EmfType.EmfOnly));
                 AssertExtensions.Throws<ArgumentException>(null, () =>
@@ -361,14 +363,14 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_InvalidEmfType_ThrowsArgumentException(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () =>
                     new Metafile(referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible, emfType));
                 AssertExtensions.Throws<ArgumentException>(null, () =>
@@ -381,13 +383,13 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_StringIntPtr_Success()
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc()))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc()))
             {
                 AssertMetafileIsBlank(metafile);
                 Assert.True(File.Exists(fileName));
@@ -402,8 +404,9 @@ namespace System.Drawing.Imaging.Tests
         public void Ctor_StringIntPtrEmfType_Success(EmfType emfType)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
@@ -413,14 +416,14 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_StringIntPtrEmfType_Success(string description)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), EmfType.EmfPlusDual, description))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), EmfType.EmfPlusDual, description))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), EmfType.EmfPlusDual);
@@ -441,57 +444,57 @@ namespace System.Drawing.Imaging.Tests
             DeleteFile(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_InvalidEmfTypeI_ThrowsArgumentException(EmfType emfType)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc, emfType));
                 AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc, emfType, "description"));
                 DeleteFile(fileName);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullPath_ThrowsArgumentNullException()
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentNullException>("path", () => new Metafile((string)null, referenceHdc));
                 AssertExtensions.Throws<ArgumentNullException>("path", () => new Metafile((string)null, referenceHdc, EmfType.EmfOnly));
                 AssertExtensions.Throws<ArgumentNullException>("path", () => new Metafile((string)null, referenceHdc, EmfType.EmfOnly, "description"));
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(@"fileNo*-//\\#@(found")]
         [InlineData("")]
         public void Ctor_InvalidPathI_ThrowsArgumentException(string fileName)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(fileName, referenceHdc));
                 AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(fileName, referenceHdc, EmfType.EmfOnly));
                 AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(fileName, referenceHdc, EmfType.EmfOnly, "description"));
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_PathTooLong_ThrowsPathTooLongException()
         {
             string fileName = GetPath(new string('a', short.MaxValue));
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 Assert.Throws<PathTooLongException>(() => new Metafile(fileName, referenceHdc));
                 Assert.Throws<PathTooLongException>(() => new Metafile(fileName, referenceHdc, EmfType.EmfOnly));
                 Assert.Throws<PathTooLongException>(() => new Metafile(fileName, referenceHdc, EmfType.EmfOnly, "description"));
@@ -499,13 +502,13 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         public void Ctor_StringIntPtrRectangleF_Success()
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), _rectangleF))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), _rectangleF))
             {
                 AssertMetafileIsBlank(metafile);
                 Assert.True(File.Exists(fileName));
@@ -514,14 +517,14 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_TestData))]
         public void Ctor_StringIntPtrRectangleFMetafileFrameUnit_Success(MetafileFrameUnit frameUnit)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), _rectangleF, frameUnit))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), _rectangleF, frameUnit))
             {
                 AssertMetafileIsBlank(metafile);
                 Assert.True(File.Exists(fileName));
@@ -530,14 +533,14 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_StringIntPtrRectangleFMetafileFrameUnitEmfType_Success(EmfType emfType)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), _rectangleF, MetafileFrameUnit.GdiCompatible, emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), _rectangleF, MetafileFrameUnit.GdiCompatible, emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
@@ -547,15 +550,15 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_StringIntPtrRectangleFMetafileFrameUnitEmfTypeString_Success(string description)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var metafile = new Metafile(
-                fileName, bufferGraphics.GetHdc(), _rectangleF, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
+                fileName, g.GetHdc(), _rectangleF, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), EmfType.EmfOnly);
@@ -565,15 +568,15 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_RectangleFEmpty_Success(string description)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var metafile = new Metafile(
-                fileName, bufferGraphics.GetHdc(), new RectangleF(), MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
+                fileName, g.GetHdc(), new RectangleF(), MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), EmfType.EmfOnly);
@@ -583,13 +586,13 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         public void Ctor_StringIntPtrRectangle_Success()
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), _rectangle))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), _rectangle))
             {
                 AssertMetafileIsBlank(metafile);
                 Assert.True(File.Exists(fileName));
@@ -598,14 +601,14 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_TestData))]
         public void Ctor_StringIntPtrRectangleMetafileFrameUnit_Success(MetafileFrameUnit frameUnit)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), _rectangle, frameUnit))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), _rectangle, frameUnit))
             {
                 AssertMetafileIsBlank(metafile);
                 Assert.True(File.Exists(fileName));
@@ -614,14 +617,14 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_StringIntPtrRectangleMetafileFrameUnitEmfType_Success(EmfType emfType)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
@@ -631,15 +634,15 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_StringIntPtrRectangleMetafileFrameUnitEmfTypeString_Success(string description)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var metafile = new Metafile(
-                fileName, bufferGraphics.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
+                fileName, g.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), EmfType.EmfOnly);
@@ -649,15 +652,15 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_RectangleEmpty_Success(string description)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var metafile = new Metafile(
-                fileName, bufferGraphics.GetHdc(), new Rectangle(), MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
+                fileName, g.GetHdc(), new Rectangle(), MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), EmfType.EmfOnly);
@@ -688,15 +691,15 @@ namespace System.Drawing.Imaging.Tests
             DeleteFile(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
         public void Ctor_InvalidEmfTypeII_ThrowsArgumentException(MetafileFrameUnit frameUnit)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc, _rectangleF, frameUnit));
                 AssertExtensions.Throws<ArgumentException>(null, () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, frameUnit, EmfType.EmfOnly));
@@ -712,15 +715,15 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_InvalidEmfTypeII_ThrowsArgumentException(EmfType emfType)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible, emfType));
                 AssertExtensions.Throws<ArgumentException>(null, () =>
@@ -734,14 +737,13 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(22723)]
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullPathI_ThrowsArgumentNullException()
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentNullException>("path", () => new Metafile((string)null, referenceHdc, _rectangleF));
                 AssertExtensions.Throws<ArgumentNullException>("path", () =>
                     new Metafile((string)null, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible));
@@ -752,16 +754,15 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(22723)]
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(@"fileNo*-//\\#@(found")]
         [InlineData("")]
         public void Ctor_InvalidPathII_ThrowsArgumentException(string fileName)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc, _rectangleF));
                 AssertExtensions.Throws<ArgumentException>(null, () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible));
@@ -772,15 +773,14 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(22723)]
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_PathTooLongI_ThrowsPathTooLongException()
         {
             string fileName = GetPath(new string('a', 261));
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 Assert.Throws<PathTooLongException>(() => new Metafile(fileName, referenceHdc, _rectangleF));
                 Assert.Throws<PathTooLongException>(() =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible));
@@ -792,69 +792,69 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         public void Ctor_StreamIntPtrRectangle_Success()
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var stream = new MemoryStream())
-            using (var metafile = new Metafile(stream, bufferGraphics.GetHdc(), _rectangle))
+            using (var metafile = new Metafile(stream, g.GetHdc(), _rectangle))
             {
                 AssertMetafileIsBlank(metafile);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_TestData))]
         public void Ctor_StreamIntPtrRectangleMetafileFrameUnit_Success(MetafileFrameUnit frameUnit)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var stream = new MemoryStream())
-            using (var metafile = new Metafile(stream, bufferGraphics.GetHdc(), _rectangle, frameUnit))
+            using (var metafile = new Metafile(stream, g.GetHdc(), _rectangle, frameUnit))
             {
                 AssertMetafileIsBlank(metafile);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_StreamIntPtrRectangleMetafileFrameUnitEmfType_Success(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var stream = new MemoryStream())
-            using (var metafile = new Metafile(stream, bufferGraphics.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, emfType))
+            using (var metafile = new Metafile(stream, g.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_StreamIntPtrRectangleMetafileFrameUnitEmfTypeString_Success(string description)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var stream = new MemoryStream())
             using (var metafile = new Metafile(
-                stream, bufferGraphics.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
+                stream, g.GetHdc(), _rectangle, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), EmfType.EmfOnly);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_RectangleEmptyI_Success(string description)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             using (var stream = new MemoryStream())
             using (var metafile = new Metafile(
-                stream, bufferGraphics.GetHdc(), new Rectangle(), MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
+                stream, g.GetHdc(), new Rectangle(), MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, description))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), EmfType.EmfOnly);
@@ -876,15 +876,15 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
         public void Ctor_InvalidEmfTypeIII_ThrowsArgumentException(MetafileFrameUnit frameUnit)
         {
             using (var stream = new MemoryStream())
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(stream, referenceHdc, _rectangle, frameUnit));
                 AssertExtensions.Throws<ArgumentException>(null, () =>
                     new Metafile(stream, referenceHdc, _rectangle, frameUnit, EmfType.EmfOnly));
@@ -893,15 +893,15 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_InvalidEmfTypeIII_ThrowsArgumentException(EmfType emfType)
         {
             using (var stream = new MemoryStream())
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 AssertExtensions.Throws<ArgumentException>(null, () =>
                    new Metafile(stream, referenceHdc, _rectangle, MetafileFrameUnit.GdiCompatible, emfType));
                 AssertExtensions.Throws<ArgumentException>(null, () =>
@@ -909,13 +909,13 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullStream_ThrowsNullReferenceException()
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                IntPtr referenceHdc = bufferGraphics.GetHdc();
+                IntPtr referenceHdc = g.GetHdc();
                 Assert.Throws<NullReferenceException>(() => new Metafile((Stream)null, referenceHdc, _rectangleF));
                 Assert.Throws<NullReferenceException>(() => new Metafile((Stream)null, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible));
                 Assert.Throws<NullReferenceException>(() =>
