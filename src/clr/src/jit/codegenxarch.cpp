@@ -1917,9 +1917,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_LIST:
         case GT_FIELD_LIST:
-        case GT_ARGPLACE:
             // Should always be marked contained.
-            assert(!"LIST, FIELD_LIST and ARGPLACE nodes should always be marked contained.");
+            assert(!"LIST, FIELD_LIST nodes should always be marked contained.");
             break;
 
         case GT_SWAP:
