@@ -131,7 +131,6 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { EmfType.EmfPlusOnly };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_IntPtrEmfType_Success(EmfType emfType)
@@ -152,7 +151,6 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { (EmfType)int.MinValue };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_IntPtrInvalidEmfType_ThrowsArgumentException(EmfType emfType)
@@ -389,7 +387,6 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_StringIntPtrEmfType_Success(EmfType emfType)
@@ -918,7 +915,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Static_GetMetafileHeader_String_ReturnsExpected()
         {
@@ -978,7 +974,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetMetafileHeader_ReturnsExpected()
         {
@@ -987,7 +982,7 @@ namespace System.Drawing.Imaging.Tests
                 MetafileHeader headerA = metafile.GetMetafileHeader();
                 MetafileHeader headerB = metafile.GetMetafileHeader();
                 AssertMetafileHeader(headerA);
-                Assert.False(ReferenceEquals(headerA, headerB));
+                Assert.NotSame(headerA, headerB);
             }
         }
 
