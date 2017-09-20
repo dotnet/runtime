@@ -5,7 +5,8 @@
     <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
     <RuntimeFrameworkVersion>2.0.0-beta-001509-00</RuntimeFrameworkVersion>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <PackageOutputPath>../nupkgs</PackageOutputPath>
+    <BaseOutputPath>../bin/</BaseOutputPath>
+    <PackageOutputPath>$(BaseOutputPath)nupkgs</PackageOutputPath>
 
     <!-- IsTool true causes the build output to be placed in the
          package's tools folder. This allows projects to reference the
@@ -42,7 +43,8 @@
          references from being marked as dependencies. -->
     <!-- TODO: Remove the custom .nuspec once the P2P PrivateAssets
          issue is fixed. -->
-    <NuspecFile>ILLink.Tasks.nuspec</NuspecFile>
+    <NuspecFileName>ILLink.Tasks.nuspec</NuspecFileName>
+    <NuspecFile>$(BaseOutputPath)$(NuspecFileName)</NuspecFile>
     <NuspecProperties>id=$(AssemblyName);authors=$(AssemblyName);description=linker tasks;</NuspecProperties>
   </PropertyGroup>
 
@@ -65,7 +67,7 @@
        Instead, we use GenerateNuspecDependsOn. We could probably also
        use BeforeTargets="GenerateNuspec". -->
   <PropertyGroup>
-    <GenerateNuspecDependsOn>SetDynamicNuspecProperties;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
+    <GenerateNuspecDependsOn>SetDynamicNuspecProperties;BinPlacePackageDeps;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
   <Target Name="SetDynamicNuspecProperties"
           DependsOnTargets="LayoutPackage">
@@ -74,11 +76,21 @@
     </PropertyGroup>
   </Target>
 
+  <!-- This target is necessary because the .nuspec includes the full
+       path of the selected dlls in the package layout. We want the
+       assets to be included in the package without the bin prefix, so
+       we place the .nuspec and the included targets alongside the
+       publish directories in the bin directory. -->
+  <Target Name="BinPlacePackageDeps">
+    <Copy SourceFiles="$(NuspecFileName)" DestinationFolder="$(BaseOutputPath)" />
+    <Copy SourceFiles="ILLink.Tasks.targets" DestinationFolder="$(BaseOutputPath)" />
+  </Target>
+
   <Target Name="LayoutPackage">
     <ItemGroup>
       <TFMsToPublish Include="$(TargetFrameworks)" />
       <ProjectsToPublish Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>TargetFramework=%(TFMsToPublish.Identity);PublishDir=%(TFMsToPublish.Identity)</AdditionalProperties>
+        <AdditionalProperties>TargetFramework=%(TFMsToPublish.Identity);PublishDir=$(BaseOutputPath)%(TFMsToPublish.Identity)</AdditionalProperties>
       </ProjectsToPublish>
     </ItemGroup>
     <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
@@ -167,6 +179,10 @@
       <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
     </ProjectReference>
     <ProjectReference Include="../../../cecil/Mono.Cecil.csproj" />
+
+    <ProjectReference Include="../ILLink.CustomSteps/ILLink.CustomSteps.csproj">
+      <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
+    </ProjectReference>
   </ItemGroup>
 
   <!-- Workaround for the SetConfiguration issue described above. -->

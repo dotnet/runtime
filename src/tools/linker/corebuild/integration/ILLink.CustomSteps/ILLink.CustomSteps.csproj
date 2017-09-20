@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp2.0;net46</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
+    <RuntimeFrameworkVersion>2.0.0-beta-001509-00</RuntimeFrameworkVersion>
+    <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyName>ILLink.CustomSteps</AssemblyName>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProjectGuid>{275C1D10-168A-4AC4-8F3E-AD969F580B9C}</ProjectGuid>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ClearInitLocals.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\linker\Mono.Linker.csproj">
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=illink_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=illink_Release</SetConfiguration>
+      <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\cecil\Mono.Cecil.csproj">
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' And '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' And '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_Release</SetConfiguration>
+      <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
