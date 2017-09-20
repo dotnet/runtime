@@ -92,7 +92,6 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Throws<OutOfMemoryException>(() => new PathGradientBrush(new PointF[pointsLength], WrapMode.Clamp));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_InvalidWrapMode_ThrowsInvalidEnumArgumentException()
         {
@@ -350,7 +349,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Blend_InvalidFactorPositionsLengthMismatch_ThrowsArgumentOutOfRangeException()
         {
@@ -373,7 +371,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Blend_NullBlendProperites_ThrowsArgumentNullException()
         {
@@ -485,8 +482,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(focus));
-                AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(focus, 1f));
+                AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetSigmaBellShape(focus));
+                AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetSigmaBellShape(focus, 1f));
             }
         }
 
@@ -497,7 +494,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(1f, scale));
+                AssertExtensions.Throws<ArgumentException>("scale", null, () => brush.SetSigmaBellShape(1f, scale));
             }
         }
 
@@ -583,8 +580,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(focus));
-                AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(focus, 1f));
+                AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetBlendTriangularShape(focus));
+                AssertExtensions.Throws<ArgumentException>("focus", null, () => brush.SetBlendTriangularShape(focus, 1f));
             }
         }
 
@@ -595,7 +592,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(1f, scale));
+                AssertExtensions.Throws<ArgumentException>("scale", null, () => brush.SetBlendTriangularShape(1f, scale));
             }
         }
 
@@ -672,7 +669,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void InterpolationColors_NullPoints_ArgumentNullException()
         {
@@ -712,7 +708,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void InterpolationColors_ColorsLengthGreaterThenPointsLength_ThrowsArgumentOutOfRangeException()
         {
@@ -756,13 +751,12 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Transform);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_Null_ArgumentNullException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.Transform = null);
+                AssertExtensions.Throws<ArgumentNullException>("value", "matrix", () => brush.Transform = null);
             }
         }
 
@@ -1059,7 +1053,6 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.WrapMode);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void WrapMode_Invalid_InvalidEnumArgumentException()
         {

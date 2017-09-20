@@ -335,9 +335,14 @@ namespace System.Drawing.Drawing2D
 
         public void SetSigmaBellShape(float focus, float scale)
         {
-            if (focus < 0 || focus > 1 || scale < 0 || scale > 1)
+            if (focus < 0 || focus > 1)
             {
-                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
+            }
+
+            if (scale < 0 || scale > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
             }
 
             int status = SafeNativeMethods.Gdip.GdipSetLineSigmaBlend(new HandleRef(this, NativeBrush), focus, scale);
@@ -348,9 +353,14 @@ namespace System.Drawing.Drawing2D
 
         public void SetBlendTriangularShape(float focus, float scale)
         {
-            if (focus < 0 || focus > 1 || scale < 0 || scale > 1)
+            if (focus < 0 || focus > 1)
             {
-                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
+            }
+
+            if (scale < 0 || scale > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
             }
 
             int status = SafeNativeMethods.Gdip.GdipSetLineLinearBlend(new HandleRef(this, NativeBrush), focus, scale);
@@ -531,7 +541,7 @@ namespace System.Drawing.Drawing2D
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("matrix");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetLineTransform(new HandleRef(this, NativeBrush), new HandleRef(value, value.nativeMatrix));
