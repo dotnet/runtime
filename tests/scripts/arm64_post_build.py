@@ -34,7 +34,7 @@ from collections import defaultdict
 
 g_arm64ci_path = os.path.join(os.environ["USERPROFILE"], "bin")
 g_dotnet_url = "https://clrjit.blob.core.windows.net/arm64ci/dotnet-sdk.zip"
-g_x64_client_url = "https://clrjit.blob.core.windows.net/arm64ci/x64_client_2_0_update.zip"
+g_x64_client_url = "https://clrjit.blob.core.windows.net/arm64ci/x64_client_arm_proxy_change.zip"
 
 ################################################################################
 # Argument Parser
@@ -54,6 +54,7 @@ parser.add_argument("-testarch", dest="testarch", nargs='?', default=None)
 parser.add_argument("-build_type", dest="build_type", nargs='?', default=None)
 parser.add_argument("-scenario", dest="scenario", nargs='?', default=None)
 parser.add_argument("-key_location", dest="key_location", nargs='?', default=None)
+parser.add_argument("-priority", dest="priority", nargs='?', default="1")
 
 ################################################################################
 # Helper Functions
@@ -228,6 +229,7 @@ def validate_args(args):
    build_type = args.build_type
    scenario = args.scenario
    key_location = args.key_location
+   priority = args.priority
    force_update = True
 
    def validate_arg(arg, check):
@@ -249,6 +251,7 @@ def validate_args(args):
    valid_arches = ["arm", "arm64"]
    valid_testarches = ["arm", "armlb", "arm64"]
    valid_build_types = ["debug", "checked", "release"]
+   valid_priorities = ["0", "1"]
 
    valid_jit_stress_regs_numbers = ["1", "2", "3", "4", "8", "10", "80"]
 
@@ -295,13 +298,14 @@ def validate_args(args):
    validate_arg(scenario, lambda item: item.lower() in valid_scenarios)
    validate_arg(key_location, lambda item: os.path.isfile(item))
    validate_arg(force_update, lambda item: isinstance(item, bool))
+   validate_arg(priority, lambda: item: item in valid_priorities)
 
    arch = arch.lower()
    testarch = testarch.lower()
    build_type = build_type.lower()
    scenario = scenario.lower()
 
-   args = (repo_root, arch, testarch, build_type, scenario, key_location, force_update)
+   args = (repo_root, arch, testarch, build_type, scenario, key_location, priority, force_update)
 
    log("Passed args: "
        "Repo Root: %s, "
@@ -309,7 +313,8 @@ def validate_args(args):
        "Test Arch: %s, "
        "Config: %s, "
        "Scenario: %s, "
-       "Key Location: %s" % (repo_root, arch, testarch, build_type, scenario, key_location))
+       "Priority: %s "
+       "Key Location: %s" % (repo_root, arch, testarch, build_type, scenario, priority, key_location))
 
    return args
 
@@ -320,7 +325,7 @@ def validate_args(args):
 def main(args):
    global g_arm64ci_path
 
-   repo_root, arch, testarch, build_type, scenario, key_location, force_update = validate_args(args)
+   repo_root, arch, testarch, build_type, scenario, key_location, priority, force_update = validate_args(args)
 
    cwd = os.getcwd()
    os.chdir(repo_root)
@@ -364,6 +369,8 @@ def main(args):
    # RyuJIT/arm32, set by prepending the scenario name with "ryujit_".
    if testarch == "arm":
       scenario = "ryujit_" + scenario
+
+   scenario = priority + scenario
 
    args = ["dotnet", 
            os.path.join(g_arm64ci_path, "x64_client.dll"), 
