@@ -713,25 +713,27 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_NullMatrix_ThrowsArgumentNullException()
         {
-            var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.MultiplyTransform(null));
-            AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.MultiplyTransform(null, MatrixOrder.Append));
+            using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.MultiplyTransform(null));
+                AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.MultiplyTransform(null, MatrixOrder.Append));
+            }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_DisposedMatrix_Nop()
         {
-            var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            Matrix transform = brush.Transform;
+            using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
+            using (Matrix transform = brush.Transform)
+            {
+                var matrix = new Matrix();
+                matrix.Dispose();
 
-            var matrix = new Matrix();
-            matrix.Dispose();
+                brush.MultiplyTransform(matrix);
+                brush.MultiplyTransform(matrix, MatrixOrder.Append);
 
-            brush.MultiplyTransform(matrix);
-            brush.MultiplyTransform(matrix, MatrixOrder.Append);
-
-            Assert.Equal(transform, brush.Transform);
+                Assert.Equal(transform, brush.Transform);
+            }
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
