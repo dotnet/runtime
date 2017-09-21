@@ -58,6 +58,10 @@ namespace ILLink.Tests
 			AddLinkerReference(csproj);
 
 			BuildAndLink(csproj);
+
+			int ret = RunApp(csproj, out string commandOutput, 5000);
+			Assert.True(commandOutput.Contains("Application started. Press Ctrl+C to shut down."));
+			Assert.True(commandOutput.Contains("Now listening on: http://localhost:5000"));
 		}
 	}
 }

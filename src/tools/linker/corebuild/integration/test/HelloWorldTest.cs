@@ -36,6 +36,10 @@ namespace ILLink.Tests
 			AddLinkerReference(csproj);
 
 			BuildAndLink(csproj, null);
+
+			int ret = RunApp(csproj, out string commandOutput);
+			Assert.True(ret == 0);
+			Assert.True(commandOutput.Contains("Hello World!"));
 		}
 	}
 }

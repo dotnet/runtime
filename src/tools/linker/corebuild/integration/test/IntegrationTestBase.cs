@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Xml.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -28,10 +29,20 @@ namespace ILLink.Tests
 
 		protected int Dotnet(string args, string workingDir, string additionalPath = null)
 		{
-			return RunCommand(context.DotnetToolPath, args, workingDir, additionalPath);
+			return RunCommand(context.DotnetToolPath, args, workingDir, additionalPath, out string commandOutput);
 		}
 
-		protected int RunCommand(string command, string args, string workingDir, string additionalPath = null)
+		protected int RunCommand(string command, string args, int timeout = 60000)
+		{
+			return RunCommand(command, args, null, null, out string commandOutput, timeout);
+		}
+
+		protected int RunCommand(string command, string args, string workingDir)
+		{
+			return RunCommand(command, args, workingDir, null, out string commandOutput);
+		}
+
+		protected int RunCommand(string command, string args, string workingDir, string additionalPath, out string commandOutput, int timeout = 60000)
 		{
 			output.WriteLine($"{command} {args}");
 			if (workingDir != null)
@@ -50,18 +61,37 @@ namespace ILLink.Tests
 				string path = psi.Environment["PATH"];
 				psi.Environment["PATH"] = path + ";" + additionalPath;
 			}
+			var process = new Process();
+			process.StartInfo = psi;
 
-			var process = new Process
-			{
-				StartInfo = psi,
+			StringBuilder processOutput = new StringBuilder();
+			DataReceivedEventHandler handler = (sender, e) => {
+				processOutput.Append(e.Data);
+				processOutput.AppendLine();
 			};
-
+			StringBuilder processError = new StringBuilder();
+			DataReceivedEventHandler ehandler = (sender, e) => {
+				processError.Append(e.Data);
+				processError.AppendLine();
+			};
+			process.OutputDataReceived += handler;
+			process.ErrorDataReceived += ehandler;
 			process.Start();
-			string capturedOutput = process.StandardOutput.ReadToEnd();
-			output.WriteLine(capturedOutput);
-			string capturedError = process.StandardError.ReadToEnd();
-			output.WriteLine(capturedError);
+			process.BeginOutputReadLine();
+			process.BeginErrorReadLine();
+			if (!process.WaitForExit(timeout)) {
+				process.Kill();
+			}
+			// WaitForExit with timeout doesn't guarantee
+			// that the async output handlers have been
+			// called, so WaitForExit needs to be called
+			// afterwards.
 			process.WaitForExit();
+			string processOutputStr = processOutput.ToString();
+			string processErrorStr = processError.ToString();
+			output.WriteLine(processOutputStr);
+			output.WriteLine(processErrorStr);
+			commandOutput = processOutputStr;
 			return process.ExitCode;
 		}
 
@@ -92,10 +122,37 @@ namespace ILLink.Tests
 			}
 			ret = Dotnet(publishArgs, demoRoot);
 			if (ret != 0) {
-				output.WriteLine("publish failed");
+				output.WriteLine("publish failed, returning " + ret);
 				Assert.True(false);
 				return;
 			}
+		}
+
+ 		public int RunApp(string csproj, out string processOutput, int timeout = 60000)
+		{
+			string demoRoot = Path.GetDirectoryName(csproj);
+			string executablePath = Path.Combine(
+				demoRoot, "bin", context.Configuration, "netcoreapp2.0",
+				context.RuntimeIdentifier, "publish",
+				Path.GetFileNameWithoutExtension(csproj)
+			);
+			if (context.RuntimeIdentifier.Contains("win")) {
+				executablePath += ".exe";
+			}
+			Assert.True(File.Exists(executablePath));
+
+			// work around bug in prerelease .NET Core,
+			// where the published host isn't executable
+			int ret;
+			if (!context.RuntimeIdentifier.Contains("win")) {
+				ret = RunCommand("chmod", "+x " + executablePath, 1000);
+				Assert.True(ret == 0);
+			}
+
+			ret = RunCommand(executablePath, null,
+					 Directory.GetParent(executablePath).FullName,
+					 null, out processOutput, timeout);
+			return ret;
 		}
 
 		protected void AddLinkerReference(string csproj)
