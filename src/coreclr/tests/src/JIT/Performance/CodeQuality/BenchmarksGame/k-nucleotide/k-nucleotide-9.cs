@@ -304,12 +304,12 @@ namespace BenchmarksGame
 
             bool ok = true;
 
-            var task18 = count4(18, 34359738367, d => writeCount(d, "GGTATTTTAATTTATAGT", helpers.expectedCountFragments[4], ref ok));
-            var task12 = count4(12, 8388607, d => writeCount(d, "GGTATTTTAATT", helpers.expectedCountFragments[3], ref ok));
-            var task6 = count(6, 0b1111111111, d => writeCount(d, "GGTATT", helpers.expectedCountFragments[2], ref ok));
-            var task4 = count(4, 0b111111, d => writeCount(d, "GGTA", helpers.expectedCountFragments[1], ref ok));
-            var task3 = count(3, 0b1111, d => writeCount(d, "GGT", helpers.expectedCountFragments[0], ref ok));
-            var task2 = count(2, 0b11, d => writeFrequencies(d, 2, helpers.expectedFrequencies[1], ref ok));
+            var task18 = count4(18, 0x7FFFFFFFF, d => writeCount(d, "GGTATTTTAATTTATAGT", helpers.expectedCountFragments[4], ref ok));
+            var task12 = count4(12, 0x7FFFFF, d => writeCount(d, "GGTATTTTAATT", helpers.expectedCountFragments[3], ref ok));
+            var task6 = count(6, 0x3FF, d => writeCount(d, "GGTATT", helpers.expectedCountFragments[2], ref ok));
+            var task4 = count(4, 0x3F, d => writeCount(d, "GGTA", helpers.expectedCountFragments[1], ref ok));
+            var task3 = count(3, 0xF, d => writeCount(d, "GGT", helpers.expectedCountFragments[0], ref ok));
+            var task2 = count(2, 0x3, d => writeFrequencies(d, 2, helpers.expectedFrequencies[1], ref ok));
             var task1 = count(1, 0, d => writeFrequencies(d, 1, helpers.expectedFrequencies[0], ref ok));
 
             if (verbose)
