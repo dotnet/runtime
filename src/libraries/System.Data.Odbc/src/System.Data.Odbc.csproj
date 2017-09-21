@@ -6,6 +6,7 @@
     <AssemblyName>System.Data.Odbc</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage  Condition="'$(TargetGroup)' == 'netstandard' AND '$(OSGroup)' == 'AnyOS'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
@@ -15,7 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-OSX-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'  AND '$(OSGroup)' != 'AnyOS'">
     <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
       <Link>Common\System\Data\Common\AdapterUtil.cs</Link>
     </Compile>
