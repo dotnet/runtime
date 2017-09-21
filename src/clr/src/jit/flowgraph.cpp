@@ -8360,11 +8360,12 @@ private:
 
         if (returnConst != nullptr)
         {
-            returnExpr             = comp->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
+            returnExpr = comp->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
 #ifdef _TARGET_64BIT_
             returnConstants[index] = returnConst->LngValue();
 #else
-            returnConstants[index] = returnConst->gtOper == GT_CNS_LNG ? returnConst->LngValue() : (INT64)returnConst->IconValue();
+            returnConstants[index] =
+                returnConst->gtOper == GT_CNS_LNG ? returnConst->LngValue() : (INT64)returnConst->IconValue();
 #endif // _TARGET_64BIT_
         }
         else if (comp->compMethodHasRetVal())
