@@ -50,6 +50,7 @@ parser.add_argument("--force_update", dest="force_update", action="store_true", 
 
 parser.add_argument("-repo_root", dest="repo_root", nargs='?', default=None)
 parser.add_argument("-arch", dest="arch", nargs='?', default=None)
+parser.add_argument("-testarch", dest="testarch", nargs='?', default=None)
 parser.add_argument("-build_type", dest="build_type", nargs='?', default=None)
 parser.add_argument("-scenario", dest="scenario", nargs='?', default=None)
 parser.add_argument("-key_location", dest="key_location", nargs='?', default=None)
@@ -210,12 +211,12 @@ def validate_args(args):
    Args:
       args (argparser.ArgumentParser): Args parsed by the argument parser.
    Returns:
-      (workspace, arch, build_type, scenario, force_update): (str, 
-                                                              str,
-                                                              str,
-                                                              str,
-                                                              str, 
-                                                              bool)
+      (workspace, arch, testarch, build_type, scenario, force_update): (str, 
+                                                                        str,
+                                                                        str,
+                                                                        str,
+                                                                        str, 
+                                                                        bool)
    Notes:
    If the arguments are valid then return them all in a tuple. If not, raise
    an exception stating x argument is incorrect.
@@ -223,6 +224,7 @@ def validate_args(args):
 
    repo_root = args.repo_root
    arch = args.arch
+   testarch = args.testarch
    build_type = args.build_type
    scenario = args.scenario
    key_location = args.key_location
@@ -245,9 +247,11 @@ def validate_args(args):
          raise Exception("Argument: %s is not valid." % (arg))
 
    valid_arches = ["arm", "arm64"]
+   valid_testarches = ["arm", "armlb", "arm64"]
    valid_build_types = ["debug", "checked", "release"]
 
-   valid_jit_stress_regs_numbers = ["1", "2", "3", "4", "8", "10", "80"]
+   # Use the same naming scheme as netci.groovy, so, e.g., "0x10" instead of just "10".
+   valid_jit_stress_regs_numbers = ["1", "2", "3", "4", "8", "0x10", "0x80", "0x1000"]
 
    jit_stress_scenarios = ["jitstress1", "jitstress2"]
    jitstressregs_scenarios = ["jitstressregs" + item for item in valid_jit_stress_regs_numbers]
@@ -273,7 +277,6 @@ def validate_args(args):
    valid_scenarios = ["default",
                       "pri1r2r",
                       "minopts",
-                      "zapdisable",
                       "tailcallstress",
                       "zapdisable"]
 
@@ -287,23 +290,26 @@ def validate_args(args):
    
    validate_arg(repo_root, lambda item: os.path.isdir(item))
    validate_arg(arch, lambda item: item.lower() in valid_arches)
+   validate_arg(testarch, lambda item: item.lower() in valid_testarches)
    validate_arg(build_type, lambda item: item.lower() in valid_build_types)
    validate_arg(scenario, lambda item: item.lower() in valid_scenarios)
    validate_arg(key_location, lambda item: os.path.isfile(item))
    validate_arg(force_update, lambda item: isinstance(item, bool))
 
    arch = arch.lower()
+   testarch = testarch.lower()
    build_type = build_type.lower()
    scenario = scenario.lower()
 
-   args = (repo_root, arch, build_type, scenario, key_location, force_update)
+   args = (repo_root, arch, testarch, build_type, scenario, key_location, force_update)
 
    log("Passed args: "
        "Repo Root: %s, "
        "Build Arch: %s, "
+       "Test Arch: %s, "
        "Config: %s, "
        "Scenario: %s, "
-       "Key Location: %s" % (repo_root, arch, build_type, scenario, key_location))
+       "Key Location: %s" % (repo_root, arch, testarch, build_type, scenario, key_location))
 
    return args
 
@@ -314,7 +320,7 @@ def validate_args(args):
 def main(args):
    global g_arm64ci_path
 
-   repo_root, arch, build_type, scenario, key_location, force_update = validate_args(args)
+   repo_root, arch, testarch, build_type, scenario, key_location, force_update = validate_args(args)
 
    cwd = os.getcwd()
    os.chdir(repo_root)
@@ -353,6 +359,11 @@ def main(args):
    lst_file = os.path.join(repo_root, "tests", arch, "Tests.lst")
    shutil.copy2(lst_file, core_root)
    log("Copied %s to %s." % (lst_file, core_root))
+
+   # The x64_client has logic to set the appropriate AltJit environment variables for
+   # RyuJIT/arm32, set by prepending the scenario name with "ryujit_".
+   if testarch == "arm":
+      scenario = "ryujit_" + scenario
 
    args = ["dotnet", 
            os.path.join(g_arm64ci_path, "x64_client.dll"), 

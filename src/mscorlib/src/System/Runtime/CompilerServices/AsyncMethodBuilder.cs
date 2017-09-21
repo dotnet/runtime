@@ -719,7 +719,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="result">The result for which we need a task.</param>
         /// <returns>The completed task containing the result.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
-        private Task<TResult> GetTaskForResult(TResult result)
+        internal static Task<TResult> GetTaskForResult(TResult result)
         {
             Contract.Ensures(
                 EqualityComparer<TResult>.Default.Equals(result, Contract.Result<Task<TResult>>().Result),
@@ -762,7 +762,7 @@ namespace System.Runtime.CompilerServices
                 {
                     Boolean value = (Boolean)(object)result;
                     Task<Boolean> task = value ? AsyncTaskCache.TrueTask : AsyncTaskCache.FalseTask;
-                    return JitHelpers.UnsafeCast<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
+                    return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
                 }
                 // For Int32, we cache a range of common values, e.g. [-1,4).
                 else if (typeof(TResult) == typeof(Int32))
@@ -775,7 +775,7 @@ namespace System.Runtime.CompilerServices
                         value >= AsyncTaskCache.INCLUSIVE_INT32_MIN)
                     {
                         Task<Int32> task = AsyncTaskCache.Int32Tasks[value - AsyncTaskCache.INCLUSIVE_INT32_MIN];
-                        return JitHelpers.UnsafeCast<Task<TResult>>(task); // UnsafeCast avoids a type check we know will succeed
+                        return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids a type check we know will succeed
                     }
                 }
                 // For other known value types, we only special-case 0 / default(TResult).
@@ -1120,7 +1120,7 @@ namespace System.Runtime.CompilerServices
         }
 
         ///<summary>
-        /// Given an action, see if it is a contiunation wrapper and has a Task associated with it.  If so return it (null otherwise)
+        /// Given an action, see if it is a continuation wrapper and has a Task associated with it.  If so return it (null otherwise)
         ///</summary>
         internal static Task TryGetContinuationTask(Action action)
         {

@@ -58,7 +58,6 @@ namespace System.IO
         // This is used only for preamble detection
         private int bytePos;
 
-        [NonSerialized]
         private StringBuilder _builder;
 
         // This is the maximum number of chars we can get from one call to 
@@ -84,14 +83,12 @@ namespace System.IO
         private bool _isBlocked;
 
         // The intent of this field is to leave open the underlying stream when 
-        // disposing of this StreamReader.  A name like _leaveOpen is better, 
-        // but this type is serializable, and this field's name was _closable.
-        private bool _closable;  // Whether to close the underlying stream.
+        // disposing of this StreamReader.
+        private bool _leaveOpen;  // Whether to keep the underlying stream open.
 
         // We don't guarantee thread safety on StreamReader, but we should at 
         // least prevent users from trying to read anything while an Async
         // read from the same thread is in progress.
-        [NonSerialized]
         private volatile Task _asyncReadTask;
 
         private void CheckAsyncTaskInProgress()
@@ -216,14 +213,14 @@ namespace System.IO
 
             _checkPreamble = (_preamble.Length > 0);
             _isBlocked = false;
-            _closable = !leaveOpen;
+            _leaveOpen = leaveOpen;
         }
 
         // Init used by NullStreamReader, to delay load encoding
         internal void Init(Stream stream)
         {
             this.stream = stream;
-            _closable = true;
+            _leaveOpen = false;
         }
 
         public override void Close()
@@ -265,7 +262,7 @@ namespace System.IO
         }
 
         internal bool LeaveOpen {
-            get { return !_closable; }
+            get { return _leaveOpen; }
         }
 
         // DiscardBufferedData tells StreamReader to throw away its internal
@@ -1145,7 +1142,6 @@ namespace System.IO
         }
         #endregion
 
-        // No data, class doesn't need to be serializable.
         // Note this class is threadsafe.
         private class NullStreamReader : StreamReader
         {

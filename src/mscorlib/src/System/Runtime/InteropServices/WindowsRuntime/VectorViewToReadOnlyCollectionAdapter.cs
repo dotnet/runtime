@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [Pure]
         internal int Count<T>()
         {
-            IVectorView<T> _this = JitHelpers.UnsafeCast<IVectorView<T>>(this);
+            IVectorView<T> _this = Unsafe.As<IVectorView<T>>(this);
             uint size = _this.Size;
             if (((uint)Int32.MaxValue) < size)
             {

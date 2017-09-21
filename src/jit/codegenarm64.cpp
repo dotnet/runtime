@@ -1502,53 +1502,44 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
-    assert(!(treeNode->gtFlags & GTF_UNSIGNED));
     assert(!treeNode->gtOverflowEx());
-
-#if 0
-    regNumber targetReg  = treeNode->gtRegNum;
-    var_types targetType = treeNode->TypeGet();
-    emitter *emit        = getEmitter();
-    emitAttr size        = emitTypeSize(treeNode);
-    GenTree *op1         = treeNode->gtOp1;
-    GenTree *op2         = treeNode->gtOp2;
-
-    // to get the high bits of the multiply, we are constrained to using the
-    // 1-op form:  RDX:RAX = RAX * rm
-    // The 3-op form (Rx=Ry*Rz) does not support it.
 
     genConsumeOperands(treeNode);
 
-    GenTree* regOp = op1;
-    GenTree* rmOp  = op2; 
-            
-    // Set rmOp to the contained memory operand (if any)
-    //
-    if (op1->isContained() || (!op2->isContained() && (op2->gtRegNum == targetReg)))
+    regNumber targetReg  = treeNode->gtRegNum;
+    var_types targetType = treeNode->TypeGet();
+    emitter*  emit       = getEmitter();
+    emitAttr  attr       = emitTypeSize(treeNode);
+    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+
+    GenTreePtr op1 = treeNode->gtGetOp1();
+    GenTreePtr op2 = treeNode->gtGetOp2();
+
+    assert(!varTypeIsFloating(targetType));
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(targetReg != REG_NA);
+
+    if (EA_SIZE(attr) == EA_8BYTE)
     {
-        regOp = op2;
-        rmOp  = op1;
+        instruction ins = isUnsigned ? INS_umulh : INS_smulh;
+
+        regNumber r = emit->emitInsTernary(ins, attr, treeNode, op1, op2);
+
+        assert(r == targetReg);
     }
-    assert(!regOp->isContained());
-            
-    // Setup targetReg when neither of the source operands was a matching register
-    if (regOp->gtRegNum != targetReg)
+    else
     {
-        inst_RV_RV(ins_Copy(targetType), targetReg, regOp->gtRegNum, targetType);
-    }
-            
-    emit->emitInsBinary(INS_imulEAX, size, treeNode, rmOp);
-            
-    // Move the result to the desired register, if necessary
-    if (targetReg != REG_RDX)
-    {
-        inst_RV_RV(INS_mov, targetReg, REG_RDX, targetType);
+        assert(EA_SIZE(attr) == EA_4BYTE);
+
+        instruction ins = isUnsigned ? INS_umull : INS_smull;
+
+        regNumber r = emit->emitInsTernary(ins, EA_4BYTE, treeNode, op1, op2);
+
+        emit->emitIns_R_R_I(isUnsigned ? INS_lsr : INS_asr, EA_8BYTE, targetReg, targetReg, 32);
     }
 
     genProduceReg(treeNode);
-#else  // !0
-    NYI("genCodeForMulHi");
-#endif // !0
 }
 
 // Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
@@ -1568,10 +1559,10 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
     // The arithmetic node must be sitting in a register (since it's not contained)
-    noway_assert(targetReg != REG_NA);
+    assert(targetReg != REG_NA);
 
     regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
-    noway_assert(r == targetReg);
+    assert(r == targetReg);
 
     genProduceReg(treeNode);
 }
@@ -2388,25 +2379,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     }
 }
 
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    emitter* emit = getEmitter();
-
-    if (base->OperIsLocalAddr())
-    {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
-            offset += base->gtLclFld.gtLclOffs;
-        emit->emitIns_R_S(ins, size, dst, base->gtLclVarCommon.gtLclNum, offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, dst, base->gtRegNum, offset);
-    }
-}
-
 // Generate code for a load pair from some address + offset
 //   base: tree node which can be either a local address or arbitrary node
 //   offset: distance from the base from which to load
@@ -2427,25 +2399,6 @@ void CodeGen::genCodeForLoadPairOffset(regNumber dst, regNumber dst2, GenTree* b
     }
 }
 
-// Generate code for a store to some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset)
-{
-    emitter* emit = getEmitter();
-
-    if (base->OperIsLocalAddr())
-    {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
-            offset += base->gtLclFld.gtLclOffs;
-        emit->emitIns_S_R(ins, size, src, base->gtLclVarCommon.gtLclNum, offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, src, base->gtRegNum, offset);
-    }
-}
-
 // Generate code for a store pair to some address + offset
 //   base: tree node which can be either a local address or arbitrary node
 //   offset: distance from the base from which to load
@@ -2463,114 +2416,6 @@ void CodeGen::genCodeForStorePairOffset(regNumber src, regNumber src2, GenTree* 
     else
     {
         emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, src, src2, base->gtRegNum, offset);
-    }
-}
-
-// Generates CpBlk code by performing a loop unroll
-// Preconditions:
-//  The size argument of the CpBlk node is a constant and <= 64 bytes.
-//  This may seem small but covers >95% of the cases in several framework assemblies.
-void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
-{
-    // Make sure we got the arguments of the cpblk operation in the right registers
-    unsigned   size    = cpBlkNode->Size();
-    GenTreePtr dstAddr = cpBlkNode->Addr();
-    GenTreePtr source  = cpBlkNode->Data();
-    GenTreePtr srcAddr = nullptr;
-
-    assert((size != 0) && (size <= CPBLK_UNROLL_LIMIT));
-
-    emitter* emit = getEmitter();
-
-    if (dstAddr->isUsedFromReg())
-    {
-        genConsumeReg(dstAddr);
-    }
-
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
-    {
-        // issue a full memory barrier before a volatile CpBlkUnroll operation
-        instGen_MemoryBarrier();
-    }
-
-    if (source->gtOper == GT_IND)
-    {
-        srcAddr = source->gtGetOp1();
-        if (srcAddr->isUsedFromReg())
-        {
-            genConsumeReg(srcAddr);
-        }
-    }
-    else
-    {
-        noway_assert(source->IsLocal());
-        // TODO-Cleanup: Consider making the addrForm() method in Rationalize public, e.g. in GenTree.
-        // OR: transform source to GT_IND(GT_LCL_VAR_ADDR)
-        if (source->OperGet() == GT_LCL_VAR)
-        {
-            source->SetOper(GT_LCL_VAR_ADDR);
-        }
-        else
-        {
-            assert(source->OperGet() == GT_LCL_FLD);
-            source->SetOper(GT_LCL_FLD_ADDR);
-        }
-        srcAddr = source;
-    }
-
-    unsigned offset = 0;
-
-    // Grab the integer temp register to emit the loads and stores.
-    regNumber tmpReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
-
-    if (size >= 2 * REGSIZE_BYTES)
-    {
-        regNumber tmp2Reg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
-
-        size_t slots = size / (2 * REGSIZE_BYTES);
-
-        while (slots-- > 0)
-        {
-            // Load
-            genCodeForLoadPairOffset(tmpReg, tmp2Reg, srcAddr, offset);
-            // Store
-            genCodeForStorePairOffset(tmpReg, tmp2Reg, dstAddr, offset);
-            offset += 2 * REGSIZE_BYTES;
-        }
-    }
-
-    // Fill the remainder (15 bytes or less) if there's one.
-    if ((size & 0xf) != 0)
-    {
-        if ((size & 8) != 0)
-        {
-            genCodeForLoadOffset(INS_ldr, EA_8BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_str, EA_8BYTE, tmpReg, dstAddr, offset);
-            offset += 8;
-        }
-        if ((size & 4) != 0)
-        {
-            genCodeForLoadOffset(INS_ldr, EA_4BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_str, EA_4BYTE, tmpReg, dstAddr, offset);
-            offset += 4;
-        }
-        if ((size & 2) != 0)
-        {
-            genCodeForLoadOffset(INS_ldrh, EA_2BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_strh, EA_2BYTE, tmpReg, dstAddr, offset);
-            offset += 2;
-        }
-        if ((size & 1) != 0)
-        {
-            genCodeForLoadOffset(INS_ldrb, EA_1BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_strb, EA_1BYTE, tmpReg, dstAddr, offset);
-        }
-    }
-
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
-    {
-        // issue a INS_BARRIER_ISHLD after a volatile CpBlkUnroll operation
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
     }
 }
 
@@ -3241,7 +3086,7 @@ void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     assert(genIsValidIntReg(op1->gtRegNum)); // Must be a valid int reg.
 
     var_types dstType = treeNode->CastToType();
-    var_types srcType = op1->TypeGet();
+    var_types srcType = genActualType(op1->TypeGet());
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
@@ -3251,9 +3096,6 @@ void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     }
 
     // We should never see a srcType whose size is neither EA_4BYTE or EA_8BYTE
-    // For conversions from small types (byte/sbyte/int16/uint16) to float/double,
-    // we expect the front-end or lowering phase to have generated two levels of cast.
-    //
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
 
@@ -3439,22 +3281,23 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     GenTreePtr op1     = tree->gtOp1;
     GenTreePtr op2     = tree->gtOp2;
-    var_types  op1Type = op1->TypeGet();
-    var_types  op2Type = op2->TypeGet();
+    var_types  op1Type = genActualType(op1->TypeGet());
+    var_types  op2Type = genActualType(op2->TypeGet());
 
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
 
     genConsumeOperands(tree);
 
-    emitAttr cmpSize = EA_UNKNOWN;
+    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+
+    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
     if (varTypeIsFloating(op1Type))
     {
         assert(varTypeIsFloating(op2Type));
         assert(!op1->isContained());
         assert(op1Type == op2Type);
-        cmpSize = EA_ATTR(genTypeSize(op1Type));
 
         if (op2->IsIntegralConst(0))
         {
@@ -3472,43 +3315,16 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         // We don't support swapping op1 and op2 to generate cmp reg, imm
         assert(!op1->isContainedIntOrIImmed());
 
-        // TODO-ARM64-CQ: the second register argument of a CMP can be sign/zero
-        // extended as part of the instruction (using "CMP (extended register)").
-        // We should use that if possible, swapping operands
-        // (and reversing the condition) if necessary.
-        unsigned op1Size = genTypeSize(op1Type);
-        unsigned op2Size = genTypeSize(op2Type);
-
-        if ((op1Size < 4) || (op1Size < op2Size))
-        {
-            // We need to sign/zero extend op1 up to 32 or 64 bits.
-            instruction ins = ins_Move_Extend(op1Type, true);
-            inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
-        }
-
-        if (!op2->isContainedIntOrIImmed())
-        {
-            if ((op2Size < 4) || (op2Size < op1Size))
-            {
-                // We need to sign/zero extend op2 up to 32 or 64 bits.
-                instruction ins = ins_Move_Extend(op2Type, true);
-                inst_RV_RV(ins, op2->gtRegNum, op2->gtRegNum);
-            }
-        }
-        cmpSize = EA_4BYTE;
-        if ((op1Size == EA_8BYTE) || (op2Size == EA_8BYTE))
-        {
-            cmpSize = EA_8BYTE;
-        }
+        instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
 
         if (op2->isContainedIntOrIImmed())
         {
             GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-            emit->emitIns_R_I(INS_cmp, cmpSize, op1->gtRegNum, intConst->IconValue());
+            emit->emitIns_R_I(ins, cmpSize, op1->gtRegNum, intConst->IconValue());
         }
         else
         {
-            emit->emitIns_R_R(INS_cmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+            emit->emitIns_R_R(ins, cmpSize, op1->gtRegNum, op2->gtRegNum);
         }
     }
 

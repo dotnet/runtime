@@ -71,8 +71,8 @@ def static getOSGroup(def os) {
                             }
                             else {
                                 parameters {
-                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
-                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
+                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
                                 }
                             }
 
@@ -267,7 +267,7 @@ def static getOSGroup(def os) {
                             if (pgo_optimized) {
                                 pgo_trigger = "\\W+nopgo"
                             }
-                            
+
 
                             TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
                             builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} ${pgo_string} CoreCLR Throughput Perf Tests")
@@ -331,8 +331,8 @@ def static getFullPerfJobName(def project, def os, def isPR) {
 
             parameters {
                 // Cap the maximum number of iterations to 21.
-                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
-                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
+                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
                 stringParam('PRODUCT_BUILD', '', 'Build number from which to copy down the CoreCLR Product binaries built for Linux')
             }
 
@@ -363,6 +363,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
                 --generatebenchviewdata=\"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" \\
                 --stabilityPrefix=\"taskset 0x00000002 nice --adjustment=-10\" \\
                 --uploadToBenchview""")
+                shell("mkdir -p bin/toArchive/sandbox/Logs/")
                 shell("rsync -a bin/sandbox/Logs/Perf-*.* bin/toArchive/sandbox/Logs/")
             }
         }

@@ -704,7 +704,6 @@ public:
         InterlockedUpdateFlags(mdcNotInline, set);
     }
 
-
     BOOL IsIntrospectionOnly();
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
@@ -1244,7 +1243,8 @@ public:
             !IsEnCMethod() &&
             HasNativeCodeSlot() &&
             !IsUnboxingStub() &&
-            !IsInstantiatingStub();
+            !IsInstantiatingStub() &&
+            !IsDynamicMethod();
 
         // We should add an exclusion for modules with debuggable code gen flags
 
@@ -1690,7 +1690,8 @@ protected:
         enum_flag2_IsUnboxingStub           = 0x04,
         enum_flag2_HasNativeCodeSlot        = 0x08,   // Has slot for native code
 
-        // unused                           = 0x10,
+        enum_flag2_IsJitIntrinsic           = 0x10,   // Jit may expand method as an intrinsic
+
         // unused                           = 0x20,
         // unused                           = 0x40,
         // unused                           = 0x80, 
@@ -1741,6 +1742,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_bFlags2 |= enum_flag2_HasNativeCodeSlot;
+    }
+
+    inline BOOL IsJitIntrinsic()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_bFlags2 & enum_flag2_IsJitIntrinsic) != 0;
+    }
+
+    inline void SetIsJitIntrinsic()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_bFlags2 |= enum_flag2_IsJitIntrinsic;
     }
 
     static const SIZE_T s_ClassificationSizeTable[];

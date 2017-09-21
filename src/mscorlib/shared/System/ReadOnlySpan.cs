@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
-using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
+using System.Runtime.Versioning;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -15,7 +15,9 @@ namespace System
     /// ReadOnlySpan represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
+    [IsReadOnly]
     [IsByRefLike]
+    [NonVersionable]
     public struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -103,6 +105,7 @@ namespace System
         /// <param name="objectData">A reference to data within that object.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length) => new ReadOnlySpan<T>(ref objectData, length);
 
         // Constructor for internal use only.
@@ -120,6 +123,7 @@ namespace System
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public ref T DangerousGetPinnableReference()
         {
             return ref _pointer.Value;
@@ -128,12 +132,26 @@ namespace System
         /// <summary>
         /// The number of items in the read-only span.
         /// </summary>
-        public int Length => _length;
+        public int Length
+        {
+            [NonVersionable]
+            get
+            {
+                return _length;
+            }
+        }
 
         /// <summary>
         /// Returns true if Length is 0.
         /// </summary>
-        public bool IsEmpty => _length == 0;
+        public bool IsEmpty
+        {
+            [NonVersionable]
+            get
+            {
+                return _length == 0;
+            }
+        }
 
         /// <summary>
         /// Returns the specified element of the read-only span.
@@ -156,6 +174,7 @@ namespace System
             [Intrinsic]
 #endif
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [NonVersionable]
             get
             {
                 if ((uint)index >= (uint)_length)

@@ -8187,6 +8187,10 @@ private:
     // merged constant return blocks.
     ssize_t returnConstants[ReturnCountHardLimit];
 
+    // Indicators of where in the lexical block list we'd like to place
+    // each constant return block.
+    BasicBlock* insertionPoints[ReturnCountHardLimit];
+
     // Number of return blocks allowed
     PhasedVar<unsigned> maxReturns;
 
@@ -8271,6 +8275,49 @@ public:
         return Merge(nullptr, 0);
     }
 
+    //------------------------------------------------------------------------
+    // PlaceReturns: Move any generated const return blocks to an appropriate
+    //     spot in the lexical block list.
+    //
+    // Notes:
+    //    The goal is to set things up favorably for a reasonable layout without
+    //    putting too much burden on fgReorderBlocks; in particular, since that
+    //    method doesn't (currently) shuffle non-profile, non-rare code to create
+    //    fall-through and reduce gotos, this method places each const return
+    //    block immediately after its last predecessor, so that the flow from
+    //    there to it can become fallthrough without requiring any motion to be
+    //    performed by fgReorderBlocks.
+    //
+    void PlaceReturns()
+    {
+        if (!mergingReturns)
+        {
+            // No returns generated => no returns to place.
+            return;
+        }
+
+        for (unsigned index = 0; index < comp->fgReturnCount; ++index)
+        {
+            BasicBlock* returnBlock    = returnBlocks[index];
+            BasicBlock* genReturnBlock = comp->genReturnBB;
+            if (returnBlock == genReturnBlock)
+            {
+                continue;
+            }
+
+            BasicBlock* insertionPoint = insertionPoints[index];
+            assert(insertionPoint != nullptr);
+
+            comp->fgUnlinkBlock(returnBlock);
+            comp->fgMoveBlocksAfter(returnBlock, returnBlock, insertionPoint);
+            // Treat the merged return block as belonging to the same EH region
+            // as the insertion point block, to make sure we don't break up
+            // EH regions; since returning a constant won't throw, this won't
+            // affect program behavior.
+            comp->fgExtendEHRegionAfter(insertionPoint);
+        }
+    }
+
 private:
     //------------------------------------------------------------------------
     // CreateReturnBB: Create a basic block to serve as a merged return point, stored to
@@ -8293,7 +8340,7 @@ private:
         newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
-        newReturnBB->bbFlags |= (BBF_INTERNAL | BBF_DONT_REMOVE);
+        newReturnBB->bbFlags |= BBF_INTERNAL;
 
         noway_assert(newReturnBB->bbNext == nullptr);
 
@@ -8441,7 +8488,8 @@ private:
             {
                 // We have a constant.  Now find or create a corresponding return block.
 
-                BasicBlock* constReturnBlock = FindConstReturnBlock(retConst, searchLimit);
+                unsigned    index;
+                BasicBlock* constReturnBlock = FindConstReturnBlock(retConst, searchLimit, &index);
 
                 if (constReturnBlock == nullptr)
                 {
@@ -8478,6 +8526,13 @@ private:
                     assert(returnBlock->lastStmt()->gtStmtExpr->OperIs(GT_RETURN));
                     assert(returnBlock->lastStmt()->gtStmtExpr->gtGetOp1()->IsIntegralConst());
                     comp->fgRemoveStmt(returnBlock, returnBlock->lastStmt());
+
+                    // Using 'returnBlock' as the insertion point for 'mergedReturnBlock'
+                    // will give it a chance to use fallthrough rather than BBJ_ALWAYS.
+                    // Resetting this after each merge ensures that any branches to the
+                    // merged return block are lexically forward.
+
+                    insertionPoints[index] = returnBlock;
                 }
             }
         }
@@ -8493,6 +8548,9 @@ private:
                 assert(searchLimit < maxReturns);
                 mergedReturnBlock = CreateReturnBB(searchLimit);
                 comp->genReturnBB = mergedReturnBlock;
+                // Downstream code expects the `genReturnBB` to always remain
+                // once created, so that it can redirect flow edges to it.
+                mergedReturnBlock->bbFlags |= BBF_DONT_REMOVE;
             }
         }
 
@@ -8563,11 +8621,13 @@ private:
     //        searching for.
     //    searchLimit - Check `returnBlocks`/`returnConstants` up to but not including
     //        this index.
+    //    index - [out] Index of return block in the `returnBlocks` array, if found;
+    //        searchLimit otherwise.
     //
     // Return Value:
     //    A block that returns the same constant, if one is found; otherwise nullptr.
     //
-    BasicBlock* FindConstReturnBlock(GenTreeIntConCommon* constExpr, unsigned searchLimit)
+    BasicBlock* FindConstReturnBlock(GenTreeIntConCommon* constExpr, unsigned searchLimit, unsigned* index)
     {
         ssize_t constVal = constExpr->IconValue();
 
@@ -8588,10 +8648,12 @@ private:
                     continue;
                 }
 
+                *index = i;
                 return returnBlock;
             }
         }
 
+        *index = searchLimit;
         return nullptr;
     }
 };
@@ -8759,6 +8821,8 @@ void Compiler::fgAddInternal()
             merger.Record(block);
         }
     }
+
+    merger.PlaceReturns();
 
     if (info.compCallUnmanaged != 0)
     {
@@ -15280,7 +15344,15 @@ void Compiler::fgReorderBlocks()
             /* (bPrev is known to be a normal block at this point) */
             if (!isRare)
             {
-                reorderBlock = false;
+                if ((bDest == block->bbNext) && (block->bbJumpKind == BBJ_RETURN) && (bPrev->bbJumpKind == BBJ_ALWAYS))
+                {
+                    // This is a common case with expressions like "return Expr1 && Expr2" -- move the return
+                    // to establish fall-through.
+                }
+                else
+                {
+                    reorderBlock = false;
+                }
             }
             else
             {
@@ -23107,14 +23179,17 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     CORINFO_CLASS_HANDLE structType =
                         lclVarInfo[lclNum + inlineInfo->argCnt].lclVerTypeInfo.GetClassHandle();
 
-                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp),              // Dest
-                                          gtNewIconNode(0),                           // Value
-                                          info.compCompHnd->getClassSize(structType), // Size
-                                          false,                                      // isVolatile
-                                          false);                                     // not copyBlock
+                    if (fgStructTempNeedsExplicitZeroInit(lvaTable + tmpNum, block))
+                    {
+                        tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp),              // Dest
+                                              gtNewIconNode(0),                           // Value
+                                              info.compCompHnd->getClassSize(structType), // Size
+                                              false,                                      // isVolatile
+                                              false);                                     // not copyBlock
 
-                    newStmt   = gtNewStmt(tree, callILOffset);
-                    afterStmt = fgInsertStmtAfter(block, afterStmt, newStmt);
+                        newStmt   = gtNewStmt(tree, callILOffset);
+                        afterStmt = fgInsertStmtAfter(block, afterStmt, newStmt);
+                    }
                 }
 
 #ifdef DEBUG

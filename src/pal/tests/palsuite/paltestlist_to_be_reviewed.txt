@@ -22,7 +22,6 @@ c_runtime/vprintf/test1/paltest_vprintf_test1
 c_runtime/vswprintf/test2/paltest_vswprintf_test2
 c_runtime/vswprintf/test7/paltest_vswprintf_test7
 c_runtime/wprintf/test2/paltest_wprintf_test2
-c_runtime/_ecvt/test1/paltest_ecvt_test1
 c_runtime/_gcvt/test1/paltest_gcvt_test1
 c_runtime/_gcvt/test2/paltest_gcvt_test2
 c_runtime/_getw/test1/paltest_getw_test1

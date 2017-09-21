@@ -3275,6 +3275,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface4*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface5)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface5*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -4385,6 +4389,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     GcEvtArgs pubGcEvtArgs;
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
+    TADDR nativeCodeLocation = NULL;
 
     DAC_ENTER();
 
@@ -4447,11 +4452,11 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             break;
         }
 
-        case DACNotify::JIT_NOTIFICATION:
+        case DACNotify::JIT_NOTIFICATION2:
         {
             TADDR methodDescPtr;
 
-            if (DACNotify::ParseJITNotification(exInfo, methodDescPtr))
+            if(DACNotify::ParseJITNotification(exInfo, methodDescPtr, nativeCodeLocation))
             {
                 // Try and find the right appdomain
                 MethodDesc* methodDesc = PTR_MethodDesc(methodDescPtr);
@@ -4484,7 +4489,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             }
             break;
         }
-
+        
         case DACNotify::EXCEPTION_NOTIFICATION:
         {
             TADDR threadPtr;
@@ -4590,6 +4595,13 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             notify4 = NULL;
         }
 
+        IXCLRDataExceptionNotification5* notify5;
+        if (notify->QueryInterface(__uuidof(IXCLRDataExceptionNotification5),
+                                   (void**)&notify5) != S_OK)
+        {
+            notify5 = NULL;
+        }
+
         switch(notifyType)
         {
         case DACNotify::MODULE_LOAD_NOTIFICATION:
@@ -4600,8 +4612,13 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             notify->OnModuleUnloaded(pubModule);
             break;
 
-        case DACNotify::JIT_NOTIFICATION:
+        case DACNotify::JIT_NOTIFICATION2:
             notify->OnCodeGenerated(pubMethodInst);
+
+            if (notify5)
+            {
+                notify5->OnCodeGenerated2(pubMethodInst, TO_CDADDR(nativeCodeLocation));
+            }
             break;
 
         case DACNotify::EXCEPTION_NOTIFICATION:
@@ -4642,6 +4659,14 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
         if (notify3)
         {
             notify3->Release();
+        }
+        if (notify4)
+        {
+            notify4->Release();
+        }
+        if (notify5)
+        {
+            notify5->Release();
         }
     }
 

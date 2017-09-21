@@ -123,7 +123,7 @@ namespace System
 
         internal static void ThrowKeyNotFoundException()
         {
-            throw new System.Collections.Generic.KeyNotFoundException();
+            throw new KeyNotFoundException();
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource)
@@ -224,6 +224,11 @@ namespace System
         internal static void ThrowAggregateException(List<Exception> exceptions)
         {
             throw new AggregateException(exceptions);
+        }
+
+        internal static void ThrowOutOfMemoryException()
+        {
+            throw new OutOfMemoryException();
         }
 
         internal static void ThrowArgumentException_Argument_InvalidArrayType()
@@ -356,7 +361,6 @@ namespace System
     {
         obj,
         dictionary,
-        dictionaryCreationThreshold,
         array,
         info,
         key,
@@ -364,8 +368,6 @@ namespace System
         list,
         match,
         converter,
-        queue,
-        stack,
         capacity,
         index,
         startIndex,
@@ -373,7 +375,6 @@ namespace System
         count,
         arrayIndex,
         name,
-        mode,
         item,
         options,
         view,
@@ -420,9 +421,6 @@ namespace System
         beginMethod,
         continuationOptions,
         continuationAction,
-        valueFactory,
-        addValueFactory,
-        updateValueFactory,
         concurrencyLevel,
         text,
         callBack,
@@ -432,6 +430,7 @@ namespace System
         values,
         task,
         s,
+        keyValuePair,
         input,
         ownedMemory
     }
@@ -533,7 +532,6 @@ namespace System
         ConcurrentDictionary_CapacityMustNotBeNegative,
         ConcurrentDictionary_TypeOfValueIncorrect,
         ConcurrentDictionary_TypeOfKeyIncorrect,
-        ConcurrentDictionary_SourceContainsDuplicateKeys,
         ConcurrentDictionary_KeyAlreadyExisted,
         ConcurrentDictionary_ItemKeyIsNull,
         ConcurrentDictionary_IndexIsNegative,

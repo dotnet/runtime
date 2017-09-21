@@ -8,7 +8,7 @@ namespace System.Reflection
 {
     public class MethodBody
     {
-        #region costructor
+        #region constructor
         // This class can only be created from inside the EE.
         protected MethodBody() { }
         #endregion

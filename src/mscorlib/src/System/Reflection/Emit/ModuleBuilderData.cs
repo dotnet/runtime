@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-// 
-
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -55,9 +51,7 @@ namespace System.Reflection.Emit
         internal String m_strFileName;
         internal bool m_fGlobalBeenCreated;
         internal bool m_fHasGlobal;
-        [NonSerialized]
         internal TypeBuilder m_globalTypeBuilder;
-        [NonSerialized]
         internal ModuleBuilder m_module;
 
         private int m_tkFile;
@@ -65,5 +59,5 @@ namespace System.Reflection.Emit
         internal const String MULTI_BYTE_VALUE_CLASS = "$ArrayType$";
         internal String m_strResourceFileName;
         internal byte[] m_resourceBytes;
-    } // class ModuleBuilderData
+    }
 }

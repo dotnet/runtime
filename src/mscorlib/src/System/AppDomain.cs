@@ -226,7 +226,7 @@ namespace System
 
         /// <summary>
         ///     Initialize the compatibility flags to non-NULL values.
-        ///     This method is also called from the VM when the default domain dosen't have a domain manager.
+        ///     This method is also called from the VM when the default domain doesn't have a domain manager.
         /// </summary>
         private void InitializeCompatibilityFlags()
         {

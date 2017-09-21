@@ -41,10 +41,10 @@ namespace System.Threading.Tasks
         private readonly TaskScheduler m_underlyingTaskScheduler;
         /// <summary>
         /// The maximum number of tasks allowed to run concurrently.  This only applies to concurrent tasks, 
-        /// since exlusive tasks are inherently limited to 1.
+        /// since exclusive tasks are inherently limited to 1.
         /// </summary>
         private readonly int m_maxConcurrencyLevel;
-        /// <summary>The maximum number of tasks we can process before recyling our runner tasks.</summary>
+        /// <summary>The maximum number of tasks we can process before recycling our runner tasks.</summary>
         private readonly int m_maxItemsPerTask;
         /// <summary>
         /// If positive, it represents the number of concurrently running concurrent tasks.
@@ -225,7 +225,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>Initiatites scheduler shutdown due to a worker task faulting.</summary>
+        /// <summary>Initiates scheduler shutdown due to a worker task faulting.</summary>
         /// <param name="faultedTask">The faulted worker task that's initiating the shutdown.</param>
         private void FaultWithTask(Task faultedTask)
         {

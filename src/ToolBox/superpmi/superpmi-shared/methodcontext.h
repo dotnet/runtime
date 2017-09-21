@@ -89,6 +89,12 @@ public:
         DWORDLONG A;
         DWORD     B;
     };
+    struct DLDD
+    {
+        DWORDLONG A;
+        DWORD     B;
+        DWORD     C;
+    };
     struct Agnostic_CORINFO_RESOLVED_TOKENin
     {
         DWORDLONG tokenContext;
@@ -241,7 +247,7 @@ public:
     {
         DWORD A;
         DWORD B;
-        bool C;
+        DWORD C;
     };
     struct Agnostic_CanTailCall
     {
@@ -564,12 +570,7 @@ public:
 
     void recGlobalContext(const MethodContext& other);
 
-    void recEnvironment();
     void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
-    void repEnvironmentSet();
-    void repEnvironmentUnset();
-    int  repEnvironmentGetCount();
-    int  repGetTestID();
 
     void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
@@ -615,6 +616,10 @@ public:
     void recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName);
     void dmpGetMethodName(DLD key, DD value);
     const char* repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char** moduleName);
+
+    void recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName, const char** namespaceName);
+    void dmpGetMethodNameFromMetadata(DLDD key, DDD value);
+    const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName);
 
     void recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result);
     void dmpGetJitFlags(DWORD key, DD value);
@@ -1247,7 +1252,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 160
+// Highest packet number: 161
 // *************************************************************************************
 enum mcPackets
 {
@@ -1277,7 +1282,7 @@ enum mcPackets
     Packet_EmbedMethodHandle                             = 19,
     Packet_EmbedModuleHandle                             = 20,
     Packet_EmptyStringLiteral                            = 21,
-    Packet_Environment                                   = 136, // Added 4/3/2013
+    Packet_Environment                                   = 136, // Deprecated 7/29/2017
     Packet_ErrorList                                     = 22,
     Packet_FilterException                               = 134,
     Packet_FindCallSiteSig                               = 23,
@@ -1342,6 +1347,7 @@ enum mcPackets
     Packet_GetMethodHash                                 = 73,
     Packet_GetMethodInfo                                 = 74,
     Packet_GetMethodName                                 = 75,
+    Packet_GetMethodNameFromMetadata                     = 161,  // Added 9/6/17
     Packet_GetMethodSig                                  = 76,
     Packet_GetMethodSync                                 = 77,
     Packet_GetMethodVTableOffset                         = 78,

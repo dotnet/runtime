@@ -270,7 +270,7 @@ namespace System.Threading
         /// <summary>
         /// Try acquire the lock with long path, this is usually called after the first path in Enter and
         /// TryEnter failed The reason for short path is to make it inline in the run time which improves the
-        /// performance. This method assumed that the parameter are validated in Enter ir TryENter method
+        /// performance. This method assumed that the parameter are validated in Enter or TryEnter method.
         /// </summary>
         /// <param name="millisecondsTimeout">The timeout milliseconds</param>
         /// <param name="lockTaken">The lockTaken param</param>

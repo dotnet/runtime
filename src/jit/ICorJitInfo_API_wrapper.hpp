@@ -1029,6 +1029,17 @@ const char* WrapICorJitInfo::getMethodName(
     return temp;
 }
 
+const char* WrapICorJitInfo::getMethodNameFromMetadata(
+        CORINFO_METHOD_HANDLE       ftn,           /* IN */
+        const char                **className,     /* OUT */
+        const char                **namespaceName  /* OUT */)
+{
+    API_ENTER(getMethodNameFromMetadata);
+    const char* temp = wrapHnd->getMethodNameFromMetaData(ftn, moduleName, namespaceName);
+    API_LEAVE(getMethodNameFromMetadata);
+    return temp;
+}
+
 unsigned WrapICorJitInfo::getMethodHash(
         CORINFO_METHOD_HANDLE       ftn         /* IN */)
 {
