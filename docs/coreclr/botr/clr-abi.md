@@ -75,7 +75,7 @@ NOTE: This optimization is now disabled for all platforms (`IsStructRequiringSta
 
 ## Hidden parameters
 
-*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R4` / (ARM64) `R11`. In the JIT, this is `REG_VIRTUAL_STUB_PARAM`.
+*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (AMD64 CoreRT ABI) `R10` / (ARM) `R4` / (ARM CoreRT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
 AMD64-only: Fast Pinvoke - The VM wants a conservative estimate of the size of the stack arguments placed in `R11`. (This is consumed by callout stubs used in SQL hosting).
 
