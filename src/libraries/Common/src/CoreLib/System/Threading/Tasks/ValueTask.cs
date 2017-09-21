@@ -114,7 +114,7 @@ namespace System.Threading.Tasks
             // Return the task if we were constructed from one, otherwise manufacture one.  We don't
             // cache the generated task into _task as it would end up changing both equality comparison
             // and the hash code we generate in GetHashCode.
-            _task ?? Task.FromResult(_result);
+            _task ?? AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a completed operation.</summary>
         public bool IsCompleted => _task == null || _task.IsCompleted;
