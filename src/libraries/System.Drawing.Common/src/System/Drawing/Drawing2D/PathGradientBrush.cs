@@ -485,14 +485,21 @@ namespace System.Drawing.Drawing2D
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
             if (matrix == null)
-                throw new ArgumentNullException("matrix");
+            {
+                throw new ArgumentNullException(nameof(matrix));
+            }
+
+            // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
+            // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
+            if (matrix.nativeMatrix == IntPtr.Zero)
+            {
+                return;
+            }
 
             int status = SafeNativeMethods.Gdip.GdipMultiplyPathGradientTransform(new HandleRef(this, NativeBrush),
                                                 new HandleRef(matrix, matrix.nativeMatrix),
                                                 order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);
