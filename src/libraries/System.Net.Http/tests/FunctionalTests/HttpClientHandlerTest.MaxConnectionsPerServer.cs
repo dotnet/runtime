@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -14,13 +13,13 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-    public class HttpClientHandler_MaxConnectionsPerServer_Test
+    public class HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientTestBase
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxConnectionsPerServer either returns two or int.MaxValue depending if ctor of HttpClientHandlerTest executed first. Disabling cause of random xunit execution order.")]
         public void Default_ExpectedValue()
         {
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
             }
@@ -31,7 +30,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(-1)]
         public void Set_InvalidValues_Throws(int invalidValue)
         {
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => handler.MaxConnectionsPerServer = invalidValue);
             }
@@ -44,7 +43,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(int.MaxValue - 1)]
         public void Set_ValidValues_Success(int validValue)
         {
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 try
                 {
@@ -68,8 +67,10 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, 5, false)]
         public async Task GetAsync_MaxLimited_ConcurrentCallsStillSucceed(int maxConnections, int numRequests, bool secure)
         {
-            using (var client = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = maxConnections }))
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (var client = new HttpClient(handler))
             {
+                handler.MaxConnectionsPerServer = maxConnections;
                 await Task.WhenAll(
                     from i in Enumerable.Range(0, numRequests)
                     select client.GetAsync(secure ? Configuration.Http.RemoteEchoServer : Configuration.Http.SecureRemoteEchoServer));

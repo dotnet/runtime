@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -17,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-    public class ResponseStreamTest
+    public class ResponseStreamTest : HttpClientTestBase
     {
         private readonly ITestOutputHelper _output;
         
@@ -36,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(5)]
         public async Task GetStreamAsync_ReadToEnd_Success(int readMode)
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 string customHeaderValue = Guid.NewGuid().ToString("N");
                 client.DefaultRequestHeaders.Add("X-ResponseStreamTest", customHeaderValue);
@@ -111,7 +110,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
             {
                 await response.Content.LoadIntoBufferAsync();
@@ -130,7 +129,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
             {
                 var memoryStream = new MemoryStream();
@@ -154,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetStreamAsync_ReadZeroBytes_Success()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(0, stream.Read(new byte[1], 0, 0));
@@ -169,7 +168,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var cts = new CancellationTokenSource();
 
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (HttpResponseMessage response =
                     await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
             using (Stream stream = await response.Content.ReadAsStreamAsync())
@@ -243,7 +242,7 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task ReadAsStreamHelper(IPEndPoint serverEndPoint)
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 using (var response = await client.GetAsync(
                     new Uri($"http://{serverEndPoint.Address}:{(serverEndPoint).Port}/"),
