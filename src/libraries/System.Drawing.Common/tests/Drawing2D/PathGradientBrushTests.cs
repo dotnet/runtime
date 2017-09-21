@@ -835,12 +835,28 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void MultiplyTransform_Null_ArgumentNullException()
+        public void MultiplyTransform_NullMatrix_ThrowsArgumentNullException()
         {
-            using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
+            using (var brush = new PathGradientBrush(_defaultFloatPoints))
             {
                 AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.MultiplyTransform(null));
                 AssertExtensions.Throws<ArgumentNullException>("matrix", () => brush.MultiplyTransform(null, MatrixOrder.Append));
+            }
+        }
+
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        public void MultiplyTransform_DisposedMatrix_Nop()
+        {
+            using (var brush = new PathGradientBrush(_defaultFloatPoints))
+            using (Matrix transform = brush.Transform)
+            {
+                var matrix = new Matrix();
+                matrix.Dispose();
+
+                brush.MultiplyTransform(matrix);
+                brush.MultiplyTransform(matrix, MatrixOrder.Append);
+
+                Assert.Equal(transform, brush.Transform);
             }
         }
 
