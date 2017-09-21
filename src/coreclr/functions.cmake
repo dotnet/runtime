@@ -192,9 +192,28 @@ function(install_clr targetName)
   endif()  
 endfunction()
 
+# Disable PAX mprotect that would prevent JIT and other codegen in coreclr from working.
+# PAX mprotect prevents:
+# - changing the executable status of memory pages that were
+#   not originally created as executable,
+# - making read-only executable pages writable again,
+# - creating executable pages from anonymous memory,
+# - making read-only-after-relocations (RELRO) data pages writable again.
+function(disable_pax_mprotect targetName)
+  if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
+    add_custom_command(
+      TARGET ${targetName}
+      POST_BUILD
+      VERBATIM
+      COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
+    )
+  endif()
+endfunction()
+
 function(_add_executable)
     if(NOT WIN32)
       add_executable(${ARGV} ${VERSION_FILE_PATH})
+      disable_pax_mprotect(${ARGV})
     else()
       add_executable(${ARGV})
     endif(NOT WIN32)
@@ -239,28 +258,12 @@ function(verify_dependencies targetName errorMessage)
 endfunction()
 
 function(add_library_clr)
-    if(NOT WIN32)
-      add_library(${ARGV} ${VERSION_FILE_PATH})
-    else()
-      add_library(${ARGV})
-    endif(NOT WIN32)
+    _add_library(${ARGV})
     add_dependencies(${ARGV0} GeneratedEventingFiles)
-    list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)  
-    if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)  
-     set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)  
-    endif()  
 endfunction()
 
 function(add_executable_clr)
-    if(NOT WIN32)
-      add_executable(${ARGV} ${VERSION_FILE_PATH})
-    else()
-      add_executable(${ARGV})
-    endif(NOT WIN32)
+    _add_executable(${ARGV})
     add_dependencies(${ARGV0} GeneratedEventingFiles)
-    list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)  
-    if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)  
-     set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)  
-    endif()  
 endfunction()
 

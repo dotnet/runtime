@@ -88,8 +88,8 @@ ICorDebugProcess *g_pCorDebugProcess = NULL;
 #endif // IfFailGo
 
 // Max number of reverted rejit versions that !dumpmd and !ip2md will print
-const UINT kcMaxRevertedRejitData = 10;
-
+const UINT kcMaxRevertedRejitData   = 10;
+const UINT kcMaxTieredVersions      = 10;
 #ifndef FEATURE_PAL
 
 // ensure we always allocate on the process heap
@@ -3252,10 +3252,53 @@ const char *EHTypeName(EHClauseType et)
         return "UNKNOWN";
 }
 
-void DumpRejitData(DacpReJitData * pReJitData)
+void DumpTieredNativeCodeAddressInfo(struct DacpTieredVersionData * pTieredVersionData, const UINT cTieredVersionData)
+{
+    ExtOut("Code Version History:\n");
+
+    for(int i = cTieredVersionData - 1; i >= 0; --i)
+    {
+        const char *descriptor = NULL;
+        switch(pTieredVersionData[i].TieredInfo)
+        {
+        case DacpTieredVersionData::TIERED_UNKNOWN:
+        default:
+            _ASSERTE(!"Update SOS to understand the new tier");
+            descriptor = "Unknown Tier";
+            break;
+        case DacpTieredVersionData::NON_TIERED:
+            descriptor = "Non-Tiered";
+            break;
+        case DacpTieredVersionData::TIERED_0:
+            descriptor = "Tier 0";
+            break;
+        case DacpTieredVersionData::TIERED_1:
+            descriptor = "Tier 1";
+            break;
+        }
+
+        DMLOut("  CodeAddr:           %s  (%s)\n", DMLIP(pTieredVersionData[i].NativeCodeAddr), descriptor);
+        ExtOut("  NativeCodeVersion:  %p\n", SOS_PTR(pTieredVersionData[i].NativeCodeVersionNodePtr));
+    }
+}
+
+void DumpRejitData(CLRDATA_ADDRESS pMethodDesc, DacpReJitData * pReJitData)
 {
     ExtOut("    ReJITID %p: ", SOS_PTR(pReJitData->rejitID));
-    DMLOut("CodeAddr = %s", DMLIP(pReJitData->NativeCodeAddr));                
+
+    struct DacpTieredVersionData codeAddrs[kcMaxTieredVersions];
+    int cCodeAddrs;
+
+    ReleaseHolder<ISOSDacInterface5> sos5;
+    if (SUCCEEDED(g_sos->QueryInterface(__uuidof(ISOSDacInterface5), &sos5)) && 
+        SUCCEEDED(sos5->GetTieredVersions(pMethodDesc, 
+                                            (int)pReJitData->rejitID,
+                                            codeAddrs,
+                                            kcMaxTieredVersions,
+                                            &cCodeAddrs)))
+    {
+        DumpTieredNativeCodeAddressInfo(codeAddrs, cCodeAddrs);
+    }
 
     LPCSTR szFlags;
     switch (pReJitData->flags)
@@ -3277,6 +3320,7 @@ void DumpRejitData(DacpReJitData * pReJitData)
         szFlags = " (reverted)";
         break;
     }
+    
     ExtOut("%s\n", szFlags);
 }
 
@@ -3314,18 +3358,18 @@ void DumpAllRejitDataIfNecessary(DacpMethodDescData * pMethodDescData, DacpReJit
     ExtOut("ReJITed versions:\n");
 
     // Dump CURRENT rejit info
-    DumpRejitData(&pMethodDescData->rejitDataCurrent);
+    DumpRejitData(pMethodDescData->MethodDescPtr, &pMethodDescData->rejitDataCurrent);
 
     // Dump reverted rejit infos
     for (ULONG i=0; i < cRevertedRejitData; i++)
     {
-        DumpRejitData(&pRevertedRejitData[i]);
+        DumpRejitData(pMethodDescData->MethodDescPtr, &pRevertedRejitData[i]);
     }
 
     // For !ip2md, ensure we dump the rejit version corresponding to the specified IP
     // (if not already dumped)
     if (ShouldDumpRejitDataRequested(pMethodDescData, pRevertedRejitData, cRevertedRejitData))
-        DumpRejitData(&pMethodDescData->rejitDataRequested);
+        DumpRejitData(pMethodDescData->MethodDescPtr, &pMethodDescData->rejitDataRequested);
 
     // If we maxed out the reverted versions we dumped, let user know there may be more
     if (cRevertedRejitData == kcMaxRevertedRejitData)
@@ -3344,20 +3388,35 @@ void DumpMDInfoFromMethodDescData(DacpMethodDescData * pMethodDescData, DacpReJi
 
     if (!fStackTraceFormat)
     {
-        ExtOut("Method Name:  %S\n", wszNameBuffer);
+        ExtOut("Method Name:          %S\n", wszNameBuffer);
 
         DacpMethodTableData mtdata;
         if (SUCCEEDED(mtdata.Request(g_sos, pMethodDescData->MethodTablePtr)))
         {
-            DMLOut("Class:        %s\n", DMLClass(mtdata.Class));
+            DMLOut("Class:                %s\n", DMLClass(mtdata.Class));
         }            
 
-        DMLOut("MethodTable:  %s\n", DMLMethodTable(pMethodDescData->MethodTablePtr));
-        ExtOut("mdToken:      %p\n", SOS_PTR(pMethodDescData->MDToken));
-        DMLOut("Module:       %s\n", DMLModule(pMethodDescData->ModulePtr));
-        ExtOut("IsJitted:     %s\n", pMethodDescData->bHasNativeCode ? "yes" : "no");
-        DMLOut("CodeAddr:     %s\n", DMLIP(pMethodDescData->NativeCodeAddr));                
+        DMLOut("MethodTable:          %s\n", DMLMethodTable(pMethodDescData->MethodTablePtr));
+        ExtOut("mdToken:              %p\n", SOS_PTR(pMethodDescData->MDToken));
+        DMLOut("Module:               %s\n", DMLModule(pMethodDescData->ModulePtr));
+        ExtOut("IsJitted:             %s\n", pMethodDescData->bHasNativeCode ? "yes" : "no");
 
+        DMLOut("Current CodeAddr:     %s\n", DMLIP(pMethodDescData->NativeCodeAddr));                
+
+        struct DacpTieredVersionData codeAddrs[kcMaxTieredVersions];
+        int cCodeAddrs;
+
+        ReleaseHolder<ISOSDacInterface5> sos5;
+        if (SUCCEEDED(g_sos->QueryInterface(__uuidof(ISOSDacInterface5), &sos5)) && 
+            SUCCEEDED(sos5->GetTieredVersions(pMethodDescData->MethodDescPtr, 
+                                                                (int)pMethodDescData->rejitDataCurrent.rejitID,
+                                                                codeAddrs,
+                                                                kcMaxTieredVersions,
+                                                                &cCodeAddrs)))
+        {
+            DumpTieredNativeCodeAddressInfo(codeAddrs, cCodeAddrs);
+        }
+        
         DacpMethodDescTransparencyData transparency;
         if (SUCCEEDED(transparency.Request(g_sos, pMethodDescData->MethodDescPtr)))
         {

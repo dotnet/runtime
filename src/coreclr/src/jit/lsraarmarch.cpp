@@ -99,7 +99,7 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
     }
     else
     {
-        assert((info->dstCount == 1) || tree->OperIs(GT_CMP));
+        assert((info->dstCount == 1) || tree->OperIs(GT_CMP, GT_TEST_EQ, GT_TEST_NE));
     }
 }
 
@@ -890,24 +890,20 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
             if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
             {
-                // TODO-ARM-CQ: cpblk loop unrolling is currently not implemented.
                 // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
                 // we should unroll the loop to improve CQ.
                 // For reference see the code in lsraxarch.cpp.
-                NYI_ARM("cpblk loop unrolling is currently not implemented.");
-
-#ifdef _TARGET_ARM64_
 
                 internalIntCount      = 1;
                 internalIntCandidates = RBM_ALLINT;
 
+#ifdef _TARGET_ARM64_
                 if (size >= 2 * REGSIZE_BYTES)
                 {
                     // We will use ldp/stp to reduce code size and improve performance
                     // so we need to reserve an extra internal register
                     internalIntCount++;
                 }
-
 #endif // _TARGET_ARM64_
             }
             else

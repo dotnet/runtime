@@ -371,7 +371,7 @@ namespace System
         /// If any inner exceptions are themselves instances of
         /// <see cref="AggregateException"/>, this method will recursively flatten all of them. The
         /// inner exceptions returned in the new <see cref="AggregateException"/>
-        /// will be the union of all of the the inner exceptions from exception tree rooted at the provided
+        /// will be the union of all of the inner exceptions from exception tree rooted at the provided
         /// <see cref="AggregateException"/> instance.
         /// </remarks>
         public AggregateException Flatten()

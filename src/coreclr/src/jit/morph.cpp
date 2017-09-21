@@ -2459,6 +2459,8 @@ void fgArgInfo::EvalArgsToTemps()
                 noway_assert(parent->OperIsList());
                 noway_assert(parent->gtOp.gtOp1 == argx);
 
+                parent->gtFlags |= (setupArg->gtFlags & GTF_ALL_EFFECT);
+
                 parent->gtOp.gtOp1 = setupArg;
             }
             else
@@ -2482,8 +2484,12 @@ void fgArgInfo::EvalArgsToTemps()
             noway_assert(tmpRegArgNext->OperIsList());
             noway_assert(tmpRegArgNext->Current());
             tmpRegArgNext->gtOp.gtOp2 = compiler->gtNewArgList(defArg);
-            tmpRegArgNext             = tmpRegArgNext->Rest();
+
+            tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
+            tmpRegArgNext = tmpRegArgNext->Rest();
         }
+
+        tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
 
         curArgTabEntry->node       = defArg;
         curArgTabEntry->lateArgInx = regArgInx++;
@@ -2919,7 +2925,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             noway_assert(arg != nullptr);
 
             GenTree* newArg = new (this, GT_ADDR)
-                GenTreeAddrMode(TYP_REF, arg, nullptr, 0, eeGetEEInfo()->offsetOfSecureDelegateIndirectCell);
+                GenTreeAddrMode(TYP_BYREF, arg, nullptr, 0, eeGetEEInfo()->offsetOfSecureDelegateIndirectCell);
 
             // Append newArg as the last arg
             GenTreeArgList** insertionPoint = &call->gtCallArgs;
@@ -4451,14 +4457,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-    /* Update the 'side effect' flags value for the call */
-
-    call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
-
-    if (!call->OperMayThrow(this) && ((flagsSummary & GTF_EXCEPT) == 0))
+    // Clear the ASG and EXCEPT (if possible) flags on the call node
+    call->gtFlags &= ~GTF_ASG;
+    if (!call->OperMayThrow(this))
     {
         call->gtFlags &= ~GTF_EXCEPT;
     }
+
+    // Union in the side effect flags from the call's operands
+    call->gtFlags |= flagsSummary & GTF_ALL_EFFECT;
 
     // If the register arguments have already been determined
     // or we have no register arguments then we don't need to
@@ -8074,33 +8081,37 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // If compInitMem is set, we may need to zero-initialize some locals. Normally it's done in the prolog
     // but this loop can't include the prolog. Since we don't have liveness information, we insert zero-initialization
-    // for all non-parameter non-temp locals. Liveness phase will remove unnecessary initializations.
+    // for all non-parameter non-temp locals as well as temp structs with GC fields.
+    // Liveness phase will remove unnecessary initializations.
     if (info.compInitMem)
     {
         unsigned   varNum;
         LclVarDsc* varDsc;
-        for (varNum = 0, varDsc = lvaTable; varNum < info.compLocalsCount; varNum++, varDsc++)
+        for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
         {
+            var_types lclType = varDsc->TypeGet();
             if (!varDsc->lvIsParam)
             {
-                assert(!varDsc->lvIsTemp);
-                var_types  lclType = varDsc->TypeGet();
-                GenTreePtr lcl     = gtNewLclvNode(varNum, lclType);
-                GenTreePtr init    = nullptr;
-                if (lclType == TYP_STRUCT)
+                if (!varDsc->lvIsTemp || ((lclType == TYP_STRUCT) && (varDsc->lvStructGcCount > 0)))
                 {
-                    const bool isVolatile  = false;
-                    const bool isCopyBlock = false;
-                    init = gtNewBlkOpNode(lcl, gtNewIconNode(0), varDsc->lvSize(), isVolatile, isCopyBlock);
-                    init = fgMorphInitBlock(init);
+                    var_types  lclType = varDsc->TypeGet();
+                    GenTreePtr lcl     = gtNewLclvNode(varNum, lclType);
+                    GenTreePtr init    = nullptr;
+                    if (lclType == TYP_STRUCT)
+                    {
+                        const bool isVolatile  = false;
+                        const bool isCopyBlock = false;
+                        init = gtNewBlkOpNode(lcl, gtNewIconNode(0), varDsc->lvSize(), isVolatile, isCopyBlock);
+                        init = fgMorphInitBlock(init);
+                    }
+                    else
+                    {
+                        GenTreePtr zero = gtNewZeroConNode(genActualType(lclType));
+                        init            = gtNewAssignNode(lcl, zero);
+                    }
+                    GenTreePtr initStmt = gtNewStmt(init, callILOffset);
+                    fgInsertStmtBefore(block, last, initStmt);
                 }
-                else
-                {
-                    GenTreePtr zero = gtNewZeroConNode(genActualType(lclType));
-                    init            = gtNewAssignNode(lcl, zero);
-                }
-                GenTreePtr initStmt = gtNewStmt(init, callILOffset);
-                fgInsertStmtBefore(block, last, initStmt);
             }
         }
     }
@@ -8839,11 +8850,29 @@ NO_TAIL_CALL:
         compCurBB->bbFlags |= BBF_GC_SAFE_POINT;
     }
 
-    // Morph Type.op_Equality and Type.op_Inequality
-    // We need to do this before the arguments are morphed
+    // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
+    //
+    // We need to do these before the arguments are morphed
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC))
     {
         CorInfoIntrinsics methodID = info.compCompHnd->getIntrinsicID(call->gtCallMethHnd);
+
+        if (methodID == CORINFO_INTRINSIC_Illegal)
+        {
+            // Check for a new-style jit intrinsic.
+            const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+
+            if (ni == NI_Enum_HasFlag)
+            {
+                GenTree* thisOp  = call->gtCallObjp;
+                GenTree* flagOp  = call->gtCallArgs->gtOp.gtOp1;
+                GenTree* optTree = gtOptimizeEnumHasFlag(thisOp, flagOp);
+                if (optTree != nullptr)
+                {
+                    return fgMorphTree(optTree);
+                }
+            }
+        }
 
         genTreeOps simpleOp = GT_CALL;
         if (methodID == CORINFO_INTRINSIC_TypeEQ)
@@ -8871,6 +8900,9 @@ NO_TAIL_CALL:
 
             if (gtCanOptimizeTypeEquality(op1) || gtCanOptimizeTypeEquality(op2))
             {
+                JITDUMP("Optimizing call to Type:op_%s to simple compare via %s\n",
+                        methodID == CORINFO_INTRINSIC_TypeEQ ? "Equality" : "Inequality", GenTree::OpName(simpleOp));
+
                 GenTreePtr compare = gtNewOperNode(simpleOp, TYP_INT, op1, op2);
 
                 // fgMorphSmpOp will further optimize the following patterns:
@@ -11869,20 +11901,43 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 }
 
 #ifdef _TARGET_ARM64_
-
                 // For ARM64 we don't have a remainder instruction,
                 // The architecture manual suggests the following transformation to
                 // generate code for such operator:
                 //
                 // a % b = a - (a / b) * b;
                 //
-                // NOTE: we should never need to perform this transformation when remorphing, since global morphing
-                //       should already have done so and we do not introduce new modulus nodes in later phases.
-                assert(!optValnumCSE_phase);
-                tree = fgMorphModToSubMulDiv(tree->AsOp());
-                op1  = tree->gtOp.gtOp1;
-                op2  = tree->gtOp.gtOp2;
-#else  //_TARGET_ARM64_
+                // We will use the suggested transform except in the special case
+                // when the modulo operation is unsigned and the divisor is a
+                // integer constant power of two.  In this case, we will rely on lower
+                // to make the transform:
+                //
+                // a % b = a & (b - 1);
+                //
+                // Note: We must always perform one or the other of these transforms.
+                // Therefore we must also detect the special cases where lower does not do the
+                // % to & transform.  In our case there is only currently one extra condition:
+                //
+                // * Dividend must not be constant.  Lower disables this rare const % const case
+                //
+                {
+                    // Do "a % b = a - (a / b) * b" morph if ...........................
+                    bool doMorphModToSubMulDiv =
+                        (tree->OperGet() == GT_MOD) ||           // Modulo operation is signed
+                        !op2->IsIntegralConst() ||               // Divisor is not an integer constant
+                        !isPow2(op2->AsIntCon()->IconValue()) || // Divisor is not a power of two
+                        op1->IsCnsIntOrI();                      // Dividend is constant
+
+                    if (doMorphModToSubMulDiv)
+                    {
+                        assert(!optValnumCSE_phase);
+
+                        tree = fgMorphModToSubMulDiv(tree->AsOp());
+                        op1  = tree->gtOp.gtOp1;
+                        op2  = tree->gtOp.gtOp2;
+                    }
+                }
+#else  // !_TARGET_ARM64_
                 // If b is not a power of 2 constant then lowering replaces a % b
                 // with a - (a / b) * b and applies magic division optimization to
                 // a / b. The code may already contain an a / b expression (e.g.
@@ -12004,6 +12059,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                     if (bOp1ClassFromHandle && bOp2ClassFromHandle)
                     {
+                        JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
+
                         GenTreePtr classFromHandleArg1 = tree->gtOp.gtOp1->gtCall.gtCallArgs->gtOp.gtOp1;
                         GenTreePtr classFromHandleArg2 = tree->gtOp.gtOp2->gtCall.gtCallArgs->gtOp.gtOp1;
 
@@ -12061,19 +12118,22 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                             if (info.compCompHnd->canInlineTypeCheckWithObjectVTable(clsHnd))
                             {
-                                // Method Table tree
-                                CLANG_FORMAT_COMMENT_ANCHOR;
+                                // Fetch object method table from the object itself
+                                JITDUMP("Optimizing compare of obj.GetType()"
+                                        " and type-from-handle to compare handles\n");
+
+                                // Method table constant
+                                GenTree* cnsMT = pGetClassFromHandleArgument;
 #ifdef LEGACY_BACKEND
-                                GenTreePtr objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtCall.gtCallObjp);
+                                // Method table from object
+                                GenTree* objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtCall.gtCallObjp);
 #else
-                                GenTreePtr objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtUnOp.gtOp1);
+                                // Method table from object
+                                GenTree* objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtUnOp.gtOp1);
 #endif
                                 objMT->gtFlags |= GTF_EXCEPT; // Null ref exception if object is null
                                 compCurBB->bbFlags |= BBF_HAS_VTABREF;
                                 optMethodFlags |= OMF_HAS_VTABLEREF;
-
-                                // Method table constant
-                                GenTreePtr cnsMT = pGetClassFromHandleArgument;
 
                                 GenTreePtr compare = gtNewOperNode(oper, TYP_INT, objMT, cnsMT);
 

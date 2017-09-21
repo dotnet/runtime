@@ -38,14 +38,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(key));
             Contract.EndContractBlock();
 
-            IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
+            IMapView<K, V> _this = Unsafe.As<IMapView<K, V>>(this);
             return Lookup(_this, key);
         }
 
         // IEnumerable<K> Keys { get }
         internal IEnumerable<K> Keys<K, V>()
         {
-            IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
+            IMapView<K, V> _this = Unsafe.As<IMapView<K, V>>(this);
             IReadOnlyDictionary<K, V> roDictionary = (IReadOnlyDictionary<K, V>)_this;
             return new ReadOnlyDictionaryKeyCollection<K, V>(roDictionary);
         }
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // IEnumerable<V> Values { get }
         internal IEnumerable<V> Values<K, V>()
         {
-            IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
+            IMapView<K, V> _this = Unsafe.As<IMapView<K, V>>(this);
             IReadOnlyDictionary<K, V> roDictionary = (IReadOnlyDictionary<K, V>)_this;
             return new ReadOnlyDictionaryValueCollection<K, V>(roDictionary);
         }
@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
+            IMapView<K, V> _this = Unsafe.As<IMapView<K, V>>(this);
             return _this.HasKey(key);
         }
 
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
+            IMapView<K, V> _this = Unsafe.As<IMapView<K, V>>(this);
 
             // It may be faster to call HasKey then Lookup.  On failure, we would otherwise
             // throw an exception from Lookup.

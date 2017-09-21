@@ -219,6 +219,7 @@ coreFxBinDir=
 uploadToBenchview=
 benchViewOS=`lsb_release -i -s``lsb_release -r -s`
 runType=local
+optLevel=full_opt
 BENCHVIEW_TOOLS_PATH=
 benchViewGroup=CoreCLR
 perfCollection=
@@ -257,6 +258,9 @@ do
             ;;
         --runType=*)
             runType=${i#*=}
+            ;;
+        --optLevel=*)
+            optLevel=${i#*=}
             ;;
         --collectionflags=*)
             collectionflags=${i#*=}
@@ -313,6 +317,11 @@ precompile_overlay_assemblies       || { echo "Precompiling overlay assemblies f
 # If the output Logs folder exist, it was from a previous run (It needs to be deleted).
 if [ ! -d "$benchmarksOutputDir" ]; then
     mkdir -p "$benchmarksOutputDir" || { echo "Failed to delete $benchmarksOutputDir"; exit 1; }
+fi
+
+# Set minopts
+if ["$optLevel" == "min_opt"]; then
+    export COMPlus_JITMinOpts=1
 fi
 
 cd $CORE_ROOT
@@ -377,6 +386,8 @@ if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
     args+=" --config Configuration Release"
     args+=" --config OS $benchViewOS"
     args+=" --config Profile $perfCollection"
+    args+=" --config JitName ryujit"
+    args+=" --config OptLevel $optLevel"
     args+=" --architecture x64"
     args+=" --machinepool Perfsnake"
     run_command python3.5 "$BENCHVIEW_TOOLS_PATH/submission.py" $args || {

@@ -195,14 +195,14 @@ void PEImageLayout::ApplyBaseRelocations()
             if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0))
             {
                 DWORD dwNewProtection = PAGE_READWRITE;
-#ifdef FEATURE_PAL
+#if defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
                     dwNewProtection = PAGE_EXECUTE_READWRITE;
                 }
-#endif // FEATURE_PAL
+#endif // FEATURE_PAL && !CROSSGEN_COMPILE
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
@@ -243,6 +243,7 @@ void PEImageLayout::ApplyBaseRelocations()
     }
     _ASSERTE(dirSize == dirPos);
 
+#ifndef CROSSGEN_COMPILE
     if (dwOldProtection != 0)
     {
         // Restore the protection
@@ -250,6 +251,7 @@ void PEImageLayout::ApplyBaseRelocations()
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
     }
+#endif // CROSSGEN_COMPILE
 }
 #endif // FEATURE_PREJIT
 
@@ -478,7 +480,9 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
 
 #else //!FEATURE_PAL
 
+#ifndef CROSSGEN_COMPILE
     m_FileView = PAL_LOADLoadPEFile(hFile);
+
     if (m_FileView == NULL)
     {
         // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
@@ -506,6 +510,10 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
         ApplyBaseRelocations();
         SetRelocated();
     }
+
+#else // !CROSSGEN_COMPILE
+    m_FileView = NULL;
+#endif // !CROSSGEN_COMPILE
 
 #endif // !FEATURE_PAL
 }

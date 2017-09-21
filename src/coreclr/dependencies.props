@@ -8,24 +8,27 @@
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
 
-    <PreReleaseLabel>preview2</PreReleaseLabel>
+    <PreReleaseLabel>preview1</PreReleaseLabel>
   </PropertyGroup>
   
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>063b06d0342b9e575e852d0c52b590f1bdd85606</CoreFxCurrentRef>
-    <CoreClrCurrentRef>063b06d0342b9e575e852d0c52b590f1bdd85606</CoreClrCurrentRef>
+    <CoreFxCurrentRef>ab762a3c35e208cd698988fb7761bc92be417be9</CoreFxCurrentRef>
+    <CoreClrCurrentRef>2a83ae1685d323e6bd206dd2596b953488479922</CoreClrCurrentRef>
+    <BuildToolsCurrentRef>2a83ae1685d323e6bd206dd2596b953488479922</BuildToolsCurrentRef>
+    <PgoDataCurrentRef>1a2306063659d9704d06119325ff7c2652b1af0b</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxPackageVersion>4.5.0-preview2-25706-01</CoreFxPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview2-25706-01</PlatformPackageVersion>
+    <CoreFxPackageVersion>4.5.0-preview1-25712-02</CoreFxPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25712-02</PlatformPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20170914-0028</PgoDataPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <CoreClrPackageVersion>2.1.0-preview2-25706-01</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview1-25714-01</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
     <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
@@ -49,6 +52,14 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="BuildTools">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="PgoData">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(PgoDataCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
@@ -68,6 +79,16 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>CoreClrPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
+    </XmlUpdateStep>
+    <UpdateStep Include="BuildTools">
+      <UpdaterType>File</UpdaterType>
+      <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
+      <PackageId>Microsoft.DotNet.BuildTools</PackageId>
+    </UpdateStep>
+    <XmlUpdateStep Include="PgoData">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>PgoDataPackageVersion</ElementName>
+      <PackageId>optimization.PGO.CoreCLR</PackageId>
     </XmlUpdateStep>
   </ItemGroup>
 

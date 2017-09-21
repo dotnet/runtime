@@ -5082,6 +5082,20 @@ MethodTableBuilder::InitNewMethodDesc(
         pNewMD->SetNotInline(true);
     }
 
+    // Check for methods marked as [Intrinsic]
+    if (GetModule()->IsSystem())
+    {
+        HRESULT hr = GetMDImport()->GetCustomAttributeByName(pMethod->GetMethodSignature().GetToken(),
+            g_CompilerServicesIntrinsicAttribute,
+            NULL,
+            NULL);
+
+        if (hr == S_OK)
+        {
+            pNewMD->SetIsJitIntrinsic();
+        }
+    }
+
     pNewMD->SetSlot(pMethod->GetSlotIndex());
 }
 

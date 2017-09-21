@@ -845,8 +845,6 @@ void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, Nativ
 }
 #endif // FEATURE_REJIT
 
-
-
 //---------------------------------------------------------------------------------------
 //
 // Given a method desc addr, this loads up DacpMethodDescData and multiple DacpReJitDatas
@@ -872,10 +870,10 @@ void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, Nativ
 //
 
 HRESULT ClrDataAccess::GetMethodDescData(
-    CLRDATA_ADDRESS methodDesc, 
-    CLRDATA_ADDRESS ip, 
-    struct DacpMethodDescData *methodDescData, 
-    ULONG cRevertedRejitVersions, 
+    CLRDATA_ADDRESS methodDesc,
+    CLRDATA_ADDRESS ip,
+    struct DacpMethodDescData *methodDescData,
+    ULONG cRevertedRejitVersions,
     DacpReJitData * rgRevertedRejitData,
     ULONG * pcNeededRevertedRejitData)
 {
@@ -904,12 +902,12 @@ HRESULT ClrDataAccess::GetMethodDescData(
     }
     else
     {
-        ZeroMemory(methodDescData,sizeof(DacpMethodDescData));
+        ZeroMemory(methodDescData, sizeof(DacpMethodDescData));
         if (rgRevertedRejitData != NULL)
-            ZeroMemory(rgRevertedRejitData, sizeof(*rgRevertedRejitData)*cRevertedRejitVersions);
+            ZeroMemory(rgRevertedRejitData, sizeof(*rgRevertedRejitData) * cRevertedRejitVersions);
         if (pcNeededRevertedRejitData != NULL)
             *pcNeededRevertedRejitData = 0;
-    
+
         methodDescData->requestedIP = ip;
         methodDescData->bHasNativeCode = pMD->HasNativeCode();
         methodDescData->bIsDynamic = (pMD->IsLCGMethod()) ? TRUE : FALSE;
@@ -925,8 +923,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
         {
             methodDescData->NativeCodeAddr = (CLRDATA_ADDRESS)-1;
         }
-        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ?
-            TO_CDADDR(pMD->GetAddrOfNativeCodeSlot()) : NULL;
+        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(pMD->GetAddrOfNativeCodeSlot()) : NULL;
         methodDescData->MDToken = pMD->GetMemberDef();
         methodDescData->MethodDescPtr = methodDesc;
         methodDescData->MethodTablePtr = HOST_CDADDR(pMD->GetMethodTable());
@@ -939,26 +936,24 @@ HRESULT ClrDataAccess::GetMethodDescData(
         //     * ReJitInfo for the requested IP (for !ip2md and !u)
         //     * ReJitInfos for all reverted versions of the method (up to
         //         cRevertedRejitVersions)
-        //         
+        //
         // Minidumps will not have all this rejit info, and failure to get rejit info
         // should not be fatal.  So enclose all rejit stuff in a try.
 
         EX_TRY
         {
-            CodeVersionManager * pCodeVersionManager = pMD->GetCodeVersionManager();
+            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
 
             // Current ReJitInfo
             ILCodeVersion activeILCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
             NativeCodeVersion activeChild = activeILCodeVersion.GetActiveNativeCodeVersion(pMD);
-            NativeCodeVersionCollection nativeCodeVersions = activeILCodeVersion.GetNativeCodeVersions(pMD);
-            for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
+            CopyNativeCodeVersionToReJitData(activeChild, activeChild, &methodDescData->rejitDataCurrent);
+            
+            if (!activeChild.IsNull())
             {
-                // This arbitrarily captures the first jitted version for the active IL version, but with
-                // tiered compilation there could be many such method bodies. Before tiered compilation is enabled in a broader set
-                // of scenarios we need to consider how this change goes all the way up to the UI - probably exposing the
-                // entire set of methods.
-                CopyNativeCodeVersionToReJitData(*iter, activeChild, &methodDescData->rejitDataCurrent);
-                break;
+                // This was already set previously, but MethodDesc::GetNativeCode is potentially not aware of
+                // a new native code version, so this is more accurate.
+                methodDescData->NativeCodeAddr = activeChild.GetNativeCode();
             }
 
             // Requested ReJitInfo
@@ -966,7 +961,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
             if (methodDescData->requestedIP != NULL)
             {
                 NativeCodeVersion nativeCodeVersionRequested = pCodeVersionManager->GetNativeCodeVersion(
-                    pMD, 
+                    pMD,
                     CLRDATA_ADDRESS_TO_TADDR(methodDescData->requestedIP));
 
                 if (!nativeCodeVersionRequested.IsNull())
@@ -1001,7 +996,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
                 // Prepare array to populate with rejitids.  "+ 1" because GetReJITIDs
                 // returns all available rejitids, including the rejitid for the one non-reverted
                 // current version.
-                ReJITID * rgReJitIds = reJitIds.OpenRawBuffer(cRevertedRejitVersions + 1);
+                ReJITID *rgReJitIds = reJitIds.OpenRawBuffer(cRevertedRejitVersions + 1);
                 if (rgReJitIds != NULL)
                 {
                     hr = ReJitManager::GetReJITIDs(pMD, cRevertedRejitVersions + 1, &cReJitIds, rgReJitIds);
@@ -1011,28 +1006,20 @@ HRESULT ClrDataAccess::GetMethodDescData(
                         reJitIds.CloseRawBuffer(cReJitIds);
                         ULONG iRejitDataReverted = 0;
                         ILCodeVersion activeVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-                        for (COUNT_T i=0; 
-                            (i < cReJitIds) && (iRejitDataReverted < cRevertedRejitVersions);
-                            i++)
+                        for (COUNT_T i = 0;
+                             (i < cReJitIds) && (iRejitDataReverted < cRevertedRejitVersions);
+                             i++)
                         {
                             ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitIds[i]);
 
-                            if ((ilCodeVersion.IsNull()) || 
+                            if ((ilCodeVersion.IsNull()) ||
                                 (ilCodeVersion == activeVersion))
                             {
                                 continue;
                             }
 
-                            NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
-                            for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
-                            {
-                                // This arbitrarily captures the first jitted version for this reverted IL version, but with
-                                // tiered compilation there could be many such method bodies. Before tiered compilation is enabled in a broader set
-                                // of scenarios we need to consider how this change goes all the way up to the UI - probably exposing the
-                                // entire set of methods.
-                                CopyNativeCodeVersionToReJitData(*iter, activeChild, &rgRevertedRejitData[iRejitDataReverted]);
-                                break;
-                            }
+                            NativeCodeVersion activeRejitChild = ilCodeVersion.GetActiveNativeCodeVersion(pMD);
+                            CopyNativeCodeVersionToReJitData(activeRejitChild, activeChild, &rgRevertedRejitData[iRejitDataReverted]);
                             iRejitDataReverted++;
                         }
                         // pcNeededRevertedRejitData != NULL as per condition at top of function (cuz rgRevertedRejitData !=
@@ -1048,7 +1035,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
                 *pcNeededRevertedRejitData = 0;
         }
         EX_END_CATCH(SwallowAllExceptions)
-        hr = S_OK;      // Failure to get rejitids is not fatal
+        hr = S_OK; // Failure to get rejitids is not fatal
 #endif // FEATURE_REJIT
 
 #if defined(HAVE_GCCOVER)
@@ -1090,10 +1077,130 @@ HRESULT ClrDataAccess::GetMethodDescData(
                         }
                     }
                 }
-            }            
+            }
         }
     }
 
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetTieredVersions(
+    CLRDATA_ADDRESS methodDesc,
+    int rejitId,
+    struct DacpTieredVersionData *nativeCodeAddrs,
+    int cNativeCodeAddrs,
+    int *pcNativeCodeAddrs)
+{
+    if (methodDesc == 0 || cNativeCodeAddrs == 0 || pcNativeCodeAddrs == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    *pcNativeCodeAddrs = 0;
+
+    SOSDacEnter();
+
+#ifdef FEATURE_REJIT
+    PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
+
+    // If rejit info is appropriate, get the following:
+    //     * ReJitInfo for the current, active version of the method
+    //     * ReJitInfo for the requested IP (for !ip2md and !u)
+    //     * ReJitInfos for all reverted versions of the method (up to
+    //         cRevertedRejitVersions)
+    //
+    // Minidumps will not have all this rejit info, and failure to get rejit info
+    // should not be fatal.  So enclose all rejit stuff in a try.
+
+    EX_TRY
+    {
+        CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
+
+        // Total number of jitted rejit versions
+        ULONG cJittedRejitVersions;
+        if (!SUCCEEDED(ReJitManager::GetReJITIDs(pMD, 0 /* cReJitIds */, &cJittedRejitVersions, NULL /* reJitIds */)))
+        {
+            goto cleanup;
+        }
+
+        if ((ULONG)rejitId >= cJittedRejitVersions)
+        {
+            hr = E_INVALIDARG;
+            goto cleanup;
+        }
+
+        ULONG cReJitIds;
+        StackSArray<ReJITID> reJitIds;
+
+        // Prepare array to populate with rejitids.
+        ReJITID *rgReJitIds = reJitIds.OpenRawBuffer(cJittedRejitVersions);
+        if (rgReJitIds != NULL)
+        {
+            hr = ReJitManager::GetReJITIDs(pMD, cJittedRejitVersions, &cReJitIds, rgReJitIds);
+            if (SUCCEEDED(hr))
+            {
+                reJitIds.CloseRawBuffer(cReJitIds);
+
+                ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitIds[rejitId]);
+
+                if (ilCodeVersion.IsNull())
+                {
+                    hr = S_FALSE;
+                    goto cleanup;
+                }
+
+                NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
+                int count = 0;
+                for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
+                {
+                    nativeCodeAddrs[count].NativeCodeAddr = (*iter).GetNativeCode();
+                    PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
+                    nativeCodeAddrs[count].NativeCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(pNode));
+
+                    if (pMD->IsEligibleForTieredCompilation())
+                    {
+                        switch ((*iter).GetOptimizationTier())
+                        {
+                        default:
+                            nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::TIERED_UNKNOWN;
+                            break;
+                        case NativeCodeVersion::OptimizationTier0:
+                            nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::TIERED_0;
+                            break;
+                        case NativeCodeVersion::OptimizationTier1:
+                            nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::TIERED_1;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::NON_TIERED;
+                    }
+
+                    ++count;
+
+                    if (count >= cNativeCodeAddrs)
+                    {
+                        hr = S_FALSE;
+                        break;
+                    }
+                }
+
+                *pcNativeCodeAddrs = count;
+            }
+        }
+    }
+    EX_CATCH
+    {
+        hr = E_FAIL;
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+    
+cleanup:
+    ;
+#endif // FEATURE_REJIT
+    
     SOSDacLeave();
     return hr;
 }

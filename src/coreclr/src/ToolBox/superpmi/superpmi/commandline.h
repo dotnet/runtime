@@ -42,6 +42,8 @@ public:
             , compileList(nullptr)
             , offset(-1)
             , increment(-1)
+            , jitOptions(nullptr)
+            , jit2Options(nullptr)
         {
         }
 
@@ -67,6 +69,8 @@ public:
         char* compileList;
         int   offset;
         int   increment;
+        LightWeightMap<DWORD, DWORD>* jitOptions;
+        LightWeightMap<DWORD, DWORD>* jit2Options;
     };
 
     static bool Parse(int argc, char* argv[], /* OUT */ Options* o);

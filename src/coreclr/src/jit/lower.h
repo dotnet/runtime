@@ -288,7 +288,6 @@ private:
     void LowerPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
 #endif // _TARGET_ARM64_
     void LowerPutArgStk(GenTreePutArgStk* tree);
-    void DumpNodeInfoMap();
 
     GenTree* TryCreateAddrMode(LIR::Use&& use, bool isIndir);
     void AddrModeCleanupHelper(GenTreeAddrMode* addrMode, GenTree* node);

@@ -121,12 +121,21 @@ struct SymbolsInfo
 class DwarfDumpable
 {
 public:
+    DwarfDumpable() :
+        m_base_ptr(nullptr),
+        m_is_visited(false)
+    {
+    }
+
     // writes all string literals this type needs to ptr
     virtual void DumpStrings(char* ptr, int& offset) = 0;
 
     virtual void DumpDebugInfo(char* ptr, int& offset) = 0;
 
     virtual ~DwarfDumpable() {}
+
+    char *m_base_ptr;
+    bool m_is_visited;
 };
 
 class LocalsInfo
@@ -410,9 +419,12 @@ private:
 #ifdef FEATURE_GDBJIT_FRAME
     static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
 #endif // FEATURE_GDBJIT_FRAME
+#ifdef FEATURE_GDBJIT_SYMTAB
+    static bool EmitSymtab(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize);
+#endif // FEATURE_GDBJIT_SYMTAB
     static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile);
 
-    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
+    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, int methodCount,
                                         NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
                                         unsigned int thunkIndexBase);
     static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
