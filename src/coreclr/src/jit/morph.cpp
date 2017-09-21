@@ -502,6 +502,9 @@ OPTIMIZECAST:
     /* Reset the call flag */
     tree->gtFlags &= ~GTF_CALL;
 
+    /* Reset the assignment flag */
+    tree->gtFlags &= ~GTF_ASG;
+
     /* unless we have an overflow cast, reset the except flag */
     if (!tree->gtOverflow())
     {
