@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class PostScenarioUWPTest : RemoteExecutorTestBase
+    public class PostScenarioUWPTest : HttpClientTestBase
     {
         private readonly ITestOutputHelper _output;
 
@@ -27,15 +27,15 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Authentication_UseStreamContent_Throws()
         {
-            RemoteInvoke(async () =>
+            RemoteInvoke(async useManagedHandlerString =>
             {
                 // This test validates the current limitation of CoreFx's NetFxToWinRtStreamAdapter
                 // which throws exceptions when trying to rewind a .NET Stream when it needs to be
                 // re-POST'd to the server.
                 string username = "testuser";
                 string password = "password";
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                var handler = new HttpClientHandler();
+                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);
+                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
                 handler.Credentials = new NetworkCredential(username, password);
 
                 using (var client = new HttpClient(handler))
@@ -48,18 +48,18 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }).Dispose();
+            }, UseManagedHandler.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMultiInterfaceNonRewindableStreamContent_Throws()
         {
-            RemoteInvoke(async () =>
+            RemoteInvoke(async useManagedHandlerString =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                var handler = new HttpClientHandler();
+                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
                 handler.Credentials = new NetworkCredential(username, password);
 
                 using (var client = new HttpClient(handler))
@@ -72,18 +72,18 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }).Dispose();
+            }, UseManagedHandler.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMultiInterfaceStreamContent_Success()
         {
-            RemoteInvoke(async () =>
+            RemoteInvoke(async useManagedHandlerString =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                var handler = new HttpClientHandler();
+                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
                 handler.Credentials = new NetworkCredential(username, password);
 
                 using (var client = new HttpClient(handler))
@@ -100,18 +100,18 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }).Dispose();
+            }, UseManagedHandler.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMemoryStreamVisibleBufferContent_Success()
         {
-            RemoteInvoke(async () =>
+            RemoteInvoke(async useManagedHandlerString =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                var handler = new HttpClientHandler();
+                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
                 handler.Credentials = new NetworkCredential(username, password);
 
                 using (var client = new HttpClient(handler))
@@ -128,18 +128,18 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }).Dispose();
+            }, UseManagedHandler.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMemoryStreamNotVisibleBufferContent_Success()
         {
-            RemoteInvoke(async () =>
+            RemoteInvoke(async useManagedHandlerString =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                var handler = new HttpClientHandler();
+                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
                 handler.Credentials = new NetworkCredential(username, password);
 
                 using (var client = new HttpClient(handler))
@@ -156,7 +156,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }).Dispose();
+            }, UseManagedHandler.ToString()).Dispose();
         }
     }
 }
