@@ -260,6 +260,7 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->sc_r15)
 #elif !defined(HOST_WIN32)
 	#define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext.gregs))
+	#define UCONTEXT_FREGS(ctx)	(((ucontext_t*)(ctx))->uc_mcontext.fpregs->_xmm)
 #endif
 
 #ifdef UCONTEXT_GREGS
@@ -280,6 +281,26 @@ typedef struct ucontext {
 #define UCONTEXT_REG_R13(ctx) (UCONTEXT_GREGS ((ctx)) [REG_R13])
 #define UCONTEXT_REG_R14(ctx) (UCONTEXT_GREGS ((ctx)) [REG_R14])
 #define UCONTEXT_REG_R15(ctx) (UCONTEXT_GREGS ((ctx)) [REG_R15])
+#endif
+
+#ifdef UCONTEXT_FREGS
+#define UCONTEXT_REG_XMM
+#define UCONTEXT_REG_XMM0(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM0])
+#define UCONTEXT_REG_XMM1(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM1])
+#define UCONTEXT_REG_XMM2(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM2])
+#define UCONTEXT_REG_XMM3(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM3])
+#define UCONTEXT_REG_XMM4(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM4])
+#define UCONTEXT_REG_XMM5(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM5])
+#define UCONTEXT_REG_XMM6(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM6])
+#define UCONTEXT_REG_XMM7(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM7])
+#define UCONTEXT_REG_XMM8(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM8])
+#define UCONTEXT_REG_XMM9(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM9])
+#define UCONTEXT_REG_XMM10(ctx) (UCONTEXT_FREGS ((ctx)) [AMD64_XMM10])
+#define UCONTEXT_REG_XMM11(ctx) (UCONTEXT_FREGS ((ctx)) [AMD64_XMM11])
+#define UCONTEXT_REG_XMM12(ctx) (UCONTEXT_FREGS ((ctx)) [AMD64_XMM12])
+#define UCONTEXT_REG_XMM13(ctx) (UCONTEXT_FREGS ((ctx)) [AMD64_XMM13])
+#define UCONTEXT_REG_XMM14(ctx) (UCONTEXT_FREGS ((ctx)) [AMD64_XMM14])
+#define UCONTEXT_REG_XMM15(ctx) (UCONTEXT_FREGS ((ctx)) [AMD64_XMM15])
 #endif
 
 #elif defined(__mono_ppc__)

@@ -22,8 +22,16 @@
 #define MONO_CONTEXT_OFFSET(field, index, field_type) \
     "i" (offsetof (MonoContext, field) + (index) * sizeof (field_type))
 
+#if defined(TARGET_X86)
 #if defined(__APPLE__)
 typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#endif
+#elif defined(TARGET_AMD64)
+#if defined(__APPLE__)
+typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#elif defined(__linux__)
+typedef struct _libc_xmmreg MonoContextSimdReg;
+#endif
 #endif
 
 /*
@@ -237,7 +245,7 @@ typedef struct {
 
 typedef struct {
 	mgreg_t gregs [AMD64_NREG];
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 	MonoContextSimdReg fregs [AMD64_XMM_NREG];
 #else
 	double fregs [AMD64_XMM_NREG];
