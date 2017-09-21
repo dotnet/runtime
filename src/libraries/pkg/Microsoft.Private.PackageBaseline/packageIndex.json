@@ -1577,6 +1577,12 @@
         "4.2.0.0": "4.5.0"
       }
     },
+    "System.Data.Odbc": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "System.Drawing.Common": {
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
