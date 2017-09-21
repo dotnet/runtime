@@ -455,6 +455,19 @@
     ]
   },
   {
+    "Name": "System.Data.Odbc",
+    "Description": "Provides a collection of classes used to access an ODBC data source in the managed space",
+    "CommonTypes": [
+        "System.Data.Odbc.OdbcCommand",
+        "System.Data.Odbc.OdbcConnection",
+        "System.Data.Odbc.OdbcDataReader",
+        "System.Data.Odbc.OdbcDataAdapter",
+        "System.Data.Odbc.OdbcParameter",
+        "System.Data.Odbc.OdbcParameterCollection",
+        "System.Data.Odbc.OdbcTransaction"
+    ]
+  },
+  {
     "Name": "System.Data.SqlClient",
     "Description": "Provides the data provider for SQL Server. These classes provide access to versions of SQL Server and encapsulate database-specific protocols, including tabular data stream (TDS)",
     "CommonTypes": [
