@@ -1903,6 +1903,9 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     }
     else if (code & 0x00FF0000)
     {
+        // BT supports 16 bit operands and this code doesn't handle the necessary 66 prefix.
+        assert(ins != INS_bt);
+
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE) // Only for x64
                || (attrSize == EA_16BYTE)                         // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx));
@@ -2078,6 +2081,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+
+    // We should never generate BT mem,reg because it has poor performance. BT mem,imm might be useful
+    // but it requires special handling of the immediate value (it is always encoded in a byte).
+    // Let's not complicate things until this is needed.
+    assert(ins != INS_bt);
 
 #ifdef _TARGET_AMD64_
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -3480,6 +3488,10 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     instrDesc*     id;
     insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+
+    // BT reg,imm might be useful but it requires special handling of the immediate value
+    // (it is always encoded in a byte). Let's not complicate things until this is needed.
+    assert(ins != INS_bt);
 
     // Figure out the size of the instruction
     switch (ins)
@@ -7064,6 +7076,11 @@ void emitter::emitDispIns(
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), emitRegName(id->idReg2(), attr));
             }
+            else if (ins == INS_bt)
+            {
+                // INS_bt operands are reversed. Display them in the normal order.
+                printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
+            }
             else
             {
                 printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
@@ -7635,6 +7652,9 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
+        // BT supports 16 bit operands and this code doesn't handle the necessary 66 prefix.
+        assert(ins != INS_bt);
+
         // Output the REX prefix
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
@@ -8186,6 +8206,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
+        // BT supports 16 bit operands and this code doesn't add the necessary 66 prefix.
+        assert(ins != INS_bt);
+
         // Output the REX prefix
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
@@ -9557,6 +9580,10 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     regNumber   reg       = id->idReg1();
     ssize_t     val       = emitGetInsSC(id);
     bool        valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+
+    // BT reg,imm might be useful but it requires special handling of the immediate value
+    // (it is always encoded in a byte). Let's not complicate things until this is needed.
+    assert(ins != INS_bt);
 
     if (id->idIsCnsReloc())
     {

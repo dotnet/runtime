@@ -3395,7 +3395,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case CORINFO_INTRINSIC_Ceiling:
                         case CORINFO_INTRINSIC_Floor:
                         case CORINFO_INTRINSIC_Object_GetType:
-                            // Giving intrinsics a large fixed exectuion cost is because we'd like to CSE
+                            // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                             // them, even if they are implemented by calls. This is different from modeling
                             // user calls since we never CSE user calls.
                             costEx = 36;
@@ -7863,6 +7863,9 @@ DONE:
             copy->gtOp.gtOp1->gtFlags |= GTF_RELOP_QMARK;
         }
 
+        // Clear the copy's GTF_ASG and GTF_EXCEPT bits; these will instead be taken from the source.
+        copy->gtFlags &= ~(GTF_ASG | GTF_EXCEPT);
+
         copy->gtFlags |= addFlags;
     }
 
@@ -12206,7 +12209,8 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
                     assert(!gtTreeHasSideEffects(op->gtBox.gtOp.gtOp1, GTF_SIDE_EFFECT));
 
                     // See if we can optimize away the box and related statements.
-                    bool didOptimize = gtTryRemoveBoxUpstreamEffects(op);
+                    GenTree* boxSourceTree = gtTryRemoveBoxUpstreamEffects(op);
+                    bool     didOptimize   = (boxSourceTree != nullptr);
 
                     // If optimization succeeded, remove the box.
                     if (didOptimize)
@@ -12449,17 +12453,34 @@ DONE_FOLD:
 //    the copy.
 //
 // Arguments:
-//    op  -- the box node to optimize
+//    op  - the box node to optimize
+//    options - controls whether and how trees are modified
+//        (see notes)
 //
 // Return Value:
-//    True if the upstream effects were removed. Note parts of the
-//    copy tree may remain, if the copy source had side effects.
-//
-//    False if the upstream effects could not be removed.
+//    A tree representing the original value to box, if removal
+//    is successful/possible (but see note). nullptr if removal fails.
 //
 // Notes:
 //    Value typed box gets special treatment because it has associated
 //    side effects that can be removed if the box result is not used.
+//
+//    By default (options == BR_REMOVE_AND_NARROW) this method will
+//    try and remove unnecessary trees and will try and reduce remaning
+//    operations to the minimal set, possibly narrowing the width of
+//    loads from the box source if it is a struct.
+//
+//    To perform a trial removal, pass BR_DONT_REMOVE. This can be
+//    useful to determine if this optimization should only be
+//    performed if some other conditions hold true.
+//
+//    To remove but not alter the access to the box source, pass
+//    BR_REMOVE_BUT_NOT_NARROW.
+//
+//    To remove and return the tree for the type handle used for
+//    the boxed newobj, pass BR_REMOVE_BUT_NOT_NARROW_WANT_TYPE_HANDLE.
+//    This can be useful when the only part of the box that is "live"
+//    is its type.
 //
 //    If removal fails, is is possible that a subsequent pass may be
 //    able to optimize.  Blocking side effects may now be minimized
@@ -12468,21 +12489,22 @@ DONE_FOLD:
 //    return expression). So the box is perhaps best left as is to
 //    help trigger this re-examination.
 
-bool Compiler::gtTryRemoveBoxUpstreamEffects(GenTreePtr op)
+GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions options)
 {
     JITDUMP("gtTryRemoveBoxUpstreamEffects called for [%06u]\n", dspTreeID(op));
     assert(op->IsBoxedValue());
 
     // grab related parts for the optimization
-    GenTreePtr asgStmt = op->gtBox.gtAsgStmtWhenInlinedBoxValue;
+    GenTree* asgStmt = op->gtBox.gtAsgStmtWhenInlinedBoxValue;
     assert(asgStmt->gtOper == GT_STMT);
-    GenTreePtr copyStmt = op->gtBox.gtCopyStmtWhenInlinedBoxValue;
+    GenTree* copyStmt = op->gtBox.gtCopyStmtWhenInlinedBoxValue;
     assert(copyStmt->gtOper == GT_STMT);
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAttempting to remove side effects of BOX (valuetype)\n");
+        printf("\n%s to remove side effects of BOX (valuetype)\n",
+               options == BR_DONT_REMOVE ? "Checking if it is possible" : "Attempting");
         gtDispTree(op);
         printf("\nWith assign\n");
         gtDispTree(asgStmt);
@@ -12492,15 +12514,54 @@ bool Compiler::gtTryRemoveBoxUpstreamEffects(GenTreePtr op)
 #endif
 
     // If we don't recognize the form of the assign, bail.
-    GenTreePtr asg = asgStmt->gtStmt.gtStmtExpr;
+    GenTree* asg = asgStmt->gtStmt.gtStmtExpr;
     if (asg->gtOper != GT_ASG)
     {
         JITDUMP(" bailing; unexpected assignment op %s\n", GenTree::OpName(asg->gtOper));
-        return false;
+        return nullptr;
+    }
+
+    // If we're eventually going to return the type handle, remember it now.
+    GenTree* boxTypeHandle = nullptr;
+    if (options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
+    {
+        GenTree*   asgSrc     = asg->gtOp.gtOp2;
+        genTreeOps asgSrcOper = asgSrc->OperGet();
+
+        // Allocation may be via AllocObj or via helper call, depending
+        // on when this is invoked and whether the jit is using AllocObj
+        // for R2R allocations.
+        if (asgSrcOper == GT_ALLOCOBJ)
+        {
+            GenTreeAllocObj* allocObj = asgSrc->AsAllocObj();
+            boxTypeHandle             = allocObj->gtOp.gtOp1;
+        }
+        else if (asgSrcOper == GT_CALL)
+        {
+            GenTreeCall* newobjCall = asgSrc->AsCall();
+            GenTree*     newobjArgs = newobjCall->gtCallArgs;
+
+            // In R2R expansions the handle may not be an explicit operand to the helper,
+            // so we can't remove the box.
+            if (newobjArgs == nullptr)
+            {
+                assert(newobjCall->IsHelperCall(this, CORINFO_HELP_READYTORUN_NEW));
+                JITDUMP("bailing; newobj via R2R helper\n");
+                return nullptr;
+            }
+
+            boxTypeHandle = newobjArgs->AsArgList()->Current();
+        }
+        else
+        {
+            unreached();
+        }
+
+        assert(boxTypeHandle != nullptr);
     }
 
     // If we don't recognize the form of the copy, bail.
-    GenTreePtr copy = copyStmt->gtStmt.gtStmtExpr;
+    GenTree* copy = copyStmt->gtStmt.gtStmtExpr;
     if (copy->gtOper != GT_ASG)
     {
         // GT_RET_EXPR is a tolerable temporary failure.
@@ -12518,18 +12579,18 @@ bool Compiler::gtTryRemoveBoxUpstreamEffects(GenTreePtr op)
             // looking for.
             JITDUMP(" bailing; unexpected copy op %s\n", GenTree::OpName(copy->gtOper));
         }
-        return false;
+        return nullptr;
     }
 
     // If the copy is a struct copy, make sure we know how to isolate
     // any source side effects.
-    GenTreePtr copySrc = copy->gtOp.gtOp2;
+    GenTree* copySrc = copy->gtOp.gtOp2;
 
     // If the copy source is from a pending inline, wait for it to resolve.
     if (copySrc->gtOper == GT_RET_EXPR)
     {
         JITDUMP(" bailing; must wait for replacement of copy source %s\n", GenTree::OpName(copySrc->gtOper));
-        return false;
+        return nullptr;
     }
 
     bool hasSrcSideEffect = false;
@@ -12548,12 +12609,18 @@ bool Compiler::gtTryRemoveBoxUpstreamEffects(GenTreePtr op)
                 // We don't know how to handle other cases, yet.
                 JITDUMP(" bailing; unexpected copy source struct op with side effect %s\n",
                         GenTree::OpName(copySrc->gtOper));
-                return false;
+                return nullptr;
             }
         }
     }
 
-    // Proceed with the optimization
+    // If this was a trial removal, we're done.
+    if (options == BR_DONT_REMOVE)
+    {
+        return copySrc;
+    }
+
+    // Otherwise, proceed with the optimization.
     //
     // Change the assignment expression to a NOP.
     JITDUMP("\nBashing NEWOBJ [%06u] to NOP\n", dspTreeID(asg));
@@ -12585,10 +12652,18 @@ bool Compiler::gtTryRemoveBoxUpstreamEffects(GenTreePtr op)
         // source struct; there's no need to read the
         // entire thing, and no place to put it.
         assert(copySrc->gtOper == GT_OBJ || copySrc->gtOper == GT_IND || copySrc->gtOper == GT_FIELD);
-        copySrc->ChangeOper(GT_IND);
-        copySrc->gtType             = TYP_BYTE;
         copyStmt->gtStmt.gtStmtExpr = copySrc;
-        JITDUMP(" to read first byte of struct via modified [%06u]\n", dspTreeID(copySrc));
+
+        if (options == BR_REMOVE_AND_NARROW || options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
+        {
+            JITDUMP(" to read first byte of struct via modified [%06u]\n", dspTreeID(copySrc));
+            copySrc->ChangeOper(GT_IND);
+            copySrc->gtType = TYP_BYTE;
+        }
+        else
+        {
+            JITDUMP(" to read entire struct via modified [%06u]\n", dspTreeID(copySrc));
+        }
     }
 
     if (fgStmtListThreaded)
@@ -12597,8 +12672,167 @@ bool Compiler::gtTryRemoveBoxUpstreamEffects(GenTreePtr op)
         fgSetStmtSeq(copyStmt);
     }
 
-    // Box effects were successfully optimized
-    return true;
+    // Box effects were successfully optimized.
+
+    if (options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
+    {
+        return boxTypeHandle;
+    }
+    else
+    {
+        return copySrc;
+    }
+}
+
+//------------------------------------------------------------------------
+// gtOptimizeEnumHasFlag: given the operands for a call to Enum.HasFlag,
+//    try and optimize the call to a simple and/compare tree.
+//
+// Arguments:
+//    thisOp  - first argument to the call
+//    flagOp  - second argument to the call
+//
+// Return Value:
+//    A new cmp/amd tree if successful. nullptr on failure.
+//
+// Notes:
+//    If successful, may allocate new temps and modify connected
+//    statements.
+
+GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
+{
+    JITDUMP("Considering optimizing call to Enum.HasFlag....\n");
+
+    // Operands must be boxes
+    if (!thisOp->IsBoxedValue() || !flagOp->IsBoxedValue())
+    {
+        JITDUMP("bailing, need both inputs to be BOXes\n");
+        return nullptr;
+    }
+
+    // Operands must have same type
+    bool                 isExactThis   = false;
+    bool                 isNonNullThis = false;
+    CORINFO_CLASS_HANDLE thisHnd       = gtGetClassHandle(thisOp, &isExactThis, &isNonNullThis);
+
+    if (thisHnd == nullptr)
+    {
+        JITDUMP("bailing, can't find type for 'this' operand\n");
+        return nullptr;
+    }
+
+    // A boxed thisOp should have exact type and non-null instance
+    assert(isExactThis);
+    assert(isNonNullThis);
+
+    bool                 isExactFlag   = false;
+    bool                 isNonNullFlag = false;
+    CORINFO_CLASS_HANDLE flagHnd       = gtGetClassHandle(flagOp, &isExactFlag, &isNonNullFlag);
+
+    if (flagHnd == nullptr)
+    {
+        JITDUMP("bailing, can't find type for 'flag' operand\n");
+        return nullptr;
+    }
+
+    // A boxed flagOp should have exact type and non-null instance
+    assert(isExactFlag);
+    assert(isNonNullFlag);
+
+    if (flagHnd != thisHnd)
+    {
+        JITDUMP("bailing, operand types differ\n");
+        return nullptr;
+    }
+
+    // If we have a shared type instance we can't safely check type
+    // equality, so bail.
+    DWORD classAttribs = info.compCompHnd->getClassAttribs(thisHnd);
+    if (classAttribs & CORINFO_FLG_SHAREDINST)
+    {
+        JITDUMP("bailing, have shared instance type\n");
+        return nullptr;
+    }
+
+    // Simulate removing the box for thisOP. We need to know that it can
+    // be safely removed before we can optimize.
+    GenTree* thisVal = gtTryRemoveBoxUpstreamEffects(thisOp, BR_DONT_REMOVE);
+    if (thisVal == nullptr)
+    {
+        // Note we may fail here if the this operand comes from
+        // a call. We should be able to retry this post-inlining.
+        JITDUMP("bailing, can't undo box of 'this' operand\n");
+        return nullptr;
+    }
+
+    GenTree* flagVal = gtTryRemoveBoxUpstreamEffects(flagOp, BR_REMOVE_BUT_NOT_NARROW);
+    if (flagVal == nullptr)
+    {
+        // Note we may fail here if the flag operand comes from
+        // a call. We should be able to retry this post-inlining.
+        JITDUMP("bailing, can't undo box of 'flag' operand\n");
+        return nullptr;
+    }
+
+    // Yes, both boxes can be cleaned up. Optimize.
+    JITDUMP("Optimizing call to Enum.HasFlag\n");
+
+    // Undo the boxing of thisOp and prepare to operate directly
+    // on the original enum values.
+    thisVal = gtTryRemoveBoxUpstreamEffects(thisOp, BR_REMOVE_BUT_NOT_NARROW);
+
+    // Our trial removal above should guarantee successful removal here.
+    assert(thisVal != nullptr);
+
+    // We should have a consistent view of the type
+    var_types type = thisVal->TypeGet();
+    assert(type == flagVal->TypeGet());
+
+    // The thisVal and flagVal trees come from earlier statements.
+    //
+    // Unless they are invariant values, we need to evaluate them both
+    // to temps at those points to safely transmit the values here.
+    //
+    // Also we need to use the flag twice, so we need two trees for it.
+    GenTree* thisValOpt     = nullptr;
+    GenTree* flagValOpt     = nullptr;
+    GenTree* flagValOptCopy = nullptr;
+
+    if (thisVal->IsIntegralConst())
+    {
+        thisValOpt = gtClone(thisVal);
+    }
+    else
+    {
+        const unsigned thisTmp         = lvaGrabTemp(true DEBUGARG("Enum:HasFlag this temp"));
+        GenTree*       thisAsg         = gtNewTempAssign(thisTmp, thisVal);
+        GenTree*       thisAsgStmt     = thisOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+        thisAsgStmt->gtStmt.gtStmtExpr = thisAsg;
+        thisValOpt                     = gtNewLclvNode(thisTmp, type);
+    }
+
+    if (flagVal->IsIntegralConst())
+    {
+        flagValOpt     = gtClone(flagVal);
+        flagValOptCopy = gtClone(flagVal);
+    }
+    else
+    {
+        const unsigned flagTmp         = lvaGrabTemp(true DEBUGARG("Enum:HasFlag flag temp"));
+        GenTree*       flagAsg         = gtNewTempAssign(flagTmp, flagVal);
+        GenTree*       flagAsgStmt     = flagOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+        flagAsgStmt->gtStmt.gtStmtExpr = flagAsg;
+        flagValOpt                     = gtNewLclvNode(flagTmp, type);
+        flagValOptCopy                 = gtNewLclvNode(flagTmp, type);
+    }
+
+    // Turn the call into (thisValTmp & flagTmp) == flagTmp.
+    GenTree* andTree = gtNewOperNode(GT_AND, type, thisValOpt, flagValOpt);
+    GenTree* cmpTree = gtNewOperNode(GT_EQ, TYP_INT, andTree, flagValOptCopy);
+
+    JITDUMP("Optimized call to Enum.HasFlag\n");
+
+    return cmpTree;
 }
 
 /*****************************************************************************
@@ -15371,9 +15605,19 @@ bool GenTree::canBeContained() const
 {
     assert(IsLIR());
 
+    if (gtHasReg())
+    {
+        return false;
+    }
+
     // It is not possible for nodes that do not produce values or that are not containable values
     // to be contained.
-    return (OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) == 0;
+    if ((OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) != 0)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -15398,7 +15642,7 @@ bool GenTree::isContained() const
     const bool isMarkedContained = ((gtFlags & GTF_CONTAINED) != 0);
 
 #ifdef DEBUG
-    if (!canBeContained() || gtHasReg())
+    if (!canBeContained())
     {
         assert(!isMarkedContained);
     }
@@ -15432,7 +15676,7 @@ bool GenTree::isContained() const
     // if it's contained it better have a user
     if (isMarkedContained)
     {
-        assert((gtNext != nullptr) || OperIsLocal());
+        assert(gtNext != nullptr);
     }
 #endif // DEBUG
     return isMarkedContained;

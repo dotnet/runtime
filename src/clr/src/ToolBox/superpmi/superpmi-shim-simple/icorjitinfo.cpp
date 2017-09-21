@@ -974,6 +974,14 @@ const char* interceptor_ICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* 
     return original_ICorJitInfo->getMethodName(ftn, moduleName);
 }
 
+const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,          /* IN */
+                                                        const char**          className,    /* OUT */
+                                                        const char**          namespaceName /* OUT */
+                                                        )
+{
+    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName);
+}
+
 // this function is for debugging only.  It returns a value that
 // is will always be the same for a given method.  It is used
 // to implement the 'jitRange' functionality

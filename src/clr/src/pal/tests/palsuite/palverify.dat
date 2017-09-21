@@ -4,7 +4,6 @@
 
 c_runtime/__iscsym/test1,1
 c_runtime/_alloca/test1,1
-c_runtime/_ecvt/test1,1
 c_runtime/_fdopen/test1,1
 c_runtime/_finite/test1,1
 c_runtime/_finitef/test1,1

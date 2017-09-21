@@ -852,15 +852,16 @@ namespace System
         private static string TryGetLocalizedNameByNativeResource(string filePath, int resource)
         {
             using (SafeLibraryHandle handle =
-                       Interop.Kernel32.LoadLibraryExW(filePath, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_AS_DATAFILE))
+                       Interop.Kernel32.LoadLibraryEx(filePath, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_AS_DATAFILE))
             {
                 if (!handle.IsInvalid)
                 {
-                    StringBuilder localizedResource = StringBuilderCache.Acquire(Win32Native.LOAD_STRING_MAX_LENGTH);
-                    localizedResource.Length = Win32Native.LOAD_STRING_MAX_LENGTH;
+                    const int LoadStringMaxLength = 500;
 
-                    int result = Interop.User32.LoadStringW(handle, resource,
-                                     localizedResource, localizedResource.Length);
+                    StringBuilder localizedResource = StringBuilderCache.Acquire(LoadStringMaxLength);
+
+                    int result = Interop.User32.LoadString(handle, resource,
+                                     localizedResource, LoadStringMaxLength);
 
                     if (result != 0)
                     {

@@ -709,7 +709,7 @@ INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
 
     BEGIN_QCALL;
 
-    pProvider = EventPipe::CreateProvider(SL(providerName), pCallbackFunc, NULL);
+    pProvider = EventPipe::CreateProvider(providerName, pCallbackFunc, NULL);
 
     END_QCALL;
 

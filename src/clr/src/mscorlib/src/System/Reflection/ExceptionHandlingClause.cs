@@ -9,7 +9,7 @@ namespace System.Reflection
 {
     public class ExceptionHandlingClause
     {
-        #region costructor
+        #region constructor
         // This class can only be created from inside the EE.
         protected ExceptionHandlingClause() { }
         #endregion

@@ -207,8 +207,8 @@ namespace Internal.Runtime.Augments
                 }
 
                 // This is done lazily because the first call to the function below in the process triggers a measurement that
-                // takes a nontrivial amount of time. See Thread::InitializeYieldProcessorNormalized(), which describes and
-                // calculates this value.
+                // takes a nontrivial amount of time if the measurement has not already been done in the backgorund.
+                // See Thread::InitializeYieldProcessorNormalized(), which describes and calculates this value.
                 s_optimalMaxSpinWaitsPerSpinIteration = GetOptimalMaxSpinWaitsPerSpinIterationInternal();
                 Debug.Assert(s_optimalMaxSpinWaitsPerSpinIteration > 0);
                 return s_optimalMaxSpinWaitsPerSpinIteration;

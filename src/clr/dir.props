@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
-  
+
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
@@ -22,15 +22,9 @@
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
-  <!-- Profile-based optimization data package versions -->
-  <PropertyGroup>
-    <PgoDataPackageVersion>99.99.99-master-20170830-0123</PgoDataPackageVersion>
-    <!--<IbcDataPackageVersion></IbcDataPackageVersion>-->
-  </PropertyGroup>
-
   <!--
      Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
-     as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
+     as well as running the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
      -->
   <PropertyGroup>
     <RunningOnCore>false</RunningOnCore>
@@ -61,7 +55,7 @@
     <SourceDir>$(__SourceDir)\</SourceDir>
     <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)src\</SourceDir>
 
-    <!-- This name is used to create a GIT reposiitory URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
+    <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">coreclr</GitHubRepositoryName>
 
     <PackagesDir>$(__PackagesDir)\</PackagesDir>
@@ -72,7 +66,7 @@
 
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
-    
+
     <__IntermediatesDir Condition="'$(__IntermediatesDir)' == ''">$(RootBinDir)obj\$(BuildOS).$(BuildArch).$(BuildType)</__IntermediatesDir>
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(__IntermediatesDir)\</IntermediateOutputRootPath>
 
@@ -146,7 +140,7 @@
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
 
     <ProjectUrl>https://dot.net</ProjectUrl>
-    
+
     <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
      -->
@@ -157,7 +151,7 @@
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
-        <!-- This property must be set to disable local package installation -->
+    <!-- This property must be set to disable local package installation -->
     <SkipInstallLocallyBuiltPackages>true</SkipInstallLocallyBuiltPackages>
 
     <!-- Define packaging attributes for cross target components -->

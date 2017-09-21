@@ -205,7 +205,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 #pragma optimize("", off)
 #endif
 
-void DACNotifyCompilationFinished(MethodDesc *methodDesc)
+void DACNotifyCompilationFinished(MethodDesc *methodDesc, PCODE pCode)
 {
     CONTRACTL
     {
@@ -231,7 +231,7 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
         if (jnt & CLRDATA_METHNOTIFY_GENERATED)
         {
             // If so, throw an exception!
-            DACNotify::DoJITNotification(methodDesc);
+            DACNotify::DoJITNotification(methodDesc, (TADDR)pCode);
         }
     }
 }
@@ -813,7 +813,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #endif
     {
         // The notification will only occur if someone has registered for this method.
-        DACNotifyCompilationFinished(this);
+        DACNotifyCompilationFinished(this, pCode);
     }
 
     return pCode;
@@ -2586,6 +2586,9 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
     //
     // Optimization cases
     //
+    // TODO-ARM : If the optimization cases are implemented in CreateDictionaryLookupHelper,
+    //            It's ifndef for ARM will be removed.
+#ifndef _TARGET_ARM_
     if (signatureKind == ENCODE_TYPE_HANDLE)
     {
         SigPointer sigptr(pBlob, -1);
@@ -2628,6 +2631,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             return;
         }
     }
+#endif // !_TARGET_ARM_
 
     if (pContextMT != NULL && pContextMT->GetNumDicts() > 0xFFFF)
         ThrowHR(COR_E_BADIMAGEFORMAT);

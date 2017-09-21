@@ -10,6 +10,7 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel SSE2 hardware instructions via intrinsics
     /// </summary>
+    [CLSCompliant(false)]
     public static class Sse2
     {
         public static bool IsSupported { get { return false; } }

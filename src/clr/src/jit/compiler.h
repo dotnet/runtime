@@ -45,6 +45,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "valuenum.h"
 #include "reglist.h"
 #include "jittelemetry.h"
+#include "namedintrinsiclist.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
 #endif
@@ -2217,7 +2218,12 @@ public:
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
     {
-        return (call->gtCallMethHnd == impInlineRoot()->info.compMethodHnd);
+        return gtIsRecursiveCall(call->gtCallMethHnd);
+    }
+
+    bool gtIsRecursiveCall(CORINFO_METHOD_HANDLE callMethodHandle)
+    {
+        return (callMethodHandle == impInlineRoot()->info.compMethodHnd);
     }
 
     //-------------------------------------------------------------------------
@@ -2237,7 +2243,18 @@ public:
         gtFoldExprConst(GenTreePtr tree);
     GenTreePtr gtFoldExprSpecial(GenTreePtr tree);
     GenTreePtr gtFoldExprCompare(GenTreePtr tree);
-    bool gtTryRemoveBoxUpstreamEffects(GenTreePtr tree);
+
+    // Options to control behavior of gtTryRemoveBoxUpstreamEffects
+    enum BoxRemovalOptions
+    {
+        BR_REMOVE_AND_NARROW, // remove effects, minimize remaining work, return possibly narrowed source tree
+        BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE, // remove effects and minimize remaining work, return type handle tree
+        BR_REMOVE_BUT_NOT_NARROW,              // remove effects, return original source tree
+        BR_DONT_REMOVE                         // just check if removal is possible
+    };
+
+    GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
+    GenTree* gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp);
 
     //-------------------------------------------------------------------------
     // Get the handle, if any.
@@ -2878,6 +2895,13 @@ public:
     CORINFO_CLASS_HANDLE impGetStringClass();
     CORINFO_CLASS_HANDLE impGetObjectClass();
 
+    // Returns underlying type of handles returned by ldtoken instruction
+    inline var_types GetRuntimeHandleUnderlyingType()
+    {
+        // RuntimeTypeHandle is backed by raw pointer on CoreRT and by object reference on other runtimes
+        return IsTargetAbi(CORINFO_CORERT_ABI) ? TYP_I_IMPL : TYP_REF;
+    }
+
     //=========================================================================
     //                          PROTECTED
     //=========================================================================
@@ -2980,7 +3004,10 @@ protected:
                             int                   memberRef,
                             bool                  readonlyCall,
                             bool                  tailCall,
-                            CorInfoIntrinsics*    pIntrinsicID);
+                            bool                  isJitIntrinsic,
+                            CorInfoIntrinsics*    pIntrinsicID,
+                            bool*                 isSpecialIntrinsic = nullptr);
+    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,
                                        int                  memberRef,
@@ -3923,6 +3950,9 @@ public:
     // Returns "true" iff lcl "lclNum" should be excluded from SSA.
     inline bool fgExcludeFromSsa(unsigned lclNum);
 
+    // Returns "true" if a struct temp of the given type requires needs zero init in this block
+    inline bool fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block);
+
     // The value numbers for this compilation.
     ValueNumStore* vnStore;
 
@@ -4261,9 +4291,9 @@ private:
     BlockToSwitchDescMap* m_switchDescMap;
 
 public:
-    BlockToSwitchDescMap* GetSwitchDescMap()
+    BlockToSwitchDescMap* GetSwitchDescMap(bool createIfNull = true)
     {
-        if (m_switchDescMap == nullptr)
+        if ((m_switchDescMap == nullptr) && createIfNull)
         {
             m_switchDescMap = new (getAllocator()) BlockToSwitchDescMap(getAllocator());
         }

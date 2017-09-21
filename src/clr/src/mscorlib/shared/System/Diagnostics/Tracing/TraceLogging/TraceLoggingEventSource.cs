@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tracing
         /// 
         /// Also specify a list of key-value pairs called traits (you must pass an even number of strings).   
         /// The first string is the key and the second is the value.   These are not interpreted by EventSource
-        /// itself but may be interprated the listeners.  Can be fetched with GetTrait(string).   
+        /// itself but may be interpreted the listeners.  Can be fetched with GetTrait(string).   
         /// </summary>
         /// <param name="eventSourceName">
         /// The name of the event source. Must not be null.

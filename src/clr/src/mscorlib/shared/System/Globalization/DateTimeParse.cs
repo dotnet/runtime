@@ -2295,6 +2295,23 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         return false;
                     }
                     break;
+                case DS.DX_NNY:
+                    // When formatting, we only format up to the hundred digit of the Hebrew year, although Hebrew year is now over 5000.
+                    // E.g. if the year is 5763, we only format as 763. so we do the reverse when parsing.
+                    if (raw.year < 1000)
+                    {
+                        raw.year += 5000;
+                    }
+                    if (!GetDayOfNNY(ref result, ref raw, dtfi))
+                    {
+                        return false;
+                    }
+                    if (!dtfi.YearMonthAdjustment(ref result.Year, ref raw.month, true))
+                    {
+                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                        return false;
+                    }
+                    break;
                 case DS.DX_NM:
                 case DS.DX_MN:
                     // Deal with Month/Day pattern.

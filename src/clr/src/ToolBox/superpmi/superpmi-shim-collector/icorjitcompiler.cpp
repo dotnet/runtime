@@ -63,9 +63,6 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
         our_ICorJitInfo.mc->recGlobalContext(*g_globalContext);
     }
 
-    // Record a simple view of the environment
-    our_ICorJitInfo.mc->recEnvironment();
-
     CorJitResult temp =
         original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode);
 

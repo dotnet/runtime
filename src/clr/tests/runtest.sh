@@ -733,8 +733,10 @@ function run_test {
 # Variables for running tests in the background
 if [ `uname` = "NetBSD" ]; then
     NumProc=$(getconf NPROCESSORS_ONLN)
-else
+elif [ `uname` = "Darwin" ]; then
     NumProc=$(getconf _NPROCESSORS_ONLN)
+else
+    NumProc=$(nproc --all)
 fi
 ((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
 

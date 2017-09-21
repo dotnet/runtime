@@ -756,6 +756,11 @@ const int AbbrevTableSize = sizeof(AbbrevTable);
 #define DWARF_LINE_RANGE 14
 #define DWARF_OPCODE_BASE 13
 
+#ifdef FEATURE_GDBJIT_LANGID_CS
+/* TODO: use corresponding constant when it will be added to llvm */
+#define DW_LANG_MICROSOFT_CSHARP 0x9e57
+#endif
+
 DwarfLineNumHeader LineNumHeader = {
     0, 2, 0, 1, 1, DWARF_LINE_BASE, DWARF_LINE_RANGE, DWARF_OPCODE_BASE, {0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1}
 };
@@ -769,7 +774,11 @@ struct __attribute__((packed)) DebugInfoCU
     uint32_t m_cu_name;
     uint32_t m_line_num;
 } debugInfoCU = {
+#ifdef FEATURE_GDBJIT_LANGID_CS
+    1, 0, DW_LANG_MICROSOFT_CSHARP, 0, 0
+#else
     1, 0, DW_LANG_C89, 0, 0
+#endif
 };
 
 struct __attribute__((packed)) DebugInfoTryCatchSub
@@ -955,10 +964,13 @@ void TypeDefInfo::DumpStrings(char *ptr, int &offset)
 
 void TypeDefInfo::DumpDebugInfo(char *ptr, int &offset)
 {
-    if (m_typedef_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
 
     if (ptr != nullptr)
     {
@@ -1030,10 +1042,14 @@ void PrimitiveTypeInfo::DumpStrings(char* ptr, int& offset)
 
 void PrimitiveTypeInfo::DumpDebugInfo(char *ptr, int &offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_typedef_info->DumpDebugInfo(ptr, offset);
 
     if (ptr != nullptr)
@@ -1047,13 +1063,12 @@ void PrimitiveTypeInfo::DumpDebugInfo(char *ptr, int &offset)
         memcpy(ptr + offset,
                &bufType,
                sizeof(DebugInfoType));
-        m_type_offset = offset;
+
+        // Replace offset from real type to typedef
+        m_type_offset = m_typedef_info->m_typedef_type_offset;
     }
 
     offset += sizeof(DebugInfoType);
-    // Replace offset from real type to typedef
-    if (ptr != nullptr)
-        m_type_offset = m_typedef_info->m_typedef_type_offset;
 }
 
 ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMemberPtrArrayHolder &method)
@@ -1122,7 +1137,21 @@ void TypeMember::DumpDebugInfo(char* ptr, int& offset)
 void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
 {
     const int ptrSize = sizeof(TADDR);
-    int bufSize = 0;
+    const int valueTypeBufSize = ptrSize + 6;
+    const int refTypeBufSize = ptrSize + 2;
+
+    bool isValueType = m_member_type->GetTypeHandle().GetSignatureCorElementType() ==
+                            ELEMENT_TYPE_VALUETYPE;
+    int bufSize;
+    if (isValueType)
+    {
+        bufSize = valueTypeBufSize;
+    }
+    else
+    {
+        bufSize = refTypeBufSize;
+    }
+
     if (ptr != nullptr)
     {
         DebugInfoStaticMember memberEntry;
@@ -1133,12 +1162,9 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
 
         // for value type static fields compute address as:
         // addr = (*addr+sizeof(OBJECTREF))
-        if (m_member_type->GetTypeHandle().GetSignatureCorElementType() ==
-                ELEMENT_TYPE_VALUETYPE)
+        if (isValueType)
         {
-            bufSize = ptrSize + 6;
-
-            char buf[ptrSize + 6] = {0};
+            char buf[valueTypeBufSize] = {0};
             buf[0] = ptrSize + 5;
             buf[1] = DW_OP_addr;
 
@@ -1156,9 +1182,7 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
         }
         else
         {
-            bufSize = ptrSize + 2;
-
-            char buf[ptrSize + 2] = {0};
+            char buf[refTypeBufSize] = {0};
             buf[0] = ptrSize + 1;
             buf[1] = DW_OP_addr;
 
@@ -1516,10 +1540,14 @@ void RefTypeInfo::DumpStrings(char* ptr, int& offset)
 
 void RefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_type_offset = offset;
     offset += sizeof(DebugInfoRefType);
     m_value_type->DumpDebugInfo(ptr, offset);
@@ -1539,10 +1567,14 @@ void RefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void NamedRefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     m_type_offset = offset;
     offset += sizeof(DebugInfoRefType) + sizeof(DebugInfoTypeDef);
     m_value_type->DumpDebugInfo(ptr, offset);
@@ -1569,28 +1601,23 @@ void NamedRefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
 
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
     if (m_parent != nullptr)
     {
-        if (m_parent->m_type_offset == 0)
-        {
-            m_parent->DumpDebugInfo(ptr, offset);
-        }
-        else if (RefTypeInfo* m_p = dynamic_cast<RefTypeInfo*>(m_parent))
-        {
-            if (m_p->m_value_type->m_type_offset == 0)
-                m_p->m_value_type->DumpDebugInfo(ptr, offset);
-        }
+        m_parent->DumpDebugInfo(ptr, offset);
     }
 
     // make sure that types of all members are dumped
     for (int i = 0; i < m_num_members; ++i)
     {
-        if (members[i].m_member_type->m_type_offset == 0 && members[i].m_member_type != this)
+        if (members[i].m_member_type != this)
         {
             members[i].m_member_type->DumpDebugInfo(ptr, offset);
         }
@@ -1654,14 +1681,16 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 
 void ArrayTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
-    if (m_type_offset != 0)
+    if (m_is_visited && m_base_ptr == ptr)
     {
         return;
     }
-    if (m_elem_type->m_type_offset == 0)
-    {
-        m_elem_type->DumpDebugInfo(ptr, offset);
-    }
+
+    m_base_ptr = ptr;
+    m_is_visited = true;
+
+    m_elem_type->DumpDebugInfo(ptr, offset);
+
     if (ptr != nullptr)
     {
         DebugInfoArrayType arrType;
@@ -1730,11 +1759,12 @@ struct Elf_Symbol {
     Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
 };
 
-static int countFuncs(const SymbolsInfo *lines, int nlines)
+template <class T>
+static int countFuncs(T &arr, int n)
 {
     int count = 0;
-    for (int i = 0; i < nlines; i++) {
-        if (lines[i].ilOffset == ICorDebugInfo::PROLOG)
+    for (int i = 0; i < n; i++) {
+        if (arr[i].ilOffset == ICorDebugInfo::PROLOG)
         {
             count++;
         }
@@ -1742,10 +1772,11 @@ static int countFuncs(const SymbolsInfo *lines, int nlines)
     return count;
 }
 
-static int getNextPrologueIndex(int from, const SymbolsInfo *lines, int nlines)
+template <class T>
+static int getNextPrologueIndex(int from, T &arr, int n)
 {
-    for (int i = from; i < nlines; ++i) {
-        if (lines[i].ilOffset == ICorDebugInfo::PROLOG)
+    for (int i = from; i < n; ++i) {
+        if (arr[i].ilOffset == ICorDebugInfo::PROLOG)
         {
             return i;
         }
@@ -2480,6 +2511,13 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
         bool bEmitted = EmitDebugInfo(elfBuilder, methodDescPtr, pCode, codeSize, szModuleFile);
         bNotify = bNotify || bEmitted;
     }
+#ifdef FEATURE_GDBJIT_SYMTAB
+    else
+    {
+        bool bEmitted = EmitSymtab(elfBuilder, methodDescPtr, pCode, codeSize);
+        bNotify = bNotify || bEmitted;
+    }
+#endif
 
     if (!bNotify)
     {
@@ -2534,6 +2572,94 @@ bool NotifyGdb::EmitFrameInfo(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSi
     return true;
 }
 #endif // FEATURE_GDBJIT_FRAME
+
+#ifdef FEATURE_GDBJIT_SYMTAB
+bool NotifyGdb::EmitSymtab(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize)
+{
+    NewArrayHolder<DebuggerILToNativeMap> map = nullptr;
+    NewArrayHolder<Elf_Symbol> symbols = nullptr;
+    NewArrayHolder<NewArrayHolder<char>> symbolNames = nullptr;
+
+    ULONG32 numMap;
+    int symbolCount;
+
+    LPCUTF8 methodName = methodDescPtr->GetName();
+
+    if (GetMethodNativeMap(methodDescPtr, &numMap, map, NULL, NULL) == S_OK)
+    {
+        int methodCount = countFuncs(map, numMap);
+        symbolCount = methodCount + 1;
+        symbols = new Elf_Symbol[symbolCount];
+
+        if (methodCount > 1)
+            symbolNames = new NewArrayHolder<char>[methodCount - 1];
+
+        int startIndex = getNextPrologueIndex(0, map, numMap);
+
+        int methodNameSize = strlen(methodName) + 10;
+
+        for (int i = 1; i < symbolCount; ++i)
+        {
+            int endIndex = getNextPrologueIndex(startIndex + 1, map, numMap);
+
+            PCODE methodStart = map[startIndex].nativeStartOffset;
+            TADDR methodSize = endIndex == -1 ? codeSize - methodStart : map[endIndex].nativeStartOffset - methodStart;
+
+            if (i == 1)
+            {
+                symbols[i].m_name = methodName;
+            }
+            else
+            {
+                int symbolNameIndex = i - 2;
+                symbolNames[symbolNameIndex] = new char[methodNameSize];
+                sprintf_s(symbolNames[symbolNameIndex], methodNameSize, "%s_%d", methodName, symbolNameIndex + 1);
+                symbols[i].m_name = symbolNames[symbolNameIndex];
+            }
+
+            symbols[i].m_value = pCode + methodStart;
+            symbols[i].m_size = methodSize;
+
+            startIndex = endIndex;
+        }
+    }
+    else
+    {
+        symbolCount = 2;
+        symbols = new Elf_Symbol[symbolCount];
+
+        symbols[1].m_name = methodName;
+        symbols[1].m_value = pCode;
+        symbols[1].m_size = codeSize;
+    }
+
+    symbols[0].m_name = "";
+
+    MemBuf sectSymTab, sectStrTab;
+
+    if (!BuildStringTableSection(sectStrTab, symbols, symbolCount))
+    {
+        return false;
+    }
+
+    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, symbolCount - 1, symbols, symbolCount, 0))
+    {
+        return false;
+    }
+
+    Elf_SectionTracker *strtab = elfBuilder.OpenSection(".strtab", SHT_STRTAB, 0);
+    elfBuilder.Append(sectStrTab.MemPtr, sectStrTab.MemSize);
+    elfBuilder.CloseSection();
+
+    Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
+    elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
+    symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_entsize = sizeof(Elf_Sym);
+    elfBuilder.CloseSection();
+
+    return true;
+}
+#endif // FEATURE_GDBJIT_SYMTAB
 
 bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile)
 {
@@ -2676,7 +2802,7 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
         return false;
     }
     /* Build .symtab section */
-    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, method, symbolNames, symbolCount, thunkIndexBase))
+    if (!BuildSymbolTableSection(sectSymTab, pCode, codeSize, method.GetCount(), symbolNames, symbolCount, thunkIndexBase))
     {
         return false;
     }
@@ -3236,7 +3362,7 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf, NewArrayHolder<Elf_Symbol> 
 }
 
 /* Build ELF .symtab section */
-bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
+bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, int methodCount,
                                         NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
                                         unsigned int thunkIndexBase)
 {
@@ -3252,7 +3378,7 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize,
     sym[0].st_size = 0;
     sym[0].st_shndx = SHN_UNDEF;
 
-    for (int i = 1; i < 1 + method.GetCount(); ++i)
+    for (int i = 1; i < 1 + methodCount; ++i)
     {
         sym[i].st_name = symbolNames[i].m_off;
         sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
@@ -3262,12 +3388,12 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize,
         sym[i].st_size = symbolNames[i].m_size;
     }
 
-    for (int i = 1 + method.GetCount(); i < symbolCount; ++i)
+    for (int i = 1 + methodCount; i < symbolCount; ++i)
     {
         sym[i].st_name = symbolNames[i].m_off;
         sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
         sym[i].st_other = 0;
-        sym[i].st_shndx = thunkIndexBase + (i - (1 + method.GetCount())); // .thunks section index
+        sym[i].st_shndx = thunkIndexBase + (i - (1 + methodCount)); // .thunks section index
         sym[i].st_size = 8;
 #ifdef _TARGET_ARM_
         sym[i].st_value = 1; // for THUMB code

@@ -273,9 +273,9 @@ if not exist "%__BinDir%"           md "%__BinDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"          md "%__LogsDir%"
 
-REM It is convinient to have your Nuget search path include the location where the build
-REM will plass packages.  However nuget used during the build will fail if that directory 
-REM does not exist.   Avoid this in at least one case by agressively creating the directory. 
+REM It is convenient to have your Nuget search path include the location where the build
+REM will place packages.  However nuget used during the build will fail if that directory
+REM does not exist.   Avoid this in at least one case by aggressively creating the directory.
 if not exist "%__BinDir%\.nuget\pkg"           md "%__BinDir%\.nuget\pkg"
 
 echo %__MsgPrefix%Commencing CoreCLR Repo build
@@ -296,7 +296,7 @@ echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 @if defined _echo @echo on
 
-@call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs% 
+@call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs%
 
 REM =========================================================================================
 REM ===
@@ -342,7 +342,7 @@ if %__BuildNative% EQU 1 (
     set nativePlatfromArgs=-platform=%__BuildArch%
     if /i "%__BuildArch%" == "arm64" ( set nativePlatfromArgs=-useEnv )
 
-    if /i "%__BuildArch%" == "arm64" ( 
+    if /i "%__BuildArch%" == "arm64" (
         rem arm64 builds currently use private toolset which has not been released yet
         REM TODO, remove once the toolset is open.
         call :PrivateToolSet
@@ -354,7 +354,7 @@ if %__BuildNative% EQU 1 (
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
-        
+
         REM Make CMake pick the highest installed version in the 10.0.* range
         set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
     )
@@ -474,7 +474,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
         echo     !__BuildWrn!
         echo     !__BuildErr!
         exit /b 1
-    )    
+    )
 
 :SkipCrossCompBuild
     REM } Scope environment changes end
@@ -539,6 +539,31 @@ set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft
 
 if %__BuildNativeCoreLib% EQU 1 (
     echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
+
+    REM Need VS native tools environment for the **target** arch when running instrumented binaries
+    if %__PgoInstrument% EQU 1 (
+        set __VCExecArch=%__BuildArch%
+        if /i [%__BuildArch%] == [x64] set __VCExecArch=amd64
+        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCExecArch!
+        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCExecArch!
+        @if defined _echo @echo on
+        if NOT !errorlevel! == 0 (
+            echo %__MsgPrefix%Error: Failed to load native tools environment for !__VCExecArch!
+            goto CrossgenFailure
+        )
+
+        REM HACK: Workaround for [dotnet/coreclr#13970](https://github.com/dotnet/coreclr/issues/13970)
+        set __PgoRtPath=
+        for /f "tokens=*" %%f in ('where pgort*.dll') do (
+          if not defined __PgoRtPath set "__PgoRtPath=%%~f"
+        )
+        echo %__MsgPrefix%Copying "!__PgoRtPath!" into "%__BinDir%"
+        copy /y "!__PgoRtPath!" "%__BinDir%" || (
+          echo %__MsgPrefix%Error: copy failed
+          goto CrossgenFailure
+        )
+        REM End HACK
+    )
 
     set NEXTCMD="%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
@@ -607,7 +632,7 @@ if %__BuildTests% EQU 1 (
 
     rem arm64 builds currently use private toolset which has not been released yet
     REM TODO, remove once the toolset is open.
-    if /i "%__BuildArch%" == "arm64" call :PrivateToolSet 
+    if /i "%__BuildArch%" == "arm64" call :PrivateToolSet
 
     set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
@@ -617,7 +642,7 @@ if %__BuildTests% EQU 1 (
         REM buildtest.cmd has already emitted an error message and mentioned the build log file to examine.
         exit /b 1
     )
-) 
+)
 
 REM =========================================================================================
 REM ===
