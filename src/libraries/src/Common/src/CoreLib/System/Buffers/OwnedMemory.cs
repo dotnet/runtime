@@ -11,9 +11,9 @@ namespace System.Buffers
     {
         public abstract int Length { get; }
 
-        public abstract Span<T> AsSpan();
+        public abstract Span<T> Span { get; }
 
-        public Memory<T> AsMemory
+        public Memory<T> Memory
         {
             get 
             {
