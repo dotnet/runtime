@@ -33,6 +33,9 @@ namespace ILLink.Tests
 			AddLinkerReference(csproj);
 
 			BuildAndLink(csproj, rootFiles);
+
+			int ret = RunApp(csproj, out string commandOutput);
+			Assert.True(ret == 0);
 		}
 
 		// returns path to .csproj project file
@@ -48,7 +51,7 @@ namespace ILLink.Tests
 				Directory.Delete(repoName, true);
 			}
 
-			ret = RunCommand("git", $"clone {gitRepo}", null, null);
+			ret = RunCommand("git", $"clone {gitRepo}");
 			if (ret != 0) {
 				output.WriteLine("git failed");
 				Assert.True(false);
@@ -59,7 +62,7 @@ namespace ILLink.Tests
 				Assert.True(false);
 			}
 
-			ret = RunCommand("git", $"checkout {gitBranch}", demoRoot, null);
+			ret = RunCommand("git", $"checkout {gitBranch}", demoRoot);
 			if (ret != 0) {
 				output.WriteLine($"problem checking out branch {gitBranch}");
 				Assert.True(false);
