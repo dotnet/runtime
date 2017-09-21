@@ -243,8 +243,11 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, EmfType type, String description)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
-            Path.GetFullPath(fileName);
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            if (fileName.Length == 0)
+                throw new ArgumentException(nameof(fileName));
 
             IntPtr metafile = IntPtr.Zero;
 
@@ -297,6 +300,12 @@ namespace System.Drawing.Imaging
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect,
                         MetafileFrameUnit frameUnit, EmfType type, String description)
         {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            if (fileName.Length == 0)
+                throw new ArgumentException(nameof(fileName));
+
             IntPtr metafile = IntPtr.Zero;
 
             GPRECTF rectf = new GPRECTF(frameRect);
@@ -349,6 +358,9 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
         {
+            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            Path.GetFullPath(fileName);
+
             IntPtr metafile = IntPtr.Zero;
 
             int status;
