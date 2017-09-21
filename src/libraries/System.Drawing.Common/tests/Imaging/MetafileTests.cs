@@ -773,6 +773,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_PathTooLongI_ThrowsPathTooLongException()
         {
