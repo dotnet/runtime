@@ -135,8 +135,9 @@ namespace System.Drawing.Imaging.Tests
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_IntPtrEmfType_Success(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(bufferGraphics.GetHdc(), emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(g.GetHdc(), emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
@@ -155,9 +156,10 @@ namespace System.Drawing.Imaging.Tests
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_IntPtrInvalidEmfType_ThrowsArgumentException(EmfType emfType)
         {
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(bufferGraphics.GetHdc(), emfType));
+                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(g.GetHdc(), emfType));
             }
         }
 
@@ -392,8 +394,9 @@ namespace System.Drawing.Imaging.Tests
         public void Ctor_StringIntPtrEmfType_Success(EmfType emfType)
         {
             string fileName = GetPath("newTestImage.wmf");
-            using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
-            using (var metafile = new Metafile(fileName, bufferGraphics.GetHdc(), emfType))
+            using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
+            using (Graphics g = Graphics.FromImage(bmp))
+            using (var metafile = new Metafile(fileName, g.GetHdc(), emfType))
             {
                 AssertMetafileIsBlank(metafile);
                 AssertEmfType(metafile.GetMetafileHeader(), emfType);
