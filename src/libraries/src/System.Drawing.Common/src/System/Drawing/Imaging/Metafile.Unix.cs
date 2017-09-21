@@ -300,6 +300,9 @@ namespace System.Drawing.Imaging
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit,
             EmfType type, string description)
         {
+            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            Path.GetFullPath(fileName);
+
             int status = SafeNativeMethods.Gdip.GdipRecordMetafileFileNameI(fileName, referenceHdc, type, ref frameRect,
                 frameUnit, description, out nativeObject);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -308,6 +311,12 @@ namespace System.Drawing.Imaging
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit,
             EmfType type, string description)
         {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            if (fileName.Length == 0)
+                throw new ArgumentException(nameof(fileName));
+
             int status = SafeNativeMethods.Gdip.GdipRecordMetafileFileName(fileName, referenceHdc, type, ref frameRect, frameUnit,
                 description, out nativeObject);
             SafeNativeMethods.Gdip.CheckStatus(status);
