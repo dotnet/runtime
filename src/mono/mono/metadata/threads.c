@@ -1023,8 +1023,6 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 
 	mono_thread_detach_internal (internal);
 
-	internal->tid = 0;
-
 	return(0);
 }
 
