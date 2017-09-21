@@ -65,6 +65,13 @@
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
       <Link>Common\System\IO\WrappedMemoryStream.cs</Link>
     </Compile>
+    <Compile Include="TestDataProvider\TestDataProvider.cs" />
+    <Compile Include="TextReader\CharArrayTextReader.cs" />
+    <Compile Include="TextReader\TextReaderTests.cs" />
+    <Compile Include="TextReader\TextReaderTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="TextWriter\CharArrayTextWriter.cs" />
+    <Compile Include="TextWriter\TextWriterTests.cs" />
+    <Compile Include="TextWriter\TextWriterTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
