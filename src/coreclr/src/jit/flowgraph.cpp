@@ -8609,6 +8609,14 @@ private:
             return nullptr;
         }
 
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+        if (retExpr->gtOper != GT_CNS_INT)
+        {
+            // There is no long cache in 32 bit VM so skip it
+            return nullptr;
+        }
+#endif // _TARGET_X86_ || _TARGET_ARM_
+
         return retExpr->AsIntConCommon();
     }
 
