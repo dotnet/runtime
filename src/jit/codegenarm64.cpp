@@ -1292,7 +1292,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
         {
-            instGen(INS_BREAKPOINT); // This should never get executed
+            instGen(INS_bkpt); // This should never get executed
         }
     }
     else
@@ -1849,7 +1849,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         BasicBlock*  esp_check = genCreateTempLabel();
         emitJumpKind jmpEqual  = genJumpKindForOper(GT_EQ, CK_SIGNED);
         inst_JMP(jmpEqual, esp_check);
-        getEmitter()->emitIns(INS_BREAKPOINT);
+        getEmitter()->emitIns(INS_bkpt);
         genDefineTempLabel(esp_check);
     }
 #endif
@@ -1888,7 +1888,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // If 0 bail out by returning null in targetReg
         genConsumeRegAndCopy(size, targetReg);
         endLabel = genCreateTempLabel();
-        getEmitter()->emitIns_R_R(INS_TEST, easz, targetReg, targetReg);
+        getEmitter()->emitIns_R_R(INS_tst, easz, targetReg, targetReg);
         emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
         inst_JMP(jmpEqual, endLabel);
 
@@ -1912,7 +1912,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // Align to STACK_ALIGN
         // regCnt will be the total number of bytes to localloc
         inst_RV_IV(INS_add, regCnt, (STACK_ALIGN - 1), emitActualTypeSize(type));
-        inst_RV_IV(INS_AND, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
+        inst_RV_IV(INS_and, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
     }
 
     stackAdjustment = 0;
