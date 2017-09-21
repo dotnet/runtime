@@ -78,10 +78,8 @@ namespace System.Drawing.Imaging
 
         public Metafile(string filename)
         {
-            if (filename == null)
-                throw new ArgumentNullException("filename");
-            if (filename.Length == 0)
-                throw new ArgumentException("filename");
+            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            Path.GetFullPath(filename);
 
             int status = SafeNativeMethods.Gdip.GdipCreateMetafileFromFile(filename, out nativeObject);
             if (status == SafeNativeMethods.Gdip.GenericError)
