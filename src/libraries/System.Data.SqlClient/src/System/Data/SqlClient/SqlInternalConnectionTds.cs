@@ -1416,7 +1416,7 @@ namespace System.Data.SqlClient
             // Determine unit interval
             if (timeout.IsInfinite)
             {
-                timeoutUnitInterval = checked((long)ADP.FailoverTimeoutStep * ADP.TimerFromSeconds(ADP.DefaultConnectionTimeout));
+                timeoutUnitInterval = checked((long)(ADP.FailoverTimeoutStep * ADP.TimerFromSeconds(ADP.DefaultConnectionTimeout)));
             }
             else
             {
