@@ -80,8 +80,15 @@ void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
 void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* pRD)
 {
     SUPPORTS_DAC_HOST_ONLY;
-    
+    // CORDbgSetDebuggerREGDISPLAYFromContext() checks the context flags.  In cases where we don't have a filter
+    // context from the thread, we initialize a CONTEXT on the stack and use that to do our stack walking.  We never
+    // initialize the context flags in such cases.  Since this function is called from the stackwalker, we can
+    // guarantee that the integer, control, and floating point sections are valid.  So we set the flags here and
+    // restore them afterwards.
+    DWORD contextFlags = pRD->pCurrentContext->ContextFlags;
+    pRD->pCurrentContext->ContextFlags = CONTEXT_FULL;
     CORDbgSetDebuggerREGDISPLAYFromContext(pDRD, reinterpret_cast<DT_CONTEXT*>(pRD->pCurrentContext));
+    pRD->pCurrentContext->ContextFlags = contextFlags;
 
     pDRD->SP   = pRD->SP;
     pDRD->PC   = (SIZE_T)*(pRD->pPC);

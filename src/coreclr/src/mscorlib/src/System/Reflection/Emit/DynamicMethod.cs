@@ -579,7 +579,7 @@ namespace System.Reflection.Emit
         // This way the DynamicMethod creator is the only one responsible for DynamicMethod access,
         // and can control exactly who gets access to it.
         //
-        internal class RTDynamicMethod : MethodInfo
+        internal sealed class RTDynamicMethod : MethodInfo
         {
             internal DynamicMethod m_owner;
             private RuntimeParameterInfo[] m_parameters;
@@ -680,7 +680,7 @@ namespace System.Reflection.Emit
                 Contract.EndContractBlock();
 
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                    return new Object[] { new MethodImplAttribute(GetMethodImplementationFlags()) };
+                    return new Object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
                 else
                     return Array.Empty<Object>();
             }
@@ -688,7 +688,7 @@ namespace System.Reflection.Emit
             public override Object[] GetCustomAttributes(bool inherit)
             {
                 // support for MethodImplAttribute PCA
-                return new Object[] { new MethodImplAttribute(GetMethodImplementationFlags()) };
+                return new Object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
             }
 
             public override bool IsDefined(Type attributeType, bool inherit)

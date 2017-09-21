@@ -20,6 +20,8 @@ EXTERN_C void JIT_GetSharedNonGCStaticBase_SingleAppDomain();
 EXTERN_C void JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain();
 EXTERN_C void JIT_GetSharedGCStaticBase_SingleAppDomain();
 EXTERN_C void JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain();
+EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
+
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -1119,7 +1121,15 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain);
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
     }
+
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
+#ifndef FEATURE_PAL // TODO-ARM64-WINDOWS #13592
+EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
+#endif
+
+#else
+EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 EXTERN_C void __stdcall ProfileEnterNaked(UINT_PTR clientData)
@@ -1338,28 +1348,29 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#ifndef CROSSGEN_COMPILE
 void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
 void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 void SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
 void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    return;
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
+#endif // CROSSGEN_COMPILE
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)

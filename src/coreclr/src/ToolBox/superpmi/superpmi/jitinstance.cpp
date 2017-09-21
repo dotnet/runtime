@@ -12,7 +12,7 @@
 #include "errorhandling.h"
 #include "spmiutil.h"
 
-JitInstance* JitInstance::InitJit(char* nameOfJit, bool breakOnAssert, SimpleTimer* st1, MethodContext* firstContext)
+JitInstance* JitInstance::InitJit(char* nameOfJit, bool breakOnAssert, SimpleTimer* st1, MethodContext* firstContext, LightWeightMap<DWORD, DWORD>* options)
 {
     JitInstance* jit = new JitInstance();
     if (jit == nullptr)
@@ -20,6 +20,8 @@ JitInstance* JitInstance::InitJit(char* nameOfJit, bool breakOnAssert, SimpleTim
         LogError("Failed to allocate a JitInstance");
         return nullptr;
     }
+
+    jit->options = options;
 
     if (st1 != nullptr)
         st1->Start();
@@ -33,6 +35,7 @@ JitInstance* JitInstance::InitJit(char* nameOfJit, bool breakOnAssert, SimpleTim
     }
     if (st1 != nullptr)
         LogVerbose("Jit startup took %fms", st1->GetMilliseconds());
+
     return jit;
 }
 
@@ -284,7 +287,6 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     times[0] = 0;
     times[1] = 0;
 
-    mc->repEnvironmentSet(); // Sets envvars
     stj.Start();
 
     PAL_TRY(Param*, pParam, &param)
@@ -349,7 +351,6 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         // If we get here, we know it compiles
         timeResult(param.info, param.flags);
     }
-    mc->repEnvironmentUnset(); // Unsets envvars
 
     mc->cr->secondsToCompile = stj.GetSeconds();
 
@@ -397,6 +398,23 @@ void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 }
 
 /*-------------------------- Misc ---------------------------------------*/
+
+const wchar_t* JitInstance::getOption(const wchar_t* key)
+{
+    if (options == nullptr)
+    {
+        return nullptr;
+    }
+
+    size_t keyLenInBytes = sizeof(wchar_t) * (wcslen(key) + 1);
+    int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
+    if (keyIndex == -1)
+    {
+        return nullptr;
+    }
+
+    return (const wchar_t*)options->GetBuffer(options->Get(keyIndex));
+}
 
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,

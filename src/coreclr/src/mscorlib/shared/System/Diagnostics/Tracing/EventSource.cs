@@ -572,11 +572,11 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// EventSources can have arbitrary string key-value pairs associated with them called Traits.  
         /// These traits are not interpreted by the EventSource but may be interpreted by EventListeners
-        /// (e.g. like the built in ETW listener).   These traits are specififed at EventSource 
+        /// (e.g. like the built in ETW listener).   These traits are specified at EventSource 
         /// construction time and can be retrieved by using this GetTrait API.  
         /// </summary>
         /// <param name="key">The key to look up in the set of key-value pairs passed to the EventSource constructor</param>
-        /// <returns>The value string associated iwth key.  Will return null if there is no such key.</returns>
+        /// <returns>The value string associated with key.  Will return null if there is no such key.</returns>
         public string GetTrait(string key)
         {
             if (m_traits != null)
@@ -661,7 +661,7 @@ namespace System.Diagnostics.Tracing
         /// 
         /// Also specify a list of key-value pairs called traits (you must pass an even number of strings).   
         /// The first string is the key and the second is the value.   These are not interpreted by EventSource
-        /// itself but may be interprated the listeners.  Can be fetched with GetTrait(string).   
+        /// itself but may be interpreted the listeners.  Can be fetched with GetTrait(string).   
         /// </summary>
         /// <param name="settings">See EventSourceSettings for more.</param>
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
@@ -5521,7 +5521,7 @@ namespace System.Diagnostics.Tracing
         /// Returns a session mask representing all sessions in which the activity 
         /// associated with the current thread is allowed  through the activity filter. 
         /// If 'triggeringEvent' is true the event MAY be a triggering event. Ideally 
-        /// most of the time this is false as you can guarentee this event is NOT a 
+        /// most of the time this is false as you can guarantee this event is NOT a 
         /// triggering event. If 'triggeringEvent' is true, then it checks the 
         /// 'EventSource' and 'eventID' of the event being logged to see if it is actually
         /// a trigger. If so it activates the current activity. 
@@ -6070,11 +6070,11 @@ namespace System.Diagnostics.Tracing
     /// (m_EventEnabled) for a particular EventSource X EventListener tuple
     /// 
     /// Thus a single EventListener may have many EventDispatchers (one for every EventSource 
-    /// that that EventListener has activate) and a Single EventSource may also have many
+    /// that EventListener has activate) and a Single EventSource may also have many
     /// event Dispatchers (one for every EventListener that has activated it). 
     /// 
     /// Logically a particular EventDispatcher belongs to exactly one EventSource and exactly  
-    /// one EventListener (alhtough EventDispatcher does not 'remember' the EventSource it is
+    /// one EventListener (although EventDispatcher does not 'remember' the EventSource it is
     /// associated with. 
     /// </summary>
     internal class EventDispatcher

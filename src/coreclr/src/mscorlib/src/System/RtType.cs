@@ -458,8 +458,8 @@ namespace System
 
                                     Volatile.Write(ref m_cacheComplete, true);
                                 }
-                                else
-                                    list = m_allMembers;
+
+                                list = m_allMembers;
                                 break;
 
                             default:
@@ -3846,7 +3846,7 @@ namespace System
         {
             get
             {
-                return (StructLayoutAttribute)StructLayoutAttribute.GetCustomAttribute(this);
+                return PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
             }
         }
         #endregion

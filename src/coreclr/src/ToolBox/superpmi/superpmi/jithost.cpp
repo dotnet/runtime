@@ -77,19 +77,30 @@ int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
         return jitInstance.mc->index;
     }
 
-    // If the result is the default value, probe the environment for
-    // a COMPlus variable with the same name.
-    wchar_t* complus = GetCOMPlusVariable(key, jitInstance);
-    if (complus == nullptr)
-    {
-        return defaultValue;
-    }
+    // If the result is the default value, probe the JIT options and then the environment. If a value is found, parse
+    // it as a hex integer.
 
-    // Parse the value as a hex integer.
     wchar_t* endPtr;
-    result         = static_cast<int>(wcstoul(complus, &endPtr, 16));
-    bool succeeded = (errno != ERANGE) && (endPtr != complus);
-    jitInstance.freeLongLivedArray(complus);
+    bool     succeeded;
+
+    const wchar_t* value = jitInstance.getOption(key);
+    if (value != nullptr)
+    {
+        result    = static_cast<int>(wcstoul(value, &endPtr, 16));
+        succeeded = (errno != ERANGE) && (endPtr != value);
+    }
+    else
+    {
+        wchar_t* complus = GetCOMPlusVariable(key, jitInstance);
+        if (complus == nullptr)
+        {
+            return defaultValue;
+        }
+
+        result    = static_cast<int>(wcstoul(complus, &endPtr, 16));
+        succeeded = (errno != ERANGE) && (endPtr != complus);
+        jitInstance.freeLongLivedArray(complus);
+    }
 
     return succeeded ? result : defaultValue;
 }
@@ -99,19 +110,22 @@ const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
     jitInstance.mc->cr->AddCall("getStringConfigValue");
     const wchar_t* result = jitInstance.mc->repGetStringConfigValue(key);
 
-    if (result != nullptr)
+    // If the result is the default value, probe the JIT options and then the environment.
+    if (result == nullptr)
     {
-        // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
-        size_t   resultLenInChars = wcslen(result) + 1;
-        wchar_t* dupResult = (wchar_t*)jitInstance.allocateLongLivedArray((ULONG)(sizeof(wchar_t) * resultLenInChars));
-        wcscpy_s(dupResult, resultLenInChars, result);
-
-        return dupResult;
+        result = jitInstance.getOption(key);
+        if (result == nullptr)
+        {
+            return GetCOMPlusVariable(key, jitInstance);
+        }
     }
 
-    // If the result is the default value, probe the environment for
-    // a COMPlus variable with the same name.
-    return GetCOMPlusVariable(key, jitInstance);
+    // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
+    size_t   resultLenInChars = wcslen(result) + 1;
+    wchar_t* dupResult = (wchar_t*)jitInstance.allocateLongLivedArray((ULONG)(sizeof(wchar_t) * resultLenInChars));
+    wcscpy_s(dupResult, resultLenInChars, result);
+
+    return dupResult;
 }
 
 void JitHost::freeStringConfigValue(const wchar_t* value)

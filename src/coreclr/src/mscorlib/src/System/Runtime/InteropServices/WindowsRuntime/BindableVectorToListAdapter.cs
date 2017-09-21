@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
             return GetAt(_this, (uint)index);
         }
 
@@ -47,14 +47,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
             SetAt(_this, (uint)index, value);
         }
 
         // int Add(object value)
         internal int Add(object value)
         {
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
             _this.Append(value);
 
             uint size = _this.Size;
@@ -69,7 +69,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // bool Contains(object item)
         internal bool Contains(object item)
         {
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
 
             uint index;
             return _this.IndexOf(item, out index);
@@ -78,7 +78,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void Clear()
         internal void Clear()
         {
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
             _this.Clear();
         }
 
@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // int IndexOf(object item)
         internal int IndexOf(object item)
         {
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
 
             uint index;
             bool exists = _this.IndexOf(item, out index);
@@ -121,14 +121,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
             InsertAtHelper(_this, (uint)index, item);
         }
 
         // bool Remove(object item)
         internal void Remove(object item)
         {
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
 
             uint index;
             bool exists = _this.IndexOf(item, out index);
@@ -150,7 +150,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);
+            IBindableVector _this = Unsafe.As<IBindableVector>(this);
             RemoveAtHelper(_this, (uint)index);
         }
 

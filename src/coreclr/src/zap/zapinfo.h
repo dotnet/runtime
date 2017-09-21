@@ -616,6 +616,10 @@ public:
 
     const char* getMethodName(CORINFO_METHOD_HANDLE ftn,
                                         const char **moduleName);
+    const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                          const char **className,
+                                          const char **namespaceName);
+
     unsigned getMethodHash(CORINFO_METHOD_HANDLE ftn);
     DWORD getMethodAttribs(CORINFO_METHOD_HANDLE ftn);
     void setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs);

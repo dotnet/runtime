@@ -279,17 +279,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             {
                 castOpType = genUnsignedType(castOpType);
             }
-#ifdef DEBUG
-            if (!tree->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(castOpType)))
-            {
-                // If converting to float/double, the operand must be 4 or 8 byte in size.
-                if (varTypeIsFloating(castToType))
-                {
-                    unsigned opSize = genTypeSize(castOpType);
-                    assert(opSize == 4 || opSize == 8);
-                }
-            }
-#endif // DEBUG
 
             if (varTypeIsLong(castOpType))
             {
@@ -630,6 +619,17 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             TreeNodeInfoInitCall(tree->AsCall());
             break;
 
+        case GT_ADDR:
+        {
+            // For a GT_ADDR, the child node should not be evaluated into a register
+            GenTreePtr child = tree->gtOp.gtOp1;
+            assert(!isCandidateLocalRef(child));
+            assert(child->isContained());
+            assert(info->dstCount == 1);
+            info->srcCount = 0;
+        }
+        break;
+
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
@@ -652,6 +652,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
             if (compiler->codeGen->gcInfo.gcIsWriteBarrierAsgNode(tree))
             {
+                info->srcCount = 2;
                 TreeNodeInfoInitGCWriteBarrier(tree);
                 break;
             }
@@ -775,6 +776,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
     } // end switch (tree->OperGet())
 
+    if (tree->IsUnusedValue() && (info->dstCount != 0))
+    {
+        info->isLocalDefUse = true;
+    }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || tree->IsMultiRegNode());
 }

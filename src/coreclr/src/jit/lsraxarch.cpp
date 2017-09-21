@@ -343,6 +343,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        case GT_BT:
             info->srcCount = GetOperandSourceCount(tree->gtOp.gtOp1);
             info->srcCount += GetOperandSourceCount(tree->gtOp.gtOp2);
             break;
@@ -722,6 +723,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
     TreeNodeInfoInitCheckByteable(tree);
 
+    if (tree->IsUnusedValue() && (info->dstCount != 0))
+    {
+        info->isLocalDefUse = true;
+    }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || (tree->IsMultiRegCall() && info->dstCount == MAX_RET_REG_COUNT));
 }
@@ -2666,20 +2671,6 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
         info->srcCount += GetOperandSourceCount(op1);
     }
     info->srcCount += GetOperandSourceCount(op2);
-
-#if !defined(_TARGET_64BIT_)
-    // Long compares will consume GT_LONG nodes, each of which produces two results.
-    // Thus for each long operand there will be an additional source.
-    // TODO-X86-CQ: Mark hiOp2 and loOp2 as contained if it is a constant or a memory op.
-    if (varTypeIsLong(op1Type))
-    {
-        info->srcCount++;
-    }
-    if (varTypeIsLong(op2Type))
-    {
-        info->srcCount++;
-    }
-#endif // !defined(_TARGET_64BIT_)
 }
 
 //------------------------------------------------------------------------

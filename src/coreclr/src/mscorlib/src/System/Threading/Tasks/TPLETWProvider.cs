@@ -130,7 +130,7 @@ namespace System.Threading.Tasks
             /// <summary>
             /// TasksSetActivityIds will cause the task operations to set Activity Ids 
             /// This option is incompatible with TasksFlowActivityIds flow is ignored
-            /// if that keyword is set.   This option is likley to be removed in the future
+            /// if that keyword is set.   This option is likely to be removed in the future
             /// </summary>
             public const EventKeywords TasksSetActivityIds = (EventKeywords)0x10000;
 

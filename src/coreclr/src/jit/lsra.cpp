@@ -182,14 +182,23 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
             GenTreeLclVarCommon* lclCommon = treeNode->AsLclVarCommon();
             LclVarDsc*           varDsc    = &(compiler->lvaTable[lclCommon->gtLclNum]);
             weight                         = varDsc->lvRefCntWtd;
+            if (refPos->getInterval()->isSpilled)
+            {
+                // Decrease the weight if the interval has already been spilled.
+                weight -= BB_UNITY_WEIGHT;
+            }
         }
         else
         {
             // Non-candidate local ref or non-lcl tree node.
             // These are considered to have two references in the basic block:
-            // a def and a use and hence weighted ref count is 2 times
+            // a def and a use and hence weighted ref count would be 2 times
             // the basic block weight in which they appear.
-            weight = 2 * this->blockInfo[refPos->bbNum].weight;
+            // However, it is generally more harmful to spill tree temps, so we
+            // double that.
+            const unsigned TREE_TEMP_REF_COUNT    = 2;
+            const unsigned TREE_TEMP_BOOST_FACTOR = 2;
+            weight = TREE_TEMP_REF_COUNT * TREE_TEMP_BOOST_FACTOR * blockInfo[refPos->bbNum].weight;
         }
     }
     else
@@ -198,7 +207,7 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
         // reference in the basic block and hence their weighted
         // refcount is equal to the block weight in which they
         // appear.
-        weight = this->blockInfo[refPos->bbNum].weight;
+        weight = blockInfo[refPos->bbNum].weight;
     }
 
     return weight;
@@ -1366,6 +1375,9 @@ void LinearScan::setBlockSequence()
     verifiedAllBBs           = false;
     hasCriticalEdges         = false;
     BasicBlock* nextBlock;
+    // We use a bbNum of 0 for entry RefPositions.
+    // The other information in blockInfo[0] will never be used.
+    blockInfo[0].weight = BB_UNITY_WEIGHT;
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
         blockSequence[bbSeqCount] = block;
@@ -1375,11 +1387,12 @@ void LinearScan::setBlockSequence()
 
         // Initialize the blockInfo.
         // predBBNum will be set later.  0 is never used as a bbNum.
+        assert(block->bbNum != 0);
         blockInfo[block->bbNum].predBBNum = 0;
         // We check for critical edges below, but initialize to false.
         blockInfo[block->bbNum].hasCriticalInEdge  = false;
         blockInfo[block->bbNum].hasCriticalOutEdge = false;
-        blockInfo[block->bbNum].weight             = block->bbWeight;
+        blockInfo[block->bbNum].weight             = block->getBBWeight(compiler);
 
 #if TRACK_LSRA_STATS
         blockInfo[block->bbNum].spillCount         = 0;
@@ -4195,6 +4208,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                                           (unsigned)i DEBUG_ARG(minRegCount));
         if (info.isLocalDefUse)
         {
+            // This must be an unused value, OR it is a special node for which we allocate
+            // a target register even though it produces no value.
+            assert(defNode->IsUnusedValue() || (defNode->gtOper == GT_LOCKADD));
             pos->isLocalDefUse = true;
             pos->lastUse       = true;
         }
@@ -4576,9 +4592,21 @@ void LinearScan::buildIntervals()
     // second part:
     JITDUMP("\nbuildIntervals second part ========\n");
     LsraLocation currentLoc = 0;
+    // TODO-Cleanup: This duplicates prior behavior where entry (ParamDef) RefPositions were
+    // being assigned the bbNum of the last block traversed in the 2nd phase of Lowering.
+    // Previously, the block sequencing was done for the (formerly separate) TreeNodeInfoInit pass,
+    // and the curBBNum was left as the last block sequenced. This block was then used to set the
+    // weight for the entry (ParamDef) RefPositions. It would be logical to set this to the
+    // normalized entry weight (compiler->fgCalledCount), but that results in a net regression.
+    if (!blockSequencingDone)
+    {
+        setBlockSequence();
+    }
+    curBBNum = blockSequence[bbSeqCount - 1]->bbNum;
 
-    // Next, create ParamDef RefPositions for all the tracked parameters,
-    // in order of their varIndex
+    // Next, create ParamDef RefPositions for all the tracked parameters, in order of their varIndex.
+    // Assign these RefPositions to the (nonexistent) BB0.
+    curBBNum = 0;
 
     LclVarDsc*   argDsc;
     unsigned int lclNum;
@@ -4712,6 +4740,8 @@ void LinearScan::buildIntervals()
             if (block == compiler->fgFirstBB)
             {
                 insertZeroInitRefPositions();
+                // The first real location is at 1; 0 is for the entry.
+                currentLoc = 1;
             }
 
             // Any lclVars live-in to a block are resolution candidates.
@@ -4766,15 +4796,49 @@ void LinearScan::buildIntervals()
         // this point.
 
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
+        currentLoc += 2;
         JITDUMP("\n");
 
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange.NonPhiNodes())
         {
-            assert(node->gtLsraInfo.loc >= currentLoc);
-            assert(!node->IsValue() || !node->IsUnusedValue() || node->gtLsraInfo.isLocalDefUse);
+            // We increment the number position of each tree node by 2 to simplify the logic when there's the case of
+            // a tree that implicitly does a dual-definition of temps (the long case).  In this case it is easier to
+            // already have an idle spot to handle a dual-def instead of making some messy adjustments if we only
+            // increment the number position by one.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
-            currentLoc = node->gtLsraInfo.loc;
+#ifdef DEBUG
+            node->gtSeqNum = currentLoc;
+            // In DEBUG, we want to set the gtRegTag to GT_REGTAG_REG, so that subsequent dumps will so the register
+            // value.
+            // Although this looks like a no-op it sets the tag.
+            node->gtRegNum = node->gtRegNum;
+#endif
+
+            node->gtLsraInfo.Initialize(this, node, currentLoc);
+
+            TreeNodeInfoInit(node);
+
+            // If the node produces an unused value, mark it as a local def-use
+            if (node->IsValue() && node->IsUnusedValue())
+            {
+                node->gtLsraInfo.isLocalDefUse = true;
+                node->gtLsraInfo.dstCount      = 0;
+            }
+
+#ifdef DEBUG
+            if (VERBOSE)
+            {
+                compiler->gtDispTree(node, nullptr, nullptr, true);
+                printf("    +");
+                node->gtLsraInfo.dump(this);
+            }
+#endif // DEBUG
+
+            // Only nodes that produce values should have a non-zero dstCount.
+            assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
+
             buildRefPositionsForNode(node, block, listNodePool, operandToLocationInfoMap, currentLoc);
 
 #ifdef DEBUG
@@ -4783,11 +4847,8 @@ void LinearScan::buildIntervals()
                 maxNodeLocation = currentLoc;
             }
 #endif // DEBUG
+            currentLoc += 2;
         }
-
-        // Increment the LsraLocation at this point, so that the dummy RefPositions
-        // will not have the same LsraLocation as any "real" RefPosition.
-        currentLoc += 2;
 
         // Note: the visited set is cleared in LinearScan::doLinearScan()
         markBlockVisited(block);
@@ -5472,7 +5533,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
     }
 
     RegRecord* availablePhysRegInterval = nullptr;
-    Interval*  intervalToUnassign       = nullptr;
+    bool       unassignInterval         = false;
 
     // Each register will receive a score which is the sum of the scoring criteria below.
     // These were selected on the assumption that they will have an impact on the "goodness"
@@ -5550,7 +5611,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         if (physRegRecord->assignedInterval == currentInterval)
         {
             availablePhysRegInterval = physRegRecord;
-            intervalToUnassign       = nullptr;
+            unassignInterval         = false;
             break;
         }
 
@@ -5710,7 +5771,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         {
             bestLocation             = nextPhysRefLocation;
             availablePhysRegInterval = physRegRecord;
-            intervalToUnassign       = physRegRecord->assignedInterval;
+            unassignInterval         = true;
             bestScore                = score;
         }
 
@@ -5723,9 +5784,9 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
     if (availablePhysRegInterval != nullptr)
     {
-        if (isAssigned(availablePhysRegInterval ARM_ARG(currentInterval->registerType)))
+        if (unassignInterval && isAssigned(availablePhysRegInterval ARM_ARG(currentInterval->registerType)))
         {
-            intervalToUnassign = availablePhysRegInterval->assignedInterval;
+            Interval* const intervalToUnassign = availablePhysRegInterval->assignedInterval;
             unassignPhysReg(availablePhysRegInterval ARM_ARG(currentInterval->registerType));
 
             if ((bestScore & VALUE_AVAILABLE) != 0 && intervalToUnassign != nullptr)
@@ -9729,6 +9790,7 @@ void LinearScan::insertMove(
         dst->gtLsraInfo.isLsraAdded   = true;
     }
     dst->gtLsraInfo.isLocalDefUse = true;
+    dst->SetUnusedValue();
 
     LIR::Range  treeRange  = LIR::SeqTree(compiler, dst);
     LIR::Range& blockRange = LIR::AsRange(block);

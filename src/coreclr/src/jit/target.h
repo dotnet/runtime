@@ -1183,6 +1183,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
   #define CPU_USES_BLOCK_MOVE      0
+
+  #define CPBLK_UNROLL_LIMIT       32      // Upper bound to let the code generator to loop unroll CpBlk.
+  #define INITBLK_UNROLL_LIMIT     32      // Upper bound to let the code generator to loop unroll InitBlk.
+
   #define FEATURE_WRITE_BARRIER    1       // Generate the proper WriteBarrier calls for GC    
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers

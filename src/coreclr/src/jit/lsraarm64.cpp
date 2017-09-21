@@ -302,17 +302,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             {
                 castOpType = genUnsignedType(castOpType);
             }
-#ifdef DEBUG
-            if (!tree->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(castOpType)))
-            {
-                // If converting to float/double, the operand must be 4 or 8 byte in size.
-                if (varTypeIsFloating(castToType))
-                {
-                    unsigned opSize = genTypeSize(castOpType);
-                    assert(opSize == 4 || opSize == 8);
-                }
-            }
-#endif // DEBUG
+
             // Some overflow checks need a temp reg
 
             Lowering::CastInfo castInfo;
@@ -362,6 +352,8 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_LE:
         case GT_GE:
         case GT_GT:
+        case GT_TEST_EQ:
+        case GT_TEST_NE:
             TreeNodeInfoInitCmp(tree);
             break;
 
@@ -668,6 +660,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
     } // end switch (tree->OperGet())
 
+    if (tree->IsUnusedValue() && (info->dstCount != 0))
+    {
+        info->isLocalDefUse = true;
+    }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || tree->IsMultiRegCall());
 }

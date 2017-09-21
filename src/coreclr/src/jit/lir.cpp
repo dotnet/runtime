@@ -1501,20 +1501,16 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
 
             assert(!(checkUnusedValues && def->IsUnusedValue()) && "operands should never be marked as unused values");
 
-            if (def->OperGet() == GT_ARGPLACE)
-            {
-                // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
-                continue;
-            }
-            else if (!def->IsValue())
+            if (!def->IsValue())
             {
                 // Stack arguments do not produce a value, but they are considered children of the call.
                 // It may be useful to remove these from being call operands, but that may also impact
                 // other code that relies on being able to reach all the operands from a call node.
                 // The GT_NOP case is because sometimes we eliminate stack argument stores as dead, but
                 // instead of removing them we replace with a NOP.
+                // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
                 assert((node->OperGet() == GT_CALL) &&
-                       (def->OperIsStore() || (def->OperGet() == GT_PUTARG_STK) || (def->OperGet() == GT_NOP)));
+                       (def->OperIsStore() || def->OperIs(GT_PUTARG_STK, GT_NOP, GT_ARGPLACE)));
                 continue;
             }
 

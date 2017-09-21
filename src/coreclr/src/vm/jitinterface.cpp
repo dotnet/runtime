@@ -3132,9 +3132,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
     {
-#if defined(_TARGET_ARM_)
-        ThrowHR(E_NOTIMPL); /* TODO - NYI */
-#endif
         pResultLookup->lookupKind.runtimeLookupArgs = NULL;
 
         switch (entryKind)
@@ -6460,6 +6457,48 @@ const char* CEEInfo::getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** s
     return result;
 }
 
+const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    const char* result = NULL;
+    const char* classResult = NULL;
+    const char* namespaceResult = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc *ftn = GetMethod(ftnHnd);
+    mdMethodDef token = ftn->GetMemberDef();
+
+    if (!IsNilToken(token))
+    {
+        if (!FAILED(ftn->GetMDImport()->GetNameOfMethodDef(token, &result)))
+        {
+            MethodTable* pMT = ftn->GetMethodTable();
+            classResult = pMT->GetFullyQualifiedNameInfo(&namespaceResult);
+        }
+    }
+
+    if (className != NULL)
+    {
+        *className = classResult;
+    }
+
+    if (namespaceName != NULL)
+    {
+        *namespaceName = namespaceResult;
+    }
+
+    EE_TO_JIT_TRANSITION();
+    
+    return result;
+}
+
 /*********************************************************************/
 DWORD CEEInfo::getMethodAttribs (CORINFO_METHOD_HANDLE ftn)
 {
@@ -6514,6 +6553,8 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_SYNCH;
     if (pMD->IsFCallOrIntrinsic())
         result |= CORINFO_FLG_NOGCCHECK | CORINFO_FLG_INTRINSIC;
+    if (pMD->IsJitIntrinsic())
+        result |= CORINFO_FLG_JIT_INTRINSIC;
     if (IsMdVirtual(attribs))
         result |= CORINFO_FLG_VIRTUAL;
     if (IsMdAbstract(attribs))
@@ -6705,18 +6746,7 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
     // Compare tokens to cover all generic instantiations
     // The body of the first method is simply ret Arg0. The second one first casts the arg to I4.
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__UNSAFE_CAST)->GetMemberDef())
-    {
-        // Return the argument that was passed in.
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__UNSAFE_CAST_TO_STACKPTR)->GetMemberDef())
+    if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__UNSAFE_CAST_TO_STACKPTR)->GetMemberDef())
     {
         // Return the argument that was passed in converted to IntPtr
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_CONV_I, CEE_RET };
