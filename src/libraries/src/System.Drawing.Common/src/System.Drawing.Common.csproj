@@ -115,6 +115,7 @@
     <Compile Include="System\Drawing\Imaging\FrameDimension.cs" />
     <Compile Include="System\Drawing\Imaging\ImageCodecFlags.cs" />
     <Compile Include="System\Drawing\Imaging\ImageFlags.cs" />
+    <Compile Include="System\Drawing\Imaging\ImageFormat.cs" />
     <Compile Include="System\Drawing\Imaging\ImageLockMode.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileType.cs" />
     <Compile Include="System\Drawing\Imaging\PaletteFlags.cs" />
@@ -211,7 +212,7 @@
     <Compile Include="System\Drawing\BufferedGraphicsContext.Windows.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsManager.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
-    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
+    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Windows.cs" />
     <Compile Include="System\Drawing\Font.Windows.cs" />
     <Compile Include="System\Drawing\Font.NotSerializable.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
@@ -223,11 +224,10 @@
     <Compile Include="System\Drawing\Image.NotSerializable.cs" />
     <Compile Include="System\Drawing\ImageAnimator.Windows.cs" />
     <Compile Include="System\Drawing\ImageInfo.cs" />
-    <Compile Include="System\Drawing\Imaging\BitmapData.cs" />
-    <Compile Include="System\Drawing\Imaging\ImageFormat.cs" />
-    <Compile Include="System\Drawing\Imaging\Metafile.cs" />
-    <Compile Include="System\Drawing\Imaging\MetafileHeader.cs" />
-    <Compile Include="System\Drawing\Imaging\METAHEADER.cs" />
+    <Compile Include="System\Drawing\Imaging\BitmapData.Windows.cs" />
+    <Compile Include="System\Drawing\Imaging\Metafile.Windows.cs" />
+    <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
+    <Compile Include="System\Drawing\Imaging\MetaHeader.Windows.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\Pen.Windows.cs" />
@@ -297,6 +297,10 @@
     <Compile Include="System\Drawing\Icon.Unix.cs" />
     <Compile Include="System\Drawing\Icon.NotSerializable.cs" />
     <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
+    <Compile Include="System\Drawing\Imaging\BitmapData.Unix.cs" />
+    <Compile Include="System\Drawing\Imaging\Metafile.Unix.cs" />
+    <Compile Include="System\Drawing\Imaging\MetafileHeader.Unix.cs" />
+    <Compile Include="System\Drawing\Imaging\MetaHeader.Unix.cs" />
     <Compile Include="System\Drawing\Printing\LibcupsNative.cs" />
     <Compile Include="System\Drawing\Printing\PrintingServices.Unix.cs" />
     <Compile Include="System\Drawing\Printing\PageSettings.Unix.cs" />
@@ -327,14 +331,9 @@
     <Compile Include="System\Drawing\ToolboxBitmapAttribute.Unix.cs" />
     <Compile Include="System\Drawing\Drawing2D\AdjustableArrowCap.Unix.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Unix.cs" />
-    <Compile Include="Unix\System.Drawing.Drawing2D\GraphicsPath.cs" />
-    <Compile Include="Unix\System.Drawing.Imaging\BitmapData.cs" />
-    <Compile Include="Unix\System.Drawing.Imaging\ImageFormat.cs" />
-    <Compile Include="Unix\System.Drawing.Imaging\Metafile.cs" />
-    <Compile Include="Unix\System.Drawing.Imaging\MetafileHeader.cs" />
-    <Compile Include="Unix\System.Drawing.Imaging\MetaHeader.cs" />
+    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Unix.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
-    <Compile Include="Unix\MonoTODOAttribute.cs" />
+    <Compile Include="MonoTODOAttribute.cs" />
     <Compile Include="misc\ExternDll.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
