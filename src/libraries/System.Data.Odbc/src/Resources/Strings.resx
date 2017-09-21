@@ -429,4 +429,7 @@
   <data name="Odbc_OpenConnectionNoOwner" xml:space="preserve">
     <value>An internal connection does not have an owner.</value>
   </data>
+  <data name="Odbc_PlatformNotSupported" xml:space="preserve">
+    <value>System.Data.ODBC is not supported on this platform.</value>
+  </data>
 </root>
