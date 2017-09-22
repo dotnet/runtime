@@ -206,8 +206,8 @@ namespace CorUnix
             CPalThread * pthrCurrent,
             CPalThread * pthrTarget);
 
-        void WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode);
-        void SharedWaiterEnqueue(SharedID shridNewNode);
+        void WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode, bool fPrioritize);
+        void SharedWaiterEnqueue(SharedID shridNewNode, bool fPrioritize);
 
         // Object Domain accessor methods
         ObjectDomain GetObjectDomain(void)
@@ -464,7 +464,8 @@ namespace CorUnix
         virtual PAL_ERROR RegisterWaitingThread(
             WaitType wtWaitType,
             DWORD dwIndex,
-            bool fAlertable);
+            bool fAlertable,
+            bool fPrioritize);
 
         virtual void ReleaseController(void);
 

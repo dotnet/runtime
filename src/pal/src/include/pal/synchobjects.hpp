@@ -40,7 +40,8 @@ namespace CorUnix
         CONST HANDLE *lpHandles,
         BOOL bWaitAll,
         DWORD dwMilliseconds,
-        BOOL bAlertable);
+        BOOL bAlertable,
+        BOOL bPrioritize = FALSE);
     
     PAL_ERROR InternalSleepEx(
         CPalThread * pthrCurrent,
