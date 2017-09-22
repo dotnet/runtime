@@ -75,7 +75,7 @@ void EventPipeConfiguration::Initialize()
     CONTRACTL_END;
 
     // Create the configuration provider.
-    m_pConfigProvider = EventPipe::CreateProvider(SL(s_configurationProviderName));
+    m_pConfigProvider = CreateProvider(SL(s_configurationProviderName), NULL, NULL);
 
     // Create the metadata event.
     m_pMetadataEvent = m_pConfigProvider->AddEvent(
@@ -85,6 +85,49 @@ void EventPipeConfiguration::Initialize()
         EventPipeEventLevel::LogAlways,
         false); /* needStack */
 }
+
+EventPipeProvider* EventPipeConfiguration::CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Allocate a new provider.
+    EventPipeProvider *pProvider = new EventPipeProvider(this, providerName, pCallbackFunction, pCallbackData);
+
+    // Register the provider with the configuration system.
+    RegisterProvider(*pProvider);
+
+    return pProvider;
+}
+
+void EventPipeConfiguration::DeleteProvider(EventPipeProvider *pProvider)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(pProvider != NULL);
+    }
+    CONTRACTL_END;
+
+    if (pProvider == NULL)
+    {
+        return;
+    }
+
+    // Unregister the provider.
+    UnregisterProvider(*pProvider);
+
+    // Free the provider itself.
+    delete(pProvider);
+}
+
 
 bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider)
 {
