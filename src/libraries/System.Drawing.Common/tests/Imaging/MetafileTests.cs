@@ -765,12 +765,12 @@ namespace System.Drawing.Imaging.Tests
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 IntPtr referenceHdc = g.GetHdc();
-                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () => new Metafile(fileName, referenceHdc, _rectangleF));
-                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentException>("path", null, () => new Metafile(fileName, referenceHdc, _rectangleF));
+                AssertExtensions.Throws<ArgumentException, ArgumentException>("path", null, () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible));
-                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentException>("path", null, () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly));
-                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentException>("path", null, () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, "description"));
             }
         }
