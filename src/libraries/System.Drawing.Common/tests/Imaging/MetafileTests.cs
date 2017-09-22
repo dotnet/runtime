@@ -472,7 +472,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(@"fileNo*-//\\#@(found")]
         [InlineData("")]
@@ -757,7 +757,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(@"fileNo*-//\\#@(found")]
         [InlineData("")]
@@ -778,7 +778,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         // Long paths aren't that much of a problem on Unix.
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_PathTooLongI_ThrowsPathTooLongException()
         {
