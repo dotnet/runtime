@@ -14,6 +14,9 @@ namespace System.Drawing.Imaging
     /// </summary>
     public sealed partial class Metafile : Image
     {
+        // GDI+ doesn't handle filenames over MAX_PATH very well
+        private const int MaxPath = 260;
+
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class from the specified handle and
         /// <see cref='WmfPlaceableFileHeader'/>.
@@ -299,6 +302,11 @@ namespace System.Drawing.Imaging
         {
             // Called in order to emulate exception behavior from netfx related to invalid file paths.
             Path.GetFullPath(fileName);
+
+            if (fileName.Length > MaxPath)
+            {
+                throw new PathTooLongException();
+            }
 
             IntPtr metafile = IntPtr.Zero;
 
