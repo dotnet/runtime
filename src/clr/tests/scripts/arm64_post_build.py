@@ -298,7 +298,7 @@ def validate_args(args):
    validate_arg(scenario, lambda item: item.lower() in valid_scenarios)
    validate_arg(key_location, lambda item: os.path.isfile(item))
    validate_arg(force_update, lambda item: isinstance(item, bool))
-   validate_arg(priority, lambda: item: item in valid_priorities)
+   validate_arg(priority, lambda item: item in valid_priorities)
 
    arch = arch.lower()
    testarch = testarch.lower()
