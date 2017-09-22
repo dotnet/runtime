@@ -403,7 +403,7 @@ namespace System
 
         private AppDomain()
         {
-            throw new NotSupportedException(SR.GetResourceString(ResId.NotSupported_Constructor));
+            throw new NotSupportedException(SR.NotSupported_Constructor);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
