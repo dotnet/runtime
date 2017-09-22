@@ -401,8 +401,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 
 	g_assert (fpctx->head.magic == FPSIMD_MAGIC);
 	for (i = 0; i < 32; ++i)
-		/* Only store the bottom 8 bytes for now */
-		*(guint64*)&(mctx->fregs [i]) = fpctx->vregs [i];
+		mctx->fregs [i] = fpctx->vregs [i];
 #endif
 	/* FIXME: apple */
 #endif
