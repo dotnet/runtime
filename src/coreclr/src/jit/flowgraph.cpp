@@ -8360,13 +8360,8 @@ private:
 
         if (returnConst != nullptr)
         {
-            returnExpr = comp->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
-#ifdef _TARGET_64BIT_
-            returnConstants[index] = returnConst->LngValue();
-#else
-            returnConstants[index] =
-                returnConst->gtOper == GT_CNS_LNG ? returnConst->LngValue() : (INT64)returnConst->IconValue();
-#endif // _TARGET_64BIT_
+            returnExpr             = comp->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
+            returnConstants[index] = returnConst->IntegralValue();
         }
         else if (comp->compMethodHasRetVal())
         {
@@ -8634,11 +8629,7 @@ private:
     //
     BasicBlock* FindConstReturnBlock(GenTreeIntConCommon* constExpr, unsigned searchLimit, unsigned* index)
     {
-#ifdef _TARGET_64BIT_
-        INT64 constVal = constExpr->LngValue();
-#else
-        INT64 constVal = constExpr->gtOper == GT_CNS_LNG ? constExpr->LngValue() : (INT64)constExpr->IconValue();
-#endif // _TARGET_64BIT_
+        INT64 constVal = constExpr->IntegralValue();
 
         for (unsigned i = 0; i < searchLimit; ++i)
         {
