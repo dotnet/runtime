@@ -472,6 +472,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(@"fileNo*-//\\#@(found")]
         [InlineData("")]
@@ -756,6 +757,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(@"fileNo*-//\\#@(found")]
         [InlineData("")]
