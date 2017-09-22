@@ -1744,8 +1744,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         def machineAffinityOptions = ['use_arm64_build_machine' : true]
                         setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
 
-                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
-
+                        if (priority == "1")
+                        {
+                            buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
+                        }
+                        else
+                        {
+                            buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture}"
+                        }
+                        
                         // Also run testing.
                         buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${buildArchitecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -priority ${priority} -key_location C:\\tools\\key.txt"
                     }
@@ -1777,10 +1784,18 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                            Utilities.setJobTimeout(newJob, 240)
                        }
 
-                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2 -priority=1"
-                       // Test build and run are launched together.
-                       buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -priority ${priority} -key_location C:\\tools\\key.txt"
-                       //Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
+                       if (priority == "1")
+                        {
+                            buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
+                        }
+                        else
+                        {
+                            buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture}"
+                        }
+
+                        // Test build and run are launched together.
+                        buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -priority ${priority} -key_location C:\\tools\\key.txt"
+                        //Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                     }
 
                     // Add archival.
