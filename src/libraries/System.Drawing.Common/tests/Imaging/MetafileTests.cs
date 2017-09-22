@@ -487,6 +487,8 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        // Long paths aren't that much of a problem on Unix.
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_PathTooLong_ThrowsPathTooLongException()
         {
@@ -763,16 +765,17 @@ namespace System.Drawing.Imaging.Tests
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 IntPtr referenceHdc = g.GetHdc();
-                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc, _rectangleF));
-                AssertExtensions.Throws<ArgumentException>(null, () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () => new Metafile(fileName, referenceHdc, _rectangleF));
+                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible));
-                AssertExtensions.Throws<ArgumentException>(null, () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly));
-                AssertExtensions.Throws<ArgumentException>(null, () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentException>(null, "path", () =>
                     new Metafile(fileName, referenceHdc, _rectangleF, MetafileFrameUnit.GdiCompatible, EmfType.EmfOnly, "description"));
             }
         }
 
+        // Long paths aren't that much of a problem on Unix.
         [ActiveIssue(20844, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_PathTooLongI_ThrowsPathTooLongException()
