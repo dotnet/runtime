@@ -8226,21 +8226,30 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		return mono_gparam_is_assignable_from (klass, oklass);
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass)) {
-		if ((oklass->byval_arg.type == MONO_TYPE_VAR) || (oklass->byval_arg.type == MONO_TYPE_MVAR)) {
-			MonoGenericParam *gparam = oklass->byval_arg.data.generic_param;
-			MonoClass **constraints = mono_generic_container_get_param_info (gparam->owner, gparam->num)->constraints;
-			int i;
+	/* This can happen if oklass is a tyvar that has a constraint which is another tyvar which in turn
+	 * has a constraint which is a class type:
+	 *
+	 *  class Foo { }
+	 *  class G<T1, T2> where T1 : T2 where T2 : Foo { }
+	 *
+	 * In this case, Foo is assignable from T1.
+	 */
+	if ((oklass->byval_arg.type == MONO_TYPE_VAR) || (oklass->byval_arg.type == MONO_TYPE_MVAR)) {
+		MonoGenericParam *gparam = oklass->byval_arg.data.generic_param;
+		MonoClass **constraints = mono_generic_container_get_param_info (gparam->owner, gparam->num)->constraints;
+		int i;
 
-			if (constraints) {
-				for (i = 0; constraints [i]; ++i) {
-					if (mono_class_is_assignable_from (klass, constraints [i]))
-						return TRUE;
-				}
+		if (constraints) {
+			for (i = 0; constraints [i]; ++i) {
+				if (mono_class_is_assignable_from (klass, constraints [i]))
+					return TRUE;
 			}
-
-			return FALSE;
 		}
+
+		return mono_class_has_parent (oklass, klass);
+	}
+
+	if (MONO_CLASS_IS_INTERFACE (klass)) {
 
 		/* interface_offsets might not be set for dynamic classes */
 		if (mono_class_get_ref_info_handle (oklass) && !oklass->interface_bitmap) {
