@@ -95,12 +95,6 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("almogaver1bit.bmp");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-#if false
-				for (int x = 0; x < bmp.Width; x += 32) {
-					for (int y = 0; y < bmp.Height; y += 32)
-						Console.WriteLine ("\t\t\t\tAssert.Equal ({0}, bmp.GetPixel ({1}, {2}).ToArgb (), \"{1},{2}\");", bmp.GetPixel (x, y).ToArgb (), x, y);
-				}
-#else
                 // sampling values from a well known bitmap
                 Assert.Equal(-1, bmp.GetPixel(0, 0).ToArgb());
                 Assert.Equal(-4144960, bmp.GetPixel(0, 32).ToArgb());
@@ -138,7 +132,6 @@ namespace MonoTests.System.Drawing.Imaging
                 Assert.Equal(-4144960, bmp.GetPixel(160, 96).ToArgb());
                 Assert.Equal(-4144960, bmp.GetPixel(160, 128).ToArgb());
                 Assert.Equal(-8355712, bmp.GetPixel(160, 160).ToArgb());
-#endif
             }
         }
 
@@ -172,12 +165,6 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("almogaver8bits.bmp");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-#if false
-				for (int x = 0; x < bmp.Width; x += 32) {
-					for (int y = 0; y < bmp.Height; y += 32)
-						Console.WriteLine ("\t\t\t\tAssert.Equal ({0}, bmp.GetPixel ({1}, {2}).ToArgb (), \"{1},{2}\");", bmp.GetPixel (x, y).ToArgb (), x, y);
-				}
-#else
                 // sampling values from a well known bitmap
                 Assert.Equal(-1040, bmp.GetPixel(0, 0).ToArgb());
                 Assert.Equal(-4137792, bmp.GetPixel(0, 32).ToArgb());
@@ -215,7 +202,6 @@ namespace MonoTests.System.Drawing.Imaging
                 Assert.Equal(-4137792, bmp.GetPixel(160, 96).ToArgb());
                 Assert.Equal(-4137792, bmp.GetPixel(160, 128).ToArgb());
                 Assert.Equal(-8355712, bmp.GetPixel(160, 160).ToArgb());
-#endif
             }
         }
 
@@ -250,12 +236,6 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("almogaver24bits.bmp");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-#if false
-				for (int x = 0; x < bmp.Width; x += 32) {
-					for (int y = 0; y < bmp.Height; y += 32)
-						Console.WriteLine ("\t\t\t\tAssert.Equal ({0}, bmp.GetPixel ({1}, {2}).ToArgb (), \"{1},{2}\");", bmp.GetPixel (x, y).ToArgb (), x, y);
-				}
-#else
                 // sampling values from a well known bitmap
                 Assert.Equal(-1645353, bmp.GetPixel(0, 32).ToArgb());
                 Assert.Equal(-461332, bmp.GetPixel(0, 64).ToArgb());
@@ -292,7 +272,6 @@ namespace MonoTests.System.Drawing.Imaging
                 Assert.Equal(-2435382, bmp.GetPixel(160, 96).ToArgb());
                 Assert.Equal(-2501944, bmp.GetPixel(160, 128).ToArgb());
                 Assert.Equal(-9211799, bmp.GetPixel(160, 160).ToArgb());
-#endif
             }
         }
 
@@ -314,12 +293,6 @@ namespace MonoTests.System.Drawing.Imaging
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
-#if false
-						// 1009 is the first prime after 1000 (so we're not affected by a recurring pattern)
-						for (int p = 0; p < size; p += 1009) {
-							Console.WriteLine ("\t\t\t\t\t\tAssert.Equal ({0}, *(scan + {1}), \"{1}\");", *(scan + p), p);
-						}
-#else
                         // sampling values from a well known bitmap
                         Assert.Equal(217, *(scan + 0));
                         Assert.Equal(192, *(scan + 1009));
@@ -416,7 +389,6 @@ namespace MonoTests.System.Drawing.Imaging
                         Assert.Equal(0, *(scan + 92828));
                         Assert.Equal(146, *(scan + 93837));
                         Assert.Equal(163, *(scan + 94846));
-#endif
                     }
                 }
                 finally
@@ -456,12 +428,6 @@ namespace MonoTests.System.Drawing.Imaging
             using (Bitmap bmp = new Bitmap(sInFile))
             {
                 Assert.Equal(PixelFormat.Format32bppRgb, bmp.PixelFormat);
-#if false
-				for (int x = 0; x < bmp.Width; x += 32) {
-					for (int y = 0; y < bmp.Height; y += 32)
-						Console.WriteLine ("\t\t\t\tAssert.Equal ({0}, bmp.GetPixel ({1}, {2}).ToArgb (), \"{1},{2}\");", bmp.GetPixel (x, y).ToArgb (), x, y);
-				}
-#else
                 // sampling values from a well known bitmap
                 Assert.Equal(-1579559, bmp.GetPixel(0, 0).ToArgb());
                 Assert.Equal(-1645353, bmp.GetPixel(0, 32).ToArgb());
@@ -499,7 +465,6 @@ namespace MonoTests.System.Drawing.Imaging
                 Assert.Equal(-2435382, bmp.GetPixel(160, 96).ToArgb());
                 Assert.Equal(-2501944, bmp.GetPixel(160, 128).ToArgb());
                 Assert.Equal(-9211799, bmp.GetPixel(160, 160).ToArgb());
-#endif
             }
         }
 
