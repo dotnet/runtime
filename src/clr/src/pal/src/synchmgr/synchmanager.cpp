@@ -3867,7 +3867,7 @@ namespace CorUnix
                 pwtlnNew->shridWaitingState = pwtlnOld->shridWaitingState;
                 pwtlnNew->ptwiWaitInfo = pwtlnOld->ptwiWaitInfo;
 
-                psdShared->SharedWaiterEnqueue(rgshridWTLNodes[i]);
+                psdShared->SharedWaiterEnqueue(rgshridWTLNodes[i], false);
                 psdShared->AddRef();
 
                 _ASSERTE(pwtlnOld = pwtlnOld->ptwiWaitInfo->rgpWTLNodes[pwtlnOld->dwObjIndex]);
