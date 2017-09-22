@@ -1156,7 +1156,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
                         }
                         else {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
                         }
                     }
                     break
@@ -1175,7 +1176,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
                         }
                         else {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
                         }
                     }
                     break
@@ -1237,22 +1239,26 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     switch (scenario) {
                         case 'pri1':
                             if (configuration == 'Release') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Priority 1 Build and Test",
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
                         case 'r2r':
                             if (configuration == 'Checked' || configuration == 'Release') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri0 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri0 Build & Test",
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
                         case 'pri1r2r':
                             if (configuration == 'Checked' || configuration == 'Release') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri1 Build & Test",
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
                         case 'gcstress15_pri1r2r':
                             if (configuration == 'Release' || configuration == 'Checked') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test",
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
                         case 'r2r_jitstress1':
@@ -1269,7 +1275,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'r2r_jitforcerelocs':
                             if (configuration == 'Release' || configuration == 'Checked') {
                                 def displayStr = getR2RStressModeDisplayName(scenario)
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} ${displayStr} R2R Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} ${displayStr} R2R Build & Test",
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
                         default:
@@ -1279,13 +1286,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     switch (scenario) {
                         case 'default':
                             if (isFlowJob == true) {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration}", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration}",
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
                             }
-
                             // For now only run Debug jobs on PR Trigger.
                             else if (configuration != 'Debug') {
                                 Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}.*", null, arm64Users)
                             }
                             else {
                                 // Add "Checked Build And Test" and "Debug Build" to the above users' PRs since many of them
@@ -1297,7 +1304,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             // Stress jobs will use this code path.
                             if (Constants.validArmWindowsScenarios.contains(scenario)) {
                                 Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*", null, arm64Users)
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+${scenario}.*", null, arm64Users)
                             }
                             break
                     }
