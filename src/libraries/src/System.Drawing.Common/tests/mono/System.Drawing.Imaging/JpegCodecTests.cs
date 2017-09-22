@@ -62,7 +62,7 @@ namespace MonoTests.System.Drawing.Imaging
             return s;
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap8bbpIndexedGreyscaleFeatures()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature-greyscale.jpg");
@@ -105,7 +105,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap8bbpIndexedGreyscalePixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature-greyscale.jpg");
@@ -138,7 +138,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap8bbpIndexedGreyscaleData()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature-greyscale.jpg");
@@ -205,7 +205,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 24-bits bitmap */
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap24bitFeatures()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature24bits.jpg");
@@ -445,25 +445,25 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_24bppRgb()
         {
             Save(PixelFormat.Format24bppRgb, PixelFormat.Format24bppRgb);
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_32bppRgb()
         {
             Save(PixelFormat.Format32bppRgb, PixelFormat.Format24bppRgb);
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_32bppArgb()
         {
             Save(PixelFormat.Format32bppArgb, PixelFormat.Format24bppRgb);
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_32bppPArgb()
         {
             Save(PixelFormat.Format32bppPArgb, PixelFormat.Format24bppRgb);
