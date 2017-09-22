@@ -1727,6 +1727,13 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
                     }
                     else {
+                        def priority = "1"
+
+                        if (scenario == "default")
+                        {
+                            priority = "0"
+                        }
+
                         if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc'))
                         {
                            // Up the timeout for arm checked testing only.
@@ -1740,13 +1747,20 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
 
                         // Also run testing.
-                        buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${buildArchitecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -key_location C:\\tools\\key.txt"
+                        buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${buildArchitecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -priority ${priority} -key_location C:\\tools\\key.txt"
                     }
                     // Add archival.
                     Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
                     break
                 case 'arm64':
                     assert Constants.validArmWindowsScenarios.contains(scenario)
+
+                    def priority = "1"
+
+                    if (scenario == "default")
+                    {
+                        priority = "0"
+                    }
                    
                     // Set time out
                     setTestJobTimeOut(newJob, scenario)
@@ -1765,7 +1779,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2 -priority=1"
                        // Test build and run are launched together.
-                       buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -key_location C:\\tools\\key.txt"
+                       buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -priority ${priority} -key_location C:\\tools\\key.txt"
                        //Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                     }
 
