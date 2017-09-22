@@ -1407,6 +1407,105 @@ LIR::ReadOnlyRange LIR::Range::GetRangeOfOperandTrees(GenTree* root, bool* isClo
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
+// CheckLclVarSemanticsHelper checks lclVar semantics.
+//
+// Specifically, ensure that an unaliasable lclVar is not redefined between the
+// point at which a use appears in linear order and the point at which it is used by its user.
+// This ensures that it is always safe to treat a lclVar use as happening at the user (rather than at
+// the lclVar node).
+class CheckLclVarSemanticsHelper
+{
+public:
+    //------------------------------------------------------------------------
+    // CheckLclVarSemanticsHelper constructor: Init arguments for the helper.
+    //
+    // This needs unusedDefs because unused lclVar reads may otherwise appear as outstanding reads
+    // and produce false indications that a write to a lclVar occurs while outstanding reads of that lclVar
+    // exist.
+    //
+    // Arguments:
+    //    compiler - A compiler context.
+    //    range - a range to do the check.
+    //    unusedDefs - map of defs that do no have users.
+    //
+    CheckLclVarSemanticsHelper(Compiler*         compiler,
+                               const LIR::Range* range,
+                               SmallHashTable<GenTreePtr, bool, 32U>& unusedDefs)
+        : compiler(compiler), range(range), unusedDefs(unusedDefs), unusedLclVarReads(compiler)
+    {
+    }
+
+    //------------------------------------------------------------------------
+    // Check: do the check.
+    // Return Value:
+    //    'true' if the Local variables semantics for the specified range is legal.
+    bool Check()
+    {
+        for (GenTreePtr node : *range)
+        {
+            if (!node->isContained()) // a contained node reads operands in the parent.
+            {
+                UseNodeOperands(node);
+            }
+
+            AliasSet::NodeInfo nodeInfo(compiler, node);
+            if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
+            {
+                int count = 0;
+                unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &count);
+                unusedLclVarReads.AddOrUpdate(nodeInfo.LclNum(), count + 1);
+            }
+
+            // If this node is a lclVar write, it must be to a lclVar that does not have an outstanding read.
+            assert(!nodeInfo.IsLclVarWrite() || !unusedLclVarReads.Contains(nodeInfo.LclNum()));
+        }
+
+        return true;
+    }
+
+private:
+    //------------------------------------------------------------------------
+    // UseNodeOperands: mark the node's operands as used.
+    //
+    // Arguments:
+    //    node - the node to use operands from.
+    void UseNodeOperands(GenTreePtr node)
+    {
+        for (GenTreePtr operand : node->Operands())
+        {
+            if (!operand->IsLIR())
+            {
+                // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
+                assert(operand->OperIs(GT_ARGPLACE));
+                continue;
+            }
+            if (operand->isContained())
+            {
+                UseNodeOperands(operand);
+            }
+            AliasSet::NodeInfo operandInfo(compiler, operand);
+            if (operandInfo.IsLclVarRead())
+            {
+                int        count;
+                const bool removed = unusedLclVarReads.TryRemove(operandInfo.LclNum(), &count);
+                assert(removed);
+
+                if (count > 1)
+                {
+                    unusedLclVarReads.AddOrUpdate(operandInfo.LclNum(), count - 1);
+                }
+            }
+        }
+    }
+
+private:
+    Compiler*         compiler;
+    const LIR::Range* range;
+    SmallHashTable<GenTree*, bool, 32U>& unusedDefs;
+    SmallHashTable<int, int, 32U>        unusedLclVarReads;
+};
+
+//------------------------------------------------------------------------
 // LIR::Range::CheckLIR: Performs a set of correctness checks on the LIR
 //                       contained in this range.
 //
@@ -1561,44 +1660,8 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         }
     }
 
-    // Check lclVar semantics: specifically, ensure that an unaliasable lclVar is not redefined between the
-    // point at which a use appears in linear order and the point at which that use is consumed by its user.
-    // This ensures that it is always safe to treat a lclVar use as happening at the user (rather than at
-    // the lclVar node).
-    //
-    // This happens as a second pass because unused lclVar reads may otherwise appear as outstanding reads
-    // and produce false indications that a write to a lclVar occurs while outstanding reads of that lclVar
-    // exist.
-    SmallHashTable<int, int, 32> unconsumedLclVarReads(compiler);
-    for (GenTree* node : *this)
-    {
-        for (GenTree* operand : node->Operands())
-        {
-            AliasSet::NodeInfo operandInfo(compiler, operand);
-            if (operandInfo.IsLclVarRead())
-            {
-                int        count;
-                const bool removed = unconsumedLclVarReads.TryRemove(operandInfo.LclNum(), &count);
-                assert(removed);
-
-                if (count > 1)
-                {
-                    unconsumedLclVarReads.AddOrUpdate(operandInfo.LclNum(), count - 1);
-                }
-            }
-        }
-
-        AliasSet::NodeInfo nodeInfo(compiler, node);
-        if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
-        {
-            int count = 0;
-            unconsumedLclVarReads.TryGetValue(nodeInfo.LclNum(), &count);
-            unconsumedLclVarReads.AddOrUpdate(nodeInfo.LclNum(), count + 1);
-        }
-
-        // If this node is a lclVar write, it must be to a lclVar that does not have an outstanding read.
-        assert(!nodeInfo.IsLclVarWrite() || !unconsumedLclVarReads.Contains(nodeInfo.LclNum()));
-    }
+    CheckLclVarSemanticsHelper checkLclVarSemanticsHelper(compiler, this, unusedDefs);
+    assert(checkLclVarSemanticsHelper.Check());
 
     return true;
 }
