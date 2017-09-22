@@ -246,8 +246,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForJumpTrue(treeNode);
             break;
 
-#ifdef _TARGET_ARM_
-
         case GT_JCC:
             genCodeForJcc(treeNode->AsCC());
             break;
@@ -255,8 +253,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_SETCC:
             genCodeForSetcc(treeNode->AsCC());
             break;
-
-#endif // _TARGET_ARM_
 
         case GT_RETURNTRAP:
             genCodeForReturnTrap(treeNode->AsOp());
@@ -3284,8 +3280,6 @@ void CodeGen::genCodeForJumpTrue(GenTreePtr tree)
     }
 }
 
-#if defined(_TARGET_ARM_)
-
 //------------------------------------------------------------------------
 // genCodeForJcc: Produce code for a GT_JCC node.
 //
@@ -3325,6 +3319,9 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     // Make sure nobody is setting GTF_RELOP_NAN_UN on this node as it is ignored.
     assert((setcc->gtFlags & GTF_RELOP_NAN_UN) == 0);
 
+#ifdef _TARGET_ARM64_
+    inst_SET(jumpKind, dstReg);
+#else
     // Emit code like that:
     //   ...
     //   bgt True
@@ -3346,11 +3343,10 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genDefineTempLabel(labelTrue);
     getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(setcc->TypeGet()), dstReg, 1);
     genDefineTempLabel(labelNext);
+#endif
 
     genProduceReg(setcc);
 }
-
-#endif // defined(_TARGET_ARM_)
 
 //------------------------------------------------------------------------
 // genCodeForStoreBlk: Produce code for a GT_STORE_OBJ/GT_STORE_DYN_BLK/GT_STORE_BLK node.
