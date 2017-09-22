@@ -18701,6 +18701,8 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Abs:
         case CORINFO_INTRINSIC_Round:
+        case CORINFO_INTRINSIC_Floor:
+        case CORINFO_INTRINSIC_Ceiling:
             return true;
 
         default:

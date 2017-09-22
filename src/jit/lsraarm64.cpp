@@ -260,9 +260,9 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            // TODO-ARM64-NYI
-            // Right now only Abs/Round/Sqrt are treated as math intrinsics
             noway_assert((tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Abs) ||
+                         (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Ceiling) ||
+                         (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Floor) ||
                          (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Round) ||
                          (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Sqrt));
 
