@@ -282,6 +282,12 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForJumpTrue(treeNode);
             break;
 
+#ifdef _TARGET_ARM64_
+        case GT_JCMP:
+            genCodeForJumpCompare(treeNode->AsOp());
+            break;
+#endif // _TARGET_ARM64_
+
         case GT_JCC:
             genCodeForJcc(treeNode->AsCC());
             break;
