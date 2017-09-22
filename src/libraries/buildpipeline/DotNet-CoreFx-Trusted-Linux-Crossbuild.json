@@ -329,7 +329,7 @@
       "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "PB_DockerTag": {
-      "value": "ubuntu-14.04-cross-0cd4667-20172211042239",
+      "value": "ubuntu-14.04-cross-0cd4667-20170319080304",
       "allowOverride": true
     },
     "PB_DockerVolumeName": {
