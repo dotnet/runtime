@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class HttpClientEKUTest
+    public class HttpClientEKUTest : HttpClientTestBase
     {
         // Curl + OSX SecureTransport doesn't support the custom certificate callback.
         private static bool BackendSupportsCustomCertificateHandling =>
@@ -56,7 +56,7 @@ namespace System.Net.Http.Functional.Tests
             options.ServerCertificate = serverCertificateNoEku;
 
             using (var server = new HttpsTestServer(options))
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
                 server.Start();
@@ -78,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
             options.ServerCertificate = serverCertificateWrongEku;
 
             using (var server = new HttpsTestServer(options))
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
                 server.Start();
@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
             options.RequireClientAuthentication = true;
 
             using (var server = new HttpsTestServer(options))
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
                 server.Start();
@@ -125,7 +125,7 @@ namespace System.Net.Http.Functional.Tests
             options.RequireClientAuthentication = true;
 
             using (var server = new HttpsTestServer(options))
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
                 server.Start();
