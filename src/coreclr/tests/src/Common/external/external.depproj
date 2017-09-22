@@ -21,6 +21,9 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers">
       <Version>1.1.1</Version>
     </PackageReference>
+    <PackageReference Include="CommandLineParser">
+      <Version>2.1.1-beta</Version>
+    </PackageReference>
     <PackageReference Include="xunit.performance.api">
       <Version>$(XUnitPerformanceApiVersion)</Version>
     </PackageReference>
@@ -71,6 +74,7 @@
     <PackageToInclude Include="Microsoft.CodeAnalysis.Compilers"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
+    <PackageToInclude Include="CommandLineParser"/>
     <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 
