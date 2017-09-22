@@ -249,39 +249,42 @@ namespace System.Runtime.CompilerServices
             // is enabled, and in doing so it allows us to pass the awaited task's information into the end event
             // in a purely pay-for-play manner (the alternatively would be to increase the size of TaskAwaiter
             // just for this ETW purpose, not pay-for-play, since GetResult would need to know whether a real yield occurred).
-            return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, () =>
+            return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, (innerContinuation,innerTask) =>
             {
                 if (Task.s_asyncDebuggingEnabled)
                 {
-                    Task.RemoveFromActiveTasks(task.Id);
+                    Task.RemoveFromActiveTasks(innerTask.Id);
                 }
+
+                TplEtwProvider innerEtwLog = TplEtwProvider.Log;
 
                 // ETW event for Task Wait End.
                 Guid prevActivityId = new Guid();
-                bool bEtwLogEnabled = etwLog.IsEnabled();
+                bool bEtwLogEnabled = innerEtwLog.IsEnabled();
                 if (bEtwLogEnabled)
                 {
                     var currentTaskAtEnd = Task.InternalCurrent;
-                    etwLog.TaskWaitEnd(
+                    innerEtwLog.TaskWaitEnd(
                         (currentTaskAtEnd != null ? currentTaskAtEnd.m_taskScheduler.Id : TaskScheduler.Default.Id),
                         (currentTaskAtEnd != null ? currentTaskAtEnd.Id : 0),
-                        task.Id);
+                        innerTask.Id);
 
                     // Ensure the continuation runs under the activity ID of the task that completed for the
                     // case the antecendent is a promise (in the other cases this is already the case).
-                    if (etwLog.TasksSetActivityIds && (task.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0)
-                        EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(task.Id), out prevActivityId);
+                    if (innerEtwLog.TasksSetActivityIds && (innerTask.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0)
+                        EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(innerTask.Id), out prevActivityId);
                 }
+
                 // Invoke the original continuation provided to OnCompleted.
-                continuation();
+                innerContinuation();
 
                 if (bEtwLogEnabled)
                 {
-                    etwLog.TaskWaitContinuationComplete(task.Id);
-                    if (etwLog.TasksSetActivityIds && (task.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0)
+                    innerEtwLog.TaskWaitContinuationComplete(innerTask.Id);
+                    if (innerEtwLog.TasksSetActivityIds && (innerTask.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0)
                         EventSource.SetCurrentThreadActivityId(prevActivityId);
                 }
-            });
+            }, task);
         }
     }
 
