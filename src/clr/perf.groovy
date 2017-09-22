@@ -692,6 +692,88 @@ parallel(
     }
 }
 
+// Setup size-on-disk test
+['Windows_NT'].each { os ->
+    ['x64', 'x86'].each { arch ->
+        def architecture = arch
+        def newJob = job(Utilities.getFullJobName(project, "sizeondisk_${arch}", false)) {
+
+            wrappers {
+                credentialsBinding {
+                    string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                }
+            }
+
+            def channel = 'master'
+            def configuration = 'Release'
+            def runType = 'rolling'
+            def benchViewName = 'Dotnet Size on Disk %DATE% %TIME%'
+            def testBin = "%WORKSPACE%\\bin\\tests\\${os}.${architecture}.${configuration}"
+            def coreRoot = "${testBin}\\Tests\\Core_Root"
+            def benchViewTools = "%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools"
+
+            steps {
+                // Install nuget and get BenchView tools
+                batchFile("powershell wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile \"%WORKSPACE%\\nuget.exe\"")
+                batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
+                batchFile("\"%WORKSPACE%\\nuget.exe\" install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
+
+                // Generate submission metadata for BenchView
+                // Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
+                // we have to do it all as one statement because cmd is called each time and we lose the set environment variable
+                batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
+                "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
+                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
+                "py \"${benchViewTools}\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                "py \"${benchViewTools}\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
+
+                // Generate machine data from BenchView
+                batchFile("py \"${benchViewTools}\\machinedata.py\"")
+
+                // Build CoreCLR and gnerate test layout
+                batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
+                batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
+
+                // Run the size on disk benchmark
+                batchFile("\"${coreRoot}\\CoreRun.exe\" \"${testBin}\\sizeondisk\\sodbench\\SoDBench\\SoDBench.exe\" -o \"%WORKSPACE%\\sodbench.csv\" --architecture ${arch} --channel ${channel}")
+
+                // From sodbench.csv, create measurment.json, then submission.json
+                batchFile("py \"${benchViewTools}\\measurement.py\" csv \"%WORKSPACE%\\sodbench.csv\" --metric \"Size on Disk\" --unit \"bytes\" --better \"desc\"")
+                batchFile("py \"${benchViewTools}\\submission.py\" measurement.json --build build.json --machine-data machinedata.json --metadata submission-metadata.json --group \"Dotnet Size on Disk\" --type ${runType} --config-name ${configuration} --architecture ${arch} --machinepool VM --config Channel ${channel}")
+
+                // If this is a PR, upload submission.json
+                batchFile("py \"${benchViewTools}\\upload.py\" submission.json --container coreclr")
+            }
+        }
+
+        Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
+
+        def archiveSettings = new ArchivalSettings()
+        archiveSettings.addFiles('bin/toArchive/**')
+        archiveSettings.addFiles('machinedata.json')
+
+        Utilities.addArchival(newJob, archiveSettings)
+        Utilities.standardJobSetup(newJob, project, false, "*/${branch}")
+
+        // Set the cron job here.  We run nightly on each flavor, regardless of code changes
+        Utilities.addPeriodicTrigger(newJob, "@daily", true /*always run*/)
+
+        newJob.with {
+            logRotator {
+                artifactDaysToKeep(30)
+                daysToKeep(30)
+                artifactNumToKeep(200)
+                numToKeep(200)
+            }
+            wrappers {
+                timeout {
+                    absolute(240)
+                }
+            }
+        }
+    }
+}
+
 // Setup IlLink tests
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
