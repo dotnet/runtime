@@ -103,6 +103,7 @@ DWORD ThreadpoolMgr::NextCompletedWorkRequestsTime;
 
 LARGE_INTEGER ThreadpoolMgr::CurrentSampleStartTime;
 
+unsigned int ThreadpoolMgr::WorkerThreadSpinLimit;
 int ThreadpoolMgr::ThreadAdjustmentInterval;
 
 #define INVALID_HANDLE ((HANDLE) -1)
@@ -136,8 +137,8 @@ CLREvent * ThreadpoolMgr::RetiredCPWakeupEvent;       // wakeup event for comple
 CrstStatic ThreadpoolMgr::WaitThreadsCriticalSection;
 ThreadpoolMgr::LIST_ENTRY ThreadpoolMgr::WaitThreadsHead;
 
-ThreadpoolMgr::UnfairSemaphore* ThreadpoolMgr::WorkerSemaphore;
-CLRSemaphore* ThreadpoolMgr::RetiredWorkerSemaphore;
+CLRLifoSemaphore* ThreadpoolMgr::WorkerSemaphore;
+CLRLifoSemaphore* ThreadpoolMgr::RetiredWorkerSemaphore;
 
 CrstStatic ThreadpoolMgr::TimerQueueCriticalSection;
 HANDLE ThreadpoolMgr::TimerThread=NULL;
@@ -353,6 +354,7 @@ BOOL ThreadpoolMgr::Initialize()
 
     EX_TRY
     {
+        WorkerThreadSpinLimit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit);
         ThreadAdjustmentInterval = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HillClimbing_SampleIntervalLow);
         
         pADTPCount->InitResources();
@@ -370,26 +372,26 @@ BOOL ThreadpoolMgr::Initialize()
         RetiredCPWakeupEvent->CreateAutoEvent(FALSE);
         _ASSERTE(RetiredCPWakeupEvent->IsValid());
 
-        int spinLimitPerProcessor = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit);
-        WorkerSemaphore = new UnfairSemaphore(ThreadCounter::MaxPossibleCount, spinLimitPerProcessor);
+        WorkerSemaphore = new CLRLifoSemaphore();
+        WorkerSemaphore->Create(0, ThreadCounter::MaxPossibleCount);
 
-        RetiredWorkerSemaphore = new CLRSemaphore();
+        RetiredWorkerSemaphore = new CLRLifoSemaphore();
         RetiredWorkerSemaphore->Create(0, ThreadCounter::MaxPossibleCount);
 
-    //ThreadPool_CPUGroup
-    if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+        //ThreadPool_CPUGroup
+        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
             RecycledLists.Initialize( CPUGroupInfo::GetNumActiveProcessors() );
         else
-        RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
-    /*
-        {
-            SYSTEM_INFO sysInfo;
+            RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
+        /*
+            {
+                SYSTEM_INFO sysInfo;
 
-            ::GetSystemInfo( &sysInfo );
+                ::GetSystemInfo( &sysInfo );
 
-            RecycledLists.Initialize( sysInfo.dwNumberOfProcessors );
-        }
-    */
+                RecycledLists.Initialize( sysInfo.dwNumberOfProcessors );
+            }
+        */
     }
     EX_CATCH
     {
@@ -1034,9 +1036,7 @@ void ThreadpoolMgr::MaybeAddWorkingWorker()
 
     if (toUnretire > 0)
     {
-        LONG previousCount;
-        INDEBUG(BOOL success =) RetiredWorkerSemaphore->Release((LONG)toUnretire, &previousCount);            
-        _ASSERTE(success);
+        RetiredWorkerSemaphore->Release(toUnretire);
     }
 
     if (toRelease > 0)
@@ -2055,10 +2055,7 @@ Retire:
     while (true)
     {
 RetryRetire:
-        DWORD result = RetiredWorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout, FALSE);
-        _ASSERTE(WAIT_OBJECT_0 == result || WAIT_TIMEOUT == result);
-
-        if (WAIT_OBJECT_0 == result)
+        if (RetiredWorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout))
         {
             foundWork = true;
 
@@ -2134,59 +2131,57 @@ WaitForWork:
     FireEtwThreadPoolWorkerThreadWait(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 RetryWaitForWork:
-    if (!WorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout))
+    if (WorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
     {
-        if (!IsIoPending())
+        foundWork = true;
+        goto Work;
+    }
+
+    if (!IsIoPending())
+    {
+        //
+        // We timed out, and are about to exit.  This puts us in a very similar situation to the
+        // retirement case above - someone may think we're still waiting, and go ahead and:
+        //
+        // 1) Increment NumWorking
+        // 2) Signal WorkerSemaphore
+        //
+        // The solution is much like retirement; when we're decrementing NumActive, we need to make
+        // sure it doesn't drop below NumWorking.  If it would, then we need to go back and wait 
+        // again.
+        //
+
+        DangerousNonHostedSpinLockHolder tal(&ThreadAdjustmentLock);
+
+        // counts volatile read paired with CompareExchangeCounts loop set
+        counts = WorkerCounter.DangerousGetDirtyCounts();
+        while (true)
         {
-            //
-            // We timed out, and are about to exit.  This puts us in a very similar situation to the
-            // retirement case above - someone may think we're still waiting, and go ahead and:
-            //
-            // 1) Increment NumWorking
-            // 2) Signal WorkerSemaphore
-            //
-            // The solution is much like retirement; when we're decrementing NumActive, we need to make
-            // sure it doesn't drop below NumWorking.  If it would, then we need to go back and wait 
-            // again.
-            //
-
-            DangerousNonHostedSpinLockHolder tal(&ThreadAdjustmentLock);
-
-            // counts volatile read paired with CompareExchangeCounts loop set
-            counts = WorkerCounter.DangerousGetDirtyCounts();
-            while (true)
+            if (counts.NumActive == counts.NumWorking)
             {
-                if (counts.NumActive == counts.NumWorking)
-                {
-                    goto RetryWaitForWork;
-                }
-
-                newCounts = counts;
-                newCounts.NumActive--;
-
-                // if we timed out while active, then Hill Climbing needs to be told that we need fewer threads
-                newCounts.MaxWorking = max(MinLimitTotalWorkerThreads, min(newCounts.NumActive, newCounts.MaxWorking));
-
-                oldCounts = WorkerCounter.CompareExchangeCounts(newCounts, counts);
-
-                if (oldCounts == counts)
-                {
-                    HillClimbingInstance.ForceChange(newCounts.MaxWorking, ThreadTimedOut);
-                    goto Exit;
-                }
-
-                counts = oldCounts;
+                goto RetryWaitForWork;
             }
-        }
-        else
-        {
-            goto RetryWaitForWork;
+
+            newCounts = counts;
+            newCounts.NumActive--;
+
+            // if we timed out while active, then Hill Climbing needs to be told that we need fewer threads
+            newCounts.MaxWorking = max(MinLimitTotalWorkerThreads, min(newCounts.NumActive, newCounts.MaxWorking));
+
+            oldCounts = WorkerCounter.CompareExchangeCounts(newCounts, counts);
+
+            if (oldCounts == counts)
+            {
+                HillClimbingInstance.ForceChange(newCounts.MaxWorking, ThreadTimedOut);
+                goto Exit;
+            }
+
+            counts = oldCounts;
         }
     }
     else
     {
-        foundWork = true;
-        goto Work;
+        goto RetryWaitForWork;
     }
 
 Exit:

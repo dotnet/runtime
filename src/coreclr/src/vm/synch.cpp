@@ -590,6 +590,418 @@ DWORD CLRSemaphore::Wait(DWORD dwMilliseconds, BOOL alertable)
     }
 }
 
+void CLRLifoSemaphore::Create(INT32 initialSignalCount, INT32 maximumSignalCount)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(maximumSignalCount > 0);
+    _ASSERTE(initialSignalCount <= maximumSignalCount);
+    _ASSERTE(m_handle == nullptr);
+
+#ifdef FEATURE_PAL
+    HANDLE h = UnsafeCreateSemaphore(nullptr, initialSignalCount, maximumSignalCount, nullptr);
+#else // !FEATURE_PAL
+    HANDLE h = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, maximumSignalCount);
+#endif // FEATURE_PAL
+    if (h == nullptr)
+    {
+        ThrowOutOfMemory();
+    }
+
+    m_handle = h;
+    m_counts.signalCount = initialSignalCount;
+    INDEBUG(m_maximumSignalCount = maximumSignalCount);
+}
+
+void CLRLifoSemaphore::Close()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (m_handle == nullptr)
+    {
+        return;
+    }
+
+    CloseHandle(m_handle);
+    m_handle = nullptr;
+}
+
+bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(timeoutMs != 0);
+    _ASSERTE(m_handle != nullptr);
+    _ASSERTE(m_counts.waiterCount != (UINT16)0);
+
+    while (true)
+    {
+        // Wait for a signal
+        BOOL waitSuccessful;
+        {
+#ifdef FEATURE_PAL
+            // Do a prioritized wait to get LIFO waiter release order
+            DWORD waitResult = PAL_WaitForSingleObjectPrioritized(m_handle, timeoutMs);
+            _ASSERTE(waitResult == WAIT_OBJECT_0 || waitResult == WAIT_TIMEOUT);
+            waitSuccessful = waitResult == WAIT_OBJECT_0;
+#else // !FEATURE_PAL
+            // I/O completion ports release waiters in LIFO order, see
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365198(v=vs.85).aspx
+            DWORD numberOfBytes;
+            ULONG_PTR completionKey;
+            LPOVERLAPPED overlapped;
+            waitSuccessful = GetQueuedCompletionStatus(m_handle, &numberOfBytes, &completionKey, &overlapped, timeoutMs);
+            _ASSERTE(waitSuccessful || GetLastError() == WAIT_TIMEOUT);
+            _ASSERTE(overlapped == nullptr);
+#endif // FEATURE_PAL
+        }
+
+        // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
+        Counts counts = m_counts.VolatileLoad();
+        while (true)
+        {
+            _ASSERTE(counts.waiterCount != (UINT16)0);
+            Counts newCounts = counts;
+            if (counts.signalCount != 0)
+            {
+                --newCounts.signalCount;
+                --newCounts.waiterCount;
+            }
+            else if (!waitSuccessful)
+            {
+                --newCounts.waiterCount;
+            }
+
+            // This waiter has woken up and this needs to be reflected in the count of waiters signaled to wake. Since we don't
+            // have thread-specific signal state, there is not enough information to tell whether this thread woke up because it
+            // was signaled. For instance, this thread may have timed out and then we don't know whether this thread also got
+            // signaled. So in any woken case, decrement the count if possible. As such, timeouts could cause more waiters to
+            // wake than necessary.
+            if (counts.countOfWaitersSignaledToWake != (UINT8)0)
+            {
+                --newCounts.countOfWaitersSignaledToWake;
+            }
+
+            Counts countsBeforeUpdate = m_counts.CompareExchange(newCounts, counts);
+            if (countsBeforeUpdate == counts)
+            {
+                if (counts.signalCount != 0)
+                {
+                    return true;
+                }
+                break;
+            }
+
+            counts = countsBeforeUpdate;
+        }
+
+        if (!waitSuccessful)
+        {
+            return false;
+        }
+    }
+}
+
+bool CLRLifoSemaphore::Wait(DWORD timeoutMs)
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(m_handle != nullptr);
+
+    // Acquire the semaphore or register as a waiter
+    Counts counts = m_counts.VolatileLoad();
+    while (true)
+    {
+        _ASSERTE(counts.signalCount <= m_maximumSignalCount);
+        Counts newCounts = counts;
+        if (counts.signalCount != 0)
+        {
+            --newCounts.signalCount;
+        }
+        else if (timeoutMs != 0)
+        {
+            ++newCounts.waiterCount;
+            _ASSERTE(newCounts.waiterCount != (UINT16)0); // overflow check, this many waiters is currently not supported
+        }
+
+        Counts countsBeforeUpdate = m_counts.CompareExchange(newCounts, counts);
+        if (countsBeforeUpdate == counts)
+        {
+            return counts.signalCount != 0 || (timeoutMs != 0 && WaitForSignal(timeoutMs));
+        }
+
+        counts = countsBeforeUpdate;
+    }
+}
+
+bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorCount)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(m_handle != nullptr);
+
+    if (timeoutMs == 0 || spinCount == 0)
+    {
+        return Wait(timeoutMs);
+    }
+
+    // Try to acquire the semaphore or register as a spinner
+    Counts counts = m_counts.VolatileLoad();
+    while (true)
+    {
+        Counts newCounts = counts;
+        if (counts.signalCount != 0)
+        {
+            --newCounts.signalCount;
+        }
+        else
+        {
+            ++newCounts.spinnerCount;
+            if (newCounts.spinnerCount == (UINT8)0)
+            {
+                // Maximum number of spinners reached, register as a waiter instead
+                --newCounts.spinnerCount;
+                ++newCounts.waiterCount;
+                _ASSERTE(newCounts.waiterCount != (UINT16)0); // overflow check, this many waiters is currently not supported
+            }
+        }
+
+        Counts countsBeforeUpdate = m_counts.CompareExchange(newCounts, counts);
+        if (countsBeforeUpdate == counts)
+        {
+            if (counts.signalCount != 0)
+            {
+                return true;
+            }
+            if (newCounts.waiterCount != counts.waiterCount)
+            {
+                return WaitForSignal(timeoutMs);
+            }
+            break;
+        }
+
+        counts = countsBeforeUpdate;
+    }
+
+#ifdef _TARGET_ARM64_
+    // For now, the spinning changes are disabled on ARM64. The spin loop below replicates how UnfairSemaphore used to spin.
+    // Once more tuning is done on ARM64, it should be possible to come up with a spinning scheme that works well everywhere.
+    int spinCountPerProcessor = spinCount;
+    for (UINT32 i = 1; ; ++i)
+    {
+        // Wait
+        ClrSleepEx(0, false);
+
+        // Try to acquire the semaphore and unregister as a spinner
+        counts = m_counts.VolatileLoad();
+        while (true)
+        {
+            _ASSERTE(counts.spinnerCount != (UINT8)0);
+            if (counts.signalCount == 0)
+            {
+                break;
+            }
+
+            Counts newCounts = counts;
+            --newCounts.signalCount;
+            --newCounts.spinnerCount;
+
+            Counts countsBeforeUpdate = m_counts.CompareExchange(newCounts, counts);
+            if (countsBeforeUpdate == counts)
+            {
+                return true;
+            }
+
+            counts = countsBeforeUpdate;
+        }
+
+        // Determine whether to spin further
+        double spinnersPerProcessor = (double)counts.spinnerCount / processorCount;
+        UINT32 spinLimit = (UINT32)(spinCountPerProcessor / spinnersPerProcessor + 0.5);
+        if (i >= spinLimit)
+        {
+            break;
+        }
+    }
+#else // !_TARGET_ARM64_
+    const UINT32 Sleep0Threshold = 10;
+    YieldProcessorWithBackOffNormalizationInfo normalizationInfo;
+#ifdef FEATURE_PAL
+    // The PAL's wait subsystem is quite slow, spin more to compensate for the more expensive wait
+    spinCount *= 2;
+#endif // FEATURE_PAL
+    for (UINT32 i = 0; i < spinCount; ++i)
+    {
+        // Wait
+        //
+        // (i - Sleep0Threshold) % 2 != 0: The purpose of this check is to interleave Thread.Yield/Sleep(0) with
+        // Thread.SpinWait. Otherwise, the following issues occur:
+        //   - When there are no threads to switch to, Yield and Sleep(0) become no-op and it turns the spin loop into a
+        //     busy-spin that may quickly reach the max spin count and cause the thread to enter a wait state. Completing the
+        //     spin loop too early can cause excessive context switcing from the wait.
+        //   - If there are multiple threads doing Yield and Sleep(0) (typically from the same spin loop due to contention),
+        //     they may switch between one another, delaying work that can make progress.
+        if (i < Sleep0Threshold || (i - Sleep0Threshold) % 2 != 0)
+        {
+            YieldProcessorWithBackOffNormalized(normalizationInfo, i);
+        }
+        else
+        {
+            // Not doing SwitchToThread(), it does not seem to have any benefit over Sleep(0)
+            ClrSleepEx(0, false);
+        }
+
+        // Try to acquire the semaphore and unregister as a spinner
+        counts = m_counts.VolatileLoad();
+        while (true)
+        {
+            _ASSERTE(counts.spinnerCount != (UINT8)0);
+            if (counts.signalCount == 0)
+            {
+                break;
+            }
+
+            Counts newCounts = counts;
+            --newCounts.signalCount;
+            --newCounts.spinnerCount;
+
+            Counts countsBeforeUpdate = m_counts.CompareExchange(newCounts, counts);
+            if (countsBeforeUpdate == counts)
+            {
+                return true;
+            }
+
+            counts = countsBeforeUpdate;
+        }
+    }
+#endif // _TARGET_ARM64_
+
+    // Unregister as a spinner, and acquire the semaphore or register as a waiter
+    counts = m_counts.VolatileLoad();
+    while (true)
+    {
+        _ASSERTE(counts.spinnerCount != (UINT8)0);
+        Counts newCounts = counts;
+        --newCounts.spinnerCount;
+        if (counts.signalCount != 0)
+        {
+            --newCounts.signalCount;
+        }
+        else
+        {
+            ++newCounts.waiterCount;
+            _ASSERTE(newCounts.waiterCount != (UINT16)0); // overflow check, this many waiters is currently not supported
+        }
+
+        Counts countsBeforeUpdate = m_counts.CompareExchange(newCounts, counts);
+        if (countsBeforeUpdate == counts)
+        {
+            return counts.signalCount != 0 || WaitForSignal(timeoutMs);
+        }
+
+        counts = countsBeforeUpdate;
+    }
+}
+
+void CLRLifoSemaphore::Release(INT32 releaseCount)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(releaseCount > 0);
+    _ASSERTE((UINT32)releaseCount <= m_maximumSignalCount);
+    _ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+
+    INT32 countOfWaitersToWake;
+    Counts counts = m_counts.VolatileLoad();
+    while (true)
+    {
+        Counts newCounts = counts;
+
+        // Increase the signal count. The addition doesn't overflow because of the limit on the max signal count in Create.
+        newCounts.signalCount += releaseCount;
+        _ASSERTE(newCounts.signalCount > counts.signalCount);
+
+        // Determine how many waiters to wake, taking into account how many spinners and waiters there are and how many waiters
+        // have previously been signaled to wake but have not yet woken
+        countOfWaitersToWake =
+            (INT32)min(newCounts.signalCount, (UINT32)newCounts.waiterCount + newCounts.spinnerCount) -
+            newCounts.spinnerCount -
+            newCounts.countOfWaitersSignaledToWake;
+        if (countOfWaitersToWake > 0)
+        {
+            // Ideally, limiting to a maximum of releaseCount would not be necessary and could be an assert instead, but since
+            // WaitForSignal() does not have enough information to tell whether a woken thread was signaled, and due to the cap
+            // below, it's possible for countOfWaitersSignaledToWake to be less than the number of threads that have actually
+            // been signaled to wake.
+            if (countOfWaitersToWake > releaseCount)
+            {
+                countOfWaitersToWake = releaseCount;
+            }
+
+            // Cap countOfWaitersSignaledToWake to its max value. It's ok to ignore some woken threads in this count, it just
+            // means some more threads will be woken next time. Typically, it won't reach the max anyway.
+            newCounts.countOfWaitersSignaledToWake += (UINT8)min(countOfWaitersToWake, (INT32)UINT8_MAX);
+            if (newCounts.countOfWaitersSignaledToWake <= counts.countOfWaitersSignaledToWake)
+            {
+                newCounts.countOfWaitersSignaledToWake = UINT8_MAX;
+            }
+        }
+
+        Counts countsBeforeUpdate = m_counts.CompareExchange(newCounts, counts);
+        if (countsBeforeUpdate == counts)
+        {
+            _ASSERTE((UINT32)releaseCount <= m_maximumSignalCount - counts.signalCount);
+            _ASSERTE(newCounts.countOfWaitersSignaledToWake <= newCounts.waiterCount);
+            if (countOfWaitersToWake <= 0)
+            {
+                return;
+            }
+            break;
+        }
+
+        counts = countsBeforeUpdate;
+    }
+
+    // Wake waiters
+#ifdef FEATURE_PAL
+    BOOL released = UnsafeReleaseSemaphore(m_handle, countOfWaitersToWake, nullptr);
+    _ASSERTE(released);
+#else // !FEATURE_PAL
+    while (--countOfWaitersToWake >= 0)
+    {
+        while (!PostQueuedCompletionStatus(m_handle, 0, 0, nullptr))
+        {
+            // Probably out of memory. It's not valid to stop and throw here, so try again after a delay.
+            ClrSleepEx(1, false);
+        }
+    }
+#endif // FEATURE_PAL
+}
+
 void CLRMutex::Create(LPSECURITY_ATTRIBUTES lpMutexAttributes, BOOL bInitialOwner, LPCTSTR lpName)
 {
     CONTRACTL
