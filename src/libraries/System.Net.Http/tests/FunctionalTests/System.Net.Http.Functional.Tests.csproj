@@ -82,6 +82,7 @@
     <Compile Include="HttpClientHandlerTest.SslProtocols.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="HttpClientHandlerTest.SslProtocols.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="DiagnosticsTests.cs" />
+    <Compile Include="HttpClientTestBase.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientEKUTest.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
@@ -102,7 +103,6 @@
     <Compile Include="StringContentTest.cs" />
     <Compile Include="SyncBlockingContent.cs" />
     <Compile Include="TestHelper.cs" />
-    <Compile Include="ManagedHandlerTestHelpers.cs" />
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
@@ -130,6 +130,9 @@
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.net.testdata\1.0.0-prerelease\content\**\*.*" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsOSX)'=='true'">
+    <TestCommandLines Include="ulimit -Sn 4096" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
