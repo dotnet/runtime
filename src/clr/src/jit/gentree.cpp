@@ -2542,6 +2542,10 @@ GenTreePtr Compiler::gtReverseCond(GenTree* tree)
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenTree::ReverseRelop(cc->gtCondition);
     }
+    else if (tree->OperIs(GT_JCMP))
+    {
+        tree->gtFlags ^= GTF_JCMP_EQ;
+    }
     else
     {
         tree = gtNewOperNode(GT_NOT, TYP_INT, tree);
@@ -9874,6 +9878,11 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
                 }
                 goto DASH;
 
+            case GT_JCMP:
+                printf((tree->gtFlags & GTF_JCMP_TST) ? "T" : "C");
+                printf((tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+                goto DASH;
+
             default:
             DASH:
                 printf("-");
@@ -10786,6 +10795,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_SETCC:
             printf(" cond=%s", GenTree::OpName(tree->AsCC()->gtCondition));
             break;
+        case GT_JCMP:
+            printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
+                   (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
 
         default:
             assert(!"don't know how to display tree leaf node");

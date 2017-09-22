@@ -188,6 +188,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_CMP:
+        case GT_JCMP:
             LowerCompare(node);
             break;
 
@@ -5349,6 +5350,7 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_CMP:
+        case GT_JCMP:
             ContainCheckCompare(node->AsOp());
             break;
 

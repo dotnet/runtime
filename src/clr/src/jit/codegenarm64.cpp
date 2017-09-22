@@ -3382,6 +3382,55 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// genCodeForJumpCompare: Generates code for jmpCompare statement.
+//
+// Arguments:
+//    tree - The GT_JCMP tree node.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    assert(tree->OperIs(GT_JCMP));
+    assert(!varTypeIsFloating(tree));
+    assert(!op1->isUsedFromMemory());
+    assert(!op2->isUsedFromMemory());
+    assert(op2->IsCnsIntOrI());
+    assert(op2->isContained());
+
+    genConsumeOperands(tree);
+
+    regNumber reg  = op1->gtRegNum;
+    emitAttr  attr = emitActualTypeSize(op1->TypeGet());
+
+    if (tree->gtFlags & GTF_JCMP_TST)
+    {
+        ssize_t compareImm = op2->gtIntCon.IconValue();
+
+        assert(isPow2(compareImm));
+
+        instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_tbz : INS_tbnz;
+        int         imm = genLog2((size_t)compareImm);
+
+        getEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
+    }
+    else
+    {
+        assert(op2->IsIntegralConst(0));
+
+        instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_cbz : INS_cbnz;
+
+        getEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->bbJumpDest, reg);
+    }
+}
+
 int CodeGenInterface::genSPtoFPdelta()
 {
     int delta;

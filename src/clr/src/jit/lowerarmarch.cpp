@@ -121,6 +121,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_LE:
             case GT_GE:
             case GT_GT:
+            case GT_JCMP:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
                 break;
             case GT_AND:
@@ -716,6 +717,39 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             assert(!op1->gtSetFlags());
             op1->gtFlags |= GTF_SET_FLAGS;
             cmp->gtFlags |= GTF_USE_FLAGS;
+        }
+
+        if (!varTypeIsFloating(cmp) && op2->IsCnsIntOrI() && ((cmp->gtFlags & GTF_USE_FLAGS) == 0))
+        {
+            LIR::Use cmpUse;
+            bool     useJCMP = false;
+            uint64_t flags   = 0;
+
+            if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && BlockRange().TryGetUse(cmp, &cmpUse) &&
+                cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                // Codegen will use cbz or cbnz in codegen which do not affect the flag register
+                flags   = cmp->OperIs(GT_EQ) ? GTF_JCMP_EQ : 0;
+                useJCMP = true;
+            }
+            else if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(op2->gtIntCon.IconValue()) &&
+                     BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                // Codegen will use tbz or tbnz in codegen which do not affect the flag register
+                flags   = GTF_JCMP_TST | (cmp->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : 0);
+                useJCMP = true;
+            }
+
+            if (useJCMP)
+            {
+                cmp->gtLsraInfo.isNoRegCompare = true;
+                cmp->SetOper(GT_JCMP);
+
+                cmp->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+                cmp->gtFlags |= flags;
+
+                BlockRange().Remove(cmpUse.User());
+            }
         }
 #endif // _TARGET_ARM64_
     }
