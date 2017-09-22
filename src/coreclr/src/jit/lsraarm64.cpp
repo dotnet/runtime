@@ -354,6 +354,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_JCMP:
             TreeNodeInfoInitCmp(tree);
             break;
 

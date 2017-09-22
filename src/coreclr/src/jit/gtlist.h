@@ -225,6 +225,7 @@ GTNODE(SIMD             , GenTreeSIMD        ,0,GTK_BINOP|GTK_EXOP)     // SIMD 
 
 GTNODE(CMP              , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)  // Sets the condition flags according to the compare result. 
                                                                         // N.B. Not a relop, it does not produce a value and it cannot be reversed.
+GTNODE(JCMP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)  // Makes a comparison and jump if the condition specified.  Does not set flags
 GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE)   // Checks the condition flags and branch if the condition specified
                                                                         // by GenTreeCC::gtCondition is true.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF)               // Checks the condition flags and produces 1 if the condition specified 
