@@ -50,7 +50,7 @@ namespace System.MemoryTests
         {
             int[] array = { 1, 2, 3, 4, 5 };
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            ReadOnlyMemory<int> memory = owner.AsMemory;
+            ReadOnlyMemory<int> memory = owner.Memory;
             MemoryHandle handle = memory.Retain();
             unsafe
             {
@@ -65,7 +65,7 @@ namespace System.MemoryTests
         {
             int[] array = { 1, 2, 3, 4, 5 };
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            ReadOnlyMemory<int> memory = owner.AsMemory;
+            ReadOnlyMemory<int> memory = owner.Memory;
             MemoryHandle handle = memory.Retain(pin: true);
             unsafe
             {

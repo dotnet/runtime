@@ -117,7 +117,7 @@ namespace System.IO.Tests
 
             using (var totalNativeMemory = new NativeOwnedMemory(30))
             {
-                Memory<byte> totalMemory = totalNativeMemory.AsMemory;
+                Memory<byte> totalMemory = totalNativeMemory.Memory;
                 Memory<byte> targetMemory = totalMemory.Slice(5, 20);
 
                 Assert.Equal(10, await s.ReadAsync(targetMemory));
@@ -176,7 +176,7 @@ namespace System.IO.Tests
 
             using (var nativeMemory = new NativeOwnedMemory(10))
             {
-                Memory<byte> memory = nativeMemory.AsMemory;
+                Memory<byte> memory = nativeMemory.Memory;
                 memory.Span[2] = 0;
                 memory.Span[3] = 1;
                 memory.Span[4] = 2;
