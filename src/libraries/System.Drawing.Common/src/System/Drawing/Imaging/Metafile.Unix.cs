@@ -303,11 +303,6 @@ namespace System.Drawing.Imaging
             // Called in order to emulate exception behavior from netfx related to invalid file paths.
             Path.GetFullPath(fileName);
 
-            if (!File.Exists(fileName))
-            {
-                throw new ArgumentException("path");
-            }
-
             int status = SafeNativeMethods.Gdip.GdipRecordMetafileFileNameI(fileName, referenceHdc, type, ref frameRect,
                 frameUnit, description, out nativeObject);
             SafeNativeMethods.Gdip.CheckStatus(status);
