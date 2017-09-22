@@ -373,7 +373,7 @@
       "allowOverride": true
     },
     "PB_BuildArguments": {
-      "value": "-buildArch=x64 -Release -- /p:SignType=test /p:RuntimeOS=win10",
+      "value": "-buildArch=x64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
       "allowOverride": true
     },
     "PB_BuildTestsArguments": {
@@ -466,7 +466,8 @@
       "isSecret": true
     },
     "PB_SignType": {
-      "value": "real"
+      "value": "real",
+      "allowOverride": true
     }
   },
   "demands": [
