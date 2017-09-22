@@ -21,121 +21,87 @@ using Xunit.Abstractions;
 // - By setting the env var prior to running tests, every test will implicitly use the managed handler,
 //   at which point the tests in this file are duplicative and can be commented out.
 
-// For now parallelism is disabled because we use an env var to turn on the managed handler, and the env var
-// impacts any tests running concurrently in the process.  We can remove this restriction in the future once
-// plans around the ManagedHandler are better understood.
-[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true, MaxParallelThreads = 1)]
-
 namespace System.Net.Http.Functional.Tests
 {
     public sealed class ManagedHandler_HttpClientTest : HttpClientTest, IDisposable
     {
-        public ManagedHandler_HttpClientTest() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_DiagnosticsTest : DiagnosticsTest, IDisposable
     {
-        public ManagedHandler_DiagnosticsTest() => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
     {
-        public ManagedHandler_HttpClientEKUTest() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        public ManagedHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
     {
-        public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest, IDisposable
     {
-        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
-    
+
     public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_SslProtocols_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest, IDisposable
     {
-        public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress, IDisposable
     {
-        public ManagedHandler_HttpClientMiniStress() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest, IDisposable
     {
-        public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
     {
-        public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
     // TODO #23141: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
@@ -145,30 +111,24 @@ namespace System.Net.Http.Functional.Tests
     // same thing if it's really important.
     //public sealed class ManagedHandler_CancellationTest : CancellationTest, IDisposable
     //{
-    //    public ManagedHandler_CancellationTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    //    public ManagedHandler_CancellationTest(ITestOutputHelper output) : base(output) { }
+    //    protected override bool UseManagedHandler => true;
     //}
 
     // TODO #23142: The managed handler doesn't currently track how much data was written for the response headers.
     //public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test, IDisposable
     //{
-    //    public ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public new void Dispose()
-    //    {
-    //        ManagedHandlerTestHelpers.RemoveEnvVar();
-    //        base.Dispose();
-    //    }
+    //    protected override bool UseManagedHandler => true;
     //}
 
-    public sealed class ManagedHandler_HttpClientHandler_DuplexCommunication_Test : IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_DuplexCommunication_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
 
         [Fact]
         public async Task SendBytesBackAndForthBetweenClientAndServer_Success()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -293,10 +253,9 @@ namespace System.Net.Http.Functional.Tests
 
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_ConnectionPooling_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
 
         // TODO: Currently the subsequent tests sometimes fail/hang with WinHttpHandler / CurlHandler.
         // In theory they should pass with any handler that does appropriate connection pooling.
@@ -306,7 +265,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task MultipleIterativeRequests_SameConnectionReused()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -345,7 +304,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ServerDisconnectsAfterInitialRequest_SubsequentRequestUsesDifferentConnection()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -384,7 +343,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ServerSendsConnectionClose_SubsequentRequestUsesDifferentConnection()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
