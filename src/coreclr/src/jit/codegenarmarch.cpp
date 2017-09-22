@@ -1825,7 +1825,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     // Grab the integer temp register to emit the loads and stores.
     regNumber tmpReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
 
-#ifdef _TARGAET_ARM64_
+#ifdef _TARGET_ARM64_
     if (size >= 2 * REGSIZE_BYTES)
     {
         regNumber tmp2Reg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
