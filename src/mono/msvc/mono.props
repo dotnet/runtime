@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="UserMacros">
     <!-- Change this to custom build tree location to enable out of source tree builds, example c:/mono-build/ -->
@@ -55,7 +55,7 @@
     <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true'">$(MONO_BUILD_DIR_PREFIX)boehm/</MONO_BUILD_DIR_PREFIX>
   </PropertyGroup>
   <PropertyGroup Label="Static-Mono-Libraries">
-    <MONO_RUNTIME_LIBS>libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;$(GC_LIB)</MONO_RUNTIME_LIBS>
+    <MONO_RUNTIME_LIBS>libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmini$(MONO_TARGET_SUFFIX).lib;$(GC_LIB)</MONO_RUNTIME_LIBS>
     <MONO_STATIC_LIBMONO_LIB>libmono-static$(MONO_TARGET_SUFFIX).lib</MONO_STATIC_LIBMONO_LIB>
     <MONO_DYNAMIC_LIBMONO_LIB>mono-2.0$(MONO_TARGET_SUFFIX).lib</MONO_DYNAMIC_LIBMONO_LIB>
   </PropertyGroup>

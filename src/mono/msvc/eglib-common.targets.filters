@@ -2,78 +2,83 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\garray.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gbytearray.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gerror.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\ghashtable.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\giconv.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\glist.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmarkup.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmem.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\goutput.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpattern.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gptrarray.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqsort.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqueue.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gshell.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gslist.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gspawn.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gstr.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gstring.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gutf8.c">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\glib.h">
-      <Filter>Header Files\Common</Filter>
+      <Filter>Header Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule.h">
-      <Filter>Header Files\Common</Filter>
+      <Filter>Header Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\sort.frag.h">
-      <Filter>Header Files\Common</Filter>
+      <Filter>Header Files$(EGLibFilterSubFolder)\Common</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\eglib\src\Makefile.am">
+      <Filter>Resource Files$(EGLibFilterSubFolder)</Filter>
+    </None>
   </ItemGroup>
 </Project>

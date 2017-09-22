@@ -28,4 +28,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\sort.frag.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\eglib\src\Makefile.am" />
+  </ItemGroup>
 </Project>

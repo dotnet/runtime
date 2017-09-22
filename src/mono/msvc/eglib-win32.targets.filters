@@ -2,33 +2,33 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gdate-win32.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gdir-win32.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile-win32.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmisc-win32.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpath.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gtimer-win32.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode-win32.c">
-      <Filter>Source Files\Win32</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32-internals.h">
-      <Filter>Header Files\Win32</Filter>
+      <Filter>Header Files$(EGLibFilterSubFolder)\Win32</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -18,128 +18,6 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\mono\mini\alias-analysis.c" />
-    <ClCompile Include="..\mono\mini\arch-stubs.c" />
-    <ClCompile Include="..\mono\mini\exceptions-amd64.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\exceptions-x86.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\mini-amd64.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\mini-amd64-gsharedvt.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\mini-runtime.c" />
-    <ClCompile Include="..\mono\mini\mini-windows.c" />
-    <ClCompile Include="..\mono\mini\mini-x86.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\mini-x86-gsharedvt.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\mini.c" />
-    <ClCompile Include="..\mono\mini\memory-access.c" />
-    <ClInclude Include="..\mono\metadata\remoting.h" />
-    <ClInclude Include="..\mono\mini\ir-emit.h" />
-    <ClCompile Include="..\mono\mini\method-to-ir.c" />
-    <ClCompile Include="..\mono\mini\decompose.c" />
-    <ClInclude Include="..\mono\mini\mini-amd64.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\mono\mini\mini-amd64-gsharedvt.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\mono\mini\mini-windows.h" />
-    <ClInclude Include="..\mono\mini\mini-x86.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\mono\mini\mini.h" />
-    <ClInclude Include="..\mono\mini\seq-points.h" />
-    <ClInclude Include="..\mono\mini\version.h" />
-    <ClInclude Include="..\mono\mini\optflags-def.h" />
-    <ClInclude Include="..\mono\mini\cfgdump.h" />
-    <ClCompile Include="..\mono\mini\cfgdump.c" />
-    <ClInclude Include="..\mono\mini\jit-icalls.h " />
-    <ClCompile Include="..\mono\mini\jit-icalls.c " />
-    <ClCompile Include="..\mono\mini\seq-points.c" />
-    <ClCompile Include="..\mono\mini\trace.c" />
-    <ClInclude Include="..\mono\mini\trace.h" />
-    <ClInclude Include="..\mono\mini\patch-info.h" />
-    <ClInclude Include="..\mono\mini\mini-ops.h" />
-    <ClInclude Include="..\mono\mini\mini-arch.h" />
-    <ClCompile Include="..\mono\mini\dominators.c" />
-    <ClCompile Include="..\mono\mini\cfold.c" />
-    <ClInclude Include="..\mono\mini\regalloc.h" />
-    <ClCompile Include="..\mono\mini\helpers.c" />
-    <ClCompile Include="..\mono\mini\liveness.c" />
-    <ClCompile Include="..\mono\mini\ssa.c" />
-    <ClCompile Include="..\mono\mini\abcremoval.c" />
-    <ClInclude Include="..\mono\mini\abcremoval.h" />
-    <ClCompile Include="..\mono\mini\local-propagation.c" />
-    <ClCompile Include="..\mono\mini\driver.c" />
-    <ClCompile Include="..\mono\mini\debug-mini.c" />
-    <ClCompile Include="..\mono\mini\linear-scan.c" />
-    <ClCompile Include="..\mono\mini\aot-compiler.c" />
-    <ClCompile Include="..\mono\mini\aot-runtime.c" />
-    <ClCompile Include="..\mono\mini\graph.c" />
-    <ClCompile Include="..\mono\mini\mini-codegen.c" />
-    <ClCompile Include="..\mono\mini\mini-cross-helpers.c" />
-    <ClCompile Include="..\mono\mini\mini-exceptions.c" />
-    <ClCompile Include="..\mono\mini\mini-trampolines.c  " />
-    <ClCompile Include="..\mono\mini\tramp-amd64.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\tramp-amd64-gsharedvt.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\tramp-x86.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\tramp-x86-gsharedvt.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\mono\mini\branch-opts.c" />
-    <ClCompile Include="..\mono\mini\mini-generic-sharing.c" />
-    <ClInclude Include="..\mono\mini\simd-methods.h" />
-    <ClCompile Include="..\mono\mini\tasklets.c" />
-    <ClInclude Include="..\mono\mini\tasklets.h" />
-    <ClCompile Include="..\mono\mini\simd-intrinsics.c" />
-    <ClInclude Include="..\mono\mini\mini-unwind.h" />
-    <ClCompile Include="..\mono\mini\unwind.c" />
-    <ClInclude Include="..\mono\mini\image-writer.h" />
-    <ClCompile Include="..\mono\mini\image-writer.c" />
-    <ClInclude Include="..\mono\mini\dwarfwriter.h" />
-    <ClCompile Include="..\mono\mini\dwarfwriter.c" />
-    <ClInclude Include="..\mono\mini\mini-gc.h" />
-    <ClCompile Include="..\mono\mini\mini-gc.c" />
-    <ClInclude Include="..\mono\mini\debugger-agent.h " />
-    <ClCompile Include="..\mono\mini\debugger-agent.c" />
-    <ClCompile Include="..\mono\mini\xdebug.c" />
-    <ClInclude Include="..\mono\mini\mini-llvm.h" />
-    <ClInclude Include="..\mono\mini\mini-llvm-cpp.h" />
-    <ClCompile Include="..\mono\mini\mini-native-types.c" />
-    <ClCompile Include="..\mono\mini\type-checking.c" />
-    <ClCompile Include="..\mono\mini\lldb.c" />
-    <ClCompile Include="..\mono\mini\interp\interp-stubs.c" />
-    <ClCompile Include="..\mono\mini\mini-profiler.c" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CB0D9E92-293C-439C-9AC7-C5F59B6E0772}</ProjectGuid>
     <RootNamespace>libmono-static</RootNamespace>
@@ -214,25 +92,24 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <BrowseInformation>false</BrowseInformation>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4996;4018;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <MinimalRebuild>true</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-    </Lib>
+    <Lib />
+    <ProjectReference />
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>
@@ -242,25 +119,24 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;WIN64;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <BrowseInformation>false</BrowseInformation>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4996;4018;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <MinimalRebuild>true</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-    </Lib>
+    <Lib />
+    <ProjectReference />
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
@@ -269,14 +145,14 @@
     </PreBuildEvent>
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -284,10 +160,11 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-    </Lib>
+    <Lib />
+    <ProjectReference />
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
@@ -296,14 +173,14 @@
     </PreBuildEvent>
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;WIN64;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -311,33 +188,24 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>eglib.lib;$(MONO_RUNTIME_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-    </Lib>
+    <Lib />
+    <ProjectReference />
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <CustomBuildStep Include="..\mono\mini\mini-x86.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CustomBuildStep>
-    <CustomBuildStep Include="..\mono\mini\mini-amd64.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </CustomBuildStep>
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="eglib.vcxproj">
       <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
     </ProjectReference>
-    <ProjectReference Include="genmdesc.vcxproj">
-      <Project>{b7098dfa-31e6-4006-8a15-1c9a4e925149}</Project>
-    </ProjectReference>
-    <ProjectReference Include="libgc.vcxproj">
+    <ProjectReference Condition="'$(MONO_TARGET_GC)'=='boehm'" Include="libgc.vcxproj">
       <Project>{eb56000b-c80b-4e8b-908d-d84d31b517d3}</Project>
     </ProjectReference>
-    <ProjectReference Include="libgcmonosgen.vcxproj">
+    <ProjectReference Condition="'$(MONO_TARGET_GC)'=='sgen'" Include="libgcmonosgen.vcxproj">
       <Project>{c36612bd-22d3-4b95-85e2-7fdc4fc5d740}</Project>
+    </ProjectReference>
+    <ProjectReference Include="libmini.vcxproj">
+      <Project>{88d2eb79-592d-45f8-b849-ae021c1d983a}</Project>
     </ProjectReference>
     <ProjectReference Include="libmonoruntime.vcxproj">
       <Project>{c36612bd-22d3-4b95-85e2-7fdc4fc5d739}</Project>
@@ -345,9 +213,6 @@
     <ProjectReference Include="libmonoutils.vcxproj">
       <Project>{8fc2b0c8-51ad-49df-851f-5d01a77a75e4}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\mono\mini\Makefile.am.in" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

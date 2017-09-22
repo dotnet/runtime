@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MonoUtilsFilterSubFolder>\libmonoutils</MonoUtilsFilterSubFolder>
+    <MonoRuntimeFilterSubFolder>\libmonoruntime</MonoRuntimeFilterSubFolder>
+    <MonoMiniFilterSubFolder>\libmini</MonoMiniFilterSubFolder>
+    <MonoGCsgenFilterSubFolder>\libgcmonosgen</MonoGCsgenFilterSubFolder>
+    <EGLibFilterSubFolder>\eglib</EGLibFilterSubFolder>
+  </PropertyGroup>
+  <Import Project="eglib.targets.filters" />
+  <Import Project="libmonoutils.targets.filters" />
+  <Import Project="libmonoruntime.targets.filters" />
+  <Import Project="libmini.targets.filters" />
+  <Import Project="libgcmonosgen.targets.filters" />
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{09693EC3-6099-43FF-A22D-D0651643B146}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{851A7AF5-8521-4F03-9527-D162FB53D9E7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{58EC90AB-A91B-433C-AE1E-6B09A6D43A3E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-windows-dllmain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
