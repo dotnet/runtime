@@ -3646,19 +3646,17 @@ AGAIN:
 
         if (emitIsCondJump(jmp))
         {
-            ssz = JCC_SIZE_SMALL;
-            nsd = JCC_DIST_SMALL_MAX_NEG;
-            psd = JCC_DIST_SMALL_MAX_POS;
+            ssz         = JCC_SIZE_SMALL;
+            bool isTest = (jmp->idIns() == INS_tbz) || (jmp->idIns() == INS_tbnz);
+
+            nsd = (isTest) ? TB_DIST_SMALL_MAX_NEG : JCC_DIST_SMALL_MAX_POS;
+            psd = (isTest) ? TB_DIST_SMALL_MAX_POS : JCC_DIST_SMALL_MAX_POS;
         }
         else if (emitIsUncondJump(jmp))
         {
             // Nothing to do; we don't shrink these.
             assert(jmp->idjShort);
             ssz = JMP_SIZE_SMALL;
-        }
-        else if (emitIsCmpJump(jmp))
-        {
-            NYI("branch shortening compare-and-branch instructions");
         }
         else if (emitIsLoadLabel(jmp))
         {
