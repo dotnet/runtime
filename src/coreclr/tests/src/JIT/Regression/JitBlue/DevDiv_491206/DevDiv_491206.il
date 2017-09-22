@@ -64,7 +64,7 @@
           ldc.r8     9.2233720368547758e+018
           call       int64 ILGEN_CLASS::DoubleToInt64(float64)
           pop
-          ldc.i4.0
+          ldc.i4 100
           ret
     }
 }
