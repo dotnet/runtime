@@ -62,7 +62,7 @@ namespace MonoTests.System.Drawing.Imaging
             return s;
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Image16()
         {
             string sInFile = Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico");
@@ -85,7 +85,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         // simley.ico has 48x48, 32x32 and 16x16 images (in that order)
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap16Features()
         {
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
@@ -261,7 +261,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         // VisualPng.ico only has a 32x32 size available
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap32Features()
         {
             string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
@@ -493,7 +493,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         // 48x48_one_entry_1bit.ico only has a 48x48 size available
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap48Features()
         {
             string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
@@ -728,7 +728,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         // 64x64x256 only has a 64x64 size available
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap64Features()
         {
             string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
@@ -997,7 +997,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         // 96x96x256.ico only has a 96x96 size available
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap96Features()
         {
             string sInFile = Helpers.GetTestBitmapPath("96x96x256.ico");
@@ -1029,7 +1029,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap96Pixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("96x96x256.ico");
@@ -2019,29 +2019,25 @@ namespace MonoTests.System.Drawing.Imaging
                 }
             }
         }
-
-        [ActiveIssue(23846)]
+        
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_24bppRgb()
         {
             Save(PixelFormat.Format24bppRgb, PixelFormat.Format24bppRgb, true);
         }
 
-        [ActiveIssue(23846)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_32bppRgb()
         {
             Save(PixelFormat.Format32bppRgb, PixelFormat.Format32bppArgb, true);
         }
 
-        [ActiveIssue(23846)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_32bppArgb()
         {
             Save(PixelFormat.Format32bppArgb, PixelFormat.Format32bppArgb, true);
         }
 
-        [ActiveIssue(23846)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Save_32bppPArgb()
         {
