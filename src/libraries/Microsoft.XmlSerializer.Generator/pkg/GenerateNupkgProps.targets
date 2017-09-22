@@ -20,9 +20,6 @@
   &lt;ItemGroup&gt;
     &lt;DotNetCliToolReference Include="$(Id)" Version="$(PackageVersion)" /&gt;
   &lt;/ItemGroup&gt;
-  &lt;ItemGroup&gt;
-    &lt;None Condition="Exists('%24(OutputPath)\%24(AssemblyName).XmlSerializers.dll')=='true'" Include="%24(OutputPath)\%24(AssemblyName).XmlSerializers.dll" Pack="true" PackagePath="lib\netstandard2.0" /&gt;
-  &lt;/ItemGroup&gt;
 &lt;/Project&gt;
       </PropsFileContents>
     </PropertyGroup>
