@@ -15663,16 +15663,6 @@ bool GenTree::isContained() const
         assert(!isMarkedContained);
     }
 
-#if !defined(_TARGET_64BIT_)
-    if (OperGet() == GT_LONG)
-    {
-        // GT_LONG nodes are normally contained. The only exception is when the result
-        // of a TYP_LONG operation is not used and this can only happen if the GT_LONG
-        // has no parent.
-        assert(isMarkedContained || (gtGetParent(nullptr) == nullptr));
-    }
-#endif
-
     // if it's contained it better have a user
     if (isMarkedContained)
     {

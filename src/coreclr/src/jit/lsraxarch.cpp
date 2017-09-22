@@ -193,18 +193,11 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 #if !defined(_TARGET_64BIT_)
 
         case GT_LONG:
-            if (tree->IsUnusedValue())
-            {
-                // An unused GT_LONG node needs to consume its sources.
-                info->srcCount = 2;
-                info->dstCount = 0;
-            }
-            else
-            {
-                // Passthrough. Should have been marked contained.
-                info->srcCount = 0;
-                assert(info->dstCount == 0);
-            }
+            assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
+
+            // An unused GT_LONG node needs to consume its sources.
+            info->srcCount = 2;
+            info->dstCount = 0;
             break;
 
 #endif // !defined(_TARGET_64BIT_)
