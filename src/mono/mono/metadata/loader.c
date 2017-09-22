@@ -76,6 +76,9 @@ MonoNativeTlsKey loader_lock_nest_id;
 static void dllmap_cleanup (void);
 static void cached_module_cleanup(void);
 
+/* Class lazy loading functions */
+GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
+
 static void
 global_loader_data_lock (void)
 {

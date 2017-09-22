@@ -1170,6 +1170,8 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 
 #endif
 
+GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
+
 extern MonoDefaults mono_defaults;
 
 void

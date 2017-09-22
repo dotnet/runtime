@@ -21,6 +21,7 @@
 #include "mono/metadata/exception.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/reflection-internals.h"
+#include "mono/metadata/assembly.h"
 
 typedef enum {
 	MONO_MARSHAL_NONE,			/* No marshalling needed */
@@ -51,6 +52,9 @@ typedef struct _MonoRemotingMethods MonoRemotingMethods;
 
 static MonoObject *
 mono_remoting_wrapper (MonoMethod *method, gpointer *params);
+
+static MonoException *
+mono_remoting_update_exception (MonoException *exc);
 
 static gint32
 mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push);
@@ -206,6 +210,7 @@ mono_remoting_marshal_init (void)
 		register_icall (ves_icall_mono_marshal_xdomain_copy_value, "ves_icall_mono_marshal_xdomain_copy_value", "object object", FALSE);
 		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
 		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
+		register_icall (mono_remoting_update_exception, "mono_remoting_update_exception", "object object", FALSE);
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 
 #ifndef DISABLE_JIT
@@ -425,6 +430,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 
 	if (exc) {
 		error_init (&error);
+		exc = (MonoObject*) mono_remoting_update_exception ((MonoException*)exc);
 		mono_error_set_exception_instance (&error, (MonoException *)exc);
 		goto fail;
 	}
@@ -444,6 +450,37 @@ fail:
 	return NULL;
 } 
 
+/*
+ * Handles exception transformation at appdomain call boundary.
+ * Note this is called from target appdomain inside xdomain wrapper, but from
+ * source domain in the mono_remoting_wrapper slowpath.
+ */
+static MonoException *
+mono_remoting_update_exception (MonoException *exc)
+{
+	MonoInternalThread *thread;
+	MonoClass *klass = mono_object_get_class ((MonoObject*)exc);
+
+	/* Serialization error can only happen when still in the target appdomain */
+	if (!(mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SERIALIZABLE)) {
+		MonoException *ret;
+		char *aname = mono_stringify_assembly_name (&klass->image->assembly->aname);
+		char *message = g_strdup_printf ("Type '%s' in Assembly '%s' is not marked as serializable", klass->name, aname);
+		ret =  mono_get_exception_serialization (message);
+		g_free (aname);
+		g_free (message);
+		return ret;
+	}
+
+	thread = mono_thread_internal_current ();
+	if (mono_object_get_class ((MonoObject*)exc) == mono_defaults.threadabortexception_class &&
+			thread->flags & MONO_THREAD_FLAG_APPDOMAIN_ABORT) {
+		mono_thread_internal_reset_abort (thread);
+		return mono_get_exception_appdomain_unloaded ();
+	}
+
+	return exc;
+}
 
 /**
  * mono_marshal_get_remoting_invoke:
@@ -671,8 +708,8 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	int i, j, param_index, copy_locals_base;
 	MonoClass *ret_class = NULL;
 	int loc_array=0, loc_return=0, loc_serialized_exc=0;
-	MonoExceptionClause *clauses, *main_clause, *serialization_clause;
-	int pos, pos_leave, pos_leave_serialization;
+	MonoExceptionClause *main_clause;
+	int pos, pos_leave;
 	gboolean copy_return;
 	WrapperInfo *info;
 
@@ -714,8 +751,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	/* try */
 
-	clauses = (MonoExceptionClause *)mono_image_alloc0 (method->klass->image, 2 * sizeof (MonoExceptionClause));
-	main_clause = &clauses [0];
+	main_clause = (MonoExceptionClause *)mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
 	main_clause->try_offset = mono_mb_get_label (mb);
 
 	/* Clean the call context */
@@ -896,33 +932,8 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	/* handler code */
 	main_clause->handler_offset = mono_mb_get_label (mb);
 
-	/*
-	 * We deserialize the exception in another try-catch so we can catch
-	 * serialization failure exceptions.
-	 */
-	serialization_clause = &clauses [1];
-	serialization_clause->try_offset = mono_mb_get_label (mb);
-
-	mono_mb_emit_managed_call (mb, method_rs_serialize_exc, NULL);
-	mono_mb_emit_stloc (mb, loc_serialized_exc);
-	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_ldloc (mb, loc_serialized_exc);
-	mono_mb_emit_byte (mb, CEE_STIND_REF);
-	pos_leave_serialization = mono_mb_emit_branch (mb, CEE_LEAVE);
-
-	/* Serialization exception catch */
-	serialization_clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
-	serialization_clause->try_len = mono_mb_get_pos (mb) - serialization_clause->try_offset;
-	serialization_clause->data.catch_class = mono_defaults.object_class;
-
-	/* handler code */
-	serialization_clause->handler_offset = mono_mb_get_label (mb);
-
-	/*
-	 * If the serialization of the original exception failed we serialize the newly
-	 * thrown exception, which should always succeed, passing it over to the calling
-	 * domain.
-	 */
+	mono_mb_emit_icall (mb, mono_remoting_update_exception);
+	mono_mb_emit_op (mb, CEE_CASTCLASS, mono_defaults.exception_class);
 	mono_mb_emit_managed_call (mb, method_rs_serialize_exc, NULL);
 	mono_mb_emit_stloc (mb, loc_serialized_exc);
 	mono_mb_emit_ldarg (mb, 2);
@@ -930,13 +941,8 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 	mono_mb_emit_branch (mb, CEE_LEAVE);
 
-	/* end serialization exception catch */
-	serialization_clause->handler_len = mono_mb_get_pos (mb) - serialization_clause->handler_offset;
-	mono_mb_patch_branch (mb, pos_leave_serialization);
-
-	mono_mb_emit_branch (mb, CEE_LEAVE);
-	/* end main catch */
 	main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
+	/* end catch */
 	mono_mb_patch_branch (mb, pos_leave);
 	
 	if (copy_return)
@@ -944,7 +950,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	mono_mb_set_clauses (mb, 2, clauses);
+	mono_mb_set_clauses (mb, 1, main_clause);
 #endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);

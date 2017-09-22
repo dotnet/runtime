@@ -376,6 +376,7 @@ typedef struct {
 typedef enum {
 	MONO_THREAD_FLAG_DONT_MANAGE = 1, // Don't wait for or abort this thread
 	MONO_THREAD_FLAG_NAME_SET = 2, // Thread name set from managed code
+	MONO_THREAD_FLAG_APPDOMAIN_ABORT = 4, // Current requested abort originates from appdomain unload
 } MonoThreadFlags;
 
 struct _MonoInternalThread {

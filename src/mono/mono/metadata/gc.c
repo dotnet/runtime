@@ -1009,7 +1009,7 @@ mono_gc_cleanup (void)
 					mono_gc_suspend_finalizers ();
 
 					/* Try to abort the thread, in the hope that it is running managed code */
-					mono_thread_internal_abort (gc_thread);
+					mono_thread_internal_abort (gc_thread, FALSE);
 
 					/* Wait for it to stop */
 					ret = guarded_wait (gc_thread->handle, 100, FALSE);
