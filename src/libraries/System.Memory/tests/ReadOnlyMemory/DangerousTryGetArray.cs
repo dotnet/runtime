@@ -28,7 +28,7 @@ namespace System.MemoryTests
         {
             int[] array = new int[10];
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            ReadOnlyMemory<int> memory = owner.AsMemory;
+            ReadOnlyMemory<int> memory = owner.Memory;
             Assert.True(memory.DangerousTryGetArray(out ArraySegment<int> segment));
             Assert.Equal(array.Length, segment.Count);
 

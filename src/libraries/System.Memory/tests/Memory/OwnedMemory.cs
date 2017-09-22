@@ -18,7 +18,7 @@ namespace System.MemoryTests
         {
             int[] a = { 91, 92, -93, 94 };
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memory = owner.AsMemory;
+            Memory<int> memory = owner.Memory;
             memory.Validate(91, 92, -93, 94);
         }
 
@@ -27,7 +27,7 @@ namespace System.MemoryTests
         {
             long[] a = { 91, -92, 93, 94, -95 };
             OwnedMemory<long> owner = new CustomMemoryForTest<long>(a);
-            Memory<long> memory = owner.AsMemory;
+            Memory<long> memory = owner.Memory;
             memory.Validate(91, -92, 93, 94, -95);
         }
 
@@ -38,7 +38,7 @@ namespace System.MemoryTests
             object o2 = new object();
             object[] a = { o1, o2 };
             OwnedMemory<object> owner = new CustomMemoryForTest<object>(a);
-            Memory<object> memory = owner.AsMemory;
+            Memory<object> memory = owner.Memory;
             memory.ValidateReferenceType(o1, o2);
         }
 
@@ -47,7 +47,7 @@ namespace System.MemoryTests
         {
             long[] a = { 91, -92, 93, 94, -95 };
             OwnedMemory<long> owner = new CustomMemoryForTest<long>(a);
-            Memory<long> memory = owner.AsMemory;
+            Memory<long> memory = owner.Memory;
             CastReadOnly<long>(memory, 91, -92, 93, 94, -95);
         }
 
@@ -67,7 +67,7 @@ namespace System.MemoryTests
             int[] a = { 91, 92, -93, 94 };
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
             owner.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => owner.AsMemory);
+            Assert.Throws<ObjectDisposedException>(() => owner.Memory);
         }
 
         [Fact]

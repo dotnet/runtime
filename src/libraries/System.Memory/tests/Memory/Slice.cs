@@ -19,7 +19,7 @@ namespace System.MemoryTests
             Assert.True(Unsafe.AreSame(ref a[6], ref memory.Span.DangerousGetPinnableReference()));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.AsMemory.Slice(6);
+            Memory<int> memoryFromOwner = owner.Memory.Slice(6);
 
             Assert.Equal(4, memoryFromOwner.Length);
             Assert.True(Unsafe.AreSame(ref a[6], ref memoryFromOwner.Span.DangerousGetPinnableReference()));
@@ -34,7 +34,7 @@ namespace System.MemoryTests
             Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memory.Span.DangerousGetPinnableReference(), 1)));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.AsMemory.Slice(a.Length);
+            Memory<int> memoryFromOwner = owner.Memory.Slice(a.Length);
 
             Assert.Equal(0, memoryFromOwner.Length);
             Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memoryFromOwner.Span.DangerousGetPinnableReference(), 1)));
@@ -49,7 +49,7 @@ namespace System.MemoryTests
             Assert.True(Unsafe.AreSame(ref a[3], ref memory.Span.DangerousGetPinnableReference()));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.AsMemory.Slice(3, 5);
+            Memory<int> memoryFromOwner = owner.Memory.Slice(3, 5);
 
             Assert.Equal(5, memoryFromOwner.Length);
             Assert.True(Unsafe.AreSame(ref a[3], ref memoryFromOwner.Span.DangerousGetPinnableReference()));
@@ -64,7 +64,7 @@ namespace System.MemoryTests
             Assert.True(Unsafe.AreSame(ref a[4], ref memory.Span.DangerousGetPinnableReference()));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.AsMemory.Slice(4, 6);
+            Memory<int> memoryFromOwner = owner.Memory.Slice(4, 6);
 
             Assert.Equal(6, memoryFromOwner.Length);
             Assert.True(Unsafe.AreSame(ref a[4], ref memoryFromOwner.Span.DangerousGetPinnableReference()));
@@ -79,7 +79,7 @@ namespace System.MemoryTests
             Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memory.Span.DangerousGetPinnableReference(), 1)));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.AsMemory.Slice(a.Length, 0);
+            Memory<int> memoryFromOwner = owner.Memory.Slice(a.Length, 0);
 
             Assert.Equal(0, memoryFromOwner.Length);
             Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memoryFromOwner.Span.DangerousGetPinnableReference(), 1)));
@@ -98,7 +98,7 @@ namespace System.MemoryTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(a).Slice(a.Length, 1));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memory = owner.AsMemory;
+            Memory<int> memory = owner.Memory;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(a.Length + 1));

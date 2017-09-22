@@ -22,7 +22,7 @@ namespace System.MemoryTests
             memory.Span.Validate(91, 92, -93, 94);
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            ((ReadOnlyMemory<int>)owner.AsMemory).Span.Validate(91, 92, -93, 94);
+            ((ReadOnlyMemory<int>)owner.Memory).Span.Validate(91, 92, -93, 94);
         }
 
         [Fact]
@@ -38,7 +38,7 @@ namespace System.MemoryTests
             memory.Span.Validate(91, -92, 93, 94, -95);
 
             OwnedMemory<long> owner = new CustomMemoryForTest<long>(a);
-            ((ReadOnlyMemory<long>)owner.AsMemory).Span.Validate(91, -92, 93, 94, -95);
+            ((ReadOnlyMemory<long>)owner.Memory).Span.Validate(91, -92, 93, 94, -95);
         }
 
         [ActiveIssue(23952, TargetFrameworkMonikers.UapAot)]
@@ -57,7 +57,7 @@ namespace System.MemoryTests
             memory.Span.ValidateReferenceType(o1, o2);
 
             OwnedMemory<object> owner = new CustomMemoryForTest<object>(a);
-            ((ReadOnlyMemory<object>)owner.AsMemory).Span.ValidateReferenceType(o1, o2);
+            ((ReadOnlyMemory<object>)owner.Memory).Span.ValidateReferenceType(o1, o2);
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace System.MemoryTests
             memory.Span.Validate();
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(empty);
-            ((ReadOnlyMemory<int>)owner.AsMemory).Span.Validate();
+            ((ReadOnlyMemory<int>)owner.Memory).Span.Validate();
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace System.MemoryTests
             memory.Span.Validate(42, -1);
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(aAsIntArray);
-            ((ReadOnlyMemory<int>)owner.AsMemory).Span.Validate(42, -1);
+            ((ReadOnlyMemory<int>)owner.Memory).Span.Validate(42, -1);
         }
 
     }
