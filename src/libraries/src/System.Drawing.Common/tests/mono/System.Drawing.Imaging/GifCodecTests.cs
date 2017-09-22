@@ -101,12 +101,6 @@ namespace MonoTests.System.Drawing.Imaging
         {
             using (Bitmap bmp = new Bitmap(filename))
             {
-#if false
-				for (int x = 0; x < bmp.Width; x += 32) {
-					for (int y = 0; y < bmp.Height; y += 32)
-						Console.WriteLine ("\t\t\t\tAssert.Equal ({0}, bmp.GetPixel ({1}, {2}).ToArgb (), \"{1},{2}\");", bmp.GetPixel (x, y).ToArgb (), x, y);
-				}
-#else
                 // sampling values from a well known bitmap
                 Assert.Equal(-10644802, bmp.GetPixel(0, 0).ToArgb());
                 Assert.Equal(-12630705, bmp.GetPixel(0, 32).ToArgb());
@@ -124,7 +118,6 @@ namespace MonoTests.System.Drawing.Imaging
                 Assert.Equal(-7766649, bmp.GetPixel(96, 32).ToArgb());
                 Assert.Equal(-11512986, bmp.GetPixel(96, 64).ToArgb());
                 Assert.Equal(-12616230, bmp.GetPixel(96, 96).ToArgb());
-#endif
             }
         }
 
@@ -157,12 +150,6 @@ namespace MonoTests.System.Drawing.Imaging
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
-#if false
-						// 1009 is the first prime after 1000 (so we're not affected by a recurring pattern)
-						for (int p = 0; p < size; p += 1009) {
-							Console.WriteLine ("\t\t\t\t\t\tAssert.Equal ({0}, *(scan + {1}), \"{1}\");", *(scan + p), p);
-						}
-#else
                         // sampling values from a well known bitmap
                         Assert.Equal(190, *(scan + 0));
                         Assert.Equal(217, *(scan + 1009));
@@ -197,7 +184,6 @@ namespace MonoTests.System.Drawing.Imaging
                         Assert.Equal(99, *(scan + 30270));
                         Assert.Equal(67, *(scan + 31279));
                         Assert.Equal(142, *(scan + 32288));
-#endif
                     }
                 }
                 finally
