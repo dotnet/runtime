@@ -2543,6 +2543,7 @@ struct GenTreeIntConCommon : public GenTree
     inline void SetLngValue(INT64 val);
     inline ssize_t IconValue();
     inline void SetIconValue(ssize_t val);
+    inline INT64 IntegralValue();
 
     GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTree(oper, type DEBUGARG(largeNode))
@@ -2777,6 +2778,15 @@ inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
 {
     assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
     AsIntCon()->gtIconVal = val;
+}
+
+inline INT64 GenTreeIntConCommon::IntegralValue()
+{
+#ifdef _TARGET_64BIT_
+    return LngValue();
+#else
+    return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
+#endif // _TARGET_64BIT_
 }
 
 /* gtDblCon -- double  constant (GT_CNS_DBL) */
