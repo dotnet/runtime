@@ -3649,7 +3649,7 @@ AGAIN:
             ssz         = JCC_SIZE_SMALL;
             bool isTest = (jmp->idIns() == INS_tbz) || (jmp->idIns() == INS_tbnz);
 
-            nsd = (isTest) ? TB_DIST_SMALL_MAX_NEG : JCC_DIST_SMALL_MAX_POS;
+            nsd = (isTest) ? TB_DIST_SMALL_MAX_NEG : JCC_DIST_SMALL_MAX_NEG;
             psd = (isTest) ? TB_DIST_SMALL_MAX_POS : JCC_DIST_SMALL_MAX_POS;
         }
         else if (emitIsUncondJump(jmp))
