@@ -1279,10 +1279,31 @@ namespace System.Net.Security
             }
         }
 
-        // Returns: 
-        // true  - operation queued
-        // false - operation can proceed
-        internal bool CheckEnqueueWrite(AsyncProtocolRequest asyncRequest)
+        internal Task CheckEnqueueWriteAsync()
+        {
+            // Clear previous request.
+            int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
+            if (lockState != LockHandshake)
+            {
+                return Task.CompletedTask;
+            }
+
+            lock (this)
+            {
+                if (_lockWriteState != LockHandshake)
+                {
+                    CheckThrow(authSuccessCheck: true);
+                    return Task.CompletedTask;
+                }
+
+                _lockWriteState = LockPendingWrite;
+                TaskCompletionSource<int> completionSource = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _queuedWriteStateRequest = completionSource;
+                return completionSource.Task;
+            }
+        }
+
+        internal void CheckEnqueueWrite()
         {
             // Clear previous request.
             _queuedWriteStateRequest = null;
@@ -1290,7 +1311,7 @@ namespace System.Net.Security
             if (lockState != LockHandshake)
             {
                 // Proceed with write.
-                return false;
+                return;
             }
 
             LazyAsyncResult lazyResult = null;
@@ -1299,18 +1320,11 @@ namespace System.Net.Security
                 if (_lockWriteState != LockHandshake)
                 {
                     // Handshake has completed before we grabbed the lock.
-                    CheckThrow(true);
-                    return false;
+                    CheckThrow(authSuccessCheck: true);
+                    return;
                 }
 
                 _lockWriteState = LockPendingWrite;
-
-                // Still pending, wait or enqueue.
-                if (asyncRequest != null)
-                {
-                    _queuedWriteStateRequest = asyncRequest;
-                    return true;
-                }
 
                 lazyResult = new LazyAsyncResult(null, null, /*must be */null);
                 _queuedWriteStateRequest = lazyResult;
@@ -1318,8 +1332,8 @@ namespace System.Net.Security
 
             // Need to exit from lock before waiting.
             lazyResult.InternalWaitForCompletion();
-            CheckThrow(true);
-            return false;
+            CheckThrow(authSuccessCheck: true);
+            return;
         }
 
         internal void FinishWrite()
