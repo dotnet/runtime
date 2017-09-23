@@ -14,7 +14,8 @@
     {
 		.maxstack 4
 
-		ldc.i8 0xFFFFFFF100000000
+		ldc.i8 0xFFFFFFF1FFFFFFFF
+		conv.i
 		newarr [mscorlib]System.Int32
 		dup
 
