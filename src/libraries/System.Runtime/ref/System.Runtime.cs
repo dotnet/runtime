@@ -1313,7 +1313,9 @@ namespace System
         public static bool operator ==(System.Guid a, System.Guid b) { throw null; }
         public static bool operator !=(System.Guid a, System.Guid b) { throw null; }
         public static System.Guid Parse(string input) { throw null; }
+        public static System.Guid Parse(System.ReadOnlySpan<char> input) { throw null; }
         public static System.Guid ParseExact(string input, string format) { throw null; }
+        public static System.Guid ParseExact(System.ReadOnlySpan<char> input, string format) { throw null; }
         public byte[] ToByteArray() { throw null; }
         public bool TryWriteBytes(Span<byte> destination) { throw null; }
         public override string ToString() { throw null; }
@@ -1321,7 +1323,9 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public bool TryFormat(Span<char> destination, out int charsWritten, string format) { throw null; }
         public static bool TryParse(string input, out System.Guid result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, out System.Guid result) { throw null; }
         public static bool TryParseExact(string input, string format, out System.Guid result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string format, out System.Guid result) { throw null; }
     }
     public partial interface IAsyncResult
     {

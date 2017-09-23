@@ -72,5 +72,53 @@ namespace System.Tests
             Assert.True(guid.TryFormat(new Span<char>(chars), out int charsWritten, format));
             Assert.Equal(chars, expected.ToCharArray());
         }
+
+        [Theory]
+        [MemberData(nameof(GuidStrings_Valid_TestData))]
+        public static void Parse_Span_ValidInput_Success(string input, string format, Guid expected)
+        {
+            Assert.Equal(expected, Guid.Parse(input.AsReadOnlySpan()));
+            Assert.Equal(expected, Guid.ParseExact(input.AsReadOnlySpan(), format.ToUpperInvariant()));
+            Assert.Equal(expected, Guid.ParseExact(input.AsReadOnlySpan(), format.ToLowerInvariant())); // Format should be case insensitive
+
+            Guid result;
+
+            Assert.True(Guid.TryParse(input.AsReadOnlySpan(), out result));
+            Assert.Equal(expected, result);
+
+            Assert.True(Guid.TryParseExact(input.AsReadOnlySpan(), format.ToUpperInvariant(), out result));
+            Assert.Equal(expected, result);
+
+            Assert.True(Guid.TryParseExact(input.AsReadOnlySpan(), format.ToLowerInvariant(), out result)); // Format should be case insensitive
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(GuidStrings_Invalid_TestData))]
+        public static void Parse_Span_InvalidInput_Fails(string input, Type exceptionType)
+        {
+            if (input == null)
+            {
+                return;
+            }
+
+            // Overflow exceptions throw as format exceptions in Parse
+            if (exceptionType.Equals(typeof(OverflowException)))
+            {
+                exceptionType = typeof(FormatException);
+            }
+            Assert.Throws(exceptionType, () => Guid.Parse(input.AsReadOnlySpan()));
+
+            Assert.False(Guid.TryParse(input.AsReadOnlySpan(), out Guid result));
+            Assert.Equal(Guid.Empty, result);
+
+            foreach (string format in new[] { "N", "D", "B", "P", "X" })
+            {
+                Assert.Throws(exceptionType, () => Guid.ParseExact(input.AsReadOnlySpan(), format));
+
+                Assert.False(Guid.TryParseExact(input.AsReadOnlySpan(), format, out result));
+                Assert.Equal(Guid.Empty, result);
+            }
+        }
     }
 }
