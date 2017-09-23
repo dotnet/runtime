@@ -329,8 +329,8 @@
     <Compile Include="$(BclSourcesRoot)\System\InsufficientMemoryException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IntPtr.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Math.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\MathF.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\mda.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingFieldException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.cs" />
