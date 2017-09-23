@@ -119,7 +119,6 @@ namespace System.Threading.Tasks.Tests
         {
             AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
             AssertExtensions.Throws<ArgumentNullException>("stateMachine", () => b.SetStateMachine(null));
-            b.SetStateMachine(new DelegateStateMachine());
         }
 
         [Fact]
