@@ -289,9 +289,9 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         {
             assert(actualVal->IsCnsIntOrI());
 
-            if (actualVal->gtIntCon.gtIconVal > INT32_MAX)
+            if ((actualVal->AsIntCon()->IconValue() < 0) || (actualVal->AsIntCon()->IconValue() > INT32_MAX))
             {
-                // Don't propagate array lengths that are beyond the maximum value of a GT_ARR_LENGTH.
+                // Don't propagate array lengths that are beyond the maximum value of a GT_ARR_LENGTH or negative.
                 // node. CORINFO_HELP_NEWARR_1_OBJ helper call allows to take a long integer as the
                 // array length argument, but the type of GT_ARR_LENGTH is always INT32.
                 return false;
