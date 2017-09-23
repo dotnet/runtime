@@ -6703,6 +6703,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
                 break;
             default:
                 fmt = IF_BI_0B;
+                break;
         }
     }
     else if (emitIsLoadLabel(id))
@@ -6798,7 +6799,8 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 {
     assert((ins == INS_cbz) || (ins == INS_cbnz));
 
-    assert(dst && (dst->bbFlags & BBF_JMP_TARGET));
+    assert(dst != nullptr);
+    assert((dst->bbFlags & BBF_JMP_TARGET) != 0);
 
     insFormat fmt = IF_LARGEJMP;
 
@@ -6835,7 +6837,10 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
 {
     assert((ins == INS_tbz) || (ins == INS_tbnz));
 
-    assert(dst && (dst->bbFlags & BBF_JMP_TARGET));
+    assert(dst != nullptr);
+    assert((dst->bbFlags & BBF_JMP_TARGET) != 0);
+    assert((EA_SIZE(attr) == EA_4BYTE) || (EA_SIZE(attr) == EA_8BYTE));
+    assert(imm < ((EA_SIZE(attr) == EA_4BYTE) ? 32 : 64));
 
     insFormat fmt = IF_LARGEJMP;
 
@@ -6845,7 +6850,7 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
     id->idInsFmt(fmt);
     id->idReg1(reg);
     id->idjShort = false;
-    id->idSmallCns(imm & 0x3f);
+    id->idSmallCns(imm);
     id->idOpSize(EA_SIZE(attr));
 
     id->idAddr()->iiaBBlabel = dst;
@@ -8361,35 +8366,35 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // the condition inversion takes ordered/unordered into account, preserving NaN behavior. For example,
             // "GT" (greater than) is inverted to "LE" (less than, equal, or unordered).
 
-            instruction revereIns;
+            instruction reverseIns;
             insFormat   reverseFmt;
 
             switch (ins)
             {
                 case INS_cbz:
-                    revereIns  = INS_cbnz;
+                    reverseIns = INS_cbnz;
                     reverseFmt = IF_BI_1A;
                     break;
                 case INS_cbnz:
-                    revereIns  = INS_cbz;
+                    reverseIns = INS_cbz;
                     reverseFmt = IF_BI_1A;
                     break;
                 case INS_tbz:
-                    revereIns  = INS_tbnz;
+                    reverseIns = INS_tbnz;
                     reverseFmt = IF_BI_1B;
                     break;
                 case INS_tbnz:
-                    revereIns  = INS_tbz;
+                    reverseIns = INS_tbz;
                     reverseFmt = IF_BI_1B;
                     break;
                 default:
-                    revereIns  = emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
+                    reverseIns = emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
                     reverseFmt = IF_BI_0B;
             }
 
             dst =
                 emitOutputShortBranch(dst,
-                                      revereIns, // reverse the conditional instruction
+                                      reverseIns, // reverse the conditional instruction
                                       reverseFmt,
                                       8, /* 8 bytes from start of this large conditional pseudo-instruction to L_not. */
                                       id);
