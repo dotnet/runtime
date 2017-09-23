@@ -21,6 +21,7 @@
     <Compile Include="System\Net\CertificateValidationPal.cs" />
     <Compile Include="System\Net\FixedSizeReader.cs" />
     <Compile Include="System\Net\HelperAsyncResults.cs" />
+    <Compile Include="System\Net\Security\SslStreamInternal.Adapters.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
@@ -34,7 +35,6 @@
     <Compile Include="System\Net\Security\StreamSizes.cs" />
     <Compile Include="System\Net\Security\TlsAlertType.cs" />
     <Compile Include="System\Net\Security\TlsAlertMessage.cs" />
-    <Compile Include="System\Net\SslStreamInternal.Adapaters.cs" />
     <Compile Include="System\Security\Authentication\AuthenticationException.cs" />
     <!-- NegotiateStream -->
     <Compile Include="System\Net\BufferAsyncResult.cs" />
