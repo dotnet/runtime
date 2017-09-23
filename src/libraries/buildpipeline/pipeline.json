@@ -17,7 +17,7 @@
       "Definitions": [{
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "centos-7-34f1db9-20171620021620",
+            "PB_DockerTag": "rhel7_prereqs_2",
             "PB_BuildArguments": "-buildArch=x64 -Release -stripSymbols",
             "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -Outerloop -- /p:ArchiveTests=true /p:EnableDumpling=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64",
@@ -51,7 +51,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20170319080304",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_Architecture": "arm",
             "PB_BuildArguments": "-buildArch=arm -Release -stripSymbols",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm"
@@ -345,7 +345,7 @@
       "Definitions": [{
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "centos-7-34f1db9-20171620021620",
+            "PB_DockerTag": "rhel7_prereqs_2",
             "PB_BuildArguments": "-buildArch=x64 -Debug",
             "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -Outerloop -- /p:ArchiveTests=true /p:EnableDumpling=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64",
@@ -379,7 +379,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20170319080304",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_Architecture": "arm",
             "PB_BuildArguments": "-buildArch=arm -Debug",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm"
