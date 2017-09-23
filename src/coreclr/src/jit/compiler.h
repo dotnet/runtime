@@ -3007,6 +3007,11 @@ protected:
                             bool                  isJitIntrinsic,
                             CorInfoIntrinsics*    pIntrinsicID,
                             bool*                 isSpecialIntrinsic = nullptr);
+    GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
+                              CORINFO_SIG_INFO*     sig,
+                              var_types             callType,
+                              CorInfoIntrinsics     intrinsicID,
+                              bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,

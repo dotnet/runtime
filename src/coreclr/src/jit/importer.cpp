@@ -3360,97 +3360,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
         case CORINFO_INTRINSIC_Exp:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-
-            // These are math intrinsics
-
-            assert(callType != TYP_STRUCT);
-
-            op1 = nullptr;
-
-#if defined(LEGACY_BACKEND)
-            if (IsTargetIntrinsic(intrinsicID))
-#elif !defined(_TARGET_X86_)
-            // Intrinsics that are not implemented directly by target instructions will
-            // be re-materialized as users calls in rationalizer. For prefixed tail calls,
-            // don't do this optimization, because
-            //  a) For back compatibility reasons on desktop.Net 4.6 / 4.6.1
-            //  b) It will be non-trivial task or too late to re-materialize a surviving
-            //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
-            if (!IsIntrinsicImplementedByUserCall(intrinsicID) || !tailCall)
-#else
-            // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
-            // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
-            // code generation for certain EH constructs.
-            if (!IsIntrinsicImplementedByUserCall(intrinsicID))
-#endif
-            {
-                switch (sig->numArgs)
-                {
-                    case 1:
-                        op1 = impPopStack().val;
-
-#if FEATURE_X87_DOUBLES
-
-                        // X87 stack doesn't differentiate between float/double
-                        // so it doesn't need a cast, but everybody else does
-                        // Just double check it is at least a FP type
-                        noway_assert(varTypeIsFloating(op1));
-
-#else // FEATURE_X87_DOUBLES
-
-                        if (op1->TypeGet() != callType)
-                        {
-                            op1 = gtNewCastNode(callType, op1, callType);
-                        }
-
-#endif // FEATURE_X87_DOUBLES
-
-                        op1 = new (this, GT_INTRINSIC)
-                            GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
-                        break;
-
-                    case 2:
-                        op2 = impPopStack().val;
-                        op1 = impPopStack().val;
-
-#if FEATURE_X87_DOUBLES
-
-                        // X87 stack doesn't differentiate between float/double
-                        // so it doesn't need a cast, but everybody else does
-                        // Just double check it is at least a FP type
-                        noway_assert(varTypeIsFloating(op2));
-                        noway_assert(varTypeIsFloating(op1));
-
-#else // FEATURE_X87_DOUBLES
-
-                        if (op2->TypeGet() != callType)
-                        {
-                            op2 = gtNewCastNode(callType, op2, callType);
-                        }
-                        if (op1->TypeGet() != callType)
-                        {
-                            op1 = gtNewCastNode(callType, op1, callType);
-                        }
-
-#endif // FEATURE_X87_DOUBLES
-
-                        op1 = new (this, GT_INTRINSIC)
-                            GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicID, method);
-                        break;
-
-                    default:
-                        NO_WAY("Unsupported number of args for Math Instrinsic");
-                }
-
-#ifndef LEGACY_BACKEND
-                if (IsIntrinsicImplementedByUserCall(intrinsicID))
-                {
-                    op1->gtFlags |= GTF_CALL;
-                }
-#endif
-            }
-
-            retNode = op1;
+            retNode = impMathIntrinsic(method, sig, callType, intrinsicID, tailCall);
             break;
 
 #ifdef _TARGET_XARCH_
@@ -3850,6 +3760,18 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
                 break;
             }
 
+            case NI_MathF_Round:
+            case NI_Math_Round:
+            {
+                // Math.Round and MathF.Round used to be a traditional JIT intrinsic. In order
+                // to simplify the transition, we will just treat it as if it was still the
+                // old intrinsic, CORINFO_INTRINSIC_Round. This should end up flowing properly
+                // everywhere else.
+
+                retNode = impMathIntrinsic(method, sig, callType, CORINFO_INTRINSIC_Round, tailCall);
+                break;
+            }
+
             default:
                 break;
         }
@@ -3871,6 +3793,112 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
     }
 
     return retNode;
+}
+
+GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig,
+                                    var_types             callType,
+                                    CorInfoIntrinsics     intrinsicID,
+                                    bool                  tailCall)
+{
+    GenTree* op1;
+    GenTree* op2;
+
+    assert(callType != TYP_STRUCT);
+    assert((intrinsicID == CORINFO_INTRINSIC_Sin) || (intrinsicID == CORINFO_INTRINSIC_Sqrt) ||
+           (intrinsicID == CORINFO_INTRINSIC_Abs) || (intrinsicID == CORINFO_INTRINSIC_Cos) ||
+           (intrinsicID == CORINFO_INTRINSIC_Round) || (intrinsicID == CORINFO_INTRINSIC_Cosh) ||
+           (intrinsicID == CORINFO_INTRINSIC_Sinh) || (intrinsicID == CORINFO_INTRINSIC_Tan) ||
+           (intrinsicID == CORINFO_INTRINSIC_Tanh) || (intrinsicID == CORINFO_INTRINSIC_Asin) ||
+           (intrinsicID == CORINFO_INTRINSIC_Acos) || (intrinsicID == CORINFO_INTRINSIC_Atan) ||
+           (intrinsicID == CORINFO_INTRINSIC_Atan2) || (intrinsicID == CORINFO_INTRINSIC_Log10) ||
+           (intrinsicID == CORINFO_INTRINSIC_Pow) || (intrinsicID == CORINFO_INTRINSIC_Exp) ||
+           (intrinsicID == CORINFO_INTRINSIC_Ceiling) || (intrinsicID == CORINFO_INTRINSIC_Floor));
+
+    op1 = nullptr;
+
+#if defined(LEGACY_BACKEND)
+    if (IsTargetIntrinsic(intrinsicID))
+#elif !defined(_TARGET_X86_)
+    // Intrinsics that are not implemented directly by target instructions will
+    // be re-materialized as users calls in rationalizer. For prefixed tail calls,
+    // don't do this optimization, because
+    //  a) For back compatibility reasons on desktop.Net 4.6 / 4.6.1
+    //  b) It will be non-trivial task or too late to re-materialize a surviving
+    //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
+    if (!IsIntrinsicImplementedByUserCall(intrinsicID) || !tailCall)
+#else
+    // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
+    // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
+    // code generation for certain EH constructs.
+    if (!IsIntrinsicImplementedByUserCall(intrinsicID))
+#endif
+    {
+        switch (sig->numArgs)
+        {
+            case 1:
+                op1 = impPopStack().val;
+
+#if FEATURE_X87_DOUBLES
+
+                // X87 stack doesn't differentiate between float/double
+                // so it doesn't need a cast, but everybody else does
+                // Just double check it is at least a FP type
+                noway_assert(varTypeIsFloating(op1));
+
+#else // FEATURE_X87_DOUBLES
+
+                if (op1->TypeGet() != callType)
+                {
+                    op1 = gtNewCastNode(callType, op1, callType);
+                }
+
+#endif // FEATURE_X87_DOUBLES
+
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
+                break;
+
+            case 2:
+                op2 = impPopStack().val;
+                op1 = impPopStack().val;
+
+#if FEATURE_X87_DOUBLES
+
+                // X87 stack doesn't differentiate between float/double
+                // so it doesn't need a cast, but everybody else does
+                // Just double check it is at least a FP type
+                noway_assert(varTypeIsFloating(op2));
+                noway_assert(varTypeIsFloating(op1));
+
+#else // FEATURE_X87_DOUBLES
+
+                if (op2->TypeGet() != callType)
+                {
+                    op2 = gtNewCastNode(callType, op2, callType);
+                }
+                if (op1->TypeGet() != callType)
+                {
+                    op1 = gtNewCastNode(callType, op1, callType);
+                }
+
+#endif // FEATURE_X87_DOUBLES
+
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicID, method);
+                break;
+
+            default:
+                NO_WAY("Unsupported number of args for Math Instrinsic");
+        }
+
+#ifndef LEGACY_BACKEND
+        if (IsIntrinsicImplementedByUserCall(intrinsicID))
+        {
+            op1->gtFlags |= GTF_CALL;
+        }
+#endif
+    }
+
+    return op1;
 }
 
 //------------------------------------------------------------------------
@@ -3895,13 +3923,24 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     const char* namespaceName = nullptr;
     const char* methodName    = info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName);
 
-    if ((namespaceName != nullptr) && strcmp(namespaceName, "System") == 0)
+    // Currently we only have intrinsics at the method level, so we can check that
+    // namespaceName, className, and methodName are all not null upfront.
+
+    if ((namespaceName != nullptr) && (className != nullptr) && (methodName != nullptr))
     {
-        if ((className != nullptr) && strcmp(className, "Enum") == 0)
+        if (strcmp(namespaceName, "System") == 0)
         {
-            if ((methodName != nullptr) && strcmp(methodName, "HasFlag") == 0)
+            if ((strcmp(className, "Enum") == 0) && (strcmp(methodName, "HasFlag") == 0))
             {
                 result = NI_Enum_HasFlag;
+            }
+            else if ((strcmp(className, "MathF") == 0) && (strcmp(methodName, "Round") == 0))
+            {
+                result = NI_MathF_Round;
+            }
+            else if ((strcmp(className, "Math") == 0) && (strcmp(methodName, "Round") == 0))
+            {
+                result = NI_Math_Round;
             }
         }
     }
