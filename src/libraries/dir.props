@@ -209,9 +209,10 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
   </PropertyGroup>
-
-  <!-- Set up handling of build warnings -->
+  
+  <!-- Language configuration -->
   <PropertyGroup>
+    <LangVersion>latest</LangVersion> <!-- default to allowing all language features -->
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>

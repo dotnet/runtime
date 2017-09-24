@@ -102,6 +102,11 @@ Once you've built the source code for netfx from the root (`build.cmd -framework
 For advanced debugging using WinDBG see [Debugging CoreFX on Windows](https://github.com/dotnet/corefx/blob/master/Documentation/debugging/windows-instructions.md)
 
 ### Notes
+* At any given time, the corefx repo might be configured to use a more recent compiler than
+the one used by the most recent Visual Studio IDE release.  This means the corefx codebase might
+be using language features that are not understood by the IDE, which might result in errors that
+show up as red squiggles while writing code.  Such errors should, however, not affect the actual compilation.
+
 * Running tests from using the VS test explorer does not currently work after we switched to running on CoreCLR. [We will be working on enabling full VS test integration](https://github.com/dotnet/corefx/issues/1318) but we don't have an ETA yet. In the meantime, use the steps above to launch/debug the tests using the console runner.
 
 * VS 2015 is required to debug tests running on CoreCLR as the CoreCLR

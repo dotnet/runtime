@@ -218,12 +218,7 @@ namespace System.Net.Http
         private static string GetRandomAlphaNumericString()
         {
             const int Length = 16;
-            Span<byte> randomNumbers;
-            unsafe
-            {
-                byte* ptr = stackalloc byte[Length * 2];
-                randomNumbers = new Span<byte>(ptr, Length * 2);
-            }
+            Span<byte> randomNumbers = stackalloc byte[Length * 2];
             s_rng.GetBytes(randomNumbers);
 
             StringBuilder sb = StringBuilderCache.Acquire(Length);
