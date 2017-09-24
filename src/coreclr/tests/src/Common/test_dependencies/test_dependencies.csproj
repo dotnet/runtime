@@ -23,7 +23,7 @@
       <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Intrinsics.X86">
-      <Version>4.5.0-preview1-25718-03</Version>
+      <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>

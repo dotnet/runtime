@@ -154,225 +154,226 @@ InstructionSet Compiler::isaOfHWIntrinsic(NamedIntrinsic intrinsic)
 // Arguments:
 //    intrinsic -- id of the intrinsic function.
 //    method    -- method handle of the intrinsic function.
+//    sig       -- signature of the intrinsic call
 //
 // Return Value:
 //    the expanded intrinsic.
 //
-GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     InstructionSet isa = isaOfHWIntrinsic(intrinsic);
     switch (isa)
     {
         case InstructionSet_SSE:
-            return impSSEIntrinsic(intrinsic, method);
+            return impSSEIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE2:
-            return impSSE2Intrinsic(intrinsic, method);
+            return impSSE2Intrinsic(intrinsic, method, sig);
         case InstructionSet_SSE3:
-            return impSSE3Intrinsic(intrinsic, method);
+            return impSSE3Intrinsic(intrinsic, method, sig);
         case InstructionSet_SSSE3:
-            return impSSSE3Intrinsic(intrinsic, method);
+            return impSSSE3Intrinsic(intrinsic, method, sig);
         case InstructionSet_SSE41:
-            return impSSE41Intrinsic(intrinsic, method);
+            return impSSE41Intrinsic(intrinsic, method, sig);
         case InstructionSet_SSE42:
-            return impSSE42Intrinsic(intrinsic, method);
+            return impSSE42Intrinsic(intrinsic, method, sig);
         case InstructionSet_AVX:
-            return impAVXIntrinsic(intrinsic, method);
+            return impAVXIntrinsic(intrinsic, method, sig);
         case InstructionSet_AVX2:
-            return impAVX2Intrinsic(intrinsic, method);
+            return impAVX2Intrinsic(intrinsic, method, sig);
 
         case InstructionSet_AES:
-            return impAESIntrinsic(intrinsic, method);
+            return impAESIntrinsic(intrinsic, method, sig);
         case InstructionSet_BMI1:
-            return impBMI1Intrinsic(intrinsic, method);
+            return impBMI1Intrinsic(intrinsic, method, sig);
         case InstructionSet_BMI2:
-            return impBMI2Intrinsic(intrinsic, method);
+            return impBMI2Intrinsic(intrinsic, method, sig);
         case InstructionSet_FMA:
-            return impFMAIntrinsic(intrinsic, method);
+            return impFMAIntrinsic(intrinsic, method, sig);
         case InstructionSet_LZCNT:
-            return impLZCNTIntrinsic(intrinsic, method);
+            return impLZCNTIntrinsic(intrinsic, method, sig);
         case InstructionSet_PCLMULQDQ:
-            return impPCLMULQDQIntrinsic(intrinsic, method);
+            return impPCLMULQDQIntrinsic(intrinsic, method, sig);
         case InstructionSet_POPCNT:
-            return impPOPCNTIntrinsic(intrinsic, method);
+            return impPOPCNTIntrinsic(intrinsic, method, sig);
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_SSE_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_SSE));
+            return gtNewIconNode(compSupports(InstructionSet_SSE));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_SSE2_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_SSE2));
+            return gtNewIconNode(compSupports(InstructionSet_SSE2));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_SSE3_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_SSE3));
+            return gtNewIconNode(compSupports(InstructionSet_SSE3));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impSSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impSSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_SSSE3_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_SSSE3));
+            return gtNewIconNode(compSupports(InstructionSet_SSSE3));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impSSE41Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impSSE41Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_SSE41_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_SSE41));
+            return gtNewIconNode(compSupports(InstructionSet_SSE41));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_SSE42_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_SSE42));
+            return gtNewIconNode(compSupports(InstructionSet_SSE42));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_AVX_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_AVX));
+            return gtNewIconNode(compSupports(InstructionSet_AVX));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impAVX2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impAVX2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_AVX2_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_AVX2));
+            return gtNewIconNode(compSupports(InstructionSet_AVX2));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impAESIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impAESIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_AES_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_AES));
+            return gtNewIconNode(compSupports(InstructionSet_AES));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impBMI1Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impBMI1Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_BMI1_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_BMI1));
+            return gtNewIconNode(compSupports(InstructionSet_BMI1));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_BMI2_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_BMI2));
+            return gtNewIconNode(compSupports(InstructionSet_BMI2));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impFMAIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impFMAIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_FMA_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_FMA));
+            return gtNewIconNode(compSupports(InstructionSet_FMA));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_LZCNT_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_LZCNT));
+            return gtNewIconNode(compSupports(InstructionSet_LZCNT));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_PCLMULQDQ_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_PCLMULQDQ));
+            return gtNewIconNode(compSupports(InstructionSet_PCLMULQDQ));
 
         default:
             return nullptr;
     }
 }
 
-GenTree* Compiler::impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method)
+GenTree* Compiler::impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     switch (intrinsic)
     {
         case NI_POPCNT_IsSupported:
-            return gtNewIconNode(opts.compSupports(InstructionSet_POPCNT));
+            return gtNewIconNode(compSupports(InstructionSet_POPCNT));
 
         default:
             return nullptr;
