@@ -3322,9 +3322,11 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
     GenTreePtr retNode = nullptr;
 
     //
-    // We disable the inlining of instrinsics for MinOpts.
-    //
-    if (!mustExpand && (opts.compDbgCode || opts.MinOpts()))
+    // We disable the inlining of intrinsic for MinOpts,
+    // but we should always expand hardware intrinsics whose managed method body
+    // is a directly recursive call site. This design makes hardware intrinsic
+    // be able to work with debugger and reflection.
+    if (!mustExpand && (opts.compDbgCode || opts.MinOpts()) && !gtIsRecursiveCall(method))
     {
         *pIntrinsicID = CORINFO_INTRINSIC_Illegal;
         return retNode;
@@ -3738,7 +3740,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
 #ifdef _TARGET_XARCH_
         if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
         {
-            retNode = impX86HWIntrinsic(ni, method);
+            retNode = impX86HWIntrinsic(ni, method, sig);
         }
 #endif
         switch (ni)
