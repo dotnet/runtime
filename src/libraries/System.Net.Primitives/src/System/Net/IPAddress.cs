@@ -397,8 +397,11 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (((long)HostToNetworkOrder(unchecked((int)host)) & 0xFFFFFFFF) << 32)
-                    | ((long)HostToNetworkOrder(unchecked((int)(host >> 32))) & 0xFFFFFFFF);
+            ulong value = (ulong)host;
+            value = (value << 32) | (value >> 32);
+            value = (value & 0x0000FFFF0000FFFF) << 16 | (value & 0xFFFF0000FFFF0000) >> 16;
+            value = (value & 0x00FF00FF00FF00FF) << 8 | (value & 0xFF00FF00FF00FF00) >> 8;
+            return (long)value;
 #endif
         }
 
@@ -407,8 +410,10 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (((int)HostToNetworkOrder(unchecked((short)host)) & 0xFFFF) << 16)
-                    | ((int)HostToNetworkOrder(unchecked((short)(host >> 16))) & 0xFFFF);
+            uint value = (uint)host;
+            value = (value << 16) | (value >> 16);
+            value = (value & 0x00FF00FF) << 8 | (value & 0xFF00FF00) >> 8;
+            return (int)value;
 #endif
         }
 
