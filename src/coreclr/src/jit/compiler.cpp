@@ -2561,7 +2561,7 @@ void Compiler::compSetProcessor()
 
 #endif // _TARGET_X86_
 
-// Instruction set flags fo// Instruction set flags for Intel hardware intrinsics
+// Instruction set flags for Intel hardware intrinsics
 #ifdef _TARGET_XARCH_
     opts.compSupportsISA = 0;
 
