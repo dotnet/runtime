@@ -1484,6 +1484,26 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) 
+    // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
+    // We specially treat them here to reduce the disk footprint of mscorlib.
+    if (GetModule()->IsSystem() && !bmtGenerics->HasInstantiation())
+    {
+        LPCUTF8 x86className;
+        LPCUTF8 x86nameSpace;
+        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &x86className, &x86nameSpace);
+    
+        if (hr == S_OK && strcmp(x86nameSpace, "System.Runtime.Intrinsics.X86") == 0)
+        {
+            if (IsCompilationProcess())
+            {
+                // Disable AOT compiling for managed implementation of hardware intrinsics in mscorlib.
+                COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
+            }
+            bmtProp->fIsHardwareIntrinsic = true;
+        }
+    }
+#endif
 
 #ifdef FEATURE_COMINTEROP 
 
@@ -5090,19 +5110,7 @@ MethodTableBuilder::InitNewMethodDesc(
             NULL,
             NULL);
 
-        if (hr == S_OK)
-        {
-            pNewMD->SetIsJitIntrinsic();
-        }
-
-        // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
-        // We specially treat them here to reduce the disk footprint of mscorlib.
-        LPCUTF8 className;
-        LPCUTF8 nameSpace;
-
-        HRESULT hrns = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
-
-        if (hrns == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0)
+        if (hr == S_OK || bmtProp->fIsHardwareIntrinsic)
         {
             pNewMD->SetIsJitIntrinsic();
         }
@@ -9402,7 +9410,7 @@ void MethodTableBuilder::CheckForSystemTypes()
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
     }
-    
+
     if (IsValueClass())
     {
         //

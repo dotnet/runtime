@@ -3560,6 +3560,12 @@ void ZapImage::Error(mdToken token, HRESULT hr, UINT resID,  LPCWSTR message)
         level = CORZAP_LOGLEVEL_INFO;
     }
 
+    if (resID == IDS_EE_HWINTRINSIC_NGEN_DISALLOWED)
+    {
+        // Supress printing of "Hardware intrinsics may not be used with ngen."
+        level = CORZAP_LOGLEVEL_INFO;
+    }
+
 #ifdef CROSSGEN_COMPILE
     if ((resID == IDS_IBC_MISSING_EXTERNAL_TYPE) ||
         (resID == IDS_IBC_MISSING_EXTERNAL_METHOD))
