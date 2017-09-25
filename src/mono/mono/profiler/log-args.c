@@ -81,6 +81,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 	} else if (match_option (arg, "calls", NULL)) {
 		config->enter_leave = TRUE;
 	} else if (match_option (arg, "coverage", NULL)) {
+		g_warning ("the log profiler support for code coverage is obsolete, use the \"coverage\" profiler");
 		config->collect_coverage = TRUE;
 	} else if (match_option (arg, "zip", NULL)) {
 		config->use_zip = TRUE;

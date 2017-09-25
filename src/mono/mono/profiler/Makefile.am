@@ -25,6 +25,8 @@ lib_LTLIBRARIES = \
 	libmono-profiler-iomap-static.la \
 	libmono-profiler-log.la \
 	libmono-profiler-log-static.la \
+	libmono-profiler-coverage.la \
+	libmono-profiler-coverage-static.la \
 	$(vtune_libs)
 
 suppressiondir = $(datadir)/mono-$(API_VER)/mono/profiler
@@ -82,6 +84,12 @@ libmono_profiler_log_la_LIBADD = $(libmono_dep) $(GLIB_LIBS) $(Z_LIBS)
 libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_log_static_la_SOURCES = log.c log-args.c
 libmono_profiler_log_static_la_LDFLAGS = -static
+
+libmono_profiler_coverage_la_SOURCES = coverage.c
+libmono_profiler_coverage_la_LIBADD = $(libmono_dep) $(GLIB_LIBS) $(Z_LIBS)
+libmono_profiler_coverage_la_LDFLAGS = $(prof_ldflags)
+libmono_profiler_coverage_static_la_SOURCES = coverage.c
+libmono_profiler_coverage_static_la_LDFLAGS = -static
 
 if HAVE_VTUNE
 libmono_profiler_vtune_la_SOURCES = vtune.c
