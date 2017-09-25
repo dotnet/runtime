@@ -10,6 +10,7 @@ namespace System.ComponentModel.Tests
     public class CategoryAttributeTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // NetFX does not have fix for #21369
         public void Ctor_Default()
         {
             var attribute = new CategoryAttribute();
