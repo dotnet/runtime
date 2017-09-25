@@ -708,18 +708,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_COPY:
             info->srcCount = 1;
-#ifdef ARM_SOFTFP
-            // This case currently only occurs for double types that are passed as TYP_LONG;
-            // actual long types would have been decomposed by now.
-            if (tree->TypeGet() == TYP_LONG)
-            {
-                info->dstCount = 2;
-            }
-            else
-#endif
-            {
-                assert(info->dstCount == 1);
-            }
+            assert(info->dstCount == 1);
             break;
 
         case GT_PUTARG_SPLIT:
@@ -733,6 +722,28 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_PUTARG_REG:
             TreeNodeInfoInitPutArgReg(tree->AsUnOp());
             break;
+
+        case GT_BITCAST:
+        {
+            info->srcCount = 1;
+            assert(info->dstCount == 1);
+            regNumber argReg  = tree->gtRegNum;
+            regMaskTP argMask = genRegMask(argReg);
+#ifdef ARM_SOFTFP
+            // If type of node is `long` then it is actually `double`.
+            // The actual `long` types must have been transformed as a field list with two fields.
+            if (tree->TypeGet() == TYP_LONG)
+            {
+                info->dstCount++;
+                assert(genRegArgNext(argReg) == REG_NEXT(argReg));
+                argMask |= genRegMask(REG_NEXT(argReg));
+            }
+#endif // ARM_SOFTFP
+            info->setDstCandidates(this, argMask);
+            info->setSrcCandidates(this, argMask);
+            tree->AsUnOp()->gtOp1->gtLsraInfo.isTgtPref = true;
+        }
+        break;
 
         default:
 #ifdef DEBUG

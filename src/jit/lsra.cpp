@@ -134,17 +134,11 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
         tree->gtRegNum = reg;
     }
 #if defined(_TARGET_ARM_)
-    else if (tree->OperGet() == GT_MUL_LONG || tree->OperGet() == GT_PUTARG_REG)
+    else if (tree->OperGet() == GT_MUL_LONG || tree->OperGet() == GT_PUTARG_REG || tree->OperGet() == GT_BITCAST)
     {
         assert(regIdx == 1);
         GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
         mul->gtOtherReg        = reg;
-    }
-    else if (tree->OperGet() == GT_COPY)
-    {
-        assert(regIdx == 1);
-        GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
-        copy->gtOtherRegs[0]      = (regNumberSmall)reg;
     }
     else if (tree->OperGet() == GT_PUTARG_SPLIT)
     {
@@ -4038,7 +4032,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
             regMaskTP candidates = getUseCandidates(useNode);
 #ifdef _TARGET_ARM_
-            if (useNode->OperIsPutArgSplit() || (compiler->opts.compUseSoftFP && useNode->OperIsPutArgReg()))
+            if (useNode->OperIsPutArgSplit() ||
+                (compiler->opts.compUseSoftFP && (useNode->OperIsPutArgReg() || useNode->OperGet() == GT_BITCAST)))
             {
                 // get i-th candidate, set bits in useCandidates must be in sequential order.
                 candidates = genFindLowestReg(candidates & ~currCandidates);
@@ -4116,9 +4111,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // push defs
     LocationInfoList locationInfoList;
     LsraLocation     defLocation = currentLoc + 1;
-#ifdef ARM_SOFTFP
-    regMaskTP remainingUseCandidates = useCandidates;
-#endif
     for (int i = 0; i < produce; i++)
     {
         regMaskTP currCandidates = candidates;
@@ -4142,10 +4134,10 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
 #ifdef ARM_SOFTFP
         // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
-        else if (tree->OperIsMultiRegOp() || tree->OperGet() == GT_COPY)
+        else if (tree->OperIsMultiRegOp() || tree->OperGet() == GT_BITCAST)
         {
-            useCandidates = genFindLowestReg(remainingUseCandidates);
-            remainingUseCandidates &= ~useCandidates;
+            currCandidates = genFindLowestReg(candidates);
+            candidates &= ~currCandidates;
         }
 #endif // ARM_SOFTFP
 #endif // _TARGET_ARM_
