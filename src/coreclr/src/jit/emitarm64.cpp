@@ -11448,11 +11448,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     bool isMulOverflow = false;
     if (dst->gtOverflowEx())
     {
-        if (ins == INS_add)
+        if ((ins == INS_add) || (ins == INS_adds))
         {
             ins = INS_adds;
         }
-        else if (ins == INS_sub)
+        else if ((ins == INS_sub) || (ins == INS_subs))
         {
             ins = INS_subs;
         }
