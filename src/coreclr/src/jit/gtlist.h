@@ -64,7 +64,11 @@ GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,GTK_SPECIAL)
 GTNODE(MEMORYBARRIER    , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)
 
 GTNODE(CAST             , GenTreeCast        ,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+GTNODE(BITCAST          , GenTreeMultiRegOp  ,0,GTK_UNOP)               // reinterpretation of bits as another type
+#else
 GTNODE(BITCAST          , GenTreeUnOp        ,0,GTK_UNOP)               // reinterpretation of bits as another type
+#endif
 GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // alloca()
 GTNODE(JMP              , GenTreeVal         ,0,GTK_LEAF|GTK_NOVALUE)   // Jump to another function
