@@ -417,6 +417,16 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        public void Multiply_SameMatrix_ThrowsInvalidOperationException()
+        {
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<InvalidOperationException>(() => matrix.Multiply(matrix));
+                Assert.Throws<InvalidOperationException>(() => matrix.Multiply(matrix, MatrixOrder.Prepend));
+            }
+        }
+
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Reset_Matrix_ReturnsExpected()
         {
             using (var matrix = new Matrix(1, 2, 3, 4, 5, 6))
