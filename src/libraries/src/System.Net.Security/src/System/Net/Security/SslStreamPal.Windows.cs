@@ -5,7 +5,6 @@
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -41,7 +40,7 @@ namespace System.Net.Security
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default(Interop.SspiCli.ContextFlags);
 
@@ -49,7 +48,7 @@ namespace System.Net.Security
                 GlobalSSPI.SSPISecureChannel,
                 ref credentialsHandle,
                 ref context,
-                ServerRequiredFlags | (remoteCertRequired ? Interop.SspiCli.ContextFlags.MutualAuth : Interop.SspiCli.ContextFlags.Zero),
+                ServerRequiredFlags | (sslAuthenticationOptions.RemoteCertRequired ? Interop.SspiCli.ContextFlags.MutualAuth : Interop.SspiCli.ContextFlags.Zero),
                 Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
                 inputBuffer,
                 outputBuffer,
@@ -58,7 +57,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default(Interop.SspiCli.ContextFlags);
 
@@ -76,7 +75,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default(Interop.SspiCli.ContextFlags);
 
@@ -129,6 +128,11 @@ namespace System.Net.Security
                 policy);
 
             return AcquireCredentialsHandle(direction, secureCredential);
+        }
+
+        internal static string GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        {
+            throw new NotImplementedException();
         }
 
         public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
