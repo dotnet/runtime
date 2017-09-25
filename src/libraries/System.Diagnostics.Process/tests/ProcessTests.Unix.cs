@@ -93,12 +93,7 @@ namespace System.Diagnostics.Tests
                 using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
                 {
                     Assert.NotNull(px);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to #23972
-                        Console.WriteLine($"{nameof(ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled)}(isFolder: {isFolder}), ProcessName: {px.ProcessName}");
-                    }
-                    else
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to #23972
                     {
                         Assert.Equal(programToOpen, px.ProcessName);
                     }
