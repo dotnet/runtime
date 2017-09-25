@@ -15,15 +15,6 @@
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(StabilizePackageVersion)' != 'true'">
-    <!-- 
-    Ensure VersionSuffix is set (especially during 'dotnet restore')
-    to work around https://github.com/NuGet/Home/issues/4337
-     -->
-    <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
-    <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
-  </PropertyGroup>
-
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>$(RepoRoot)tools-local/setuptools/Key.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
