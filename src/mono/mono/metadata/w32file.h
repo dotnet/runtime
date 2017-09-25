@@ -235,8 +235,8 @@ ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void);
 extern gunichar2 
 ves_icall_System_IO_MonoIO_get_PathSeparator (void);
 
-extern MonoArray *
-ves_icall_System_IO_MonoIO_get_InvalidPathChars (void);
+extern MonoArrayHandle
+ves_icall_System_IO_MonoIO_get_InvalidPathChars (MonoError *error);
 
 extern void ves_icall_System_IO_MonoIO_Lock (gpointer handle, gint64 position,
 					     gint64 length, gint32 *error);
