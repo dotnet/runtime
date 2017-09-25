@@ -33,5 +33,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>Schedules the continuation action for this ValueTask.</summary>
         public void UnsafeOnCompleted(Action continuation) =>
             _value.AsTask().ConfigureAwait(continueOnCapturedContext: true).GetAwaiter().UnsafeOnCompleted(continuation);
+
+        /// <summary>Gets the task underlying <see cref="_value"/>.</summary>
+        internal Task<TResult> AsTask() => _value.AsTask();
     }
 }
