@@ -1513,7 +1513,7 @@ RelativePath=baseservices\threading\generics\threadstart\GThread25\GThread25.cmd
 WorkingDir=baseservices\threading\generics\threadstart\GThread25
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ArraySort9.cmd_191]
@@ -3801,7 +3801,7 @@ RelativePath=GC\Regressions\v2.0-beta1\149926\149926\149926.cmd
 WorkingDir=GC\Regressions\v2.0-beta1\149926\149926
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [param06.cmd_478]
@@ -4681,7 +4681,7 @@ RelativePath=GC\Regressions\dev10bugs\536168\536168\536168.cmd
 WorkingDir=GC\Regressions\dev10bugs\536168\536168
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ldvirtftn.cmd_589]
@@ -5201,7 +5201,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1.1-M1-Beta1\b143840\b143840\b143840.cm
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1.1-M1-Beta1\b143840\b143840
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [struct01_static.cmd_654]
@@ -6449,7 +6449,7 @@ RelativePath=baseservices\threading\generics\threadstart\GThread01\GThread01.cmd
 WorkingDir=baseservices\threading\generics\threadstart\GThread01
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_relgc_nested.cmd_811]
@@ -7409,7 +7409,7 @@ RelativePath=GC\Scenarios\FinalizeTimeout\FinalizeTimeout\FinalizeTimeout.cmd
 WorkingDir=GC\Scenarios\FinalizeTimeout\FinalizeTimeout
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated989.cmd_932]
@@ -8609,7 +8609,7 @@ RelativePath=Regressions\coreclr\1514\InterlockExchange\InterlockExchange.cmd
 WorkingDir=Regressions\coreclr\1514\InterlockExchange
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [r4div_cs_do.cmd_1082]
@@ -16617,7 +16617,7 @@ RelativePath=GC\Features\LOHFragmentation\lohfragmentation\lohfragmentation.cmd
 WorkingDir=GC\Features\LOHFragmentation\lohfragmentation
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [CharIsLetter1.cmd_2089]
@@ -17121,7 +17121,7 @@ RelativePath=GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.cmd
 WorkingDir=GC\Coverage\LargeObjectAlloc
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [NestedInterface03.cmd_2152]
@@ -18633,7 +18633,7 @@ RelativePath=JIT\jit64\hfa\main\testE\hfa_sd0E_r\hfa_sd0E_r.cmd
 WorkingDir=JIT\jit64\hfa\main\testE\hfa_sd0E_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12684;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DevDiv_359736_ro.cmd_2342]
@@ -19729,7 +19729,7 @@ RelativePath=GC\Scenarios\BinTree\thdtreelivingobj\thdtreelivingobj.cmd
 WorkingDir=GC\Scenarios\BinTree\thdtreelivingobj
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated38.cmd_2479]
@@ -20273,7 +20273,7 @@ RelativePath=JIT\jit64\hfa\main\testE\hfa_sf1E_r\hfa_sf1E_r.cmd
 WorkingDir=JIT\jit64\hfa\main\testE\hfa_sf1E_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12684;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [OpCodesCall.cmd_2547]
@@ -20561,7 +20561,7 @@ RelativePath=JIT\Regression\JitBlue\DevDiv_255263\DevDiv_255263\DevDiv_255263.cm
 WorkingDir=JIT\Regression\JitBlue\DevDiv_255263\DevDiv_255263
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12686
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [castclass-null013.cmd_2583]
@@ -20897,7 +20897,7 @@ RelativePath=JIT\Regression\JitBlue\DevDiv_199169\DevDiv_199169\DevDiv_199169.cm
 WorkingDir=JIT\Regression\JitBlue\DevDiv_199169\DevDiv_199169
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12686
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [CS_ARENullRefEx.cmd_2625]
@@ -21833,7 +21833,7 @@ RelativePath=JIT\SIMD\VectorConvert_r\VectorConvert_r.cmd
 WorkingDir=JIT\SIMD\VectorConvert_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13422
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [b13466.cmd_2743]
@@ -22105,7 +22105,7 @@ RelativePath=GC\Scenarios\DoublinkList\doublinknoleak2\doublinknoleak2.cmd
 WorkingDir=GC\Scenarios\DoublinkList\doublinknoleak2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [MathFSqrt.cmd_2777]
@@ -24009,7 +24009,7 @@ RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeT
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [TimeSpanFromTicks.cmd_3015]
@@ -24769,7 +24769,7 @@ RelativePath=JIT\jit64\regress\vsw\539509\test1\test1.cmd
 WorkingDir=JIT\jit64\regress\vsw\539509\test1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [GetHashCode.cmd_3111]
@@ -25161,7 +25161,7 @@ RelativePath=GC\Features\HeapExpansion\plug\plug.cmd
 WorkingDir=GC\Features\HeapExpansion\plug
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [OpCodesLdloca_S.cmd_3160]
@@ -26217,7 +26217,7 @@ RelativePath=baseservices\threading\regressions\beta2\437017\437017.cmd
 WorkingDir=baseservices\threading\regressions\beta2\437017
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [rethrowwithhandlerscatchingbase_d.cmd_3294]
@@ -28617,7 +28617,7 @@ RelativePath=GC\Scenarios\THDList\thdlist\thdlist.cmd
 WorkingDir=GC\Scenarios\THDList\thdlist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [waitallex1.cmd_3595]
@@ -30497,7 +30497,7 @@ RelativePath=GC\Scenarios\muldimjagary\muldimjagary\muldimjagary.cmd
 WorkingDir=GC\Scenarios\muldimjagary\muldimjagary
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [GCSimulator_261.cmd_3830]
@@ -31593,7 +31593,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41129\b41129\b41129.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41129\b41129
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12685
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [thread21.cmd_3967]
@@ -33209,7 +33209,7 @@ RelativePath=JIT\Methodical\flowgraph\dev10_bug679955\volatileLocal1\volatileLoc
 WorkingDir=JIT\Methodical\flowgraph\dev10_bug679955\volatileLocal1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12685;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b21296.cmd_4170]
@@ -34785,7 +34785,7 @@ RelativePath=GC\Features\BackgroundGC\foregroundgc\foregroundgc.cmd
 WorkingDir=GC\Features\BackgroundGC\foregroundgc
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_il_relldsfld_mul.cmd_4367]
@@ -43017,7 +43017,7 @@ RelativePath=JIT\SIMD\VectorConvert_ro\VectorConvert_ro.cmd
 WorkingDir=JIT\SIMD\VectorConvert_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13422
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [b53650.cmd_5397]
@@ -43305,7 +43305,7 @@ RelativePath=GC\Coverage\LargeObjectAlloc2\LargeObjectAlloc2.cmd
 WorkingDir=GC\Coverage\LargeObjectAlloc2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [DelegStaticFtn.cmd_5433]
@@ -44649,7 +44649,7 @@ RelativePath=GC\Scenarios\BinTree\thdtreegrowingobj\thdtreegrowingobj.cmd
 WorkingDir=GC\Scenarios\BinTree\thdtreegrowingobj
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [_speed_dbgselfref.cmd_5602]
@@ -48881,7 +48881,7 @@ RelativePath=GC\Regressions\v2.0-beta2\460373\460373\460373.cmd
 WorkingDir=GC\Regressions\v2.0-beta2\460373\460373
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [waitanyex3.cmd_6133]
@@ -50897,7 +50897,7 @@ RelativePath=baseservices\threading\generics\threadstart\GThread22\GThread22.cmd
 WorkingDir=baseservices\threading\generics\threadstart\GThread22
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b50145c.cmd_6386]
@@ -55297,7 +55297,7 @@ RelativePath=GC\Scenarios\BinTree\thdtree\thdtree.cmd
 WorkingDir=GC\Scenarios\BinTree\thdtree
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [add_ovf_i8.cmd_6940]
@@ -56921,7 +56921,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b59782\b59782\b59782.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b59782\b59782
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12685
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated1230.cmd_7144]
@@ -57081,7 +57081,7 @@ RelativePath=JIT\jit64\hfa\main\testE\hfa_sf0E_r\hfa_sf0E_r.cmd
 WorkingDir=JIT\jit64\hfa\main\testE\hfa_sf0E_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12684;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated399.cmd_7164]
@@ -57865,7 +57865,7 @@ RelativePath=JIT\Methodical\xxblk\initblk3_il_d\initblk3_il_d.cmd
 WorkingDir=JIT\Methodical\xxblk\initblk3_il_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12686
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [118414.cmd_7262]
@@ -59553,7 +59553,7 @@ RelativePath=GC\Scenarios\THDChaos\thdchaos\thdchaos.cmd
 WorkingDir=GC\Scenarios\THDChaos\thdchaos
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated615.cmd_7473]
@@ -64825,7 +64825,7 @@ RelativePath=JIT\jit64\hfa\main\testE\hfa_sd1E_r\hfa_sd1E_r.cmd
 WorkingDir=JIT\jit64\hfa\main\testE\hfa_sd1E_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12684;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated948.cmd_8134]
@@ -64953,7 +64953,7 @@ RelativePath=GC\Scenarios\LeakGen\leakgenthrd\leakgenthrd.cmd
 WorkingDir=GC\Scenarios\LeakGen\leakgenthrd
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [castclass003.cmd_8150]
@@ -66737,7 +66737,7 @@ RelativePath=baseservices\threading\generics\threadstart\GThread02\GThread02.cmd
 WorkingDir=baseservices\threading\generics\threadstart\GThread02
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [nestedTryRegionsWithSameOffset1_o.cmd_8374]
@@ -67473,7 +67473,7 @@ RelativePath=GC\Features\HeapExpansion\bestfit-threaded\bestfit-threaded.cmd
 WorkingDir=GC\Features\HeapExpansion\bestfit-threaded
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [ConvertToSingle16.cmd_8466]
@@ -69609,7 +69609,7 @@ RelativePath=GC\Regressions\v2.0-beta2\445488\445488\445488.cmd
 WorkingDir=GC\Regressions\v2.0-beta2\445488\445488
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [_dbgsizeof32.cmd_8733]
@@ -72193,7 +72193,7 @@ RelativePath=GC\LargeMemory\API\gc\suppressfinalize\suppressfinalize.cmd
 WorkingDir=GC\LargeMemory\API\gc\suppressfinalize
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [StringPadLeft.cmd_9058]
@@ -73809,7 +73809,7 @@ RelativePath=JIT\Methodical\xxblk\initblk3_il_r\initblk3_il_r.cmd
 WorkingDir=JIT\Methodical\xxblk\initblk3_il_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12686
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated721.cmd_9260]
@@ -74777,7 +74777,7 @@ RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeT
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeTString
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [castclass011.cmd_9383]
@@ -75609,7 +75609,7 @@ RelativePath=JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [DevDiv_816617_ro.cmd_9488]
@@ -79001,7 +79001,7 @@ RelativePath=JIT\jit64\hfa\main\testE\hfa_nf1E_r\hfa_nf1E_r.cmd
 WorkingDir=JIT\jit64\hfa\main\testE\hfa_nf1E_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12684;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [box-unbox003.cmd_9916]
@@ -80241,7 +80241,7 @@ RelativePath=GC\Coverage\smalloom\smalloom.cmd
 WorkingDir=GC\Coverage\smalloom
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b12425.cmd_10072]
@@ -80385,7 +80385,7 @@ RelativePath=JIT\jit64\hfa\main\testE\hfa_nf0E_r\hfa_nf0E_r.cmd
 WorkingDir=JIT\jit64\hfa\main\testE\hfa_nf0E_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12684;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated237.cmd_10090]
@@ -82337,7 +82337,7 @@ RelativePath=Regressions\coreclr\0080\delete_next_card_table\delete_next_card_ta
 WorkingDir=Regressions\coreclr\0080\delete_next_card_table
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ArrayInitialize.cmd_10336]
@@ -84761,7 +84761,7 @@ RelativePath=baseservices\threading\generics\threadstart\GThread23\GThread23.cmd
 WorkingDir=baseservices\threading\generics\threadstart\GThread23
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [AbstractBase01.cmd_10641]
@@ -85993,7 +85993,7 @@ RelativePath=baseservices\threading\generics\threadstart\GThread24\GThread24.cmd
 WorkingDir=baseservices\threading\generics\threadstart\GThread24
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [StackCtor1.cmd_10795]
@@ -89017,7 +89017,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b54566\b54566\b54566.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b54566\b54566
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;12685
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [rangecheckinfinally_r.cmd_11175]
