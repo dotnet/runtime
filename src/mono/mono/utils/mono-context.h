@@ -449,12 +449,17 @@ typedef struct {
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
 	arm_unified_thread_state_t thread_state;	\
+	arm_neon_state64_t thread_fpstate;		\
 	int state_flavor = ARM_UNIFIED_THREAD_STATE;	\
+	int fpstate_flavor = ARM_NEON_STATE64;	\
 	unsigned state_count = ARM_UNIFIED_THREAD_STATE_COUNT;	\
+	unsigned fpstate_count = ARM_NEON_STATE64_COUNT;	\
 	thread_port_t self = mach_thread_self ();	\
 	kern_return_t ret = thread_get_state (self, state_flavor, (thread_state_t) &thread_state, &state_count);	\
 	g_assert (ret == 0);	\
-	mono_mach_arch_thread_states_to_mono_context ((thread_state_t)&thread_state, (thread_state_t)NULL, &ctx); \
+	ret = thread_get_state (self, fpstate_flavor, (thread_state_t) &thread_fpstate, &fpstate_count);	\
+	g_assert (ret == 0);	\
+	mono_mach_arch_thread_states_to_mono_context ((thread_state_t) &thread_state, (thread_state_t) &thread_fpstate, &ctx); \
 	mach_port_deallocate (current_task (), self);	\
 } while (0);
 
