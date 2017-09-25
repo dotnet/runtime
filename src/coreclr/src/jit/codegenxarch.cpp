@@ -6246,6 +6246,9 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     // Case of op1 == 0 or op1 != 0:
     // Optimize generation of 'test' instruction if op1 sets flags.
     //
+    // TODO-Cleanup Review GTF_USE_FLAGS usage
+    // https://github.com/dotnet/coreclr/issues/14093
+    //
     // Note that if LSRA has inserted any GT_RELOAD/GT_COPY before
     // op1, it will not modify the flags set by codegen of op1.
     // Similarly op1 could also be reg-optional at its use and
