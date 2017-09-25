@@ -4378,6 +4378,18 @@ ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 }
 
 void
+ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes (MonoReflectionAssemblyBuilderHandle assemblyb)
+{
+	MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, assemblyb, cattrs);
+
+	MonoReflectionAssemblyHandle assembly_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, assemblyb);
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_handle, assembly);
+	g_assert (assembly);
+
+	mono_save_custom_attrs (assembly->image, assembly, MONO_HANDLE_RAW (cattrs));
+}
+
+void
 ves_icall_EnumBuilder_setup_enum_type (MonoReflectionTypeHandle enumtype,
 				       MonoReflectionTypeHandle t,
 				       MonoError *error)
