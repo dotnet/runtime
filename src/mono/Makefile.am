@@ -145,4 +145,7 @@ update-llvm-version:
 update-solution-files:
 	make update-csproj
 	make package-inputs
-	(cd msvc/scripts; make genproj.exe; mono genproj.exe)
+	(cd msvc/scripts; make genproj.exe; mono genproj.exe $(GENPROJ_ARGS))
+
+update-solution-files-with-tests:
+	make "GENPROJ_ARGS=2012 true true" update-solution-files

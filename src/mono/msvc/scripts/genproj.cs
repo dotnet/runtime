@@ -794,12 +794,8 @@ class MsbuildGenerator {
 
 		var refs = new StringBuilder ();
 
-		bool is_test = response.Contains ("_test_");
-		if (is_test) {
-			// F:\src\mono\mcs\class\lib\net_2_0\nunit.framework.dll
-			// F:\src\mono\mcs\class\SomeProject\SomeProject_test_-net_2_0.csproj
-			var nunitLibPath = string.Format (@"..\lib\{0}\nunit.framework.dll", profile);
-			refs.Append (string.Format ("    <Reference Include=\"{0}\" />" + NewLine, nunitLibPath));
+		if (response.Contains ("_test")) {
+			refs.Append ($@"    <Reference Include=""..\lib\{profile}\nunitlite.dll"" />{NewLine}");
 		}
 
 		//
@@ -1049,7 +1045,7 @@ class MsbuildGenerator {
 
 public class Driver {
 
-	static IEnumerable<XElement> GetProjects (bool full = false)
+	static IEnumerable<XElement> GetProjects (bool withTests = false)
 	{
 		XDocument doc = XDocument.Load ("order.xml");
 		foreach (XElement project in doc.Root.Elements ()) {
@@ -1071,12 +1067,6 @@ public class Driver {
 			//
 			if (!(dir.StartsWith ("class") || dir.StartsWith ("mcs") || dir.StartsWith ("basic")))
 				continue;
-
-			if (full){
-				if (!library.Contains ("tests"))
-					yield return project;
-				continue;
-			}
 #endif
 			//
 			// Do not do 2.1, it is not working yet
@@ -1094,11 +1084,12 @@ public class Driver {
 			if (dir.Contains ("nunit20"))
 				continue;
 			
-#if true
-			if (profile != "net_4_x" || library.Contains ("tests")) 
+			if (library.Contains ("tests") && !withTests)
 				continue;
-#endif
-			//Console.WriteLine ("Going to handle {0}", library);
+
+			if (profile != "net_4_x")
+				continue;
+
 			yield return project;
 		}
 	}
@@ -1112,12 +1103,12 @@ public class Driver {
 
 		if (args.Length == 1 && args [0].ToLower ().Contains ("-h")) {
 			Console.WriteLine ("Usage:");
-			Console.WriteLine ("genproj.exe [visual_studio_release] [output_full_solutions]");
+			Console.WriteLine ("genproj.exe [visual_studio_release] [output_full_solutions] [with_tests]");
 			Console.WriteLine ("If output_full_solutions is false, only the main System*.dll");
 			Console.WriteLine (" assemblies (and dependencies) is included in the solution.");
 			Console.WriteLine ("Example:");
-			Console.WriteLine ("genproj.exe 2012 false");
-			Console.WriteLine ("genproj.exe with no arguments is equivalent to 'genproj.exe 2012 true'\n\n");
+			Console.WriteLine ("genproj.exe 2012 false false");
+			Console.WriteLine ("genproj.exe with no arguments is equivalent to 'genproj.exe 2012 true false'\n\n");
 			Console.WriteLine ("genproj.exe deps");
 			Console.WriteLine ("Generates a Makefile dependency file from the projects input");
 			Environment.Exit (0);
@@ -1125,6 +1116,7 @@ public class Driver {
 
 		var slnVersion = (args.Length > 0) ? args [0] : "2012";
 		bool fullSolutions = (args.Length > 1) ? bool.Parse (args [1]) : true;
+		bool withTests = (args.Length > 2) ? bool.Parse (args [2]) : false;
 
 		// To generate makefile depenedencies
 		var makefileDeps =  (args.Length > 0 && args [0] == "deps");
@@ -1134,11 +1126,11 @@ public class Driver {
 		var projects = new Dictionary<string,MsbuildGenerator> ();
 
 		var duplicates = new List<string> ();
-		foreach (var project in GetProjects (makefileDeps)) {
+		foreach (var project in GetProjects (withTests)) {
 			var library_output = project.Element ("library_output").Value;
 			projects [library_output] = new MsbuildGenerator (project);
 		}
-		foreach (var project in GetProjects (makefileDeps)){
+		foreach (var project in GetProjects (withTests)){
 			var library_output = project.Element ("library_output").Value;
 			//Console.WriteLine ("=== {0} ===", library_output);
 			var gen = projects [library_output];
