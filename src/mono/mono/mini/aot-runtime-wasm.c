@@ -313,6 +313,15 @@ wasm_invoke_vifffffi (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_ff (void *target_func, InterpMethodArguments *margs)
+{
+	float (*func)(float a) = target_func;
+
+	float res = func (*(float*)&margs->fargs [FIDX (0)]);
+	*(float*)margs->retval = res;
+}
+
+static void
 wasm_enter_icall_trampoline (void *target_func, InterpMethodArguments *margs)
 {
 	static char cookie [8];
@@ -374,6 +383,8 @@ wasm_enter_icall_trampoline (void *target_func, InterpMethodArguments *margs)
 		wasm_invoke_viffff (target_func, margs);
 	else if (!strcmp ("VIFFFFFI", cookie))
 		wasm_invoke_vifffffi (target_func, margs);
+	else if (!strcmp ("FF", cookie))
+		wasm_invoke_ff (target_func, margs);
 	else {
 		printf ("CANNOT HANDLE COOKIE %s\n", cookie);
 		g_assert (0);
