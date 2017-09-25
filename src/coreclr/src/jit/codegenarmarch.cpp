@@ -154,6 +154,42 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForCast(treeNode->AsOp());
             break;
 
+        case GT_BITCAST:
+        {
+            GenTree* op1 = treeNode->gtOp.gtOp1;
+            if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
+            {
+#ifdef _TARGET_ARM64_
+                inst_RV_RV(INS_fmov, targetReg, genConsumeReg(op1), targetType);
+#else  // !_TARGET_ARM64_
+                if (varTypeIsFloating(treeNode))
+                {
+                    NYI_ARM("genRegCopy from 'int' to 'float'");
+                }
+                else
+                {
+                    assert(varTypeIsFloating(op1));
+
+                    if (op1->TypeGet() == TYP_FLOAT)
+                    {
+                        inst_RV_RV(INS_vmov_f2i, targetReg, genConsumeReg(op1), targetType);
+                    }
+                    else
+                    {
+                        regNumber otherReg = (regNumber)treeNode->AsMultiRegOp()->gtOtherReg;
+                        assert(otherReg != REG_NA);
+                        inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, genConsumeReg(op1), EA_8BYTE);
+                    }
+                }
+#endif // !_TARGET_ARM64_
+            }
+            else
+            {
+                inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
+            }
+        }
+        break;
+
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
             genCodeForLclAddr(treeNode);
