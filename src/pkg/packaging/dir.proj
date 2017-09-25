@@ -185,7 +185,8 @@
       <PackArgs>$(PackArgs) $(MSBuildPassThroughPropertyList) /p:BaseOutputPath=$(IntermediateOutputForPackaging)</PackArgs>
     </PropertyGroup>
 
-    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) $(PackArgs)" />
+    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) $(PackArgs)"
+          Condition="'@(PackageProjects)' != ''" />
   </Target>
 
 </Project>
