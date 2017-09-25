@@ -283,9 +283,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(PB_GitDirectory)/Tools/msbuild.sh",
+        "filename": "$(DockerHost_ToolsDirectory)/msbuild.sh",
         "arguments": "cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
-        "workingFolder": "$(PB_GitDirectory)/Tools/scripts/vstsagent/",
+        "workingFolder": "$(DockerHost_ToolsDirectory)/scripts/vstsagent/",
         "failOnStandardError": "false"
       }
     }
