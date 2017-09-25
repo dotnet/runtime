@@ -13,42 +13,42 @@ namespace System.Runtime.Intrinsics.X86
     [CLSCompliant(false)]
     public static class Bmi2
     {
-        public static bool IsSupported { get => IsSupported; }
+        public static bool IsSupported { get { return false; } }
 
         /// <summary>
         /// unsigned int _bzhi_u32 (unsigned int a, unsigned int index)
         /// </summary>
-        public static uint ZeroHighBits(uint value, uint index) => ZeroHighBits(value, index);
+        public static uint ZeroHighBits(uint value, uint index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// unsigned __int64 _bzhi_u64 (unsigned __int64 a, unsigned int index)
         /// </summary>
-        public static ulong ZeroHighBits(ulong value, ulong index) => ZeroHighBits(value, index);
+        public static ulong ZeroHighBits(ulong value, ulong index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
         /// </summary>
-        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* high) => MultiplyNoFlags(left, right, high);
+        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* high) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
         /// </summary>
-        public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) => MultiplyNoFlags(left, right, high);
+        public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _pdep_u32 (unsigned int a, unsigned int mask)
         /// </summary>
-        public static uint ParallelBitDeposit(uint value, uint mask) => ParallelBitDeposit(value, mask);
+        public static uint ParallelBitDeposit(uint value, uint mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
         /// </summary>
-        public static ulong ParallelBitDeposit(ulong value, ulong mask) => ParallelBitDeposit(value, mask);
+        public static ulong ParallelBitDeposit(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _pext_u32 (unsigned int a, unsigned int mask)
         /// </summary>
-        public static uint ParallelBitExtract(uint value, uint mask) => ParallelBitExtract(value, mask);
+        public static uint ParallelBitExtract(uint value, uint mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// unsigned __int64 _pext_u64 (unsigned __int64 a, unsigned __int64 mask)
         /// </summary>
-        public static ulong ParallelBitExtract(ulong value, ulong mask) => ParallelBitExtract(value, mask);        
+        public static ulong ParallelBitExtract(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }        
     }
 }
