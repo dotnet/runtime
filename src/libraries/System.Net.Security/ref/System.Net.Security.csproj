@@ -22,5 +22,8 @@
     <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
     <ProjectReference Include="..\..\System.Threading.Tasks\ref\System.Threading.Tasks.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

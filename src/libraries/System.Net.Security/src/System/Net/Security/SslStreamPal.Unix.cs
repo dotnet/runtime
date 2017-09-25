@@ -29,9 +29,9 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
-            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired, SslAuthenticationOptions sslAuthenticationOptions)
+            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, true, remoteCertRequired, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, true, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
@@ -102,8 +102,8 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(((SafeDeleteSslContext)securityContext).SslContext);
         }
 
-        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
-            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool isServer, bool remoteCertRequired, SslAuthenticationOptions sslAuthenticationOptions)
+        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context, SecurityBuffer inputBuffer,
+            SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
 

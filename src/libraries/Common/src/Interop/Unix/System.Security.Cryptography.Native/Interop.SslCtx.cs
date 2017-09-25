@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -34,7 +35,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAplnSelectCb")]
         internal static unsafe extern void SslCtxSetAplnSelectCb(SafeSslContextHandle ctx, SslCtxSetAplnCallback callback, IntPtr arg);
 
-        internal static unsafe int SslCtxSetAplnProtos(SafeSslContextHandle ctx, IList<string> protocols)
+        internal static unsafe int SslCtxSetAplnProtos(SafeSslContextHandle ctx, IList<SslApplicationProtocol> protocols)
         {
             byte[] buffer = AlpnStringListToByteArray(protocols);
             fixed (byte* b = buffer)
@@ -43,12 +44,12 @@ internal static partial class Interop
             }
         }
 
-        internal static byte[] AlpnStringListToByteArray(IList<string> protocols)
+        internal static byte[] AlpnStringListToByteArray(IList<SslApplicationProtocol> protocols)
         {
             int protocolSize = 0;
-            foreach (string protocol in protocols)
+            foreach (SslApplicationProtocol protocol in protocols)
             {
-                if (string.IsNullOrEmpty(protocol) || protocol.Length > byte.MaxValue)
+                if (protocol.Length <= 0 || protocol.Length > byte.MaxValue)
                 {
                     throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(protocols));
                 }
@@ -58,10 +59,11 @@ internal static partial class Interop
 
             byte[] buffer = new byte[protocolSize];
             var offset = 0;
-            foreach (string protocol in protocols)
+            foreach (SslApplicationProtocol protocol in protocols)
             {
                 buffer[offset++] = (byte)(protocol.Length);
-                offset += Encoding.ASCII.GetBytes(protocol, 0, protocol.Length, buffer, offset);
+                Array.Copy(protocol.ToArray(), 0, buffer, offset, protocol.Length);
+                offset += protocol.Length;
             }
 
             return buffer;
