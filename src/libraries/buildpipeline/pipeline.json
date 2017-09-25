@@ -107,7 +107,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-buildArch=arm -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:ConfigurationGroup=Release /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
@@ -124,7 +124,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm64",
-            "PB_BuildArguments": "-buildArch=arm64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-buildArch=arm64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm64 /p:RuntimeOS=win10",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm64 /p:ConfigurationGroup=Release /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
@@ -141,7 +141,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-buildArch=x64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
             "PB_TargetQueue": "Windows.10.Amd64+Windows.10.Nano.Amd64+Windows.10.Amd64.Core+Windows.7.Amd64+Windows.81.Amd64",
@@ -159,7 +159,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-buildArch=x86 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
             "PB_TargetQueue": "Windows.10.Amd64+Windows.10.Amd64.Core+Windows.7.Amd64+Windows.81.Amd64",
@@ -177,7 +177,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-framework=uap -buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uap -buildArch=arm -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=arm -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_TargetQueue": "Windows.10.Arm64",
@@ -195,7 +195,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework=uap -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uap -buildArch=x64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -213,7 +213,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework=uap -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uap -buildArch=x86 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -231,7 +231,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=arm -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
             "PB_TargetQueue": "Windows.10.Amd64",
@@ -249,7 +249,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework=uapaot -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=x64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -267,7 +267,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework=uapaot -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=x86 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -285,7 +285,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows-NoTest",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-allConfigurations -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-allConfigurations -buildArch=x64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
@@ -300,7 +300,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
             "PB_TargetQueue": "Windows.10.Amd64",
@@ -318,7 +318,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
             "PB_TargetQueue": "Windows.10.Amd64",
@@ -430,7 +430,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-framework=uap -buildArch=arm -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uap -buildArch=arm -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=arm -Debug -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_TargetQueue": "Windows.10.Arm64",
@@ -448,7 +448,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework=uap -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uap -buildArch=x64 -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=x64 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -466,7 +466,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework=uap -buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uap -buildArch=x86 -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=x86 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -484,7 +484,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=arm -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
             "PB_TargetQueue": "Windows.10.Amd64",
@@ -502,7 +502,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework:uapaot -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework:uapaot -buildArch=x64 -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x64 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -520,7 +520,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework:uapaot -buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework:uapaot -buildArch=x86 -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x86 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
@@ -538,7 +538,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows-NoTest",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-allConfigurations -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-allConfigurations -buildArch=x64 -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
@@ -553,7 +553,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Debug -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
             "PB_TargetQueue": "Windows.10.Amd64",
@@ -571,7 +571,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Debug -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Debug -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
             "PB_TargetQueue": "Windows.10.Amd64",
