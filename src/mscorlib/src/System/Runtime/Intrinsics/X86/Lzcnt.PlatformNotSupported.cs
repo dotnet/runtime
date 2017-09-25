@@ -12,15 +12,15 @@ namespace System.Runtime.Intrinsics.X86
     [CLSCompliant(false)]
     public static class Lzcnt
     {
-        public static bool IsSupported { get => IsSupported; }
+        public static bool IsSupported { get { return false; } }
 
         /// <summary>
         /// unsigned int _lzcnt_u32 (unsigned int a)
         /// </summary>
-        public static uint LeadingZeroCount(uint value) => LeadingZeroCount(value);
+        public static uint LeadingZeroCount(uint value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// unsigned __int64 _lzcnt_u64 (unsigned __int64 a)
         /// </summary>
-        public static ulong LeadingZeroCount(ulong value) => LeadingZeroCount(value);
+        public static ulong LeadingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
     }
 }
