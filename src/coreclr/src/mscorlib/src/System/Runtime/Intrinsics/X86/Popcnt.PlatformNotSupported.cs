@@ -12,15 +12,15 @@ namespace System.Runtime.Intrinsics.X86
     [CLSCompliant(false)]
     public static class Popcnt
     {
-        public static bool IsSupported { get => IsSupported; }
+        public static bool IsSupported { get { return false; } }
 
         /// <summary>
         /// int _mm_popcnt_u32 (unsigned int a)
         /// </summary>
-        public static int PopCount(uint value) => PopCount(value);
+        public static int PopCount(uint value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
         /// </summary>
-        public static long PopCount(ulong value) => PopCount(value);
+        public static long PopCount(ulong value) { throw new PlatformNotSupportedException(); }
     }
 }
