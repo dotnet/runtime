@@ -48,7 +48,7 @@ internal static partial class Interop
             return bindingHandle;
         }
 
-        internal static SafeSslHandle AllocateSslContext(SslProtocols protocols, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, EncryptionPolicy policy, bool isServer, bool remoteCertRequired, SslAuthenticationOptions authOptions)
+        internal static SafeSslHandle AllocateSslContext(SslProtocols protocols, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, EncryptionPolicy policy, SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeSslHandle context = null;
 
@@ -89,34 +89,33 @@ internal static partial class Interop
                     SetSslCertificate(innerContext, certHandle, certKeyHandle);
                 }
 
-                if (remoteCertRequired)
+                if (sslAuthenticationOptions.RemoteCertRequired)
                 {
-                    Debug.Assert(isServer, "isServer flag should be true");
-                    Ssl.SslCtxSetVerify(innerContext,
-                        s_verifyClientCertificate);
+                    Debug.Assert(sslAuthenticationOptions.IsServer, "isServer flag should be true");
+                    Ssl.SslCtxSetVerify(innerContext, s_verifyClientCertificate);
 
                     //update the client CA list 
                     UpdateCAListFromRootStore(innerContext);
                 }
 
-                if (authOptions.ApplicationProtocols != null)
+                if (sslAuthenticationOptions.ApplicationProtocols != null)
                 {
-                    if (isServer)
+                    if (sslAuthenticationOptions.IsServer)
                     {
-                        byte[] protos = Ssl.AlpnStringListToByteArray(authOptions.ApplicationProtocols);
-                        authOptions._alpnProtocolsHandle = GCHandle.Alloc(protos);
-                        Interop.Ssl.SslCtxSetAplnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(authOptions._alpnProtocolsHandle));
+                        byte[] protos = Ssl.AlpnStringListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                        sslAuthenticationOptions.AlpnProtocolsHandle = GCHandle.Alloc(protos);
+                        Interop.Ssl.SslCtxSetAplnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(sslAuthenticationOptions.AlpnProtocolsHandle));
                     }
                     else
                     {
-                        if (Interop.Ssl.SslCtxSetAplnProtos(innerContext, authOptions.ApplicationProtocols) != 0)
+                        if (Interop.Ssl.SslCtxSetAplnProtos(innerContext, sslAuthenticationOptions.ApplicationProtocols) != 0)
                         {
                             throw CreateSslException(SR.net_alpn_notsupported);
                         }
                     }
                 }
 
-                context = SafeSslHandle.Create(innerContext, isServer);
+                context = SafeSslHandle.Create(innerContext, sslAuthenticationOptions.IsServer);
                 Debug.Assert(context != null, "Expected non-null return value from SafeSslHandle.Create");
                 if (context.IsInvalid)
                 {

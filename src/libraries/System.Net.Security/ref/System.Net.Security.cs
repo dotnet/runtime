@@ -6,6 +6,10 @@
 // ------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -95,18 +99,49 @@ namespace System.Net.Security
         EncryptAndSign = 2
     }
     public delegate bool RemoteCertificateValidationCallback(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors);
-    public partial class SslAuthenticationOptions
+    public class SslServerAuthenticationOptions
     {
-        public IList<string> ApplicationProtocols { get { throw null; } set { } }
-        public Dictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> ServerCertificates { get { throw null; } set { } }
+        public bool AllowRenegotiation { get { throw null;  } set { } }
+        public X509Certificate ServerCertificate { get { throw null;  } set { } }
+        public bool ClientCertificateRequired { get { throw null;  } set { } }
+        public SslProtocols EnabledSslProtocols { get { throw null;  } set { } }
+        public X509RevocationMode CheckCertificateRevocation { get { throw null;  } set { } }
+        public IList<SslApplicationProtocol> ApplicationProtocols { get; }
+        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null;  } set { } }
+        public EncryptionPolicy EncryptionPolicy { get { throw null;  } set { } }
+    }
+    public partial class SslClientAuthenticationOptions
+    {
+        public bool AllowRenegotiation { get { throw null;  } set { } }
+        public string TargetHost { get { throw null; } set { } }
+        public X509CertificateCollection ClientCertificates { get { throw null; } set { } }
+        public LocalCertificateSelectionCallback LocalCertificateSelectionCallback { get { throw null; } set { } }
+        public SslProtocols EnabledSslProtocols { get { throw null; } set { } }
+        public X509RevocationMode CheckCertificateRevocation { get { throw null; } set { } }
+        public IList<SslApplicationProtocol> ApplicationProtocols { get { throw null; } }
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null; } set { } }
-        public LocalCertificateSelectionCallback UserCertificateSelectionCallback { get { throw null; } set { } }
         public EncryptionPolicy EncryptionPolicy { get { throw null; } set { } }
+    }
+    public partial struct SslApplicationProtocol : IEquatable<SslApplicationProtocol>
+    {
+        public static readonly SslApplicationProtocol Http2;
+        public static readonly SslApplicationProtocol Http11;
+
+        public SslApplicationProtocol(byte[] protocol) { }
+        public SslApplicationProtocol(string protocol) { }
+
+        public ReadOnlyMemory<byte> Protocol { get { throw null; } }
+
+        public bool Equals(SslApplicationProtocol other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+        public static bool operator ==(SslApplicationProtocol left, SslApplicationProtocol right) { throw null; }
+        public static bool operator !=(SslApplicationProtocol left, SslApplicationProtocol right) { throw null; }
     }
     public partial class SslStream : AuthenticatedStream
     {
         public SslStream(System.IO.Stream innerStream) : base(innerStream, false) { }
-        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, SslAuthenticationOptions sslauthenticationOptions) : base(innerStream, leaveInnerStreamOpen) { }
         public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen) : base(innerStream, leaveInnerStreamOpen) { }
         public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback userCertificateValidationCallback) : base(innerStream, leaveInnerStreamOpen) { }
         public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback userCertificateValidationCallback, System.Net.Security.LocalCertificateSelectionCallback userCertificateSelectionCallback) : base(innerStream, leaveInnerStreamOpen) { }
@@ -145,9 +180,11 @@ namespace System.Net.Security
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(string targetHost) { throw null; }
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection clientCertificates, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation) { throw null; }
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection clientCertificates, bool checkCertificateRevocation) { throw null; }
+        public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate) { throw null; }
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation) { throw null; }
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation) { throw null; }
+        public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken) { throw null; }
         public virtual System.IAsyncResult BeginAuthenticateAsClient(string targetHost, System.AsyncCallback asyncCallback, object asyncState) { throw null; }
         public virtual System.IAsyncResult BeginAuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection clientCertificates, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation, System.AsyncCallback asyncCallback, object asyncState) { throw null; }
         public virtual System.IAsyncResult BeginAuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection clientCertificates, bool checkCertificateRevocation, System.AsyncCallback asyncCallback, object asyncState) { throw null; }

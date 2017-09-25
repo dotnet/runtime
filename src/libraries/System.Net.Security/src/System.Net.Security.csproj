@@ -22,6 +22,10 @@
     <Compile Include="System\Net\FixedSizeReader.cs" />
     <Compile Include="System\Net\HelperAsyncResults.cs" />
     <Compile Include="System\Net\Logging\NetEventSource.cs" />
+    <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
+    <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
+    <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
+    <Compile Include="System\Net\Security\SslServerAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslStreamInternal.Adapters.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
@@ -396,6 +400,7 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
