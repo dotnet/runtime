@@ -5927,9 +5927,24 @@ bool LinearScan::checkActiveInterval(Interval* interval, LsraLocation refLocatio
             else
             {
                 RefPosition* nextAssignedRef = recentAssignedRef->nextRefPosition;
+#ifdef _TARGET_ARM_
+                // This function is invoked only from allocateBusyReg() through checkActiveIntervals().
+                //
+                // For ARM32, when we try to allocate a double register which consists of two float registers,
+                // tryAllocateFreeReg() may fail to allocate a double register even if one of two float
+                // reigsters is assigned to a inactive constant interval.
+                // https://github.com/dotnet/coreclr/pull/14080
+                //
+                // Therefore an inactive constant interval may be encountered here.
+                assert(nextAssignedRef != nullptr || interval->isConstant);
+                if (nextAssignedRef != nullptr)
+                    assert(nextAssignedRef->nodeLocation == refLocation ||
+                           (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
+#else  // !_TARGET_ARM_
                 assert(nextAssignedRef != nullptr);
                 assert(nextAssignedRef->nodeLocation == refLocation ||
                        (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
+#endif // !_TARGET_ARM_
             }
         }
         return false;
