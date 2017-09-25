@@ -711,7 +711,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         // GenTree node we need to set the info whether its codegen
         // will modify flags.
         if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
-            cmp->OperIs(GT_EQ, GT_NE, GT_GT, GT_GE, GT_LT, GT_LE) && op1->OperIs(GT_ADD, GT_AND, GT_SUB))
+            !cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && op1->OperIs(GT_ADD, GT_AND, GT_SUB))
         {
             assert(!op1->gtSetFlags());
             op1->gtFlags |= GTF_SET_FLAGS;
