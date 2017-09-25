@@ -1155,7 +1155,11 @@ no_intrinsic:
 			return;
 		} else {
 			/* mheader might not exist if this is a delegate invoc, etc */
-			if (mheader && *mheader->code == CEE_RET && called_inited) {
+			gboolean has_vt_arg = FALSE;
+			for (i = 0; i < csignature->param_count; i++)
+				has_vt_arg |= !mini_type_is_reference (csignature->params [i]);
+
+			if (mheader && *mheader->code == CEE_RET && called_inited && !has_vt_arg) {
 				if (td->verbose_level)
 					g_print ("Inline (empty) call of %s.%s\n", target_method->klass->name, target_method->name);
 				for (i = 0; i < csignature->param_count; i++) {
