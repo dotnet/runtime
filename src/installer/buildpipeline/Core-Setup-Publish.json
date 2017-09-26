@@ -12,7 +12,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "signType": "oss",
+        "signType": "real",
         "zipSources": "true",
         "version": "",
         "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
