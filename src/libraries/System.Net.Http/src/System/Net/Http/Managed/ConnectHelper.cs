@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace System.Net.Http
 {
     internal static class ConnectHelper
     {
-        public static async ValueTask<NetworkStream> ConnectAsync(string host, int port)
+        public static async ValueTask<Stream> ConnectAsync(string host, int port)
         {
             var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             try
