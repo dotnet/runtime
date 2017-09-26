@@ -13,7 +13,6 @@
 ===========================================================*/
 
 using System;
-using System.Diagnostics.Contracts;
 
 namespace System.Runtime.Versioning
 {
@@ -28,7 +27,6 @@ namespace System.Runtime.Versioning
         {
             if (frameworkName == null)
                 throw new ArgumentNullException(nameof(frameworkName));
-            Contract.EndContractBlock();
             _frameworkName = frameworkName;
         }
 

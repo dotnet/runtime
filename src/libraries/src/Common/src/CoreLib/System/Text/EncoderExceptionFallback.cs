@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
@@ -68,7 +67,6 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
                     SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             }
-            Contract.EndContractBlock();
 
             int iTemp = Char.ConvertToUtf32(charUnknownHigh, charUnknownLow);
 
@@ -143,7 +141,6 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(CharUnknownLow),
                     SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             }
-            Contract.EndContractBlock();
 
             _charUnknownHigh = charUnknownHigh;
             _charUnknownLow = charUnknownLow;

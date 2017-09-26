@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -87,7 +86,6 @@ namespace System
             // Check that array is not too big
             if (d.Length != 8)
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), nameof(d));
-            Contract.EndContractBlock();
 
             _a = a;
             _b = b;
@@ -245,7 +243,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(g));
             }
-            Contract.EndContractBlock();
 
             GuidResult result = new GuidResult();
             result.Init(GuidParseThrowStyle.All);

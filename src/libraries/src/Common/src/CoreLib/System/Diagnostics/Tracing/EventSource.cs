@@ -197,12 +197,6 @@ using System.Threading.Tasks;
 
 using Microsoft.Reflection;
 
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
-
 #if CORECLR || ES_BUILD_PN
 using Internal.Runtime.Augments;
 #endif
@@ -250,7 +244,6 @@ namespace System.Diagnostics.Tracing
     /// </remarks>
     public partial class EventSource : IDisposable
     {
-
 #if FEATURE_EVENTSOURCE_XPLAT
         private static readonly EventListener persistent_Xplat_Listener = XplatEventLogger.InitializePersistentListener();
 #endif //FEATURE_EVENTSOURCE_XPLAT
@@ -405,7 +398,6 @@ namespace System.Diagnostics.Tracing
         {
             if (eventSourceType == null)
                 throw new ArgumentNullException(nameof(eventSourceType));
-            Contract.EndContractBlock();
 
             EventSourceAttribute attrib = (EventSourceAttribute)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
             string name = eventSourceType.Name;
@@ -473,7 +465,6 @@ namespace System.Diagnostics.Tracing
         {
             if (eventSourceType == null)
                 throw new ArgumentNullException(nameof(eventSourceType));
-            Contract.EndContractBlock();
 
             byte[] manifestBytes = EventSource.CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
             return (manifestBytes == null) ? null : Encoding.UTF8.GetString(manifestBytes, 0, manifestBytes.Length);
@@ -1259,7 +1250,6 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
                     if (m_eventData[eventId].EnabledForETW)
                     {
-
 #if FEATURE_ACTIVITYSAMPLING
                         // this code should be kept in sync with WriteEventVarargs().
                         SessionMask etwSessions = SessionMask.All;
@@ -1623,7 +1613,6 @@ namespace System.Diagnostics.Tracing
         {
             if (eventSourceType == null)
                 throw new ArgumentNullException(nameof(eventSourceType));
-            Contract.EndContractBlock();
 
             EventSourceAttribute attrib = (EventSourceAttribute)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
             if (attrib != null && attrib.Name != null)
@@ -3599,7 +3588,6 @@ namespace System.Diagnostics.Tracing
                                             string.Compare(startEventMetadata.Name, 0, taskName, 0, taskName.Length) == 0 &&
                                             string.Compare(startEventMetadata.Name, taskName.Length, s_ActivityStartSuffix, 0, Math.Max(startEventMetadata.Name.Length - taskName.Length, s_ActivityStartSuffix.Length)) == 0)
                                         {
-
                                             // Make the stop event match the start event
                                             eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
                                             noTask = false;
@@ -4455,7 +4443,6 @@ namespace System.Diagnostics.Tracing
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
-            Contract.EndContractBlock();
 
             eventSource.SendCommand(this, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
         }
@@ -4470,7 +4457,6 @@ namespace System.Diagnostics.Tracing
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
-            Contract.EndContractBlock();
 
             eventSource.SendCommand(this, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
         }
@@ -4946,7 +4932,6 @@ namespace System.Diagnostics.Tracing
                 // do the lazy init if you know it is contract based (EventID >= 0)
                 if (EventId >= 0 && m_payloadNames == null)
                 {
-
                     var names = new List<string>();
                     foreach (var parameter in m_eventSource.m_eventData[EventId].Parameters)
                     {
@@ -6461,7 +6446,6 @@ namespace System.Diagnostics.Tracing
 
         private string CreateManifestString()
         {
-
 #if FEATURE_MANAGED_ETW_CHANNELS
             // Write out the channels
             if (channelTab != null)
@@ -6529,7 +6513,6 @@ namespace System.Diagnostics.Tracing
             // Write out the tasks
             if (taskTab != null)
             {
-
                 sb.Append(" <tasks>").AppendLine();
                 var sortedTasks = new List<int>(taskTab.Keys);
                 sortedTasks.Sort();

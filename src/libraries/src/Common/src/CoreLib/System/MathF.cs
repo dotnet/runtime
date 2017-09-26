@@ -10,7 +10,6 @@
 
 //This class contains only static members and doesn't require serialization.
 
-using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
@@ -177,7 +176,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnum, mode, nameof(MidpointRounding)), nameof(mode));
             }
-            Contract.EndContractBlock();
 
             if (Abs(x) < singleRoundLimit)
             {

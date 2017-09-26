@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
     public interface IFormattable
     {
-        [Pure]
         String ToString(String format, IFormatProvider formatProvider);
     }
 }

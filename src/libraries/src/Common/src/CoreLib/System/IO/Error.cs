@@ -6,14 +6,12 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
     /// <summary>
     ///     Provides centralized methods for creating exceptions for System.IO.FileSystem.
     /// </summary>
-    [Pure]
     internal static class Error
     {
         internal static Exception GetStreamIsClosed()

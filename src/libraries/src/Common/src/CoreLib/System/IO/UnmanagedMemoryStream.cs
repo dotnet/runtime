@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -111,7 +110,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
-            Contract.EndContractBlock();
 
             if (_isOpen)
             {
@@ -178,7 +176,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (length > capacity)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
-            Contract.EndContractBlock();
             // Check for wraparound.
             if (((byte*)((long)pointer + capacity)) < pointer)
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_UnmanagedMemStreamWrapAround);
@@ -200,7 +197,6 @@ namespace System.IO
         /// </summary>
         public override bool CanRead
         {
-            [Pure]
             get { return _isOpen && (_access & FileAccess.Read) != 0; }
         }
 
@@ -209,7 +205,6 @@ namespace System.IO
         /// </summary>
         public override bool CanSeek
         {
-            [Pure]
             get { return _isOpen; }
         }
 
@@ -218,7 +213,6 @@ namespace System.IO
         /// </summary>
         public override bool CanWrite
         {
-            [Pure]
             get { return _isOpen && (_access & FileAccess.Write) != 0; }
         }
 
@@ -298,14 +292,12 @@ namespace System.IO
             get
             {
                 if (!CanSeek) throw Error.GetStreamIsClosed();
-                Contract.EndContractBlock();
                 return Interlocked.Read(ref _position);
             }
             set
             {
                 if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (!CanSeek) throw Error.GetStreamIsClosed();
-                Contract.EndContractBlock();
 
                 Interlocked.Exchange(ref _position, value);
             }
@@ -452,7 +444,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();  // contract validation copied from Read(...) 
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<Int32>(cancellationToken);
@@ -600,7 +591,6 @@ namespace System.IO
         {
             if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
             if (_buffer != null)
                 throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
             if (!_isOpen) throw Error.GetStreamIsClosed();
@@ -748,7 +738,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();  // contract validation copied from Write(..) 
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);

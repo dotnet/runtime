@@ -14,7 +14,6 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -82,7 +81,6 @@ namespace System.IO
             {
                 return (int)_unmanagedStream.Capacity;
             }
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             set
             {
                 throw new IOException(SR.IO_FixedCapacity);
@@ -156,7 +154,6 @@ namespace System.IO
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
-            Contract.EndContractBlock();
 
             byte[] buffer = ToArray();
 
@@ -193,7 +190,6 @@ namespace System.IO
             if (!destination.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
-            Contract.EndContractBlock();
 
             return _unmanagedStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }

@@ -12,7 +12,6 @@
 ** 
 ===========================================================*/
 
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -46,7 +45,6 @@ namespace System.Collections
                 {
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
-                Contract.EndContractBlock();
                 DictionaryNode node = head;
 
                 while (node != null)
@@ -65,7 +63,6 @@ namespace System.Collections
                 {
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
-                Contract.EndContractBlock();
 
 
                 version++;
@@ -167,7 +164,6 @@ namespace System.Collections
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
-            Contract.EndContractBlock();
 
 
             version++;
@@ -215,7 +211,6 @@ namespace System.Collections
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
-            Contract.EndContractBlock();
             for (DictionaryNode node = head; node != null; node = node.next)
             {
                 if (node.key.Equals(key))
@@ -239,7 +234,6 @@ namespace System.Collections
 
             if (array.Length - index < this.Count)
                 throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
-            Contract.EndContractBlock();
 
             for (DictionaryNode node = head; node != null; node = node.next)
             {
@@ -264,7 +258,6 @@ namespace System.Collections
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
-            Contract.EndContractBlock();
             version++;
             DictionaryNode last = null;
             DictionaryNode node;
@@ -403,7 +396,6 @@ namespace System.Collections
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.EndContractBlock();
                 if (array.Length - index < list.Count)
                     throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
                 for (DictionaryNode node = list.head; node != null; node = node.next)
