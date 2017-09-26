@@ -2033,6 +2033,8 @@ public:
 
     GenTree* gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg);
 
+    GenTree* gtNewBitCastNode(var_types type, GenTreePtr arg);
+
 protected:
     void gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOrFillVal, bool isVolatile);
 

@@ -7058,7 +7058,7 @@ GenTree* Compiler::gtNewBlkOpNode(
 //    Returns the newly created PutArgReg node.
 //
 // Notes:
-//    The node is generated as GenTreeMultiRegOp on armel, as GenTreeOp on all the other archs
+//    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, GenTreeOp on all the other archs.
 //
 GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg)
 {
@@ -7072,6 +7072,35 @@ GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber ar
     node            = gtNewOperNode(GT_PUTARG_REG, type, arg);
 #endif
     node->gtRegNum = argReg;
+
+    return node;
+}
+
+//------------------------------------------------------------------------
+// gtNewBitCastNode: Creates a new BitCast node.
+//
+// Arguments:
+//    type   - The actual type of the argument
+//    arg    - The argument node
+//    argReg - The register that the argument will be passed in
+//
+// Return Value:
+//    Returns the newly created BitCast node.
+//
+// Notes:
+//    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, as GenTreeOp on all the other archs.
+//
+GenTreePtr Compiler::gtNewBitCastNode(var_types type, GenTreePtr arg)
+{
+    assert(arg != nullptr);
+
+    GenTreePtr node = nullptr;
+#if !defined(LEGACY_BACKEND) && defined(ARM_SOFTFP)
+    // A BITCAST could be a MultiRegOp on armel since we could move a double register to two int registers.
+    node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
+#else
+    node            = gtNewOperNode(GT_BITCAST, type, arg);
+#endif
 
     return node;
 }
