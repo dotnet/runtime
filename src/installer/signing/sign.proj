@@ -2,6 +2,11 @@
 <Project InitialTargets="SetSigningProperties" DefaultTargets="SignFiles" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildThisFileDirectory)..\dir.props" />
 
+  <PropertyGroup>
+    <IsSignTypeReal Condition="'$(SignType)' == 'Real' OR '$(SignType)' == 'real'">true</IsSignTypeReal>
+    <IsSignTypeReal Condition="'$(IsSignTypeReal)' == ''">false</IsSignTypeReal>
+  </PropertyGroup>
+
   <!-- This will be overridden if we're building with MicroBuild. -->
   <Target Name="SignFiles">
     <Message Text="Fake sign target.  Would sign: @(FilesToSign)" />
@@ -22,7 +27,7 @@
     <Error Condition="!Exists('$(OutDir)')" Text="'OutDir' folder '$(OutDir)' does not exist."/>
   </Target>
 
-  <Target Name="SignBinaries" DependsOnTargets="GetSignBinaryFiles">
+  <Target Name="SignBinaries" Condition="'$(IsSignTypeReal)' == 'true'" DependsOnTargets="GetSignBinaryFiles">
     <CallTarget Targets="SignFiles" />
   </Target>
 
@@ -66,7 +71,7 @@
     <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
-  <Target Name="SignAppxFiles" DependsOnTargets="GetSignAppxFiles">
+  <Target Name="SignAppxFiles" Condition="'$(IsSignTypeReal)' == 'true'" DependsOnTargets="GetSignAppxFiles">
     <CallTarget Targets="SignFiles" />
   </Target>
   
@@ -79,7 +84,7 @@
     <Error Condition="'@(FilesToSign)' == '' AND '$(Platform)' != 'arm64'" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
-  <Target Name="SignMsiAndCab" DependsOnTargets="GetSignMsiAndCabFiles">
+  <Target Name="SignMsiAndCab" Condition="'$(IsSignTypeReal)' == 'true'" DependsOnTargets="GetSignMsiAndCabFiles">
     <CallTarget Targets="SignFiles" />
   </Target>
 
@@ -95,7 +100,7 @@
     <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
-  <Target Name="SignEngine" DependsOnTargets="GetSignEngineFiles">
+  <Target Name="SignEngine" Condition="'$(IsSignTypeReal)' == 'true'" DependsOnTargets="GetSignEngineFiles">
     <CallTarget Targets="SignFiles" />
   </Target>
 
@@ -108,7 +113,7 @@
     <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
-  <Target Name="SignBundle" DependsOnTargets="GetSignBundleFiles">
+  <Target Name="SignBundle" Condition="'$(IsSignTypeReal)' == 'true'" DependsOnTargets="GetSignBundleFiles">
     <CallTarget Targets="SignFiles" />
   </Target>
 

@@ -450,7 +450,7 @@
       "allowOverride": true
     },
     "MsbuildSigningArguments": {
-      "value": "/p:CertificateId=$(CertificateId) /v:detailed"
+      "value": "/p:CertificateId=$(CertificateId) /v:detailed /p:SignType=$(PB_SignType)"
     },
     "TeamName": {
       "value": "DotNetCore"
