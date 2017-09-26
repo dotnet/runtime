@@ -1,4 +1,4 @@
-Performance Tracing on Linux
+﻿Performance Tracing on Linux
 ============================
 
 When a performance problem is encountered on Linux, these instructions can be used to gather detailed information about what was happening on the machine at the time of the performance problem.
@@ -80,6 +80,26 @@ Follow these steps to prepare your machine to collect a performance trace.
 	> ```
 
 	The compressed trace file is now stored in the current working directory.
+
+# Resolving Framework Symbols #
+Framework symbols need to be manually generated at the time the trace is collected.  They are different than app-level symbols because the framework is pre-compiled while apps are just-in-time-compiled.
+
+The easiest way to generate framework symbols is to have perfcollect do it for you automatically when the trace is collected.  To do this, crossgen must be present on the collection machine and located next to libcoreclr.so.  This can be done manually using the following steps:
+
+1. Download the CoreCLR nuget package.  A simple way to do this is to create a self-contained version of your application using the dotnet CLI:
+	> ```bash
+	> dotnet publish --self-contained -r linux-x64
+	> ```	
+
+	This will create a bin/*/netcoreapp2.0/Linux-x64/publish directory which contains all of the files required to run your app including the .NET runtime and framework.  As a side-effect, the dotnet CLI downloads and extracts the CoreCLR nuget package.  You should be able to find crossgen at:
+
+	> ```bash
+	> ~/packages/runtime.linux-x64.microsoft.netcore.app/2.0.0/tools/crossgen
+	> ``` 
+
+2. Copy crossgen next to libcoreclr.so.  If you run your application out of the publish directory, you can copy it into the directory that you just created during step # 1.  If you run your application using the dotnet CLI, then you likely need to copy it to /usr/share/dotnet/shared/Microsoft.NETCore.App/<Version> where <Version> is the version number of CoreCLR.  This should match the version number in the path to crossgen from step # 1.
+
+Now, traces containing apps that were run on the updated runtime should contain framework-level symbols.  To view the trace with framework-level symbols, you will need to use PerfView.  Details on using PerfView to view a trace are available below in this document.
 
 # Collecting in a Docker Container #
 Perfcollect can be used to collect data for an application running inside a Docker container.  The main thing to know is that collecting a trace requires elevated privileges because the [default seccomp profile](https://docs.docker.com/engine/security/seccomp/) blocks a required syscall - perf_events_open.
