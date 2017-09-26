@@ -24,7 +24,6 @@
 using System;
 using System.Security;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,7 +76,6 @@ namespace System.Runtime.CompilerServices
             {
                 // Validate arguments
                 if (continuation == null) throw new ArgumentNullException(nameof(continuation));
-                Contract.EndContractBlock();
 
                 if (TplEtwProvider.Log.IsEnabled())
                 {

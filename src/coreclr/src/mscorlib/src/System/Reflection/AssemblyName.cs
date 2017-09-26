@@ -24,7 +24,6 @@ namespace System.Reflection
     using System.Runtime.Serialization;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
     using System.Text;
 
     public sealed class AssemblyName : ICloneable, ISerializable, IDeserializationCallback
@@ -192,7 +191,6 @@ namespace System.Reflection
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
-            Contract.EndContractBlock();
 
             // Assembly.GetNameInternal() will not demand path discovery 
             //  permission, so do that first.
@@ -310,7 +308,6 @@ namespace System.Reflection
         {
             if (assemblyName == null)
                 throw new ArgumentNullException(nameof(assemblyName));
-            Contract.EndContractBlock();
             if ((assemblyName.Length == 0) ||
                 (assemblyName[0] == '\0'))
                 throw new ArgumentException(SR.Format_StringZeroLength);

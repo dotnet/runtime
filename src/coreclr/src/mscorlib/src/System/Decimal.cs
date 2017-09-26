@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using System.Runtime.Serialization;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System
 {
@@ -275,7 +275,6 @@ namespace System
         {
             if (bits == null)
                 throw new ArgumentNullException(nameof(bits));
-            Contract.EndContractBlock();
             if (bits.Length == 4)
             {
                 int f = bits[3];
@@ -297,7 +296,6 @@ namespace System
         {
             if (scale > 28)
                 throw new ArgumentOutOfRangeException(nameof(scale), SR.ArgumentOutOfRange_DecimalScale);
-            Contract.EndContractBlock();
             this.lo = lo;
             this.mid = mid;
             this.hi = hi;
@@ -478,25 +476,21 @@ namespace System
         //
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -587,7 +581,7 @@ namespace System
 
         internal static void GetBytes(Decimal d, byte[] buffer)
         {
-            Contract.Requires((buffer != null && buffer.Length >= 16), "[GetBytes]buffer != null && buffer.Length >= 16");
+            Debug.Assert((buffer != null && buffer.Length >= 16), "[GetBytes]buffer != null && buffer.Length >= 16");
             buffer[0] = (byte)d.lo;
             buffer[1] = (byte)(d.lo >> 8);
             buffer[2] = (byte)(d.lo >> 16);
@@ -611,7 +605,7 @@ namespace System
 
         internal static decimal ToDecimal(byte[] buffer)
         {
-            Contract.Requires((buffer != null && buffer.Length >= 16), "[ToDecimal]buffer != null && buffer.Length >= 16");
+            Debug.Assert((buffer != null && buffer.Length >= 16), "[ToDecimal]buffer != null && buffer.Length >= 16");
             int lo = ((int)buffer[0]) | ((int)buffer[1] << 8) | ((int)buffer[2] << 16) | ((int)buffer[3] << 24);
             int mid = ((int)buffer[4]) | ((int)buffer[5] << 8) | ((int)buffer[6] << 16) | ((int)buffer[7] << 24);
             int hi = ((int)buffer[8]) | ((int)buffer[9] << 8) | ((int)buffer[10] << 16) | ((int)buffer[11] << 24);
@@ -818,7 +812,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
             }
-            Contract.EndContractBlock();
 
             if (mode == MidpointRounding.ToEven)
             {

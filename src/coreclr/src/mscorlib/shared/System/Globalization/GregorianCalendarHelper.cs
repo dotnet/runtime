@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Threading;
 
 namespace System.Globalization
@@ -141,7 +140,6 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(year),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
 
             if (era == Calendar.CurrentEra)
             {
@@ -323,7 +321,6 @@ namespace System.Globalization
                                 m_Cal.MinSupportedDateTime,
                                 m_Cal.MaxSupportedDateTime));
             }
-            Contract.EndContractBlock();
         }
 
         // Returns the DateTime resulting from adding the given number of
@@ -355,7 +352,6 @@ namespace System.Globalization
                                 -120000,
                                 120000));
             }
-            Contract.EndContractBlock();
             CheckTicksRange(time.Ticks);
 
             int y = GetDatePart(time.Ticks, DatePartYear);
@@ -427,7 +423,6 @@ namespace System.Globalization
         // Returns the number of days in the month given by the year and
         // month arguments.
         //
-        [Pure]
         public int GetDaysInMonth(int year, int month, int era)
         {
             //
@@ -555,7 +550,6 @@ namespace System.Globalization
                                 1,
                                 GetDaysInMonth(year, month, era)));
             }
-            Contract.EndContractBlock();
 
             if (!IsLeapYear(year, era))
             {
@@ -633,7 +627,6 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(year),
                     SR.ArgumentOutOfRange_NeedPosNum);
             }
-            Contract.EndContractBlock();
 
             if (year < 100)
             {

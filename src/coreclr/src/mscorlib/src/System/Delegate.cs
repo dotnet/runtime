@@ -13,7 +13,6 @@ namespace System
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
     [ClassInterface(ClassInterfaceType.AutoDual)]
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -45,7 +44,6 @@ namespace System
 
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
-            Contract.EndContractBlock();
 
             // This API existed in v1/v1.1 and only expected to create closed
             // instance delegates. Constrain the call to BindToMethodName to
@@ -72,7 +70,6 @@ namespace System
 
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
-            Contract.EndContractBlock();
 
             RuntimeType rtTarget = target as RuntimeType;
             if (rtTarget == null)
@@ -349,7 +346,6 @@ namespace System
                 throw new ArgumentNullException(nameof(target));
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
-            Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
             if (rtType == null)
@@ -402,7 +398,6 @@ namespace System
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
-            Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
             RuntimeType rtTarget = target as RuntimeType;
@@ -440,7 +435,6 @@ namespace System
                 throw new ArgumentNullException(nameof(type));
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
-            Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
             if (rtType == null)
@@ -490,7 +484,6 @@ namespace System
                 throw new ArgumentNullException(nameof(type));
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
-            Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
             if (rtType == null)
@@ -558,7 +551,6 @@ namespace System
             // Validate the parameters.
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            Contract.EndContractBlock();
 
             if (method.IsNullHandle())
                 throw new ArgumentNullException(nameof(method));
@@ -594,7 +586,6 @@ namespace System
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
 
-            Contract.EndContractBlock();
 
             RuntimeMethodInfo rtMethod = method as RuntimeMethodInfo;
             if (rtMethod == null)

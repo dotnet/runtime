@@ -2,12 +2,6 @@
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
-
 namespace System.Diagnostics.Tracing
 {
     /// <summary>

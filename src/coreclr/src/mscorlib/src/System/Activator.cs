@@ -23,7 +23,6 @@ namespace System
     using System.Runtime.CompilerServices;
     using AssemblyHashAlgorithm = System.Configuration.Assemblies.AssemblyHashAlgorithm;
     using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
 
     // Only statics, does not need to be marked with the serializable attribute
     public sealed class Activator
@@ -60,7 +59,6 @@ namespace System
         {
             if ((object)type == null)
                 throw new ArgumentNullException(nameof(type));
-            Contract.EndContractBlock();
 
             if (type is System.Reflection.Emit.TypeBuilder)
                 throw new NotSupportedException(SR.NotSupported_CreateInstanceWithTypeBuilder);
@@ -118,7 +116,6 @@ namespace System
         {
             if ((object)type == null)
                 throw new ArgumentNullException(nameof(type));
-            Contract.EndContractBlock();
 
             RuntimeType rt = type.UnderlyingSystemType as RuntimeType;
 

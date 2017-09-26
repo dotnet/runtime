@@ -29,11 +29,9 @@ using System.Security;
 using System.Collections.ObjectModel;
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
 using System.Collections.Generic;
 using System.Text;
 #else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 using System.Collections.Generic;
 using System.Text;
 #endif
@@ -102,7 +100,6 @@ namespace System.Diagnostics.Tracing
             {
                 throw new ArgumentNullException(nameof(eventSourceName));
             }
-            Contract.EndContractBlock();
         }
 
         /// <summary>
@@ -117,7 +114,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            Contract.EndContractBlock();
 
             if (!this.IsEnabled())
             {
@@ -144,7 +140,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            Contract.EndContractBlock();
 
             if (!this.IsEnabled())
             {
