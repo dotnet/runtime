@@ -792,9 +792,11 @@ public class BuiltinTests {
 		return 0;
 	}
 
+#if !__MOBILE__
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (BuiltinTests), args);
 	}
+#endif
 }
 
 

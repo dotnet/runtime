@@ -7,12 +7,17 @@ using System.Threading;
 /*
  * Regression tests for the GC support in the JIT
  */
-
-class Tests {
-
-	static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+#if __MOBILE__
+class GcTests
+#else
+class Tests
+#endif
+{
+#if !__MOBILE__
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
+#endif
 
 	public static int test_36_simple () {
 		// Overflow the registers
@@ -525,9 +530,16 @@ class Tests {
 		return 0;
 	}
 
+	class ObjWithShiftOp {
+		public static ObjWithShiftOp operator >> (ObjWithShiftOp bi1, int shiftVal) {
+			clobber_regs_and_gc ();
+			return bi1;
+		}
+	}
+
 	// Liveness for spill slots holding managed pointers
 	public static int test_0_liveness_11 () {
-		Tests[] arr = new Tests [10];
+		ObjWithShiftOp[] arr = new ObjWithShiftOp [10];
 		// This uses an ldelema internally
 		// FIXME: This doesn't crash if mp-s are not correctly tracked, just writes to
 		// an old object.
@@ -536,10 +548,6 @@ class Tests {
 		return 0;
 	}
 
-	public static Tests operator >> (Tests bi1, int shiftVal) {
-		clobber_regs_and_gc ();
-		return bi1;
-	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static void liveness_12_inner (int a, int b, int c, int d, int e, int f, object o, ref string s) {

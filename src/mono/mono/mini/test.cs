@@ -338,11 +338,17 @@ namespace SSA {
 			return a;
 		}
 
+#if __MOBILE__
+		public static test_2_old_test_suite () {
+			return test1 (1);
+		}
+#else
 		static int Main() {
 			if (test1 (1) != 2)
 				return 1;
 			return 0;
 		}
+#endif
 	}
 }
 
