@@ -1218,8 +1218,13 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 		signalled = (waitall && count == nhandles) || (!waitall && count > 0);
 
 		if (signalled) {
-			for (i = 0; i < nhandles; i++)
-				own_if_signalled (handles [i], &abandoned [i]);
+			for (i = 0; i < nhandles; i++) {
+				if (own_if_signalled (handles [i], &abandoned [i]) && !waitall) {
+					/* if we are calling WaitHandle.WaitAny, .NET only owns the first one; it matters for Mutex which
+					 * throw AbandonedMutexException in case we owned it but didn't release it */
+					break;
+				}
+			}
 		}
 
 		mono_w32handle_unlock_handles (handles, nhandles);
