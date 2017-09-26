@@ -624,7 +624,7 @@ namespace System
 
             double flrTempVal = Floor(a + 0.5);
 
-            if ((a == (Floor(a) + 0.5)) && (fmod(flrTempVal, 2.0) != 0))
+            if ((a == (Floor(a) + 0.5)) && (FMod(flrTempVal, 2.0) != 0))
             {
                 flrTempVal -= 1.0;
             }
@@ -664,7 +664,7 @@ namespace System
 
                 if (mode == MidpointRounding.AwayFromZero)
                 {
-                    var fraction = modf(value, &value);
+                    var fraction = ModF(value, &value);
 
                     if (Abs(fraction) >= 0.5)
                     {
@@ -755,7 +755,7 @@ namespace System
 
         public static unsafe double Truncate(double d)
         {
-            modf(d, &d);
+            ModF(d, &d);
             return d;
         }
 

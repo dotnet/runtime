@@ -77,9 +77,9 @@ namespace System
         public static extern double Tanh(double value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern double fmod(double x, double y);
+        private static extern double FMod(double x, double y);
         
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe double modf(double x, double* intptr);
+        private static extern unsafe double ModF(double x, double* intptr);
     }
 }
