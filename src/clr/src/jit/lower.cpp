@@ -777,7 +777,7 @@ void Lowering::ReplaceArgWithPutArgOrCopy(GenTree** argSlot, GenTree* putArgOrCo
 {
     assert(argSlot != nullptr);
     assert(*argSlot != nullptr);
-    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_COPY));
+    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_BITCAST));
 
     GenTree* arg = *argSlot;
 
@@ -1310,12 +1310,15 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         {
             var_types intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
 
-            GenTreePtr intArg = new (comp, GT_COPY) GenTreeCopyOrReload(GT_COPY, intType, arg);
-
-            if (comp->opts.compUseSoftFP)
+            GenTreePtr intArg = comp->gtNewBitCastNode(intType, arg);
+            intArg->gtRegNum  = info->regNum;
+#ifdef ARM_SOFTFP
+            if (intType == TYP_LONG)
             {
-                intArg->gtFlags |= GTF_VAR_DEATH;
+                assert(info->numRegs == 2);
+                intArg->AsMultiRegOp()->gtOtherReg = REG_NEXT(info->regNum);
             }
+#endif // ARM_SOFTFP
 
             info->node = intArg;
             ReplaceArgWithPutArgOrCopy(ppArg, intArg);

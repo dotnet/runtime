@@ -6053,7 +6053,7 @@ inline bool GenTree::IsMultiRegNode() const
     }
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    if (gtOper == GT_MUL_LONG || gtOper == GT_PUTARG_REG || gtOper == GT_COPY || OperIsPutArgSplit())
+    if (gtOper == GT_MUL_LONG || gtOper == GT_PUTARG_REG || gtOper == GT_BITCAST || OperIsPutArgSplit())
     {
         return true;
     }
