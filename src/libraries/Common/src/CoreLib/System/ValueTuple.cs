@@ -4,7 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using HashHelpers = System.Numerics.Hashing.HashHelpers;
@@ -2186,7 +2186,7 @@ namespace System
                                                        rest.GetHashCode());
             }
 
-            Contract.Assert(false, "Missed all cases for computing ValueTuple hash code");
+            Debug.Fail("Missed all cases for computing ValueTuple hash code");
             return -1;
         }
 
@@ -2237,7 +2237,7 @@ namespace System
                                                        comparer.GetHashCode(Item7), rest.GetHashCode(comparer));
             }
 
-            Contract.Assert(false, "Missed all cases for computing ValueTuple hash code");
+            Debug.Fail("Missed all cases for computing ValueTuple hash code");
             return -1;
         }
 

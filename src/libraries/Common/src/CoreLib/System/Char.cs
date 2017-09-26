@@ -154,14 +154,12 @@ namespace System
         [Pure]
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Char.ToString(m_value);
         }
 
         [Pure]
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Char.ToString(m_value);
         }
 
@@ -182,7 +180,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            Contract.EndContractBlock();
 
             if (s.Length != 1)
             {
@@ -405,7 +402,6 @@ namespace System
         {
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
-            Contract.EndContractBlock();
             return culture.TextInfo.ToUpper(c);
         }
 
@@ -438,7 +434,6 @@ namespace System
         {
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
-            Contract.EndContractBlock();
             return culture.TextInfo.ToLower(c);
         }
 
@@ -562,7 +557,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -580,7 +574,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -597,7 +590,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -619,7 +611,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -636,7 +627,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -687,7 +677,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -716,7 +705,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -766,7 +754,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -792,7 +779,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             return (IsSurrogate(s[index]));
         }
 
@@ -830,7 +816,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -848,7 +833,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -870,7 +854,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
 
             if (IsLatin1(s[index]))
             {
@@ -897,7 +880,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             if (IsLatin1(s[index]))
             {
                 return (GetLatin1UnicodeCategory(s[index]));
@@ -918,7 +900,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             return CharUnicodeInfo.GetNumericValue(s, index);
         }
 
@@ -943,7 +924,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             return (IsHighSurrogate(s[index]));
         }
 
@@ -967,7 +947,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             return (IsLowSurrogate(s[index]));
         }
 
@@ -985,7 +964,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             if (index + 1 < s.Length)
             {
                 return (IsSurrogatePair(s[index], s[index + 1]));
@@ -1024,7 +1002,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(utf32), SR.ArgumentOutOfRange_InvalidUTF32);
             }
-            Contract.EndContractBlock();
 
             if (utf32 < UNICODE_PLANE01_START)
             {
@@ -1059,7 +1036,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(lowSurrogate), SR.ArgumentOutOfRange_InvalidLowSurrogate);
             }
-            Contract.EndContractBlock();
             return (((highSurrogate - CharUnicodeInfo.HIGH_SURROGATE_START) * 0x400) + (lowSurrogate - CharUnicodeInfo.LOW_SURROGATE_START) + UNICODE_PLANE01_START);
         }
 
@@ -1082,7 +1058,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
-            Contract.EndContractBlock();
             // Check if the character at index is a high surrogate.
             int temp1 = (int)s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
             if (temp1 >= 0 && temp1 <= 0x7ff)

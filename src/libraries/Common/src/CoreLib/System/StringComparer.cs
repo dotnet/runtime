@@ -5,7 +5,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
 namespace System
@@ -23,7 +22,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<StringComparer>() != null);
                 return s_invariantCulture;
             }
         }
@@ -32,7 +30,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<StringComparer>() != null);
                 return s_invariantCultureIgnoreCase;
             }
         }
@@ -41,7 +38,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<StringComparer>() != null);
                 return new CultureAwareComparer(CultureInfo.CurrentCulture, false);
             }
         }
@@ -50,7 +46,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<StringComparer>() != null);
                 return new CultureAwareComparer(CultureInfo.CurrentCulture, true);
             }
         }
@@ -59,7 +54,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<StringComparer>() != null);
                 return s_ordinal;
             }
         }
@@ -68,7 +62,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<StringComparer>() != null);
                 return s_ordinalIgnoreCase;
             }
         }
@@ -101,8 +94,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(culture));
             }
-            Contract.Ensures(Contract.Result<StringComparer>() != null);
-            Contract.EndContractBlock();
 
             return new CultureAwareComparer(culture, ignoreCase);
         }
@@ -156,7 +147,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            Contract.EndContractBlock();
 
             string s = obj as string;
             if (s != null)
@@ -279,7 +269,6 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            Contract.EndContractBlock();
 
             if (_ignoreCase)
             {

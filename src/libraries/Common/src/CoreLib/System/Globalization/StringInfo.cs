@@ -14,7 +14,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
@@ -95,7 +94,6 @@ namespace System.Globalization
                     throw new ArgumentNullException(nameof(String),
                         SR.ArgumentNull_String);
                 }
-                Contract.EndContractBlock();
 
                 _str = value;
                 _indexes = null;
@@ -280,7 +278,6 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            Contract.EndContractBlock();
 
             int len = str.Length;
             if (index < 0 || index >= len)
@@ -311,7 +308,6 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            Contract.EndContractBlock();
 
             int len = str.Length;
             if (index < 0 || (index > len))
@@ -340,7 +336,6 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            Contract.EndContractBlock();
 
             int len = str.Length;
             int[] result = new int[len];

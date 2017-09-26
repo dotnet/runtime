@@ -5,7 +5,6 @@
 using System.Runtime.Serialization;
 using System.Text;
 using System;
-using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
@@ -67,7 +66,6 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(bytes),
                     SR.ArgumentOutOfRange_IndexCountBuffer);
 
-            Contract.EndContractBlock();
 
             // Avoid null fixed problem
             if (bytes.Length == 0)
@@ -88,7 +86,6 @@ namespace System.Text
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // Remember the flush
             _mustFlush = flush;
@@ -124,7 +121,6 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(charIndex),
                     SR.ArgumentOutOfRange_Index);
 
-            Contract.EndContractBlock();
 
             // Avoid empty input fixed problem
             if (bytes.Length == 0)
@@ -153,7 +149,6 @@ namespace System.Text
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // Remember our flush
             _mustFlush = flush;
@@ -190,7 +185,6 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(chars),
                       SR.ArgumentOutOfRange_IndexCountBuffer);
 
-            Contract.EndContractBlock();
 
             // Avoid empty input problem
             if (bytes.Length == 0)
@@ -223,7 +217,6 @@ namespace System.Text
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // We don't want to throw
             _mustFlush = flush;

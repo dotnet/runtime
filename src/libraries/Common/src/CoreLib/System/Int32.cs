@@ -12,7 +12,6 @@
 ** 
 ===========================================================*/
 
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -87,42 +86,32 @@ namespace System
             return m_value;
         }
 
-        [Pure]
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        [Pure]
         public String ToString(String format)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        [Pure]
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        [Pure]
         public String ToString(String format, IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        [Pure]
         public static int Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseInt32(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        [Pure]
         public static int Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -134,7 +123,6 @@ namespace System
         // a NumberFormatInfo isn't specified, the current culture's 
         // NumberFormatInfo is assumed.
         // 
-        [Pure]
         public static int Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -145,7 +133,6 @@ namespace System
         // a NumberFormatInfo isn't specified, the current culture's 
         // NumberFormatInfo is assumed.
         // 
-        [Pure]
         public static int Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -162,7 +149,6 @@ namespace System
         // Parses an integer from a String. Returns false rather
         // than throwing exceptin if input is invalid
         // 
-        [Pure]
         public static bool TryParse(String s, out Int32 result)
         {
             if (s == null)
@@ -177,7 +163,6 @@ namespace System
         // Parses an integer from a String in the given style. Returns false rather
         // than throwing exceptin if input is invalid
         // 
-        [Pure]
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out Int32 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -201,7 +186,6 @@ namespace System
         // IConvertible implementation
         // 
 
-        [Pure]
         public TypeCode GetTypeCode()
         {
             return TypeCode.Int32;
