@@ -1603,8 +1603,6 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
         }
     }
 
-    /* GC refs cannot be enregistered accross an unmanaged call */
-
     // TODO: we should generate the code for saving to/restoring
     //       from the inlined N/Direct frame instead.
 
