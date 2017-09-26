@@ -48,10 +48,8 @@
   <!-- Used to enable incremental build for the link target. -->
   <PropertyGroup>
     <_LinkSemaphore>$(IntermediateOutputPath)Link.semaphore</_LinkSemaphore>
-    <_LinkDepsSemaphore>$(IntermediateOutputPath)LinkDeps.semaphore</_LinkDepsSemaphore>
   </PropertyGroup>
 
-  
   <!--
       This target runs the linker during the publish pipeline. The
       publish pipeline has a target called ComputeFilesToPublish,
@@ -76,12 +74,14 @@
        ComputeFilesToPublish, but after all of its dependencies. -->
   <Target Name="ComputeLinkedFilesToPublish"
           BeforeTargets="ComputeFilesToPublish"
-          DependsOnTargets="_ComputeLinkedAssemblies"
+          DependsOnTargets="_ComputeLinkedAssemblies;_FindNativeDeps"
           Condition=" '$(LinkDuringPublish)' == 'true' ">
     <!-- Rewrite ResolvedAssembliesToPublish, which is an input to
          ComputeFilesToPublish. -->
     <ItemGroup>
       <ResolvedAssembliesToPublish Remove="@(_ManagedResolvedAssembliesToPublish)" />
+      <ResolvedAssembliesToPublish Remove="@(_NativeResolvedDepsToPublish)" />
+      <ResolvedAssembliesToPublish Include="@(_NativeKeptDepsToPublish)" />
       <ResolvedAssembliesToPublish Include="@(_LinkedResolvedAssemblies)" />
     </ItemGroup>
     
@@ -109,7 +109,7 @@
   <UsingTask TaskName="CompareAssemblySizes" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_CompareLinkedAssemblySizes"
           AfterTargets="ComputeLinkedFilesToPublish"
-          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies"
+          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies;_FindNativeDeps"
           Condition=" '$(LinkDuringPublish)' == 'true' And '$(ShowLinkerSizeComparison)' == 'true' ">
     <CompareAssemblySizes UnlinkedAssemblies="@(_ManagedAssembliesToLink)"
                           LinkedAssemblies="@(_LinkedIntermediateAssembly);@(_LinkedResolvedAssemblies)" />
@@ -141,7 +141,6 @@
     </ItemGroup>
   </Target>
   
-
   <!-- This calls the linker. Inputs are the managed assemblies to
        link, and root specifications. The semaphore enables msbuild to
        skip linking during an incremental build, when the semaphore is
@@ -167,6 +166,37 @@
     <Touch Files="$(_LinkSemaphore)" AlwaysCreate="true">
       <Output TaskParameter="TouchedFiles" ItemName="FileWrites" />
     </Touch>
+  </Target>
+
+  <!-- FindNativeDeps scans the managed assemblies kept by the linker
+       to find references to native files. It outputs the found native
+       dependencies, and these are prevented from being published. -->
+  <UsingTask TaskName="FindNativeDeps" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_FindNativeDeps"
+          DependsOnTargets="_ComputeLinkedAssemblies">
+    <ItemGroup>
+      <_NativeResolvedDepsToPublish Include="@(ResolvedAssembliesToPublish)" />
+      <_NativeResolvedDepsToPublish Remove="@(_ManagedResolvedAssembliesToPublish)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ManagedLinkedAssemblies Include="@(_LinkedResolvedAssemblies)" />
+      <_ManagedLinkedAssemblies Include="@(_LinkedIntermediateAssembly)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_NativeDepsToAlwaysKeep Include="coreclr.dll;libcoreclr.dylib;libcoreclr.so" />
+      <_NativeDepsToAlwaysKeep Include="clrjit.dll;libclrjit.dylib;libclrjit.so" />
+      <_NativeDepsToAlwaysKeep Include="hostfxr.dll;libhostfxr.dylib;libhostfxr.so" />
+      <_NativeDepsToAlwaysKeep Include="hostpolicy.dll;libhostpolicy.dylib;libhostpolicy.so" />
+    </ItemGroup>
+
+    <FindNativeDeps ManagedAssemblyPaths="@(_ManagedLinkedAssemblies)"
+                      NativeDepsPaths="@(_NativeResolvedDepsToPublish)"
+                      NativeDepsToKeep="@(_NativeDepsToAlwaysKeep)">
+      <Output TaskParameter="KeptNativeDepsPaths" ItemName="_NativeKeptDepsToPublish" />
+    </FindNativeDeps>
+
   </Target>
 
 
@@ -287,38 +317,27 @@
                               RootDescriptorFilePath="$(_IntermediateRootDescriptorPath)" />
   </Target>
 
+  <!-- Uses _PublishConflictPackageFiles, an input to the publish deps
+       file generation target, to exclude the removed managed
+       assemblies and native dependencies from the generated deps
+       file. -->
+  <UsingTask TaskName="ComputeRemovedAssemblies" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_ExcludeRemovedFilesFromDepFileGeneration"
+          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputeLinkedAssemblies;_FindNativeDeps;HandlePublishFileConflicts"
+          BeforeTargets="GeneratePublishDependencyFile"
+          Condition=" '$(LinkDuringPublish)' == 'true' ">
+    <ComputeRemovedAssemblies InputAssemblies="@(_ManagedResolvedAssembliesToPublish)"
+                              KeptAssemblies="@(_LinkedResolvedAssemblies)">
+      <Output TaskParameter="RemovedAssemblies" ItemName="_RemovedManagedAssemblies" />
+    </ComputeRemovedAssemblies>
 
-  <!-- This target needs to remove from the publish deps file those
-       assemblies that were excluded from the publish output by the
-       linker. Currently it does so by rewriting the publish
-       dependency file (as opposed to generating one without the
-       excluded assemblies in the first place).
-
-       TODO: update this to pass FilesToSkip to
-       GeneratePublishDependencyFile once
-       https://github.com/dotnet/sdk/pull/1052 is merged.
-  -->
-  <UsingTask TaskName="DepsJsonLinker" AssemblyFile="$(LinkTaskDllPath)" />
-  <Target Name="_GenerateLinkedPublishDependencyFile"
-          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies"
-          AfterTargets="GeneratePublishDependencyFile"
-          Condition=" '$(LinkDuringPublish)' == 'true' "
-          Inputs="@(_ManagedResolvedAssembliesToPublish);@(_LinkedResolvedAssemblies);$(PublishDepsFilePath)"
-          Outputs="$(_LinkDepsSemaphore)">
-    <!-- DepsJsonLinker expects inputs in the form of filename.dll. -->
-    <!-- We pass _ManagedResolvedAssembliesToPublish, which doesn't
-         contain any .ni files. This correctly prevents stripping of
-         the .ni files (which we want to continue publishing at the
-         moment). -->
-    <!-- This doesn't filter any assemblies from IntermediateAssembly,
-         which should currently always be rooted by default. -->
-    <DepsJsonLinker InputDepsFilePath="$(PublishDepsFilePath)"
-                    OutputDepsFilePath="$(PublishDepsFilePath)"
-                    ManagedPublishAssemblies="@(_ManagedResolvedAssembliesToPublish->'%(Filename)%(Extension)')"
-                    KeptAssemblies="@(_LinkedResolvedAssemblies->'%(Filename)%(Extension)')" />
-    <Touch Files="$(_LinkDepsSemaphore)" AlwaysCreate="true">
-      <Output TaskParameter="TouchedFiles" ItemName="FileWrites" />
-    </Touch>
+    <ItemGroup>
+      <_RemovedNativeDeps Include="@(_NativeResolvedDepsToPublish)" />
+      <_RemovedNativeDeps Remove="@(_NativeKeptDepsToPublish)" />
+      
+      <_PublishConflictPackageFiles Include="@(_RemovedManagedAssemblies)" />
+      <_PublishConflictPackageFiles Include="@(_RemovedNativeDeps)" />
+    </ItemGroup>
   </Target>
 
 </Project>

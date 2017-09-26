@@ -98,7 +98,6 @@
 
   <ItemGroup>
     <Compile Include="LinkTask.cs" />
-    <Compile Include="DepsJsonLinker.cs" />
     <Compile Include="CompareSizes.cs" />
     <Compile Include="ComputeManagedAssemblies.cs" />
     <Compile Include="GetRuntimeLibraries.cs" />
@@ -106,6 +105,8 @@
     <Compile Include="Utils.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/LockFileCache.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/BuildErrorException.cs" />
+    <Compile Include="FindNativeDeps.cs" />
+    <Compile Include="ComputeRemovedAssemblies.cs" />
   </ItemGroup>
 
   <!-- TODO: Uncomment this once we can avoid hard-coding this in a
