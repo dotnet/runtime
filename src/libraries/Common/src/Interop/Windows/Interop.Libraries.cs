@@ -29,5 +29,6 @@ internal static partial class Interop
         internal const string WinHttp = "winhttp.dll";
         internal const string Ws2_32 = "ws2_32.dll";
         internal const string Zlib = "clrcompression.dll";
+        internal const string PerfCounter = "perfcounter.dll";
     }
 }
