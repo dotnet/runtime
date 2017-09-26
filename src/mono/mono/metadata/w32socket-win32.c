@@ -23,6 +23,7 @@
 #include "w32socket-internals.h"
 
 #include "utils/w32api.h"
+#include "utils/mono-os-wait.h"
 
 #define LOGDEBUG(...)  
 
@@ -76,10 +77,10 @@ static gboolean alertable_socket_wait (SOCKET sock, int event_bit)
 	WSAEVENT event = WSACreateEvent ();
 	if (event != WSA_INVALID_EVENT) {
 		if (WSAEventSelect (sock, event, (1 << event_bit) | FD_CLOSE) != SOCKET_ERROR) {
-			LOGDEBUG (g_message ("%06d - Calling WSAWaitForMultipleEvents () on socket %d", GetCurrentThreadId (), sock));
-			DWORD ret = WSAWaitForMultipleEvents (1, &event, TRUE, timeout, TRUE);
+			LOGDEBUG (g_message ("%06d - Calling mono_win32_wsa_wait_for_multiple_events () on socket %d", GetCurrentThreadId (), sock));
+			DWORD ret = mono_win32_wsa_wait_for_multiple_events (1, &event, TRUE, timeout, TRUE);
 			if (ret == WSA_WAIT_IO_COMPLETION) {
-				LOGDEBUG (g_message ("%06d - WSAWaitForMultipleEvents () returned WSA_WAIT_IO_COMPLETION for socket %d", GetCurrentThreadId (), sock));
+				LOGDEBUG (g_message ("%06d - mono_win32_wsa_wait_for_multiple_events () returned WSA_WAIT_IO_COMPLETION for socket %d", GetCurrentThreadId (), sock));
 				error = WSAEINTR;
 			} else if (ret == WSA_WAIT_TIMEOUT) {
 				error = WSAETIMEDOUT;
@@ -229,9 +230,9 @@ BOOL mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, TRANSMIT_FILE
 			if (error == WSA_IO_PENDING) {
 				error = 0;
 				// NOTE: .NET's Socket.SendFile() doesn't honor the Socket's SendTimeout so we shouldn't either
-				DWORD ret = WaitForSingleObjectEx (overlapped.hEvent, INFINITE, TRUE);
+				DWORD ret = mono_win32_wait_for_single_object_ex (overlapped.hEvent, INFINITE, TRUE);
 				if (ret == WAIT_IO_COMPLETION) {
-					LOGDEBUG (g_message ("%06d - WaitForSingleObjectEx () returned WSA_WAIT_IO_COMPLETION for socket %d", GetCurrentThreadId (), hSocket));
+					LOGDEBUG (g_message ("%06d - mono_win32_wait_for_single_object_ex () returned WSA_WAIT_IO_COMPLETION for socket %d", GetCurrentThreadId (), hSocket));
 					error = WSAEINTR;
 				} else if (ret == WAIT_TIMEOUT) {
 					error = WSAETIMEDOUT;

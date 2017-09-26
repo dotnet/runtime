@@ -13,7 +13,8 @@ endif
 
 if HOST_WIN32
 win32_sources = \
-	os-event-win32.c
+	os-event-win32.c \
+	mono-os-wait-win32.c
 
 platform_sources = $(win32_sources)
 else
@@ -61,6 +62,7 @@ monoutils_sources = \
 	mono-mmap-windows-internals.h	\
 	mono-os-mutex.h		\
 	mono-os-mutex.c		\
+	mono-os-wait.h \
 	mono-coop-mutex.h		\
 	mono-once.h		\
 	mono-lazy-init.h		\

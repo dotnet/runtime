@@ -14,16 +14,11 @@
 
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-os-wait.h>
 #include <limits.h>
-
 
 void
 mono_threads_suspend_init (void)
-{
-}
-
-static void CALLBACK
-interrupt_apc (ULONG_PTR param)
 {
 }
 
@@ -57,9 +52,8 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	info->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info);
 	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (void*)id, res);
 	if (info->suspend_can_continue) {
-		//FIXME do we need to QueueUserAPC on this case?
 		if (interrupt_kernel)
-			QueueUserAPC ((PAPCFUNC)interrupt_apc, handle, (ULONG_PTR)NULL);
+			mono_win32_interrupt_wait (info, handle, id);
 	} else {
 		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %d\n", (void*)info->native_handle, 0);
 	}
@@ -74,11 +68,7 @@ mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 	return info->suspend_can_continue;
 }
 
-static void CALLBACK
-abort_apc (ULONG_PTR param)
-{
-	THREADS_INTERRUPT_DEBUG ("%06d - abort_apc () called", GetCurrentThreadId ());
-}
+
 
 void
 mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
@@ -89,8 +79,7 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
 	g_assert (handle);
 
-	THREADS_INTERRUPT_DEBUG ("%06d - Aborting syscall in thread %06d", GetCurrentThreadId (), id);
-	QueueUserAPC ((PAPCFUNC)abort_apc, handle, (ULONG_PTR)NULL);
+	mono_win32_abort_wait (info, handle, id);
 
 	CloseHandle (handle);
 }

@@ -14,6 +14,7 @@
 #include <winbase.h>
 
 #include "atomic.h"
+#include "mono-os-wait.h"
 
 void
 mono_os_event_init (MonoOSEvent *event, gboolean initial)
@@ -72,7 +73,7 @@ mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout, gboolean alertable)
 	g_assert (event);
 	g_assert (event->handle);
 
-	res = WaitForSingleObjectEx (event->handle, timeout, alertable);
+	res = mono_win32_wait_for_single_object_ex (event->handle, timeout, alertable);
 	if (res == WAIT_OBJECT_0)
 		return MONO_OS_EVENT_WAIT_RET_SUCCESS_0;
 	else if (res == WAIT_IO_COMPLETION)
@@ -80,7 +81,7 @@ mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout, gboolean alertable)
 	else if (res == WAIT_TIMEOUT)
 		return MONO_OS_EVENT_WAIT_RET_TIMEOUT;
 	else if (res == WAIT_FAILED)
-		g_error ("%s: WaitForSingleObjectEx failed with error %d", __func__, GetLastError ());
+		g_error ("%s: mono_thread_win32_wait_one_handle failed with error %d", __func__, GetLastError ());
 	else
 		g_error ("%s: unknown res value %d", __func__, res);
 }
@@ -105,7 +106,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 		handles [i] = events [i]->handle;
 	}
 
-	res = WaitForMultipleObjectsEx (nevents, handles, waitall, timeout, alertable);
+	res = mono_win32_wait_for_multiple_objects_ex ((DWORD)nevents, handles, waitall, timeout, alertable);
 	if (res >= WAIT_OBJECT_0 && res < WAIT_OBJECT_0 + MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS)
 		return MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + (res - WAIT_OBJECT_0);
 	else if (res == WAIT_IO_COMPLETION)
@@ -113,7 +114,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	else if (res == WAIT_TIMEOUT)
 		return MONO_OS_EVENT_WAIT_RET_TIMEOUT;
 	else if (res == WAIT_FAILED)
-		g_error ("%s: WaitForSingleObjectEx failed with error %d", __func__, GetLastError ());
+		g_error ("%s: mono_thread_win32_wait_multiple_handle failed with error %d", __func__, GetLastError ());
 	else
 		g_error ("%s: unknown res value %d", __func__, res);
 }
