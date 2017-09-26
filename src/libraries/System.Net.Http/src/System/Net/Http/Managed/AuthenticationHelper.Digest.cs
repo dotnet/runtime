@@ -52,7 +52,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            string parameter = await GetDigestTokenForCredential(credential, request, digestResponse);
+            string parameter = await GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
 
             // Any errors in obtaining parameter return false
             if (string.IsNullOrEmpty(parameter))
@@ -177,7 +177,7 @@ namespace System.Net.Http
             string a2 = request.Method.Method + ":" + request.RequestUri.PathAndQuery;
             if (qop == AuthInt)
             {
-                string content = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync();
+                string content = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
                 a2 = a2 + ":" + ComputeHash(content, algorithm);
             }
 
