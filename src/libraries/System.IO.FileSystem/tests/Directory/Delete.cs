@@ -254,6 +254,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue(24242)]
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("This test is very slow.")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop does not have the fix for #22596")]
