@@ -184,36 +184,11 @@ ASMCONSTANTS_C_ASSERT(THREAD_CATCHATSAFEPOINT_BITS == Thread::TS_CatchAtSafePoin
 #define               OFFSETOF__NDirectMethodDesc__m_pWriteableData DBG_FRE(0x48, 0x20)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__NDirectMethodDesc__m_pWriteableData == offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
 
-#define               OFFSETOF__ObjHeader__SyncBlkIndex         0x4
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ObjHeader__SyncBlkIndex
-                    == (sizeof(ObjHeader) - offsetof(ObjHeader, m_SyncBlockValue)));
-
-#define           SIZEOF__SyncTableEntry                    0x10
-ASMCONSTANT_SIZEOF_ASSERT(SyncTableEntry);
-
-#define           OFFSETOF__SyncTableEntry__m_SyncBlock     0x0
-ASMCONSTANT_OFFSETOF_ASSERT(SyncTableEntry, m_SyncBlock);
-
-#define           OFFSETOF__SyncBlock__m_Monitor            0x0
-ASMCONSTANT_OFFSETOF_ASSERT(SyncBlock, m_Monitor);
-
 #define           OFFSETOF__DelegateObject___methodPtr      0x18
 ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
 
 #define           OFFSETOF__DelegateObject___target         0x08
 ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _target);
-
-#define               OFFSETOF__AwareLock__m_MonitorHeld        0x0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__AwareLock__m_MonitorHeld
-                    == offsetof(AwareLock, m_MonitorHeld));
-
-#define               OFFSETOF__AwareLock__m_Recursion          0x4
-ASMCONSTANTS_C_ASSERT(OFFSETOF__AwareLock__m_Recursion
-                    == offsetof(AwareLock, m_Recursion));
-
-#define               OFFSETOF__AwareLock__m_HoldingThread      0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__AwareLock__m_HoldingThread
-                    == offsetof(AwareLock, m_HoldingThread));
 
 #define               OFFSETOF__g_SystemInfo__dwNumberOfProcessors  0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__g_SystemInfo__dwNumberOfProcessors
@@ -345,10 +320,6 @@ ASMCONSTANTS_C_ASSERT(   CORINFO_InvalidCastException_ASM
 #define                  CORINFO_IndexOutOfRangeException_ASM 3
 ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
                       == CORINFO_IndexOutOfRangeException);
-
-#define                  CORINFO_SynchronizationLockException_ASM 5
-ASMCONSTANTS_C_ASSERT(   CORINFO_SynchronizationLockException_ASM
-                      == CORINFO_SynchronizationLockException);
 
 #define                  CORINFO_ArrayTypeMismatchException_ASM 6
 ASMCONSTANTS_C_ASSERT(   CORINFO_ArrayTypeMismatchException_ASM
@@ -612,10 +583,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
 #define               OFFSETOF__ArrayTypeDesc__m_Arg 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayTypeDesc__m_Arg
                     == offsetof(ArrayTypeDesc, m_Arg));
-
-#define               SYNCBLOCKINDEX_OFFSET 0x4
-ASMCONSTANTS_C_ASSERT(SYNCBLOCKINDEX_OFFSET
-                    == (sizeof(ObjHeader) - offsetof(ObjHeader, m_SyncBlockValue)));
 
 #define CallDescrData__pSrc                0x00
 #define CallDescrData__numStackSlots       0x08

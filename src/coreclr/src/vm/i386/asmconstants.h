@@ -176,9 +176,6 @@ ASMCONSTANTS_C_ASSERT(CORINFO_IndexOutOfRangeException_ASM == CORINFO_IndexOutOf
 #define CORINFO_OverflowException_ASM 4
 ASMCONSTANTS_C_ASSERT(CORINFO_OverflowException_ASM == CORINFO_OverflowException)
 
-#define CORINFO_SynchronizationLockException_ASM 5
-ASMCONSTANTS_C_ASSERT(CORINFO_SynchronizationLockException_ASM == CORINFO_SynchronizationLockException)
-
 #define CORINFO_ArrayTypeMismatchException_ASM 6
 ASMCONSTANTS_C_ASSERT(CORINFO_ArrayTypeMismatchException_ASM == CORINFO_ArrayTypeMismatchException)
 
@@ -231,79 +228,6 @@ ASMCONSTANTS_C_ASSERT(Thread::TS_Hijacked == TS_Hijacked_ASM)
 
 #define AppDomain__m_dwId 0x4
 ASMCONSTANTS_C_ASSERT(AppDomain__m_dwId == offsetof(AppDomain, m_dwId));
-
-// from clr/src/vm/ceeload.cpp
-
-// from clr/src/vm/syncblk.h
-#define SizeOfSyncTableEntry_ASM 8
-ASMCONSTANTS_C_ASSERT(sizeof(SyncTableEntry) == SizeOfSyncTableEntry_ASM)
-
-#define SyncBlockIndexOffset_ASM 4
-ASMCONSTANTS_C_ASSERT(sizeof(ObjHeader) - offsetof(ObjHeader, m_SyncBlockValue) == SyncBlockIndexOffset_ASM)
-
-#ifndef __GNUC__
-#define SyncTableEntry_m_SyncBlock 0
-ASMCONSTANTS_C_ASSERT(offsetof(SyncTableEntry, m_SyncBlock) == SyncTableEntry_m_SyncBlock)
-
-#define SyncBlock_m_Monitor 0
-ASMCONSTANTS_C_ASSERT(offsetof(SyncBlock, m_Monitor) == SyncBlock_m_Monitor)
-
-#define AwareLock_m_MonitorHeld 0
-ASMCONSTANTS_C_ASSERT(offsetof(AwareLock, m_MonitorHeld) == AwareLock_m_MonitorHeld)
-#else
-// The following 3 offsets have value of 0, and must be
-// defined to be an empty string. Otherwise, gas may generate assembly
-// code with 0 displacement if 0 is left in the displacement field
-// of an instruction.
-#define SyncTableEntry_m_SyncBlock // 0
-ASMCONSTANTS_C_ASSERT(offsetof(SyncTableEntry, m_SyncBlock) == 0)
-
-#define SyncBlock_m_Monitor // 0
-ASMCONSTANTS_C_ASSERT(offsetof(SyncBlock, m_Monitor) == 0)
-
-#define AwareLock_m_MonitorHeld // 0
-ASMCONSTANTS_C_ASSERT(offsetof(AwareLock, m_MonitorHeld) == 0)
-#endif // !__GNUC__
-
-#define AwareLock_m_HoldingThread 8
-ASMCONSTANTS_C_ASSERT(offsetof(AwareLock, m_HoldingThread) == AwareLock_m_HoldingThread)
-
-#define AwareLock_m_Recursion 4
-ASMCONSTANTS_C_ASSERT(offsetof(AwareLock, m_Recursion) == AwareLock_m_Recursion)
-
-#define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX_ASM 0x08000000
-ASMCONSTANTS_C_ASSERT(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX_ASM == BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-
-#define BIT_SBLK_SPIN_LOCK_ASM 0x10000000
-ASMCONSTANTS_C_ASSERT(BIT_SBLK_SPIN_LOCK_ASM == BIT_SBLK_SPIN_LOCK)
-
-#define SBLK_MASK_LOCK_THREADID_ASM 0x000003FF   // special value of 0 + 1023 thread ids
-ASMCONSTANTS_C_ASSERT(SBLK_MASK_LOCK_THREADID_ASM == SBLK_MASK_LOCK_THREADID)
-
-#define SBLK_MASK_LOCK_RECLEVEL_ASM 0x0000FC00   // 64 recursion levels
-ASMCONSTANTS_C_ASSERT(SBLK_MASK_LOCK_RECLEVEL_ASM == SBLK_MASK_LOCK_RECLEVEL)
-
-#define SBLK_LOCK_RECLEVEL_INC_ASM 0x00000400   // each level is this much higher than the previous one
-ASMCONSTANTS_C_ASSERT(SBLK_LOCK_RECLEVEL_INC_ASM == SBLK_LOCK_RECLEVEL_INC)
-
-#define BIT_SBLK_IS_HASHCODE_ASM 0x04000000
-ASMCONSTANTS_C_ASSERT(BIT_SBLK_IS_HASHCODE_ASM == BIT_SBLK_IS_HASHCODE)
-
-#define MASK_SYNCBLOCKINDEX_ASM  0x03ffffff // ((1<<SYNCBLOCKINDEX_BITS)-1)
-ASMCONSTANTS_C_ASSERT(MASK_SYNCBLOCKINDEX_ASM == MASK_SYNCBLOCKINDEX)
-
-// BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX_ASM + BIT_SBLK_SPIN_LOCK_ASM + 
-// SBLK_MASK_LOCK_THREADID_ASM + SBLK_MASK_LOCK_RECLEVEL_ASM
-#define SBLK_COMBINED_MASK_ASM 0x1800ffff
-ASMCONSTANTS_C_ASSERT(SBLK_COMBINED_MASK_ASM == (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX + BIT_SBLK_SPIN_LOCK + SBLK_MASK_LOCK_THREADID + SBLK_MASK_LOCK_RECLEVEL))
-
-// BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX_ASM + BIT_SBLK_SPIN_LOCK_ASM
-#define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX_SPIN_LOCK_ASM 0x18000000
-ASMCONSTANTS_C_ASSERT(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX_SPIN_LOCK_ASM == (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX + BIT_SBLK_SPIN_LOCK))
-
-// BIT_SBLK_IS_HASHCODE + BIT_SBLK_SPIN_LOCK
-#define BIT_SBLK_IS_HASHCODE_OR_SPIN_LOCK_ASM 0x14000000
-ASMCONSTANTS_C_ASSERT(BIT_SBLK_IS_HASHCODE_OR_SPIN_LOCK_ASM == (BIT_SBLK_IS_HASHCODE + BIT_SBLK_SPIN_LOCK))
 
 // This is the offset from EBP at which the original CONTEXT is stored in one of the 
 // RedirectedHandledJITCase*_Stub functions.

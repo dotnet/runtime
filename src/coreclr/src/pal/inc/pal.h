@@ -4202,6 +4202,9 @@ InterlockedDecrement(
     return __sync_sub_and_fetch(lpAddend, (LONG)1);
 }
 
+#define InterlockedDecrementAcquire InterlockedDecrement
+#define InterlockedDecrementRelease InterlockedDecrement
+
 EXTERN_C
 PALIMPORT
 inline
@@ -4297,39 +4300,8 @@ InterlockedCompareExchange(
         Exchange /* The value to be stored */);
 }
 
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedCompareExchangeAcquire(
-    IN OUT LONG volatile *Destination,
-    IN LONG Exchange,
-    IN LONG Comperand)
-{
-    // TODO: implement the version with only the acquire semantics
-    return __sync_val_compare_and_swap(
-        Destination, /* The pointer to a variable whose value is to be compared with. */
-        Comperand, /* The value to be compared */
-        Exchange /* The value to be stored */);
-}
-
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedCompareExchangeRelease(
-    IN OUT LONG volatile *Destination,
-    IN LONG Exchange,
-    IN LONG Comperand)
-{
-    // TODO: implement the version with only the release semantics
-    return __sync_val_compare_and_swap(
-        Destination, /* The pointer to a variable whose value is to be compared with. */
-        Comperand, /* The value to be compared */
-        Exchange /* The value to be stored */);
-}
+#define InterlockedCompareExchangeAcquire InterlockedCompareExchange
+#define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
 // See the 32-bit variant in interlock2.s
 EXTERN_C
