@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Security;
 using System.Text;
@@ -69,8 +68,6 @@ namespace System.Reflection
             RuntimeMethodHandleInternal handle, RuntimeType declaringType,
             RuntimeTypeCache reflectedTypeCache, MethodAttributes methodAttributes, BindingFlags bindingFlags, object keepalive)
         {
-            Contract.Ensures(!m_handle.IsNull());
-
             Debug.Assert(!handle.IsNullHandle());
             Debug.Assert(methodAttributes == RuntimeMethodHandle.GetAttributes(handle));
 
@@ -258,7 +255,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -272,7 +268,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -356,7 +351,6 @@ namespace System.Reflection
             return m_parameters;
         }
 
-        [System.Diagnostics.Contracts.Pure]
         public override ParameterInfo[] GetParameters()
         {
             FetchNonReturnParameters();
@@ -544,8 +538,6 @@ namespace System.Reflection
         {
             get
             {
-                Contract.Ensures(m_returnParameter != null);
-
                 FetchReturnParameter();
                 return m_returnParameter as ParameterInfo;
             }
@@ -617,7 +609,6 @@ namespace System.Reflection
             // Validate the parameters.
             if (delegateType == null)
                 throw new ArgumentNullException(nameof(delegateType));
-            Contract.EndContractBlock();
 
             RuntimeType rtType = delegateType as RuntimeType;
             if (rtType == null)
@@ -642,7 +633,6 @@ namespace System.Reflection
         {
             if (methodInstantiation == null)
                 throw new ArgumentNullException(nameof(methodInstantiation));
-            Contract.EndContractBlock();
 
             RuntimeType[] methodInstantionRuntimeType = new RuntimeType[methodInstantiation.Length];
 
@@ -711,7 +701,6 @@ namespace System.Reflection
         {
             if (!IsGenericMethod)
                 throw new InvalidOperationException();
-            Contract.EndContractBlock();
 
             return RuntimeType.GetMethodBase(m_declaringType, RuntimeMethodHandle.StripMethodInstantiation(this)) as MethodInfo;
         }

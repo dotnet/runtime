@@ -17,7 +17,6 @@ namespace System
     using System.Globalization;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Diagnostics.Contracts;
 
     [Serializable]
     [CLSCompliant(false)]
@@ -70,7 +69,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(info));
             }
-            Contract.EndContractBlock();
             info.AddValue("value", (ulong)_value);
         }
 
@@ -116,8 +114,6 @@ namespace System
 
         public unsafe override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
-
 #if BIT64
             return ((ulong)_value).ToString(CultureInfo.InvariantCulture);
 #else // 32

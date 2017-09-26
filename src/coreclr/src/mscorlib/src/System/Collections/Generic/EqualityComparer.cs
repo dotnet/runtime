@@ -11,7 +11,6 @@ using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Generic
 {
@@ -24,9 +23,7 @@ namespace System.Collections.Generic
         // as possible and define most of the creation logic in a non-generic class.
         public static EqualityComparer<T> Default { get; } = (EqualityComparer<T>)ComparerHelpers.CreateDefaultEqualityComparer(typeof(T));
 
-        [Pure]
         public abstract bool Equals(T x, T y);
-        [Pure]
         public abstract int GetHashCode(T obj);
 
         internal virtual int IndexOf(T[] array, T value, int startIndex, int count)
@@ -73,7 +70,6 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
     {
-        [Pure]
         public override bool Equals(T x, T y)
         {
             if (x != null)
@@ -85,7 +81,6 @@ namespace System.Collections.Generic
             return true;
         }
 
-        [Pure]
         public override int GetHashCode(T obj) => obj?.GetHashCode() ?? 0;
 
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
@@ -142,7 +137,6 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct, IEquatable<T>
     {
-        [Pure]
         public override bool Equals(T? x, T? y)
         {
             if (x.HasValue)
@@ -154,7 +148,6 @@ namespace System.Collections.Generic
             return true;
         }
 
-        [Pure]
         public override int GetHashCode(T? obj) => obj.GetHashCode();
 
         internal override int IndexOf(T?[] array, T? value, int startIndex, int count)
@@ -209,7 +202,6 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
     {
-        [Pure]
         public override bool Equals(T x, T y)
         {
             if (x != null)
@@ -221,7 +213,6 @@ namespace System.Collections.Generic
             return true;
         }
 
-        [Pure]
         public override int GetHashCode(T obj) => obj?.GetHashCode() ?? 0;
 
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
@@ -293,7 +284,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [Pure]
         public override int GetHashCode(string obj)
         {
             if (obj == null) return 0;
@@ -307,13 +297,11 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class ByteEqualityComparer : EqualityComparer<byte>
     {
-        [Pure]
         public override bool Equals(byte x, byte y)
         {
             return x == y;
         }
 
-        [Pure]
         public override int GetHashCode(byte b)
         {
             return b.GetHashCode();
@@ -329,7 +317,6 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             if (count > array.Length - startIndex)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
             if (count == 0) return -1;
             fixed (byte* pbytes = array)
             {
@@ -359,7 +346,6 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
-        [Pure]
         public override bool Equals(T x, T y)
         {
             int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(x);
@@ -367,7 +353,6 @@ namespace System.Collections.Generic
             return x_final == y_final;
         }
 
-        [Pure]
         public override int GetHashCode(T obj)
         {
             int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(obj);
@@ -428,7 +413,6 @@ namespace System.Collections.Generic
         // This is used by the serialization engine.
         public SByteEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
-        [Pure]
         public override int GetHashCode(T obj)
         {
             int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(obj);
@@ -445,7 +429,6 @@ namespace System.Collections.Generic
         // This is used by the serialization engine.
         public ShortEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
-        [Pure]
         public override int GetHashCode(T obj)
         {
             int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(obj);
@@ -457,7 +440,6 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
-        [Pure]
         public override bool Equals(T x, T y)
         {
             long x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCastLong(x);
@@ -465,7 +447,6 @@ namespace System.Collections.Generic
             return x_final == y_final;
         }
 
-        [Pure]
         public override int GetHashCode(T obj)
         {
             long x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCastLong(obj);

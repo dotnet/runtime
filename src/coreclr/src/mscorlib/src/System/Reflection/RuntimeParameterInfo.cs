@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using MdToken = System.Reflection.MetadataToken;
 
@@ -186,7 +185,7 @@ namespace System.Reflection
             Signature signature, MetadataImport scope, int tkParamDef,
             int position, ParameterAttributes attributes, MemberInfo member)
         {
-            Contract.Requires(member != null);
+            Debug.Assert(member != null);
             Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(MetadataImport.EmptyImport));
             Debug.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
 
@@ -397,7 +396,7 @@ namespace System.Reflection
 
         private static Decimal GetRawDecimalConstant(CustomAttributeData attr)
         {
-            Contract.Requires(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
+            Debug.Assert(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
 
             foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
             {
@@ -441,8 +440,8 @@ namespace System.Reflection
 
         private static DateTime GetRawDateTimeConstant(CustomAttributeData attr)
         {
-            Contract.Requires(attr.Constructor.DeclaringType == typeof(DateTimeConstantAttribute));
-            Contract.Requires(attr.ConstructorArguments.Count == 1);
+            Debug.Assert(attr.Constructor.DeclaringType == typeof(DateTimeConstantAttribute));
+            Debug.Assert(attr.ConstructorArguments.Count == 1);
 
             foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
             {
@@ -518,7 +517,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             if (MdToken.IsNullToken(m_tkParamDef))
                 return Array.Empty<Object>();
@@ -535,7 +533,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             if (MdToken.IsNullToken(m_tkParamDef))
                 return false;

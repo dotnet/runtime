@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -32,7 +31,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(addMethod));
             if (removeMethod == null)
                 throw new ArgumentNullException(nameof(removeMethod));
-            Contract.EndContractBlock();
 
             // Managed code allows adding a null event handler, the effect is a no-op.  To match this behavior
             // for WinRT events, we simply ignore attempts to add null.
@@ -58,7 +56,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (removeMethod == null)
                 throw new ArgumentNullException(nameof(removeMethod));
-            Contract.EndContractBlock();
 
             // Managed code allows removing a null event handler, the effect is a no-op.  To match this behavior
             // for WinRT events, we simply ignore attempts to remove null.
@@ -82,7 +79,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (removeMethod == null)
                 throw new ArgumentNullException(nameof(removeMethod));
-            Contract.EndContractBlock();
 
             // Delegate to managed event registration implementation or native event registration implementation
             // They have completely different implementation because native side has its own unique problem to solve -
@@ -217,8 +213,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                                                   Action<EventRegistrationToken> removeMethod,
                                                   T handler)
             {
-                Contract.Requires(addMethod != null);
-                Contract.Requires(removeMethod != null);
+                Debug.Assert(addMethod != null);
+                Debug.Assert(removeMethod != null);
 
                 // Add the method, and make a note of the token -> delegate mapping.
                 object instance = removeMethod.Target;
@@ -248,9 +244,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // Get the event registration token table for an event.  These are indexed by the remove method of the event.
             private static Dictionary<object, EventRegistrationTokenList> GetEventRegistrationTokenTable(object instance, Action<EventRegistrationToken> removeMethod)
             {
-                Contract.Requires(instance != null);
-                Contract.Requires(removeMethod != null);
-                Contract.Requires(s_eventRegistrations != null);
+                Debug.Assert(instance != null);
+                Debug.Assert(removeMethod != null);
+                Debug.Assert(s_eventRegistrations != null);
 
                 lock (s_eventRegistrations)
                 {
@@ -274,7 +270,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             internal static void RemoveEventHandler<T>(Action<EventRegistrationToken> removeMethod, T handler)
             {
-                Contract.Requires(removeMethod != null);
+                Debug.Assert(removeMethod != null);
 
                 object instance = removeMethod.Target;
                 Dictionary<object, EventRegistrationTokenList> registrationTokens = GetEventRegistrationTokenTable(instance, removeMethod);
@@ -315,7 +311,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             internal static void RemoveAllEventHandlers(Action<EventRegistrationToken> removeMethod)
             {
-                Contract.Requires(removeMethod != null);
+                Debug.Assert(removeMethod != null);
 
                 object instance = removeMethod.Target;
                 Dictionary<object, EventRegistrationTokenList> registrationTokens = GetEventRegistrationTokenTable(instance, removeMethod);
@@ -480,7 +476,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 {
                     // Time to destroy cache for this IUnknown */type instance
                     // because the total token list count has dropped to 0 and we don't have any events subscribed
-                    Contract.Requires(s_eventRegistrations != null);
+                    Debug.Assert(s_eventRegistrations != null);
 
                     BCLDebug.Log("INTEROP", "[WinRT_Eventing] Removing " + _key + " from cache" + "\n");
                     s_eventRegistrations.Remove(_key);
@@ -634,16 +630,16 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             private static ConditionalWeakTable<object, EventRegistrationTokenListWithCount> GetEventRegistrationTokenTableNoCreate(object instance, Action<EventRegistrationToken> removeMethod, out TokenListCount tokenListCount)
             {
-                Contract.Requires(instance != null);
-                Contract.Requires(removeMethod != null);
+                Debug.Assert(instance != null);
+                Debug.Assert(removeMethod != null);
 
                 return GetEventRegistrationTokenTableInternal(instance, removeMethod, out tokenListCount, /* createIfNotFound = */ false);
             }
 
             private static ConditionalWeakTable<object, EventRegistrationTokenListWithCount> GetOrCreateEventRegistrationTokenTable(object instance, Action<EventRegistrationToken> removeMethod, out TokenListCount tokenListCount)
             {
-                Contract.Requires(instance != null);
-                Contract.Requires(removeMethod != null);
+                Debug.Assert(instance != null);
+                Debug.Assert(removeMethod != null);
 
                 return GetEventRegistrationTokenTableInternal(instance, removeMethod, out tokenListCount, /* createIfNotFound = */ true);
             }
@@ -651,9 +647,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // Get the event registration token table for an event.  These are indexed by the remove method of the event.
             private static ConditionalWeakTable<object, EventRegistrationTokenListWithCount> GetEventRegistrationTokenTableInternal(object instance, Action<EventRegistrationToken> removeMethod, out TokenListCount tokenListCount, bool createIfNotFound)
             {
-                Contract.Requires(instance != null);
-                Contract.Requires(removeMethod != null);
-                Contract.Requires(s_eventRegistrations != null);
+                Debug.Assert(instance != null);
+                Debug.Assert(removeMethod != null);
+                Debug.Assert(s_eventRegistrations != null);
 
                 EventCacheKey eventCacheKey;
                 eventCacheKey.target = instance;
@@ -1045,7 +1041,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal static unsafe string HStringToString(IntPtr hstring)
         {
-            Contract.Requires(Environment.IsWinRTSupported);
+            Debug.Assert(Environment.IsWinRTSupported);
 
             // There is no difference between a null and empty HSTRING
             if (hstring == IntPtr.Zero)

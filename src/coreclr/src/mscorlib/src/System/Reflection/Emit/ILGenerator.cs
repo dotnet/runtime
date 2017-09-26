@@ -31,9 +31,7 @@ namespace System.Reflection.Emit
 
         internal static T[] EnlargeArray<T>(T[] incoming, int requiredSize)
         {
-            Contract.Requires(incoming != null);
-            Contract.Ensures(Contract.Result<T[]>() != null);
-            Contract.Ensures(Contract.Result<T[]>().Length == requiredSize);
+            Debug.Assert(incoming != null);
 
             T[] temp = new T[requiredSize];
             Array.Copy(incoming, 0, temp, 0, incoming.Length);
@@ -47,9 +45,7 @@ namespace System.Reflection.Emit
 
         private static byte[] EnlargeArray(byte[] incoming, int requiredSize)
         {
-            Contract.Requires(incoming != null);
-            Contract.Ensures(Contract.Result<byte[]>() != null);
-            Contract.Ensures(Contract.Result<byte[]>().Length == requiredSize);
+            Debug.Assert(incoming != null);
 
             byte[] temp = new byte[requiredSize];
             Buffer.BlockCopy(incoming, 0, temp, 0, incoming.Length);
@@ -108,8 +104,8 @@ namespace System.Reflection.Emit
 
         internal ILGenerator(MethodInfo methodBuilder, int size)
         {
-            Contract.Requires(methodBuilder != null);
-            Contract.Requires(methodBuilder is MethodBuilder || methodBuilder is DynamicMethod);
+            Debug.Assert(methodBuilder != null);
+            Debug.Assert(methodBuilder is MethodBuilder || methodBuilder is DynamicMethod);
 
             if (size < defaultSize)
             {
@@ -466,7 +462,6 @@ namespace System.Reflection.Emit
         {
             if (meth == null)
                 throw new ArgumentNullException(nameof(meth));
-            Contract.EndContractBlock();
 
             if (opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj))
             {
@@ -544,7 +539,6 @@ namespace System.Reflection.Emit
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
 
-            Contract.EndContractBlock();
 
             int stackchange = 0;
             int tk = GetMethodToken(methodInfo, optionalParameterTypes, false);
@@ -577,7 +571,6 @@ namespace System.Reflection.Emit
         {
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
-            Contract.EndContractBlock();
 
             int stackchange = 0;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
@@ -612,7 +605,6 @@ namespace System.Reflection.Emit
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
-            Contract.EndContractBlock();
 
             int stackchange = 0;
 
@@ -749,7 +741,6 @@ namespace System.Reflection.Emit
         {
             if (labels == null)
                 throw new ArgumentNullException(nameof(labels));
-            Contract.EndContractBlock();
 
             // Emitting a switch table
 
@@ -800,7 +791,6 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentNullException(nameof(local));
             }
-            Contract.EndContractBlock();
             int tempVal = local.GetLocalIndex();
             if (local.GetMethodBuilder() != m_methodBuilder)
             {
@@ -1124,7 +1114,6 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentException(SR.Argument_NotExceptionType);
             }
-            Contract.EndContractBlock();
             ConstructorInfo con = excType.GetConstructor(Type.EmptyTypes);
             if (con == null)
             {
@@ -1197,7 +1186,6 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentNullException(nameof(fld));
             }
-            Contract.EndContractBlock();
 
             MethodInfo prop = GetConsoleType().GetMethod("get_Out");
             Emit(OpCodes.Call, prop);
@@ -1279,7 +1267,6 @@ namespace System.Reflection.Emit
 
             if (usingNamespace.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(usingNamespace));
-            Contract.EndContractBlock();
 
             int index;
             MethodBuilder methodBuilder = m_methodBuilder as MethodBuilder;
@@ -1308,7 +1295,6 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentOutOfRangeException(nameof(startLine));
             }
-            Contract.EndContractBlock();
             m_LineNumberInfo.AddLineNumberInfo(document, m_length, startLine, startColumn, endLine, endColumn);
         }
 
@@ -1566,7 +1552,7 @@ namespace System.Reflection.Emit
         // not having a nesting relation. 
         internal bool IsInner(__ExceptionInfo exc)
         {
-            Contract.Requires(exc != null);
+            Debug.Assert(exc != null);
             Debug.Assert(m_currentCatch > 0, "m_currentCatch > 0");
             Debug.Assert(exc.m_currentCatch > 0, "exc.m_currentCatch > 0");
 
@@ -1681,7 +1667,6 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentException(SR.Argument_UnmatchingSymScope);
             }
-            Contract.EndContractBlock();
 
             // make sure that arrays are large enough to hold addition info
             EnsureCapacity();
