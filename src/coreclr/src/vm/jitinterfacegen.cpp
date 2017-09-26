@@ -47,15 +47,6 @@ EXTERN_C Object* JIT_NewArr1OBJ_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_NewArr1VC_MP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_NewArr1VC_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
-//For the optimized JIT_Mon helpers
-#if defined(_TARGET_AMD64_)
-EXTERN_C void JIT_MonEnterWorker_Slow(Object* obj, BYTE* pbLockTaken);
-EXTERN_C void JIT_MonExitWorker_Slow(Object* obj, BYTE* pbLockTaken);
-EXTERN_C void JIT_MonTryEnter_Slow(Object* obj, INT32 timeOut, BYTE* pbLockTaken);
-EXTERN_C void JIT_MonEnterStatic_Slow(AwareLock* lock, BYTE* pbLockTaken);
-EXTERN_C void JIT_MonExitStatic_Slow(AwareLock* lock, BYTE* pbLockTaken);
-#endif // _TARGET_AMD64_
-
 extern "C" void* JIT_GetSharedNonGCStaticBase_Slow(SIZE_T moduleDomainID, DWORD dwModuleClassID);
 extern "C" void* JIT_GetSharedNonGCStaticBaseNoCtor_Slow(SIZE_T moduleDomainID, DWORD dwModuleClassID);
 extern "C" void* JIT_GetSharedGCStaticBase_Slow(SIZE_T moduleDomainID, DWORD dwModuleClassID);
@@ -114,12 +105,6 @@ EXTERN_C void JIT_BoxFastMPIGT__PatchTLSLabel();
 EXTERN_C void AllocateStringFastMP_InlineGetThread__PatchTLSOffset();
 EXTERN_C void JIT_NewArr1VC_MP_InlineGetThread__PatchTLSOffset();
 EXTERN_C void JIT_NewArr1OBJ_MP_InlineGetThread__PatchTLSOffset();
-EXTERN_C void JIT_MonEnterWorker_InlineGetThread_GetThread_PatchLabel();
-EXTERN_C void JIT_MonExitWorker_InlineGetThread_GetThread_PatchLabel();
-EXTERN_C void JIT_MonTryEnter_GetThread_PatchLabel();
-EXTERN_C void JIT_MonEnterStaticWorker_InlineGetThread_GetThread_PatchLabel_1();
-EXTERN_C void JIT_MonEnterStaticWorker_InlineGetThread_GetThread_PatchLabel_2();
-EXTERN_C void JIT_MonExitStaticWorker_InlineGetThread_GetThread_PatchLabel();
 
 
 static const LPVOID InlineGetThreadLocations[] = {
@@ -128,12 +113,6 @@ static const LPVOID InlineGetThreadLocations[] = {
     (PVOID)AllocateStringFastMP_InlineGetThread__PatchTLSOffset,
     (PVOID)JIT_NewArr1VC_MP_InlineGetThread__PatchTLSOffset,
     (PVOID)JIT_NewArr1OBJ_MP_InlineGetThread__PatchTLSOffset,
-    (PVOID)JIT_MonEnterWorker_InlineGetThread_GetThread_PatchLabel,
-    (PVOID)JIT_MonExitWorker_InlineGetThread_GetThread_PatchLabel,
-    (PVOID)JIT_MonTryEnter_GetThread_PatchLabel,
-    (PVOID)JIT_MonEnterStaticWorker_InlineGetThread_GetThread_PatchLabel_1,
-    (PVOID)JIT_MonEnterStaticWorker_InlineGetThread_GetThread_PatchLabel_2,
-    (PVOID)JIT_MonExitStaticWorker_InlineGetThread_GetThread_PatchLabel,
 };
 
 EXTERN_C void JIT_GetSharedNonGCStaticBase__PatchTLSLabel();
@@ -186,11 +165,6 @@ void FixupInlineGetters(DWORD tlsSlot, const LPVOID * pLocations, int nLocations
     }
 }
 #endif // defined(_WIN64) && !defined(FEATURE_IMPLICIT_TLS)
-
-#if defined(_TARGET_AMD64_)
-EXTERN_C void JIT_MonEnterStaticWorker();
-EXTERN_C void JIT_MonExitStaticWorker();
-#endif
 
 void InitJITHelpers1()
 {
@@ -273,22 +247,6 @@ void InitJITHelpers1()
 #endif // !FEATURE_PAL
         }
     }
-
-#ifndef FEATURE_IMPLICIT_TLS
-    if (gThreadTLSIndex >= TLS_MINIMUM_AVAILABLE)
-    {
-        // We need to patch the helpers for FCalls
-        MakeIntoJumpStub(JIT_MonEnterWorker_InlineGetThread,        JIT_MonEnterWorker_Slow);
-        MakeIntoJumpStub(JIT_MonExitWorker_InlineGetThread,         JIT_MonExitWorker_Slow);
-        MakeIntoJumpStub(JIT_MonTryEnter_InlineGetThread,           JIT_MonTryEnter_Slow);
-
-        SetJitHelperFunction(CORINFO_HELP_MON_ENTER,        JIT_MonEnterWorker_Slow);
-        SetJitHelperFunction(CORINFO_HELP_MON_EXIT,         JIT_MonExitWorker_Slow);
-
-        SetJitHelperFunction(CORINFO_HELP_MON_ENTER_STATIC, JIT_MonEnterStatic_Slow);
-        SetJitHelperFunction(CORINFO_HELP_MON_EXIT_STATIC,  JIT_MonExitStatic_Slow);
-    }
-#endif
 
     if(IsSingleAppDomain())
     {

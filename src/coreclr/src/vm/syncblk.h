@@ -251,9 +251,10 @@ public:
         LeaveHelperAction_Error,
     };
 
+    static bool SpinWaitAndBackOffBeforeOperation(DWORD *spinCountRef);
+
     // Helper encapsulating the fast path entering monitor. Returns what kind of result was achieved.
-    AwareLock::EnterHelperResult EnterHelper(Thread* pCurThread);
-    AwareLock::EnterHelperResult EnterHelperSpin(Thread* pCurThread, INT32 timeOut = -1);
+    bool EnterHelper(Thread* pCurThread, bool checkRecursiveCase);
 
     // Helper encapsulating the core logic for leaving monitor. Returns what kind of 
     // follow up action is necessary
@@ -1265,8 +1266,11 @@ class ObjHeader
     // non-blocking version of above
     BOOL TryEnterObjMonitor(INT32 timeOut = 0);
 
-    // Inlineable fast path of EnterObjMonitor/TryEnterObjMonitor
+    // Inlineable fast path of EnterObjMonitor/TryEnterObjMonitor. Must be called before EnterObjMonitorHelperSpin.
     AwareLock::EnterHelperResult EnterObjMonitorHelper(Thread* pCurThread);
+
+    // Typically non-inlined spin loop for some fast paths of EnterObjMonitor/TryEnterObjMonitor. EnterObjMonitorHelper must be
+    // called before this function.
     AwareLock::EnterHelperResult EnterObjMonitorHelperSpin(Thread* pCurThread);
 
     // leaves the monitor of an object
