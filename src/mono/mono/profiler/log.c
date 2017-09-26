@@ -1142,7 +1142,7 @@ sync_point_mark (MonoProfilerSyncPointType type)
 
 	ENTER_LOG (&sync_points_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
-		LEB128_SIZE /* type */
+		BYTE_SIZE /* type */
 	);
 
 	emit_event (logbuffer, TYPE_META | TYPE_SYNC_POINT);
@@ -1905,7 +1905,8 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, uint32_t clause_num, MonoExc
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* clause type */ +
 		LEB128_SIZE /* clause num */ +
-		LEB128_SIZE /* method */
+		LEB128_SIZE /* method */ +
+		LEB128_SIZE /* exc */
 	);
 
 	emit_event (logbuffer, TYPE_EXCEPTION | TYPE_CLAUSE);
@@ -2268,7 +2269,7 @@ dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t
 		LEB128_SIZE /* load address */ +
 		LEB128_SIZE /* offset */ +
 		LEB128_SIZE /* size */ +
-		nlen /* file name */
+		len /* file name */
 	);
 
 	emit_event (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_UBIN);
@@ -2671,6 +2672,12 @@ counters_sample (uint64_t timestamp)
 	;
 
 	for (agent = log_profiler.counters; agent; agent = agent->next) {
+		/*
+		 * FIXME: This calculation is incorrect for string counters since
+		 * mono_counter_get_size () just returns 0 in that case. We should
+		 * address this if we ever actually add any string counters to Mono.
+		 */
+
 		size +=
 			LEB128_SIZE /* index */ +
 			BYTE_SIZE /* type */ +
