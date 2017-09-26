@@ -89,6 +89,7 @@ mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_state
 	context->gregs [AMD64_RCX] = arch_state->__rcx;
 	context->gregs [AMD64_RDX] = arch_state->__rdx;
 	context->gregs [AMD64_RDI] = arch_state->__rdi;
+	context->gregs [AMD64_RSI] = arch_state->__rsi;
 	context->gregs [AMD64_RBP] = arch_state->__rbp;
 	context->gregs [AMD64_RSP] = arch_state->__rsp;
 	context->gregs [AMD64_R8] = arch_state->__r8;
