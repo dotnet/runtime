@@ -676,7 +676,7 @@
       "value": "false"
     },
     "PB_SignType": {
-      "value": "real"
+      "value": "oss"
     },
     "PB_SourcesDirectory": {
       "value": "$(Build.SourcesDirectory)\\core-setup"
