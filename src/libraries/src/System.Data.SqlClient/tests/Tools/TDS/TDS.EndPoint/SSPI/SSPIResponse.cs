@@ -10,7 +10,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.SSPI
     public class SSPIResponse
     {
         /// <summary>
-        /// Payload to proceed to the next step of authentcation
+        /// Payload to proceed to the next step of authentication
         /// </summary>
         public byte[] Payload { get; set; }
 

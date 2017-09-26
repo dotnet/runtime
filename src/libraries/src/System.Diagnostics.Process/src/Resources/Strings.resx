@@ -210,6 +210,9 @@
   <data name="CantRedirectStreams" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to redirect IO streams.</value>
   </data>
+  <data name="DirectoryNotValidAsInput" xml:space="preserve">
+    <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
+  </data>
   <data name="PendingAsyncOperation" xml:space="preserve">
     <value>An async read operation has already been started on the stream.</value>
   </data>

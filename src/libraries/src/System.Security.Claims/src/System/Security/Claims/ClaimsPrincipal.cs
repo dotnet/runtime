@@ -22,10 +22,7 @@ namespace System.Security.Claims
             UserData = 2
         }
 
-        [NonSerialized]
         private readonly List<ClaimsIdentity> _identities = new List<ClaimsIdentity>();
-
-        [NonSerialized]
         private readonly byte[] _userSerializationData;
 
         private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity> s_identitySelector = SelectPrimaryIdentity;

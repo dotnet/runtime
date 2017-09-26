@@ -16,9 +16,6 @@
     <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\PositionValueStream.cs">
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
@@ -137,7 +134,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Folder Include="Common\Interop\Unix\" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="AesManagedTests.cs" />
@@ -149,12 +145,18 @@
     <Compile Include="DESTests.cs" />
     <Compile Include="DSACreateTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
+    <Compile Include="DSATests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
+    <Compile Include="ECDsaTests.cs" />
+    <Compile Include="HashAlgorithmTest.netcoreapp.cs" />
+    <Compile Include="IncrementalHashTests.netcoreapp.cs" />
     <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
+    <Compile Include="RandomNumberGeneratorTests.netcoreapp.cs" />
     <Compile Include="RC2Provider.cs" />
     <Compile Include="RC2Tests.cs" />
     <Compile Include="RijndaelTests.cs" />
+    <Compile Include="RSATests.cs" />
     <Compile Include="RSACreateTests.cs" />
     <Compile Include="RSAKeyExchangeFormatterTests.cs" />
     <Compile Include="RSASignatureFormatterTests.cs" />
@@ -199,6 +201,9 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaTests.netcoreapp.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaTests.netcoreapp.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs</Link>
     </Compile>
@@ -211,6 +216,9 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.netcoreapp.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.netcoreapp.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyExchangeFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyExchangeFormatter.cs</Link>
     </Compile>
@@ -219,6 +227,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

@@ -48,8 +48,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public MethWithType MethWithTypeSet { get; }
 
-        public bool IsBaseCall => 0 != (Flags & EXPRFLAG.EXF_BASECALL);
-
         SymWithType IExprWithArgs.GetSymWithType() => PropWithTypeSlot;
     }
 }

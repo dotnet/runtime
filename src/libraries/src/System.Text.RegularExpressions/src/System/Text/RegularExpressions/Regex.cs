@@ -42,9 +42,12 @@ namespace System.Text.RegularExpressions
 
         protected internal TimeSpan internalMatchTimeout;   // timeout for the execution of this regex
 
+        // During static initialisation of Regex we check
+        private const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
+
         // DefaultMatchTimeout specifies the match timeout to use if no other timeout was specified
         // by one means or another. Typically, it is set to InfiniteMatchTimeout.
-        internal static readonly TimeSpan DefaultMatchTimeout = InfiniteMatchTimeout;
+        internal static readonly TimeSpan DefaultMatchTimeout = InitDefaultMatchTimeout();
 
         // *********** } match timeout fields ***********
 
@@ -234,6 +237,45 @@ namespace System.Text.RegularExpressions
                 return;
 
             throw new ArgumentOutOfRangeException(nameof(matchTimeout));
+        }
+
+        /// <summary>
+        /// Specifies the default RegEx matching timeout value (i.e. the timeout that will be used if no
+        /// explicit timeout is specified).
+        /// The default is queried from the current <code>AppDomain</code>.
+        /// If the AddDomain's data value for that key is not a <code>TimeSpan</code> value or if it is outside the
+        /// valid range, an exception is thrown.
+        /// If the AddDomain's data value for that key is <code>null</code>, a fallback value is returned.
+        /// </summary>
+        /// <returns>The default RegEx matching timeout for this AppDomain</returns>
+        private static TimeSpan InitDefaultMatchTimeout()
+        {
+            // Query AppDomain
+            AppDomain ad = AppDomain.CurrentDomain;
+            object defaultMatchTimeoutObj = ad.GetData(DefaultMatchTimeout_ConfigKeyName);
+
+            // If no default is specified, use fallback
+            if (defaultMatchTimeoutObj == null)
+            {
+                return InfiniteMatchTimeout;
+            }
+
+            if (defaultMatchTimeoutObj is TimeSpan defaultMatchTimeOut)
+            {
+                // If default timeout is outside the valid range, throw. It will result in a TypeInitializationException:
+                try
+                {
+                    ValidateMatchTimeout(defaultMatchTimeOut);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    throw new ArgumentOutOfRangeException(SR.Format(SR.IllegalDefaultRegexMatchTimeoutInAppDomain, DefaultMatchTimeout_ConfigKeyName, defaultMatchTimeOut));
+                }
+
+                return defaultMatchTimeOut;
+            }
+
+            throw new InvalidCastException(SR.Format(SR.IllegalDefaultRegexMatchTimeoutInAppDomain, DefaultMatchTimeout_ConfigKeyName, defaultMatchTimeoutObj));
         }
 
         /// <summary>

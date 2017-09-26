@@ -18,7 +18,6 @@
     <Compile Include="CodeGroupTests.cs" />
     <Compile Include="MembershipConditionTests.cs" />
     <Compile Include="EvidenceBaseTests.cs" />
-    <Compile Include="SerializationTests.cs" />
     <Compile Include="PolicyTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
     <Compile Include="PermissionSetTests.cs" />
@@ -27,12 +26,6 @@
     <Compile Include="SecurityElementTests.cs" />
     <Compile Include="HostSecurityManagerTests.cs" />
     <Compile Include="HostProtectionTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

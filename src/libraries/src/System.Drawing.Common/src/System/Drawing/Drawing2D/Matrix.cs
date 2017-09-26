@@ -170,7 +170,12 @@ namespace System.Drawing.Drawing2D
         {
             if (matrix == null)
             {
-                throw new ArgumentNullException("matrix");
+                throw new ArgumentNullException(nameof(matrix));
+            }
+
+            if (matrix.nativeMatrix == nativeMatrix)
+            {
+                throw new InvalidOperationException(SR.GdiplusObjectBusy);
             }
 
             int status = SafeNativeMethods.Gdip.GdipMultiplyMatrix(new HandleRef(this, nativeMatrix), new HandleRef(matrix, matrix.nativeMatrix),

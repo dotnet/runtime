@@ -3757,7 +3757,8 @@ namespace System.Xml.Schema
             {
                 throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
-            if (double.IsInfinity(value) || double.IsNaN(value))
+
+            if (!double.IsFinite(value))
             {
                 throw new XmlSchemaException(SR.Sch_InvalidValue, s);
             }
@@ -3778,7 +3779,8 @@ namespace System.Xml.Schema
             {
                 throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
-            if (float.IsInfinity(value) || float.IsNaN(value))
+
+            if (!float.IsFinite(value))
             {
                 throw new XmlSchemaException(SR.Sch_InvalidValue, s);
             }

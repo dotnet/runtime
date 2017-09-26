@@ -39,21 +39,6 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Enable MARS support on a connection
-        /// </summary>
-        /// <param name="handle">Connection handle</param>
-        /// <returns>SNI error code</returns>
-        public uint EnableMars(SNIHandle handle)
-        {
-            if (SNIMarsManager.Singleton.CreateMarsConnection(handle) == TdsEnums.SNI_SUCCESS_IO_PENDING)
-            {
-                return TdsEnums.SNI_SUCCESS;
-            }
-
-            return TdsEnums.SNI_ERROR;
-        }
-
-        /// <summary>
         /// Enable SSL on a connection
         /// </summary>
         /// <param name="handle">Connection handle</param>
@@ -433,20 +418,6 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Create MARS handle
-        /// </summary>
-        /// <param name="callbackObject">Asynchronous I/O callback object</param>
-        /// <param name="physicalConnection">SNI connection handle</param>
-        /// <param name="defaultBufferSize">Default buffer size</param>
-        /// <param name="async">Asynchronous connection</param>
-        /// <returns>SNI error status</returns>
-        public SNIHandle CreateMarsHandle(object callbackObject, SNIHandle physicalConnection, int defaultBufferSize, bool async)
-        {
-            SNIMarsConnection connection = SNIMarsManager.Singleton.GetConnection(physicalConnection);
-            return connection.CreateSession(callbackObject, async);
-        }
-
-        /// <summary>
         /// Read packet asynchronously
         /// </summary>
         /// <param name="handle">SNI handle</param>
@@ -502,7 +473,7 @@ namespace System.Data.SqlClient.SNI
         /// Gets the Local db Named pipe data source if the input is a localDB server. 
         /// </summary>
         /// <param name="fullServerName">The data source</param>
-        /// <param name="error">Set true when an error occured while getting LocalDB up</param>
+        /// <param name="error">Set true when an error occurred while getting LocalDB up</param>
         /// <returns></returns>
         private string GetLocalDBDataSource(string fullServerName, out bool error)
         {

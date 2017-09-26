@@ -32,6 +32,7 @@ namespace System.Drawing.Printing.Tests
 {
     public class PaperSourceTests
     {
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Ctor_Default()
         {

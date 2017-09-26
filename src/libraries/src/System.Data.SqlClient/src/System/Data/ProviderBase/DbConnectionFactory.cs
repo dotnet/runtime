@@ -395,15 +395,14 @@ namespace System.Data.ProviderBase
                     }
                 }
 
-
-                DbConnectionPoolGroup newConnectionPoolGroup = new DbConnectionPoolGroup(connectionOptions, key, poolOptions);
-                newConnectionPoolGroup.ProviderInfo = CreateConnectionPoolGroupProviderInfo(connectionOptions);
-
                 lock (this)
                 {
                     connectionPoolGroups = _connectionPoolGroups;
                     if (!connectionPoolGroups.TryGetValue(key, out connectionPoolGroup))
                     {
+                        DbConnectionPoolGroup newConnectionPoolGroup = new DbConnectionPoolGroup(connectionOptions, key, poolOptions);
+                        newConnectionPoolGroup.ProviderInfo = CreateConnectionPoolGroupProviderInfo(connectionOptions);
+
                         // build new dictionary with space for new connection string
                         Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> newConnectionPoolGroups = new Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup>(1 + connectionPoolGroups.Count);
                         foreach (KeyValuePair<DbConnectionPoolKey, DbConnectionPoolGroup> entry in connectionPoolGroups)

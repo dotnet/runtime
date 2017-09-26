@@ -3,23 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.ComponentModel;
-using System.Diagnostics;
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Security;
+using System.Text;
+using System.Threading;
 
 namespace System.ServiceProcess
 {
     /// This class represents an NT service. It allows you to connect to a running or stopped service
     /// and manipulate it or get information about it.
-    public class ServiceController : IDisposable
+    public class ServiceController : Component
     {
-        private readonly string _machineName;
+        private string _machineName;
         private readonly ManualResetEvent _waitForStatusSignal = new ManualResetEvent(false);
         private const string DefaultMachineName = ".";
 
@@ -39,6 +39,11 @@ namespace System.ServiceProcess
 
         private const int SERVICENAMEMAXLENGTH = 80;
         private const int DISPLAYNAMEBUFFERSIZE = 256;
+
+        public ServiceController()
+        {
+            _type = Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_ALL;
+        }
 
         /// Creates a ServiceController object, based on service name.
         public ServiceController(string name)
@@ -132,6 +137,22 @@ namespace System.ServiceProcess
                     GenerateNames();
                 return _displayName;
             }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                if (string.Equals(value, _displayName, StringComparison.OrdinalIgnoreCase))
+                {
+                    // they're just changing the casing. No need to close.
+                    _displayName = value;
+                    return;
+                }
+
+                Close();
+                _displayName = value;
+                _name = "";
+            }
         }
 
         /// The set of services that depend on this service. These are the services that will be stopped if
@@ -203,6 +224,22 @@ namespace System.ServiceProcess
             {
                 return _machineName;
             }
+            set
+            {
+                if (!CheckMachineName(value))
+                    throw new ArgumentException(SR.Format(SR.BadMachineName, value));
+
+                if (string.Equals(_machineName, value, StringComparison.OrdinalIgnoreCase))
+                {
+                    // no need to close, because the most they're changing is the
+                    // casing.
+                    _machineName = value;
+                    return;
+                }
+
+                Close();
+                _machineName = value;
+            }
         }
 
         /// Returns the short name of the service referenced by this object.
@@ -213,6 +250,26 @@ namespace System.ServiceProcess
                 if (_name == null)
                     GenerateNames();
                 return _name;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                if (string.Equals(value, _name, StringComparison.OrdinalIgnoreCase))
+                {
+                    // they might be changing the casing, but the service we refer to
+                    // is the same. No need to close.
+                    _name = value;
+                    return;
+                }
+
+                if (!ServiceBase.ValidServiceName(value))
+                    throw new ArgumentException(SR.Format(SR.ServiceName, value, ServiceBase.MaxNameLength.ToString(CultureInfo.CurrentCulture)));
+
+                Close();
+                _name = value;
+                _displayName = "";
             }
         }
 
@@ -254,7 +311,7 @@ namespace System.ServiceProcess
                         if (dependencyChar != null)
                         {
                             // lpDependencies points to the start of multiple null-terminated strings. The list is
-                            // double-null terminated.                            
+                            // double-null terminated.
                             int length = 0;
                             dependencyHash = new Dictionary<string, ServiceController>();
                             while (*(dependencyChar + length) != '\0')
@@ -391,17 +448,13 @@ namespace System.ServiceProcess
             return !string.IsNullOrWhiteSpace(value) && value.IndexOf('\\') == -1;
         }
 
-        private void Close()
+        public void Close()
         {
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
+            Dispose();
         }
 
         /// Disconnects this object from the service and frees any allocated resources.
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (_serviceManagerHandle != null)
             {
@@ -715,6 +768,25 @@ namespace System.ServiceProcess
                 {
                     Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
                     throw new InvalidOperationException(SR.Format(SR.ResumeService, ServiceName, _machineName), inner);
+                }
+            }
+            finally
+            {
+                Interop.Advapi32.CloseServiceHandle(serviceHandle);
+            }
+        }
+
+        public unsafe void ExecuteCommand(int command)
+        {
+            IntPtr serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_USER_DEFINED_CONTROL);
+            try
+            {
+                Interop.Advapi32.SERVICE_STATUS status = new Interop.Advapi32.SERVICE_STATUS();
+                bool result = Interop.Advapi32.ControlService(serviceHandle, command, &status);
+                if (!result)
+                {
+                    Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                    throw new InvalidOperationException(SR.Format(SR.ControlService, ServiceName, MachineName), inner);
                 }
             }
             finally

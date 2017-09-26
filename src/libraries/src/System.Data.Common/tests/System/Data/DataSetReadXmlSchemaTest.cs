@@ -26,13 +26,14 @@
 
 
 using System.IO;
+using System.Diagnostics;
 using System.Globalization;
 using System.Xml;
 using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataSetReadXmlSchemaTest : DataSetAssertion, IDisposable
+    public class DataSetReadXmlSchemaTest : RemoteExecutorTestBase
     {
         private DataSet CreateTestSet()
         {
@@ -48,19 +49,6 @@ namespace System.Data.Tests
             ds.Tables[0].Rows.Add(new object[] { "ppp", "www", "xxx" });
             ds.Relations.Add("Rel1", ds.Tables[0].Columns[2], ds.Tables[1].Columns[0]);
             return ds;
-        }
-
-        private CultureInfo _currentCultureBackup;
-
-        public DataSetReadXmlSchemaTest()
-        {
-            _currentCultureBackup = CultureInfo.CurrentCulture; ;
-            CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
-        }
-
-        public void Dispose()
-        {
-            CultureInfo.CurrentCulture = _currentCultureBackup;
         }
 
         [Fact]
@@ -125,39 +113,39 @@ namespace System.Data.Tests
 
             string xs = string.Format(xsbase, simple);
             ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("simple", ds, "hoge", 1, 0);
-            AssertDataTable("simple", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataSet("simple", ds, "hoge", 1, 0);
+            DataSetAssertion.AssertDataTable("simple", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
 
             // reference to global complex type
             ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs2));
-            AssertDataSet("external complexType", ds, "hoge", 2, 1);
-            AssertDataTable("external Tab1", ds.Tables[0], "Root", 1, 0, 0, 1, 1, 1);
-            AssertDataTable("external Tab2", ds.Tables[1], "Child", 3, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataSet("external complexType", ds, "hoge", 2, 1);
+            DataSetAssertion.AssertDataTable("external Tab1", ds.Tables[0], "Root", 1, 0, 0, 1, 1, 1);
+            DataSetAssertion.AssertDataTable("external Tab2", ds.Tables[1], "Child", 3, 0, 1, 0, 1, 0);
 
             // xsbase2 + complex -> datatable
             ds = new DataSet();
             xs = string.Format(xsbase2, complex);
             ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("complex", ds, "hoge", 2, 1);
-            AssertDataTable("complex", ds.Tables[0], "Root", 1, 0, 0, 1, 1, 1);
+            DataSetAssertion.AssertDataSet("complex", ds, "hoge", 2, 1);
+            DataSetAssertion.AssertDataTable("complex", ds.Tables[0], "Root", 1, 0, 0, 1, 1, 1);
             DataTable dt = ds.Tables[1];
-            AssertDataTable("complex", dt, "Child", 3, 0, 1, 0, 1, 0);
-            AssertDataColumn("a1", dt.Columns["a1"], "a1", true, false, 0, 1, "a1", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, /*0*/-1, string.Empty, false, false);
-            AssertDataColumn("a2", dt.Columns["a2"], "a2", true, false, 0, 1, "a2", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, /*1*/-1, string.Empty, false, false);
-            AssertDataColumn("Root_Id", dt.Columns[2], "Root_Id", true, false, 0, 1, "Root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 2, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("complex", dt, "Child", 3, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataColumn("a1", dt.Columns["a1"], "a1", true, false, 0, 1, "a1", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, /*0*/-1, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("a2", dt.Columns["a2"], "a2", true, false, 0, 1, "a2", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, /*1*/-1, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("Root_Id", dt.Columns[2], "Root_Id", true, false, 0, 1, "Root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 2, string.Empty, false, false);
 
             // xsbase + complex -> dataset
             ds = new DataSet();
             xs = string.Format(xsbase, complex);
             ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("complex", ds, "Root", 1, 0);
+            DataSetAssertion.AssertDataSet("complex", ds, "Root", 1, 0);
 
             ds = new DataSet();
             xs = string.Format(xsbase2, elref);
             ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("complex", ds, "hoge", 1, 0);
-            AssertDataTable("complex", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataSet("complex", ds, "hoge", 1, 0);
+            DataSetAssertion.AssertDataTable("complex", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
         }
 
         [Fact]
@@ -181,8 +169,8 @@ namespace System.Data.Tests
 </xsd:schema>";
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(schema));
-            AssertDataSet("ds", ds, "doc", 1, 0);
-            AssertDataTable("table", ds.Tables[0], "elem", 2, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataSet("ds", ds, "doc", 1, 0);
+            DataSetAssertion.AssertDataTable("table", ds.Tables[0], "elem", 2, 0, 0, 0, 0, 0);
         }
 
         [Fact]
@@ -206,8 +194,8 @@ namespace System.Data.Tests
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs));
             // Here "unusedType" table is never imported.
-            AssertDataSet("ds", ds, "hoge", 1, 0);
-            AssertDataTable("dt", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataSet("ds", ds, "hoge", 1, 0);
+            DataSetAssertion.AssertDataTable("dt", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
         }
 
         [Fact]
@@ -221,7 +209,7 @@ namespace System.Data.Tests
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs));
             // nothing is imported.
-            AssertDataSet("ds", ds, "NewDataSet", 0, 0);
+            DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 0, 0);
         }
 
         [Fact]
@@ -243,7 +231,7 @@ namespace System.Data.Tests
 
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("ds", ds, "Root", 0, 0); // name is "Root"
+            DataSetAssertion.AssertDataSet("ds", ds, "Root", 0, 0); // name is "Root"
 
             // But when explicit msdata:IsDataSet value is "false", then
             // treat as usual.
@@ -251,7 +239,7 @@ namespace System.Data.Tests
 
             ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("ds", ds, "NewDataSet", 1, 0);
+            DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
         }
 
         [Fact]
@@ -302,13 +290,16 @@ namespace System.Data.Tests
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs));
             // Child should not be regarded as DataSet element
-            AssertDataSet("ds", ds, "NewDataSet", 1, 0);
+            DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
         }
 
         [Fact]
         public void LocaleOnRootWithoutIsDataSet()
         {
-            string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
+                string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
 	<xs:element name='Root' msdata:Locale='ja-JP'>
 		<xs:complexType>
 			<xs:sequence>
@@ -319,15 +310,18 @@ namespace System.Data.Tests
 	</xs:element>
 </xs:schema>";
 
-            var ds = new DataSet();
-            ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("ds", ds, "NewDataSet", 1, 0);
-            Assert.Equal("fi-FI", ds.Locale.Name); // DataSet's Locale comes from current thread
-            DataTable dt = ds.Tables[0];
-            AssertDataTable("dt", dt, "Root", 2, 0, 0, 0, 0, 0);
-            Assert.Equal("ja-JP", dt.Locale.Name); // DataTable's Locale comes from msdata:Locale
-            AssertDataColumn("col1", dt.Columns[0], "Attr", true, false, 0, 1, "Attr", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-            AssertDataColumn("col2", dt.Columns[1], "Child", false, false, 0, 1, "Child", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+                var ds = new DataSet();
+                ds.ReadXmlSchema(new StringReader(xs));
+                DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
+                Assert.Equal("fi-FI", ds.Locale.Name); // DataSet's Locale comes from current thread
+                DataTable dt = ds.Tables[0];
+                DataSetAssertion.AssertDataTable("dt", dt, "Root", 2, 0, 0, 0, 0, 0);
+                Assert.Equal("ja-JP", dt.Locale.Name); // DataTable's Locale comes from msdata:Locale
+                DataSetAssertion.AssertDataColumn("col1", dt.Columns[0], "Attr", true, false, 0, 1, "Attr", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+                DataSetAssertion.AssertDataColumn("col2", dt.Columns[1], "Child", false, false, 0, 1, "Child", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
 
@@ -440,10 +434,10 @@ namespace System.Data.Tests
             // No prefixes on tables and columns
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs));
-            AssertDataSet("ds", ds, "DS", 3, 1);
+            DataSetAssertion.AssertDataSet("ds", ds, "DS", 3, 1);
             DataTable dt = ds.Tables[0];
-            AssertDataTable("R3", dt, "R3", 3, 0, 0, 0, 0, 0);
-            AssertDataColumn("col1", dt.Columns[0], "Attr", true, false, 0, 1, "Attr", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("R3", dt, "R3", 3, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataColumn("col1", dt.Columns[0], "Attr", true, false, 0, 1, "Attr", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
         }
 
         [Fact]
@@ -469,17 +463,17 @@ namespace System.Data.Tests
 
         private void ReadTest1Check(DataSet ds)
         {
-            AssertDataSet("dataset", ds, "NewDataSet", 2, 1);
-            AssertDataTable("tbl1", ds.Tables[0], "Table1", 3, 0, 0, 1, 1, 0);
-            AssertDataTable("tbl2", ds.Tables[1], "Table2", 3, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataSet("dataset", ds, "NewDataSet", 2, 1);
+            DataSetAssertion.AssertDataTable("tbl1", ds.Tables[0], "Table1", 3, 0, 0, 1, 1, 0);
+            DataSetAssertion.AssertDataTable("tbl2", ds.Tables[1], "Table2", 3, 0, 1, 0, 1, 0);
 
             DataRelation rel = ds.Relations[0];
-            AssertDataRelation("rel", rel, "Rel1", false,
+            DataSetAssertion.AssertDataRelation("rel", rel, "Rel1", false,
                 new string[] { "Column1_3" },
                 new string[] { "Column2_1" }, true, true);
-            AssertUniqueConstraint("uc", rel.ParentKeyConstraint,
+            DataSetAssertion.AssertUniqueConstraint("uc", rel.ParentKeyConstraint,
                 "Constraint1", false, new string[] { "Column1_3" });
-            AssertForeignKeyConstraint("fk", rel.ChildKeyConstraint, "Rel1",
+            DataSetAssertion.AssertForeignKeyConstraint("fk", rel.ChildKeyConstraint, "Rel1",
                 AcceptRejectRule.None, Rule.Cascade, Rule.Cascade,
                 new string[] { "Column2_1" },
                 new string[] { "Column1_3" });
@@ -491,11 +485,11 @@ namespace System.Data.Tests
         {
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(@"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'><!-- empty --></xs:schema>"));
-            AssertDataSet("001", ds, "NewDataSet", 0, 0);
+            DataSetAssertion.AssertDataSet("001", ds, "NewDataSet", 0, 0);
 
             ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(@"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'><xs:element name='foo' /></xs:schema>"));
-            AssertDataSet("002", ds, "NewDataSet", 0, 0);
+            DataSetAssertion.AssertDataSet("002", ds, "NewDataSet", 0, 0);
 
             ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(
@@ -503,7 +497,7 @@ namespace System.Data.Tests
                     <xs:element name='foo' type='xs:integer' />
                     <xs:element name='bar' type='xs:string' />
                 </xs:schema>"));
-            AssertDataSet("003", ds, "NewDataSet", 0, 0);
+            DataSetAssertion.AssertDataSet("003", ds, "NewDataSet", 0, 0);
 
             ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(
@@ -515,7 +509,7 @@ namespace System.Data.Tests
                       </xs:restriction>
                     </xs:simpleType>
                 </xs:schema>"));
-            AssertDataSet("004", ds, "NewDataSet", 0, 0);
+            DataSetAssertion.AssertDataSet("004", ds, "NewDataSet", 0, 0);
         }
 
         [Fact]
@@ -533,11 +527,11 @@ namespace System.Data.Tests
                   </xs:simpleContent>
                 </xs:complexType>
                 </xs:schema>"));
-            AssertDataSet("005", ds, "NewDataSet", 1, 0);
+            DataSetAssertion.AssertDataSet("005", ds, "NewDataSet", 1, 0);
             DataTable dt = ds.Tables[0];
-            AssertDataTable("tab", dt, "foo", 2, 0, 0, 0, 0, 0);
-            AssertDataColumn("attr", dt.Columns[0], "attr", true, false, 0, 1, "attr", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-            AssertDataColumn("text", dt.Columns[1], "foo_text", false, false, 0, 1, "foo_text", MappingType.SimpleContent, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("tab", dt, "foo", 2, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataColumn("attr", dt.Columns[0], "attr", true, false, 0, 1, "attr", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("text", dt.Columns[1], "foo_text", false, false, 0, 1, "foo_text", MappingType.SimpleContent, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
 
             ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(
@@ -548,11 +542,11 @@ namespace System.Data.Tests
                       <xs:attribute name='att2' type='xs:int' default='2' />
                     </xs:complexType>
                 </xs:schema>"));
-            AssertDataSet("006", ds, "NewDataSet", 1, 0);
+            DataSetAssertion.AssertDataSet("006", ds, "NewDataSet", 1, 0);
             dt = ds.Tables[0];
-            AssertDataTable("tab", dt, "foo", 2, 0, 0, 0, 0, 0);
-            AssertDataColumn("att1", dt.Columns["att1"], "att1", true, false, 0, 1, "att1", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, /*0*/-1, string.Empty, false, false);
-            AssertDataColumn("att2", dt.Columns["att2"], "att2", true, false, 0, 1, "att2", MappingType.Attribute, typeof(int), 2, string.Empty, -1, string.Empty, /*1*/-1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("tab", dt, "foo", 2, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataColumn("att1", dt.Columns["att1"], "att1", true, false, 0, 1, "att1", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, /*0*/-1, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("att2", dt.Columns["att2"], "att2", true, false, 0, 1, "att2", MappingType.Attribute, typeof(int), 2, string.Empty, -1, string.Empty, /*1*/-1, string.Empty, false, false);
         }
 
         [Fact]
@@ -576,15 +570,15 @@ namespace System.Data.Tests
                     </xs:sequence>
                   </xs:complexType>
                 </xs:schema>"));
-            AssertDataSet("007", ds, "NewDataSet", 2, 1);
+            DataSetAssertion.AssertDataSet("007", ds, "NewDataSet", 2, 1);
             DataTable dt = ds.Tables[0];
-            AssertDataTable("tab1", dt, "uno", 1, 0, 0, 1, 1, 1);
-            AssertDataColumn("id", dt.Columns[0], "uno_Id", false, true, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, "urn:foo", 0, string.Empty, false, true);
+            DataSetAssertion.AssertDataTable("tab1", dt, "uno", 1, 0, 0, 1, 1, 1);
+            DataSetAssertion.AssertDataColumn("id", dt.Columns[0], "uno_Id", false, true, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, "urn:foo", 0, string.Empty, false, true);
 
             dt = ds.Tables[1];
-            AssertDataTable("tab2", dt, "des", 2, 0, 1, 0, 1, 0);
-            AssertDataColumn("child", dt.Columns[0], "tres", false, false, 0, 1, "tres", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-            AssertDataColumn("id", dt.Columns[1], "uno_Id", true, false, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("tab2", dt, "des", 2, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataColumn("child", dt.Columns[0], "tres", false, false, 0, 1, "tres", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("id", dt.Columns[1], "uno_Id", true, false, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
 
             // External simple type element
             ds = new DataSet();
@@ -605,15 +599,15 @@ namespace System.Data.Tests
                     </xs:sequence>
                   </xs:complexType>
                 </xs:schema>"));
-            AssertDataSet("008", ds, "NewDataSet", 2, 1);
+            DataSetAssertion.AssertDataSet("008", ds, "NewDataSet", 2, 1);
             dt = ds.Tables[0];
-            AssertDataTable("tab1", dt, "uno", 1, 0, 0, 1, 1, 1);
-            AssertDataColumn("id", dt.Columns[0], "uno_Id", false, true, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, "urn:foo", 0, string.Empty, false, true);
+            DataSetAssertion.AssertDataTable("tab1", dt, "uno", 1, 0, 0, 1, 1, 1);
+            DataSetAssertion.AssertDataColumn("id", dt.Columns[0], "uno_Id", false, true, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, "urn:foo", 0, string.Empty, false, true);
 
             dt = ds.Tables[1];
-            AssertDataTable("tab2", dt, "des", 2, 0, 1, 0, 1, 0);
-            AssertDataColumn("child", dt.Columns[0], "tres", false, false, 0, 1, "tres", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, "urn:foo", 0, string.Empty, false, false);
-            AssertDataColumn("id", dt.Columns[1], "uno_Id", true, false, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("tab2", dt, "des", 2, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataColumn("child", dt.Columns[0], "tres", false, false, 0, 1, "tres", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, "urn:foo", 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("id", dt.Columns[1], "uno_Id", true, false, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
         }
 
         [Fact]
@@ -639,12 +633,12 @@ namespace System.Data.Tests
 		                </xsd:complexType>
 	                </xsd:element>
                 </xsd:schema>"));
-            AssertDataSet("013", ds, "root", 1, 0);
+            DataSetAssertion.AssertDataSet("013", ds, "root", 1, 0);
 
             DataTable dt = ds.Tables[0];
-            AssertDataTable("root", dt, "e", 2, 0, 0, 0, 0, 0);
-            AssertDataColumn("attr", dt.Columns[0], "a", true, false, 0, 1, "a", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-            AssertDataColumn("simple", dt.Columns[1], "e_text", false, false, 0, 1, "e_text", MappingType.SimpleContent, typeof(decimal), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("root", dt, "e", 2, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataColumn("attr", dt.Columns[0], "a", true, false, 0, 1, "a", MappingType.Attribute, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("simple", dt.Columns[1], "e_text", false, false, 0, 1, "e_text", MappingType.SimpleContent, typeof(decimal), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
         }
 
         [Fact]
@@ -728,16 +722,16 @@ namespace System.Data.Tests
                      </xs:appinfo>
                   </xs:annotation>
                 </xs:schema>"));
-            AssertDataSet("101", ds, "root", 2, 1);
+            DataSetAssertion.AssertDataSet("101", ds, "root", 2, 1);
             DataTable dt = ds.Tables[0];
-            AssertDataTable("parent_table", dt, "p", 2, 0, 0, 1, 0, 0);
-            AssertDataColumn("pk", dt.Columns[0], "pk", false, false, 0, 1, "pk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("parent_table", dt, "p", 2, 0, 0, 1, 0, 0);
+            DataSetAssertion.AssertDataColumn("pk", dt.Columns[0], "pk", false, false, 0, 1, "pk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
 
             dt = ds.Tables[1];
-            AssertDataTable("child_table", dt, "c", 2, 0, 1, 0, 0, 0);
-            AssertDataColumn("fk", dt.Columns[0], "fk", false, false, 0, 1, "fk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("child_table", dt, "c", 2, 0, 1, 0, 0, 0);
+            DataSetAssertion.AssertDataColumn("fk", dt.Columns[0], "fk", false, false, 0, 1, "fk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
 
-            AssertDataRelation("rel", ds.Relations[0], "rel", false, new string[] { "pk" }, new string[] { "fk" }, false, false);
+            DataSetAssertion.AssertDataRelation("rel", ds.Relations[0], "rel", false, new string[] { "pk" }, new string[] { "fk" }, false, false);
         }
 
         [Fact]
@@ -779,16 +773,16 @@ namespace System.Data.Tests
                  </xs:complexType>
                 </xs:element>
                 </xs:schema>"));
-            AssertDataSet("102", ds, "ds", 2, 1);
+            DataSetAssertion.AssertDataSet("102", ds, "ds", 2, 1);
             DataTable dt = ds.Tables[0];
-            AssertDataTable("parent_table", dt, "p", 2, 0, 0, 1, 0, 0);
-            AssertDataColumn("pk", dt.Columns[0], "pk", false, false, 0, 1, "pk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("parent_table", dt, "p", 2, 0, 0, 1, 0, 0);
+            DataSetAssertion.AssertDataColumn("pk", dt.Columns[0], "pk", false, false, 0, 1, "pk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
 
             dt = ds.Tables[1];
-            AssertDataTable("child_table", dt, "c", 2, 0, 1, 0, 0, 0);
-            AssertDataColumn("fk", dt.Columns[0], "fk", false, false, 0, 1, "fk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("child_table", dt, "c", 2, 0, 1, 0, 0, 0);
+            DataSetAssertion.AssertDataColumn("fk", dt.Columns[0], "fk", false, false, 0, 1, "fk", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
 
-            AssertDataRelation("rel", ds.Relations[0], "rel", true, new string[] { "pk" }, new string[] { "fk" }, false, false);
+            DataSetAssertion.AssertDataRelation("rel", ds.Relations[0], "rel", true, new string[] { "pk" }, new string[] { "fk" }, false, false);
         }
 
         [Fact]
@@ -806,17 +800,17 @@ namespace System.Data.Tests
 	                </xs:sequence>
                   </xs:complexType>
                 </xs:schema>"));
-            AssertDataSet("012", ds, "NewDataSet", 2, 1);
+            DataSetAssertion.AssertDataSet("012", ds, "NewDataSet", 2, 1);
             DataTable dt = ds.Tables[0];
-            AssertDataTable("parent", dt, "Foo", 1, 0, 0, 1, 1, 1);
-            AssertDataColumn("key", dt.Columns[0], "Foo_Id", false, true, 0, 1, "Foo_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, true);
+            DataSetAssertion.AssertDataTable("parent", dt, "Foo", 1, 0, 0, 1, 1, 1);
+            DataSetAssertion.AssertDataColumn("key", dt.Columns[0], "Foo_Id", false, true, 0, 1, "Foo_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, true);
 
             dt = ds.Tables[1];
-            AssertDataTable("repeated", dt, "Bar", 2, 0, 1, 0, 1, 0);
-            AssertDataColumn("data", dt.Columns[0], "Bar_Column", false, false, 0, 1, "Bar_Column", MappingType.SimpleContent, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-            AssertDataColumn("refkey", dt.Columns[1], "Foo_Id", true, false, 0, 1, "Foo_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("repeated", dt, "Bar", 2, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataColumn("data", dt.Columns[0], "Bar_Column", false, false, 0, 1, "Bar_Column", MappingType.SimpleContent, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("refkey", dt.Columns[1], "Foo_Id", true, false, 0, 1, "Foo_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
 
-            AssertDataRelation("rel", ds.Relations[0], "Foo_Bar", true, new string[] { "Foo_Id" }, new string[] { "Foo_Id" }, true, true);
+            DataSetAssertion.AssertDataRelation("rel", ds.Relations[0], "Foo_Bar", true, new string[] { "Foo_Id" }, new string[] { "Foo_Id" }, true, true);
         }
 
         [Fact]
@@ -835,25 +829,25 @@ namespace System.Data.Tests
 	                </xsd:element>
 	                <xsd:element name=""y"" />
                 </xsd:schema>"));
-            AssertDataSet("014", ds, "NewDataSet", 3, 2);
+            DataSetAssertion.AssertDataSet("014", ds, "NewDataSet", 3, 2);
 
             DataTable dt = ds.Tables[0];
-            AssertDataTable("parent", dt, "root", 1, 0, 0, 2, 1, 1);
-            AssertDataColumn("key", dt.Columns[0], "root_Id", false, true, 0, 1, "root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, true);
+            DataSetAssertion.AssertDataTable("parent", dt, "root", 1, 0, 0, 2, 1, 1);
+            DataSetAssertion.AssertDataColumn("key", dt.Columns[0], "root_Id", false, true, 0, 1, "root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, true);
 
             dt = ds.Tables[1];
-            AssertDataTable("repeated", dt, "x", 2, 0, 1, 0, 1, 0);
-            AssertDataColumn("data_1", dt.Columns[0], "x_Column", false, false, 0, 1, "x_Column", MappingType.SimpleContent, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-            AssertDataColumn("refkey_1", dt.Columns[1], "root_Id", true, false, 0, 1, "root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("repeated", dt, "x", 2, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataColumn("data_1", dt.Columns[0], "x_Column", false, false, 0, 1, "x_Column", MappingType.SimpleContent, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("refkey_1", dt.Columns[1], "root_Id", true, false, 0, 1, "root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
 
             dt = ds.Tables[2];
-            AssertDataTable("repeated", dt, "y", 2, 0, 1, 0, 1, 0);
-            AssertDataColumn("data", dt.Columns[0], "y_Column", false, false, 0, 1, "y_Column", MappingType.SimpleContent, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-            AssertDataColumn("refkey", dt.Columns[1], "root_Id", true, false, 0, 1, "root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            DataSetAssertion.AssertDataTable("repeated", dt, "y", 2, 0, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataColumn("data", dt.Columns[0], "y_Column", false, false, 0, 1, "y_Column", MappingType.SimpleContent, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+            DataSetAssertion.AssertDataColumn("refkey", dt.Columns[1], "root_Id", true, false, 0, 1, "root_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
 
-            AssertDataRelation("rel", ds.Relations[0], "root_x", true, new string[] { "root_Id" }, new string[] { "root_Id" }, true, true);
+            DataSetAssertion.AssertDataRelation("rel", ds.Relations[0], "root_x", true, new string[] { "root_Id" }, new string[] { "root_Id" }, true, true);
 
-            AssertDataRelation("rel", ds.Relations[1], "root_y", true, new string[] { "root_Id" }, new string[] { "root_Id" }, true, true);
+            DataSetAssertion.AssertDataRelation("rel", ds.Relations[1], "root_y", true, new string[] { "root_Id" }, new string[] { "root_Id" }, true, true);
         }
 
         [Fact]
@@ -955,7 +949,7 @@ namespace System.Data.Tests
             Assert.Equal(0, ds.Tables[0].Constraints.Count);
             Assert.Equal(0, ds.Tables[1].Constraints.Count);
 
-            AssertDataRelation("TestRel", ds.Relations[0], "rel", false, new string[] { "col 1", "col2" },
+            DataSetAssertion.AssertDataRelation("TestRel", ds.Relations[0], "rel", false, new string[] { "col 1", "col2" },
                     new string[] { "col1", "col  2" }, false, false);
         }
     }

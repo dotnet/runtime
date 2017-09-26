@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.IO;
 
 namespace System.Drawing.Imaging
 {
@@ -405,6 +406,9 @@ namespace System.Drawing.Imaging
         public void SetOutputChannelColorProfile(String colorProfileFilename,
                                                  ColorAdjustType type)
         {
+            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            Path.GetFullPath(colorProfileFilename);
+
             int status = SafeNativeMethods.Gdip.GdipSetImageAttributesOutputChannelColorProfile(
                                         new HandleRef(this, nativeImageAttributes),
                                         type,

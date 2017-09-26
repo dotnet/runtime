@@ -452,7 +452,7 @@ namespace System.Xml.Xsl.XPath
             if (isReverseStep)
             {
                 Debug.Assert(nodeset.NodeType == QilNodeType.DocOrderDistinct,
-                    "ReverseAxe in Qil is actuly reverse and we compile them here in builder by wrapping to DocOrderDistinct()"
+                    "ReverseAxe in Qil is actually reverse and we compile them here in builder by wrapping to DocOrderDistinct()"
                 );
                 // The trick here is that we unwarp it back, compile as regular predicate and wrap again.
                 // this way this wat we hold invariant that path expresion are always DOD and make predicates on reverse axe

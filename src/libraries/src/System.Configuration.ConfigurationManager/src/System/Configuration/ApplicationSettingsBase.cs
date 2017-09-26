@@ -377,7 +377,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Overriden from SettingsBase to support validation event.
+        /// Overridden from SettingsBase to support validation event.
         /// </summary>
         public override void Save()
         {
@@ -391,7 +391,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Overriden from SettingsBase to support validation event.
+        /// Overridden from SettingsBase to support validation event.
         /// </summary>
         public override object this[string propertyName]
         {

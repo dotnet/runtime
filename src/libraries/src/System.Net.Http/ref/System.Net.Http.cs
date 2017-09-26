@@ -225,6 +225,12 @@ namespace System.Net.Http
         public void Add(System.Net.Http.HttpContent content, string name) { }
         public void Add(System.Net.Http.HttpContent content, string name, string fileName) { }
     }
+    public sealed partial class ReadOnlyMemoryContent : System.Net.Http.HttpContent
+    {
+        public ReadOnlyMemoryContent(System.ReadOnlyMemory<byte> content) { }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) => throw null;
+        protected internal override bool TryComputeLength(out long length) => throw null;
+    }
     public partial class StreamContent : System.Net.Http.HttpContent
     {
         public StreamContent(System.IO.Stream content) { }

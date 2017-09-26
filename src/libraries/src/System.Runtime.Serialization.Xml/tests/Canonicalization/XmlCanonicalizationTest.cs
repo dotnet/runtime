@@ -188,9 +188,9 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                         string rwTypeStr = input.Arguments[0].Value;
                         ReaderWriterFactory.ReaderWriterType rwType = (ReaderWriterFactory.ReaderWriterType)Enum.Parse(typeof(ReaderWriterFactory.ReaderWriterType), rwTypeStr, true);
                         Encoding encoding = Encoding.GetEncoding((string)input.Arguments[1].Value);
-                        string sampleXmlFileName = Path.Combine("baselines", input2.Arguments[0].Value);
+                        string sampleXmlFileName = input2.Arguments[0].Value;
                         bool mustSupportV14N = input.Arguments[2].Value == "true";
-                        string baselineFileName = Path.Combine("baselines", input2.Arguments[1].Value);
+                        string baselineFileName = input2.Arguments[1].Value;
 
                         bool testWithComments = input3.Arguments[0].Value == "true";
 
@@ -253,13 +253,13 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             foreach (var input in params4.Inputs)
             {
                 count++;
-                string sampleXmlFileName = Path.Combine("baselines", input.Arguments[3].Value);
+                string sampleXmlFileName = input.Arguments[3].Value;
                 string rwTypeStr = input.Arguments[0].Value;
                 ReaderWriterFactory.ReaderWriterType rwType = (ReaderWriterFactory.ReaderWriterType)Enum.Parse(typeof(ReaderWriterFactory.ReaderWriterType), rwTypeStr, true);
                 Encoding encoding = Encoding.GetEncoding((string)input.Arguments[1].Value);
 
                 bool mustSupportV14N = input.Arguments[2].Value == "true";
-                string baselineFileName = Path.Combine("baselines", "ReaderWriter_C14N_BaselineXML_OnlyLF.xml");
+                string baselineFileName = "ReaderWriter_C14N_BaselineXML_OnlyLF.xml";
 
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.PreserveWhitespace = true;
@@ -384,7 +384,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                     mode = TestMode.StartAtSpecifiedElement;
                 }
 
-                xmlBuffer = new XmlBuffer(Path.Combine("baselines", input.Arguments[0].Value));
+                xmlBuffer = new XmlBuffer(input.Arguments[0].Value);
                 engine = new Engine(includeComments, inclusivePrefixes, mode == TestMode.FullDocument);
 
                 XmlReader reader = CreateReader(mode, xmlBuffer, startAt);

@@ -55,7 +55,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint
         TDSEndPointInfo ServerEndPointInfo { get; set; }
 
         /// <summary>
-        /// Remote connectionend-point information
+        /// Remote connection end-point information
         /// </summary>
         TDSEndPointInfo ClientEndPointInfo { get; set; }
 

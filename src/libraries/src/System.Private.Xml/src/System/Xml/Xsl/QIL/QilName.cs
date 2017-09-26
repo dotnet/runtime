@@ -99,7 +99,7 @@ namespace System.Xml.Xsl.Qil
         }
 
         /// <summary>
-        /// Implement operator == to prevent exidental referential comarison 
+        /// Implement operator == to prevent accidental referential comparison
         /// </summary>
         /// <remarks>Does not compare their prefixes (if any).</remarks>
         public static bool operator ==(QilName a, QilName b)
@@ -116,7 +116,7 @@ namespace System.Xml.Xsl.Qil
         }
 
         /// <summary>
-        /// Implement operator != to prevent exidental referential comarison 
+        /// Implement operator != to prevent accidental referential comparison 
         /// </summary>
         /// <remarks>Does not compare their prefixes (if any).</remarks>
         public static bool operator !=(QilName a, QilName b)

@@ -33,7 +33,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
             Assert.Throws<ActiveDirectoryOperationException>(() => Forest.GetForest(context));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(DirectoryContextType.DirectoryServer, "\0")]
         [InlineData(DirectoryContextType.Forest, "server:port")]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
@@ -46,7 +46,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
             Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => Forest.GetForest(context));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(DirectoryContextType.Forest, "\0")]
         [InlineData(DirectoryContextType.DirectoryServer, "server:port")]

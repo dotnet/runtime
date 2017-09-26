@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,152 +21,241 @@ using Xunit.Abstractions;
 // - By setting the env var prior to running tests, every test will implicitly use the managed handler,
 //   at which point the tests in this file are duplicative and can be commented out.
 
-// For now parallelism is disabled because we use an env var to turn on the managed handler, and the env var
-// impacts any tests running concurrently in the process.  We can remove this restriction in the future once
-// plans around the ManagedHandler are better understood.
-[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true, MaxParallelThreads = 1)]
-
 namespace System.Net.Http.Functional.Tests
 {
     public sealed class ManagedHandler_HttpClientTest : HttpClientTest, IDisposable
     {
-        public ManagedHandler_HttpClientTest() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_DiagnosticsTest : DiagnosticsTest, IDisposable
     {
-        public ManagedHandler_DiagnosticsTest() => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        protected override bool UseManagedHandler => true;
     }
 
-    // TODO #21452: Tests on this class fail when the associated condition is enabled.
-    //public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientEKUTest() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
-    
+    public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
+    {
+        protected override bool UseManagedHandler => true;
+    }
+
     public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        public ManagedHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
-    // TODO #21452: Tests started hanging with updated connection pooling.  Needs to be investigated.
-    //public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public new void Dispose()
-    //    {
-    //        ManagedHandlerTestHelpers.RemoveEnvVar();
-    //        base.Dispose();
-    //    }
-    //}
+    public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
+    {
+        protected override bool UseManagedHandler => true;
+    }
 
     public sealed class ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
     {
-        public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest, IDisposable
     {
-        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
-    
+
     public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_SslProtocols_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest, IDisposable
     {
-        public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
     public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress, IDisposable
     {
-        public ManagedHandler_HttpClientMiniStress() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
     }
-
-    // TODO #21452:
-    //public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
-    //{
-    //    public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
 
     public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest, IDisposable
     {
-        public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public new void Dispose()
-        {
-            ManagedHandlerTestHelpers.RemoveEnvVar();
-            base.Dispose();
-        }
+        public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
     }
 
-    // TODO #21452: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
+    public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
+    {
+        public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseManagedHandler => true;
+    }
+
+    // TODO #23141: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
     // isn't cancelable once the operation has started.  We either need to wrap the operation with one that's
     // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
     // or we need to just recognize that cancellation in such situations can be left up to the caller to do the
     // same thing if it's really important.
     //public sealed class ManagedHandler_CancellationTest : CancellationTest, IDisposable
     //{
-    //    public ManagedHandler_CancellationTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    //    public ManagedHandler_CancellationTest(ITestOutputHelper output) : base(output) { }
+    //    protected override bool UseManagedHandler => true;
     //}
 
-    // TODO #21452: The managed handler doesn't currently track how much data was written for the response headers.
+    // TODO #23142: The managed handler doesn't currently track how much data was written for the response headers.
     //public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test, IDisposable
     //{
-    //    public ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public new void Dispose()
-    //    {
-    //        ManagedHandlerTestHelpers.RemoveEnvVar();
-    //        base.Dispose();
-    //    }
+    //    protected override bool UseManagedHandler => true;
     //}
 
-    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase, IDisposable
     {
-        public ManagedHandler_HttpClientHandler_ConnectionPooling_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        protected override bool UseManagedHandler => true;
+
+        [Fact]
+        public async Task SendBytesBackAndForthBetweenClientAndServer_Success()
+        {
+            using (HttpClient client = CreateHttpClient())
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+                var ep = (IPEndPoint)listener.LocalEndPoint;
+
+                var clientToServerStream = new ProducerConsumerStream();
+                clientToServerStream.WriteByte(0);
+
+                var reqMsg = new HttpRequestMessage
+                {
+                    RequestUri = new Uri($"http://{ep.Address}:{ep.Port}/"),
+                    Content = new StreamContent(clientToServerStream),
+                };
+                Task<HttpResponseMessage> req = client.SendAsync(reqMsg, HttpCompletionOption.ResponseHeadersRead);
+
+                using (Socket server = await listener.AcceptAsync())
+                using (var serverStream = new NetworkStream(server, ownsSocket: false))
+                {
+                    // Skip request headers.
+                    while (true)
+                    {
+                        if (serverStream.ReadByte() == '\r')
+                        {
+                            serverStream.ReadByte();
+                            break;
+                        }
+                        while (serverStream.ReadByte() != '\r') { }
+                        serverStream.ReadByte();
+                    }
+
+                    // Send response headers.
+                    await server.SendAsync(
+                        new ArraySegment<byte>(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n")),
+                        SocketFlags.None);
+
+                    HttpResponseMessage resp = await req;
+                    Stream serverToClientStream = await resp.Content.ReadAsStreamAsync();
+
+                    // Communication should now be open between the client and server.
+                    // Ping pong bytes back and forth.
+                    for (byte i = 0; i < 100; i++)
+                    {
+                        // Send a byte from the client to the server.  The server will receive
+                        // the byte as a chunk.
+                        if (i > 0) clientToServerStream.WriteByte(i); // 0 was already seeded when the stream was created above
+                        Assert.Equal('1', serverStream.ReadByte());
+                        Assert.Equal('\r', serverStream.ReadByte());
+                        Assert.Equal('\n', serverStream.ReadByte());
+                        Assert.Equal(i, serverStream.ReadByte());
+                        Assert.Equal('\r', serverStream.ReadByte());
+                        Assert.Equal('\n', serverStream.ReadByte());
+
+                        // Send a byte from the server to the client.  The client will receive
+                        // the byte on its own, with HttpClient stripping away the chunk encoding.
+                        serverStream.WriteByte(i);
+                        Assert.Equal(i, serverToClientStream.ReadByte());
+                    }
+
+                    clientToServerStream.DoneWriting();
+                    server.Shutdown(SocketShutdown.Send);
+                    Assert.Equal(-1, clientToServerStream.ReadByte());
+                }
+            }
+        }
+
+        private sealed class ProducerConsumerStream : Stream
+        {
+            private readonly BlockingCollection<byte[]> _buffers = new BlockingCollection<byte[]>();
+            private ArraySegment<byte> _remaining;
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                if (count > 0)
+                {
+                    byte[] tmp = new byte[count];
+                    Buffer.BlockCopy(buffer, offset, tmp, 0, count);
+                    _buffers.Add(tmp);
+                }
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (count > 0)
+                {
+                    if (_remaining.Count == 0)
+                    {
+                        if (!_buffers.TryTake(out byte[] tmp, Timeout.Infinite))
+                        {
+                            return 0;
+                        }
+                        _remaining = new ArraySegment<byte>(tmp, 0, tmp.Length);
+                    }
+
+                    if (_remaining.Count <= count)
+                    {
+                        count = _remaining.Count;
+                        Buffer.BlockCopy(_remaining.Array, _remaining.Offset, buffer, offset, count);
+                        _remaining = default(ArraySegment<byte>);
+                    }
+                    else
+                    {
+                        Buffer.BlockCopy(_remaining.Array, _remaining.Offset, buffer, offset, count);
+                        _remaining = new ArraySegment<byte>(_remaining.Array, _remaining.Offset + count, _remaining.Count - count);
+                    }
+                }
+
+                return count;
+            }
+
+            public void DoneWriting() => _buffers.CompleteAdding();
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length => throw new NotImplementedException();
+            public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public override void Flush() { }
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
+            public override void SetLength(long value) => throw new NotImplementedException();
+        }
+
+    }
+
+    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase, IDisposable
+    {
+        protected override bool UseManagedHandler => true;
 
         // TODO: Currently the subsequent tests sometimes fail/hang with WinHttpHandler / CurlHandler.
         // In theory they should pass with any handler that does appropriate connection pooling.
@@ -174,7 +265,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task MultipleIterativeRequests_SameConnectionReused()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -213,7 +304,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ServerDisconnectsAfterInitialRequest_SubsequentRequestUsesDifferentConnection()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -252,7 +343,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ServerSendsConnectionClose_SubsequentRequestUsesDifferentConnection()
         {
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));

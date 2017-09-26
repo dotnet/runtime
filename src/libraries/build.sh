@@ -17,14 +17,17 @@ usage()
     echo
 }
 
-if [ "$1" == "-?" ]; then
+if [ "$1" == "-?" ] || [ "$1" == "-h" ]; then
     usage
+    if [ "$1" == "-h" ]; then
+        set -- "-?"
+    fi
 fi
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __workingDir=$(pwd -P)
 
-if [ "$1" != "" ]; then
+if [ "$1" != "" ] && [[ "$1" != -* ]]; then
     if [ -d $__workingDir/$1 ]; then
         $__scriptpath/run.sh build-directory -directory:$__workingDir/$*
         exit $?

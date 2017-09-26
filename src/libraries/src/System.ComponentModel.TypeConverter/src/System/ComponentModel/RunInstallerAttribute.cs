@@ -59,7 +59,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///    <para>
-        ///       Specifies the default visiblity, which is <see cref='System.ComponentModel.RunInstallerAttribute.No'/>. This <see langword='static '/>field is
+        ///       Specifies the default visibility, which is <see cref='System.ComponentModel.RunInstallerAttribute.No'/>. This <see langword='static '/>field is
         ///       read-only.
         ///    </para>
         /// </summary>

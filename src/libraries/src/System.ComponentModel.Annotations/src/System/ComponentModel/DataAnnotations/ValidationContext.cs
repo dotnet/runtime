@@ -30,9 +30,7 @@ namespace System.ComponentModel.DataAnnotations
         #region Member Fields
 
         private readonly Dictionary<object, object> _items;
-        private readonly object _objectInstance;
         private string _displayName;
-        private string _memberName;
         private Func<Type, object> _serviceProvider;
 
         #endregion
@@ -102,7 +100,7 @@ namespace System.ComponentModel.DataAnnotations
                 _items = new Dictionary<object, object>();
             }
 
-            _objectInstance = instance;
+            ObjectInstance = instance;
         }
 
         #endregion
@@ -119,18 +117,12 @@ namespace System.ComponentModel.DataAnnotations
         ///     For example, the property being validated, as well as other properties on the instance might not have been
         ///     updated to their new values.
         /// </remarks>
-        public object ObjectInstance
-        {
-            get { return _objectInstance; }
-        }
+        public object ObjectInstance { get; }
 
         /// <summary>
         ///     Gets the type of the object being validated.  It will not be null.
         /// </summary>
-        public Type ObjectType
-        {
-            get { return ObjectInstance.GetType(); }
-        }
+        public Type ObjectType => ObjectInstance.GetType();
 
         /// <summary>
         ///     Gets or sets the user-visible name of the type or property being validated.
@@ -172,11 +164,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     This name reflects the API name of the member being validated, not a localized name.  It should be set
         ///     only for property or parameter contexts.
         /// </value>
-        public string MemberName
-        {
-            get { return _memberName; }
-            set { _memberName = value; }
-        }
+        public string MemberName { get; set; }
 
         /// <summary>
         ///     Gets the dictionary of key/value pairs associated with this context.
@@ -185,10 +173,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     This property will never be null, but the dictionary may be empty.  Changes made
         ///     to items in this dictionary will never affect the original dictionary specified in the constructor.
         /// </value>
-        public IDictionary<object, object> Items
-        {
-            get { return _items; }
-        }
+        public IDictionary<object, object> Items => _items;
 
         #endregion
 
@@ -204,7 +189,7 @@ namespace System.ComponentModel.DataAnnotations
             ValidationAttributeStore store = ValidationAttributeStore.Instance;
             DisplayAttribute displayAttribute = null;
 
-            if (string.IsNullOrEmpty(_memberName))
+            if (string.IsNullOrEmpty(MemberName))
             {
                 displayAttribute = store.GetTypeDisplayAttribute(this);
             }
@@ -244,15 +229,8 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="serviceType">The type of the service needed.</param>
         /// <returns>An instance of that service or null if it is not available.</returns>
-        public object GetService(Type serviceType)
-        {
-            if (_serviceProvider != null)
-            {
-                return _serviceProvider(serviceType);
-            }
+        public object GetService(Type serviceType) => _serviceProvider?.Invoke(serviceType);
 
-            return null;
-        }
         #endregion
     }
 }

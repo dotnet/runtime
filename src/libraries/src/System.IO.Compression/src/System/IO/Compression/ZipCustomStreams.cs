@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.IO.Compression
 {
-    internal sealed class WrappedStream : Stream
+    internal sealed partial class WrappedStream : Stream
     {
         private readonly Stream _baseStream;
         private readonly bool _closeBaseStream;
@@ -145,7 +145,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal sealed class SubReadStream : Stream
+    internal sealed partial class SubReadStream : Stream
     {
         private readonly long _startInSuperStream;
         private long _positionInSuperStream;
@@ -271,7 +271,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal sealed class CheckSumAndSizeWriteStream : Stream
+    internal sealed partial class CheckSumAndSizeWriteStream : Stream
     {
         private readonly Stream _baseStream;
         private readonly Stream _baseBaseStream;

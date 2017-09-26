@@ -46,6 +46,38 @@ internal static partial class Interop
                 }
             }
         }
+
+        internal static unsafe bool TryCFWriteData(SafeCFDataHandle cfData, Span<byte> destination, out int bytesWritten)
+        {
+            bool addedRef = false;
+            try
+            {
+                cfData.DangerousAddRef(ref addedRef);
+
+                long length = CFDataGetLength(cfData).ToInt64();
+                if (destination.Length < length)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                byte* dataBytes = CFDataGetBytePtr(cfData);
+                fixed (byte* destinationPtr = &destination.DangerousGetPinnableReference())
+                {
+                    Buffer.MemoryCopy(dataBytes, destinationPtr, destination.Length, length);
+                }
+
+                bytesWritten = (int)length;
+                return true;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    cfData.DangerousRelease();
+                }
+            }
+        }
     }
 }
 

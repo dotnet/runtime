@@ -167,7 +167,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Send cached, non-overriden attributes to the specified writer.  Calling this method has
+        /// Send cached, non-overridden attributes to the specified writer.  Calling this method has
         /// the side effect of clearing the attribute cache.
         /// </summary>
         internal override void StartElementContent()

@@ -2914,21 +2914,8 @@ namespace System.Xml
             }
             SetupEncoding(encoding);
 
-            // eat preamble 
-            byte[] preamble = _ps.encoding.GetPreamble();
-            int preambleLen = preamble.Length;
-            int i;
-            for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
-            {
-                if (_ps.bytes[i] != preamble[i])
-                {
-                    break;
-                }
-            }
-            if (i == preambleLen)
-            {
-                _ps.bytePos = preambleLen;
-            }
+            // eat preamble
+            EatPreamble();
 
             _documentStartBytePos = _ps.bytePos;
 
@@ -3222,6 +3209,24 @@ namespace System.Xml
                         _ps.decoder = encoding.GetDecoder();
                         break;
                 }
+            }
+        }
+
+        private void EatPreamble()
+        {
+            ReadOnlySpan<byte> preamble = _ps.encoding.Preamble;
+            int preambleLen = preamble.Length;
+            int i;
+            for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
+            {
+                if (_ps.bytes[i] != preamble[i])
+                {
+                    break;
+                }
+            }
+            if (i == preambleLen)
+            {
+                _ps.bytePos = preambleLen;
             }
         }
 
@@ -9581,7 +9586,7 @@ namespace System.Xml
 
         /// <summary>
         /// This method should be called every time the reader is about to consume some number of
-        ///   characters from the input. It will count it agains the security counters and
+        ///   characters from the input. It will count it against the security counters and
         ///   may throw if some of the security limits are exceeded.
         /// </summary>
         /// <param name="characters">Number of characters to be consumed.</param>

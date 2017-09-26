@@ -5,6 +5,8 @@
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          The only asset that we copy which is RID-specific is sni.dll which is only used in windows, which is why we default to Windows as the RID -->
     <NugetRuntimeIdentifier>win10-$(ArchGroup)</NugetRuntimeIdentifier>
+    <!-- Use xunit for arm packages because of not providing armel package in win10 -->
+    <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'armel'">win10-arm</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(RuntimePath)</OutputPath>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
@@ -74,7 +76,7 @@
       <Version>1.0.0-prerelease</Version>
     </PackageReference>
     <PackageReference Include="System.Drawing.Common.TestData">
-      <Version>1.0.2</Version>
+      <Version>1.0.6</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
@@ -83,6 +85,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <PackageToInclude Include="Microsoft.DiaSymReader.Native"/>
     <PackageToInclude Include="xunit.abstractions"/>
     <PackageToInclude Include="xunit.assert"/>
     <PackageToInclude Include="xunit.extensibility.core"/>
@@ -94,7 +97,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
-    <UAPToolsPackageVersion>1.0.14</UAPToolsPackageVersion>
+    <UAPToolsPackageVersion>1.0.15</UAPToolsPackageVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">

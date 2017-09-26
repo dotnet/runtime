@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
+using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
-using System.IO;
 
 namespace System.Security.Cryptography
 {
@@ -89,6 +89,41 @@ namespace System.Security.Cryptography
                 return converted;
             }
 
+            public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+            {
+                SafeEcKeyHandle key = _key.Value;
+
+                byte[] converted;
+                int signatureLength = Interop.Crypto.EcDsaSize(key);
+                byte[] signature = ArrayPool<byte>.Shared.Rent(signatureLength);
+                try
+                {
+                    if (!Interop.Crypto.EcDsaSign(source, source.Length, new Span<byte>(signature, 0, signatureLength), ref signatureLength, key))
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
+                }
+                finally
+                {
+                    Array.Clear(signature, 0, signatureLength);
+                    ArrayPool<byte>.Shared.Return(signature);
+                }
+
+                if (converted.Length <= destination.Length)
+                {
+                    new ReadOnlySpan<byte>(converted).CopyTo(destination);
+                    bytesWritten = converted.Length;
+                    return true;
+                }
+                else
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+            }
+
             public override bool VerifyHash(byte[] hash, byte[] signature)
             {
                 if (hash == null)
@@ -96,6 +131,11 @@ namespace System.Security.Cryptography
                 if (signature == null)
                     throw new ArgumentNullException(nameof(signature));
 
+                return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+            }
+
+            public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+            {
                 // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
                 // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
                 // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
@@ -113,15 +153,14 @@ namespace System.Security.Cryptography
                 return verifyResult == 1;
             }
 
-            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-            {
-                return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-            }
+            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+                AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
 
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-            {
-                return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-            }
+            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+
+            protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+                AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {
@@ -233,10 +272,7 @@ namespace System.Security.Cryptography
                 // with the already loaded key.
                 ForceSetKeySize(Interop.Crypto.EcKeyGetSize(newKey));
 
-                _key = new Lazy<SafeEcKeyHandle>(() => newKey, isThreadSafe: true);
-
-                // Have Lazy<T> consider the key to be loaded
-                var dummy = _key.Value;
+                _key = new Lazy<SafeEcKeyHandle>(newKey);
             }
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

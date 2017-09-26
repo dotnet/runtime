@@ -51,7 +51,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public Type CallingContext { get; }
 
-        private readonly List<CSharpArgumentInfo> _argumentInfo;
+        private readonly CSharpArgumentInfo[] _argumentInfo;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
@@ -78,8 +78,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             IsChecked = isChecked;
             _binopFlags = binaryOperationFlags;
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToList(argumentInfo);
-            Debug.Assert(_argumentInfo.Count == 2);
+            _argumentInfo = BinderHelper.ToArray(argumentInfo);
+            Debug.Assert(_argumentInfo.Length == 2);
             _binder = RuntimeBinder.GetInstance();
         }
 
@@ -92,6 +92,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion)
         {
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(arg, nameof(arg));
             return BinderHelper.Bind(this, _binder, new [] {target, arg}, _argumentInfo, errorSuggestion);
         }
     }

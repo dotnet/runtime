@@ -12,7 +12,6 @@ namespace System.ComponentModel.DataAnnotations.Schema
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class ColumnAttribute : Attribute
     {
-        private readonly string _name;
         private int _order = -1;
         private string _typeName;
 
@@ -35,23 +34,20 @@ namespace System.ComponentModel.DataAnnotations.Schema
                     SR.ArgumentIsNullOrWhitespace, nameof(name)));
             }
 
-            _name = name;
+            Name = name;
         }
 
         /// <summary>
         ///     The name of the column the property is mapped to.
         /// </summary>
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get; }
 
         /// <summary>
         ///     The zero-based order of the column the property is mapped to.
         /// </summary>
         public int Order
         {
-            get { return _order; }
+            get => _order;
             set
             {
                 if (value < 0)
@@ -68,7 +64,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// </summary>
         public string TypeName
         {
-            get { return _typeName; }
+            get => _typeName;
             set
             {
                 if (string.IsNullOrWhiteSpace(value))

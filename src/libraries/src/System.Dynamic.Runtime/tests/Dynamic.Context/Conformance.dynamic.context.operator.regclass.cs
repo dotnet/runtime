@@ -1755,10 +1755,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
             }
         }
 
-        public void Foo()
-        {
-        }
-
         private static int Verify()
         {
             lock (Test.locker)
@@ -1783,7 +1779,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
         {
             Test t = new Test();
             Test.s_field = null;
-            t.Foo();
+            GC.KeepAlive(t);
         }
 
         [Fact]
@@ -3437,10 +3433,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
             }
         }
 
-        public void Foo()
-        {
-        }
-
         private static int Verify()
         {
             lock (Test.locker)
@@ -3465,7 +3457,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
         {
             Test t = new Test();
             Test.s_field = null;
-            t.Foo();
+            GC.KeepAlive(t);
         }
 
         [Fact]

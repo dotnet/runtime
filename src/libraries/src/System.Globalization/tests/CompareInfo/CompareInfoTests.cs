@@ -410,8 +410,9 @@ namespace System.Globalization.Tests
         {
             SortVersion sv1 = CultureInfo.GetCultureInfo("en-US").CompareInfo.Version;
             SortVersion sv2 = CultureInfo.GetCultureInfo("ja-JP").CompareInfo.Version;
+            SortVersion sv3 = CultureInfo.GetCultureInfo("en").CompareInfo.Version;
             
-            Assert.Equal(sv1.FullVersion, sv2.FullVersion);
+            Assert.Equal(sv1.FullVersion, sv3.FullVersion);
             Assert.NotEqual(sv1.SortId, sv2.SortId);
         } 
     }

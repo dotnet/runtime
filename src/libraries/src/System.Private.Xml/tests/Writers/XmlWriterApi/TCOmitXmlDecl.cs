@@ -1,62 +1,194 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
+using System.IO;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    public partial class TCOmitXmlDecl : XmlFactoryWriterTestCaseBase
+    public class TCOmitXmlDecl
     {
-        // Type is System.Xml.Tests.TCOmitXmlDecl
-        // Test Case
-        public override void AddChildren()
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void XmlDecl_1(XmlWriterUtils utils)
         {
-            if (WriterType == WriterType.CustomWriter)
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.ConformanceLevel = ConformanceLevel.Document;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Document, "Mismatch in CL");
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.Dispose();
+
+            XmlReader xr = utils.GetReader();
+            // First node should be XmlDeclaration
+            xr.Read();
+            if (xr.NodeType != XmlNodeType.XmlDeclaration)
             {
+                CError.WriteLine("Did not write XmlDecl when OmitXmlDecl was FALSE. NodeType = {0}", xr.NodeType.ToString());
+                xr.Dispose();
+                Assert.True(false);
+            }
+            else if (xr.NodeType == XmlNodeType.XmlDeclaration)
+            {
+                xr.Dispose();
                 return;
             }
-            // for function XmlDecl_1
+            else
             {
-                this.AddChild(new CVariation(XmlDecl_1) { Attribute = new Variation("Check when false") { id = 1, Pri = 1 } });
+                xr.Dispose();
+                Assert.True(false);
             }
+        }
 
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void XmlDecl_2(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.ConformanceLevel = ConformanceLevel.Document;
+            wSettings.OmitXmlDeclaration = true;
 
-            // for function XmlDecl_2
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Document, "Mismatch in CL");
+            CError.Compare(w.Settings.OmitXmlDeclaration, true, "Mismatch in OmitXmlDecl");
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.Dispose();
+
+            XmlReader xr = utils.GetReader();
+            // Should not read XmlDeclaration
+            while (xr.Read())
             {
-                this.AddChild(new CVariation(XmlDecl_2) { Attribute = new Variation("Check when true") { id = 2, Pri = 1 } });
+                if (xr.NodeType == XmlNodeType.XmlDeclaration)
+                {
+                    CError.WriteLine("Wrote XmlDecl when OmitXmlDecl was TRUE");
+                    xr.Dispose();
+                    Assert.True(false);
+                }
             }
+            xr.Dispose();
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void XmlDecl_3(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.ConformanceLevel = ConformanceLevel.Document;
+            wSettings.OmitXmlDeclaration = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartDocument(true);
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.WriteEndDocument();
+            w.Dispose();
 
 
-            // for function XmlDecl_3
+            XmlReader xr = utils.GetReader();
+            // Should not read XmlDeclaration
+            while (xr.Read())
             {
-                this.AddChild(new CVariation(XmlDecl_3) { Attribute = new Variation("Set to true, write standalone attribute. Should not write XmlDecl") { id = 3, Pri = 1 } });
+                if (xr.NodeType == XmlNodeType.XmlDeclaration)
+                {
+                    CError.WriteLine("Wrote XmlDecl when OmitXmlDecl was TRUE");
+                    xr.Dispose();
+                    Assert.True(false);
+                }
             }
+            xr.Dispose();
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void XmlDecl_4(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.ConformanceLevel = ConformanceLevel.Fragment;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Fragment, "Mismatch in CL");
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.Dispose();
 
 
-            // for function XmlDecl_4
-            {
-                this.AddChild(new CVariation(XmlDecl_4) { Attribute = new Variation("Set to false, write document fragment. Should not write XmlDecl") { id = 4, Pri = 1 } });
-            }
+            Assert.True(utils.CompareReader("<root /><root />"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void XmlDecl_5(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.CloseOutput = false;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.CloseOutput, false, "Mismatch in CloseOutput");
+            w.WriteProcessingInstruction("xml", "version = \"1.0\"");
+            w.WriteStartElement("Root");
+            w.WriteEndElement();
+            w.Dispose();
 
 
-            // for function XmlDecl_5
-            {
-                this.AddChild(new CVariation(XmlDecl_5) { Attribute = new Variation("WritePI with name = 'xml' text = 'version = 1.0' should work if WriteStartDocument is not called") { id = 5, Pri = 1 } });
-            }
+            Assert.True(utils.CompareReader("<?xml version = \"1.0\"?><Root />"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void XmlDecl_6(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.CloseOutput = false;
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.ConformanceLevel = ConformanceLevel.Document;
+
+            string strxml = "<?xml version=\"1.0\"?><root>blah</root>";
+            XmlReader xr = ReaderHelper.Create(new StringReader(strxml));
+            xr.Read();
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteNode(xr, false);
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            xr.Dispose();
+            w.Dispose();
 
 
-            // for function XmlDecl_6
-            {
-                this.AddChild(new CVariation(XmlDecl_6) { Attribute = new Variation("WriteNode(reader) positioned on XmlDecl, OmitXmlDecl = true") { id = 6, Pri = 1 } });
-            }
+            Assert.True(utils.CompareReader("<root />"));
+        }
 
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void XmlDecl_7(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.CloseOutput = false;
+            wSettings.OmitXmlDeclaration = false;
+            wSettings.ConformanceLevel = ConformanceLevel.Document;
 
-            // for function XmlDecl_7
-            {
-                this.AddChild(new CVariation(XmlDecl_7) { Attribute = new Variation("WriteNode(reader) positioned on XmlDecl, OmitXmlDecl = false") { id = 7, Pri = 1 } });
-            }
+            string strxml = "<?xml version=\"1.0\"?><root>blah</root>";
+            XmlReader xr = ReaderHelper.Create(new StringReader(strxml));
+            xr.Read();
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteNode(xr, false);
+            w.WriteStartElement("root");
+            w.WriteString("blah");
+            w.WriteEndElement();
+            xr.Dispose();
+            w.Dispose();
+
+            Assert.True(utils.CompareReader(strxml));
         }
     }
 }

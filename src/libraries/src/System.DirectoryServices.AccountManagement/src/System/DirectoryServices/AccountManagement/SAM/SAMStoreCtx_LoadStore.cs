@@ -207,7 +207,7 @@ namespace System.DirectoryServices.AccountManagement
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetAsPrincipal: using path={0}", de.Path);
 
-            // Construct a appropriate Principal object.
+            // Construct an appropriate Principal object.
             Principal p = SDSUtils.DirectoryEntryToPrincipal(de, this.OwningContext, null);
             Debug.Assert(p != null);
 

@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Net.Primitives.Functional.Tests">
+    <Type Name="System.Net.CookieVariant" BinaryFormatter="All" />
+    <Type Name="System.Net.CookieCollection" BinaryFormatter="All" />
+  </Library>
+</Directives>

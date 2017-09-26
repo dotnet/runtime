@@ -56,8 +56,10 @@
     <Compile Include="SQL\LocalDBTest\LocalDBTest.cs" />
     <Compile Include="SQL\MARSSessionPoolingTest\MARSSessionPoolingTest.cs" />
     <Compile Include="SQL\MARSTest\MARSTest.cs" />
+    <Compile Include="SQL\MirroringTest\ConnectionOnMirroringTest.cs" />
     <Compile Include="SQL\ParallelTransactionsTest\ParallelTransactionsTest.cs" />
     <Compile Include="SQL\SqlSchemaInfoTest\SqlSchemaInfoTest.cs" />
+    <Compile Include="SQL\SqlBulkCopyTest\AdjustPrecScaleForBulkCopy.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\ErrorOnRowsMarkedAsDeleted.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\Bug84548.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\Bug85007.cs" />
@@ -109,6 +111,7 @@
     <Compile Include="SQL\SqlNotificationTest\SqlNotificationTest.cs" />
     <Compile Include="SQL\TransactionTest\TransactionTest.cs" />
     <Compile Include="SQL\TransactionTest\TransactionEnlistmentTest.cs" />
+    <Compile Include="SQL\UdtTest\UdtTest.cs" />
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />

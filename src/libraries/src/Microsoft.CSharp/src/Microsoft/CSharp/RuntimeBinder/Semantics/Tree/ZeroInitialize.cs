@@ -6,21 +6,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprZeroInit : ExprWithType
     {
-        public ExprZeroInit(CType type, Expr originalConstructorCall, bool isConstructor, bool isError)
+        public ExprZeroInit(CType type)
             : base(ExpressionKind.ZeroInit, type)
         {
-            OptionalConstructorCall = originalConstructorCall;
-            IsConstructor = isConstructor;
-            if (isError)
-            {
-                SetError();
-            }
         }
-
-        public Expr OptionalArgument { get; set; }
-
-        public Expr OptionalConstructorCall { get; set; }
-
-        public bool IsConstructor { get; }
     }
 }

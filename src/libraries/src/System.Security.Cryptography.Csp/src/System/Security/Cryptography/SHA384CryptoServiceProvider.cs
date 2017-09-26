@@ -27,19 +27,21 @@ namespace System.Security.Cryptography
             // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
         }
 
-        protected override void HashCore(byte[] array, int ibStart, int cbSize)
-        {
+        protected override void HashCore(byte[] array, int ibStart, int cbSize) =>
             _incrementalHash.AppendData(array, ibStart, cbSize);
-        }
 
-        protected override byte[] HashFinal()
-        {
-            return _incrementalHash.GetHashAndReset();
-        }
+        protected override void HashCore(ReadOnlySpan<byte> source) =>
+            _incrementalHash.AppendData(source);
+
+        protected override byte[] HashFinal() =>
+            _incrementalHash.GetHashAndReset();
+
+        protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
+            _incrementalHash.TryGetHashAndReset(destination, out bytesWritten);
 
         // The Hash and HashSize properties are not overridden since the correct values are returned from base.
 
-        protected sealed override void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing)
             {

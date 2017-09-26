@@ -1297,7 +1297,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    providerSpecificFieldType = MetaType.MetaMaxVarBinary.SqlType;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -2349,7 +2349,7 @@ namespace System.Data.SqlClient
             }
             else if (_typeSystem != SqlConnectionString.TypeSystem.SQLServer2000)
             {
-                // TypeSystem.SQLServer2005
+                // TypeSystem.SQLServer2005 and above
 
                 if (metaData.type == SqlDbType.Udt)
                 {
@@ -2535,7 +2535,7 @@ namespace System.Data.SqlClient
             }
             else if (_typeSystem != SqlConnectionString.TypeSystem.SQLServer2000)
             {
-                // TypeSystem.SQLServer2005
+                // TypeSystem.SQLServer2005 and above
 
                 if (metaData.type != SqlDbType.Udt)
                 {

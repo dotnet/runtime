@@ -38,6 +38,8 @@
     <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
     <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
+    <Compile Include="Metadata\TypeSystem\AssemblyDefinitionTests.cs" />
+    <Compile Include="Metadata\TypeSystem\AssemblyReferenceTests.cs" />
     <Compile Include="Metadata\TypeSystem\ClassLayoutRow.cs" />
     <Compile Include="Metadata\Decoding\CustomAttributeDecoderTests.cs" />
     <Compile Include="Metadata\Decoding\DisassemblingTypeProvider.cs" />
@@ -130,11 +132,13 @@
     <EmbeddedResource Include="Resources\PortablePdbs\Documents.Embedded.dll" />
     <None Include="Resources\PortablePdbs\Documents.cmd" />
     <None Include="Resources\PortablePdbs\Documents.cs" />
+    <None Include="Resources\Misc\SatelliteAssembly.resources.cs" />
+    <EmbeddedResource Include="Resources\Misc\SatelliteAssembly.resources.dll" />
     <None Include="Resources\Misc\Signed.cmd" />
     <None Include="Resources\Misc\Signed.cs" />
     <EmbeddedResource Include="Resources\Misc\Signed.exe" />
   </ItemGroup>
-    <ItemGroup>
+  <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <TargetingPackExclusions Include="System.Reflection.Metadata" />
     <ReferenceFromRuntime Include="System.Reflection.Metadata" />

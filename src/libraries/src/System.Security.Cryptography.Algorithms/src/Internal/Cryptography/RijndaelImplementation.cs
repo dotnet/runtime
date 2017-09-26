@@ -11,7 +11,7 @@ namespace Internal.Cryptography
     /// Internal implementation of Rijndael.
     /// This class is returned from Rijndael.Create() instead of the public RijndaelManaged to 
     /// be consistent with the rest of the static Create() methods which return opaque types.
-    /// They both have have the same implementation.
+    /// They both have the same implementation.
     /// </summary>
     internal sealed class RijndaelImplementation : Rijndael
     {

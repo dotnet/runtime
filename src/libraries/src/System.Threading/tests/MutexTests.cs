@@ -71,7 +71,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWinRT))] // Can't create global objects in appcontainer
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't create global objects in appcontainer
         [SkipOnTargetFramework(
             TargetFrameworkMonikers.NetFramework,
             "The fix necessary for this test (PR https://github.com/dotnet/coreclr/pull/12381) is not in the .NET Framework.")]
@@ -90,7 +90,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWinRT))] // Can't create global objects in appcontainer
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))] // Can't create global objects in appcontainer
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Ctor_TryCreateGlobalMutexTest_Uwp()
         {

@@ -31,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public Type CallingContext { get; }
 
-        private readonly List<CSharpArgumentInfo> _argumentInfo;
+        private readonly CSharpArgumentInfo[] _argumentInfo;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
@@ -59,7 +59,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             IsCompoundAssignment = isCompoundAssignment;
             IsChecked = isChecked;
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToList(argumentInfo);
+            _argumentInfo = BinderHelper.ToArray(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }
 
@@ -79,6 +79,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return com;
             }
 #endif
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(value, nameof(value));
             return BinderHelper.Bind(this, _binder, new[] { target, value }, _argumentInfo, errorSuggestion);
         }
     }

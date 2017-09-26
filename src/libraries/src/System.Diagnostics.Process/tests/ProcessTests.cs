@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -13,7 +12,6 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using Xunit;
-using Xunit.NetCore.Extensions;
 
 namespace System.Diagnostics.Tests
 {
@@ -117,6 +115,71 @@ namespace System.Diagnostics.Tests
             else
             {
                 Assert.False(exitedInvoked);
+            }
+        }
+
+        [Fact]
+        public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
+        }
+
+        [Fact]
+        public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
+        }
+
+        [Fact]
+        public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
+        {
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
+        }
+        
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "not supported on UAP")]
+        [OuterLoop("Launches File Explorer")]
+        public void ProcessStart_UseShellExecuteTrue_OpenMissingFile_Throws()
+        {
+            string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "not supported on UAP")]
+        [OuterLoop("Launches File Explorer")]
+        public void ProcessStart_UseShellExecute_OnWindows_DoesNotThrow(bool isFolder)
+        {
+            string fileToOpen;
+            if (isFolder)
+            {
+                fileToOpen = Environment.CurrentDirectory;
+            }
+            else
+            {
+                fileToOpen = GetTestFilePath() + ".txt";
+                File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_UseShellExecute_OnWindows_DoesNotThrow)}");
+            }
+
+            using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
+            {
+                if (isFolder)
+                {
+                    Assert.Null(px); // Not sure why px returned is null. but the call does not throw and opens folder successfully.
+                }
+                else
+                {
+                    if (px != null) // sometimes process is null: tracked by #24048
+                    {
+                        Assert.Equal("notepad", px.ProcessName);
+
+                        px.Kill();
+                        Assert.True(px.WaitForExit(WaitInMS));
+                    }
+                }
             }
         }
 
@@ -900,7 +963,6 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Behavior differs on Windows and Unix
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18212", TargetFrameworkMonikers.UapAot)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Retrieving information about local processes is not supported on uap")]
         public void TestProcessOnRemoteMachineWindows()
         {

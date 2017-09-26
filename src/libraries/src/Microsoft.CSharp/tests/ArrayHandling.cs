@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
     public class ArrayHandling
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void SingleRankNonSZArray()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
@@ -142,7 +142,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void NonSZ1RArrayLenght()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] {23}, new[] {-2});

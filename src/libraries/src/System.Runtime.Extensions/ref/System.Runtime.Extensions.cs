@@ -141,21 +141,47 @@ namespace System
         public static double Int64BitsToDouble(long value) { throw null; }
         public static int SingleToInt32Bits(float value) { throw null; }
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
+        public static bool ToBoolean(ReadOnlySpan<byte> value) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
+        public static char ToChar(ReadOnlySpan<byte> value) { throw null; }
         public static double ToDouble(byte[] value, int startIndex) { throw null; }
+        public static double ToDouble(ReadOnlySpan<byte> value) { throw null; }
         public static short ToInt16(byte[] value, int startIndex) { throw null; }
+        public static short ToInt16(ReadOnlySpan<byte> value) { throw null; }
         public static int ToInt32(byte[] value, int startIndex) { throw null; }
+        public static int ToInt32(ReadOnlySpan<byte> value) { throw null; }
         public static long ToInt64(byte[] value, int startIndex) { throw null; }
+        public static long ToInt64(ReadOnlySpan<byte> value) { throw null; }
         public static float ToSingle(byte[] value, int startIndex) { throw null; }
+        public static float ToSingle(ReadOnlySpan<byte> value) { throw null; }
         public static string ToString(byte[] value) { throw null; }
         public static string ToString(byte[] value, int startIndex) { throw null; }
         public static string ToString(byte[] value, int startIndex, int length) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort ToUInt16(byte[] value, int startIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static ushort ToUInt16(ReadOnlySpan<byte> value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint ToUInt32(byte[] value, int startIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static uint ToUInt32(ReadOnlySpan<byte> value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static ulong ToUInt64(byte[] value, int startIndex) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong ToUInt64(ReadOnlySpan<byte> value) { throw null; }
+        public static bool TryWriteBytes(Span<byte> destination, bool value) { throw null; }
+        public static bool TryWriteBytes(Span<byte> destination, char value) { throw null; }
+        public static bool TryWriteBytes(Span<byte> destination, double value) { throw null; }
+        public static bool TryWriteBytes(Span<byte> destination, short value) { throw null; }
+        public static bool TryWriteBytes(Span<byte> destination, int value) { throw null; }
+        public static bool TryWriteBytes(Span<byte> destination, long value) { throw null; }
+        public static bool TryWriteBytes(Span<byte> destination, float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteBytes(Span<byte> destination, ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteBytes(Span<byte> destination, uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteBytes(Span<byte> destination, ulong value) { throw null; }
     }
     public static partial class Convert
     {
@@ -881,6 +907,7 @@ namespace System
         public virtual int Next(int maxValue) { throw null; }
         public virtual int Next(int minValue, int maxValue) { throw null; }
         public virtual void NextBytes(byte[] buffer) { }
+        public virtual void NextBytes(Span<byte> buffer) { }
         public virtual double NextDouble() { throw null; }
         protected virtual double Sample() { throw null; }
     }
@@ -1178,6 +1205,7 @@ namespace System.IO
         public static string GetTempPath() { throw null; }
         public static bool HasExtension(string path) { throw null; }
         public static bool IsPathRooted(string path) { throw null; }
+        public static bool IsPathFullyQualified(string path) { throw null; }
         public static string GetRelativePath(string relativeTo, string path) { throw null; }
     }
 
@@ -1195,6 +1223,8 @@ namespace System.IO
         public virtual int Read() { throw null; }
         public virtual int Read(byte[] buffer, int index, int count) { throw null; }
         public virtual int Read(char[] buffer, int index, int count) { throw null; }
+        public virtual int Read(System.Span<byte> destination) { throw null; }
+        public virtual int Read(System.Span<char> destination) { throw null; }
         protected internal int Read7BitEncodedInt() { throw null; }
         public virtual bool ReadBoolean() { throw null; }
         public virtual byte ReadByte() { throw null; }
@@ -1253,6 +1283,8 @@ namespace System.IO
         public virtual void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(ulong value) { }
+        public virtual void Write(ReadOnlySpan<byte> span) { }
+        public virtual void Write(ReadOnlySpan<char> span) { }
         protected void Write7BitEncodedInt(int value) { }
     }
     public sealed partial class BufferedStream : System.IO.Stream
@@ -1321,6 +1353,7 @@ namespace System.IO
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual byte[] GetBuffer() { throw null; }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> destination) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin loc) { throw null; }
@@ -1328,6 +1361,7 @@ namespace System.IO
         public virtual byte[] ToArray() { throw null; }
         public virtual bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> source) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
         public virtual void WriteTo(System.IO.Stream stream) { }
@@ -1440,8 +1474,10 @@ namespace System.IO
         public virtual int Peek() { throw null; }
         public virtual int Read() { throw null; }
         public virtual int Read(char[] buffer, int index, int count) { throw null; }
+        public virtual int Read(Span<char> destination) { throw null; }
         public virtual System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
         public virtual int ReadBlock(char[] buffer, int index, int count) { throw null; }
+        public virtual int ReadBlock(Span<char> destination) { throw null; }
         public virtual System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
         public virtual string ReadLine() { throw null; }
         public virtual System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
@@ -1483,6 +1519,7 @@ namespace System.IO
         public virtual void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(ulong value) { }
+        public virtual void Write(ReadOnlySpan<char> source) { }
         public virtual System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public System.Threading.Tasks.Task WriteAsync(char[] buffer) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
@@ -1507,6 +1544,7 @@ namespace System.IO
         public virtual void WriteLine(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(ulong value) { }
+        public virtual void WriteLine(ReadOnlySpan<char> source) { }
         public virtual System.Threading.Tasks.Task WriteLineAsync() { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public System.Threading.Tasks.Task WriteLineAsync(char[] buffer) { throw null; }

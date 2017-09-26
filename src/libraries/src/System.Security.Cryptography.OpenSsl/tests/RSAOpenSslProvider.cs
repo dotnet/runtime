@@ -6,25 +6,15 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public class RSAOpenSslProvider : IRSAProvider
     {
-        public RSA Create()
-        {
-            return new RSAOpenSsl();
-        }
+        public RSA Create() => new RSAOpenSsl();
 
-        public RSA Create(int keySize)
-        {
-            return new RSAOpenSsl(keySize);
-        }
+        public RSA Create(int keySize) => new RSAOpenSsl(keySize);
 
-        public bool Supports384PrivateKey
-        {
-            get { return true; }
-        }
+        public bool Supports384PrivateKey => true;
 
-        public bool SupportsSha2Oaep
-        {
-            get { return false; }
-        }
+        public bool SupportsSha2Oaep => false;
+
+        public bool SupportsDecryptingIntoExactSpaceRequired => false;
     }
 
     public partial class RSAFactory

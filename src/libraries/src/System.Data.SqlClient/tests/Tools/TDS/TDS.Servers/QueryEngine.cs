@@ -1481,7 +1481,7 @@ namespace Microsoft.SqlServer.TDS.Servers
         }
 
         /// <summary>
-        /// Prepare response for arithmethic abort
+        /// Prepare response for arithmetic abort
         /// </summary>
         private TDSMessage _PrepareArithAbortResponse(ITDSServerSession session)
         {

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
@@ -33,15 +34,18 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public bool IsChecked => false;
 
-        public IList<Type> TypeArguments => _typeArguments.AsReadOnly();
+        public Type[] TypeArguments { get; }
 
-        private readonly List<Type> _typeArguments;
-
-        private readonly List<CSharpArgumentInfo> _argumentInfo;
+        private readonly CSharpArgumentInfo[] _argumentInfo;
 
         public CSharpArgumentInfo GetArgumentInfo(int index) => _argumentInfo[index];
 
-        public CSharpArgumentInfo[] ArgumentInfoArray() => _argumentInfo.ToArray();
+        public CSharpArgumentInfo[] ArgumentInfoArray()
+        {
+            CSharpArgumentInfo[] array = new CSharpArgumentInfo[_argumentInfo.Length];
+            _argumentInfo.CopyTo(array, 0);
+            return array;
+        }
 
         bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded => (Flags & CSharpCallFlags.ResultDiscarded) != 0;
 
@@ -65,8 +69,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             Flags = flags;
             CallingContext = callingContext;
-            _typeArguments = BinderHelper.ToList(typeArguments);
-            _argumentInfo = BinderHelper.ToList(argumentInfo);
+            TypeArguments = BinderHelper.ToArray(typeArguments);
+            _argumentInfo = BinderHelper.ToArray(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }
 
@@ -86,6 +90,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return com;
             }
 #endif
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(args, nameof(args));
             return BinderHelper.Bind(this, _binder, BinderHelper.Cons(target, args), _argumentInfo, errorSuggestion);
         }
 

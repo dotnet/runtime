@@ -9,7 +9,7 @@ namespace System.ComponentModel
 {
     /// <summary>
     ///     If this attribute is placed on a property or a type, its text representation in a property window
-    ///     will appear as dots or astrisks to indicate a password field.  This indidation in no way
+    ///     will appear as dots or asterisks to indicate a password field.  This indication in no way
     ///     represents any type of encryption or security.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]

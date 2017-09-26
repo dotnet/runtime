@@ -27,6 +27,10 @@ namespace System.Diagnostics
 
         internal void Add(ProcessModule module) => InnerList.Add(module);
 
+        internal void Insert(int index, ProcessModule module) => InnerList.Insert(index, module);
+
+        internal void RemoveAt(int index) => InnerList.RemoveAt(index);
+
         public ProcessModule this[int index] => (ProcessModule)InnerList[index];
 
         public int IndexOf(ProcessModule module) => InnerList.IndexOf(module);

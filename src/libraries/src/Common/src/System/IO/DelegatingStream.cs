@@ -94,6 +94,13 @@ namespace System.Net.Http
             return _innerStream.Read(buffer, offset, count);
         }
 
+#if !NET46
+        public override int Read(Span<byte> destination)
+        {
+            return _innerStream.Read(destination);
+        }
+#endif
+
         public override int ReadByte()
         {
             return _innerStream.ReadByte();
@@ -137,6 +144,13 @@ namespace System.Net.Http
         {
             _innerStream.Write(buffer, offset, count);
         }
+
+#if !NET46
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            _innerStream.Write(source);
+        }
+#endif
 
         public override void WriteByte(byte value)
         {

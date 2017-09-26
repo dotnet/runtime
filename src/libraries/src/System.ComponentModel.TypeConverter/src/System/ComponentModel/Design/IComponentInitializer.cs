@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design
         ///     dragging a component to another container, for example.  The defaultValues
         ///     property contains a name/value dictionary of default values that should be applied
         ///     to properties. This dictionary may be null if no default values are specified.
-        ///     You may use the defaultValues dictionary to apply recommended defaults to proeprties
+        ///     You may use the defaultValues dictionary to apply recommended defaults to properties
         ///     but you should not modify component properties beyond what is stored in the
         ///     dictionary, because this is an existing component that may already have properties
         ///     set on it.

@@ -103,7 +103,7 @@ namespace Microsoft.SqlServer.TDS.FeatureExtAck
         }
 
         /// <summary>
-        /// Delate the token.
+        /// Deflate the token.
         /// </summary>
         /// <param name="destination">Stream the token to deflate to.</param>
         public override void Deflate(Stream destination)

@@ -12,17 +12,17 @@ using Xunit;
 
 namespace System.Collections.Tests
 {
-    public static class HashtableTests
+    public class HashtableTests : RemoteExecutorTestBase
     {
         [Fact]
-        public static void Ctor_Empty()
+        public void Ctor_Empty()
         {
             var hash = new ComparableHashtable();
             VerifyHashtable(hash, null, null);
         }
 
         [Fact]
-        public static void Ctor_HashCodeProvider_Comparer()
+        public void Ctor_HashCodeProvider_Comparer()
         {
             var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
             VerifyHashtable(hash, null, hash.EqualityComparer);
@@ -35,7 +35,7 @@ namespace System.Collections.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public static void Ctor_HashCodeProvider_Comparer_NullInputs(bool nullProvider, bool nullComparer)
+        public void Ctor_HashCodeProvider_Comparer_NullInputs(bool nullProvider, bool nullComparer)
         {
             var hash = new ComparableHashtable(
                 nullProvider ? null : CaseInsensitiveHashCodeProvider.DefaultInvariant,
@@ -44,7 +44,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IDictionary()
+        public void Ctor_IDictionary()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable());
@@ -60,13 +60,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IDictionary_NullDictionary_ThrowsArgumentNullException()
+        public void Ctor_IDictionary_NullDictionary_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null)); // Dictionary is null
         }
 
         [Fact]
-        public static void Ctor_IDictionary_HashCodeProvider_Comparer()
+        public void Ctor_IDictionary_HashCodeProvider_Comparer()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable(), CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
@@ -82,32 +82,34 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IDictionary_HashCodeProvider_Comparer_NullDictionary_ThrowsArgumentNullException()
+        public void Ctor_IDictionary_HashCodeProvider_Comparer_NullDictionary_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable(null, CaseInsensitiveHashCodeProvider.Default, StringComparer.OrdinalIgnoreCase)); // Dictionary is null
         }
 
         [Fact]
-        public static void Ctor_IEqualityComparer()
+        public void Ctor_IEqualityComparer()
         {
-            // Null comparer
-            var hash = new ComparableHashtable((IEqualityComparer)null);
-            VerifyHashtable(hash, null, null);
-
-            // Custom comparer
-            Helpers.PerformActionOnCustomCulture(() =>
+            RemoteInvoke(() =>
             {
+                // Null comparer
+                var hash = new ComparableHashtable((IEqualityComparer)null);
+                VerifyHashtable(hash, null, null);
+
+                // Custom comparer
                 IEqualityComparer comparer = StringComparer.CurrentCulture;
                 hash = new ComparableHashtable(comparer);
                 VerifyHashtable(hash, null, comparer);
-            });
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Theory]
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(100)]
-        public static void Ctor_Int(int capacity)
+        public void Ctor_Int(int capacity)
         {
             var hash = new ComparableHashtable(capacity);
             VerifyHashtable(hash, null, null);
@@ -117,21 +119,21 @@ namespace System.Collections.Tests
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(100)]
-        public static void Ctor_Int_HashCodeProvider_Comparer(int capacity)
+        public void Ctor_Int_HashCodeProvider_Comparer(int capacity)
         {
             var hash = new ComparableHashtable(capacity, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
             VerifyHashtable(hash, null, hash.EqualityComparer);
         }
 
         [Fact]
-        public static void Ctor_Int_Invalid()
+        public void Ctor_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1)); // Capacity < 0
             AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue)); // Capacity / load factor > int.MaxValue
         }
 
         [Fact]
-        public static void Ctor_IDictionary_Int()
+        public void Ctor_IDictionary_Int()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable(), 1f, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
@@ -148,7 +150,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IDictionary_Int_Invalid()
+        public void Ctor_IDictionary_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f)); // Dictionary is null
 
@@ -161,7 +163,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IDictionary_Int_HashCodeProvider_Comparer()
+        public void Ctor_IDictionary_Int_HashCodeProvider_Comparer()
         {
             // No exception
             var hash1 = new ComparableHashtable(new Hashtable(), 1f);
@@ -177,32 +179,34 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IDictionary_IEqualityComparer()
+        public void Ctor_IDictionary_IEqualityComparer()
         {
-            // No exception
-            var hash1 = new ComparableHashtable(new Hashtable(), null);
-            Assert.Equal(0, hash1.Count);
-
-            hash1 = new ComparableHashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(), null), null), null), null), null);
-            Assert.Equal(0, hash1.Count);
-
-            // Null comparer
-            Hashtable hash2 = Helpers.CreateIntHashtable(100);
-            hash1 = new ComparableHashtable(hash2, null);
-            VerifyHashtable(hash1, hash2, null);
-
-            // Custom comparer
-            hash2 = Helpers.CreateIntHashtable(100);
-            Helpers.PerformActionOnCustomCulture(() =>
+            RemoteInvoke(() =>
             {
+                // No exception
+                var hash1 = new ComparableHashtable(new Hashtable(), null);
+                Assert.Equal(0, hash1.Count);
+
+                hash1 = new ComparableHashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(new Hashtable(), null), null), null), null), null);
+                Assert.Equal(0, hash1.Count);
+
+                // Null comparer
+                Hashtable hash2 = Helpers.CreateIntHashtable(100);
+                hash1 = new ComparableHashtable(hash2, null);
+                VerifyHashtable(hash1, hash2, null);
+
+                // Custom comparer
+                hash2 = Helpers.CreateIntHashtable(100);
                 IEqualityComparer comparer = StringComparer.CurrentCulture;
                 hash1 = new ComparableHashtable(hash2, comparer);
                 VerifyHashtable(hash1, hash2, comparer);
-            });
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
-        public static void Ctor_IDictionary_IEqualityComparer_NullDictionary_ThrowsArgumentNullException()
+        public void Ctor_IDictionary_IEqualityComparer_NullDictionary_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null, null)); // Dictionary is null
         }
@@ -212,7 +216,7 @@ namespace System.Collections.Tests
         [InlineData(10, 0.2)]
         [InlineData(100, 0.3)]
         [InlineData(1000, 1)]
-        public static void Ctor_Int_Int(int capacity, float loadFactor)
+        public void Ctor_Int_Int(int capacity, float loadFactor)
         {
             var hash = new ComparableHashtable(capacity, loadFactor);
             VerifyHashtable(hash, null, null);
@@ -223,14 +227,14 @@ namespace System.Collections.Tests
         [InlineData(10, 0.2)]
         [InlineData(100, 0.3)]
         [InlineData(1000, 1)]
-        public static void Ctor_Int_Int_HashCodeProvider_Comparer(int capacity, float loadFactor)
+        public void Ctor_Int_Int_HashCodeProvider_Comparer(int capacity, float loadFactor)
         {
             var hash = new ComparableHashtable(capacity, loadFactor, CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
             VerifyHashtable(hash, null, hash.EqualityComparer);
         }
 
         [Fact]
-        public static void Ctor_Int_Int_GenerateNewPrime()
+        public void Ctor_Int_Int_GenerateNewPrime()
         {
             // The ctor for Hashtable performs the following calculation:
             // rawSize = capacity / (loadFactor * 0.72)
@@ -250,7 +254,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Invalid()
+        public void Ctor_Int_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f)); // Capacity < 0
             AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue, 0.1f)); // Capacity / load factor > int.MaxValue
@@ -268,56 +272,59 @@ namespace System.Collections.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void Ctor_Int_IEqualityComparer(int capacity)
+        public void Ctor_Int_IEqualityComparer(int capacity)
         {
-            // Null comparer
-            var hash = new ComparableHashtable(capacity, null);
-            VerifyHashtable(hash, null, null);
-
-            // Custom comparer
-            Helpers.PerformActionOnCustomCulture(() =>
+            RemoteInvoke((rcapacity) =>
             {
+                int.TryParse(rcapacity, out int capacityint);
+
+                // Null comparer
+                var hash = new ComparableHashtable(capacityint, null);
+                VerifyHashtable(hash, null, null);
+
+                // Custom comparer
                 IEqualityComparer comparer = StringComparer.CurrentCulture;
-                hash = new ComparableHashtable(capacity, comparer);
+                hash = new ComparableHashtable(capacityint, comparer);
                 VerifyHashtable(hash, null, comparer);
-            });
+                return SuccessExitCode;
+            }, capacity.ToString()).Dispose();
         }
 
         [Fact]
-        public static void Ctor_Int_IEqualityComparer_Invalid()
+        public void Ctor_Int_IEqualityComparer_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, null)); // Capacity < 0
             AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue, null)); // Capacity / load factor > int.MaxValue
         }
 
         [Fact]
-        public static void Ctor_IDictionary_Int_IEqualityComparer()
+        public void Ctor_IDictionary_Int_IEqualityComparer()
         {
-            // No exception
-            var hash1 = new ComparableHashtable(new Hashtable(), 1f, null);
-            Assert.Equal(0, hash1.Count);
+            RemoteInvoke(() => {
+                // No exception
+                var hash1 = new ComparableHashtable(new Hashtable(), 1f, null);
+                Assert.Equal(0, hash1.Count);
 
-            hash1 = new ComparableHashtable(new Hashtable(new Hashtable(
-                new Hashtable(new Hashtable(new Hashtable(), 1f, null), 1f, null), 1f, null), 1f, null), 1f, null);
-            Assert.Equal(0, hash1.Count);
+                hash1 = new ComparableHashtable(new Hashtable(new Hashtable(
+                    new Hashtable(new Hashtable(new Hashtable(), 1f, null), 1f, null), 1f, null), 1f, null), 1f, null);
+                Assert.Equal(0, hash1.Count);
 
-            // Null comparer
-            Hashtable hash2 = Helpers.CreateIntHashtable(100);
-            hash1 = new ComparableHashtable(hash2, 1f, null);
-            VerifyHashtable(hash1, hash2, null);
+                // Null comparer
+                Hashtable hash2 = Helpers.CreateIntHashtable(100);
+                hash1 = new ComparableHashtable(hash2, 1f, null);
+                VerifyHashtable(hash1, hash2, null);
 
-            hash2 = Helpers.CreateIntHashtable(100);
-            // Custom comparer
-            Helpers.PerformActionOnCustomCulture(() =>
-            {
+                hash2 = Helpers.CreateIntHashtable(100);
+                // Custom comparer
                 IEqualityComparer comparer = StringComparer.CurrentCulture;
                 hash1 = new ComparableHashtable(hash2, 1f, comparer);
                 VerifyHashtable(hash1, hash2, comparer);
-            });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
-        public static void Ctor_IDictionary_LoadFactor_IEqualityComparer_Invalid()
+        public void Ctor_IDictionary_LoadFactor_IEqualityComparer_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f, null)); // Dictionary is null
 
@@ -334,24 +341,29 @@ namespace System.Collections.Tests
         [InlineData(10, 0.2)]
         [InlineData(100, 0.3)]
         [InlineData(1000, 1)]
-        public static void Ctor_Int_Int_IEqualityComparer(int capacity, float loadFactor)
+        public void Ctor_Int_Int_IEqualityComparer(int capacity, float loadFactor)
         {
-            // Null comparer
-            var hash = new ComparableHashtable(capacity, loadFactor, null);
-            VerifyHashtable(hash, null, null);
-            Assert.Null(hash.EqualityComparer);
-
-            // Custom comparer
-            Helpers.PerformActionOnCustomCulture(() =>
+            RemoteInvoke((rcapacity, rloadFactor) =>
             {
+                int.TryParse(rcapacity, out int capacityint);
+                float.TryParse(rloadFactor, out float loadFactorFloat);
+
+                // Null comparer
+                var hash = new ComparableHashtable(capacityint, loadFactorFloat, null);
+                VerifyHashtable(hash, null, null);
+                Assert.Null(hash.EqualityComparer);
+
+                // Custom compare
                 IEqualityComparer comparer = StringComparer.CurrentCulture;
-                hash = new ComparableHashtable(capacity, loadFactor, comparer);
+                hash = new ComparableHashtable(capacityint, loadFactorFloat, comparer);
                 VerifyHashtable(hash, null, comparer);
-            });
+
+                return SuccessExitCode;
+            }, capacity.ToString(), loadFactor.ToString()).Dispose();
         }
 
         [Fact]
-        public static void Ctor_Capacity_LoadFactor_IEqualityComparer_Invalid()
+        public void Ctor_Capacity_LoadFactor_IEqualityComparer_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f, null)); // Capacity < 0
             AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue, 0.1f, null)); // Capacity / load factor > int.MaxValue
@@ -366,7 +378,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
-        public static void DebuggerAttribute()
+        public void DebuggerAttribute()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new Hashtable());
 
@@ -388,7 +400,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Add_ReferenceType()
+        public void Add_ReferenceType()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -406,7 +418,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Add_ClearRepeatedly()
+        public void Add_ClearRepeatedly()
         {
             const int Iterations = 2;
             const int Count = 2;
@@ -428,7 +440,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
-        public static void AddRemove_LargeAmountNumbers()
+        public void AddRemove_LargeAmountNumbers()
         {
             // Generate a random 100,000 array of ints as test data 
             var inputData = new int[100000];
@@ -464,7 +476,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void DuplicatedKeysWithInitialCapacity()
+        public void DuplicatedKeysWithInitialCapacity()
         {
             // Make rehash get called because to many items with duplicated keys have been added to the hashtable
             var hash = new Hashtable(200);
@@ -491,7 +503,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void DuplicatedKeysWithDefaultCapacity()
+        public void DuplicatedKeysWithDefaultCapacity()
         {
             // Make rehash get called because to many items with duplicated keys have been added to the hashtable
             var hash = new Hashtable();
@@ -520,7 +532,7 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(100)]
-        public static void Clone(int count)
+        public void Clone(int count)
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(count);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -545,7 +557,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Clone_IsShallowCopy()
+        public void Clone_IsShallowCopy()
         {
             var hash = new Hashtable();
             for (int i = 0; i < 10; i++)
@@ -570,7 +582,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Clone_HashtableCastedToInterfaces()
+        public void Clone_HashtableCastedToInterfaces()
         {
             // Try to cast the returned object from Clone() to different types
             Hashtable hash = Helpers.CreateIntHashtable(100);
@@ -583,7 +595,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void ContainsKey()
+        public void ContainsKey()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -609,7 +621,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void ContainsKey_EqualObjects()
+        public void ContainsKey_EqualObjects()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -642,7 +654,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void ContainsKey_NullKey_ThrowsArgumentNullException()
+        public void ContainsKey_NullKey_ThrowsArgumentNullException()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -653,7 +665,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void ContainsValue()
+        public void ContainsValue()
         {
             Hashtable hash1 = Helpers.CreateStringHashtable(100);
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -679,7 +691,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void ContainsValue_EqualObjects()
+        public void ContainsValue_EqualObjects()
         {
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
@@ -694,7 +706,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Keys_ModifyingHashtable_ModifiesCollection()
+        public void Keys_ModifyingHashtable_ModifiesCollection()
         {
             Hashtable hash = Helpers.CreateStringHashtable(100);
             ICollection keys = hash.Keys;
@@ -711,7 +723,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Remove_SameHashcode()
+        public void Remove_SameHashcode()
         {
             // We want to add and delete items (with the same hashcode) to the hashtable in such a way that the hashtable
             // does not expand but have to tread through collision bit set positions to insert the new elements. We do this
@@ -754,7 +766,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void SynchronizedProperties()
+        public void SynchronizedProperties()
         {
             // Ensure Synchronized correctly reflects a wrapped hashtable
             var hash1 = Helpers.CreateStringHashtable(100);
@@ -773,13 +785,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Synchronized_NullTable_ThrowsArgumentNullException()
+        public void Synchronized_NullTable_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("table", () => Hashtable.Synchronized(null)); // Table is null
         }
 
         [Fact]
-        public static void Values_ModifyingHashtable_ModifiesCollection()
+        public void Values_ModifyingHashtable_ModifiesCollection()
         {
             Hashtable hash = Helpers.CreateStringHashtable(100);
             ICollection values = hash.Values;
@@ -796,7 +808,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void HashCodeProvider_Set_ImpactsSearch()
+        public void HashCodeProvider_Set_ImpactsSearch()
         {
             var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
             hash.Add("test", "test");
@@ -820,7 +832,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void HashCodeProvider_Comparer_CompatibleGetSet_Success()
+        public void HashCodeProvider_Comparer_CompatibleGetSet_Success()
         {
             var hash = new ComparableHashtable();
             Assert.Null(hash.HashCodeProvider);
@@ -839,7 +851,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void HashCodeProvider_Comparer_IncompatibleGetSet_Throws()
+        public void HashCodeProvider_Comparer_IncompatibleGetSet_Throws()
         {
             var hash = new ComparableHashtable(StringComparer.CurrentCulture);
 
@@ -851,7 +863,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Comparer_Set_ImpactsSearch()
+        public void Comparer_Set_ImpactsSearch()
         {
             var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
             hash.Add("test", "test");
@@ -1008,7 +1020,7 @@ namespace System.Collections.Tests
     ///        (3) compare the key, if equal, go to step 4. Otherwise end.
     ///        (4) return the value contained in the bucket.
     ///     The problem is that after step 3 and before step 4. A writer can kick in a remove the old item and add a new one 
-    ///     in the same bukcet. In order to make this happen easily, I created two long with same hashcode.
+    ///     in the same bucket. In order to make this happen easily, I created two long with same hashcode.
     /// </summary>
     public class Hashtable_ItemThreadSafetyTests
     {

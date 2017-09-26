@@ -14,6 +14,7 @@
     <Compile Include="InheritedCases.cs" />
     <Compile Include="Normalization.cs" />
     <Compile Include="TCNormalization.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />

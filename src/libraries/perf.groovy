@@ -55,7 +55,7 @@ def osShortName = ['Windows 10': 'win10',
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 if (os == 'Windows_NT') {
-                    label('windows_clr_perf')
+                    label('windows_server_2016_clr_perf')
                 }
                 else {
                     label('linux_clr_perf')

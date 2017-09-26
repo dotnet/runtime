@@ -10,11 +10,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             : base(ExpressionKind.Wrap)
         {
             OptionalExpression = expression;
+            Type = expression?.Type;
             Flags = EXPRFLAG.EXF_LVALUE;
         }
 
         public Expr OptionalExpression { get; }
-
-        public override CType Type => OptionalExpression?.Type;
     }
 }

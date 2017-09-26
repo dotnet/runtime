@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using Xunit;
 
 namespace System.Tests
@@ -108,6 +109,129 @@ namespace System.Tests
         public static void NamedNaNDivision()
         {
             AssertExtensions.Throws<ArgumentException>("divisor", () => TimeSpan.FromDays(1).Divide(double.NaN));
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Valid_TestData))]
+        public static void Parse_Span(string inputString, IFormatProvider provider, TimeSpan expected)
+        {
+            ReadOnlySpan<char> input = inputString.AsReadOnlySpan();
+            TimeSpan result;
+
+            Assert.Equal(expected, TimeSpan.Parse(input, provider));
+            Assert.True(TimeSpan.TryParse(input, out result, provider));
+            Assert.Equal(expected, result);
+
+            // Also negate
+            if (!char.IsWhiteSpace(input[0]))
+            {
+                input = ("-" + inputString).AsReadOnlySpan();
+                expected = -expected;
+
+                Assert.Equal(expected, TimeSpan.Parse(input, provider));
+                Assert.True(TimeSpan.TryParse(input, out result, provider));
+                Assert.Equal(expected, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Span_Invalid(string inputString, IFormatProvider provider, Type exceptionType)
+        {
+            if (inputString != null)
+            {
+                Assert.Throws(exceptionType, () => TimeSpan.Parse(inputString.AsReadOnlySpan(), provider));
+                Assert.False(TimeSpan.TryParse(inputString.AsReadOnlySpan(), out TimeSpan result, provider));
+                Assert.Equal(TimeSpan.Zero, result);
+            }
+        }
+
+
+
+        [Theory]
+        [MemberData(nameof(ParseExact_Valid_TestData))]
+        public static void ParseExact_Span_Valid(string inputString, string format, TimeSpan expected)
+        {
+            ReadOnlySpan<char> input = inputString.AsReadOnlySpan();
+
+            TimeSpan result;
+            Assert.Equal(expected, TimeSpan.ParseExact(input, format, new CultureInfo("en-US")));
+            Assert.Equal(expected, TimeSpan.ParseExact(input, new[] { format }, new CultureInfo("en-US")));
+
+            Assert.True(TimeSpan.TryParseExact(input, format, new CultureInfo("en-US"), out result));
+            Assert.Equal(expected, result);
+
+            Assert.True(TimeSpan.TryParseExact(input, new[] { format }, new CultureInfo("en-US"), out result));
+            Assert.Equal(expected, result);
+
+            if (format != "c" && format != "t" && format != "T" && format != "g" && format != "G")
+            {
+                // TimeSpanStyles is interpreted only for custom formats
+                Assert.Equal(expected.Negate(), TimeSpan.ParseExact(input, format, new CultureInfo("en-US"), TimeSpanStyles.AssumeNegative));
+
+                Assert.True(TimeSpan.TryParseExact(input, format, new CultureInfo("en-US"), out result, TimeSpanStyles.AssumeNegative));
+                Assert.Equal(expected.Negate(), result);
+            }
+            else
+            {
+                // Inputs that can be parsed in standard formats with ParseExact should also be parsable with Parse
+                Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
+
+                Assert.True(TimeSpan.TryParse(input, out result, CultureInfo.InvariantCulture));
+                Assert.Equal(expected, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_Invalid_TestData))]
+        public static void ParseExactTest__Span_Invalid(string inputString, string format, Type exceptionType)
+        {
+            if (inputString != null)
+            {
+                Assert.Throws(exceptionType, () => TimeSpan.ParseExact(inputString.AsReadOnlySpan(), format, new CultureInfo("en-US")));
+
+                TimeSpan result;
+                Assert.False(TimeSpan.TryParseExact(inputString.AsReadOnlySpan(), format, new CultureInfo("en-US"), out result));
+                Assert.Equal(TimeSpan.Zero, result);
+
+                Assert.False(TimeSpan.TryParseExact(inputString.AsReadOnlySpan(), new[] { format }, new CultureInfo("en-US"), out result));
+                Assert.Equal(TimeSpan.Zero, result);
+            }
+        }
+
+        [Fact]
+        public static void ParseExactMultiple_Span_InvalidNullEmptyFormats()
+        {
+            TimeSpan result;
+
+            AssertExtensions.Throws<ArgumentNullException>("formats", () => TimeSpan.ParseExact("12:34:56".AsReadOnlySpan(), (string[])null, null));
+            Assert.False(TimeSpan.TryParseExact("12:34:56".AsReadOnlySpan(), (string[])null, null, out result));
+
+            Assert.Throws<FormatException>(() => TimeSpan.ParseExact("12:34:56".AsReadOnlySpan(), new string[0], null));
+            Assert.False(TimeSpan.TryParseExact("12:34:56".AsReadOnlySpan(), new string[0], null, out result));
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_MemberData))]
+        public static void TryFormat_Valid(TimeSpan input, string format, string expected)
+        {
+            int charsWritten;
+            Span<char> dst;
+
+            dst = new char[expected.Length - 1];
+            Assert.False(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.Equal(0, charsWritten);
+
+            dst = new char[expected.Length];
+            Assert.True(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(dst));
+
+            dst = new char[expected.Length + 1];
+            Assert.True(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(dst.Slice(0, dst.Length - 1)));
+            Assert.Equal(0, dst[dst.Length - 1]);
         }
     }
 }

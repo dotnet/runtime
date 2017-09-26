@@ -131,7 +131,7 @@ namespace System.Net.Http
             {
                 if (_contentConsumed)
                 {
-                    throw new InvalidOperationException("content already consumed");
+                    throw new InvalidOperationException(SR.net_http_content_stream_already_read);
                 }
 
                 _contentConsumed = true;

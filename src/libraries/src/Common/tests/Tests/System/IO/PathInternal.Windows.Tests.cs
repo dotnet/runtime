@@ -9,14 +9,14 @@ using Xunit;
 
 public class PathInternal_Windows_Tests
 {
-    [Theory
-        InlineData(@"\\?\", false)
-        InlineData(@"\\?\?", true)
-        InlineData(@"//?/", false)
-        InlineData(@"//?/*", true)
-        InlineData(@"\\.\>", true)
-        InlineData(@"C:\", false)
-        InlineData(@"C:\<", true)
+    [Theory,
+        InlineData(@"\\?\", false),
+        InlineData(@"\\?\?", true),
+        InlineData(@"//?/", false),
+        InlineData(@"//?/*", true),
+        InlineData(@"\\.\>", true),
+        InlineData(@"C:\", false),
+        InlineData(@"C:\<", true),
         InlineData("\"MyFile\"", true)
         ]
     [PlatformSpecific(TestPlatforms.Windows)]
@@ -25,14 +25,14 @@ public class PathInternal_Windows_Tests
         Assert.Equal(expected, PathInternal.HasWildCardCharacters(path));
     }
 
-    [Theory
-        InlineData(PathInternal.ExtendedPathPrefix, PathInternal.ExtendedPathPrefix)
-        InlineData(@"Foo", @"Foo")
-        InlineData(@"C:\Foo", @"\\?\C:\Foo")
-        InlineData(@"\\.\Foo", @"\\.\Foo")
-        InlineData(@"\\?\Foo", @"\\?\Foo")
-        InlineData(@"\??\Foo", @"\??\Foo")
-        InlineData(@"//?/Foo", @"//?/Foo")
+    [Theory,
+        InlineData(PathInternal.ExtendedPathPrefix, PathInternal.ExtendedPathPrefix),
+        InlineData(@"Foo", @"Foo"),
+        InlineData(@"C:\Foo", @"\\?\C:\Foo"),
+        InlineData(@"\\.\Foo", @"\\.\Foo"),
+        InlineData(@"\\?\Foo", @"\\?\Foo"),
+        InlineData(@"\??\Foo", @"\??\Foo"),
+        InlineData(@"//?/Foo", @"//?/Foo"),
         InlineData(@"\\Server\Share", PathInternal.UncExtendedPathPrefix + @"Server\Share")
         ]
     [PlatformSpecific(TestPlatforms.Windows)]
@@ -41,14 +41,14 @@ public class PathInternal_Windows_Tests
         Assert.Equal(expected, PathInternal.EnsureExtendedPrefix(path));
     }
 
-    [Theory
-        InlineData(@"", false)
-        InlineData(@"\\?\", true)
-        InlineData(@"\??\", true)
-        InlineData(@"\\.\", false)
-        InlineData(@"\\?", false)
-        InlineData(@"\??", false)
-        InlineData(@"//?/", false)
+    [Theory,
+        InlineData(@"", false),
+        InlineData(@"\\?\", true),
+        InlineData(@"\??\", true),
+        InlineData(@"\\.\", false),
+        InlineData(@"\\?", false),
+        InlineData(@"\??", false),
+        InlineData(@"//?/", false),
         InlineData(@"/??/", false)
         ]
     [PlatformSpecific(TestPlatforms.Windows)]
@@ -57,14 +57,14 @@ public class PathInternal_Windows_Tests
         Assert.Equal(expected, PathInternal.IsExtended(path));
     }
 
-    [Theory
-        InlineData(@"", false)
-        InlineData(@"\\?\", true)
-        InlineData(@"\??\", true)
-        InlineData(@"\\.\", true)
-        InlineData(@"\\?", false)
-        InlineData(@"\??", false)
-        InlineData(@"//?/", true)
+    [Theory,
+        InlineData(@"", false),
+        InlineData(@"\\?\", true),
+        InlineData(@"\??\", true),
+        InlineData(@"\\.\", true),
+        InlineData(@"\\?", false),
+        InlineData(@"\??", false),
+        InlineData(@"//?/", true),
         InlineData(@"/??/", false)
         ]
     [PlatformSpecific(TestPlatforms.Windows)]
@@ -73,26 +73,26 @@ public class PathInternal_Windows_Tests
         Assert.Equal(expected, PathInternal.IsDevice(path));
     }
 
-    [Theory
-        InlineData("", true)
-        InlineData("C:", true)
-        InlineData("**", true)
-        InlineData(@"\\.\path", false)
-        InlineData(@"\\?\path", false)
-        InlineData(@"\\.", false)
-        InlineData(@"\\?", false)
-        InlineData(@"\?", false)
-        InlineData(@"/?", false)
-        InlineData(@"\\", false)
-        InlineData(@"//", false)
-        InlineData(@"\a", true)
-        InlineData(@"/a", true)
-        InlineData(@"\", true)
-        InlineData(@"/", true)
-        InlineData(@"C:Path", true)
-        InlineData(@"C:\Path", false)
-        InlineData(@"\\?\C:\Path", false)
-        InlineData(@"Path", true)
+    [Theory,
+        InlineData("", true),
+        InlineData("C:", true),
+        InlineData("**", true),
+        InlineData(@"\\.\path", false),
+        InlineData(@"\\?\path", false),
+        InlineData(@"\\.", false),
+        InlineData(@"\\?", false),
+        InlineData(@"\?", false),
+        InlineData(@"/?", false),
+        InlineData(@"\\", false),
+        InlineData(@"//", false),
+        InlineData(@"\a", true),
+        InlineData(@"/a", true),
+        InlineData(@"\", true),
+        InlineData(@"/", true),
+        InlineData(@"C:Path", true),
+        InlineData(@"C:\Path", false),
+        InlineData(@"\\?\C:\Path", false),
+        InlineData(@"Path", true),
         InlineData(@"X", true)
         ]
     [PlatformSpecific(TestPlatforms.Windows)]
@@ -111,7 +111,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"  \", 2),
         InlineData(@"  8:", 0),
         InlineData(@"    \\", 4),
-        InlineData(@"\\", 0),
+        InlineData(@"\\", 0)
         ]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void PathStartSkipTest(string path, int expected)
@@ -154,7 +154,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"  /", @"\"),
         InlineData(@"  8:", @"  8:"),
         InlineData(@"    \\", @"\\"),
-        InlineData(@"    //", @"\\"),
+        InlineData(@"    //", @"\\")
         ]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void NormalizeDirectorySeparatorTests(string path, string expected)
@@ -181,11 +181,11 @@ public class PathInternal_Windows_Tests
     }
 
     [Theory,
-        InlineData(@"", @"", StringComparison.OrdinalIgnoreCase, true)
-        InlineData(@"", @"", StringComparison.Ordinal, true)
-        InlineData(@"A", @"a", StringComparison.OrdinalIgnoreCase, true)
-        InlineData(@"A", @"a", StringComparison.Ordinal, true)
-        InlineData(@"C:\", @"c:\", StringComparison.OrdinalIgnoreCase, true)
+        InlineData(@"", @"", StringComparison.OrdinalIgnoreCase, true),
+        InlineData(@"", @"", StringComparison.Ordinal, true),
+        InlineData(@"A", @"a", StringComparison.OrdinalIgnoreCase, true),
+        InlineData(@"A", @"a", StringComparison.Ordinal, true),
+        InlineData(@"C:\", @"c:\", StringComparison.OrdinalIgnoreCase, true),
         InlineData(@"C:\", @"c:\", StringComparison.Ordinal, false)
         ]
     [PlatformSpecific(TestPlatforms.Windows)]

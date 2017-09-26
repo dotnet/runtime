@@ -105,7 +105,7 @@ namespace System.Linq.Parallel
             for (int i = 0; i < outputStream.PartitionCount; i++)
             {
                 outputStream[i] = new SortQueryOperatorEnumerator<TInputOutput, TKey, TSortKey>(
-                    inputStream[i], _keySelector, _comparer);
+                    inputStream[i], _keySelector);
             }
 
             recipient.Receive<TSortKey>(outputStream);
@@ -185,22 +185,19 @@ namespace System.Linq.Parallel
     {
         private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // Data source to sort.
         private readonly Func<TInputOutput, TSortKey> _keySelector; // Key selector used when sorting.
-        private readonly IComparer<TSortKey> _keyComparer; // Key comparison logic to use during sorting.
 
         //---------------------------------------------------------------------------------------
         // Instantiates a new sort operator enumerator.
         //
 
         internal SortQueryOperatorEnumerator(QueryOperatorEnumerator<TInputOutput, TKey> source,
-            Func<TInputOutput, TSortKey> keySelector, IComparer<TSortKey> keyComparer)
+            Func<TInputOutput, TSortKey> keySelector)
         {
             Debug.Assert(source != null);
             Debug.Assert(keySelector != null, "need a key comparer");
-            Debug.Assert(keyComparer != null, "expected a compiled operator");
 
             _source = source;
             _keySelector = keySelector;
-            _keyComparer = keyComparer;
         }
         //---------------------------------------------------------------------------------------
         // Accessor for the key comparison routine.

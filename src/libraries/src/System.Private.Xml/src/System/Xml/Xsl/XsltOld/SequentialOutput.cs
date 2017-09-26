@@ -163,7 +163,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (mainNode.IsEmptyTag)
             {
-                Debug.Assert(!_isHtmlOutput || mainNode.Prefix != null, "Html can't have abreviated elements");
+                Debug.Assert(!_isHtmlOutput || mainNode.Prefix != null, "Html can't have abbreviated elements");
                 Write(s_SlashGreaterThan);
             }
             else

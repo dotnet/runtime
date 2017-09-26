@@ -144,6 +144,10 @@ namespace System.Runtime.Serialization
                 {
                     context.StoreIsGetOnlyCollection();
                 }
+                else
+                {
+                    context.ResetIsGetOnlyCollection();
+                }
 
                 bool shouldWriteValue = true;
                 object memberValue = null;

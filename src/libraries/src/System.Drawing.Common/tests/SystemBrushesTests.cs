@@ -49,7 +49,7 @@ namespace System.Drawing.Tests
 
         public static object[] Brush(Func<Brush> getBrush, Color expectedColor) => new object[] { getBrush, expectedColor };
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(SystemBrushes_TestData))]
         public void SystemBrushes_Get_ReturnsExpected(Func<Brush> getBrush, Color expectedColor)
         {

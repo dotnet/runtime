@@ -50,7 +50,7 @@ namespace System.Text.Tests
             yield return new object[] { Encoding.Unicode.GetEncoder(), 2 };
         }
         
-        // Call Convert to convert a arbitrary character array encoders
+        // Call Convert to convert an arbitrary character array encoders
         [Theory]
         [MemberData(nameof(Encoders_RandomInput))]
         public void EncoderConvertRandomCharArray(Encoder encoder)

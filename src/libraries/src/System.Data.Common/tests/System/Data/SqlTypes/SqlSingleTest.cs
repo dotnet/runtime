@@ -34,11 +34,6 @@ namespace System.Data.Tests.SqlTypes
 {
     public class SqlSingleTest
     {
-        public SqlSingleTest()
-        {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-        }
-
         // Test constructor
         [Fact]
         public void Create()

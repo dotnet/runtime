@@ -31,9 +31,6 @@
     <Compile Include="TraceSwitchClassTests.cs" />
     <Compile Include="TraceTestHelper.cs" />
     <Compile Include="CorrelationManagerTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\tests\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

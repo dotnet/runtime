@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
-    public abstract class HashAlgorithmTest
+    public abstract partial class HashAlgorithmTest
     {
         protected abstract HashAlgorithm Create();
 
@@ -208,6 +208,12 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 
         protected void Verify(byte[] input, string output)
         {
+            Verify_Array(input, output);
+            Verify_Span(input, output);
+        }
+
+        private void Verify_Array(byte[] input, string output)
+        {
             byte[] expected = ByteUtils.HexToByteArray(output);
             byte[] actual;
 
@@ -222,6 +228,8 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 Assert.Equal(expected, actual);
             }
         }
+
+        partial void Verify_Span(byte[] input, string output);
 
         protected void VerifyRepeating(string input, int repeatCount, string output)
         {

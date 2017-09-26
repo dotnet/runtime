@@ -3,9 +3,6 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp;
-      netfx;
-      net462;
-      net47;
       uap;
     </BuildConfigurations>
   </PropertyGroup>

@@ -49,7 +49,7 @@ namespace System.Xml.Tests
     public class XsltApiTestCaseBase : FileCleanupTestBase
     {
         private const string XmlResolverDocumentName = "xmlResolver_document_function.xml";
-        private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), XmlResolverDocumentName);
+        private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), "XslTransformApi", XmlResolverDocumentName);
         private static readonly object s_temporaryResolverDocumentLock = new object();
 
         // Generic data for all derived test cases
@@ -87,6 +87,8 @@ namespace System.Xml.Tests
             // On uap access is denied to full path and the code below and related tests cannot run
             if (!PlatformDetection.IsUap)
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
+
                 // Replace absolute URI in xmlResolver_document_function.xml based on the environment
                 string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri.xsl");
                 XmlDocument doc = new XmlDocument();

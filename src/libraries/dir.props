@@ -28,6 +28,9 @@
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
 
+    <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
+    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
+
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
 
@@ -118,11 +121,6 @@
     <NativeBinDir>$(BinDir)$(OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netfx' AND '$(IsTestProject)' != 'true'">
-    <!-- when building for netfx (net461) we also need to build for net462 and net47 in order to produce the netfx netstandard2.0 support package -->
-    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);net462-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup);net47-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
-  </PropertyGroup>
-
   <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
   <PropertyGroup>
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
@@ -146,6 +144,12 @@
     <_packageRID Condition="'$(TargetGroup)' == 'uapaot'">win10-$(ArchGroup)-aot</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(ArchGroup)</PackageRID>
+  </PropertyGroup>
+  
+  <!-- Set some shortcuts for more terse conditions in project files -->
+  <PropertyGroup>
+    <TargetsNetCoreApp Condition="$(TargetGroup.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
+    <TargetsNetFx Condition="$(TargetGroup.StartsWith('net4')) OR '$(TargetGroup)' == 'netfx'">true</TargetsNetFx>
   </PropertyGroup>
 
   <!-- Import packaging props -->
@@ -205,9 +209,10 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
   </PropertyGroup>
-
-  <!-- Set up handling of build warnings -->
+  
+  <!-- Language configuration -->
   <PropertyGroup>
+    <LangVersion>latest</LangVersion> <!-- default to allowing all language features -->
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
@@ -232,6 +237,7 @@
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)/$(TargetOutputRelPath)</IntermediateOutputPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
+    <TestPath Condition="'$(TestPath)' == ''">$(TestWorkingDir)$(MSBuildProjectName)/$(BuildConfiguration)/</TestPath>
     <RefRootPath>$(BinDir)ref/</RefRootPath>
     <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
     <BuildConfigurationRefPath Condition="$(_bc_TargetGroup.EndsWith('aot'))">$(RefRootPath)$(_bc_TargetGroup.TrimEnd('aot'))/</BuildConfigurationRefPath>
@@ -253,7 +259,7 @@
     <NetFxPackageRuntimePath>$(BinDir)pkg\netfx\lib</NetFxPackageRuntimePath>
 
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp' AND '$(BuildTests)'!='false'">true</BinPlaceTestSharedFramework>
     <BinPlaceILCInputFolder Condition="'$(_bc_TargetGroup)' == 'uapaot' And '$(BinPlaceILCInputFolder)' == ''">true</BinPlaceILCInputFolder>
     <BinPlaceUAPFramework Condition="'$(_bc_TargetGroup)' == 'uap'">true</BinPlaceUAPFramework>
     <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
@@ -278,7 +284,8 @@
   <!-- Properties related to multi-file mode for ILC tests -->
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <!-- Only enable multi-file for Release-x64 and Debug-x86 for now -->
-    <EnableMultiFileILCTests Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x64' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|x86' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Release|arm'">true</EnableMultiFileILCTests>
+    <!-- Temporarily disabling multifile test configurations. For more info, please check: https://github.com/dotnet/corefx/issues/22826
+    <EnableMultiFileILCTests Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x64' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|x86' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Release|arm'">true</EnableMultiFileILCTests> -->
   </PropertyGroup>
 
   <PropertyGroup>
@@ -291,6 +298,6 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'=='true' and Exists('$(RoslynPropsFile)')" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false' and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'=='true' and Exists('$(RoslynPropsFile)') and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
 </Project>

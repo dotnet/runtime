@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Drawing
 {
-#if FEATURE_SYSTEM_EVENTS
-    using System.Drawing.Internal;
-#endif
-
     static internal class KnownColorTable
     {
         private static int[] s_colorTable;
@@ -33,8 +31,8 @@ namespace System.Drawing
                 int argb = s_colorTable[index];
                 if (argb == targetARGB)
                 {
-                    Color color = Color.FromKnownColor((KnownColor)index);
-                    if (!color.IsSystemColor)
+                    Color color = ColorUtil.FromKnownColor((KnownColor)index);
+                    if (!ColorUtil.IsSystemColor(color))
                         return color;
                 }
             }
@@ -55,10 +53,6 @@ namespace System.Drawing
         private static void InitColorTable()
         {
             int[] values = new int[(unchecked((int)KnownColor.MenuHighlight)) + 1];
-
-#if FEATURE_SYSTEM_EVENTS
-            SystemEvents.UserPreferenceChanging += new UserPreferenceChangingEventHandler(OnUserPreferenceChanging);
-#endif
             UpdateSystemColors(values);
 
             // just consts...
@@ -403,28 +397,16 @@ namespace System.Drawing
 
         public static int KnownColorToArgb(KnownColor color)
         {
+            Debug.Assert(color > 0 && color <= KnownColor.MenuHighlight);
             EnsureColorTable();
-            if (color <= KnownColor.MenuHighlight)
-            {
-                return s_colorTable[unchecked((int)color)];
-            }
-            else
-            {
-                return 0;
-            }
+            return s_colorTable[unchecked((int)color)];
         }
 
         public static string KnownColorToName(KnownColor color)
         {
+            Debug.Assert(color > 0 && color <= KnownColor.MenuHighlight);
             EnsureColorNameTable();
-            if (color <= KnownColor.MenuHighlight)
-            {
-                return s_colorNameTable[unchecked((int)color)];
-            }
-            else
-            {
-                return null;
-            }
+            return s_colorNameTable[unchecked((int)color)];
         }
 
 #if FEATURE_WINDOWS_SYSTEM_COLORS
@@ -444,16 +426,6 @@ namespace System.Drawing
                           (value >> Win32RedShift) & 0xFF,
                           (value >> Win32GreenShift) & 0xFF,
                           (value >> Win32BlueShift) & 0xFF);
-        }
-#endif
-
-#if FEATURE_SYSTEM_EVENTS
-        private static void OnUserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
-        {
-            if (e.Category == UserPreferenceCategory.Color && colorTable != null)
-            {
-                UpdateSystemColors(colorTable);
-            }
         }
 #endif
 

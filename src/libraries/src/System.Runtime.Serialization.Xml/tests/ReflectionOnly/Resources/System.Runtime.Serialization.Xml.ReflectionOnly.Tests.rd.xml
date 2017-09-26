@@ -25,5 +25,13 @@
       <Type Name="ReadOnlyDictionary`2" Dynamic="Required All" />
     </Namespace>
     <Type Name="System.Version" Dynamic="Required All" />
+    <Namespace Name="System.Data">
+      <Type Name="DataSet">
+        <Method Name="GetDataSetSchema" Dynamic="Required Public"/>
+      </Type>
+      <Type Name="DataTable">
+        <Method Name="GetDataTableSchema" Dynamic="Required Public"/>
+      </Type>
+    </Namespace>
   </Library>
 </Directives>

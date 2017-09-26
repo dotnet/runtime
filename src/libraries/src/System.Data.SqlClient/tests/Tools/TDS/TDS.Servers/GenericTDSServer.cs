@@ -523,7 +523,7 @@ namespace Microsoft.SqlServer.TDS.Servers
             // Update session packet size
             session.PacketSize = (uint)Arguments.PacketSize;
 
-            // Create login acknowledgnment packet
+            // Create login acknowledgement packet
             TDSLoginAckToken loginResponseToken = new TDSLoginAckToken(Arguments.ServerVersion, session.TDSVersion, TDSLogin7TypeFlagsSQL.SQL, "Microsoft SQL Server");  // Otherwise SNAC yields E_FAIL
 
             // Log response

@@ -36,11 +36,6 @@ namespace System.Data.Tests.SqlTypes
     {
         private const string Error = " does not work correctly";
 
-        public SqlByteTest()
-        {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-        }
-
         // Test constructor
         [Fact]
         public void Create()

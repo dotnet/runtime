@@ -230,7 +230,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Adapter_InsertRange()
         {
-            // Test too see if listAdapator modified using InsertRange works
+            // Test to see if listAdaptor modified using InsertRange works
             // Populate the list
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             ArrayList adapter = ArrayList.Adapter(arrList);

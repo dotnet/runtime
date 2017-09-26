@@ -57,6 +57,12 @@ namespace System.Xml
         // read-only flag
         private bool _isReadOnly;
 
+        // Creation of validating readers is hidden behind a delegate which is only initialized if the ValidationType
+        // property is set. This is for AOT builds where the tree shaker can reduce the validating readers away
+        // if nobody calls the ValidationType setter. Might also help with non-AOT build when ILLinker is used.
+        delegate XmlReader AddValidationFunc(XmlReader reader, XmlResolver resolver, bool addConformanceWrapper);
+        private AddValidationFunc _addValidationFunc;
+
         //
         // Constructor
         //
@@ -317,6 +323,12 @@ namespace System.Xml
             {
                 CheckReadOnly("ValidationType");
 
+                // This introduces a dependency on the validation readers and along with that
+                // on XmlSchema and so on. For AOT builds this brings in a LOT of code
+                // which we would like to avoid unless it's needed. So the first approximation
+                // is to only reference this method when somebody explicitly sets the ValidationType.
+                _addValidationFunc = AddValidationInternal;
+
                 if ((uint)value > (uint)ValidationType.Schema)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -574,34 +586,68 @@ namespace System.Xml
 
         internal XmlReader AddValidation(XmlReader reader)
         {
+            XmlResolver resolver = null;
             if (_validationType == ValidationType.Schema)
             {
-                XmlResolver resolver = GetXmlResolver_CheckConfig();
+                resolver = GetXmlResolver_CheckConfig();
 
                 if (resolver == null &&
                     !this.IsXmlResolverSet)
                 {
                     resolver = new XmlUrlResolver();
                 }
-                reader = new XsdValidatingReader(reader, resolver, this);
             }
-            else if (_validationType == ValidationType.DTD)
-            {
-                reader = CreateDtdValidatingReader(reader);
-            }
-            return reader;
+
+            return  AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: false);
         }
 
         private XmlReader AddValidationAndConformanceWrapper(XmlReader reader)
+        {
+            XmlResolver resolver = null;
+            if (_validationType == ValidationType.Schema)
+            {
+                resolver = GetXmlResolver_CheckConfig();
+            }
+
+            return  AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: true);
+        }
+
+        private XmlReader AddValidationAndConformanceInternal(XmlReader reader, XmlResolver resolver, bool addConformanceWrapper)
+        {
+            // We have to avoid calling the _addValidationFunc delegate if there's no validation to setup
+            // since it would not be initialized (to allow AOT compilers to reduce it away).
+            // So if that's the case and we still need conformance wrapper add it here directly.
+            // This is a slight code duplication, but it's necessary due to ordering constrains
+            // of the reader wrapping as described in AddValidationInternal.
+            if (_validationType == ValidationType.None)
+            {
+                if (addConformanceWrapper)
+                {
+                    reader = AddConformanceWrapper(reader);
+                }
+            }
+            else
+            {
+                reader = _addValidationFunc(reader, resolver, addConformanceWrapper);
+            }
+
+            return reader;
+        }
+
+        private XmlReader AddValidationInternal(XmlReader reader, XmlResolver resolver, bool addConformanceWrapper)
         {
             // wrap with DTD validating reader
             if (_validationType == ValidationType.DTD)
             {
                 reader = CreateDtdValidatingReader(reader);
             }
-            // add conformance checking (must go after DTD validation because XmlValidatingReader works only on XmlTextReader),
-            // but before XSD validation because of typed value access
-            reader = AddConformanceWrapper(reader);
+
+            if (addConformanceWrapper)
+            {
+                // add conformance checking (must go after DTD validation because XmlValidatingReader works only on XmlTextReader),
+                // but before XSD validation because of typed value access
+                reader = AddConformanceWrapper(reader);
+            }
 
             if (_validationType == ValidationType.Schema)
             {

@@ -1747,7 +1747,7 @@ namespace System.Configuration
             else definitionUpdates = null;
         }
 
-        // Take a element name, and create an xml string that contains
+        // Take an element name, and create an xml string that contains
         // that element in an empty state
         private string WriteEmptyElement(string elementName)
         {

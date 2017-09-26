@@ -8,7 +8,6 @@ namespace System.CodeDom.Compiler
 {
     public partial class CompilerParameters
     {
-        [NonSerialized]
         private Evidence _evidence;
 
         [Obsolete("CAS policy is obsolete and will be removed in a future release of the .NET Framework."

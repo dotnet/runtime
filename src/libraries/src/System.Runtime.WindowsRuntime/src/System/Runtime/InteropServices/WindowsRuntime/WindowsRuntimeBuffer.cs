@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 Int32 hr = Interop.mincore.RoGetBufferMarshaler(out proxy);
                 t_winRtMarshalProxy = proxy;
 
-                if (hr != HResults.S_OK)
+                if (hr != __HResults.S_OK)
                 {
                     Exception ex = new Exception(String.Format("{0} ({1}!RoGetBufferMarshaler)", SR.WinRtCOM_Error, WinTypesDLL));
                     ex.SetErrorCode(hr);
@@ -242,7 +242,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 if (value > ((IBuffer)this).Capacity)
                 {
                     ArgumentOutOfRangeException ex = new ArgumentOutOfRangeException(nameof(value), SR.Argument_BufferLengthExceedsCapacity);
-                    ex.SetErrorCode(HResults.E_BOUNDS);
+                    ex.SetErrorCode(__HResults.E_BOUNDS);
                     throw ex;
                 }
 

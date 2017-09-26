@@ -7,6 +7,7 @@ using System.Threading;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Buffers;
 
 namespace System.IO
 {
@@ -159,6 +160,23 @@ namespace System.IO
             }
 
             for (int i = 0; i < count; i++) Write(buffer[index + i]);
+        }
+
+        // Writes a span of characters to the text stream.
+        //
+        public virtual void Write(ReadOnlySpan<char> source)
+        {
+            char[] buffer = ArrayPool<char>.Shared.Rent(source.Length);
+
+            try
+            {
+                source.CopyTo(new Span<char>(buffer));
+                Write(buffer, 0, source.Length);
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(buffer);
+            }
         }
 
         // Writes the text representation of a boolean to the text stream. This
@@ -326,6 +344,21 @@ namespace System.IO
         {
             Write(buffer, index, count);
             WriteLine();
+        }
+
+        public virtual void WriteLine(ReadOnlySpan<char> source)
+        {
+            char[] buffer = ArrayPool<char>.Shared.Rent(source.Length);
+
+            try
+            {
+                source.CopyTo(new Span<char>(buffer));
+                WriteLine(buffer, 0, source.Length);
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(buffer);
+            }
         }
 
         // Writes the text representation of a boolean followed by a line

@@ -182,7 +182,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // void CollectionChanged.add(NotifyCollectionChangedEventHandler)
             add
             {
-                INotifyCollectionChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyCollectionChanged_WinRT>(this);
+                INotifyCollectionChanged_WinRT _this = Unsafe.As<INotifyCollectionChanged_WinRT>(this);
 
                 // call the WinRT eventing support in mscorlib to subscribe the event
                 Func<NotifyCollectionChangedEventHandler, EventRegistrationToken> addMethod =
@@ -196,7 +196,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // void CollectionChanged.remove(NotifyCollectionChangedEventHandler)
             remove
             {
-                INotifyCollectionChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyCollectionChanged_WinRT>(this);
+                INotifyCollectionChanged_WinRT _this = Unsafe.As<INotifyCollectionChanged_WinRT>(this);
 
                 // call the WinRT eventing support in mscorlib to unsubscribe the event
                 Action<EventRegistrationToken> removeMethod =
@@ -226,7 +226,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // EventRegistrationToken CollectionChanged.add(NotifyCollectionChangedEventHandler value)
         internal EventRegistrationToken add_CollectionChanged(NotifyCollectionChangedEventHandler value)
         {
-            INotifyCollectionChanged _this = JitHelpers.UnsafeCast<INotifyCollectionChanged>(this);
+            INotifyCollectionChanged _this = Unsafe.As<INotifyCollectionChanged>(this);
             EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventRegistrationToken token = table.AddEventHandler(value);
@@ -238,7 +238,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void CollectionChanged.remove(EventRegistrationToken token)
         internal void remove_CollectionChanged(EventRegistrationToken token)
         {
-            INotifyCollectionChanged _this = JitHelpers.UnsafeCast<INotifyCollectionChanged>(this);
+            INotifyCollectionChanged _this = Unsafe.As<INotifyCollectionChanged>(this);
             EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             NotifyCollectionChangedEventHandler handler = table.ExtractHandler(token);
@@ -264,7 +264,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // void PropertyChanged.add(PropertyChangedEventHandler)
             add
             {
-                INotifyPropertyChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyPropertyChanged_WinRT>(this);
+                INotifyPropertyChanged_WinRT _this = Unsafe.As<INotifyPropertyChanged_WinRT>(this);
 
                 // call the WinRT eventing support in mscorlib to subscribe the event
                 Func<PropertyChangedEventHandler, EventRegistrationToken> addMethod =
@@ -278,7 +278,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // void PropertyChanged.remove(PropertyChangedEventHandler)
             remove
             {
-                INotifyPropertyChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyPropertyChanged_WinRT>(this);
+                INotifyPropertyChanged_WinRT _this = Unsafe.As<INotifyPropertyChanged_WinRT>(this);
 
                 // call the WinRT eventing support in mscorlib to unsubscribe the event
                 Action<EventRegistrationToken> removeMethod =
@@ -308,7 +308,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // EventRegistrationToken PropertyChanged.add(PropertyChangedEventHandler value)
         internal EventRegistrationToken add_PropertyChanged(PropertyChangedEventHandler value)
         {
-            INotifyPropertyChanged _this = JitHelpers.UnsafeCast<INotifyPropertyChanged>(this);
+            INotifyPropertyChanged _this = Unsafe.As<INotifyPropertyChanged>(this);
             EventRegistrationTokenTable<PropertyChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventRegistrationToken token = table.AddEventHandler(value);
@@ -320,7 +320,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void PropertyChanged.remove(EventRegistrationToken token)
         internal void remove_PropertyChanged(EventRegistrationToken token)
         {
-            INotifyPropertyChanged _this = JitHelpers.UnsafeCast<INotifyPropertyChanged>(this);
+            INotifyPropertyChanged _this = Unsafe.As<INotifyPropertyChanged>(this);
             EventRegistrationTokenTable<PropertyChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             PropertyChangedEventHandler handler = table.ExtractHandler(token);
@@ -350,7 +350,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // void CanExecuteChanged.add(EventHandler)
             add
             {
-                ICommand_WinRT _this = JitHelpers.UnsafeCast<ICommand_WinRT>(this);
+                ICommand_WinRT _this = Unsafe.As<ICommand_WinRT>(this);
 
                 // call the WinRT eventing support in mscorlib to subscribe the event
                 Func<EventHandler<object>, EventRegistrationToken> addMethod =
@@ -367,7 +367,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // void CanExecuteChanged.remove(EventHandler)
             remove
             {
-                ICommand_WinRT _this = JitHelpers.UnsafeCast<ICommand_WinRT>(this);
+                ICommand_WinRT _this = Unsafe.As<ICommand_WinRT>(this);
 
                 // call the WinRT eventing support in mscorlib to unsubscribe the event
                 Action<EventRegistrationToken> removeMethod =
@@ -384,13 +384,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private bool CanExecute(object parameter)
         {
-            ICommand_WinRT _this = JitHelpers.UnsafeCast<ICommand_WinRT>(this);
+            ICommand_WinRT _this = Unsafe.As<ICommand_WinRT>(this);
             return _this.CanExecute(parameter);
         }
 
         private void Execute(object parameter)
         {
-            ICommand_WinRT _this = JitHelpers.UnsafeCast<ICommand_WinRT>(this);
+            ICommand_WinRT _this = Unsafe.As<ICommand_WinRT>(this);
             _this.Execute(parameter);
         }
     }
@@ -415,7 +415,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // EventRegistrationToken PropertyChanged.add(EventHandler<object> value)
         private EventRegistrationToken add_CanExecuteChanged(EventHandler<object> value)
         {
-            ICommand _this = JitHelpers.UnsafeCast<ICommand>(this);
+            ICommand _this = Unsafe.As<ICommand>(this);
             EventRegistrationTokenTable<EventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventHandler handler = ICommandAdapterHelpers.CreateWrapperHandler(value);
@@ -428,7 +428,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // void PropertyChanged.remove(EventRegistrationToken token)
         private void remove_CanExecuteChanged(EventRegistrationToken token)
         {
-            ICommand _this = JitHelpers.UnsafeCast<ICommand>(this);
+            ICommand _this = Unsafe.As<ICommand>(this);
             EventRegistrationTokenTable<EventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventHandler handler = table.ExtractHandler(token);
@@ -440,13 +440,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private bool CanExecute(object parameter)
         {
-            ICommand _this = JitHelpers.UnsafeCast<ICommand>(this);
+            ICommand _this = Unsafe.As<ICommand>(this);
             return _this.CanExecute(parameter);
         }
 
         private void Execute(object parameter)
         {
-            ICommand _this = JitHelpers.UnsafeCast<ICommand>(this);
+            ICommand _this = Unsafe.As<ICommand>(this);
             _this.Execute(parameter);
         }
     }

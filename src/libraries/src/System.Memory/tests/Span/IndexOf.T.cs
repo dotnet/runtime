@@ -80,7 +80,7 @@ namespace System.SpanTests
                 foreach (TInt elem in a)
                 {
                     int numCompares = log.CountCompares(elem.Value, 9999);
-                    Assert.True(numCompares == 1);
+                    Assert.True(numCompares == 1, $"Expected {numCompares} == 1 for element {elem.Value}.");
                 }
             }
         }

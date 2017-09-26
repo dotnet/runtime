@@ -28,6 +28,11 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public TextEncoderSettings(TextEncoderSettings other)
         {
+            if (other == null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
+
             _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
             AllowCodePoints(other.GetAllowedCodePoints());
         }

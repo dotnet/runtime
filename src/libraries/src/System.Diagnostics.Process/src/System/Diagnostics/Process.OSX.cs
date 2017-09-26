@@ -88,6 +88,12 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets execution path</summary>
+        private string GetPathToOpenFile()
+        {
+            return "/usr/bin/open";
+        }
+
         /// <summary>
         /// Gets the amount of time the associated process has spent utilizing the CPU.
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and

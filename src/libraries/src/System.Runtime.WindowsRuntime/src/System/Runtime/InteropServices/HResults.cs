@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// HRESULT values used in this assembly.
     /// </summary>
-    internal static class HResults
+    internal static class __HResults
     {
         internal const Int32 S_OK = unchecked((Int32)0x00000000);
         internal const Int32 E_BOUNDS = unchecked((Int32)0x8000000B);

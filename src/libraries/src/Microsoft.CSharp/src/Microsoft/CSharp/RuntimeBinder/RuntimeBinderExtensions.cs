@@ -308,5 +308,41 @@ namespace Microsoft.CSharp.RuntimeBinder
             return mi1.Module.Equals(mi2.Module) && s_MemberEquivalence(mi1, mi2);
 #endif
         }
+
+        public static string GetIndexerName(this Type type)
+        {
+            Debug.Assert(type != null);
+            string name = GetTypeIndexerName(type);
+            if (name == null && type.IsInterface)
+            {
+                foreach (Type iface in type.GetInterfaces())
+                {
+                    name = GetTypeIndexerName(iface);
+                    if (name != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return name;
+        }
+
+        private static string GetTypeIndexerName(Type type)
+        {
+            Debug.Assert(type != null);
+            string name = type.GetCustomAttribute<DefaultMemberAttribute>()?.MemberName;
+            if (name != null)
+            {
+                if (type.GetProperties(
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
+                    .Any(p => p.Name == name && p.GetIndexParameters().Length != 0))
+                {
+                    return name;
+                }
+            }
+
+            return null;
+        }
     }
 }

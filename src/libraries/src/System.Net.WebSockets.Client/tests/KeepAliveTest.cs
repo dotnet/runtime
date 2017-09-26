@@ -16,6 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public KeepAliveTest(ITestOutputHelper output) : base(output) { }
 
+        [ActiveIssue(23204, TargetFrameworkMonikers.Uap)]
         [ConditionalFact(nameof(WebSocketsSupported))]
         [OuterLoop] // involves long delay
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()

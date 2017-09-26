@@ -51,6 +51,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.NETFramework.Compatibility",
+    "Description": "References a number of .NET Core libraries that are intended to provide support for more APIs that exist on .NET Framework.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.NETCore.Runtime",
     "Description": "The .NET Core runtime.",
     "CommonTypes": []
@@ -436,6 +441,33 @@
     ]
   },
   {
+    "Name": "System.Data.DataSetExtensions",
+    "Description": "Provides extensions to form LINQ expressions and method queries against DataTable objects.",
+    "CommonTypes": [
+        "System.Data.DataRowComparer",
+        "System.Data.DataRowExtensions",
+        "System.Data.DataTableExtensions",
+        "System.Data.EnumerableRowCollection",
+        "System.Data.EnumerableRowCollectionExtensions",
+        "System.Data.OrderedEnumerableRowCollection",
+        "System.Data.TypedTableBase",
+        "System.Data.TypedTableBaseExtensions"
+    ]
+  },
+  {
+    "Name": "System.Data.Odbc",
+    "Description": "Provides a collection of classes used to access an ODBC data source in the managed space",
+    "CommonTypes": [
+        "System.Data.Odbc.OdbcCommand",
+        "System.Data.Odbc.OdbcConnection",
+        "System.Data.Odbc.OdbcDataReader",
+        "System.Data.Odbc.OdbcDataAdapter",
+        "System.Data.Odbc.OdbcParameter",
+        "System.Data.Odbc.OdbcParameterCollection",
+        "System.Data.Odbc.OdbcTransaction"
+    ]
+  },
+  {
     "Name": "System.Data.SqlClient",
     "Description": "Provides the data provider for SQL Server. These classes provide access to versions of SQL Server and encapsulate database-specific protocols, including tabular data stream (TDS)",
     "CommonTypes": [
@@ -605,6 +637,18 @@
       "System.Drawing.SizeF",
       "System.Drawing.Rectangle",
       "System.Drawing.RectangleF"
+    ]
+  },
+  {
+    "Name": "System.Drawing.Common",
+    "Description": "Provides access to GDI+ graphics functionality.",
+    "CommonTypes": [
+      "System.Drawing.Bitmap",
+      "System.Drawing.BitmapData",
+      "System.Drawing.Brush",
+      "System.Drawing.Font",
+      "System.Drawing.Graphics",
+      "System.Drawing.Icon"
     ]
   },
   {
@@ -882,7 +926,7 @@
     "Name": "System.Memory",
     "Description": "Provides types for efficient low-allocation access to memory.",
     "CommonTypes": [
-      "System.Span",
+      "System.Span"
     ]
   },
   {
@@ -1367,6 +1411,16 @@
     ]
   },
   {
+    "Name": "System.Runtime.Intrinsics.X86",
+    "Description": "Provides classes which expose low-level processor intrinsics for the x86 family of instruction set architectures.",
+    "CommonTypes": [
+      "System.Runtime.Intrinsics.X86.Sse",
+      "System.Runtime.Intrinsics.X86.Avx",
+      "System.Runtime.Intrinsics.X86.Popcnt",
+      "System.Runtime.Intrinsics.X86.Fma",
+    ]
+  },
+  {
     "Name": "System.Runtime.Loader",
     "Description": "Provides the System.Runtime.Loader.AssemblyLoadContext class, which provides members for loading assemblies.",
     "CommonTypes": [
@@ -1565,7 +1619,7 @@
   {
     "Name": "System.Security.Cryptography.Xml",
     "Description": "Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, \"XML-Signature Syntax and Processing\", described at http://www.w3.org/TR/xmldsig-core/.",
-    "CommonTypes": [ 
+    "CommonTypes": [
       "System.Security.Cryptography.Xml.CipherData",
       "System.Security.Cryptography.Xml.CipherReference",
       "System.Security.Cryptography.Xml.DataObject",

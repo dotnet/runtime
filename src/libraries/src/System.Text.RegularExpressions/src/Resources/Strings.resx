@@ -88,6 +88,9 @@
   <data name="IllegalCondition" xml:space="preserve">
     <value>Illegal conditional (?(...)) expression.</value>
   </data>
+  <data name="IllegalDefaultRegexMatchTimeoutInAppDomain" xml:space="preserve">
+    <value>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</value>
+  </data>
   <data name="IllegalEndEscape" xml:space="preserve">
     <value>Illegal \\ at end of pattern.</value>
   </data>

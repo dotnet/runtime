@@ -22,7 +22,7 @@ namespace System.Net.WebSockets
     /// Thread-safety:
     /// - It's acceptable to call ReceiveAsync and SendAsync in parallel.  One of each may run concurrently.
     /// - It's acceptable to have a pending ReceiveAsync while CloseOutputAsync or CloseAsync is called.
-    /// - Attemping to invoke any other operations in parallel may corrupt the instance.  Attempting to invoke
+    /// - Attempting to invoke any other operations in parallel may corrupt the instance.  Attempting to invoke
     ///   a send operation while another is in progress or a receive operation while another is in progress will
     ///   result in an exception.
     /// </remarks>
@@ -41,10 +41,6 @@ namespace System.Net.WebSockets
         {
             return new ManagedWebSocket(stream, isServer, subprotocol, keepAliveInterval, receiveBufferSize, receiveBuffer);
         }
-
-        /// <summary>Per-thread cached 4-byte mask byte array.</summary>
-        [ThreadStatic]
-        private static byte[] t_headerMask;
 
         /// <summary>Thread-safe random number generator used to generate masks for each send.</summary>
         private static readonly RandomNumberGenerator s_random = RandomNumberGenerator.Create();
@@ -403,12 +399,11 @@ namespace System.Net.WebSockets
                 writeTask = _stream.WriteAsync(_sendBuffer, 0, sendBytes, CancellationToken.None);
 
                 // If the operation happens to complete synchronously (or, more specifically, by
-                // the time we get from the previous line to here, release the semaphore, propagate
-                // exceptions, and we're done.
+                // the time we get from the previous line to here), release the semaphore, return
+                // the task, and we're done.
                 if (writeTask.IsCompleted)
                 {
-                    writeTask.GetAwaiter().GetResult(); // propagate any exceptions
-                    return Task.CompletedTask;
+                    return writeTask;
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
@@ -520,7 +515,16 @@ namespace System.Net.WebSockets
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
                 // The call will handle releasing the lock.
-                SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, new ArraySegment<byte>(Array.Empty<byte>()));
+                Task t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, new ArraySegment<byte>(Array.Empty<byte>()));
+
+                // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
+                if (!t.IsCompletedSuccessfully)
+                {
+                    t.ContinueWith(p => { Exception ignored = p.Exception; },
+                        CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+                }
             }
             else
             {
@@ -600,13 +604,8 @@ namespace System.Net.WebSockets
         /// <summary>Writes a 4-byte random mask to the specified buffer at the specified offset.</summary>
         /// <param name="buffer">The buffer to which to write the mask.</param>
         /// <param name="offset">The offset into the buffer at which to write the mask.</param>
-        private static void WriteRandomMask(byte[] buffer, int offset)
-        {
-            byte[] mask = t_headerMask ?? (t_headerMask = new byte[MaskLength]);
-            Debug.Assert(mask.Length == MaskLength, $"Expected mask of length {MaskLength}, got {mask.Length}");
-            s_random.GetBytes(mask);
-            Buffer.BlockCopy(mask, 0, buffer, offset, MaskLength);
-        }
+        private static void WriteRandomMask(byte[] buffer, int offset) =>
+            s_random.GetBytes(buffer, offset, MaskLength);
 
         /// <summary>
         /// Receive the next text, binary, continuation, or close message, returning information about it and

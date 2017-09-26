@@ -127,8 +127,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
 #pragma warning disable 0169 // The private field 'class member' is never used
-        [System.Runtime.CompilerServices.IsByRefLike]
-        private struct StructWithSpanField
+        private ref struct StructWithSpanField
         {
             Span<byte> _bytes;
             int _position;
