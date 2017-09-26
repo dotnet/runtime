@@ -42,7 +42,7 @@
   </Target>
 
   <Target Name="Build"
-          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+          Condition="'$(SkipSigning)' != 'true'"
           DependsOnTargets="GetFilesToSignItems;SignFiles">
 
     <!-- now that the files have been signed delete the marker files -->
