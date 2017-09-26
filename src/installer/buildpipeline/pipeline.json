@@ -96,7 +96,8 @@
             "PB_AdditionalBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
             "PB_TargetArchitecture": "arm64",
             "PB_DistroRid": "win-arm64",
-            "PB_PortableBuild": "true"
+            "PB_PortableBuild": "true",
+            "PB_SignType": "Real"
           },
           "ReportingParameters": {
             "SubType": "PortableBuild",
@@ -112,7 +113,8 @@
             "PB_TargetArchitecture": "x64",
             "PB_PortableBuild": "true",
             "PB_PublishRidAgnosticPackages": "true",
-            "PB_BuildFullPlatformManifest": "true"
+            "PB_BuildFullPlatformManifest": "true",
+            "PB_SignType": "Real"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
