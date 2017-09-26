@@ -265,7 +265,7 @@ function cross_build_coreclr_with_docker {
         # For armel Tizen, we are going to construct RootFS on the fly.
         case $__linuxCodeName in
         tizen)
-            __dockerImage=" hqueue/dotnetcore:ubuntu1404_cross_prereqs_v4-tizen_rootfs"
+            __dockerImage=" hqueue/dotnet-buildtools-prereqs:ubuntu-14.04-cross-0cd4667-20172211042239-tizen-rootfs-20170925"
             __skipRootFS=1
             __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/armel.tizen.build"
             __runtimeOS="tizen.4.0.0"
@@ -388,7 +388,7 @@ function run_tests_using_docker {
     elif [ "$__buildArch" == "armel" ]; then
         case $__linuxCodeName in
         tizen)
-            __dockerImage=" hqueue/dotnetcore:ubuntu1404_cross_prereqs_v4-tizen_rootfs"
+            __dockerImage=" hqueue/dotnet-buildtools-prereqs:ubuntu-14.04-cross-0cd4667-20172211042239-tizen-rootfs-20170925"
             __skipRootFS=1
             __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/armel.tizen.test"
         ;;
