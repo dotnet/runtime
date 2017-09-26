@@ -119,7 +119,7 @@ For IL stubs only, the per-frame initialization includes setting `Thread->m_pFra
 2. For JIT64/AMD64 only: Next for non-IL stubs, the InlinedCallFrame is 'pushed' by setting `Thread->m_pFrame` to point to the InlinedCallFrame (recall that the per-frame initialization already set `InlinedCallFrame->m_pNext` to point to the previous top). For IL stubs this step is accomplished in the per-frame initialization.
 3. The Frame is made active by setting `InlinedCallFrame->m_pCallerReturnAddress`.
 4. The code then toggles the GC mode by setting `Thread->m_fPreemptiveGCDisabled = 0`.
-5. Starting now, no GC pointers may be live in registers.
+5. Starting now, no GC pointers may be live in registers. RyuJit LSRA meets this requirement by adding special refPositon `RefTypeKillGCRefs` before unmanaged calls and special helpers.
 6. Then comes the actual call/PInvoke.
 7. The GC mode is set back by setting `Thread->m_fPreemptiveGCDisabled = 1`.
 8. Then we check to see if `g_TrapReturningThreads` is set (non-zero). If it is, we call `CORINFO_HELP_STOP_FOR_GC`.
