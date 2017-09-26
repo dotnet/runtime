@@ -242,6 +242,7 @@ gboolean
 mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
 
 /* Can't include utils/mono-threads.h because of the THREAD_INFO_TYPE wizardry */
+void mono_threads_add_joinable_runtime_thread (gpointer thread_info);
 void mono_threads_add_joinable_thread (gpointer tid);
 void mono_threads_join_threads (void);
 void mono_thread_join (gpointer tid);

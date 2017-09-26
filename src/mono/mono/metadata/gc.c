@@ -997,7 +997,7 @@ mono_gc_cleanup (void)
 					ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, FALSE);
 					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
-					mono_threads_add_joinable_thread (GUINT_TO_POINTER (gc_thread->tid));
+					mono_threads_add_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid)));
 					break;
 				}
 
@@ -1022,7 +1022,7 @@ mono_gc_cleanup (void)
 
 					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
-					mono_threads_add_joinable_thread (GUINT_TO_POINTER (gc_thread->tid));
+					mono_threads_add_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid)));
 					break;
 				}
 

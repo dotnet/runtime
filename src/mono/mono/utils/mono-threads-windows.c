@@ -219,18 +219,25 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 }
 
 gboolean
+mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle)
+{
+	DWORD res = WaitForSingleObject (thread_handle, INFINITE);
+
+	if (close_handle)
+		CloseHandle (thread_handle);
+
+	return res != WAIT_FAILED;
+}
+
+gboolean
 mono_native_thread_join (MonoNativeThreadId tid)
 {
 	HANDLE handle;
 
-	if (!(handle = OpenThread (THREAD_ALL_ACCESS, TRUE, tid)))
+	if (!(handle = OpenThread (SYNCHRONIZE, TRUE, tid)))
 		return FALSE;
 
-	DWORD res = WaitForSingleObject (handle, INFINITE);
-
-	CloseHandle (handle);
-
-	return res != WAIT_FAILED;
+	return mono_native_thread_join_handle (handle, TRUE);
 }
 
 #if HAVE_DECL___READFSDWORD==0

@@ -2261,8 +2261,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 
 	tid = mono_thread_info_get_tid (p);
 
-	if (p->client_info.info.runtime_thread)
-		mono_threads_add_joinable_thread ((gpointer)tid);
+	mono_threads_add_joinable_runtime_thread (&p->client_info.info);
 
 	if (mono_gc_get_gc_callbacks ()->thread_detach_func) {
 		mono_gc_get_gc_callbacks ()->thread_detach_func (p->client_info.runtime_data);
