@@ -663,7 +663,7 @@ namespace System.Net.Http
         private async Task FlushThenWriteWithoutBufferingAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             await FlushAsync(cancellationToken).ConfigureAwait(false);
-            await WriteToStreamAsync(buffer, offset, count, cancellationToken);
+            await WriteToStreamAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
         private Task WriteByteAsync(byte b, CancellationToken cancellationToken)
