@@ -10080,7 +10080,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
 #ifdef _TARGET_ARM64_
     // Next, if this blocks ends with a JCMP, we have to make sure not to copy
-    // into the registers that it uses.
+    // into the register that it uses or modify the local variable it must consume
+    LclVarDsc* jcmpLocalVarDsc = nullptr;
     if (block->bbJumpKind == BBJ_COND)
     {
         GenTree* lastNode = LIR::AsRange(block).LastNode();
@@ -10089,6 +10090,12 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         {
             GenTree* op1 = lastNode->gtGetOp1();
             switchRegs |= genRegMask(op1->gtRegNum);
+
+            if (op1->IsLocal())
+            {
+                GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
+                jcmpLocalVarDsc          = &compiler->lvaTable[lcl->gtLclNum];
+            }
         }
     }
 #endif
@@ -10165,6 +10172,13 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             {
                 sameToReg = REG_NA;
             }
+
+#ifdef _TARGET_ARM64_
+            if (jcmpLocalVarDsc && (jcmpLocalVarDsc->lvVarIndex == outResolutionSetVarIndex))
+            {
+                sameToReg = REG_NA;
+            }
+#endif
 
             // If the var is live only at those blocks connected by a split edge and not live-in at some of the
             // target blocks, we will resolve it the same way as if it were in diffResolutionSet and resolution
