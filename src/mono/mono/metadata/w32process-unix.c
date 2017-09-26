@@ -2580,8 +2580,8 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 			&start_ticks, &user_ticks, &kernel_ticks);
 
 		ticks_to_processtime (start_ticks, creation_processtime);
-		ticks_to_processtime (user_ticks, kernel_processtime);
-		ticks_to_processtime (kernel_ticks, user_processtime);
+		ticks_to_processtime (kernel_ticks, kernel_processtime);
+		ticks_to_processtime (user_ticks, user_processtime);
 		return TRUE;
 	}
 
