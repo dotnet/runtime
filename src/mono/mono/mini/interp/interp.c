@@ -3442,6 +3442,9 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 			/* needed on arm64 */
 			if (isinf (sp [-1].data.f))
 				sp [-1].data.i = 0;
+			/* needed by wasm */
+			else if (isnan (sp [-1].data.f))
+				sp [-1].data.i = 0;
 			else
 				sp [-1].data.i = (guint32)sp [-1].data.f;
 			++ip;
