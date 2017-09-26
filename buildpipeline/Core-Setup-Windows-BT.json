@@ -68,7 +68,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "signType": "$(PB_SignType)",
+        "signType": "real",
         "zipSources": "false",
         "version": "",
         "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
@@ -676,7 +676,8 @@
       "value": "false"
     },
     "PB_SignType": {
-      "value": "oss"
+      "value": "real",
+      "allowOverride": true
     },
     "PB_SourcesDirectory": {
       "value": "$(Build.SourcesDirectory)\\core-setup"
