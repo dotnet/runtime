@@ -6,7 +6,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private EventRegistrationToken AddEventHandlerNoLock(T handler)
         {
-            Contract.Requires(handler != null);
+            Debug.Assert(handler != null);
 
             // Get a registration token, making sure that we haven't already used the value.  This should be quite
             // rare, but in the case it does happen, just keep trying until we find one that's unused.
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         //  2. Use it as a guess to quickly see if the handler was really assigned this token value
         private static EventRegistrationToken GetPreferredToken(T handler)
         {
-            Contract.Requires(handler != null);
+            Debug.Assert(handler != null);
 
             // We want to generate a token value that has the following properties:
             //  1. is quickly obtained from the handler instance

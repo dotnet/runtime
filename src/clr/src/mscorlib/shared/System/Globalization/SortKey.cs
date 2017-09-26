@@ -15,7 +15,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -114,7 +113,6 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException((sortkey1 == null ? nameof(sortkey1) : nameof(sortkey2)));
             }
-            Contract.EndContractBlock();
 
             byte[] key1Data = sortkey1._keyData;
             byte[] key2Data = sortkey2._keyData;

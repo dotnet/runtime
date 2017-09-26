@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 
 // Windows.Foundation.Collections.IMap`2, IMapView`2, and IKeyValuePair`2 cannot be referenced from
 // managed code because they're hidden by the metadata adapter. We redeclare the interfaces manually
@@ -19,13 +18,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [WindowsRuntimeImport]
     internal interface IMap<K, V> : IIterable<IKeyValuePair<K, V>>
     {
-        [Pure]
         V Lookup(K key);
-        [Pure]
         uint Size { get; }
-        [Pure]
         bool HasKey(K key);
-        [Pure]
         IReadOnlyDictionary<K, V> GetView();  // Really an IMapView<K, V>
         bool Insert(K key, V value);
         void Remove(K key);
@@ -37,13 +32,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [WindowsRuntimeImport]
     internal interface IMapView<K, V> : IIterable<IKeyValuePair<K, V>>
     {
-        [Pure]
         V Lookup(K key);
-        [Pure]
         uint Size { get; }
-        [Pure]
         bool HasKey(K key);
-        [Pure]
         void Split(out IMapView<K, V> first, out IMapView<K, V> second);
     }
 
@@ -52,9 +43,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [WindowsRuntimeImport]
     internal interface IKeyValuePair<K, V>
     {
-        [Pure]
         K Key { get; }
-        [Pure]
         V Value { get; }
     }
 }

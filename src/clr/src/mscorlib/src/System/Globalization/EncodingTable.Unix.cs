@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.Globalization
@@ -33,7 +32,6 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            Contract.EndContractBlock();
 
             ushort codePage;
             if (s_encodingDataTable.TryGetValue(name, out codePage))

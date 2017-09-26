@@ -14,7 +14,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
@@ -247,7 +246,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -261,7 +259,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -309,7 +306,6 @@ namespace System.Reflection
         {
             if (assemblyString == null)
                 throw new ArgumentNullException(nameof(assemblyString));
-            Contract.EndContractBlock();
 
             if ((assemblyString.Length == 0) ||
                 (assemblyString[0] == '\0'))
@@ -344,7 +340,6 @@ namespace System.Reflection
         {
             if (assemblyRef == null)
                 throw new ArgumentNullException(nameof(assemblyRef));
-            Contract.EndContractBlock();
 
             if (assemblyRef.CodeBase != null)
             {
@@ -732,7 +727,6 @@ namespace System.Reflection
         {
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
-            Contract.EndContractBlock();
 
 
             String name = GetSimpleName() + ".resources";

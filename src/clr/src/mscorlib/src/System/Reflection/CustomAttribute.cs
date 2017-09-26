@@ -16,7 +16,6 @@ using System.Globalization;
 using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
@@ -35,7 +34,6 @@ namespace System.Reflection
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             return target.GetCustomAttributesData();
         }
@@ -44,7 +42,6 @@ namespace System.Reflection
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             return target.GetCustomAttributesData();
         }
@@ -53,7 +50,6 @@ namespace System.Reflection
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             return target.GetCustomAttributesData();
         }
@@ -1004,7 +1000,6 @@ namespace System.Reflection
         {
             if (customAttributeModule == null)
                 throw new ArgumentNullException(nameof(customAttributeModule));
-            Contract.EndContractBlock();
 
             Debug.Assert(customAttributeCtorParameters != null);
             Debug.Assert(customAttributeNamedParameters != null);
@@ -1055,7 +1050,6 @@ namespace System.Reflection
         {
             if (argumentName == null)
                 throw new ArgumentNullException(nameof(argumentName));
-            Contract.EndContractBlock();
 
             m_argumentName = argumentName;
             m_fieldOrProperty = fieldOrProperty;
@@ -1133,7 +1127,7 @@ namespace System.Reflection
         #region Internal Static Members
         internal static bool IsDefined(RuntimeType type, RuntimeType caType, bool inherit)
         {
-            Contract.Requires(type != null);
+            Debug.Assert(type != null);
 
             if (type.GetElementType() != null)
                 return false;
@@ -1162,8 +1156,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimeMethodInfo method, RuntimeType caType, bool inherit)
         {
-            Contract.Requires(method != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(method != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(method, caType))
                 return true;
@@ -1189,8 +1183,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimeConstructorInfo ctor, RuntimeType caType)
         {
-            Contract.Requires(ctor != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(ctor != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(ctor, caType))
                 return true;
@@ -1200,8 +1194,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimePropertyInfo property, RuntimeType caType)
         {
-            Contract.Requires(property != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(property != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(property, caType))
                 return true;
@@ -1211,8 +1205,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimeEventInfo e, RuntimeType caType)
         {
-            Contract.Requires(e != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(e != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(e, caType))
                 return true;
@@ -1222,8 +1216,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimeFieldInfo field, RuntimeType caType)
         {
-            Contract.Requires(field != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(field != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(field, caType))
                 return true;
@@ -1233,8 +1227,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimeParameterInfo parameter, RuntimeType caType)
         {
-            Contract.Requires(parameter != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(parameter != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(parameter, caType))
                 return true;
@@ -1244,8 +1238,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimeAssembly assembly, RuntimeType caType)
         {
-            Contract.Requires(assembly != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(assembly != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(assembly, caType))
                 return true;
@@ -1255,8 +1249,8 @@ namespace System.Reflection
 
         internal static bool IsDefined(RuntimeModule module, RuntimeType caType)
         {
-            Contract.Requires(module != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(module != null);
+            Debug.Assert(caType != null);
 
             if (PseudoCustomAttribute.IsDefined(module, caType))
                 return true;
@@ -1266,8 +1260,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeType type, RuntimeType caType, bool inherit)
         {
-            Contract.Requires(type != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(type != null);
+            Debug.Assert(caType != null);
 
             if (type.GetElementType() != null)
                 return (caType.IsValueType) ? Array.Empty<Object>() : CreateAttributeArrayHelper(caType, 0);
@@ -1313,8 +1307,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, bool inherit)
         {
-            Contract.Requires(method != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(method != null);
+            Debug.Assert(caType != null);
 
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
                 method = method.GetGenericMethodDefinition() as RuntimeMethodInfo;
@@ -1357,8 +1351,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeConstructorInfo ctor, RuntimeType caType)
         {
-            Contract.Requires(ctor != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(ctor != null);
+            Debug.Assert(caType != null);
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(ctor, caType, out pcaCount);
@@ -1369,8 +1363,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimePropertyInfo property, RuntimeType caType)
         {
-            Contract.Requires(property != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(property != null);
+            Debug.Assert(caType != null);
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(property, caType, out pcaCount);
@@ -1382,8 +1376,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeEventInfo e, RuntimeType caType)
         {
-            Contract.Requires(e != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(e != null);
+            Debug.Assert(caType != null);
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(e, caType, out pcaCount);
@@ -1394,8 +1388,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType)
         {
-            Contract.Requires(field != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(field != null);
+            Debug.Assert(caType != null);
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(field, caType, out pcaCount);
@@ -1406,8 +1400,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeParameterInfo parameter, RuntimeType caType)
         {
-            Contract.Requires(parameter != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(parameter != null);
+            Debug.Assert(caType != null);
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(parameter, caType, out pcaCount);
@@ -1418,8 +1412,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeAssembly assembly, RuntimeType caType)
         {
-            Contract.Requires(assembly != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(assembly != null);
+            Debug.Assert(caType != null);
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(assembly, caType, out pcaCount);
@@ -1431,8 +1425,8 @@ namespace System.Reflection
 
         internal static Object[] GetCustomAttributes(RuntimeModule module, RuntimeType caType)
         {
-            Contract.Requires(module != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(module != null);
+            Debug.Assert(caType != null);
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(module, caType, out pcaCount);
@@ -1457,7 +1451,6 @@ namespace System.Reflection
         {
             if (decoratedModule.Assembly.ReflectionOnly)
                 throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
-            Contract.EndContractBlock();
 
             CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
 
@@ -1513,7 +1506,6 @@ namespace System.Reflection
         {
             if (decoratedModule.Assembly.ReflectionOnly)
                 throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
-            Contract.EndContractBlock();
 
             MetadataImport scope = decoratedModule.MetadataImport;
             CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
@@ -1936,8 +1928,8 @@ namespace System.Reflection
         #region Internal Static
         internal static Attribute[] GetCustomAttributes(RuntimeType type, RuntimeType caType, out int count)
         {
-            Contract.Requires(type != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(type != null);
+            Debug.Assert(caType != null);
 
             count = 0;
 
@@ -1983,8 +1975,8 @@ namespace System.Reflection
 
         internal static Attribute[] GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, out int count)
         {
-            Contract.Requires(method != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(method != null);
+            Debug.Assert(caType != null);
 
             count = 0;
 
@@ -2031,8 +2023,8 @@ namespace System.Reflection
 
         internal static Attribute[] GetCustomAttributes(RuntimeParameterInfo parameter, RuntimeType caType, out int count)
         {
-            Contract.Requires(parameter != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(parameter != null);
+            Debug.Assert(caType != null);
 
             count = 0;
 
@@ -2114,8 +2106,8 @@ namespace System.Reflection
 
         internal static Attribute[] GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType, out int count)
         {
-            Contract.Requires(field != null);
-            Contract.Requires(caType != null);
+            Debug.Assert(field != null);
+            Debug.Assert(caType != null);
 
             count = 0;
 
@@ -2329,7 +2321,7 @@ namespace System.Reflection
                 case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                 case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                 case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
-                default: Contract.Assume(false); break;
+                default: Debug.Fail("Unreachable code"); break;
             }
 
             CharSet charSet = CharSet.None;
@@ -2338,7 +2330,7 @@ namespace System.Reflection
                 case TypeAttributes.AnsiClass: charSet = CharSet.Ansi; break;
                 case TypeAttributes.AutoClass: charSet = CharSet.Auto; break;
                 case TypeAttributes.UnicodeClass: charSet = CharSet.Unicode; break;
-                default: Contract.Assume(false); break;
+                default: Debug.Fail("Unreachable code"); break;
             }
             type.GetRuntimeModule().MetadataImport.GetClassLayout(type.MetadataToken, out pack, out size);
 

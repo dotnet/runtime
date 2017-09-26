@@ -24,7 +24,6 @@ using System.Runtime.ConstrainedExecution;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -119,7 +118,6 @@ namespace System
                 throw new ArgumentOutOfRangeException("pressure",
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
-            Contract.EndContractBlock();
 
             _AddMemoryPressure((ulong)bytesAllocated);
         }
@@ -137,7 +135,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
-            Contract.EndContractBlock();
 
             _RemoveMemoryPressure((ulong)bytesAllocated);
         }
@@ -186,7 +183,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
 
-            Contract.EndContractBlock();
 
             int iInternalModes = 0;
 
@@ -216,7 +212,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
             }
-            Contract.EndContractBlock();
             return _CollectionCount(generation, 0);
         }
 
@@ -295,7 +290,6 @@ namespace System
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
-            Contract.EndContractBlock();
             _SuppressFinalize(obj);
         }
 
@@ -310,7 +304,6 @@ namespace System
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
-            Contract.EndContractBlock();
             _ReRegisterForFinalize(obj);
         }
 

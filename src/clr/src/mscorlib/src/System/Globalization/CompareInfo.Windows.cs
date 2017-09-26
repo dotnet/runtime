@@ -4,7 +4,6 @@
 
 using System.Security;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -377,7 +376,6 @@ namespace System.Globalization
             Debug.Assert(!_invariantMode);
 
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
-            Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {

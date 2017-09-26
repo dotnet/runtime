@@ -8,7 +8,6 @@ namespace System
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
 
     // This class will not be marked serializable
     // Note: This type must have the same layout as the CLR's VARARGS type in CLRVarArgs.h.

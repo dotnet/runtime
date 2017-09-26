@@ -7,7 +7,6 @@ using System.Text;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Diagnostics.Contracts;
 
 namespace System.Diagnostics
 {
@@ -149,8 +148,6 @@ namespace System.Diagnostics
         // 
         public virtual MethodBase GetMethod()
         {
-            Contract.Ensures(Contract.Result<MethodBase>() != null);
-
             return method;
         }
 

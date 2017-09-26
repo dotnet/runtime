@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.IO
@@ -100,7 +99,6 @@ namespace System.IO
         // period (".") character of the extension except when you have a terminal period when you get string.Empty, such as ".exe" or
         // ".cpp". The returned value is null if the given path is
         // null or if the given path does not include an extension.
-        [Pure]
         public static string GetExtension(string path)
         {
             if (path == null)
@@ -127,7 +125,6 @@ namespace System.IO
         // Returns the name and extension parts of the given path. The resulting
         // string contains the characters of path that follow the last
         // separator in path. The resulting string is null if path is null.
-        [Pure]
         public static string GetFileName(string path)
         {
             if (path == null)
@@ -138,7 +135,6 @@ namespace System.IO
             return path.Substring(offset, count);
         }
 
-        [Pure]
         public static string GetFileNameWithoutExtension(string path)
         {
             if (path == null)
@@ -194,7 +190,6 @@ namespace System.IO
         // true if the characters that follow the last directory
         // separator ('\\' or '/') or volume separator (':') in the path include 
         // a period (".") other than a terminal period. The result is false otherwise.
-        [Pure]
         public static bool HasExtension(string path)
         {
             if (path != null)
@@ -218,7 +213,6 @@ namespace System.IO
         {
             if (path1 == null || path2 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : nameof(path2));
-            Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);
             PathInternal.CheckInvalidPathChars(path2);
@@ -230,7 +224,6 @@ namespace System.IO
         {
             if (path1 == null || path2 == null || path3 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
-            Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);
             PathInternal.CheckInvalidPathChars(path2);
@@ -243,7 +236,6 @@ namespace System.IO
         {
             if (path1 == null || path2 == null || path3 == null || path4 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
-            Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);
             PathInternal.CheckInvalidPathChars(path2);
@@ -259,7 +251,6 @@ namespace System.IO
             {
                 throw new ArgumentNullException(nameof(paths));
             }
-            Contract.EndContractBlock();
 
             int finalSize = 0;
             int firstComponent = 0;

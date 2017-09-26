@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
@@ -151,7 +150,6 @@ namespace System.Globalization
         public static Calendar ReadOnly(Calendar calendar)
         {
             if (calendar == null) { throw new ArgumentNullException(nameof(calendar)); }
-            Contract.EndContractBlock();
             if (calendar.IsReadOnly) { return (calendar); }
 
             Calendar clonedCalendar = (Calendar)(calendar.MemberwiseClone());
@@ -211,7 +209,6 @@ namespace System.Globalization
                     String.Format(CultureInfo.InvariantCulture, SR.Format(SR.Argument_ResultCalendarRange,
                         minValue, maxValue)));
             }
-            Contract.EndContractBlock();
         }
 
         internal DateTime Add(DateTime time, double value, int scale)
@@ -633,7 +630,6 @@ namespace System.Globalization
                     nameof(firstDayOfWeek), SR.Format(SR.ArgumentOutOfRange_Range,
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
-            Contract.EndContractBlock();
             switch (rule)
             {
                 case CalendarWeekRule.FirstDay:
@@ -803,7 +799,6 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(year),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
             if (year < 100)
             {
                 return ((TwoDigitYearMax / 100 - (year > TwoDigitYearMax % 100 ? 1 : 0)) * 100 + year);

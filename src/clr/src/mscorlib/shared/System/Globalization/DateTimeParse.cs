@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
 
@@ -4678,7 +4677,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // COMPlus_LogToConsole=1
         // COMPlus_LogLevel=9
         // COMPlus_ManagedLogFacility=0x00001000
-        [Pure]
         [Conditional("_LOGGING")]
         internal static void LexTraceExit(string message, DS dps)
         {
@@ -4688,7 +4686,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             BCLDebug.Trace("DATETIME", "[DATETIME] Lex return {0}, DS.{1}", message, dps);
 #endif // _LOGGING
         }
-        [Pure]
         [Conditional("_LOGGING")]
         internal static void PTSTraceExit(DS dps, bool passed)
         {
@@ -4698,7 +4695,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             BCLDebug.Trace("DATETIME", "[DATETIME] ProcessTerminalState {0} @ DS.{1}", passed ? "passed" : "failed", dps);
 #endif // _LOGGING
         }
-        [Pure]
         [Conditional("_LOGGING")]
         internal static void TPTraceExit(string message, DS dps)
         {
@@ -4708,7 +4704,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             BCLDebug.Trace("DATETIME", "[DATETIME] TryParse return {0}, DS.{1}", message, dps);
 #endif // _LOGGING
         }
-        [Pure]
         [Conditional("_LOGGING")]
         internal static void DTFITrace(DateTimeFormatInfo dtfi)
         {
@@ -4733,7 +4728,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 #endif // _LOGGING
         }
 #if _LOGGING
-        [Pure]
         // return a string in the form: "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
         internal static string Hex(string[] strs)
         {
@@ -4787,7 +4781,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             buffer.Append(s);
             return buffer.ToString();
         }
-        [Pure]
         // return a string in the form: "Sun"
         internal static string Hex(string str)
         {
@@ -4803,7 +4796,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             buffer.Append("\"");
             return buffer.ToString();
         }
-        [Pure]
         // return an unicode escaped string form of char c
         internal static String Hex(char c)
         {

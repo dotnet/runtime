@@ -646,7 +646,6 @@ namespace System.Diagnostics.Contracts
 #endif
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
-            Contract.EndContractBlock();
 
             for (int i = fromInclusive; i < toExclusive; i++)
                 if (!predicate(i)) return false;
@@ -672,7 +671,6 @@ namespace System.Diagnostics.Contracts
                 throw new ArgumentNullException(nameof(collection));
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
-            Contract.EndContractBlock();
 
             foreach (T t in collection)
                 if (!predicate(t)) return false;
@@ -706,7 +704,6 @@ namespace System.Diagnostics.Contracts
 #endif
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
-            Contract.EndContractBlock();
 
             for (int i = fromInclusive; i < toExclusive; i++)
                 if (predicate(i)) return true;
@@ -731,7 +728,6 @@ namespace System.Diagnostics.Contracts
                 throw new ArgumentNullException(nameof(collection));
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
-            Contract.EndContractBlock();
 
             foreach (T t in collection)
                 if (predicate(t)) return true;

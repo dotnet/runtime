@@ -16,7 +16,6 @@ using System;
 
 namespace System.Reflection.Emit
 {
-
     public enum OpCodeType
     {
         [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]

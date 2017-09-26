@@ -96,7 +96,6 @@ namespace System.Diagnostics.Contracts
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
-            Contract.EndContractBlock();
 
             // displayMessage == null means: yes we handled it. Otherwise it is the localized failure message
             var displayMessage = System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent(failureKind, userMessage, conditionText, innerException);
@@ -148,7 +147,7 @@ namespace System.Diagnostics.Contracts
 #endif
         public ContractFailedEventArgs(ContractFailureKind failureKind, String message, String condition, Exception originalException)
         {
-            Contract.Requires(originalException == null || failureKind == ContractFailureKind.PostconditionOnException);
+            Debug.Assert(originalException == null || failureKind == ContractFailureKind.PostconditionOnException);
             _failureKind = failureKind;
             _message = message;
             _condition = condition;
@@ -296,7 +295,6 @@ namespace System.Runtime.CompilerServices
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
-            Contract.EndContractBlock();
 
             string returnValue;
             String displayMessage = "contract failed.";  // Incomplete, but in case of OOM during resource lookup...
@@ -405,7 +403,7 @@ namespace System.Runtime.CompilerServices
                     break;
 
                 default:
-                    Contract.Assume(false, "Unreachable code");
+                    Debug.Fail("Unreachable code");
                     resourceName = "AssumptionFailed";
                     break;
             }

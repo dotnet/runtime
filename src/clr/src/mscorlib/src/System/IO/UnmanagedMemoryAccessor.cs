@@ -20,7 +20,6 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -31,7 +30,6 @@ namespace System.IO
     {
         private SafeBuffer _buffer;
         private Int64 _offset;
-        [ContractPublicPropertyName("Capacity")]
         private Int64 _capacity;
         private FileAccess _access;
         private bool _isOpen;
@@ -79,7 +77,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
-            Contract.EndContractBlock();
 
             if (_isOpen)
             {
@@ -504,7 +501,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
 
             if (!_isOpen)
             {
@@ -555,7 +551,6 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_OffsetAndLengthOutOfBounds);
             }
-            Contract.EndContractBlock();
             if (!CanRead)
             {
                 if (!_isOpen)
@@ -905,7 +900,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
 
             if (!_isOpen)
             {
@@ -961,7 +955,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
             }
-            Contract.EndContractBlock();
 
             if (!_isOpen)
             {
@@ -1041,7 +1034,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
@@ -1069,7 +1061,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
