@@ -34,9 +34,8 @@ namespace System.Drawing.Printing.Tests
 
     public class PageSettingsTests
     {
-        private static bool AnyInstalledPrinters => PrinterSettings.InstalledPrinters.Count == 0;
-
-        [ConditionalFact(nameof(AnyInstalledPrinters))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters)]
         public void Clone_Success()
         {
             PageSettings ps = new PageSettings();

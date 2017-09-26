@@ -40,10 +40,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Get the name of the algorithm being performed.
         /// </summary>
-        public HashAlgorithmName AlgorithmName
-        {
-            get { return _algorithmName; }
-        }
+        public HashAlgorithmName AlgorithmName => _algorithmName;
 
         /// <summary>
         /// Append the entire contents of <paramref name="data"/> to the data already processed in the hash or HMAC.
@@ -92,14 +89,24 @@ namespace System.Security.Cryptography
             if (_disposed)
                 throw new ObjectDisposedException(typeof(IncrementalHash).Name);
 
+            AppendData(new ReadOnlySpan<byte>(data, offset, count));
+        }
+
+        public void AppendData(ReadOnlySpan<byte> data)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+            }
+
+            Debug.Assert((_hash != null) ^ (_hmac != null));
             if (_hash != null)
             {
-                _hash.AppendHashDataCore(data, offset, count);
+                _hash.AppendHashData(data);
             }
             else
             {
-                Debug.Assert(_hmac != null, "Both _hash and _hmac were null");
-                _hmac.AppendHashData(data, offset, count);
+                _hmac.AppendHashData(data);
             }
         }
 
@@ -113,21 +120,27 @@ namespace System.Security.Cryptography
         public byte[] GetHashAndReset()
         {
             if (_disposed)
+            {
                 throw new ObjectDisposedException(typeof(IncrementalHash).Name);
-
-            byte[] hashValue;
-
-            if (_hash != null)
-            {
-                hashValue = _hash.FinalizeHashAndReset();
-            }
-            else
-            {
-                Debug.Assert(_hmac != null, "Both _hash and _hmac were null");
-                hashValue = _hmac.FinalizeHashAndReset();
             }
 
-            return hashValue;
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+            return _hash != null ?
+                _hash.FinalizeHashAndReset() :
+                _hmac.FinalizeHashAndReset();
+        }
+
+        public bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+            }
+
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+            return _hash != null ?
+                _hash.TryFinalizeHashAndReset(destination, out bytesWritten) :
+                _hmac.TryFinalizeHashAndReset(destination, out bytesWritten);
         }
 
         /// <summary>

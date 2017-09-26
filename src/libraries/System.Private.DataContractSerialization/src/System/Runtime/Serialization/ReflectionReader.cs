@@ -205,6 +205,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
+                context.ResetCollectionMemberInfo();
                 var value = ReflectionReadValue(xmlReader, context, dataMember, classContract.StableName.Namespace);
                 MemberInfo memberInfo = dataMember.MemberInfo;
                 Debug.Assert(memberInfo != null);

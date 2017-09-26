@@ -13,14 +13,9 @@ namespace System.Net
         {
             var nativeIPAddress = default(Interop.Sys.IPAddress);
 
-            byte[] bytes = ipAddress.GetAddressBytes();
-            Debug.Assert(bytes.Length == sizeof(uint) || bytes.Length == Interop.Sys.IPv6AddressBytes, $"Unexpected length: {bytes.Length}");
+            ipAddress.TryWriteBytes(new Span<byte>(nativeIPAddress.Address, Interop.Sys.IPv6AddressBytes), out int bytesWritten);
+            Debug.Assert(bytesWritten == sizeof(uint) || bytesWritten == Interop.Sys.IPv6AddressBytes, $"Unexpected length: {bytesWritten}");
 
-            for (int i = 0; i < bytes.Length && i < Interop.Sys.IPv6AddressBytes; i++)
-            {
-                nativeIPAddress.Address[i] = bytes[i];
-            }
-            
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
             {
                 nativeIPAddress.IsIPv6 = true;
@@ -39,13 +34,9 @@ namespace System.Net
             }
             else
             {
-                byte[] address = new byte[Interop.Sys.IPv6AddressBytes];
-                for (int b = 0; b < Interop.Sys.IPv6AddressBytes; b++)
-                {
-                    address[b] = nativeIPAddress.Address[b];
-                }
-
-                return new IPAddress(address, (long)nativeIPAddress.ScopeId);
+                return new IPAddress(
+                    new Span<byte>(nativeIPAddress.Address, Interop.Sys.IPv6AddressBytes),
+                    (long)nativeIPAddress.ScopeId);
             }
         }
     }

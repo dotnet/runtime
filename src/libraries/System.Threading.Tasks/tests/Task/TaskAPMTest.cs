@@ -28,7 +28,7 @@ namespace System.Threading.Tasks.Tests
         private bool _hasReturnType;
 
         /// <summary>
-        /// Used to synchornize between Main thread and async thread, by blocking the main thread until
+        /// Used to synchronize between Main thread and async thread, by blocking the main thread until
         /// the thread that invokes the TaskCompleted method via AsyncCallback finishes
         /// </summary>
         private ManualResetEvent _mre = new ManualResetEvent(false);

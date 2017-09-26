@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>Aucun constructeur n'est défini pour le type '{0}'</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>Le délégué '{0}' n'a pas de constructeur valide</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>Impossible d'utiliser la propriété ou l'indexeur '{0}' dans ce contexte, car il lui manque l'accesseur get</value>
   </data>
@@ -129,9 +126,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>Impossible d'assigner la propriété ou l'indexeur '{0}' -- il est en lecture seule</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>Impossible d'appeler un membre de base abstrait : '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>Une propriété ou un indexeur ne peut pas être passé en tant que paramètre de sortie (out) ni de référence (ref)</value>
   </data>
@@ -150,12 +144,6 @@
   <data name="AmbigMember" xml:space="preserve">
     <value>Ambiguïté entre '{0}' et '{1}'</value>
   </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>Impossible d'appeler directement des destructeurs et object.Finalize. Appelez IDisposable.Dispose s'il est disponible.</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>Ne pas appeler directement votre méthode Finalize de la classe de base. La méthode est automatiquement appelée à partir de votre destructeur.</value>
-  </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Impossible de convertir implicitement le type '{0}' en '{1}'. Une conversion explicite existe (un cast est-il manquant ?)</value>
   </data>
@@ -167,9 +155,6 @@
   </data>
   <data name="BadArity" xml:space="preserve">
     <value>L'utilisation du {1} '{0}' générique requiert les arguments de type '{2}'</value>
-  </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>Le type '{0}' ne peut pas être utilisé comme argument de type</value>
   </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>Impossible d'utiliser le {1} '{0}' avec des arguments de type</value>
@@ -189,23 +174,14 @@
   <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
     <value>Impossible d'utiliser le type '{3}' comme paramètre de type '{2}' dans le type ou la méthode générique '{0}'. Le type Nullable '{3}' ne satisfait pas la contrainte de '{1}'. Les types Nullable ne peuvent pas satisfaire les contraintes d'interface.</value>
   </data>
-  <data name="GenericConstraintNotSatisfiedTyVar" xml:space="preserve">
-    <value>Impossible d'utiliser le type '{3}' comme paramètre de type '{2}' dans le type ou la méthode générique '{0}'. Il n'y a pas de conversion boxing ou de conversion de paramètre de type de '{3}' en '{1}'.</value>
-  </data>
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>Impossible d'utiliser le type '{3}' comme paramètre de type '{2}' dans le type ou la méthode générique '{0}'. Il n'y a pas de conversion boxing de '{3}' en '{1}'.</value>
   </data>
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>Impossible de convertir null en paramètre de type '{0}' car il peut s'agir d'un type valeur qui n'autorise pas les valeurs null. Utilisez 'default({0})' à la place.</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}' n'a pas le type de retour correct</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>Impossible de déduire les arguments de type pour la méthode '{0}' à partir de l'utilisation. Essayez de spécifier les arguments de type de façon explicite.</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>Impossible de convertir le groupe de méthodes '{0}' en type non-délégué '{1}'. Souhaitiez-vous appeler la méthode ?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>Le type '{2}' doit être un type référence afin d'être utilisé comme paramètre '{1}' dans le type ou la méthode générique '{0}'</value>
@@ -216,50 +192,23 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Conversions définies par l'utilisateur ambiguës '{0}' et '{1}' lors de la conversion de '{2}' en '{3}'</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>Le type prédéfini '{0}' n'est pas défini ou importé</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' n'est pas pris en charge par le langage</value>
   </data>
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}' : impossible d'appeler explicitement un opérateur ou un accesseur</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>'{0}' est un type qui n'est pas pris en charge par le langage</value>
-  </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>Membre requis par le compilateur '{0}.{1}' manquant</value>
-  </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>Impossible de convertir implicitement un littéral de type double en type '{1}' ; utilisez un suffixe '{0}' pour créer un littéral de ce type</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Impossible de convertir en type static '{0}'</value>
   </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}' : impossible d'utiliser les types static en tant qu'arguments de type</value>
-  </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>Impossible de créer un délégué à partir de la méthode '{0}', car il s'agit d'une méthode partielle sans déclaration d'implémentation</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>L'opérande d'un opérateur d'incrémentation ou de décrémentation doit être une variable, une propriété ou un indexeur</value>
-  </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}' ne contient pas de définition pour '{1}' et aucune méthode d'extension '{1}' acceptant un premier argument de type '{0}' n'a été trouvée (une directive using ou une référence d'assembly est-elle manquante ?)</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>Impossible d'utiliser les méthodes d'extension '{0}' définies dans un type valeur '{1}' pour créer des délégués</value>
   </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>Aucune surcharge pour la méthode '{0}' ne prend d'arguments '{1}'</value>
   </data>
   <data name="BadArgTypes" xml:space="preserve">
     <value>La méthode surchargée correspondant le mieux à '{0}' a des arguments non valides</value>
-  </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>Argument '{0}' : impossible de convertir de '{1}' en '{2}'</value>
   </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>Un argument ref ou out doit être une variable qui peut être assignée</value>
@@ -288,12 +237,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>Impossible de modifier la valeur de retour de '{0}' car il ne s'agit pas d'une variable</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>L'argument '{0}' ne doit pas être passé avec le mot clé '{1}'</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>L'argument '{0}' doit être passé avec le mot clé '{1}'</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Impossible de modifier les membres d'un champ readonly '{0}' (sauf s'ils appartiennent à un constructeur ou un initialiseur de variable)</value>
   </data>
@@ -312,23 +255,8 @@
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>Impossible de passer '{0}' en tant qu'argument ref ou out, car il s'agit d'un '{1}'</value>
   </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>Impossible de lier délégué à « {0} » parce que c'est un membre de « System.Nullable&lt;T&gt;»</value>
-  </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' ne contient pas de constructeur qui accepte des arguments '{1}'</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}' ne contient pas de définition pour '{1}' et la meilleure surcharge de la méthode d'extension '{2}' contient des arguments non valides</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>Argument d'instance : impossible de convertir '{0}' en '{1}'</value>
-  </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>La méthode Add surchargée '{0}' correspondant le mieux à l'initialiseur de collection a des arguments non valides</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>La méthode surchargée '{0}' correspondant le mieux à l'élément de l'initialiseur de collection ne peut pas être utilisée. Les méthodes 'Add' de l'initialiseur de collection ne peuvent pas avoir de paramètres ref ou out.</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Impossible d'utiliser un membre '{0}' ne pouvant pas être appelé comme une méthode.</value>

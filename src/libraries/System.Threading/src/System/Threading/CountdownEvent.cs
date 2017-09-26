@@ -375,7 +375,7 @@ namespace System.Threading
         /// thread-safe and may not be used concurrently with other members of this instance.
         /// </remarks>
         /// <exception cref="T:System.ObjectDisposedException">The current instance has already been
-        /// disposed..</exception>
+        /// disposed.</exception>
         public void Reset()
         {
             Reset(_initialCount);

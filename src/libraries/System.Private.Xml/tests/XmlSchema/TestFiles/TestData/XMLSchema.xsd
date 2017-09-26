@@ -391,7 +391,7 @@
      <xs:annotation>
       <xs:documentation>
       Not allowed if simpleContent child is chosen.
-      May be overriden by setting on complexContent child.</xs:documentation>
+      May be overridden by setting on complexContent child.</xs:documentation>
     </xs:annotation>
     </xs:attribute>
     <xs:attribute name="abstract" type="xs:boolean" use="optional" default="false"/>

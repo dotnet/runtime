@@ -17,33 +17,9 @@ namespace System.IO.Tests
         static int[] iArrLargeValues = new int[] { int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
         static int[] iArrValidValues = new int[] { 10000, 100000, int.MaxValue / 2000, int.MaxValue / 5000, short.MaxValue };
 
-        private static char[] getCharArray()
-        {
-            return new char[]{
-            char.MinValue
-            ,char.MaxValue
-            ,'\t'
-            ,' '
-            ,'$'
-            ,'@'
-            ,'#'
-            ,'\0'
-            ,'\v'
-            ,'\''
-            ,'\u3190'
-            ,'\uC3A0'
-            ,'A'
-            ,'5'
-            ,'\uFE70' 
-            ,'-'
-            ,';'
-            ,'\u00E6'
-        };
-        }
-
         private static StringBuilder getSb()
         {
-            var chArr = getCharArray();
+            var chArr = TestDataProvider.CharData;
             var sb = new StringBuilder(40);
             for (int i = 0; i < chArr.Length; i++)
                 sb.Append(chArr[i]);
@@ -88,7 +64,7 @@ namespace System.IO.Tests
         [Fact]
         public static void WriteArray()
         {
-            var chArr = getCharArray();
+            var chArr = TestDataProvider.CharData;
             StringBuilder sb = getSb();
             StringWriter sw = new StringWriter(sb);
 
@@ -125,7 +101,7 @@ namespace System.IO.Tests
         [Fact]
         public static void CantWriteIndexLargeValues()
         {
-            var chArr = getCharArray();
+            var chArr = TestDataProvider.CharData;
             for (int i = 0; i < iArrLargeValues.Length; i++)
             {
                 StringWriter sw = new StringWriter();
@@ -136,7 +112,7 @@ namespace System.IO.Tests
         [Fact]
         public static void CantWriteCountLargeValues()
         {
-            var chArr = getCharArray();
+            var chArr = TestDataProvider.CharData;
             for (int i = 0; i < iArrLargeValues.Length; i++)
             {
                 StringWriter sw = new StringWriter();
@@ -150,7 +126,7 @@ namespace System.IO.Tests
             StringWriter sw = new StringWriter();
             StringReader sr;
 
-            var chArr = getCharArray();
+            var chArr = TestDataProvider.CharData;
 
             sw.Write(chArr, 2, 5);
 

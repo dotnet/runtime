@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
     <Compile Include="DcjsPerformanceTest.cs" />

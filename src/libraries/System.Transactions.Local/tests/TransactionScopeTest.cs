@@ -761,7 +761,7 @@ namespace System.Transactions.Tests
                 irm.Value = 2;
                 ct.Commit();
 
-                /* Using a already committed transaction in a new 
+                /* Using an already committed transaction in a new 
                  * TransactionScope
                  */
                 TransactionScope scope = new TransactionScope(ct);

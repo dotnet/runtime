@@ -35,9 +35,6 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestSettingThreadCultures()
         {
-            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
-                return;
-
             RemoteInvoke(() =>
             {
                 CultureInfo culture = new CultureInfo("ja-JP");

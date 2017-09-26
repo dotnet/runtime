@@ -41,7 +41,7 @@ namespace System.ComponentModel
         internal bool CanRaiseEventsInternal => CanRaiseEvents;
 
         /// <summary>
-        ///    <para>Adds a event handler to listen to the Disposed event on the component.</para>
+        ///    <para>Adds an event handler to listen to the Disposed event on the component.</para>
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -119,7 +119,7 @@ namespace System.ComponentModel
         ///    }
         ///    </code>
         ///    <para>
-        ///    For base classes, you should never override the Finalier (~Class in C#)
+        ///    For base classes, you should never override the Finalizer (~Class in C#)
         ///    or the Dispose method that takes no arguments, rather you should
         ///    always override the Dispose method that takes a bool. 
         ///    </para>

@@ -51,7 +51,7 @@ namespace System.ComponentModel
         public static readonly DesignTimeVisibleAttribute No = new DesignTimeVisibleAttribute(false);
 
         /// <summary>
-        ///     The default visiblity. (equal to Yes.)
+        ///     The default visibility. (equal to Yes.)
         /// </summary>
         public static readonly DesignTimeVisibleAttribute Default = Yes;
 

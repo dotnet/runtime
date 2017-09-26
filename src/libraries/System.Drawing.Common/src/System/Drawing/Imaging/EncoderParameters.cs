@@ -35,7 +35,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Copy the EncoderParameters data into a chunk of memory to be consumed by native GDI+ code.
         ///
-        /// We need to marshal the EncoderParameters info from/to native GDI+ ourselve since the definition of the managed/unmanaged classes
+        /// We need to marshal the EncoderParameters info from/to native GDI+ ourselves since the definition of the managed/unmanaged classes
         /// are different and the native class is a bit weird. The native EncoderParameters class is defined in GDI+ as follows:
         /// 
         /// class EncoderParameters {

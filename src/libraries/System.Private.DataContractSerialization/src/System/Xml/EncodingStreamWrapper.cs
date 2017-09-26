@@ -206,9 +206,9 @@ namespace System.Xml
                 // Emit BOM
                 if (emitBOM)
                 {
-                    byte[] bom = _encoding.GetPreamble();
+                    ReadOnlySpan<byte> bom = _encoding.Preamble;
                     if (bom.Length > 0)
-                        _stream.Write(bom, 0, bom.Length);
+                        _stream.Write(bom);
                 }
             }
         }

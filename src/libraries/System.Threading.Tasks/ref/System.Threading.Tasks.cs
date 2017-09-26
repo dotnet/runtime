@@ -9,6 +9,7 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.AggregateException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ConfiguredTaskAwaitable))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<>))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.IAsyncStateMachine))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ICriticalNotifyCompletion))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.INotifyCompletion))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.TaskAwaiter))]
@@ -76,11 +77,6 @@ namespace System.Runtime.CompilerServices
         public void SetResult() { }
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
-    }
-    public partial interface IAsyncStateMachine
-    {
-        void MoveNext();
-        void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine);
     }
 }
 namespace System.Threading

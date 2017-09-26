@@ -350,7 +350,7 @@ namespace System.Data.SqlClient
                     serverInfo.ResolvedServerName : serverInfo.PreRoutingServerName);
             }
             _state = TdsParserState.OpenNotLoggedIn;
-            _physicalStateObj.SniContext = SniContext.Snix_PreLoginBeforeSuccessfullWrite;
+            _physicalStateObj.SniContext = SniContext.Snix_PreLoginBeforeSuccessfulWrite;
             _physicalStateObj.TimeoutTime = timerExpire;
 
             bool marsCapable = false;
@@ -1166,7 +1166,9 @@ namespace System.Data.SqlClient
             else
                 Debug.Assert(!string.IsNullOrEmpty(details.errorMessage), "Empty error message received from SNI");
 
-            string sqlContextInfo = SR.GetResourceString(Enum.GetName(typeof(SniContext), stateObj.SniContext), Enum.GetName(typeof(SniContext), stateObj.SniContext));
+            string sniContextEnumName = TdsEnums.GetSniContextEnumName(stateObj.SniContext);
+
+            string sqlContextInfo = SR.GetResourceString(sniContextEnumName, sniContextEnumName);
             string providerRid = String.Format((IFormatProvider)null, "SNI_PN{0}", details.provider);
             string providerName = SR.GetResourceString(providerRid, providerRid);
             Debug.Assert(!string.IsNullOrEmpty(providerName), String.Format((IFormatProvider)null, "invalid providerResourceId '{0}'", providerRid));
@@ -1191,7 +1193,7 @@ namespace System.Data.SqlClient
                     /*
                         The error message should come back in the following format: "TCP Provider: MESSAGE TEXT"
                         If the message is received on a Win9x OS, the error message will not contain MESSAGE TEXT 
-                        If we get a error message with no message text, just return the entire message otherwise 
+                        If we get an error message with no message text, just return the entire message otherwise 
                         return just the message text.
                     */
                     if (len > 0)
@@ -2549,7 +2551,7 @@ namespace System.Data.SqlClient
             // situations where this can occur are: an invalid buffer received from client, login error
             // and the server refused our connection, and the case where we are trying to log in but
             // the server has reached its max connection limit.  Bottom line, we need to throw general
-            // error in the cases where we did not receive a error token along with the DONE_ERROR.
+            // error in the cases where we did not receive an error token along with the DONE_ERROR.
             if ((TdsEnums.DONE_ERROR == (TdsEnums.DONE_ERROR & status)) && stateObj.ErrorCount == 0 &&
                   stateObj._errorTokenReceived == false && (RunBehavior.Clean != (RunBehavior.Clean & run)))
             {

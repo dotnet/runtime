@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{F8DD26AC-C306-481B-B0DA-E7D4CD4EF6D7}"
+	ProjectSection(SolutionItems) = preProject
+		ref\Configurations.props = ref\Configurations.props
+		ref\System.Runtime.Intrinsics.X86.cs = ref\System.Runtime.Intrinsics.X86.cs
+		ref\System.Runtime.Intrinsics.X86.csproj = ref\System.Runtime.Intrinsics.X86.csproj
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4F13FF59-6559-4930-B226-5610D85685CD}"
+	ProjectSection(SolutionItems) = preProject
+		src\Configurations.props = src\Configurations.props
+		src\System.Runtime.Intrinsics.X86.csproj = src\System.Runtime.Intrinsics.X86.csproj
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

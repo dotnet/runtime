@@ -41,7 +41,6 @@ namespace System.Data.Tests.SqlTypes
 
         public SqlMoneyTest()
         {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
             _test1 = new SqlMoney(6464.6464d);
             _test2 = new SqlMoney(90000.0m);
             _test3 = new SqlMoney(90000.0m);
@@ -89,7 +88,7 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void PublicFields()
         {
-            // FIXME: There is a error in msdn docs, it says thath MaxValue
+            // FIXME: There is an error in msdn docs, it says thath MaxValue
             // is 922,337,203,685,475.5807 when the actual value is
             //    922,337,203,685,477.5807
             Assert.Equal(922337203685477.5807m, SqlMoney.MaxValue.Value);

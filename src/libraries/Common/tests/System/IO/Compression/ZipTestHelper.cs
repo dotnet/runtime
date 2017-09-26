@@ -279,7 +279,7 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        public static async Task CreateFromDir(string directory, Stream archiveStream, ZipArchiveMode mode)
+        public static async Task CreateFromDir(string directory, Stream archiveStream, ZipArchiveMode mode, bool useSpansForWriting = false)
         {
             var files = FileData.InPath(directory);
             using (ZipArchive archive = new ZipArchive(archiveStream, mode, true))
@@ -309,7 +309,22 @@ namespace System.IO.Compression.Tests
                             e.LastWriteTime = i.LastModifiedDate;
                             using (Stream entryStream = e.Open())
                             {
-                                installStream.CopyTo(entryStream);
+                                int bytesRead;
+                                var buffer = new byte[1024];
+                                if (useSpansForWriting)
+                                {
+                                    while ((bytesRead = installStream.Read(new Span<byte>(buffer))) != 0)
+                                    {
+                                        entryStream.Write(new ReadOnlySpan<byte>(buffer, 0, bytesRead));
+                                    }
+                                }
+                                else
+                                {
+                                    while ((bytesRead = installStream.Read(buffer, 0, buffer.Length)) != 0)
+                                    {
+                                        entryStream.Write(buffer, 0, bytesRead);
+                                    }
+                                }
                             }
                         }
                     }

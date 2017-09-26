@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    public sealed class Region : MarshalByRefObject, IDisposable
+    public sealed partial class Region : MarshalByRefObject, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -188,17 +188,6 @@ namespace System.Drawing
 
             int status = SafeNativeMethods.Gdip.GdipCombineRegionRegion(new HandleRef(this, _nativeRegion), new HandleRef(region, region._nativeRegion), CombineMode.Intersect);
             SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void ReleaseHrgn(IntPtr regionHandle)
-        {
-            if (regionHandle == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(regionHandle));
-            }
-
-            SafeNativeMethods.IntDeleteObject(new HandleRef(this, regionHandle));
         }
 
         public void Union(RectangleF rect)

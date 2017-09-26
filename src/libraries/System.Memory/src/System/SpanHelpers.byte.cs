@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#if !netstandard10
+#if !netstandard11
 using System.Numerics;
 #endif
 
@@ -75,7 +75,7 @@ namespace System
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)(uint)length;
-#if !netstandard10
+#if !netstandard11
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 unchecked
@@ -135,13 +135,9 @@ namespace System
 
                 index += 1;
             }
-#if !netstandard10
-            if (Vector.IsHardwareAccelerated)
+#if !netstandard11
+            if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
                 // Get comparison Vector
                 Vector<byte> vComparison = GetVector(value);
@@ -153,17 +149,11 @@ namespace System
                         index += Vector<byte>.Count;
                         continue;
                     }
-                    // Found match, reuse Vector vComparison to keep register pressure low
-                    vComparison = vMatches;
-                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
-                    goto VectorFound;
+                    // Find offset of first match
+                    return (int)(byte*)index + LocateFirstFoundByte(vMatches);
                 }
 
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
-                else
+                if ((int)(byte*)index < length)
                 {
                     unchecked
                     {
@@ -171,14 +161,10 @@ namespace System
                     }
                     goto SequentialScan;
                 }
-            VectorFound:
-                // Find offset of first match
-                return (int)(byte*)index + LocateFirstFoundByte(vComparison);
             }
-        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -204,7 +190,7 @@ namespace System
             uint uValue1 = value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)(uint)length;
-#if !netstandard10
+#if !netstandard11
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 unchecked
@@ -278,13 +264,9 @@ namespace System
 
                 index += 1;
             }
-#if !netstandard10
-            if (Vector.IsHardwareAccelerated)
+#if !netstandard11
+            if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
                 // Get comparison Vector
                 Vector<byte> values0 = GetVector(value0);
@@ -301,17 +283,11 @@ namespace System
                         index += Vector<byte>.Count;
                         continue;
                     }
-                    // Found match, reuse Vector vComparison to keep register pressure low
-                    values0 = vMatches;
-                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
-                    goto VectorFound;
+                    // Find offset of first match
+                    return (int)(byte*)index + LocateFirstFoundByte(vMatches);
                 }
 
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
-                else
+                if ((int)(byte*)index < length)
                 {
                     unchecked
                     {
@@ -319,14 +295,10 @@ namespace System
                     }
                     goto SequentialScan;
                 }
-            VectorFound:
-                // Find offset of first match
-                return (int)(byte*)index + LocateFirstFoundByte(values0);
             }
-        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -353,7 +325,7 @@ namespace System
             uint uValue2 = value2; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)(uint)length;
-#if !netstandard10
+#if !netstandard11
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 unchecked
@@ -427,13 +399,9 @@ namespace System
 
                 index += 1;
             }
-#if !netstandard10
-            if (Vector.IsHardwareAccelerated)
+#if !netstandard11
+            if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
                 // Get comparison Vector
                 Vector<byte> values0 = GetVector(value0);
@@ -454,17 +422,11 @@ namespace System
                         index += Vector<byte>.Count;
                         continue;
                     }
-                    // Found match, reuse Vector vComparison to keep register pressure low
-                    values0 = vMatches;
-                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
-                    goto VectorFound;
+                    // Find offset of first match
+                    return (int)(byte*)index + LocateFirstFoundByte(vMatches);
                 }
 
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
-                else
+                if ((int)(byte*)index < length)
                 {
                     unchecked
                     {
@@ -472,14 +434,10 @@ namespace System
                     }
                     goto SequentialScan;
                 }
-            VectorFound:
-                // Find offset of first match
-                return (int)(byte*)index + LocateFirstFoundByte(values0);
             }
-        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -507,7 +465,7 @@ namespace System
             IntPtr i = (IntPtr)0; // Use IntPtr and byte* for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr n = (IntPtr)length;
 
-#if !netstandard10
+#if !netstandard11
             if (Vector.IsHardwareAccelerated && (byte*)n >= (byte*)Vector<byte>.Count)
             {
                 n -= Vector<byte>.Count;
@@ -551,11 +509,11 @@ namespace System
         Equal:
             return true;
 
-        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return false;
         }
 
-#if !netstandard10
+#if !netstandard11
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundByte(Vector<byte> match)
@@ -578,7 +536,7 @@ namespace System
         }
 #endif
 
-#if !netstandard10
+#if !netstandard11
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundByte(ulong match)
         {
@@ -587,12 +545,12 @@ namespace System
                 // Flag least significant power of two bit
                 var powerOfTwoFlag = match ^ (match - 1);
                 // Shift all powers of two into the high byte and extract
-                return (int)((powerOfTwoFlag * xorPowerOfTwoToHighByte) >> 57);
+                return (int)((powerOfTwoFlag * XorPowerOfTwoToHighByte) >> 57);
             }
         }
 #endif
 
-#if !netstandard10
+#if !netstandard11
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector<byte> GetVector(byte vectorByte)
         {
@@ -607,9 +565,9 @@ namespace System
         }
 #endif
 
-#if !netstandard10
-        private const ulong xorPowerOfTwoToHighByte = (0x07ul       |
-                                                       0x06ul <<  8 |
+#if !netstandard11
+        private const ulong XorPowerOfTwoToHighByte = (0x07ul |
+                                                       0x06ul << 8 |
                                                        0x05ul << 16 |
                                                        0x04ul << 24 |
                                                        0x03ul << 32 |

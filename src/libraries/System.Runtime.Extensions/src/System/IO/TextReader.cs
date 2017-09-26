@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
+using System.Buffers;
 
 namespace System.IO
 {
@@ -100,6 +101,30 @@ namespace System.IO
             return n;
         }
 
+        // Reads a span of characters. This method will read up to
+        // count characters from this TextReader into the
+        // span of characters Returns the actual number of characters read.
+        //
+        public virtual int Read(Span<char> destination)
+        {
+            char[] buffer = ArrayPool<char>.Shared.Rent(destination.Length);
+
+            try
+            {
+                int numRead = Read(buffer, 0, destination.Length);
+                if ((uint)numRead > destination.Length)
+                {
+                    throw new IOException(SR.IO_InvalidReadLength);
+                }
+                new Span<char>(buffer, 0, numRead).CopyTo(destination);
+                return numRead;
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(buffer);
+            }
+        }
+
         // Reads all characters from the current position to the end of the 
         // TextReader, and returns them as one string.
         public virtual string ReadToEnd()
@@ -125,6 +150,29 @@ namespace System.IO
                 n += (i = Read(buffer, index + n, count - n));
             } while (i > 0 && n < count);
             return n;
+        }
+
+        // Blocking version of read for span of characters.  Returns only when count
+        // characters have been read or the end of the file was reached.
+        //
+        public virtual int ReadBlock(Span<char> destination)
+        {
+            char[] buffer = ArrayPool<char>.Shared.Rent(destination.Length);
+
+            try
+            {
+                int numRead = ReadBlock(buffer, 0, destination.Length);
+                if ((uint)numRead > destination.Length)
+                {
+                    throw new IOException(SR.IO_InvalidReadLength);
+                }
+                new Span<char>(buffer, 0, numRead).CopyTo(destination);
+                return numRead;
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(buffer);
+            }
         }
 
         // Reads a line. A line is defined as a sequence of characters followed by

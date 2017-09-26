@@ -5,16 +5,19 @@
 
 using Xunit;
 using Microsoft.XmlSerializer.Generator;
+using System.IO;
 
 namespace Microsoft.XmlSerializer.Generator.Tests
 {
     public static class SgenTests
     {
         [Fact]
-        public static void BasicTest()
+        public static void SgenCommandTest()
         {
-            int n = Sgen.Main(null);
+            string codefile = "Microsoft.XmlSerializer.Generator.Tests.XmlSerializers.cs";
+            int n = Sgen.Main(new string[] { "Microsoft.XmlSerializer.Generator.Tests.dll", "/force", "/quiet"});
             Assert.Equal(0, n);
+            Assert.True(File.Exists(codefile), string.Format("Fail to generate {0}.", codefile));
         }
     }
 }

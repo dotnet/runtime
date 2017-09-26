@@ -17,22 +17,31 @@ namespace XmlCoreTest.Common
      * Helper class used by all test frameworks to create an instance of XmlWriter
      * Supports the following writer types
      */
-
+    [Flags]
     public enum WriterType
     {
-        UTF8Writer,		// V2 writer with Encoding.UTF8
-        UnicodeWriter,	// V2 writer with Encoding.Unicode
-        CustomWriter,	// CustomWriter implemented in this same folder
-        CharCheckingWriter,	// CharCheckingWriter implemented in this same folder
-        UTF8WriterIndent,	// UTF8WriterIndent implemented in this same folder
-        UnicodeWriterIndent,	// UnicodeWriterIndent implemented in this same folder
-        WrappedWriter	// WrappedWriter implemented in this same folder
+        All = UTF8Writer | UnicodeWriter | CustomWriter | CharCheckingWriter | UTF8WriterIndent | UnicodeWriterIndent | WrappedWriter | Async | NoAsync,
+        AllButCustom = All & ~CustomWriter,
+        AllButIndenting = All & ~UTF8WriterIndent & ~UnicodeWriterIndent,
+
+        Async = 1024,
+        NoAsync = 2048,
+
+        UTF8Writer = 1,	          // V2 writer with Encoding.UTF8
+        UnicodeWriter = 2,        // V2 writer with Encoding.Unicode
+        CustomWriter = 4,         // CustomWriter implemented in this same folder
+        CharCheckingWriter = 8,	  // CharCheckingWriter implemented in this same folder
+        UTF8WriterIndent = 16,    // UTF8WriterIndent implemented in this same folder
+        UnicodeWriterIndent = 32, // UnicodeWriterIndent implemented in this same folder
+        WrappedWriter = 64        // WrappedWriter implemented in this same folder
     }
 
 
     public class WriterFactory
     {
         private string _fileName;
+        private bool _overrideAsync = false;
+        private bool _async;
 
         protected WriterType writerType1;
         public WriterType WriterType
@@ -43,9 +52,11 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public WriterFactory(WriterType t)
+        public WriterFactory(WriterType t, bool overrideAsync = false, bool async = false)
         {
             writerType1 = t;
+            _overrideAsync = overrideAsync;
+            _async = async;
         }
 
         private XmlWriterSettings _wSettings = null;
@@ -64,7 +75,7 @@ namespace XmlCoreTest.Common
                     _wSettings.CloseOutput = false;
                     _wSettings.Encoding = Encoding.UTF8;
                     _wSettings.NamespaceHandling = NamespaceHandling.Default;
-                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings);
+                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings, _overrideAsync, _async);
                     FilePathUtil.addStream(_fileName, _writerStream);
                     break;
                 case WriterType.UnicodeWriter:
@@ -72,12 +83,15 @@ namespace XmlCoreTest.Common
                     _wSettings.CloseOutput = false;
                     _wSettings.Encoding = Encoding.Unicode;
                     _wSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
-                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings);
+                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings, _overrideAsync, _async);
                     FilePathUtil.addStream(_fileName, _writerStream);
                     break;
                 case WriterType.CustomWriter:
                     _writerStream = new MemoryStream();
                     _wSettings.CloseOutput = false;
+                    if (_overrideAsync)
+                        _wSettings.Async = _async;
+
                     FilePathUtil.addStream(_fileName, _writerStream);
                     _xmlWriter = new CustomWriter(_fileName, _wSettings);
                     break;
@@ -86,7 +100,7 @@ namespace XmlCoreTest.Common
                     _wSettings.CloseOutput = false;
                     _wSettings.Encoding = Encoding.UTF8;
                     _wSettings.Indent = true;
-                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings);
+                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings, _overrideAsync, _async);
                     FilePathUtil.addStream(_fileName, _writerStream);
                     break;
                 case WriterType.UnicodeWriterIndent:
@@ -94,25 +108,25 @@ namespace XmlCoreTest.Common
                     _wSettings.CloseOutput = false;
                     _wSettings.Encoding = Encoding.Unicode;
                     _wSettings.Indent = true;
-                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings);
+                    _xmlWriter = WriterHelper.Create(_writerStream, _wSettings, _overrideAsync, _async);
                     FilePathUtil.addStream(_fileName, _writerStream);
                     break;
                 case WriterType.CharCheckingWriter:
                     _writerStream = new MemoryStream();
                     _wSettings.CloseOutput = false;
                     _wSettings.CheckCharacters = false;
-                    XmlWriter ww = WriterHelper.Create(_writerStream, _wSettings);
+                    XmlWriter ww = WriterHelper.Create(_writerStream, _wSettings, _overrideAsync, _async);
                     FilePathUtil.addStream(_fileName, _writerStream);
                     XmlWriterSettings ws = _wSettings.Clone();
                     ws.CheckCharacters = true;
-                    _xmlWriter = WriterHelper.Create(ww, ws);
+                    _xmlWriter = WriterHelper.Create(ww, ws, _overrideAsync, _async);
                     break;
                 case WriterType.WrappedWriter:
                     _writerStream = new MemoryStream();
                     _wSettings.CloseOutput = false;
-                    XmlWriter w = WriterHelper.Create(_writerStream, _wSettings);
+                    XmlWriter w = WriterHelper.Create(_writerStream, _wSettings, _overrideAsync, _async);
                     FilePathUtil.addStream(_fileName, _writerStream);
-                    _xmlWriter = WriterHelper.Create(w, _wSettings);
+                    _xmlWriter = WriterHelper.Create(w, _wSettings, _overrideAsync, _async);
                     break;
                 default:
                     throw new Exception("Incorrect writer type");
@@ -419,10 +433,15 @@ namespace XmlCoreTest.Common
 
     public static class WriterHelper
     {
-        public static XmlWriter Create(string outputFileName)
+        private static bool ShouldEnableAsync(bool overrideAsync, bool async)
+        {
+            return overrideAsync ? async : AsyncUtil.IsAsyncEnabled;
+        }
+
+        public static XmlWriter Create(string outputFileName, bool overrideAsync = false, bool async = false)
         {
             FilePathUtil.addStream(outputFileName, new MemoryStream());
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(FilePathUtil.getStream(outputFileName));
             }
@@ -432,10 +451,10 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(string outputFileName, XmlWriterSettings settings)
+        public static XmlWriter Create(string outputFileName, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
             FilePathUtil.addStream(outputFileName, new MemoryStream());
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(FilePathUtil.getStream(outputFileName), settings);
             }
@@ -445,9 +464,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(Stream output)
+        public static XmlWriter Create(Stream output, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output);
             }
@@ -457,9 +476,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(Stream output, XmlWriterSettings settings)
+        public static XmlWriter Create(Stream output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output, settings);
             }
@@ -469,9 +488,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(TextWriter output)
+        public static XmlWriter Create(TextWriter output, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output);
             }
@@ -481,9 +500,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(TextWriter output, XmlWriterSettings settings)
+        public static XmlWriter Create(TextWriter output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output, settings);
             }
@@ -493,9 +512,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(StringBuilder output)
+        public static XmlWriter Create(StringBuilder output, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output);
             }
@@ -505,9 +524,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(StringBuilder output, XmlWriterSettings settings)
+        public static XmlWriter Create(StringBuilder output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output, settings);
             }
@@ -517,9 +536,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(XmlWriter output)
+        public static XmlWriter Create(XmlWriter output, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output);
             }
@@ -529,9 +548,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(XmlWriter output, XmlWriterSettings settings)
+        public static XmlWriter Create(XmlWriter output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
-            if (AsyncUtil.IsAsyncEnabled)
+            if (ShouldEnableAsync(overrideAsync, async))
             {
                 return XmlWriterAsync.Create(output, settings);
             }

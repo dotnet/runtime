@@ -86,43 +86,22 @@ namespace Internal.Cryptography
                 HashSizeInBytes = hashSizeInBytes;
             }
 
-            public override unsafe void AppendHashDataCore(byte[] data, int offset, int count)
+            public override void AppendHashData(ReadOnlySpan<byte> data)
             {
-                Debug.Assert(data != null);
-                Debug.Assert(offset >= 0);
-                Debug.Assert(offset < data.Length);
-                Debug.Assert(count >= 0);
-                Debug.Assert(data.Length - offset > count);
-
                 if (!_running)
                 {
                     SetKey();
                 }
 
-                int ret;
-
-                fixed (byte* pData = data)
-                {
-                    byte* pbData = pData + offset;
-                    ret = Interop.AppleCrypto.HmacUpdate(_ctx, pbData, count);
-                }
-
-                if (ret != 1)
+                if (Interop.AppleCrypto.HmacUpdate(_ctx, data, data.Length) != 1)
                 {
                     throw new CryptographicException();
                 }
             }
 
-            private unsafe void SetKey()
+            private void SetKey()
             {
-                int ret;
-
-                fixed (byte* pbKey = _key)
-                {
-                    ret = Interop.AppleCrypto.HmacInit(_ctx, pbKey, _key.Length);
-                }
-
-                if (ret != 1)
+                if (Interop.AppleCrypto.HmacInit(_ctx, _key, _key.Length) != 1)
                 {
                     throw new CryptographicException();
                 }
@@ -132,26 +111,34 @@ namespace Internal.Cryptography
 
             public override unsafe byte[] FinalizeHashAndReset()
             {
+                var output = new byte[HashSizeInBytes];
+                bool success = TryFinalizeHashAndReset(output, out int bytesWritten);
+                Debug.Assert(success);
+                Debug.Assert(bytesWritten == output.Length);
+                return output;
+            }
+
+            public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
+            {
+                if (destination.Length < HashSizeInBytes)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
                 if (!_running)
                 {
                     SetKey();
                 }
 
-                byte[] output = new byte[HashSizeInBytes];
-                int ret;
-
-                fixed (byte* pbOutput = output)
-                {
-                    ret = Interop.AppleCrypto.HmacFinal(_ctx, pbOutput, output.Length);
-                }
-
-                if (ret != 1)
+                if (Interop.AppleCrypto.HmacFinal(_ctx, destination, destination.Length) != 1)
                 {
                     throw new CryptographicException();
                 }
 
+                bytesWritten = HashSizeInBytes;
                 _running = false;
-                return output;
+                return true;
             }
 
             public override void Dispose(bool disposing)
@@ -193,22 +180,9 @@ namespace Internal.Cryptography
                 HashSizeInBytes = hashSizeInBytes;
             }
 
-            public override unsafe void AppendHashDataCore(byte[] data, int offset, int count)
+            public override void AppendHashData(ReadOnlySpan<byte> data)
             {
-                Debug.Assert(data != null);
-                Debug.Assert(offset >= 0);
-                Debug.Assert(offset < data.Length);
-                Debug.Assert(count >= 0);
-                Debug.Assert(data.Length - offset > count);
-
-                int ret;
-
-                fixed (byte* pData = data)
-                {
-                    byte* pbData = pData + offset;
-                    ret = Interop.AppleCrypto.DigestUpdate(_ctx, pbData, count);
-                }
-
+                int ret = Interop.AppleCrypto.DigestUpdate(_ctx, data, data.Length);
                 if (ret != 1)
                 {
                     Debug.Assert(ret == 0, $"DigestUpdate return value {ret} was not 0 or 1");
@@ -216,23 +190,32 @@ namespace Internal.Cryptography
                 }
             }
 
-            public override unsafe byte[] FinalizeHashAndReset()
+            public override byte[] FinalizeHashAndReset()
             {
-                byte[] hash = new byte[HashSizeInBytes];
-                int ret;
+                var hash = new byte[HashSizeInBytes];
+                bool success = TryFinalizeHashAndReset(hash, out int bytesWritten);
+                Debug.Assert(success);
+                Debug.Assert(bytesWritten == hash.Length);
+                return hash;
+            }
 
-                fixed (byte* pHash = hash)
+            public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
+            {
+                if (destination.Length < HashSizeInBytes)
                 {
-                    ret = Interop.AppleCrypto.DigestFinal(_ctx, pHash, hash.Length);
+                    bytesWritten = 0;
+                    return false;
                 }
 
+                int ret = Interop.AppleCrypto.DigestFinal(_ctx, destination, destination.Length);
                 if (ret != 1)
                 {
                     Debug.Assert(ret == 0, $"DigestFinal return value {ret} was not 0 or 1");
                     throw new CryptographicException();
                 }
 
-                return hash;
+                bytesWritten = HashSizeInBytes;
+                return true;
             }
 
             public override void Dispose(bool disposing)

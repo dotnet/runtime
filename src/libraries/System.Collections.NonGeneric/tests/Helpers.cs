@@ -198,26 +198,5 @@ namespace System.Collections.Tests
 
             return array;
         }
-
-        public static void PerformActionOnCustomCulture(Action action, CultureInfo customCulture = null)
-        {
-            CultureInfo currentCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                if (customCulture == null)
-                {
-                    customCulture = new CultureInfo("de-DE");
-                }
-                CultureInfo.CurrentCulture = customCulture;
-                action();
-            }
-            catch (CultureNotFoundException)
-            {
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = currentCulture;
-            }
-        }
     }
 }

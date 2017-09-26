@@ -87,12 +87,6 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\UriHelper.cs">
-      <Link>ProductionCode\Internal\UriHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\Shims\Uri.cs">
-      <Link>ProductionCode\Shims\Uri.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs">
       <Link>ProductionCode\System\Net\Http\ByteArrayContent.cs</Link>
     </Compile>
@@ -104,6 +98,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
       <Link>ProductionCode\System\IO\DelegatingStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs">
+      <Link>ProductionCode\System\Net\Http\ByteArrayHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs">
       <Link>ProductionCode\System\Net\Http\FormUrlEncodedContent.cs</Link>
@@ -138,6 +135,9 @@
     <Compile Include="..\..\src\System\Net\Http\Headers\GenericHeaderParser.cs">
       <Link>ProductionCode\System\Net\Http\Headers\GenericHeaderParser.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\HeaderDescriptor.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\HeaderDescriptor.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\HeaderUtilities.cs">
       <Link>ProductionCode\System\Net\Http\Headers\HeaderUtilities.cs</Link>
     </Compile>
@@ -153,6 +153,9 @@
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaders.cs">
       <Link>ProductionCode\System\Net\Http\Headers\HttpHeaders.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaderType.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\HttpHeaderType.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaderValueCollection.cs">
       <Link>ProductionCode\System\Net\Http\Headers\HttpHeaderValueCollection.cs</Link>
     </Compile>
@@ -167,6 +170,12 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\Int64NumberHeaderParser.cs">
       <Link>ProductionCode\System\Net\Http\Headers\Int64NumberHeaderParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\KnownHeaders.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\KnownHeaders.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\KnownHeader.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\KnownHeader.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\MediaTypeHeaderParser.cs">
       <Link>ProductionCode\System\Net\Http\Headers\MediaTypeHeaderParser.cs</Link>

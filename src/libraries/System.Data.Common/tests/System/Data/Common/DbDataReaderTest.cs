@@ -21,6 +21,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+using System.IO;
 using Xunit;
 
 namespace System.Data.Tests.Common
@@ -45,101 +46,95 @@ namespace System.Data.Tests.Common
             Assert.Equal(3, testData.Rows.Count);
         }
 
-#if NET_4_5
 		[Fact]
-		public void GetFieldValueTest ()
+		public void GetFieldValueTest()
 		{
 			//First row
-			dataReader.Read ();
-			Assert.Equal ("row_1", dataReader.GetFieldValue<string> (0));
+			 _dataReader.Read();
+			Assert.Equal("row_1", _dataReader.GetFieldValue<string>(0));
 			byte[] expected_data = new byte[] { 0xde, 0xad, 0xbe, 0xef };
-			byte[] actual_data = dataReader.GetFieldValue<byte[]> (1);
-			Assert.Equal (expected_data.Length, actual_data.Length);
-			for (int i = 0; i < expected_data.Length; i++) {
-				Assert.Equal (expected_data [i], actual_data [i]);
+			byte[] actual_data = _dataReader.GetFieldValue<byte[]>(1);
+			Assert.Equal(expected_data.Length, actual_data.Length);
+			for (int i = 0; i < expected_data.Length; i++)
+			{
+				Assert.Equal(expected_data [i], actual_data [i]);
 			}
 
 			//Second row where data row column value is DBNull
-			dataReader.Read ();
-			Assert.Equal ("row_2", dataReader.GetFieldValue<string> (0));
-			try {
-				actual_data = dataReader.GetFieldValue<byte[]> (1);
-Assert.False(true);
-			} catch (InvalidCastException) {
-				//This is expected
-			}
+			 _dataReader.Read();
+			Assert.Equal("row_2", _dataReader.GetFieldValue<string>(0));
+			Assert.Throws<InvalidCastException>(() => _dataReader.GetFieldValue<byte[]>(1));
 
 			//Third row
-			dataReader.Read ();
-			Assert.Equal ("row_3", dataReader.GetFieldValue<string> (0));
+			 _dataReader.Read();
+			Assert.Equal("row_3", _dataReader.GetFieldValue<string>(0));
 			expected_data = new byte[] { 0x00 };
-			actual_data = dataReader.GetFieldValue<byte[]> (1);
-			Assert.Equal (expected_data.Length, actual_data.Length);
-			Assert.Equal (expected_data [0], actual_data [0]);
+			actual_data = _dataReader.GetFieldValue<byte[]>(1);
+			Assert.Equal(expected_data.Length, actual_data.Length);
+			Assert.Equal(expected_data [0], actual_data [0]);
 		}
 
 		[Fact]
-		public void GetStreamTest ()
+		public void GetStreamTest()
 		{
 			int testColOrdinal = 1;
 			byte[] buffer = new byte[1024];
 
-			dataReader.Read ();
-			Stream stream = dataReader.GetStream (testColOrdinal);
-			Assert.NotNull (stream);
+			 _dataReader.Read();
+			Stream stream = _dataReader.GetStream(testColOrdinal);
+			Assert.NotNull(stream);
 
 			//Read stream content to byte buffer
-			int data_length = stream.Read (buffer, 0, buffer.Length);
+			int data_length = stream.Read(buffer, 0, buffer.Length);
 
 			//Verify that content is expected
 			byte[] expected = new byte[] { 0xde, 0xad, 0xbe, 0xef };
-			Assert.Equal (expected.Length, data_length);
-			for (int i = 0; i < expected.Length; i++) {
-				Assert.Equal (expected [i], buffer [i]);
+			Assert.Equal(expected.Length, data_length);
+			for (int i = 0; i < expected.Length; i++)
+			{
+				Assert.Equal(expected [i], buffer [i]);
 			}
 
 			//Get DBNull value stream
-			Assert.True (dataReader.Read ());
-			stream = dataReader.GetStream (testColOrdinal);
-			Assert.Equal (0, stream.Length);
+			Assert.True(_dataReader.Read());
+			stream = _dataReader.GetStream(testColOrdinal);
+			Assert.Equal(0, stream.Length);
 
 			//Get single byte value stream
-			Assert.True (dataReader.Read ());
-			stream = dataReader.GetStream (testColOrdinal);
+			Assert.True(_dataReader.Read());
+			stream = _dataReader.GetStream(testColOrdinal);
 			expected = new byte[] { 0x00 };
-			Assert.Equal (expected.Length, stream.Length);
-			Assert.Equal (expected [0], stream.ReadByte ());
+			Assert.Equal(expected.Length, stream.Length);
+			Assert.Equal(expected [0], stream.ReadByte());
 		}
 
 		[Fact]
-		public void GetTextReader ()
+		public void GetTextReader()
 		{
 			int testColOrdinal = 0;
 
 			//Read first row
-			dataReader.Read ();
-			TextReader textReader = dataReader.GetTextReader (testColOrdinal);
-			Assert.NotNull (textReader);
+			 _dataReader.Read();
+			TextReader textReader = _dataReader.GetTextReader(testColOrdinal);
+			Assert.NotNull(textReader);
 
-			string txt = textReader.ReadToEnd ();
-			Assert.Equal ("row_1", txt);
+			string txt = textReader.ReadToEnd();
+			Assert.Equal("row_1", txt);
 
 			//Move to second row
-			Assert.True (dataReader.Read ());
-			textReader = dataReader.GetTextReader (testColOrdinal);
-			txt = textReader.ReadToEnd ();
-			Assert.Equal ("row_2", txt);
+			Assert.True(_dataReader.Read());
+			textReader = _dataReader.GetTextReader(testColOrdinal);
+			txt = textReader.ReadToEnd();
+			Assert.Equal("row_2", txt);
 
 			//Move to third row
-			Assert.True (dataReader.Read ());
-			textReader = dataReader.GetTextReader (testColOrdinal);
-			txt = textReader.ReadToEnd ();
-			Assert.Equal ("row_3", txt);
+			Assert.True(_dataReader.Read());
+			textReader = _dataReader.GetTextReader(testColOrdinal);
+			txt = textReader.ReadToEnd();
+			Assert.Equal("row_3", txt);
 
-			Assert.False (dataReader.Read ());
+			Assert.False(_dataReader.Read());
 		}
-
-#endif //NET_4_5
     }
 }
 

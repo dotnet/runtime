@@ -9,7 +9,7 @@ namespace System
 {
     internal static class UriHelper
     {
-        private static readonly char[] s_hexUpperChars = {
+        internal static readonly char[] s_hexUpperChars = {
                                    '0', '1', '2', '3', '4', '5', '6', '7',
                                    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
@@ -713,52 +713,6 @@ namespace System
         internal static bool IsGenDelim(char ch)
         {
             return (ch == ':' || ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@');
-        }
-
-        //
-        // IsHexDigit
-        //
-        //  Determines whether a character is a valid hexadecimal digit in the range
-        //  [0..9] | [A..F] | [a..f]
-        //
-        // Inputs:
-        //  <argument>  character
-        //      Character to test
-        //
-        // Returns:
-        //  true if <character> is a hexadecimal digit character
-        //
-        // Throws:
-        //  Nothing
-        //
-        internal static bool IsHexDigit(char character)
-        {
-            return ((character >= '0') && (character <= '9'))
-                || ((character >= 'A') && (character <= 'F'))
-                || ((character >= 'a') && (character <= 'f'));
-        }
-
-        //
-        // Returns:
-        //  Number in the range 0..15
-        //
-        // Throws:
-        //  ArgumentException
-        //
-        internal static int FromHex(char digit)
-        {
-            if (((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f')))
-            {
-                return (digit <= '9')
-                    ? ((int)digit - (int)'0')
-                    : (((digit <= 'F')
-                    ? ((int)digit - (int)'A')
-                    : ((int)digit - (int)'a'))
-                    + 10);
-            }
-            throw new ArgumentOutOfRangeException(nameof(digit));
         }
 
         internal static readonly char[] s_WSchars = new char[] { ' ', '\n', '\r', '\t' };

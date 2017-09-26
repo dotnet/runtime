@@ -152,7 +152,7 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Retireves the part of the sqlUserInstance.dll from the registry
+        /// Retrieves the part of the sqlUserInstance.dll from the registry
         /// </summary>
         /// <param name="errorState">In case the dll path is not found, the error is set here.</param>
         /// <returns></returns>

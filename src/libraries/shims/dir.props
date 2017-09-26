@@ -6,7 +6,6 @@
       $(BuildConfigurations);
       netcoreapp;
       uap;
-      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 
@@ -17,7 +16,6 @@
   <PropertyGroup>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
-    <IsNetFxNETStandard>true</IsNetFxNETStandard>
   </PropertyGroup>
 
   <PropertyGroup>

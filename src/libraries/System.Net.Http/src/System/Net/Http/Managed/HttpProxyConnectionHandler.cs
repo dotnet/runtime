@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
@@ -22,9 +21,11 @@ namespace System.Net.Http
         public HttpProxyConnectionHandler(HttpConnectionSettings settings, HttpMessageHandler innerHandler)
         {
             Debug.Assert(innerHandler != null);
+            Debug.Assert(settings._useProxy);
+            Debug.Assert(settings._proxy != null || s_proxyFromEnvironment.Value != null);
 
             _innerHandler = innerHandler;
-            _proxy = settings._useProxy ? settings._proxy : new PassthroughWebProxy(s_proxyFromEnvironment.Value);
+            _proxy = settings._proxy ?? new PassthroughWebProxy(s_proxyFromEnvironment.Value);
             _defaultCredentials = settings._defaultProxyCredentials;
             _connectionPools = new HttpConnectionPools(settings._maxConnectionsPerServer);
         }
@@ -42,7 +43,7 @@ namespace System.Net.Http
             catch (Exception)
             {
                 // Eat any exception from the IWebProxy and just treat it as no proxy.
-                // TODO #21452: This seems a bit questionable, but it's what the tests expect
+                // This matches the behavior of other handlers.
             }
 
             return proxyUri == null ?
@@ -55,12 +56,12 @@ namespace System.Net.Http
         {
             if (proxyUri.Scheme != UriScheme.Http)
             {
-                throw new InvalidOperationException($"invalid scheme {proxyUri.Scheme} for proxy");
+                throw new InvalidOperationException(SR.net_http_invalid_proxy_scheme);
             }
 
             if (request.RequestUri.Scheme == UriScheme.Https)
             {
-                // TODO #21452: Implement SSL tunneling through proxy
+                // TODO #23136: Implement SSL tunneling through proxy
                 throw new NotImplementedException("no support for SSL tunneling through proxy");
             }
 
@@ -74,25 +75,64 @@ namespace System.Net.Http
                 foreach (AuthenticationHeaderValue h in response.Headers.ProxyAuthenticate)
                 {
                     // We only support Basic auth, ignore others
-                    const string Basic = "Basic";
-                    if (h.Scheme == Basic)
+                    if (h.Scheme == AuthenticationHelper.Basic)
                     {
                         NetworkCredential credential =
-                            _proxy.Credentials?.GetCredential(proxyUri, Basic) ??
-                            _defaultCredentials?.GetCredential(proxyUri, Basic);
+                            _proxy.Credentials?.GetCredential(proxyUri, AuthenticationHelper.Basic) ??
+                            _defaultCredentials?.GetCredential(proxyUri, AuthenticationHelper.Basic);
 
                         if (credential != null)
                         {
                             response.Dispose();
 
-                            request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(Basic,
-                                BasicAuthenticationHelper.GetBasicTokenForCredential(credential));
+                            request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(AuthenticationHelper.Basic,
+                                AuthenticationHelper.GetBasicTokenForCredential(credential));
 
                             connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);
                             response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
                         }
 
                         break;
+                    }
+                    else if (h.Scheme == AuthenticationHelper.Digest)
+                    {
+                        NetworkCredential credential =
+                            _proxy.Credentials?.GetCredential(proxyUri, AuthenticationHelper.Digest) ??
+                            _defaultCredentials?.GetCredential(proxyUri, AuthenticationHelper.Digest);
+
+                        if (credential != null)
+                        {
+                            // Update digest response with new parameter from Proxy-Authenticate
+                            AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(h.Parameter);
+
+                            if (await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false))
+                            {
+                                response.Dispose();
+                                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                                // Retry in case of nonce timeout in server.
+                                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                                {
+                                    foreach (AuthenticationHeaderValue ahv in response.Headers.ProxyAuthenticate)
+                                    {
+                                        if (ahv.Scheme == AuthenticationHelper.Digest)
+                                        {
+                                            digestResponse = new AuthenticationHelper.DigestResponse(ahv.Parameter);
+                                            if (AuthenticationHelper.IsServerNonceStale(digestResponse) &&
+                                                await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false))
+                                            {
+                                                response.Dispose();
+                                                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                                            }
+
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
                     }
                 }
             }
@@ -127,7 +167,7 @@ namespace System.Net.Http
         private static readonly Lazy<Uri> s_proxyFromEnvironment = new Lazy<Uri>(() =>
         {
             // http_proxy is standard on Unix, used e.g. by libcurl.
-            // TODO #21452: We should support the full array of environment variables here,
+            // TODO #23150: We should support the full array of environment variables here,
             // including no_proxy, all_proxy, etc.
 
             string proxyString = Environment.GetEnvironmentVariable("http_proxy");

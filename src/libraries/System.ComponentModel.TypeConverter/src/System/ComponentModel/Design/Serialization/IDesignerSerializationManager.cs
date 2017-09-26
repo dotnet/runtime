@@ -18,7 +18,7 @@ namespace System.ComponentModel.Design.Serialization
         ///     The Context property provides a user-defined storage area
         ///     implemented as a stack.  This storage area is a useful way
         ///     to provide communication across serializers, as serialization
-        ///     is a generally hierarchial process.
+        ///     is a generally hierarchical process.
         /// </summary>
         ContextStack Context { get; }
 

@@ -822,7 +822,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 {
                     if (prefix.Length != 0)
                     {
-                        throw new InvalidOperationException("Invalid Namespaceffor empty Prefix.");
+                        throw new InvalidOperationException("Invalid Namespace for empty Prefix.");
                     }
                 }
                 else if (prefix.Length == 0)

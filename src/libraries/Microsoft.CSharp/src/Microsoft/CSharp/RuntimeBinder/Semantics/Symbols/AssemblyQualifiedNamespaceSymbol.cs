@@ -14,9 +14,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class AssemblyQualifiedNamespaceSymbol : ParentSymbol
     {
-        public NamespaceSymbol GetNS()
-        {
-            return parent.AsNamespaceSymbol();
-        }
+        public NamespaceSymbol GetNS() => parent as NamespaceSymbol;
     }
 }

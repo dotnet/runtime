@@ -9,7 +9,7 @@ using System.Reflection;
 namespace System.Xml.Xsl.Qil
 {
     /// <summary>
-    /// A function invocation node which reperesents a call to an early bound Clr function.
+    /// A function invocation node which represents a call to an early bound Clr function.
     /// </summary>
     internal class QilInvokeEarlyBound : QilTernary
     {

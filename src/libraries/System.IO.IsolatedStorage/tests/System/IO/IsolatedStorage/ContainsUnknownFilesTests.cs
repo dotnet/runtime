@@ -13,7 +13,7 @@ namespace System.IO.IsolatedStorage
         private static MethodInfo s_containsUnknownFilesMethod
             = typeof(IsolatedStorageFile).GetMethod("ContainsUnknownFiles", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void ContainsUnknownFiles_CleanStore(PresetScopes scope)
         {
@@ -25,7 +25,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void ContainsUnknownFiles_OkFiles(PresetScopes scope)
         {
@@ -45,7 +45,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void ContainsUnknownFiles_NotOkFiles(PresetScopes scope)
         {
@@ -68,7 +68,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void ContainsUnknownFiles_NotOkDirectory(PresetScopes scope)
         {

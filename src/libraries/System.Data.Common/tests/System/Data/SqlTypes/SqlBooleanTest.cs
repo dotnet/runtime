@@ -38,7 +38,6 @@ namespace System.Data.Tests.SqlTypes
 
         public SqlBooleanTest()
         {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
             _sqlTrue = new SqlBoolean(true);
             _sqlFalse = new SqlBoolean(false);
         }

@@ -178,7 +178,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Creates a MaskedTextProvider object from the specified mask.
-        ///     'culture' is used to set the separator characters to the correspondig locale character; if null, the current
+        ///     'culture' is used to set the separator characters to the corresponding locale character; if null, the current
         ///               culture is used.
         /// </summary>
         public MaskedTextProvider(string mask, CultureInfo culture)
@@ -188,7 +188,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Creates a MaskedTextProvider object from the specified mask.
-        ///     'culture' is used to set the separator characters to the correspondig locale character; if null, the current
+        ///     'culture' is used to set the separator characters to the corresponding locale character; if null, the current
         ///               culture is used.
         ///     'restrictToAscii' specifies whether the input characters should be restricted to ASCII characters only.
         /// </summary>
@@ -219,7 +219,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Creates a MaskedTextProvider object from the specified mask.
-        ///     'culture' is used to set the separator characters to the correspondig locale character; if null, the current
+        ///     'culture' is used to set the separator characters to the corresponding locale character; if null, the current
         ///               culture is used.
         ///     'allowPromptAsInput' specifies whether the prompt character should be accepted as a valid input or not.
         ///     'promptChar' specifies the character to be used for the prompt.
@@ -298,7 +298,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Initializes the test string according to the mask and populates the character descirptor table
+        ///     Initializes the test string according to the mask and populates the character descriptor table
         ///     (stringDescriptor).
         /// </summary>
         private void Initialize()
@@ -455,12 +455,12 @@ namespace System.ComponentModel
         public bool AllowPromptAsInput => _flagState[s_ALLOW_PROMPT_AS_INPUT];
 
         /// <summary>
-        ///     Retreives the number of editable characters that have been set.
+        ///     Retrieves the number of editable characters that have been set.
         /// </summary>
         public int AssignedEditPositionCount { get; private set; }
 
         /// <summary>
-        ///     Retreives the number of editable characters that have been set.
+        ///     Retrieves the number of editable characters that have been set.
         /// </summary>
         public int AvailableEditPositionCount => EditPositionCount - AssignedEditPositionCount;
 
@@ -468,7 +468,7 @@ namespace System.ComponentModel
         ///     Creates a 'clean' (no text assigned) MaskedTextProvider instance with the same property values as the 
         ///     current instance.
         ///     Derived classes can override this method and call base.Clone to get proper cloning semantics but must
-        ///     implement the full-paramter contructor (passing parameters to the base constructor as well).
+        ///     implement the full-parameter constructor (passing parameters to the base constructor as well).
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
         public object Clone()
@@ -1436,7 +1436,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified position is available for assignment.  Returns false if it is assigned
+        ///     Checks whether the specified position is available for assignment.  Returns false if it is assigned
         ///     or it is not editable, true otherwise.
         /// </summary>
         public bool IsAvailablePosition(int position)
@@ -1452,7 +1452,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified position in the test string is editable.
+        ///     Checks whether the specified position in the test string is editable.
         /// </summary>
         public bool IsEditPosition(int position)
         {
@@ -1472,7 +1472,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the character in the specified position is a literal and the same as the specified character.
+        ///     Checks whether the character in the specified position is a literal and the same as the specified character.
         /// </summary>
         private static bool IsLiteralPosition(CharDescriptor charDescriptor)
         {
@@ -1480,7 +1480,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is valid as part of a mask or an input string.  
+        ///     Checks whether the specified character is valid as part of a mask or an input string.  
         /// </summary>
         private static bool IsPrintableChar(char c)
         {
@@ -1488,7 +1488,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is a valid input char.  
+        ///     Checks whether the specified character is a valid input char.  
         /// </summary>
         public static bool IsValidInputChar(char c)
         {
@@ -1496,7 +1496,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is a valid input char.  
+        ///     Checks whether the specified character is a valid input char.  
         /// </summary>
         public static bool IsValidMaskChar(char c)
         {
@@ -1504,7 +1504,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is a valid password char.
+        ///     Checks whether the specified character is a valid password char.
         /// </summary>
         public static bool IsValidPasswordChar(char c)
         {
@@ -1782,7 +1782,7 @@ namespace System.ComponentModel
         ///     character and removes any remaining characters in the range unless the character at the specified position 
         ///     is to be escaped.
         ///     If specified range covers more than one assigned edit character, shift-left is performed after replacing
-        ///     the first character.  This is useful when in a edit box the user selects text and types a character to replace it.
+        ///     the first character.  This is useful when in an edit box the user selects text and types a character to replace it.
         ///     On exit the testPosition contains last position where the primary operation was actually performed if successful, 
         ///     otherwise the first position that made the test fail. This position is relative to the test string.
         ///     The MaskedTextResultHint out param gives more information about the operation result.
@@ -2470,7 +2470,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Test the characters in the specified string agaist the test string, starting from the specified position.
+        ///     Test the characters in the specified string against the test string, starting from the specified position.
         ///     If the test is successful, the characters in the test string are set appropriately.
         ///     On exit the testPosition contains last position where the primary operation was actually performed if successful, 
         ///     otherwise the first position that made the test fail. This position is relative to the test string.
@@ -2489,7 +2489,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Test the characters in the specified string agaist the test string, starting from the specified position.
+        ///     Test the characters in the specified string against the test string, starting from the specified position.
         ///     On exit the testPosition contains last position where the primary operation was actually performed if successful, 
         ///     otherwise the first position that made the test fail. This position is relative to the test string.
         ///     The successCount out param contains the number of characters that would be actually set (not escaped).

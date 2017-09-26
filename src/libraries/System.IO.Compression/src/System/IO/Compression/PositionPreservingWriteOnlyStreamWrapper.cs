@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    internal sealed class PositionPreservingWriteOnlyStreamWrapper : Stream
+    internal sealed partial class PositionPreservingWriteOnlyStreamWrapper : Stream
     {
         private readonly Stream _stream;
         private long _position;

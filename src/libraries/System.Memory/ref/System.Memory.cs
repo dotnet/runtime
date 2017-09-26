@@ -5,29 +5,30 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 namespace System
 {
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ReadOnlySpan<T>
+    public readonly ref struct ReadOnlySpan<T>
     {
         public static ReadOnlySpan<T> Empty { get { throw null; } }
         public ReadOnlySpan(T[] array) { throw null;}
-        public ReadOnlySpan(T[] array, int start) { throw null;}
         public ReadOnlySpan(T[] array, int start, int length) { throw null;}
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null;}
         public bool IsEmpty { get { throw null; } }
         public T this[int index] { get { throw null; }}
         public int Length { get { throw null; } }
         public void CopyTo(Span<T> destination) { }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T DangerousGetPinnableReference() { throw null; }
+#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
         [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use == instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals(object obj) { throw null; }
         [System.ObsoleteAttribute("GetHashCode() on ReadOnlySpan will always throw an exception.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
+#pragma warning restore 0809
         public static bool operator ==(ReadOnlySpan<T> left, ReadOnlySpan<T> right) { throw null; }
         public static implicit operator ReadOnlySpan<T> (T[] array) { throw null; }
         public static implicit operator ReadOnlySpan<T> (ArraySegment<T> arraySegment) { throw null; }
@@ -38,12 +39,10 @@ namespace System
         public bool TryCopyTo(Span<T> destination) { throw null; }
     }
 
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Span<T>
+    public readonly ref struct Span<T>
     {
         public static Span<T> Empty { get { throw null; } }
         public Span(T[] array) { throw null;}
-        public Span(T[] array, int start) { throw null;}
         public Span(T[] array, int start, int length) { throw null;}
         public unsafe Span(void* pointer, int length) { throw null;}
         public bool IsEmpty { get { throw null; } }
@@ -52,14 +51,18 @@ namespace System
         public void Clear() { }
         public void Fill(T value) { }
         public void CopyTo(Span<T> destination) { }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static Span<T> DangerousCreate(object obj, ref T objectData, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T DangerousGetPinnableReference() { throw null; }
+#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
         [System.ObsoleteAttribute("Equals() on Span will always throw an exception. Use == instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals(object obj) { throw null; }
         [System.ObsoleteAttribute("GetHashCode() on Span will always throw an exception.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
+#pragma warning restore 0809
         public static bool operator ==(Span<T> left, Span<T> right) { throw null; }
         public static implicit operator Span<T> (T[] array) { throw null; }
         public static implicit operator Span<T> (ArraySegment<T> arraySegment) { throw null; }
@@ -119,5 +122,83 @@ namespace System
         
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
     }
+
+    public struct ReadOnlyMemory<T>
+    {
+        public static ReadOnlyMemory<T> Empty { get { throw null; } }
+        public ReadOnlyMemory(T[] array) { throw null;}
+        public ReadOnlyMemory(T[] array, int start, int length) { throw null;}
+        internal ReadOnlyMemory(Buffers.OwnedMemory<T> owner, int index, int length) { throw null;}
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(ReadOnlyMemory<T> other) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(T[] array) { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(ArraySegment<T> arraySegment) { throw null; }
+        public ReadOnlyMemory<T> Slice(int start) { throw null; }
+        public ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
+        public ReadOnlySpan<T> Span { get { throw null; } }
+        public unsafe Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
+        public T[] ToArray() { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool DangerousTryGetArray(out ArraySegment<T> arraySegment) { throw null; }
+    }
+
+    public struct Memory<T>
+    {
+        public static Memory<T> Empty { get { throw null; } }
+        public Memory(T[] array) { throw null;}
+        public Memory(T[] array, int start, int length) { throw null;}
+        internal Memory(Buffers.OwnedMemory<T> owner, int index, int length) { throw null;}
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(Memory<T> other) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+        public static implicit operator Memory<T>(T[] array) { throw null; }
+        public static implicit operator Memory<T>(ArraySegment<T> arraySegment) { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory) { throw null; }
+        public Memory<T> Slice(int start) { throw null; }
+        public Memory<T> Slice(int start, int length) { throw null; }
+        public Span<T> Span { get { throw null; } }
+        public unsafe Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
+        public T[] ToArray() { throw null; }
+        public bool TryGetArray(out ArraySegment<T> arraySegment) { throw null; }
+    }
 }
 
+namespace System.Buffers
+{
+    public unsafe struct MemoryHandle : IDisposable 
+    {
+        public MemoryHandle(IRetainable owner, void* pinnedPointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
+        public void* PinnedPointer { get { throw null; } }
+        public void Dispose()  { throw null; }
+    }
+
+    public interface IRetainable 
+    {
+        bool Release();
+        void Retain();
+    }
+    
+    public abstract class OwnedMemory<T> : IDisposable, IRetainable 
+    {
+        public Memory<T> Memory { get { throw null; } }
+        public abstract bool IsDisposed { get; }
+        protected abstract bool IsRetained { get; }
+        public abstract int Length { get; }
+        public abstract Span<T> Span { get; }
+        public void Dispose() { throw null; }
+        protected abstract void Dispose(bool disposing);
+        public abstract MemoryHandle Pin();
+        public abstract bool Release();
+        public abstract void Retain();
+        protected internal abstract bool TryGetArray(out ArraySegment<T> arraySegment);
+    }
+}

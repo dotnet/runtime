@@ -6,7 +6,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -43,27 +42,7 @@ namespace System.Security.Principal
 
             _identity = ntIdentity;
         }
-
-        [OnDeserialized]
-        private void OnDeserializedMethod(StreamingContext context)
-        {
-            ClaimsIdentity firstNonNullIdentity = null;
-
-            foreach (ClaimsIdentity identity in base.Identities)
-            {
-                if (identity != null)
-                {
-                    firstNonNullIdentity = identity;
-                    break;
-                }
-            }
-
-            if (firstNonNullIdentity == null)
-            {
-                base.AddIdentity(_identity);
-            }
-        }
-
+        
         //
         // Properties.
         //

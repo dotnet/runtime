@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Builder tracking labels, branches and exception handlers.
         /// </summary>
         /// <remarks>
-        /// If null the encoder doesn't support constuction of control flow.
+        /// If null the encoder doesn't support construction of control flow.
         /// </remarks>
         public ControlFlowBuilder ControlFlowBuilder { get; }
 

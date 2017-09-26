@@ -12,7 +12,7 @@ namespace Microsoft.SqlServer.TDS.SessionState
     public abstract class TDSSessionStateOption : IDeflatable, IInflatable
     {
         /// <summary>
-        /// Property that tells the caller how much of the data from the stream was read by infation logic
+        /// Property that tells the caller how much of the data from the stream was read by inflation logic
         /// </summary>
         internal uint InflationSize { get; set; }
 

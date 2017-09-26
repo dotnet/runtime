@@ -246,6 +246,12 @@
       "values": [],
       "defaultValue": "Please-Specify-A-Directory"
     },
+    "Clang": {
+        "description": "Specific version of Clang to use e.g. clang3.7, clang3.8, etc ...",
+        "valueType": "property",
+        "values": [],
+        "defaultValue": ""
+    },
   },
   "commands": {
     "build-directory": {

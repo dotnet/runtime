@@ -357,7 +357,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// This annotation is only applicable to Function nodes.  It contains a list of XmlILConstructInfo annontations
+        /// This annotation is only applicable to Function nodes.  It contains a list of XmlILConstructInfo annotations
         /// for all QilInvoke nodes which call the annotated function.
         /// </summary>
         public ArrayList CallersInfo

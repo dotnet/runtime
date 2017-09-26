@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.ServiceModel.Syndication", "src\Microsoft.ServiceModel.Syndication.csproj", "{B615835F-C286-4FB5-A2BF-C3B967AB9EC6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.ServiceModel.Syndication.Tests", "tests\Microsoft.ServiceModel.Syndication.Tests.csproj", "{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B615835F-C286-4FB5-A2BF-C3B967AB9EC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B615835F-C286-4FB5-A2BF-C3B967AB9EC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B615835F-C286-4FB5-A2BF-C3B967AB9EC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B615835F-C286-4FB5-A2BF-C3B967AB9EC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1425,15 +1425,22 @@ namespace System.Data.SqlClient
                             sqlValue = TdsParser.AdjustSqlDecimalScale(sqlValue, metadata.scale);
                         }
 
+                        if (sqlValue.Precision > metadata.precision)
+                        {
+                            try
+                            {
+                                sqlValue = SqlDecimal.ConvertToPrecScale(sqlValue, metadata.precision, sqlValue.Scale);
+                            }
+                            catch (SqlTruncateException)
+                            {
+                                throw SQL.BulkLoadCannotConvertValue(value.GetType(), mt, ADP.ParameterValueOutOfRange(sqlValue));
+                            }
+                        }
+
                         // Perf: It is more efficient to write a SqlDecimal than a decimal since we need to break it into its 'bits' when writing
                         value = sqlValue;
                         isSqlType = true;
                         typeChanged = false; // Setting this to false as SqlParameter.CoerceValue will only set it to true when converting to a CLR type
-
-                        if (sqlValue.Precision > metadata.precision)
-                        {
-                            throw SQL.BulkLoadCannotConvertValue(value.GetType(), mt, ADP.ParameterValueOutOfRange(sqlValue));
-                        }
                         break;
 
                     case TdsEnums.SQLINTN:

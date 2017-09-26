@@ -1280,7 +1280,8 @@ namespace System.Net
                     }
                     ++m_index;
                 }
-                else
+                
+                if (Eof)
                 {
                     m_cookieLength = m_index - m_cookieStartIndex;
                 }

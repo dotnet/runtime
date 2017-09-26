@@ -32,6 +32,7 @@ namespace System.Drawing.Printing.Tests
 {
     public class PaperSizeTests
     {
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Ctor_Default()
         {
@@ -67,6 +68,7 @@ namespace System.Drawing.Printing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => ps.PaperName = "NewName");
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData((int)PaperKind.A4)]
         [InlineData((int)PaperKind.JapaneseEnvelopeKakuNumber3)]

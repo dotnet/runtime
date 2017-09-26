@@ -123,7 +123,7 @@ namespace System.Data
         ///     Retrieves the object that directly depends on this value being edited.  This is
         ///     generally the object that is required for the PropertyDescriptor's GetValue and SetValue
         ///     methods.  If 'null' is passed for the PropertyDescriptor, the ICustomComponent
-        ///     descripotor implemementation should return the default object, that is the main
+        ///     descriptor implementation should return the default object, that is the main
         ///     object that exposes the properties and attributes,
         /// </summary>
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;

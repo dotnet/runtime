@@ -25,34 +25,23 @@ namespace System.ComponentModel.DataAnnotations
 
         public string Extensions
         {
-            get
-            {
-                // Default file extensions match those from jquery validate.
-                return string.IsNullOrWhiteSpace(_extensions) ? "png,jpg,jpeg,gif" : _extensions;
-            }
-            set { _extensions = value; }
+            // Default file extensions match those from jquery validate.
+            get => string.IsNullOrWhiteSpace(_extensions) ? "png,jpg,jpeg,gif" : _extensions;
+            set => _extensions = value;
         }
 
-        private string ExtensionsFormatted
-        {
-            get { return ExtensionsParsed.Aggregate((left, right) => left + ", " + right); }
-        }
+        private string ExtensionsFormatted => ExtensionsParsed.Aggregate((left, right) => left + ", " + right);
 
-
-        private string ExtensionsNormalized
-        {
-            get { return Extensions.Replace(" ", string.Empty).Replace(".", string.Empty).ToLowerInvariant(); }
-        }
+        private string ExtensionsNormalized =>
+            Extensions.Replace(" ", string.Empty).Replace(".", string.Empty).ToLowerInvariant();
 
         private IEnumerable<string> ExtensionsParsed
         {
             get { return ExtensionsNormalized.Split(',').Select(e => "." + e); }
         }
 
-        public override string FormatErrorMessage(string name)
-        {
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, ExtensionsFormatted);
-        }
+        public override string FormatErrorMessage(string name) =>
+            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, ExtensionsFormatted);
 
         public override bool IsValid(object value)
         {

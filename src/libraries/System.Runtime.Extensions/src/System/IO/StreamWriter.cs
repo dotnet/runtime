@@ -42,7 +42,6 @@ namespace System.IO
         // We don't guarantee thread safety on StreamWriter, but we should at 
         // least prevent users from trying to write anything while an Async
         // write from the same thread is in progress.
-        [NonSerialized]
         private volatile Task _asyncWriteTask;
 
         private void CheckAsyncTaskInProgress()
@@ -247,10 +246,10 @@ namespace System.IO
             if (!_haveWrittenPreamble)
             {
                 _haveWrittenPreamble = true;
-                byte[] preamble = _encoding.GetPreamble();
+                ReadOnlySpan<byte> preamble = _encoding.Preamble;
                 if (preamble.Length > 0)
                 {
-                    _stream.Write(preamble, 0, preamble.Length);
+                    _stream.Write(preamble);
                 }
             }
 

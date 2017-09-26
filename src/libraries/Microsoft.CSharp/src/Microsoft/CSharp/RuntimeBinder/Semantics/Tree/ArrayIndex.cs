@@ -11,6 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Array = array;
             Index = index;
+            Flags = EXPRFLAG.EXF_LVALUE | EXPRFLAG.EXF_ASSGOP;
         }
 
         public Expr Array { get; set; }

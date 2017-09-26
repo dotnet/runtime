@@ -7,12 +7,12 @@
 
   <!-- Build for all configurations -->
   <ItemGroup>
+    <Project Include="netcoreapp/netcoreapp.depproj" />
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
     <Project Include="runtime/runtime.depproj" />
     <Project Include="test-runtime/XUnit.Runtime.depproj" />
-    <Project Include="harvestPackages/harvestPackages.netstandard1.6.depproj" />
-    <Project Include="harvestPackages/harvestPackages.uap10.0.depproj" />
+    <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="portable\portable.depproj" />
     <Project Include="ilasm/ilasm.depproj" />
     <Project Include="docs/docs.depproj" />

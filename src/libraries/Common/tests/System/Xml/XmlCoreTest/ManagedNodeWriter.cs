@@ -327,7 +327,7 @@ namespace XmlCoreTest.Common
         }
 
         /// <summary>
-        /// This method is a conveinience method and a shortcut to create an XML string. Each character in the pattern
+        /// This method is a convenience method and a shortcut to create an XML string. Each character in the pattern
         ///	maps to a particular Put/Open function and calls it for you. For e.g. XEAA/ will call PutDecl, OpenElement, 
         ///	PutAttribute, PutAttribute and CloseElement for you.
         ///	The following is the list of all allowed characters and their function mappings :

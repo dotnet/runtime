@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -17,19 +16,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal class PropertySymbol : MethodOrPropertySymbol
     {
-        public MethodSymbol methGet;            // Getter method (always has same parent)
-        public MethodSymbol methSet;            // Setter method (always has same parent)
-        public PropertyInfo AssociatedPropertyInfo;
+        public MethodSymbol GetterMethod { get; set; } // (always has same parent)
 
-        public bool isIndexer()
-        {
-            return isOperator;
-        }
+        public MethodSymbol SetterMethod { get; set; } // (always has same parent)
 
-        public IndexerSymbol AsIndexerSymbol()
-        {
-            Debug.Assert(isIndexer());
-            return (IndexerSymbol)this;
-        }
+        public PropertyInfo AssociatedPropertyInfo { get; set; }
+
+        public bool Bogus { get; set; }
     }
 }

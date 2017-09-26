@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netfx-Windows_NT;
+      netstandard;
       netstandard-Linux;
       netstandard-OSX;
       netstandard-Windows_NT;

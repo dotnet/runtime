@@ -8,6 +8,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprCast : Expr
     {
+        private ExprClass _destinationType;
+
         public ExprCast(EXPRFLAG flags, ExprClass destinationType, Expr argument)
             : base(ExpressionKind.Cast)
         {
@@ -21,9 +23,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Expr Argument { get; set; }
 
-        public ExprClass DestinationType { get; set; }
-
-        public override CType Type => DestinationType.Type;
+        public ExprClass DestinationType
+        {
+            get => _destinationType;
+            set => Type = (_destinationType = value).Type;
+        }
 
         public bool IsBoxingCast => (Flags & (EXPRFLAG.EXF_BOX | EXPRFLAG.EXF_FORCE_BOX)) != 0;
     }

@@ -28,16 +28,13 @@ namespace System.Security.Claims
             UserData = 128,
         }
 
-        [NonSerialized]
         private readonly byte[] _userSerializationData;
 
         private readonly string _issuer;
         private readonly string _originalIssuer;
         private Dictionary<string, string> _properties;
 
-        [NonSerialized]
         private readonly ClaimsIdentity _subject;
-
         private readonly string _type;
         private readonly string _value;
         private readonly string _valueType;
@@ -125,6 +122,7 @@ namespace System.Security.Claims
             if ((mask & SerializationMask.HasProperties) == SerializationMask.HasProperties)
             {
                 int numProperties = reader.ReadInt32();
+                numPropertiesRead++;
                 for (int i = 0; i < numProperties; i++)
                 {
                     Properties.Add(reader.ReadString(), reader.ReadString());
@@ -253,7 +251,7 @@ namespace System.Security.Claims
         /// <param name="originalIssuer">The original issuer of this claim. If this parameter is empty or null, then originalIssuer == issuer.</param>
         /// <param name="subject">The subject that this claim describes.</param>
         /// <param name="propertyKey">This allows adding a property when adding a Claim.</param>
-        /// <param name="propertyValue">The value associcated with the property.</param>
+        /// <param name="propertyValue">The value associated with the property.</param>
         internal Claim(string type, string value, string valueType, string issuer, string originalIssuer, ClaimsIdentity subject, string propertyKey, string propertyValue)
         {
             if (type == null)

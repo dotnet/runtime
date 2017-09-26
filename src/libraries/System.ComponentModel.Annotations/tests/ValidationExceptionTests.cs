@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
@@ -78,5 +79,13 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Same(validatingAttribute, ex.ValidationAttribute);
             Assert.Same(value, ex.Value);
         }
+
+
+        [Fact]
+        public void AssertExceptionDeserializationFails()
+        {
+            BinaryFormatterHelpers.AssertExceptionDeserializationFails<ValidationException>();
+        }
+
     }
 }

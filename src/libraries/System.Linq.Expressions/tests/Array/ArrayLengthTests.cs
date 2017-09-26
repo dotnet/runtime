@@ -1605,7 +1605,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("array", () => Expression.ArrayLength(Expression.Constant(arr)));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public static void ArrayTypeArrayNotAllowedIfNonZeroBoundArray()
         {
             Array arr = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });

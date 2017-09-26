@@ -12,8 +12,8 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> CurrentInfo_CustomCulture_TestData()
         {
-            yield return new object[] { new CultureInfo("en") };
-            yield return new object[] { new CultureInfo("en-US") };
+            yield return new object[] { CultureInfo.GetCultureInfo("en") };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US") };
             yield return new object[] { CultureInfo.InvariantCulture };
         }
 
@@ -21,12 +21,9 @@ namespace System.Globalization.Tests
         [MemberData(nameof(CurrentInfo_CustomCulture_TestData))]
         public void CurrentInfo_CustomCulture(CultureInfo newCurrentCulture)
         {
-            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
-                return;
-
             RemoteInvoke((cultureName) =>
             {
-                CultureInfo newCulture = new CultureInfo(cultureName);
+                CultureInfo newCulture = CultureInfo.GetCultureInfo(cultureName);
                 CultureInfo.CurrentCulture = newCulture;
                 Assert.Same(newCulture.NumberFormat, NumberFormatInfo.CurrentInfo);
                 return SuccessExitCode;
@@ -36,9 +33,6 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentInfo_Subclass_OverridesGetFormat()
         {
-            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
-                return;
-
             RemoteInvoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfoSubclassOverridesGetFormat("en-US");
@@ -50,9 +44,6 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentInfo_Subclass_OverridesNumberFormat()
         {
-            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
-                return;
-
             RemoteInvoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfoSubclassOverridesNumberFormat("en-US");
@@ -65,7 +56,7 @@ namespace System.Globalization.Tests
         {
             public CultureInfoSubclassOverridesGetFormat(string name): base(name) { }
 
-            public static NumberFormatInfo CustomFormat { get; } = new CultureInfo("fr-FR").NumberFormat;
+            public static NumberFormatInfo CustomFormat { get; } = CultureInfo.GetCultureInfo("fr-FR").NumberFormat;
 
             public override object GetFormat(Type formatType) => CustomFormat;
         }
@@ -74,7 +65,7 @@ namespace System.Globalization.Tests
         {
             public CultureInfoSubclassOverridesNumberFormat(string name): base(name) { }
 
-            public static NumberFormatInfo CustomFormat { get; } = new CultureInfo("fr-FR").NumberFormat;
+            public static NumberFormatInfo CustomFormat { get; } = CultureInfo.GetCultureInfo("fr-FR").NumberFormat;
 
             public override NumberFormatInfo NumberFormat
             {

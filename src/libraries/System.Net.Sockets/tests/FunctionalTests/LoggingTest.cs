@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
@@ -41,17 +40,17 @@ namespace System.Net.Sockets.Tests
                     {
                         // Invoke several tests to execute code paths while tracing is enabled
 
-                        new SendReceiveSync(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveSync(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceiveSync().SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceiveSync().SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new SendReceiveTask(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveTask(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceiveTask().SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceiveTask().SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new SendReceiveEap(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveEap(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceiveEap().SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceiveEap().SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new SendReceiveApm(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveApm(new NullTestOutputHelper()).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        new SendReceiveApm().SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
+                        new SendReceiveApm().SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
                         new NetworkStreamTest().CopyToAsync_AllDataCopied(4096).GetAwaiter().GetResult();
                         new NetworkStreamTest().Timeout_ValidData_Roundtrips().GetAwaiter().GetResult();
@@ -61,12 +60,6 @@ namespace System.Net.Sockets.Tests
                 }
                 return SuccessExitCode;
             }).Dispose();
-        }
-
-        private sealed class NullTestOutputHelper : ITestOutputHelper
-        {
-            public void WriteLine(string message) { }
-            public void WriteLine(string format, params object[] args) { }
         }
     }
 }

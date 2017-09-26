@@ -53,7 +53,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Override GetHashCode since Equals is overriden.
+        /// Override GetHashCode since Equals is overridden.
         /// </summary>
         public override int GetHashCode()
         {

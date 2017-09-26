@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Compiler
 
             // Optimization: inline code for literal lambda's directly
             //
-            // This is worth it because otherwise we end up with a extra call
+            // This is worth it because otherwise we end up with an extra call
             // to DynamicMethod.CreateDelegate, which is expensive.
             //
             if (node.LambdaOperand != null)

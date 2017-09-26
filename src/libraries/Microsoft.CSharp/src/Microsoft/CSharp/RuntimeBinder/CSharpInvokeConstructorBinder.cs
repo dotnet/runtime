@@ -27,13 +27,13 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public bool IsChecked => false;
 
-        private readonly List<CSharpArgumentInfo> _argumentInfo;
+        private readonly CSharpArgumentInfo[] _argumentInfo;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
         public bool StaticCall => true;
 
-        public IList<Type> TypeArguments => Array.Empty<Type>();
+        public Type[] TypeArguments => Array.Empty<Type>();
 
         public string Name => ".ctor";
 
@@ -48,12 +48,14 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             Flags = flags;
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToList(argumentInfo);
+            _argumentInfo = BinderHelper.ToArray(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(args, nameof(args));
             return BinderHelper.Bind(this, _binder, BinderHelper.Cons(target, args), _argumentInfo, null);
         }
     }

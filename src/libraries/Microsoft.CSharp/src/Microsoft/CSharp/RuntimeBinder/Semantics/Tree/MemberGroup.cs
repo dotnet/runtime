@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(
                 (flags & ~(EXPRFLAG.EXF_CTOR | EXPRFLAG.EXF_INDEXER | EXPRFLAG.EXF_OPERATOR | EXPRFLAG.EXF_NEWOBJCALL
-                           | EXPRFLAG.EXF_BASECALL | EXPRFLAG.EXF_DELEGATE | EXPRFLAG.EXF_USERCALLABLE
+                           | EXPRFLAG.EXF_DELEGATE | EXPRFLAG.EXF_USERCALLABLE
                            | EXPRFLAG.EXF_MASK_ANY)) == 0);
             Flags = flags;
             Name = name;
@@ -52,7 +52,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public CType ParentType { get; }
 
         public bool IsDelegate => (Flags & EXPRFLAG.EXF_DELEGATE) != 0;
-
-        public void SetInaccessibleBit() => SetError();
     }
 }

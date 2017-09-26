@@ -39,7 +39,7 @@ namespace System.Net.Http
         private static Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Lazy<bool> s_RTCookieUsageBehaviorSupported =
             new Lazy<bool>(InitRTCookieUsageBehaviorSupported);
-        private static bool RTCookieUsageBehaviorSupported => s_RTCookieUsageBehaviorSupported.Value;
+        internal static bool RTCookieUsageBehaviorSupported => s_RTCookieUsageBehaviorSupported.Value;
         private static readonly Lazy<bool> s_RTNoCacheSupported =
             new Lazy<bool>(InitRTNoCacheSupported);
         private static bool RTNoCacheSupported => s_RTNoCacheSupported.Value;
@@ -49,14 +49,16 @@ namespace System.Net.Http
 
         #region Fields
 
-        private readonly RTHttpBaseProtocolFilter _rtFilter;
         private readonly HttpHandlerToFilter _handlerToFilter;
         private readonly HttpMessageHandler _diagnosticsPipeline;
 
+        private RTHttpBaseProtocolFilter _rtFilter;
         private ClientCertificateOption _clientCertificateOptions;
         private CookieContainer _cookieContainer;
         private bool _useCookies;
         private DecompressionMethods _automaticDecompression;
+        private bool _allowAutoRedirect;
+        private int _maxAutomaticRedirections;
         private ICredentials _defaultProxyCredentials;
         private ICredentials _credentials;
         private IWebProxy _proxy;
@@ -227,19 +229,23 @@ namespace System.Net.Http
 
         public bool AllowAutoRedirect
         {
-            get { return _rtFilter.AllowAutoRedirect; }
+            get { return _allowAutoRedirect; }
             set
             {
                 CheckDisposedOrStarted();
-                _rtFilter.AllowAutoRedirect = value;
+                _allowAutoRedirect = value;
             }
         }
 
         public int MaxAutomaticRedirections
         {
-            get { return 10; } // WinRT Windows.Web.Http constant via use of native WinINet.
+            get { return _maxAutomaticRedirections; }
             set
             {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
                 CheckDisposedOrStarted();
             }
         }
@@ -350,36 +356,51 @@ namespace System.Net.Http
 
         public HttpClientHandler()
         {
-            _rtFilter = new RTHttpBaseProtocolFilter();
-            _handlerToFilter = new HttpHandlerToFilter(_rtFilter);
+            _rtFilter = CreateFilter();
+
+            _handlerToFilter = new HttpHandlerToFilter(_rtFilter, this);
             _handlerToFilter.RequestMessageLookupKey = RequestMessageLookupKey;
             _handlerToFilter.SavedExceptionDispatchInfoLookupKey = SavedExceptionDispatchInfoLookupKey;
             _diagnosticsPipeline = new DiagnosticsHandler(_handlerToFilter);
 
             _clientCertificateOptions = ClientCertificateOption.Manual;
 
+            _useCookies = true; // deal with cookies by default.
+            _cookieContainer = new CookieContainer(); // default container used for dealing with auto-cookies.
+
+            _allowAutoRedirect = true;
+            _maxAutomaticRedirections = 50;
+
+            _automaticDecompression = DecompressionMethods.None;
+        }
+
+        private RTHttpBaseProtocolFilter CreateFilter()
+        {
+            var filter = new RTHttpBaseProtocolFilter();
+
             // Always turn off WinRT cookie processing if the WinRT API supports turning it off.
             // Use .NET CookieContainer handling only.
             if (RTCookieUsageBehaviorSupported)
             {
-                _rtFilter.CookieUsageBehavior = RTHttpCookieUsageBehavior.NoCookies;
+                filter.CookieUsageBehavior = RTHttpCookieUsageBehavior.NoCookies;
             }
 
-            _useCookies = true; // deal with cookies by default.
-            _cookieContainer = new CookieContainer(); // default container used for dealing with auto-cookies.
+            // Handle redirections at the .NET layer so that we can see cookies on redirect responses
+            // and have control of the number of redirections allowed.
+            filter.AllowAutoRedirect = false;
 
-            // Managed at this layer for granularity, but uses the desktop default.
-            _rtFilter.AutomaticDecompression = false;
-            _automaticDecompression = DecompressionMethods.None;
+            filter.AutomaticDecompression = false;
 
             // We don't support using the UI model in HttpBaseProtocolFilter() especially for auto-handling 401 responses.
-            _rtFilter.AllowUI = false;
-            
+            filter.AllowUI = false;
+
             // The .NET Desktop System.Net Http APIs (based on HttpWebRequest/HttpClient) uses no caching by default.
             // To preserve app-compat, we turn off caching in the WinRT HttpClient APIs.
-            _rtFilter.CacheControl.ReadBehavior = RTNoCacheSupported ?
+            filter.CacheControl.ReadBehavior = RTNoCacheSupported ?
                 RTHttpCacheReadBehavior.NoCache : RTHttpCacheReadBehavior.MostRecent;
-            _rtFilter.CacheControl.WriteBehavior = RTHttpCacheWriteBehavior.NoCache;
+            filter.CacheControl.WriteBehavior = RTHttpCacheWriteBehavior.NoCache;
+            
+            return filter;
         }
 
         protected override void Dispose(bool disposing)
@@ -408,25 +429,9 @@ namespace System.Net.Http
 
         private async Task ConfigureRequest(HttpRequestMessage request)
         {
-            ApplyRequestCookies(request);
-
             ApplyDecompressionSettings(request);
             
             await ApplyClientCertificateSettings().ConfigureAwait(false);
-        }
-
-        // Taken from System.Net.CookieModule.OnSendingHeaders
-        private void ApplyRequestCookies(HttpRequestMessage request)
-        {
-            if (UseCookies)
-            {
-                string cookieHeader = CookieContainer.GetCookieHeader(request.RequestUri);
-                if (!string.IsNullOrWhiteSpace(cookieHeader))
-                {
-                    bool success = request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Cookie, cookieHeader);
-                    Debug.Assert(success);
-                }
-            }
         }
 
         private void ApplyDecompressionSettings(HttpRequestMessage request)
@@ -586,6 +591,13 @@ namespace System.Net.Http
             HttpResponseMessage response;
             try
             {
+                if (string.Equals(request.Method.Method, HttpMethod.Trace.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    // https://github.com/dotnet/corefx/issues/22161
+                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                        SR.net_http_httpmethod_notsupported_error, request.Method.Method));
+                }
+
                 await ConfigureRequest(request).ConfigureAwait(false);
 
                 Task<HttpResponseMessage> responseTask = DiagnosticsHandler.IsEnabled() ? 
@@ -604,67 +616,10 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_client_execution_error, ex);
             }
 
-            ProcessResponse(response);
             return response;
         }
 
         #endregion Request Execution
-
-        #region Response Processing
-
-        private void ProcessResponse(HttpResponseMessage response)
-        {
-            ProcessResponseCookies(response);
-        }
-
-        // Taken from System.Net.CookieModule.OnReceivedHeaders
-        private void ProcessResponseCookies(HttpResponseMessage response)
-        {
-            if (UseCookies)
-            {
-                IEnumerable<string> values;
-                if (response.Headers.TryGetValues(HttpKnownHeaderNames.SetCookie, out values))
-                {
-                    foreach (string cookieString in values)
-                    {
-                        if (!string.IsNullOrWhiteSpace(cookieString))
-                        {
-                            try
-                            {
-                                // Parse the cookies so that we can filter some of them out
-                                CookieContainer helper = new CookieContainer();
-                                helper.SetCookies(response.RequestMessage.RequestUri, cookieString);
-                                CookieCollection cookies = helper.GetCookies(response.RequestMessage.RequestUri);
-                                foreach (Cookie cookie in cookies)
-                                {
-                                    // We don't want to put HttpOnly cookies in the CookieContainer if the system
-                                    // doesn't support the RTHttpBaseProtocolFilter CookieUsageBehavior property.
-                                    // Prior to supporting that, the WinRT HttpClient could not turn off cookie
-                                    // processing. So, it would always be storing all cookies in its internal container.
-                                    // Putting HttpOnly cookies in the .NET CookieContainer would cause problems later
-                                    // when the .NET layer tried to add them on outgoing requests and conflicted with
-                                    // the WinRT internal cookie processing.
-                                    //
-                                    // With support for WinRT CookieUsageBehavior, cookie processing is turned off
-                                    // within the WinRT layer. This allows us to process cookies using only the .NET
-                                    // layer. So, we need to add all applicable cookies that are received to the
-                                    // CookieContainer.
-                                    if (RTCookieUsageBehaviorSupported || !cookie.HttpOnly)
-                                    {
-                                        CookieContainer.Add(response.RequestMessage.RequestUri, cookie);
-                                    }
-                                }
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        #endregion Response Processing
 
         #region Helpers
 
@@ -728,7 +683,7 @@ namespace System.Net.Http
                 "ServerCustomValidationRequested");
         }
 
-        private void RTServerCertificateCallback(RTHttpBaseProtocolFilter sender, RTHttpServerCustomValidationRequestedEventArgs args)
+        internal void RTServerCertificateCallback(RTHttpBaseProtocolFilter sender, RTHttpServerCustomValidationRequestedEventArgs args)
         {
             bool success = RTServerCertificateCallbackHelper(
                 args.RequestMessage,

@@ -8,17 +8,16 @@ using System.Security.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    // We allow only the public components of an RSAParameters object, the Modulus and Exponent to be serializable.
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct RSAParameters
     {
-        [NonSerialized] public byte[] D;
-        [NonSerialized] public byte[] DP;
-        [NonSerialized] public byte[] DQ;
+        public byte[] D;
+        public byte[] DP;
+        public byte[] DQ;
         public byte[] Exponent;
-        [NonSerialized] public byte[] InverseQ;
+        public byte[] InverseQ;
         public byte[] Modulus;
-        [NonSerialized] public byte[] P;
-        [NonSerialized] public byte[] Q;
+        public byte[] P;
+        public byte[] Q;
     }
 }

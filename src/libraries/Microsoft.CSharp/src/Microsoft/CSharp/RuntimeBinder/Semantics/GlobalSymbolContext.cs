@@ -18,11 +18,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public GlobalSymbolContext(NameManager namemgr)
         {
-            TypeManager = new TypeManager();
             GlobalSymbols = new BSYMMGR(namemgr);
             _predefTypes = new PredefinedTypes(GlobalSymbols);
-            TypeManager.Init(GlobalSymbols, _predefTypes);
-            GlobalSymbols.Init();
+            TypeManager = new TypeManager(GlobalSymbols, _predefTypes);
 
             _nameManager = namemgr;
         }
@@ -37,11 +35,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public SymFactory GetGlobalSymbolFactory()
         {
             return GetGlobalSymbols().GetSymFactory();
-        }
-
-        public MiscSymFactory GetGlobalMiscSymFactory()
-        {
-            return GetGlobalSymbols().GetMiscSymFactory();
         }
     }
 }

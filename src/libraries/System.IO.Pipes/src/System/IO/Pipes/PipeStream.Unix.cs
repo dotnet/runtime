@@ -88,9 +88,9 @@ namespace System.IO.Pipes
             // nop
         }
 
-        private unsafe int ReadCore(byte[] buffer, int offset, int count)
+        private unsafe int ReadCore(Span<byte> buffer)
         {
-            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+            DebugAssertHandleValid(_handle);
 
             // For named pipes, receive on the socket.
             Socket socket = _handle.NamedPipeSocket;
@@ -102,7 +102,7 @@ namespace System.IO.Pipes
                 // is already handled by Socket.Receive, so we use it here.
                 try
                 {
-                    return socket.Receive(buffer, offset, count, SocketFlags.None);
+                    return socket.Receive(buffer, SocketFlags.None);
                 }
                 catch (SocketException e)
                 {
@@ -111,18 +111,17 @@ namespace System.IO.Pipes
             }
 
             // For anonymous pipes, read from the file descriptor.
-            fixed (byte* bufPtr = buffer)
+            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
             {
-                int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr + offset, count));
-                Debug.Assert(result <= count);
-
+                int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr, buffer.Length));
+                Debug.Assert(result <= buffer.Length);
                 return result;
             }
         }
 
-        private unsafe void WriteCore(byte[] buffer, int offset, int count)
+        private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
-            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+            DebugAssertHandleValid(_handle);
 
             // For named pipes, send to the socket.
             Socket socket = _handle.NamedPipeSocket;
@@ -134,13 +133,10 @@ namespace System.IO.Pipes
                 // Such a case is already handled by Socket.Send, so we use it here.
                 try
                 {
-                    while (count > 0)
+                    while (buffer.Length > 0)
                     {
-                        int bytesWritten = socket.Send(buffer, offset, count, SocketFlags.None);
-                        Debug.Assert(bytesWritten <= count);
-
-                        count -= bytesWritten;
-                        offset += bytesWritten;
+                        int bytesWritten = socket.Send(buffer, SocketFlags.None);
+                        buffer = buffer.Slice(bytesWritten);
                     }
                 }
                 catch (SocketException e)
@@ -150,20 +146,17 @@ namespace System.IO.Pipes
             }
 
             // For anonymous pipes, write the file descriptor.
-            fixed (byte* bufPtr = buffer)
+            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
             {
-                while (count > 0)
+                while (buffer.Length > 0)
                 {
-                    int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr + offset, count));
-                    Debug.Assert(bytesWritten <= count);
-
-                    count -= bytesWritten;
-                    offset += bytesWritten;
+                    int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr, buffer.Length));
+                    buffer = buffer.Slice(bytesWritten);
                 }
             }
         }
 
-        private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async Task<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
         {
             Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
 
@@ -182,7 +175,7 @@ namespace System.IO.Pipes
                     cancellationToken.ThrowIfCancellationRequested();
                     if (socket.Poll(timeout, SelectMode.SelectRead))
                     {
-                        return ReadCore(buffer, offset, count);
+                        return ReadCore(destination.Span);
                     }
                     timeout = Math.Min(timeout * 2, MaxTimeoutMicroseconds);
                 }
@@ -191,7 +184,16 @@ namespace System.IO.Pipes
             // The token wasn't cancelable, so we can simply use an async receive on the socket.
             try
             {
-                return await socket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), SocketFlags.None).ConfigureAwait(false);
+                if (destination.TryGetArray(out ArraySegment<byte> buffer))
+                {
+                    return await socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                }
+                else
+                {
+                    // TODO #22608: Remove this terribly inefficient special-case once Socket.ReceiveAsync
+                    // accepts a Memory<T> in the near future.
+                    return await socket.ReceiveAsync(destination.ToArray(), SocketFlags.None);
+                }
             }
             catch (SocketException e)
             {
@@ -199,11 +201,28 @@ namespace System.IO.Pipes
             }
         }
 
-        private async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async Task WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
             try
             {
+                // TODO #22608: Remove this terribly inefficient special-case once Socket.SendAsync
+                // accepts a Memory<T> in the near future.
+                byte[] buffer;
+                int offset, count;
+                if (source.DangerousTryGetArray(out ArraySegment<byte> segment))
+                {
+                    buffer = segment.Array;
+                    offset = segment.Offset;
+                    count = segment.Count;
+                }
+                else
+                {
+                    buffer = source.ToArray();
+                    offset = 0;
+                    count = buffer.Length;
+                }
+
                 while (count > 0)
                 {
                     // cancellationToken is (mostly) ignored.  We could institute a polling loop like we do for reads if 

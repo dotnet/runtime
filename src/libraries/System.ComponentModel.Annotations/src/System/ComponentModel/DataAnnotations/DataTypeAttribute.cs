@@ -62,13 +62,13 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the DataType. If it equals DataType.Custom, <see cref="CustomDataType" /> should also be retrieved.
         /// </summary>
-        public DataType DataType { get; private set; }
+        public DataType DataType { get; }
 
         /// <summary>
         ///     Gets the string representing a custom data type. Returns a non-null value only if <see cref="DataType" /> is
         ///     DataType.Custom.
         /// </summary>
-        public string CustomDataType { get; private set; }
+        public string CustomDataType { get; }
 
         /// <summary>
         ///     Gets the default display format that gets used along with this DataType.

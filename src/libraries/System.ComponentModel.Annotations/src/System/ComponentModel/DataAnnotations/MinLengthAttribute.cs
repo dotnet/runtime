@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations
@@ -30,7 +29,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the minimum allowable length of the collection/string data.
         /// </summary>
-        public int Length { get; private set; }
+        public int Length { get; }
 
         /// <summary>
         ///     Determines whether a specified object is valid. (Overrides <see cref="ValidationAttribute.IsValid(object)" />)
@@ -60,16 +59,13 @@ namespace System.ComponentModel.DataAnnotations
             {
                 length = str.Length;
             }
+            else if (CountPropertyHelper.TryGetCount(value, out var count))
+            {
+                length = count;
+            }
             else
             {
-                if (value is ICollection collection)
-                {
-                    length = collection.Count;
-                }
-                else
-                {
-                    throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
-                }
+                throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
             }
 
             return length >= Length;
@@ -80,11 +76,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="name">The name to include in the formatted string.</param>
         /// <returns>A localized string to describe the minimum acceptable length.</returns>
-        public override string FormatErrorMessage(string name)
-        {
+        public override string FormatErrorMessage(string name) =>
             // An error occurred, so we know the value is less than the minimum
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-        }
+            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
 
         /// <summary>
         ///     Checks that Length has a legal value.

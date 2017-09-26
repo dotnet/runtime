@@ -20,7 +20,6 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(SerializeDeserialize_Roundtrips_MemberData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Serialization still WIP in UapAot: https://github.com/dotnet/corefx/issues/18942")]
         public void SerializeDeserialize_Roundtrips(ObservableCollection<int> c)
         {
             ObservableCollection<int> clone = BinaryFormatterHelpers.Clone(c);

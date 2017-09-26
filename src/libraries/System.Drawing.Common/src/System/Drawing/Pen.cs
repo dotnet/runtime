@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,10 +14,7 @@ namespace System.Drawing
     /// <summary>
     /// Defines an object used to draw lines and curves.
     /// </summary>
-    public sealed class Pen : MarshalByRefObject, ICloneable, IDisposable
-#if FEATURE_SYSTEM_EVENTS
-        , ISystemColorTracker
-#endif
+    public sealed partial class Pen : MarshalByRefObject, ICloneable, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -29,6 +26,9 @@ namespace System.Drawing
         // GDI+ doesn't understand system colors, so we need to cache the value here.
         private Color _color;
         private bool _immutable;
+
+        // Tracks whether the dash style has been changed to something else than Solid during the lifetime of this object.
+        private bool _dashStyleWasOrIsNotSolid;
 
         /// <summary>
         /// Creates a Pen from a native GDI+ object.
@@ -60,13 +60,6 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             SetNativePen(pen);
-
-#if FEATURE_SYSTEM_EVENTS
-            if (this.color.IsSystemColor)
-            {
-                SystemColorTracker.Add(this);
-            }
-#endif
         }
 
         /// <summary>
@@ -360,58 +353,6 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Gets or sets a custom cap style to use at the beginning of lines drawn with this <see cref='Pen'/>.
-        /// </summary>
-        public CustomLineCap CustomStartCap
-        {
-            get
-            {
-                IntPtr lineCap = IntPtr.Zero;
-                int status = SafeNativeMethods.Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return CustomLineCap.CreateCustomLineCapObject(lineCap);
-            }
-            set
-            {
-                if (_immutable)
-                {
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
-                }
-
-                int status = SafeNativeMethods.Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
-                                                              new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-                SafeNativeMethods.Gdip.CheckStatus(status);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets a custom cap style to use at the end of lines drawn with this <see cref='Pen'/>.
-        /// </summary>
-        public CustomLineCap CustomEndCap
-        {
-            get
-            {
-                IntPtr lineCap = IntPtr.Zero;
-                int status = SafeNativeMethods.Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return CustomLineCap.CreateCustomLineCapObject(lineCap);
-            }
-            set
-            {
-                if (_immutable)
-                {
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
-                }
-
-                int status = SafeNativeMethods.Gdip.GdipSetPenCustomEndCap(new HandleRef(this, NativePen),
-                                                            new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-                SafeNativeMethods.Gdip.CheckStatus(status);
-            }
-        }
-
-        /// <summary>
         /// Gets or sets the limit of the thickness of the join on a mitered corner.
         /// </summary>
         public float MiterLimit
@@ -516,6 +457,12 @@ namespace System.Drawing
         /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
+            if (matrix.nativeMatrix == IntPtr.Zero)
+            {
+                // Disposed matrices should result in a no-op.
+                return;
+            }
+
             int status = SafeNativeMethods.Gdip.GdipMultiplyPenTransform(new HandleRef(this, NativePen),
                                                           new HandleRef(matrix, matrix.nativeMatrix),
                                                           order);
@@ -523,13 +470,13 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Translates the local geometrical transform by the specified dimmensions. This method prepends the translation
+        /// Translates the local geometrical transform by the specified dimensions. This method prepends the translation
         /// to the transform.
         /// </summary>
         public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);
 
         /// <summary>
-        /// Translates the local geometrical transform by the specified dimmensions in the specified order.
+        /// Translates the local geometrical transform by the specified dimensions in the specified order.
         /// </summary>
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
@@ -623,15 +570,6 @@ namespace System.Drawing
                     Color oldColor = _color;
                     _color = value;
                     InternalSetColor(value);
-
-#if FEATURE_SYSTEM_EVENTS
-                    // NOTE: We never remove pens from the active list, so if someone is
-                    // changing their pen colors a lot, this could be a problem.
-                    if (value.IsSystemColor && !oldColor.IsSystemColor)
-                    {
-                        SystemColorTracker.Add(this);
-                    }
-#endif
                 }
             }
         }
@@ -734,6 +672,11 @@ namespace System.Drawing
                 {
                     EnsureValidDashPattern();
                 }
+
+                if (value != DashStyle.Solid)
+                {
+                    this._dashStyleWasOrIsNotSolid = true;
+                }
             }
         }
 
@@ -780,32 +723,41 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Gets or sets an array of cutom dashes and spaces. The dashes are made up of line segments.
+        /// Gets or sets an array of custom dashes and spaces. The dashes are made up of line segments.
         /// </summary>
         public float[] DashPattern
         {
             get
             {
-                int count = 0;
-                int status = SafeNativeMethods.Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out count);
+                int status = SafeNativeMethods.Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out int count);
                 SafeNativeMethods.Gdip.CheckStatus(status);
-            
-                // Allocate temporary native memory buffer
-                // and pass it to GDI+ to retrieve dash array elements.
-                IntPtr buf = Marshal.AllocHGlobal(checked(4 * count));
-                try
-                {
-                    status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), buf, count);
-                    SafeNativeMethods.Gdip.CheckStatus(status);
 
-                    var dashArray = new float[count];
-                    Marshal.Copy(buf, dashArray, 0, count);
-                    return dashArray;
-                }
-                finally
+                float[] pattern;
+                // don't call GdipGetPenDashArray with a 0 count
+                if (count > 0)
                 {
-                    Marshal.FreeHGlobal(buf);
+                    pattern = new float[count];
+                    status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), pattern, count);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
+                else if (DashStyle == DashStyle.Solid && !this._dashStyleWasOrIsNotSolid)
+                {
+                    // Most likely we're replicating an existing System.Drawing bug here, it doesn't make much sense to
+                    // ask for a dash pattern when using a solid dash.
+                    throw new OutOfMemoryException();
+                }
+                else if (DashStyle == DashStyle.Solid)
+                {
+                    pattern = new float[0];
+                }
+                else
+                {
+                    // special case (not handled inside GDI+)
+                    pattern = new float[1];
+                    pattern[0] = 1.0f;
+                }
+
+                return pattern;
             }
             set
             {
@@ -818,6 +770,14 @@ namespace System.Drawing
                 if (value == null || value.Length == 0)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidDashPattern));
+                }
+
+                foreach (float val in value)
+                {
+                    if (val <= 0)
+                    {
+                        throw new ArgumentException(SR.Format(SR.InvalidDashPattern));
+                    }
                 }
 
                 int count = value.Length;
@@ -838,7 +798,7 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Gets or sets an array of cutom dashes and spaces. The dashes are made up of line segments.
+        /// Gets or sets an array of custom dashes and spaces. The dashes are made up of line segments.
         /// </summary>
         public float[] CompoundArray
         {
@@ -861,19 +821,22 @@ namespace System.Drawing
                     throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
                 }
 
+                if (value.Length <= 1)
+                {
+                    throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                }
+
+                foreach (float val in value)
+                {
+                    if (val < 0 || val > 1)
+                    {
+                        throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                    }
+                }
+
                 int status = SafeNativeMethods.Gdip.GdipSetPenCompoundArray(new HandleRef(this, NativePen), value, value.Length);
                 SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
-
-#if FEATURE_SYSTEM_EVENTS
-        void ISystemColorTracker.OnSystemColorChanged()
-        {
-            if (NativePen != IntPtr.Zero)
-            {
-                InternalSetColor(_color);
-            }
-        }
-#endif
     }
 }

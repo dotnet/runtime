@@ -12,7 +12,7 @@ using Windows.Storage.Streams;
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
     /// <summary>
-    /// Contains a extension methods that expose operations on WinRT <code>Windows.Foundation.IBuffer</code>.
+    /// Contains extension methods that expose operations on WinRT <code>Windows.Foundation.IBuffer</code>.
     /// </summary>
     public static class WindowsRuntimeBufferExtensions
     {
@@ -309,7 +309,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
 
         /// <summary>
-        /// Checks if the underlying memory backing two <code>IBuffer</code> intances is actually the same memory.
+        /// Checks if the underlying memory backing two <code>IBuffer</code> instances is actually the same memory.
         /// When applied to <code>IBuffer</code> instances backed by managed arrays this method is preferable to a naive comparison
         /// (such as <code>((IBufferByteAccess) buffer).Buffer == ((IBufferByteAccess) otherBuffer).Buffer</code>) because it avoids
         /// pinning the backing array which would be necessary if a direct memory pointer was obtained.

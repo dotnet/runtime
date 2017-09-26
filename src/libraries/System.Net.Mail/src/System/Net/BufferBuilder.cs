@@ -66,8 +66,10 @@ namespace System.Net.Mail
         {
             if (allowUnicode)
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(value.ToCharArray(), offset, count);
-                Append(bytes);
+                int byteCount = Encoding.UTF8.GetByteCount(value, offset, count);
+                EnsureBuffer(byteCount);
+                Encoding.UTF8.GetBytes(value, offset, count, _buffer, _offset);
+                _offset += byteCount;
             }
             else
             {

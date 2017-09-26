@@ -27,7 +27,7 @@ namespace System.Data
 
         private string _sort = string.Empty;
 
-        /// <summary>Allow a user implemented comparision of two DataRow</summary>
+        /// <summary>Allow a user implemented comparison of two DataRow</summary>
         /// <remarks>User must use correct DataRowVersion in comparison or index corruption will happen</remarks>
         private System.Comparison<DataRow> _comparison;
 
@@ -70,7 +70,7 @@ namespace System.Data
         private Dictionary<DataRow, DataRowView> _rowViewCache = new Dictionary<DataRow, DataRowView>(DataRowReferenceComparer.s_default);
 
         /// <summary>
-        /// This collection allows expression maintaince to (add / remove) from the index when it really should be a (change / move).
+        /// This collection allows expression maintenance to (add / remove) from the index when it really should be a (change / move).
         /// </summary>
         private readonly Dictionary<DataRow, DataRowView> _rowViewBuffer = new Dictionary<DataRow, DataRowView>(DataRowReferenceComparer.s_default);
 
@@ -419,7 +419,7 @@ namespace System.Data
             }
         }
 
-        /// <summary>Allow a user implemented comparision of two DataRow</summary>
+        /// <summary>Allow a user implemented comparison of two DataRow</summary>
         /// <remarks>User must use correct DataRowVersion in comparison or index corruption will happen</remarks>
         internal System.Comparison<DataRow> SortComparison
         {

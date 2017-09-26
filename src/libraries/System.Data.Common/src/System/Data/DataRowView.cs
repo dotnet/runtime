@@ -64,7 +64,7 @@ namespace System.Data
 
         /// <summary>Gets the specified column value or related child view or sets a value in specified column.</summary>
         /// <param name="property">Specified column or relation name when getting.  Specified column name when setting.</param>
-        /// <exception cref="ArgumentException"><see cref="DataColumnCollection.get_Item(string)"/> when <paramref name="property"/> is ambigous.</exception>
+        /// <exception cref="ArgumentException"><see cref="DataColumnCollection.get_Item(string)"/> when <paramref name="property"/> is ambiguous.</exception>
         /// <exception cref="ArgumentException">Unmatched <paramref name="property"/> when getting a value.</exception>
         /// <exception cref="DataException">Unmatched <paramref name="property"/> when setting a value.</exception>
         /// <exception cref="DataException"><see cref="System.Data.DataView.get_AllowEdit"/> when setting a value.</exception>

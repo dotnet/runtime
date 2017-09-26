@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -134,8 +135,10 @@ namespace System.IO.Compression.Tests
             IsZipSameAsDir(testArchive, zmodified("deleteMove"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
 
         }
-        [Fact]
-        public static async Task AppendToEntry()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task AppendToEntry(bool writeWithSpans)
         {
             //append
             Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
@@ -143,12 +146,19 @@ namespace System.IO.Compression.Tests
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
                 ZipArchiveEntry e = archive.GetEntry("first.txt");
-
-                using (StreamWriter s = new StreamWriter(e.Open()))
+                using (Stream s = e.Open())
                 {
-                    s.BaseStream.Seek(0, SeekOrigin.End);
+                    s.Seek(0, SeekOrigin.End);
 
-                    s.Write("\r\n\r\nThe answer my friend, is blowin' in the wind.");
+                    byte[] data = Encoding.ASCII.GetBytes("\r\n\r\nThe answer my friend, is blowin' in the wind.");
+                    if (writeWithSpans)
+                    {
+                        s.Write(data, 0, data.Length);
+                    }
+                    else
+                    {
+                        s.Write(new ReadOnlySpan<byte>(data));
+                    }
                 }
 
                 var file = FileData.GetFile(zmodified(Path.Combine("append", "first.txt")));

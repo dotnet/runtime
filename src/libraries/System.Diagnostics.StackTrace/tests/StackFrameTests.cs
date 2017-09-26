@@ -24,6 +24,7 @@ namespace System.Diagnostics.Tests
             VerifyStackFrame(stackFrame, false, 0, typeof(StackFrameTests).GetMethod(nameof(Ctor_Default)), isCurrentFrame: true);
         }
 
+        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -43,6 +44,7 @@ namespace System.Diagnostics.Tests
             VerifyStackFrame(stackFrame, true, skipFrames, typeof(StackFrameTests).GetMethod(nameof(Ctor_SkipFrames)), isCurrentFrame: skipFrames == 0);
         }
 
+        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(StackFrame.OFFSET_UNKNOWN, true)]
         [InlineData(0, true)]

@@ -119,8 +119,8 @@ namespace System.Data
         internal const int priMax = 24;
 
         /// <summary>
-        ///     Mapping from Operator to prioritys
-        ///     CONSIDER: fast, but hard to maitain
+        ///     Mapping from Operator to priorities
+        ///     CONSIDER: fast, but hard to maintain
         /// </summary>
 
         private static readonly int[] s_priority = new int[] {

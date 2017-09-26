@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest object representating the current state
+        /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest object representing the current state
         /// of this object.
         /// </summary>
         /// <returns>A DER-encoded certificate signing request.</returns>
@@ -250,7 +250,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest representating the current state
+        /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest representing the current state
         /// of this object using the provided signature generator.
         /// </summary>
         /// <param name="signatureGenerator">

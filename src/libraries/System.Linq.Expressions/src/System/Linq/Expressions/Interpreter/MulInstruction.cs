@@ -21,17 +21,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)unchecked((short)((short)left * (short)right));
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = unchecked((short)((short)l * (short)r));
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -40,17 +39,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)left * (int)right));
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)l * (int)r));
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -59,17 +57,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)unchecked((long)left * (long)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = unchecked((long)l * (long)r);
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -78,17 +75,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)unchecked((ushort)((ushort)left * (ushort)right));
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = unchecked((ushort)((ushort)l * (ushort)r));
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -97,17 +93,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)unchecked((uint)left * (uint)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = unchecked((uint)l * (uint)r);
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -116,17 +111,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)unchecked((ulong)left * (ulong)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = unchecked((ulong)l * (ulong)r);
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -135,17 +129,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)((float)left * (float)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = (float)l * (float)r;
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -154,17 +147,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)((double)left * (double)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = (double)l * (double)r;
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -203,17 +195,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)checked((short)((short)left * (short)right));
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = checked((short)((short)l * (short)r));
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -222,17 +213,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : ScriptingRuntimeHelpers.Int32ToObject(checked((int)left * (int)right));
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject(checked((int)l * (int)r));
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -241,17 +231,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)checked((long)left * (long)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = checked((long)l * (long)r);
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -260,17 +249,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)checked((ushort)((ushort)left * (ushort)right));
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = checked((ushort)((ushort)l * (ushort)r));
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -279,17 +267,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)checked((uint)left * (uint)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = checked((uint)l * (uint)r);
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }
@@ -298,17 +285,16 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
+                int index = frame.StackIndex;
+                object[] stack = frame.Data;
+                object left = stack[index - 2];
+                if (left != null)
                 {
-                    frame.Data[frame.StackIndex - 2] = null;
+                    object right = stack[index - 1];
+                    stack[index - 2] = right == null ? null : (object)checked((ulong)left * (ulong)right);
                 }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = checked((ulong)l * (ulong)r);
-                }
-                frame.StackIndex--;
+
+                frame.StackIndex = index - 1;
                 return 1;
             }
         }

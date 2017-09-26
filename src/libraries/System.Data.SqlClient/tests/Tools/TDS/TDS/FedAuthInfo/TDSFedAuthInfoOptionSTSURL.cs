@@ -57,7 +57,7 @@ namespace Microsoft.SqlServer.TDS.Authentication
         }
 
         /// <summary>
-        /// Default public contructor
+        /// Default public constructor
         /// </summary>
         public TDSFedAuthInfoOptionSTSURL()
         {

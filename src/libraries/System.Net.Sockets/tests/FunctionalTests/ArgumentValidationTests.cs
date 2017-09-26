@@ -254,7 +254,7 @@ namespace System.Net.Sockets.Tests
         public void Send_Buffers_NullBuffers_Throws_ArgumentNull()
         {
             SocketError errorCode;
-            Assert.Throws<ArgumentNullException>(() => GetSocket().Send(null, SocketFlags.None, out errorCode));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().Send((IList<ArraySegment<byte>>)null, SocketFlags.None, out errorCode));
         }
 
         [Fact]
@@ -321,7 +321,7 @@ namespace System.Net.Sockets.Tests
         public void Receive_Buffers_NullBuffers_Throws_ArgumentNull()
         {
             SocketError errorCode;
-            Assert.Throws<ArgumentNullException>(() => GetSocket().Receive(null, SocketFlags.None, out errorCode));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().Receive((IList<ArraySegment<byte>>)null, SocketFlags.None, out errorCode));
         }
 
         [Fact]

@@ -18,6 +18,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\StreamSpanExtensions.netstandard.cs" Condition="'$(TargetGroup)' == 'netstandard'">
+      <Link>Common\System\IO\StreamSpanExtensions.netstandard.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CRC.cs">
       <Link>Common\System\IO\Compression\CRC.cs</Link>
     </Compile>

@@ -35,7 +35,7 @@ namespace System.IO.Pipes.Tests
 
         private static string GetUniquePipeName()
         {
-            if (PlatformDetection.IsWinRT)
+            if (PlatformDetection.IsInAppContainer)
             {
                 return @"LOCAL\" + Path.GetRandomFileName();
             }

@@ -38,15 +38,10 @@ namespace System.Security.Principal
         private volatile bool _impersonationLevelInitialized;
 
         public new const string DefaultIssuer = @"AD AUTHORITY";
-        [NonSerialized]
         private string _issuerName = DefaultIssuer;
-        [NonSerialized]
         private object _claimsIntiailizedLock = new object();
-        [NonSerialized]
         private volatile bool _claimsInitialized;
-        [NonSerialized]
         private List<Claim> _deviceClaims;
-        [NonSerialized]
         private List<Claim> _userClaims;
 
         //
@@ -61,7 +56,7 @@ namespace System.Security.Principal
         /// Initializes a new instance of the WindowsIdentity class for the user represented by the specified User Principal Name (UPN).
         /// </summary>
         /// <remarks>
-        /// Unlike the desktop version, we connect to Lsa only as an untrusted caller. We do not attempt to explot Tcb privilege or adjust the current
+        /// Unlike the desktop version, we connect to Lsa only as an untrusted caller. We do not attempt to exploit Tcb privilege or adjust the current
         /// thread privilege to include Tcb.
         /// </remarks>
         public WindowsIdentity(string sUserPrincipalName)
@@ -920,8 +915,8 @@ namespace System.Security.Principal
         }
 
         /// <summary>
-        /// Intenal method to initialize the claim collection.
-        /// Lazy init is used so claims are not initialzed until needed
+        /// Internal method to initialize the claim collection.
+        /// Lazy init is used so claims are not initialized until needed
         /// </summary>        
         private void InitializeClaims()
         {

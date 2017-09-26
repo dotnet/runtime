@@ -1096,7 +1096,7 @@ namespace System.Data
 
                             if ((vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                                 continue;
-                            Debug.Assert((!DataStorage.IsObjectNull(vLeft)) && (!DataStorage.IsObjectNull(vRight)), "Imposible..");
+                            Debug.Assert((!DataStorage.IsObjectNull(vLeft)) && (!DataStorage.IsObjectNull(vRight)), "Impossible.");
 
                             resultType = DataStorage.GetStorageType(vLeft.GetType());
 

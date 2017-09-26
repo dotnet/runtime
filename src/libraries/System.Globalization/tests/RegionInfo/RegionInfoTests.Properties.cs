@@ -3,37 +3,40 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class RegionInfoPropertyTests
+    public class RegionInfoPropertyTests : RemoteExecutorTestBase
     {
         [Fact]
         public void CurrentRegion()
         {
-            CultureInfo oldThreadCulture = CultureInfo.CurrentCulture;
-
-            try
+            RemoteInvoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
                 RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
                 Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
                 Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldThreadCulture;
-            }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Theory]
         [InlineData("en-US", "United States")]
         public void DisplayName(string name, string expected)
         {
-            Assert.Equal(expected, new RegionInfo(name).DisplayName);
+            RemoteInvoke((string _name, string _expected) =>
+            {
+                CultureInfo.CurrentUICulture = new CultureInfo(_name);
+                Assert.Equal(_expected, new RegionInfo(_name).DisplayName);
+
+                return SuccessExitCode;
+            }, name, expected).Dispose();
         }
 
         [Theory]
@@ -104,7 +107,7 @@ namespace System.Globalization.Tests
                                                     "SAU", "SAU" };
             yield return new object[] { 0x412, 134, "South Korean Won", "Korean Won", PlatformDetection.IsWindows ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
             yield return new object[] { 0x40d, 117, "Israeli New Shekel", "Israeli New Sheqel", 
-                                                    PlatformDetection.IsWindows ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
+                                                    PlatformDetection.IsWindows || PlatformDetection.ICUVersion.Major >= 59 ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
         }
         
         [Theory]

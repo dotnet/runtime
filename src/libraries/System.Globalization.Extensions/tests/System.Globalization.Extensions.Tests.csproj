@@ -22,9 +22,6 @@
     <Compile Include="IdnMapping\IdnMappingUseStd3AsciiRulesTests.cs" />
     <Compile Include="Normalization\StringNormalizationTests.cs" />
     <Compile Include="Normalization\NormalizationAll.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="IdnMapping\Data\Unicode_6_0\IdnaTest_6.txt" />

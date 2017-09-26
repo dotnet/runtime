@@ -4,8 +4,6 @@
 
 namespace System.Drawing
 {
-    using System.Configuration;
-    using System.Drawing.Configuration;
     using System.IO;
     using System.Reflection;
 
@@ -27,19 +25,9 @@ namespace System.Drawing
         {
             get
             {
-                if (s_suffix == null)
-                {
-                    s_suffix = string.Empty;
-                    var section = ConfigurationManager.GetSection("system.drawing") as SystemDrawingSection;
-                    if (section != null)
-                    {
-                        var value = section.BitmapSuffix;
-                        if (value != null && value is string)
-                        {
-                            s_suffix = (string)value;
-                        }
-                    }
-                }
+                // NOTE: This value is read from the "SystemDrawingSection" of the ConfigurationManager on
+                // the .NET Framework. To avoid pulling in a direct dependency to that assembly, we are not
+                // reading the value in this implementation.
                 return s_suffix;
             }
             set

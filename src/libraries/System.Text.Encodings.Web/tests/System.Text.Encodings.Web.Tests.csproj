@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AllowedCharsBitmapTests.cs" />
+    <Compile Include="TextEncoderTests.cs" />
+    <Compile Include="ScalarTestEncoder.cs" />
     <Compile Include="CommonTestEncoder.cs" />
     <Compile Include="BufferInternalTests.cs" />
     <Compile Include="EncoderCommon.cs" />
@@ -42,11 +44,6 @@
     <Compile Include="UnicodeRangesTests.cs" />
     <Compile Include="UnicodeRangeTests.cs" />
     <Compile Include="UrlEncoderTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
