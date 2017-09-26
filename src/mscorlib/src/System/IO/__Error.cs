@@ -21,11 +21,9 @@ using Win32Native = Microsoft.Win32.Win32Native;
 using System.Text;
 using System.Globalization;
 using System.Security;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    [Pure]
     internal static class __Error
     {
         internal static void EndOfFile()

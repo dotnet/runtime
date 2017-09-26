@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
 
 namespace System.IO
@@ -148,7 +147,6 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            Contract.EndContractBlock();
 
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen);
         }
@@ -180,7 +178,6 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath);
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            Contract.EndContractBlock();
 
             Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false);
@@ -303,7 +300,6 @@ namespace System.IO
             }
         }
 
-        [Pure]
         public override int Peek() {
             if (stream == null)
                 __Error.ReaderClosed();
@@ -339,7 +335,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             if (stream == null)
                 __Error.ReaderClosed();
@@ -397,7 +392,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             if (stream == null)
                 __Error.ReaderClosed();
@@ -873,7 +867,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overriden.  
@@ -1059,7 +1052,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overriden.  
@@ -1173,7 +1165,6 @@ namespace System.IO
                 return -1;
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override int Read(char[] buffer, int index, int count) {
                 return 0;
             }

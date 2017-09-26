@@ -20,7 +20,6 @@ namespace System
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
     using System.Security;
-    using System.Diagnostics.Contracts;
 
     internal enum LogLevel
     {
@@ -121,7 +120,6 @@ namespace System
 #endif
         }
 
-        [Pure]
         [Conditional("_LOGGING")]
         static public void Log(String message)
         {
@@ -135,7 +133,6 @@ namespace System
             System.Diagnostics.Log.Trace(Environment.NewLine);
         }
 
-        [Pure]
         [Conditional("_LOGGING")]
         static public void Log(String switchName, String message)
         {
@@ -254,7 +251,6 @@ namespace System
             return ((int)logSwitch.MinimumLevel <= (int)level);
         }
 
-        [Pure]
         [Conditional("_LOGGING")]
         public static void Log(String switchName, LogLevel level, params Object[] messages)
         {
@@ -298,7 +294,6 @@ namespace System
             System.Diagnostics.Log.LogMessage((LoggingLevels)((int)level), logSwitch, StringBuilderCache.GetStringAndRelease(sb));
         }
 
-        [Pure]
         [Conditional("_LOGGING")]
         public static void Trace(String switchName, String format, params Object[] messages)
         {

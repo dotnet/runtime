@@ -8,7 +8,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 //using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -27,8 +26,6 @@ namespace System.Collections.Generic
 
         public static Comparer<T> Create(Comparison<T> comparison)
         {
-            Contract.Ensures(Contract.Result<Comparer<T>>() != null);
-
             if (comparison == null)
                 throw new ArgumentNullException(nameof(comparison));
 

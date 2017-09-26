@@ -25,7 +25,6 @@ namespace System
     using System.Reflection;
     using System.Collections;
     using System.Globalization;
-    using System.Diagnostics.Contracts;
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -74,7 +73,6 @@ namespace System
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
 
             _className = info.GetString("ClassName"); // Do not rename (binary serialization)
             _message = info.GetString("Message"); // Do not rename (binary serialization)
@@ -439,7 +437,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(info));
             }
-            Contract.EndContractBlock();
 
             String tempStackTraceString = _stackTraceString;
 

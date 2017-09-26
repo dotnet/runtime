@@ -9,7 +9,6 @@ using System.Security;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -31,7 +30,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // int Count { get }
-        [Pure]
         internal int Count<T>()
         {
             IVector<T> _this = Unsafe.As<IVector<T>>(this);
@@ -88,7 +86,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (array.Length - arrayIndex < Count<T>())
                 throw new ArgumentException(SR.Argument_InsufficientSpaceToCopyCollection);
 
-            Contract.EndContractBlock();
 
             IVector<T> _this = Unsafe.As<IVector<T>>(this);
             int count = Count<T>();

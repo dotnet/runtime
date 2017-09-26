@@ -18,7 +18,6 @@ using System.Globalization;
 using System.Threading;
 using System.Security;
 using System.Collections.Concurrent;
-using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -257,7 +256,7 @@ namespace System.Threading.Tasks
         /// </summary>
         internal void InternalQueueTask(Task task)
         {
-            Contract.Requires(task != null);
+            Debug.Assert(task != null);
 
             if (TplEtwProvider.Log.IsEnabled())
             {

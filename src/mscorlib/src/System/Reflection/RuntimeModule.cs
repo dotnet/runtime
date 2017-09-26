@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Globalization;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
@@ -414,7 +413,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -428,7 +426,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -570,7 +567,6 @@ namespace System.Reflection
 
         public override Assembly Assembly
         {
-            [Pure]
             get
             {
                 return GetRuntimeAssembly();

@@ -19,7 +19,6 @@ namespace System.Reflection.Emit
     using System.Reflection;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Runtime.InteropServices;
-    using System.Diagnostics.Contracts;
 
     // 
     // A PropertyBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineProperty
@@ -47,7 +46,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-            Contract.EndContractBlock();
 
             m_name = name;
             m_moduleBuilder = mod;

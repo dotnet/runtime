@@ -30,7 +30,6 @@ namespace System
     using System.Threading;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
 
     public enum EnvironmentVariableTarget
     {
@@ -135,7 +134,6 @@ namespace System
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
             if (name.Length == 0)
             {
@@ -289,7 +287,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<String>() != null);
 #if PLATFORM_WINDOWS
                 return "\r\n";
 #else
@@ -362,7 +359,6 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
             get
             {
-                Contract.Ensures(Contract.Result<String>() != null);
                 return Internal.Runtime.Augments.EnvironmentAugments.StackTrace;
             }
         }

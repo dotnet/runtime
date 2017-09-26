@@ -6,7 +6,6 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
@@ -37,7 +36,6 @@ namespace System.Diagnostics
         {
             if (name != null && name.Length == 0)
                 throw new ArgumentOutOfRangeException(nameof(Name), SR.Argument_StringZeroLength);
-            Contract.EndContractBlock();
 
             if ((name != null) && (parent != null))
             {
