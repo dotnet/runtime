@@ -68,7 +68,7 @@ namespace System.Net.Http
                 // source was empty, and it might be kept open to enable subsequent communication.  And it's necessary
                 // in general for at least the first write, as we need to ensure if it's the entirety of the content
                 // and if all of the headers and content fit in the write buffer that we've actually sent the request.
-                await _connection.FlushAsync(RequestCancellationToken);
+                await _connection.FlushAsync(RequestCancellationToken).ConfigureAwait(false);
             }
 
             public override Task FlushAsync(CancellationToken ignored)
