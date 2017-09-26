@@ -262,9 +262,6 @@
     <Compile Include="Variables\RuntimeVariablesTests.cs" />
     <Compile Include="Variables\VariableTests.cs" />
     <Compile Include="Visitor\VisitorTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">

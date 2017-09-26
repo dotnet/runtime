@@ -12,6 +12,85 @@ namespace System.Tests
     public partial class StringTests
     {
         [Theory]
+        [InlineData(0, 0)]
+        [InlineData(3, 1)]
+        public static void Ctor_CharSpan_EmptyString(int length, int offset)
+        {
+            Assert.Same(string.Empty, new string(new ReadOnlySpan<char>(new char[length], offset, 0)));
+        }
+
+        [Theory]
+        [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' }, 0, 8, "abcdefgh")]
+        [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0', 'i', 'j', 'k' }, 0, 12, "abcdefgh\0ijk")]
+        [InlineData(new char[] { 'a', 'b', 'c' }, 0, 0, "")]
+        [InlineData(new char[] { 'a', 'b', 'c' }, 0, 1, "a")]
+        [InlineData(new char[] { 'a', 'b', 'c' }, 2, 1, "c")]
+        [InlineData(new char[] { '\u8001', '\u8002', '\ufffd', '\u1234', '\ud800', '\udfff' }, 0, 6, "\u8001\u8002\ufffd\u1234\ud800\udfff")]
+        public static void Ctor_CharSpan(char[] valueArray, int startIndex, int length, string expected)
+        {
+            var span = new ReadOnlySpan<char>(valueArray, startIndex, length);
+            Assert.Equal(expected, new string(span));
+        }
+
+        [Fact]
+        public static void Create_InvalidArguments_Throw()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("action", () => string.Create(-1, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => string.Create(-1, 0, (span, state) => { }));
+        }
+
+        [Fact]
+        public static void Create_Length0_ReturnsEmptyString()
+        {
+            bool actionInvoked = false;
+            Assert.Same(string.Empty, string.Create(0, 0, (span, state) => actionInvoked = true));
+            Assert.False(actionInvoked);
+        }
+
+        [Fact]
+        public static void Create_NullState_Allowed()
+        {
+            string result = string.Create(1, (object)null, (span, state) =>
+            {
+                span[0] = 'a';
+                Assert.Null(state);
+            });
+            Assert.Equal("a", result);
+        }
+
+        [Fact]
+        public static void Create_ClearsMemory()
+        {
+            const int Length = 10;
+            string result = string.Create(Length, (object)null, (span, state) =>
+            {
+                for (int i = 0; i < span.Length; i++)
+                {
+                    Assert.Equal('\0', span[i]);
+                }
+            });
+            Assert.Equal(new string('\0', Length), result);
+        }
+
+        [Theory]
+        [InlineData("a")]
+        [InlineData("this is a test")]
+        [InlineData("\0\u8001\u8002\ufffd\u1234\ud800\udfff")]
+        public static void Create_ReturnsExpectedString(string expected)
+        {
+            char[] input = expected.ToCharArray();
+            string result = string.Create(input.Length, input, (span, state) =>
+            {
+                Assert.Same(input, state);
+                for (int i = 0; i < state.Length; i++)
+                {
+                    span[i] = state[i];
+                }
+            });
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
         // CurrentCulture
         [InlineData("Hello", "ello", StringComparison.CurrentCulture, true)]
         [InlineData("Hello", "ELL", StringComparison.CurrentCulture, false)]

@@ -279,6 +279,7 @@ namespace System.Net.Tests
             Assert.Equal(int.MaxValue, request.Timeout);
         }
 
+        [ActiveIssue(22627)]
         [Fact]
         public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
         {

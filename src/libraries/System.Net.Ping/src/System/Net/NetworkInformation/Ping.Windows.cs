@@ -90,7 +90,9 @@ namespace System.Net.NetworkInformation
                         pingEventSafeWaitHandle,
                         IntPtr.Zero,
                         IntPtr.Zero,
-                        (uint)address.GetAddress(),
+#pragma warning disable CS0618 // Address is marked obsolete
+                        (uint)address.Address,
+#pragma warning restore CS0618
                         _requestBuffer,
                         (ushort)buffer.Length,
                         ref ipOptions,

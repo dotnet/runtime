@@ -80,7 +80,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void MoveFile_MoveOver(PresetScopes scope)
         {
@@ -94,7 +94,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void MoveFile_MovesFile(PresetScopes scope)
         {

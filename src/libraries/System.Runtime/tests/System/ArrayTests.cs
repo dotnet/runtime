@@ -1693,7 +1693,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[1], new int[length]));
         }
         
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void CreateInstance_Type_LengthsPlusLowerBoundOverflows_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstance(typeof(int), new int[] { int.MaxValue }, new int[] { 2 }));

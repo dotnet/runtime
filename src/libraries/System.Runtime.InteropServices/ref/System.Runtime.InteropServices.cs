@@ -7,6 +7,8 @@
 
 // Types moved down into System.Runtime.Handles
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.CriticalHandle))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.GCHandle))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.GCHandleType))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.SafeHandle))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.Missing))]
 
@@ -103,11 +105,13 @@ namespace System.IO
         protected unsafe void Initialize(byte* pointer, long length, long capacity, System.IO.FileAccess access) { }
         protected void Initialize(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length, System.IO.FileAccess access) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> destination) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin loc) { throw null; }
         public override void SetLength(long value) { }
         public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> source) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
     }
@@ -390,31 +394,6 @@ namespace System.Runtime.InteropServices
         public ErrorWrapper(int errorCode) { }
         public ErrorWrapper(object errorCode) { }
         public int ErrorCode { get { throw null; } }
-    }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GCHandle
-    {
-        public bool IsAllocated { get { throw null; } }
-        public object Target {get { throw null; } set { } }
-        public System.IntPtr AddrOfPinnedObject() { throw null; }
-        public static System.Runtime.InteropServices.GCHandle Alloc(object value) { throw null; }
-        public static System.Runtime.InteropServices.GCHandle Alloc(object value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
-        public override bool Equals(object o) { throw null; }
-        public void Free() { }
-        public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
-        public override int GetHashCode() { throw null; }
-        public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static explicit operator System.Runtime.InteropServices.GCHandle(System.IntPtr value) { throw null; }
-        public static explicit operator System.IntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
-        public static bool operator !=(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
-    }
-    public enum GCHandleType
-    {
-        Normal = 2,
-        Pinned = 3,
-        Weak = 0,
-        WeakTrackResurrection = 1,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(5149), Inherited = false)]
     public sealed partial class GuidAttribute : System.Attribute

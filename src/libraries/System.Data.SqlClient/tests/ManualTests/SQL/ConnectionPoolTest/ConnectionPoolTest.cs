@@ -11,8 +11,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class ConnectionPoolTest
     {
-        private static readonly string _tcpConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = false }).ConnectionString;
-        private static readonly string _tcpMarsConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
+        private static readonly string _tcpConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = false, Pooling = true }).ConnectionString;
+        private static readonly string _tcpMarsConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true, Pooling = true }).ConnectionString;
 
         [CheckConnStrSetupFact]
         public static void ConnectionPool_NonMars()

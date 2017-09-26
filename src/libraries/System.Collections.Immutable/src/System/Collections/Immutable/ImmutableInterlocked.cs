@@ -423,7 +423,7 @@ namespace System.Collections.Immutable
         #region ImmutableStack<T> members
 
         /// <summary>
-        /// Pushes a new element onto a stack.
+        /// Pops the top element off a stack and returns it to the caller, if the stack is not empty.
         /// </summary>
         /// <typeparam name="T">The type of elements stored in the stack.</typeparam>
         /// <param name="location">The variable or field to atomically update.</param>

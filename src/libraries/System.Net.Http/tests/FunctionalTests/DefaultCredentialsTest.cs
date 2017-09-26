@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Net.Test.Common;
 using System.Security.Principal;
 using System.Threading.Tasks;
 
@@ -15,7 +14,8 @@ namespace System.Net.Http.Functional.Tests
 
     // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-    public class DefaultCredentialsTest
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public class DefaultCredentialsTest : HttpClientTestBase
     {
         private static string DomainJoinedTestServer => Configuration.Http.DomainJoinedHttpHost;
         private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(DomainJoinedTestServer);
@@ -50,7 +50,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task UseDefaultCredentials_DefaultValue_Unauthorized(bool useProxy)
         {
-            var handler = new HttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
 
             using (var client = new HttpClient(handler))
@@ -67,7 +67,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task UseDefaultCredentials_SetFalse_Unauthorized(bool useProxy)
         {
-            var handler = new HttpClientHandler { UseProxy = useProxy, UseDefaultCredentials = false };
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.UseProxy = useProxy;
+            handler.UseDefaultCredentials = false;
 
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
@@ -83,7 +85,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task UseDefaultCredentials_SetTrue_ConnectAsCurrentIdentity(bool useProxy)
         {
-            var handler = new HttpClientHandler { UseProxy = useProxy, UseDefaultCredentials = true };
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.UseProxy = useProxy;
+            handler.UseDefaultCredentials = true;
 
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
@@ -104,7 +108,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task UseDefaultCredentials_SetTrueAndServerOffersMultipleSchemes_Ok(bool useProxy)
         {
-            var handler = new HttpClientHandler { UseProxy = useProxy, UseDefaultCredentials = true };
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.UseProxy = useProxy;
+            handler.UseDefaultCredentials = true;
 
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(s_multipleSchemesAuthenticatedServer))
@@ -125,10 +131,10 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task Credentials_SetToSpecificCredential_ConnectAsSpecificIdentity(bool useProxy)
         {
-            var handler = new HttpClientHandler {
-                UseProxy = useProxy,
-                UseDefaultCredentials = false,
-                Credentials = _specificCredential };
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.UseProxy = useProxy;
+            handler.UseDefaultCredentials = false;
+            handler.Credentials = _specificCredential;
 
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
@@ -147,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task Credentials_SetToWrappedDefaultCredential_ConnectAsCurrentIdentity(bool useProxy)
         {
-            var handler = new HttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
             handler.Credentials = new CredentialWrapper
             {
@@ -171,7 +177,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
         {
-            var handler = new HttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(null);
 
             using (var client = new HttpClient(handler))
@@ -186,7 +192,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
         {
-            var handler = new HttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(CredentialCache.DefaultCredentials);
 
             using (var client = new HttpClient(handler))
@@ -205,7 +211,7 @@ namespace System.Net.Http.Functional.Tests
                 InnerCredentials = CredentialCache.DefaultCredentials
             };
 
-            var handler = new HttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(wrappedCreds);
 
             using (var client = new HttpClient(handler))

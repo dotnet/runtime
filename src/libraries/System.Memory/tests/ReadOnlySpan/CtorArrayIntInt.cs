@@ -16,7 +16,7 @@ namespace System.SpanTests
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, 3, 2);
-            span.Validate<int>(93, 94);
+            span.Validate(93, 94);
         }
 
         [Fact]
@@ -24,7 +24,7 @@ namespace System.SpanTests
         {
             long[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
             ReadOnlySpan<long> span = new ReadOnlySpan<long>(a, 4, 3);
-            span.Validate<long>(94, 95, 96);
+            span.Validate(94, 95, 96);
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace System.SpanTests
         {
             long[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
             ReadOnlySpan<long> span = new ReadOnlySpan<long>(a, 4, 5);
-            span.Validate<long>(94, 95, 96, 97, 98);
+            span.Validate(94, 95, 96, 97, 98);
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace System.SpanTests
             // Valid for start to equal the array length. This returns an empty span that starts "just past the array."
             int[] a = { 91, 92, 93 };
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, 3, 0);
-            span.Validate<int>();
+            span.Validate();
         }
     }
 }

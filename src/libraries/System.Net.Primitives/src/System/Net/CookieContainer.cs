@@ -223,7 +223,9 @@ namespace System.Net
 
             if (cookie.Domain.Length == 0)
             {
-                throw new ArgumentException(SR.net_emptystringcall, "cookie.Domain");
+                throw new ArgumentException(
+                    SR.Format(SR.net_emptystringcall, nameof(cookie) + "." + nameof(cookie.Domain)),
+                    nameof(cookie) + "." + nameof(cookie.Domain));
             }
 
             Uri uri;
@@ -734,7 +736,7 @@ namespace System.Net
                 return null;
             }
 
-            bool isSecure = (uri.Scheme == UriScheme.Https);
+            bool isSecure = (uri.Scheme == UriScheme.Https || uri.Scheme == UriScheme.Wss);
             int port = uri.Port;
             CookieCollection cookies = null;
 

@@ -1234,7 +1234,7 @@ namespace System.Net
         }
 
         /// <summary>
-        ///    <para>Determnines whether the stream we return is Writeable or Readable</para>
+        ///    <para>Determines whether the stream we return is Writeable or Readable</para>
         /// </summary>
         private TriState IsFtpDataStreamWriteable()
         {

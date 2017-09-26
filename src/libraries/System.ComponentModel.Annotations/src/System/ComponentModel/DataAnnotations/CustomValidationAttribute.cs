@@ -60,8 +60,6 @@ namespace System.ComponentModel.DataAnnotations
         #region Member Fields
 
         private readonly Lazy<string> _malformedErrorMessage;
-        private readonly string _method;
-        private readonly Type _validatorType;
         private bool _isSingleArgumentMethod;
         private string _lastMessage;
         private MethodInfo _methodInfo;
@@ -76,7 +74,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     specified type.
         /// </summary>
         /// <remarks>
-        ///     An invalid <paramref name="validatorType" /> or <paramref name="Method" /> will be cause
+        ///     An invalid <paramref name="validatorType" /> or <paramref name="method" /> will be cause
         ///     <see cref="IsValid(object, ValidationContext)" />> to return a <see cref="ValidationResult" />
         ///     and <see cref="ValidationAttribute.FormatErrorMessage" /> to return a summary error message.
         /// </remarks>
@@ -88,8 +86,8 @@ namespace System.ComponentModel.DataAnnotations
         public CustomValidationAttribute(Type validatorType, string method)
             : base(() => SR.CustomValidationAttribute_ValidationError)
         {
-            _validatorType = validatorType;
-            _method = method;
+            ValidatorType = validatorType;
+            Method = method;
             _malformedErrorMessage = new Lazy<string>(CheckAttributeWellFormed);
         }
 
@@ -100,18 +98,12 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the type that contains the validation method identified by <see cref="Method" />.
         /// </summary>
-        public Type ValidatorType
-        {
-            get { return _validatorType; }
-        }
+        public Type ValidatorType { get; }
 
         /// <summary>
         ///     Gets the name of the method in <see cref="ValidatorType" /> to invoke to perform validation.
         /// </summary>
-        public string Method
-        {
-            get { return _method; }
-        }
+        public string Method { get; }
 
         public override bool RequiresValidationContext 
         {
@@ -154,8 +146,8 @@ namespace System.ComponentModel.DataAnnotations
                             SR.CustomValidationAttribute_Type_Conversion_Failed,
                             (value != null ? value.GetType().ToString() : "null"),
                             _firstParameterType,
-                            _validatorType,
-                            _method));
+                            ValidatorType,
+                            Method));
             }
 
             // Invoke the method.  Catch TargetInvocationException merely to unwrap it.
@@ -212,10 +204,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Checks whether the current attribute instance itself is valid for use.
         /// </summary>
         /// <returns>The error message why it is not well-formed, null if it is well-formed.</returns>
-        private string CheckAttributeWellFormed()
-        {
-            return ValidateValidatorTypeParameter() ?? ValidateMethodParameter();
-        }
+        private string CheckAttributeWellFormed() => ValidateValidatorTypeParameter() ?? ValidateMethodParameter();
 
         /// <summary>
         ///     Internal helper to determine whether <see cref="ValidatorType" /> is legal for use.
@@ -223,15 +212,15 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns><c>null</c> or the appropriate error message.</returns>
         private string ValidateValidatorTypeParameter()
         {
-            if (_validatorType == null)
+            if (ValidatorType == null)
             {
                 return SR.CustomValidationAttribute_ValidatorType_Required;
             }
 
-            if (!_validatorType.IsVisible)
+            if (!ValidatorType.IsVisible)
             {
                 return string.Format(CultureInfo.CurrentCulture,
-                    SR.CustomValidationAttribute_Type_Must_Be_Public, _validatorType.Name);
+                    SR.CustomValidationAttribute_Type_Must_Be_Public, ValidatorType.Name);
             }
 
             return null;
@@ -243,27 +232,27 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns><c>null</c> or the appropriate error message.</returns>
         private string ValidateMethodParameter()
         {
-            if (string.IsNullOrEmpty(_method))
+            if (string.IsNullOrEmpty(Method))
             {
                 return SR.CustomValidationAttribute_Method_Required;
             }
 
             // Named method must be public and static
-            var methodInfo = _validatorType.GetRuntimeMethods()
-                .SingleOrDefault(m => string.Equals(m.Name, _method, StringComparison.Ordinal)
+            var methodInfo = ValidatorType.GetRuntimeMethods()
+                .SingleOrDefault(m => string.Equals(m.Name, Method, StringComparison.Ordinal)
                                     && m.IsPublic && m.IsStatic);
             if (methodInfo == null)
             {
                 return string.Format(CultureInfo.CurrentCulture,
-                    SR.CustomValidationAttribute_Method_Not_Found, _method, _validatorType.Name);
+                    SR.CustomValidationAttribute_Method_Not_Found, Method, ValidatorType.Name);
             }
 
             // Method must return a ValidationResult
             if (methodInfo.ReturnType != typeof(ValidationResult))
             {
                 return string.Format(CultureInfo.CurrentCulture,
-                    SR.CustomValidationAttribute_Method_Must_Return_ValidationResult, _method,
-                    _validatorType.Name);
+                    SR.CustomValidationAttribute_Method_Must_Return_ValidationResult, Method,
+                    ValidatorType.Name);
             }
 
             ParameterInfo[] parameterInfos = methodInfo.GetParameters();
@@ -272,7 +261,7 @@ namespace System.ComponentModel.DataAnnotations
             if (parameterInfos.Length == 0 || parameterInfos[0].ParameterType.IsByRef)
             {
                 return string.Format(CultureInfo.CurrentCulture,
-                    SR.CustomValidationAttribute_Method_Signature, _method, _validatorType.Name);
+                    SR.CustomValidationAttribute_Method_Signature, Method, ValidatorType.Name);
             }
 
             // We accept 2 forms:
@@ -285,8 +274,8 @@ namespace System.ComponentModel.DataAnnotations
                 if ((parameterInfos.Length != 2) || (parameterInfos[1].ParameterType != typeof(ValidationContext)))
                 {
                     return string.Format(CultureInfo.CurrentCulture,
-                        SR.CustomValidationAttribute_Method_Signature, _method,
-                        _validatorType.Name);
+                        SR.CustomValidationAttribute_Method_Signature, Method,
+                        ValidatorType.Name);
                 }
             }
 

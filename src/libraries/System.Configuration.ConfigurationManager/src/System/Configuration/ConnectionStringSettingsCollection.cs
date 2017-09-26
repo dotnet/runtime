@@ -39,7 +39,7 @@ namespace System.Configuration
         }
 
         // the connection string behavior is strange in that is acts kind of like a
-        // basic map and partially like a add remove clear collection
+        // basic map and partially like an add remove clear collection
         // Overriding these methods allows for the specific behaviors to be
         // patterened
         protected override void BaseAdd(int index, ConfigurationElement element)

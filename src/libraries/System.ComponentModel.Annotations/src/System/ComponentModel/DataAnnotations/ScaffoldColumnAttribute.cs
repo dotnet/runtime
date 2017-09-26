@@ -12,6 +12,6 @@ namespace System.ComponentModel.DataAnnotations
             Scaffold = scaffold;
         }
 
-        public bool Scaffold { get; private set; }
+        public bool Scaffold { get; }
     }
 }

@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.IO.Tests
 {
-    public class BinaryWriter_WriteByteCharTests
+    public partial class BinaryWriter_WriteByteCharTests
     {
         protected virtual Stream CreateStream()
         {

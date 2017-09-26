@@ -49,12 +49,6 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe uint crc32(uint crc, byte[] buffer, int offset, int len)
-        {
-            fixed (byte* buf = &buffer[offset])
-                return crc32(crc, buf, len);
-        }
-
         internal static unsafe ZLibNative.ErrorCode Deflate(ref ZLibNative.ZStream stream, ZLibNative.FlushCode flush)
         {
             fixed (ZLibNative.ZStream* streamBytes = &stream)

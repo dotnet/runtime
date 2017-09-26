@@ -38,13 +38,18 @@
     <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp21.cs">
+      <Link>System\Drawing\ColorUtil.netcoreapp21.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\KnownColor.cs">
+      <Link>System\Drawing\KnownColor.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
       <Link>System\Drawing\KnownColorTable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
-    <Compile Include="System\Drawing\KnownColor.cs" />
   </ItemGroup>
   <!-- System color features require Win32 PInvoke's which are disallowed in UAP. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">

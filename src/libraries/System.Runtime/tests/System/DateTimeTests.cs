@@ -551,9 +551,65 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Parse_NullString_ThrowsArgumentNullException()
+        public static void Parse_InvalidArguments_Throws()
         {
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.Parse(null));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.Parse(null, new MyFormatter()));
             AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.Parse(null, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.Parse(""));
+            Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public static void TryParse_NullOrEmptyString_ReturnsFalse(string input)
+        {
+            Assert.False(DateTime.TryParse(input, out DateTime result));
+            Assert.False(DateTime.TryParse(input, new MyFormatter(), DateTimeStyles.None, out result));
+        }
+
+        [Fact]
+        public static void ParseExact_InvalidArguments_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact(null, "d", new MyFormatter()));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact(null, "d", new MyFormatter(), DateTimeStyles.None));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact(null, new[] { "d" }, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("", "d", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("", "d", new MyFormatter(), DateTimeStyles.None));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("", new[] { "d" }, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            AssertExtensions.Throws<ArgumentNullException>("format", () => DateTime.ParseExact("123", null, new MyFormatter()));
+            AssertExtensions.Throws<ArgumentNullException>("format", () => DateTime.ParseExact("123", (string)null, new MyFormatter(), DateTimeStyles.None));
+            AssertExtensions.Throws<ArgumentNullException>("formats", () => DateTime.ParseExact("123", (string[])null, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("123", "", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("123", "", new MyFormatter(), DateTimeStyles.None));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("123", new string[0], new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("123", new string[] { null }, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("123", new[] { "" }, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+        }
+
+        [Fact]
+        public static void TryParseExact_InvalidArguments_ReturnsFalse()
+        {
+            Assert.False(DateTime.TryParseExact(null, "d", new MyFormatter(), DateTimeStyles.None, out DateTime result));
+            Assert.False(DateTime.TryParseExact(null, new[] { "d" }, new MyFormatter(), DateTimeStyles.None, out result));
+
+            Assert.False(DateTime.TryParseExact("", "d", new MyFormatter(), DateTimeStyles.None, out result));
+            Assert.False(DateTime.TryParseExact("", new[] { "d" }, new MyFormatter(), DateTimeStyles.None, out result));
+
+            Assert.False(DateTime.TryParseExact("abc", (string)null, new MyFormatter(), DateTimeStyles.None, out result));
+            Assert.False(DateTime.TryParseExact("abc", (string[])null, new MyFormatter(), DateTimeStyles.None, out result));
+
+            Assert.False(DateTime.TryParseExact("abc", "", new MyFormatter(), DateTimeStyles.None, out result));
+            Assert.False(DateTime.TryParseExact("abc", new string[0], new MyFormatter(), DateTimeStyles.None, out result));
+            Assert.False(DateTime.TryParseExact("abc", new string[] { null }, new MyFormatter(), DateTimeStyles.None, out result));
+            Assert.False(DateTime.TryParseExact("abc", new[] { "" }, new MyFormatter(), DateTimeStyles.None, out result));
+            Assert.False(DateTime.TryParseExact("abc", new[] { "" }, new MyFormatter(), DateTimeStyles.None, out result));
         }
 
         [Fact]
@@ -625,45 +681,69 @@ namespace System.Tests
             Assert.Equal(0, result.Second);
         }
 
-        [Fact]
-        public static void ParseExact_String_String_FormatProvider()
+        public static IEnumerable<object[]> StandardFormatSpecifiers()
         {
-            DateTime expected = DateTime.MaxValue;
-            string expectedString = expected.ToString("G");
-
-            DateTime result = DateTime.ParseExact(expectedString, "G", null);
-            Assert.Equal(expectedString, result.ToString("G"));
-        }
-
-        [Fact]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_U()
-        {
-            DateTime expected = DateTime.MaxValue;
-            string expectedString = expected.ToString("u");
-
-            DateTime result = DateTime.ParseExact(expectedString, "u", null, DateTimeStyles.None);
-            Assert.Equal(expectedString, result.ToString("u"));
-        }
-
-        [Fact]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_G()
-        {
-            DateTime expected = DateTime.MaxValue;
-            string expectedString = expected.ToString("g");
-
-            DateTime result = DateTime.ParseExact(expectedString, "g", null, DateTimeStyles.None);
-            Assert.Equal(expectedString, result.ToString("g"));
+            yield return new object[] { "d" };
+            yield return new object[] { "D" };
+            yield return new object[] { "f" };
+            yield return new object[] { "F" };
+            yield return new object[] { "g" };
+            yield return new object[] { "G" };
+            yield return new object[] { "m" };
+            yield return new object[] { "M" };
+            yield return new object[] { "o" };
+            yield return new object[] { "O" };
+            yield return new object[] { "r" };
+            yield return new object[] { "R" };
+            yield return new object[] { "s" };
+            yield return new object[] { "t" };
+            yield return new object[] { "T" };
+            yield return new object[] { "u" };
+            yield return new object[] { "U" };
+            yield return new object[] { "y" };
+            yield return new object[] { "Y" };
         }
 
         [Theory]
-        [MemberData(nameof(Format_String_TestData_O))]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_O(DateTime dt, string expected)
+        [MemberData(nameof(StandardFormatSpecifiers))]
+        public static void ParseExact_ToStringThenParseExactRoundtrip_Success(string standardFormat)
         {
-            string actual = dt.ToString("o");
-            Assert.Equal(expected, actual);
+            DateTime dt = DateTime.Now;
+            string expected = dt.ToString(standardFormat);
 
-            DateTime result = DateTime.ParseExact(actual, "o", null, DateTimeStyles.None);
-            Assert.Equal(expected, result.ToString("o"));
+            Assert.Equal(expected, DateTime.ParseExact(expected, standardFormat, null).ToString(standardFormat));
+            Assert.Equal(expected, DateTime.ParseExact(expected, standardFormat, null, DateTimeStyles.None).ToString(standardFormat));
+            Assert.Equal(expected, DateTime.ParseExact(expected, new[] { standardFormat }, null, DateTimeStyles.None).ToString(standardFormat));
+
+            Assert.True(DateTime.TryParseExact(expected, standardFormat, null, DateTimeStyles.None, out DateTime actual));
+            Assert.Equal(expected, actual.ToString(standardFormat));
+            Assert.True(DateTime.TryParseExact(expected, new[] { standardFormat }, null, DateTimeStyles.None, out actual));
+            Assert.Equal(expected, actual.ToString(standardFormat));
+
+            // Should also parse with Parse, though may not round trip exactly
+            DateTime.Parse(expected);
+        }
+
+        public static IEnumerable<object[]> InvalidFormatSpecifierRoundtripPairs()
+        {
+            yield return new object[] { "d", "f" };
+            yield return new object[] { "o", "r" };
+            yield return new object[] { "u", "y" };
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidFormatSpecifierRoundtripPairs))]
+        public static void ParseExact_ToStringThenParseExact_RoundtripWithOtherFormat_Fails(string toStringFormat, string parseFormat)
+        {
+            DateTime dt = DateTime.Now;
+            string expected = dt.ToString(toStringFormat);
+
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(expected, parseFormat, null));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(expected, parseFormat, null, DateTimeStyles.None));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(expected, new[] { parseFormat }, null, DateTimeStyles.None));
+
+            Assert.False(DateTime.TryParseExact(expected, parseFormat, null, DateTimeStyles.None, out DateTime result));
+            Assert.False(DateTime.TryParseExact(expected, new[] { parseFormat }, null, DateTimeStyles.None, out result));
         }
 
         public static IEnumerable<object[]> Format_String_TestData_O()
@@ -689,16 +769,6 @@ namespace System.Tests
             yield return new object[] { DateTime.MaxValue, "Fri, 31 Dec 9999 23:59:59 GMT" };
             yield return new object[] { DateTime.MinValue, "Mon, 01 Jan 0001 00:00:00 GMT" };
             yield return new object[] { new DateTime(1906, 8, 15, 7, 24, 5, 300), "Wed, 15 Aug 1906 07:24:05 GMT" };
-        }
-
-        [Fact]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_R()
-        {
-            DateTime expected = DateTime.MaxValue;
-            string expectedString = expected.ToString("r");
-
-            DateTime result = DateTime.ParseExact(expectedString, "r", null, DateTimeStyles.None);
-            Assert.Equal(expectedString, result.ToString("r"));
         }
 
         [Fact]
@@ -895,6 +965,161 @@ namespace System.Tests
             IFormatProvider provider = new CultureInfo("en-US");
             DateTimeStyles style = DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal;
             AssertExtensions.Throws<ArgumentException>("style", () => DateTime.ParseExact(strDateTime, formats, provider, style));
+        }
+
+        public static IEnumerable<object[]> Parse_ValidInput_Suceeds_MemberData()
+        {
+            yield return new object[] { "1234 12", CultureInfo.InvariantCulture, new DateTime(1234, 12, 1, 0, 0, 0) };
+            yield return new object[] { "12 1234", CultureInfo.InvariantCulture, new DateTime(1234, 12, 1, 0, 0, 0) };
+            yield return new object[] { "12 1234 11", CultureInfo.InvariantCulture, new DateTime(1234, 12, 11, 0, 0, 0) };
+            yield return new object[] { "1234 12 13", CultureInfo.InvariantCulture, new DateTime(1234, 12, 13, 0, 0, 0) };
+            yield return new object[] { "12 13 1234", CultureInfo.InvariantCulture, new DateTime(1234, 12, 13, 0, 0, 0) };
+            yield return new object[] { "1 1 1", CultureInfo.InvariantCulture, new DateTime(2001, 1, 1, 0, 0, 0) };
+            yield return new object[] { "2 2 2Z", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2002, 2, 2, 0, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "#10/10/2095#\0", CultureInfo.InvariantCulture, new DateTime(2095, 10, 10, 0, 0, 0) };
+
+            DateTime today = DateTime.Today;
+            var hebrewCulture = new CultureInfo("he-IL");
+            hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
+            yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
+
+            var mongolianCulture = new CultureInfo("mn-MN");
+            yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidInput_Suceeds_MemberData))]
+        public static void Parse_ValidInput_Suceeds(string input, CultureInfo culture, DateTime? expected)
+        {
+            Assert.Equal(expected, DateTime.Parse(input, culture));
+        }
+
+        public static IEnumerable<object[]> ParseExact_ValidInput_Succeeds_MemberData()
+        {
+            yield return new object[] { "9", "%d", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(DateTime.Now.Year, 1, 9, 0, 0, 0) };
+            yield return new object[] { "15", "dd", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(DateTime.Now.Year, 1, 15, 0, 0, 0) };
+
+            yield return new object[] { "9", "%M", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(DateTime.Now.Year, 9, 1, 0, 0, 0) };
+            yield return new object[] { "09", "MM", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(DateTime.Now.Year, 9, 1, 0, 0, 0) };
+            yield return new object[] { "Sep", "MMM", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(DateTime.Now.Year, 9, 1, 0, 0, 0) };
+            yield return new object[] { "September", "MMMM", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(DateTime.Now.Year, 9, 1, 0, 0, 0) };
+
+            yield return new object[] { "1", "%y", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(2001, 1, 1, 0, 0, 0) };
+            yield return new object[] { "01", "yy", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(2001, 1, 1, 0, 0, 0) };
+            yield return new object[] { "2001", "yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(2001, 1, 1, 0, 0, 0) };
+
+            yield return new object[] { "3", "%H", CultureInfo.InvariantCulture, DateTimeStyles.None, DateTime.Today + TimeSpan.FromHours(3) };
+            yield return new object[] { "03", "HH", CultureInfo.InvariantCulture, DateTimeStyles.None, DateTime.Today + TimeSpan.FromHours(3) };
+
+            yield return new object[] { "3A", "ht", CultureInfo.InvariantCulture, DateTimeStyles.None, DateTime.Today + TimeSpan.FromHours(3) };
+            yield return new object[] { "03A", "hht", CultureInfo.InvariantCulture, DateTimeStyles.None, DateTime.Today + TimeSpan.FromHours(3) };
+            yield return new object[] { "3P", "ht", CultureInfo.InvariantCulture, DateTimeStyles.None, DateTime.Today + TimeSpan.FromHours(12 + 3) };
+            yield return new object[] { "03P", "hht", CultureInfo.InvariantCulture, DateTimeStyles.None, DateTime.Today + TimeSpan.FromHours(12 + 3) };
+
+            yield return new object[] { "2017-10-11 01:23:45Z", "u", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(2017, 10, 11, 1, 23, 45) };
+            yield return new object[] { "9/8/2017 10:11:12 AM", "M/d/yyyy HH':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(2017, 9, 8, 10, 11, 12) };
+            yield return new object[] { "9/8/2017 20:11:12 PM", "M/d/yyyy HH':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(2017, 9, 8, 20, 11, 12) };
+            yield return new object[] { "Fri, 08 Sep 2017 11:18:19 -0000", "ddd, d MMM yyyy H:m:s zzz", new CultureInfo("en-US"), DateTimeStyles.AllowInnerWhite, new DateTime(2017, 9, 8, 11, 18, 19, DateTimeKind.Utc) };
+            yield return new object[] { "1234-05-06T07:00:00.8Z", "yyyy-MM-dd'T'HH:mm:ss.FFF'Z'", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(1234, 5, 6, 7, 0, 0, 800) };
+            yield return new object[] { "1234-05-06T07:00:00Z", "yyyy-MM-dd'T'HH:mm:ss.FFF'Z'", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(1234, 5, 6, 7, 0, 0, 0) };
+            yield return new object[] { "1234-05-06T07:00:00Z", "yyyy-MM-dd'T'HH:mm:ssFFF'Z'", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(1234, 5, 6, 7, 0, 0, 0) };
+            yield return new object[] { "1234-05-06T07:00:00Z", "yyyy-MM-dd'T'HH:mm:ssFFF'Z'", CultureInfo.InvariantCulture, DateTimeStyles.None, new DateTime(1234, 5, 6, 7, 0, 0, 0) };
+            yield return new object[] { "1234-05-06T07:00:00Z", "yyyy-MM-dd'T'HH:mm:ssFFFZ", CultureInfo.InvariantCulture, DateTimeStyles.None, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(1234, 5, 6, 7, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "1234-05-06T07:00:00GMT", "yyyy-MM-dd'T'HH:mm:ssFFFZ", CultureInfo.InvariantCulture, DateTimeStyles.None, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(1234, 5, 6, 7, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+
+            var hebrewCulture = new CultureInfo("he-IL");
+            hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
+            DateTime today = DateTime.Today;
+            foreach (string pattern in hebrewCulture.DateTimeFormat.GetAllDateTimePatterns())
+            {
+                yield return new object[] { today.ToString(pattern, hebrewCulture), pattern, hebrewCulture, DateTimeStyles.None, null };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
+        public static void ParseExact_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
+        {
+            DateTime result1 = DateTime.ParseExact(input, format, culture, style);
+            DateTime result2 = DateTime.ParseExact(input, new[] { format }, culture, style);
+
+            Assert.True(DateTime.TryParseExact(input, format, culture, style, out DateTime result3));
+            Assert.True(DateTime.TryParseExact(input, new[] { format }, culture, style, out DateTime result4));
+
+            Assert.Equal(result1, result2);
+            Assert.Equal(result1, result3);
+            Assert.Equal(result1, result4);
+
+            if (expected != null) // some inputs don't roundtrip well
+            {
+                // Normalize values to make comparison easier
+                if (expected.Value.Kind != DateTimeKind.Utc)
+                {
+                    expected = expected.Value.ToUniversalTime();
+                }
+                if (result1.Kind != DateTimeKind.Utc)
+                {
+                    result1 = result1.ToUniversalTime();
+                }
+
+                Assert.Equal(expected, result1);
+            }
+        }
+
+        public static IEnumerable<object[]> ParseExact_InvalidInputs_Fail_MemberData()
+        {
+            yield return new object[] { "6/28/2004 13:00:00 AM", "M/d/yyyy HH':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "6/28/2004 03:00:00 PM", "M/d/yyyy HH':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "1", "dd", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "99", "dd", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "123", "dd", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "1", "mm", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "99", "mm", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "123", "mm", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "1", "ss", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "99", "ss", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "123", "ss", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "1", "MM", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "99", "MM", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "Fep", "MMM", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "Jantember", "MMMM", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "123", "YY", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "12345", "YYYY", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "1", "HH", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "99", "HH", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "123", "HH", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "1", "hh", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "99", "hh", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "123", "hh", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "1", "ff", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "123", "ff", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "123456", "fffff", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "1234", "fffff", CultureInfo.InvariantCulture, DateTimeStyles.None };
+
+            yield return new object[] { "AM", "t", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "PM", "t", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "PM", "ttt", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "AAM", "tt", CultureInfo.InvariantCulture, DateTimeStyles.None };
+            yield return new object[] { "CM", "tt", CultureInfo.InvariantCulture, DateTimeStyles.None };
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_InvalidInputs_Fail_MemberData))]
+        public static void ParseExact_InvalidInputs_Fail(string input, string format, CultureInfo culture, DateTimeStyles style)
+        {
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input, format, culture, style));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input, new[] { format }, culture, style));
+
+            Assert.False(DateTime.TryParseExact(input, format, culture, style, out DateTime result));
+            Assert.False(DateTime.TryParseExact(input, new[] { format }, culture, style, out result));
         }
     }
 }

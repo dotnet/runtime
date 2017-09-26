@@ -2,17 +2,8 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
-      win8-Windows_NT;
-      wpa81-Windows_NT;
-      net45-Windows_NT;
-      netfx-Windows_NT;
-      net462-Windows_NT;
-      net47-Windows_NT;
       uap-Windows_NT;
       uapaot-Windows_NT;
-      netstandard1.1-AnyOS;
-      netstandard1.1-Unix;
-      netstandard1.1-Windows_NT;
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
     </BuildConfigurations>

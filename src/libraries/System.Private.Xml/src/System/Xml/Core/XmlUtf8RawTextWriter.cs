@@ -125,10 +125,10 @@ namespace System.Xml
             // Output UTF-8 byte order mark if Encoding object wants it
             if (!stream.CanSeek || stream.Position == 0)
             {
-                byte[] bom = encoding.GetPreamble();
+                ReadOnlySpan<byte> bom = encoding.Preamble;
                 if (bom.Length != 0)
                 {
-                    Buffer.BlockCopy(bom, 0, bufBytes, 1, bom.Length);
+                    bom.CopyTo(new Span<byte>(bufBytes).Slice(1));
                     bufPos += bom.Length;
                     textPos += bom.Length;
                 }

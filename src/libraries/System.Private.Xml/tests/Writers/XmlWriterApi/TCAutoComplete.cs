@@ -1,51 +1,135 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    public partial class TCAutoComplete : XmlWriterTestCaseBase
+    ////[TestCase(Name = "Auto-completion of tokens")]
+    public class TCAutoComplete
     {
-        // Type is System.Xml.Tests.TCAutoComplete
-        // Test Case
-        public override void AddChildren()
+        // Missing EndAttr, followed by element
+        [Theory]
+        [XmlWriterInlineData]
+        public void var_1(XmlWriterUtils utils)
         {
-            // for function var_1
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(var_1) { Attribute = new Variation("Missing EndAttr, followed by element") { id = 1, Pri = 1 } });
+                w.WriteStartElement("Root");
+                w.WriteStartAttribute("attr");
+                w.WriteStartElement("child");
+                w.WriteEndElement();
+                w.WriteEndElement();
             }
+            Assert.True(utils.CompareReader("<Root attr=''><child /></Root>"));
+        }
 
-
-            // for function var_2
+        // Missing EndAttr, followed by comment
+        [Theory]
+        [XmlWriterInlineData]
+        public void var_2(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(var_2) { Attribute = new Variation("Missing EndAttr, followed by comment") { id = 2, Pri = 1 } });
+                w.WriteStartElement("Root");
+                w.WriteStartAttribute("attr");
+                w.WriteComment("This text is a comment");
+                w.WriteEndElement();
             }
+            Assert.True(utils.CompareReader("<Root attr=''><!--This text is a comment--></Root>"));
+        }
 
-
-            // for function var_3
+        // Write EndDocument with unclosed element tag
+        [Theory]
+        [XmlWriterInlineData]
+        public void var_3(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(var_3) { Attribute = new Variation("Write EndDocument with unclosed element tag") { id = 3, Pri = 1 } });
+                w.WriteStartDocument();
+                w.WriteStartElement("Root");
+                w.WriteEndDocument();
             }
+            Assert.True(utils.CompareReader("<Root />"));
+        }
 
-
-            // for function var_4
+        // WriteStartDocument - WriteEndDocument
+        [Theory]
+        [XmlWriterInlineData]
+        public void var_4(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(var_4) { Attribute = new Variation("WriteStartDocument - WriteEndDocument") { id = 4, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteEndDocument();
+                }
+                catch (ArgumentException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+
+                    Assert.True(false);
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function var_5
+        // WriteEndElement without WriteStartElement
+        [Theory]
+        [XmlWriterInlineData]
+        public void var_5(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(var_5) { Attribute = new Variation("WriteEndElement without WriteStartElement") { id = 5, Pri = 1 } });
+                try
+                {
+                    w.WriteStartElement("Root");
+                    w.WriteEndElement();
+                    w.WriteEndElement();
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function var_6
+        // WriteFullEndElement without WriteStartElement
+        [Theory]
+        [XmlWriterInlineData]
+        public void var_6(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(var_6) { Attribute = new Variation("WriteFullEndElement without WriteStartElement") { id = 6, Pri = 1 } });
+                try
+                {
+                    w.WriteStartElement("Root");
+                    w.WriteFullEndElement();
+                    w.WriteFullEndElement();
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
         }
     }
 }

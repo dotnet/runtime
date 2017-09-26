@@ -429,7 +429,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                // They're trying to remove a already-persisted value.  We add it to the
+                // They're trying to remove an already-persisted value.  We add it to the
                 // removedValues list.  Then, if it's already been loaded into insertedValuesCompleted,
                 // we remove it from insertedValuesCompleted.
 

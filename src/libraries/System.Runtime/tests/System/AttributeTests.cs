@@ -109,7 +109,7 @@ namespace System.Tests
 
             // The implementation of Attribute.GetHashCode uses reflection to
             // enumerate fields. On .NET core, we add `BindingFlags.DeclaredOnly`
-            // to fix a bug where the hash code of a a subclass of an attribute can
+            // to fix a bug where the hash code of a subclass of an attribute can
             // be equal to an instance of the parent class.
             // See https://github.com/dotnet/coreclr/pull/6240
             Assert.Equal(PlatformDetection.IsFullFramework, s1.GetHashCode().Equals(s2.GetHashCode()));

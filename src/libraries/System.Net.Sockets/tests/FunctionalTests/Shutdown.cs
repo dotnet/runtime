@@ -42,6 +42,7 @@ namespace System.Net.Sockets.Tests
                         var client = (Socket)args.UserToken;
                         if (args.BytesTransferred == 0)
                         {
+                            client.Shutdown(SocketShutdown.Send);
                             client.Dispose();
                             break;
                         }

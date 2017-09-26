@@ -13,10 +13,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Flags = EXPRFLAG.EXF_LVALUE;
             Local = local;
+            Type = local?.GetType();
         }
 
         public LocalVariableSymbol Local { get; }
-
-        public override CType Type => Local?.GetType();
     }
 }

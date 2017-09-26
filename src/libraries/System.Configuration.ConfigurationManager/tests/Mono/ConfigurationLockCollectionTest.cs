@@ -28,6 +28,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+using System;
 using System.Configuration;
 using System.Collections;
 using Xunit;
@@ -37,7 +38,7 @@ namespace MonoTests.System.Configuration
 {
     public class ConfigurationLockCollectionTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void InitialState()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -73,7 +74,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal(col, col.SyncRoot);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void NonExistentItem()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -84,7 +85,7 @@ namespace MonoTests.System.Configuration
             Assert.Throws<ConfigurationErrorsException>(() => col.IsReadOnly("file"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void Populate()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -98,7 +99,7 @@ namespace MonoTests.System.Configuration
             Assert.True(col.Contains("file"), "A4");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void Populate_Error()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -107,7 +108,7 @@ namespace MonoTests.System.Configuration
             Assert.Throws<ConfigurationErrorsException>(() => col.Add("boo"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void Enumerator()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -121,7 +122,7 @@ namespace MonoTests.System.Configuration
             Assert.False(e.MoveNext(), "A3");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void SetFromList()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -139,7 +140,7 @@ namespace MonoTests.System.Configuration
             Assert.True(col.Contains("file"), "A2");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         [ActiveIssue("dotnet/corefx #18195", TargetFrameworkMonikers.NetFramework)]
         public void DuplicateAdd()
         {
@@ -154,7 +155,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal(1, app.LockAttributes.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void IsReadOnly()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);

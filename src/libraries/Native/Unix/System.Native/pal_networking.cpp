@@ -9,6 +9,7 @@
 #include "pal_safecrt.h"
 
 #include <stdlib.h>
+#include <limits.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <assert.h>
@@ -1143,13 +1144,29 @@ SystemNative_SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, ui
     return PAL_SUCCESS;
 }
 
-static void ConvertMessageHeaderToMsghdr(msghdr* header, const MessageHeader& messageHeader)
+static bool IsStreamSocket(int socket)
 {
+    int type;
+    socklen_t length = sizeof(int);
+    return getsockopt(socket, SOL_SOCKET, SO_TYPE, &type, &length) == 0
+           && type == SOCK_STREAM;
+}
+
+static void ConvertMessageHeaderToMsghdr(msghdr* header, const MessageHeader& messageHeader, int socket = -1)
+{
+    // sendmsg/recvmsg can return EMSGSIZE when msg_iovlen is greather than IOV_MAX.
+    // We avoid this for stream sockets by truncating msg_iovlen to IOV_MAX. This is ok since sendmsg is
+    // not required to send all data and recvmsg can be called again to receive more.
+    auto iovlen = static_cast<decltype(header->msg_iovlen)>(messageHeader.IOVectorCount);
+    if (iovlen > IOV_MAX && IsStreamSocket(socket))
+    {
+        iovlen = static_cast<decltype(iovlen)>(IOV_MAX);
+    }
     *header = {
         .msg_name = messageHeader.SocketAddress,
         .msg_namelen = static_cast<unsigned int>(messageHeader.SocketAddressLen),
         .msg_iov = reinterpret_cast<iovec*>(messageHeader.IOVectors),
-        .msg_iovlen = static_cast<decltype(header->msg_iovlen)>(messageHeader.IOVectorCount),
+        .msg_iovlen = iovlen,
         .msg_control = messageHeader.ControlBuffer,
         .msg_controllen = static_cast<decltype(header->msg_controllen)>(messageHeader.ControlBufferLen),
     };
@@ -1576,7 +1593,7 @@ extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* mes
     }
 
     msghdr header;
-    ConvertMessageHeaderToMsghdr(&header, *messageHeader);
+    ConvertMessageHeaderToMsghdr(&header, *messageHeader, fd);
 
     ssize_t res;
     while (CheckInterrupted(res = recvmsg(fd, &header, socketFlags)));
@@ -1619,7 +1636,7 @@ extern "C" Error SystemNative_SendMessage(intptr_t socket, MessageHeader* messag
     }
 
     msghdr header;
-    ConvertMessageHeaderToMsghdr(&header, *messageHeader);
+    ConvertMessageHeaderToMsghdr(&header, *messageHeader, fd);
 
     ssize_t res;
     while (CheckInterrupted(res = sendmsg(fd, &header, flags)));

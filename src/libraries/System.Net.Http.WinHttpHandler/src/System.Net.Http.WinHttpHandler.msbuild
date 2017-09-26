@@ -5,11 +5,13 @@
   </PropertyGroup>
   <ItemGroup>
     <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetModuleHandle.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs" />
@@ -17,8 +19,8 @@
     <CompileItem Include="$(CommonPath)\System\StringExtensions.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
-    <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\SecurityProtocol.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\WinHttpException.cs" />

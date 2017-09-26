@@ -832,7 +832,7 @@ namespace System.Xml.Serialization
                 }
             }
             ArrayList members = new ArrayList();
-            TextAccessor textAccesor = null;
+            TextAccessor textAccessor = null;
             bool hasElements = false;
             bool isSequence = false;
 
@@ -860,11 +860,11 @@ namespace System.Xml.Serialization
                     {
                         if (!member.Text.Mapping.TypeDesc.CanBeTextValue && member.Text.Mapping.IsList)
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, typeName, member.Text.Name, member.Text.Mapping.TypeDesc.FullName));
-                        if (textAccesor != null)
+                        if (textAccessor != null)
                         {
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalMultipleText, model.Type.FullName));
                         }
-                        textAccesor = member.Text;
+                        textAccessor = member.Text;
                     }
                     if (member.Xmlns != null)
                     {
@@ -887,7 +887,7 @@ namespace System.Xml.Serialization
                     throw CreateMemberReflectionException(fieldModel, e);
                 }
             }
-            mapping.SetContentModel(textAccesor, hasElements);
+            mapping.SetContentModel(textAccessor, hasElements);
             if (isSequence)
             {
                 Hashtable ids = new Hashtable();

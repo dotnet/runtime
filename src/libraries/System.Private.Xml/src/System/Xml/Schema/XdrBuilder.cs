@@ -1120,7 +1120,7 @@ namespace System.Xml.Schema
                     goto cleanup;
                 }
 
-                // a attributes of type id is not supposed to have a default value
+                // an attribute of type id is not supposed to have a default value
                 if (builder._AttributeDef._Default != null && ttype == XmlTokenizedType.ID)
                 {
                     code = SR.Sch_DefaultIdValue;

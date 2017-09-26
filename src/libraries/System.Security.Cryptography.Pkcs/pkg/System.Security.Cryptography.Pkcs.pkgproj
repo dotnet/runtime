@@ -8,11 +8,7 @@
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="runtimes/win/lib/netcore50" />
-    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3" />
-    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.3">
-      <!-- package unix impl (platform not supported) as RID agnostic -->
-      <TargetPath>lib/netstandard1.3</TargetPath>
-    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

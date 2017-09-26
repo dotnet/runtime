@@ -107,6 +107,7 @@
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XPath" />

@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class HttpClientMiniStress
+    public class HttpClientMiniStress : HttpClientTestBase
     {
         private static bool HttpStressEnabled => Configuration.Http.StressEnabled;
 
@@ -23,7 +23,7 @@ namespace System.Net.Http.Functional.Tests
         public void SingleClient_ManyGets_Sync(int numRequests, int dop, HttpCompletionOption completionOption)
         {
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
                 {
@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SingleClient_ManyGets_Async(int numRequests, int dop, HttpCompletionOption completionOption)
         {
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
-            using (var client = new HttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 await ForCountAsync(numRequests, dop, i => CreateServerAndGetAsync(client, completionOption, responseText));
             }
@@ -49,7 +49,7 @@ namespace System.Net.Http.Functional.Tests
             string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
             Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
             {
-                using (var client = new HttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     CreateServerAndGet(client, completionOption, responseText);
                 }
@@ -63,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
             string responseText = CreateResponse("");
             await ForCountAsync(numRequests, dop, async i =>
             {
-                using (HttpClient client = new HttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     await CreateServerAndPostAsync(client, numBytes, responseText);
                 }
@@ -76,7 +76,7 @@ namespace System.Net.Http.Functional.Tests
         {
             for (int i = 0; i < numClients; i++)
             {
-                new HttpClient().Dispose();
+                CreateHttpClient().Dispose();
             }
         }
 
@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                using (var client = new HttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     client.Timeout = Timeout.InfiniteTimeSpan;
 
@@ -193,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                using (var client = new HttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     Func<Task<WeakReference>> getAsync = async () => new WeakReference(await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead));
                     Task<WeakReference> wrt = getAsync();

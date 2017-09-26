@@ -3,11 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
-using System.Security.Cryptography;
-
 using Microsoft.Win32.SafeHandles;
-
 using ErrorCode = Interop.NCrypt.ErrorCode;
 using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
@@ -15,7 +11,7 @@ namespace Internal.Cryptography
 {
     internal static partial class CngCommon
     {
-        public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, byte[] hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
+        public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
         {
 #if DEBUG
             estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.
@@ -35,11 +31,28 @@ namespace Internal.Cryptography
             return signature;
         }
 
-        public static unsafe bool VerifyHash(this SafeNCryptKeyHandle keyHandle, byte[] hash, byte[] signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
+        public static unsafe bool TrySignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, Span<byte> signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, out int bytesWritten)
+        {
+            ErrorCode error = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out int numBytesNeeded, paddingMode);
+            switch (error)
+            {
+                case ErrorCode.ERROR_SUCCESS:
+                    bytesWritten = numBytesNeeded;
+                    return true;
+
+                case ErrorCode.NTE_BUFFER_TOO_SMALL:
+                    bytesWritten = 0;
+                    return false;
+
+                default:
+                    throw error.ToCryptographicException();
+            }
+        }
+
+        public static unsafe bool VerifyHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
         {
             ErrorCode errorCode = Interop.NCrypt.NCryptVerifySignature(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, paddingMode);
-            bool verified = (errorCode == ErrorCode.ERROR_SUCCESS);  // For consistency with other AsymmetricAlgorithm-derived classes, return "false" for any error code rather than making the caller catch an exception.
-            return verified;
+            return errorCode == ErrorCode.ERROR_SUCCESS;  // For consistency with other AsymmetricAlgorithm-derived classes, return "false" for any error code rather than making the caller catch an exception.
         }
     }
 }

@@ -5,12 +5,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{0D8C8BAE-E5A5-4E9F-B101-3D18BD81D261}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
-	<DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_ETLEVENTS</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_ETLEVENTS</DefineConstants>
+    <!-- CS0067: unused event, reference assembly does not care -->
+    <NoWarn>$(NoWarn);0067</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>

@@ -21,8 +21,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public int Count => Items.Length;
 
-        public TypeParameterType ItemAsTypeParameterType(int i) => Items[i].AsTypeParameterType();
-
         public CType[] Items { get; }
 
         public CType this[int i] => Items[i];

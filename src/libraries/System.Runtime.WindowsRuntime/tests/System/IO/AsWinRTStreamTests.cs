@@ -188,7 +188,7 @@ namespace System.IO
                 // asyncReadOp.Id in a progress callback must match the ID of the asyncReadOp to which the callback was assigned
                 Assert.Equal(readOpId, asyncReadOp.Id);
 
-                // asyncReadOp.Status must be 'Started' for a asyncReadOp in progress
+                // asyncReadOp.Status must be 'Started' for an asyncReadOp in progress
                 Assert.Equal(AsyncStatus.Started, asyncReadOp.Status);
 
                 // bytesCompleted must be in range [0, maxBytesToRead] asyncReadOp in progress
@@ -322,7 +322,7 @@ namespace System.IO
                     // asyncWriteOp.Id in a progress callback must match the ID of the asyncWriteOp to which the callback was assigned
                     Assert.Equal(writeOpId, asyncWriteOp.Id);
 
-                    // asyncWriteOp.Status must be 'Started' for a asyncWriteOp in progress
+                    // asyncWriteOp.Status must be 'Started' for an asyncWriteOp in progress
                     Assert.Equal(AsyncStatus.Started, asyncWriteOp.Status);
 
                     // bytesCompleted must be in range [0, maxBytesToWrite] asyncWriteOp in progress

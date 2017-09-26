@@ -29,7 +29,7 @@ namespace System.Windows.Forms
 
         private static double s_logicalToDeviceUnitsScalingFactorX = 0.0;
         private static double s_logicalToDeviceUnitsScalingFactorY = 0.0;
-        private static bool s_enableHighDpi = false;
+        private static bool s_enableHighDpi = true;
         private static InterpolationMode s_interpolationMode = InterpolationMode.Invalid;
 
         private static void Initialize()
@@ -39,17 +39,8 @@ namespace System.Windows.Forms
                 return;
             }
 
-            try
-            {
-                string value = ConfigurationManager.AppSettings.Get(EnableHighDpiConfigurationValueName);
-                if (string.Equals(value, "true", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    s_enableHighDpi = true;
-                }
-            }
-            catch
-            {
-            }
+            // NOTE: In the .NET Framework, this value can be controlled via ConfigurationManager.
+            // In .NET Core, the value always defaults to the value "true".
 
             if (s_enableHighDpi)
             {

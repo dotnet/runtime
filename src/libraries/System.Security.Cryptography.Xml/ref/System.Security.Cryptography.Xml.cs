@@ -116,6 +116,8 @@ namespace System.Security.Cryptography.Xml
         public const string XmlEncTripleDESUrl = "http://www.w3.org/2001/04/xmlenc#tripledes-cbc";
         public EncryptedXml() { }
         public EncryptedXml(System.Xml.XmlDocument document) { }
+        public EncryptedXml(System.Xml.XmlDocument document, System.Security.Policy.Evidence evidence) { }
+        public System.Security.Policy.Evidence DocumentEvidence { get { throw null; } set { } }
         public System.Text.Encoding Encoding { get { throw null; } set { } }
         public System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }

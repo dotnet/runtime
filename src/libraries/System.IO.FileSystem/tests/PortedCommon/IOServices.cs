@@ -228,7 +228,7 @@ internal class IOServices
 
     public static bool IsDriveNTFS(string drive)
     {
-        if (PlatformDetection.IsWinRT)
+        if (PlatformDetection.IsInAppContainer)
         {
             // we cannot determine filesystem so assume NTFS
             return true;

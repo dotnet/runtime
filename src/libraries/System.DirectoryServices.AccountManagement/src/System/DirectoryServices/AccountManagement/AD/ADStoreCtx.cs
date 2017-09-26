@@ -458,7 +458,7 @@ namespace System.DirectoryServices.AccountManagement
 
         /// <summary>
         /// If The enabled property was set on the principal then perform actions 
-        /// neccessary on the principal to set the enabled status to match
+        /// necessary on the principal to set the enabled status to match
         /// the set value.
         /// </summary>
         /// <param name="p"></param>
@@ -821,7 +821,7 @@ namespace System.DirectoryServices.AccountManagement
         /// just check bit 0x0010.  On DL platforms this attribute does not exist so we must read lockoutTime and return locked if
         /// this is greater than 0
         /// </summary>
-        /// <param name="p">Princiapl to check status</param>
+        /// <param name="p">Principal to check status</param>
         /// <returns>true is account is locked, false if not</returns>
         internal override bool IsLockedOut(AuthenticablePrincipal p)
         {
@@ -896,7 +896,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // methods for manipulating passwords
         /// <summary>
-        /// Set the password on the principal. This function requires administrator privilages
+        /// Set the password on the principal. This function requires administrator privileges
         /// </summary>
         /// <param name="p">Principal to modify</param>
         /// <param name="newPassword">New password</param>
@@ -2078,7 +2078,7 @@ namespace System.DirectoryServices.AccountManagement
         // interact with other StoreCtxs to fulfill the request.
         //
         // This method is typically used by ResultSet implementations, when they're iterating over a collection
-        // (e.g., of group membership) and encounter a entry that represents a foreign principal.
+        // (e.g., of group membership) and encounter an entry that represents a foreign principal.
         internal override Principal ResolveCrossStoreRefToPrincipal(object o)
         {
             Debug.Assert(o is DirectoryEntry);
@@ -2200,7 +2200,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Returns true if AccountInfo is supported for the specified principal, false otherwise.
-        // Used when a application tries to access the AccountInfo property of a newly-inserted
+        // Used when an application tries to access the AccountInfo property of a newly-inserted
         // (not yet persisted) AuthenticablePrincipal, to determine whether it should be allowed.
         internal override bool SupportsAccounts(AuthenticablePrincipal p)
         {
@@ -2213,7 +2213,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Returns the set of credential types supported by this store for the specified principal.
-        // Used when a application tries to access the PasswordInfo property of a newly-inserted
+        // Used when an application tries to access the PasswordInfo property of a newly-inserted
         // (not yet persisted) AuthenticablePrincipal, to determine whether it should be allowed.
         // Also used to implement AuthenticablePrincipal.SupportedCredentialTypes.
         internal override CredentialTypes SupportedCredTypes(AuthenticablePrincipal p)

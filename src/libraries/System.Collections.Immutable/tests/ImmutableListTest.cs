@@ -775,10 +775,23 @@ namespace System.Collections.Immutable.Tests
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableList.Create<int>());
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableList.Create<double>(1, 2, 3));
+            ImmutableList<double> list = ImmutableList.Create<double>(1, 2, 3);
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(list);
 
             object rootNode = DebuggerAttributes.GetFieldValue(ImmutableList.Create<string>("1", "2", "3"), "_root");
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
+            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            double[] items = itemProperty.GetValue(info.Instance) as double[];
+            Assert.Equal(list, items);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
+        public static void TestDebuggerAttributes_Null()
+        {
+            Type proxyType = DebuggerAttributes.GetProxyType(ImmutableList.Create<double>());
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
 #if netcoreapp

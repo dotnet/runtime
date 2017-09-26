@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -374,10 +375,23 @@ namespace System.Collections.Immutable.Tests
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedSet.Create<int>());
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableSortedSet.Create<string>("1", "2", "3"));
+            ImmutableSortedSet<string> set = ImmutableSortedSet.Create("1", "2", "3");
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(set);
 
             object rootNode = DebuggerAttributes.GetFieldValue(ImmutableSortedSet.Create<object>(), "_root");
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
+            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            string[] items = itemProperty.GetValue(info.Instance) as string[];
+            Assert.Equal(set, items);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
+        public static void TestDebuggerAttributes_Null()
+        {
+            Type proxyType = DebuggerAttributes.GetProxyType(ImmutableSortedSet.Create("1", "2", "3"));
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]

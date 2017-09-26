@@ -35,7 +35,7 @@ namespace System.IO.IsolatedStorage
             // https://github.com/dotnet/corefx/issues/12628
             // https://github.com/dotnet/corefx/issues/19839
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                && !PlatformDetection.IsWinRT)
+                && !PlatformDetection.IsInAppContainer)
             {
                 s_roots.Add(Helper.GetDataDirectory(IsolatedStorageScope.Machine));
             }

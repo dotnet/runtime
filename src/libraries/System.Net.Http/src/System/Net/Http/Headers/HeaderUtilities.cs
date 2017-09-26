@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.IO;
 using System.Net.Mail;
 using System.Text;
 
@@ -25,6 +26,8 @@ namespace System.Net.Http.Headers
 
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
+
+        private static readonly char[] s_hexUpperChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
         internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
@@ -61,6 +64,64 @@ namespace System.Net.Http.Headers
                     parameters.Remove(qualityParameter);
                 }
             }
+        }
+
+        // Encode a string using RFC 5987 encoding.
+        // encoding'lang'PercentEncodedSpecials
+        internal static string Encode5987(string input)
+        {
+            string output;
+            IsInputEncoded5987(input, out output);
+
+            return output;
+        }
+
+        internal static bool IsInputEncoded5987(string input, out string output)
+        {
+            // Encode a string using RFC 5987 encoding.
+            // encoding'lang'PercentEncodedSpecials
+            bool wasEncoded = false;
+            StringBuilder builder = StringBuilderCache.Acquire();
+            builder.Append("utf-8\'\'");
+            foreach (char c in input)
+            {
+                // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+                //      ; token except ( "*" / "'" / "%" )
+                if (c > 0x7F) // Encodes as multiple utf-8 bytes
+                {
+                    byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
+                    foreach (byte b in bytes)
+                    {
+                        AddHexEscaped((char)b, builder);
+                        wasEncoded = true;
+                    }
+                }
+                else if (!HttpRuleParser.IsTokenChar(c) || c == '*' || c == '\'' || c == '%')
+                {
+                    // ASCII - Only one encoded byte.
+                    AddHexEscaped(c, builder);
+                    wasEncoded = true;
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+
+            }
+
+            output = StringBuilderCache.GetStringAndRelease(builder);
+            return wasEncoded;
+        }
+
+        /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
+        private static void AddHexEscaped(char c, StringBuilder destination)
+        {
+            Debug.Assert(destination != null);
+            Debug.Assert(c <= 0xFF);
+
+            destination.Append('%');
+            destination.Append(s_hexUpperChars[(c & 0xf0) >> 4]);
+            destination.Append(s_hexUpperChars[c & 0xf]);
         }
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
@@ -225,11 +286,11 @@ namespace System.Net.Http.Headers
             return current;
         }
 
-        internal static DateTimeOffset? GetDateTimeOffsetValue(string headerName, HttpHeaders store)
+        internal static DateTimeOffset? GetDateTimeOffsetValue(HeaderDescriptor descriptor, HttpHeaders store)
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(headerName);
+            object storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -237,11 +298,11 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static TimeSpan? GetTimeSpanValue(string headerName, HttpHeaders store)
+        internal static TimeSpan? GetTimeSpanValue(HeaderDescriptor descriptor, HttpHeaders store)
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(headerName);
+            object storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;
@@ -270,17 +331,14 @@ namespace System.Net.Http.Headers
                     tmpResult > int.MaxValue / 10 || // will overflow when shifting digits
                     (tmpResult == int.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
                 {
-                    goto ReturnFalse; // Remove goto once https://github.com/dotnet/coreclr/issues/9692 is addressed
+                    result = 0;
+                    return false;
                 }
                 tmpResult = (tmpResult * 10) + digit;
             }
 
             result = tmpResult;
             return true;
-
-            ReturnFalse:
-            result = 0;
-            return false;
         }
 
         internal static bool TryParseInt64(string value, int offset, int length, out long result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
@@ -301,17 +359,14 @@ namespace System.Net.Http.Headers
                     tmpResult > long.MaxValue / 10 || // will overflow when shifting digits
                     (tmpResult == long.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
                 {
-                    goto ReturnFalse; // Remove goto once https://github.com/dotnet/coreclr/issues/9692 is addressed
+                    result = 0;
+                    return false;
                 }
                 tmpResult = (tmpResult * 10) + digit;
             }
 
             result = tmpResult;
             return true;
-
-            ReturnFalse:
-            result = 0;
-            return false;
         }
 
         internal static string DumpHeaders(params HttpHeaders[] headers)

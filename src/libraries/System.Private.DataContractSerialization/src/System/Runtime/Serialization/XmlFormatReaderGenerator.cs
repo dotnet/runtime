@@ -422,6 +422,7 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
+                        _ilg.Call(_contextArg, XmlFormatGeneratorStatics.ResetCollectionMemberInfoMethod);
                         value = ReadValue(memberType, dataMember.Name, classContract.StableName.Namespace);
                         _ilg.LoadAddress(_objectLocal);
                         _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);

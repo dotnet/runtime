@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-//--------------------------------------------------------------------------
-
-using System.Globalization;
 
 namespace System.Net
 {
@@ -14,7 +11,7 @@ namespace System.Net
         //
         // Date indicies used to figure out what each entry is.
         //
-        
+
         private const int DATE_INDEX_DAY_OF_WEEK     = 0;
 
         private const int DATE_1123_INDEX_DAY        = 1;
@@ -71,56 +68,25 @@ namespace System.Net
 
         private const int DATE_TOKEN_ERROR        = (DATE_TOKEN_LAST+1);
 
-
-        //
-        // MAKE_UPPER - takes an assumed lower character and bit manipulates into a upper.
-        //              (make sure the character is Lower case alpha char to begin,
-        //               otherwise it corrupts)
-        //
-
-        private
-        static
-        char
-        MAKE_UPPER(char c) {
-            return(Char.ToUpper(c));
-        }
-
-        /*++
-
-        Routine Description:
-
-            Looks at the first three bytes of string to determine if we're looking
-                at a Day of the Week, or Month, or "GMT" string.  Is inlined so that
-                the compiler can optimize this code into the caller FInternalParseHttpDate.
-
-        Arguments:
-
-            lpszDay - a string ptr to the first byte of the string in question.
-
-        Return Value:
-
-            DWORD
-            Success - The Correct date token, 0-6 for day of the week, 1-14 for month, etc
-
-            Failure - DATE_TOKEN_ERROR
-
-        --*/
-
-        private
-        static
-        int
-        MapDayMonthToDword(
-                          char [] lpszDay,
-                          int index
-                          ) {
-            switch (MAKE_UPPER(lpszDay[index])) { // make uppercase
+        /// <summary>
+        /// Looks at the first three chars of a string at the index to determine if we're looking
+        /// at a Day of the Week, or Month, or "GMT" string.
+        /// </summary>
+        /// <returns>
+        /// The correct date token (0-6 for day of the week, 1-14 for month, etc.) if successful,
+        /// otherwise, DATE_TOKEN_ERROR.
+        /// </returns>
+        private static int MapDayMonthToDword(string day, int index)
+        {
+            switch (char.ToUpper(day[index]))
+            {
                 case 'A':
-                    switch (MAKE_UPPER(lpszDay[index+1])) {
+                    switch (char.ToUpper(day[index + 1]))
+                    {
                         case 'P':
                             return DATE_TOKEN_APRIL;
                         case 'U':
                             return DATE_TOKEN_AUGUST;
-
                     }
                     return DATE_TOKEN_ERROR;
 
@@ -128,25 +94,26 @@ namespace System.Net
                     return DATE_TOKEN_DECEMBER;
 
                 case 'F':
-                    switch (MAKE_UPPER(lpszDay[index+1])) {
+                    switch (char.ToUpper(day[index + 1]))
+                    {
                         case 'R':
                             return DATE_TOKEN_FRIDAY;
                         case 'E':
                             return DATE_TOKEN_FEBRUARY;
                     }
-
                     return DATE_TOKEN_ERROR;
 
                 case 'G':
                     return DATE_TOKEN_GMT;
 
                 case 'M':
-
-                    switch (MAKE_UPPER(lpszDay[index+1])) {
+                    switch (char.ToUpper(day[index + 1]))
+                    {
                         case 'O':
                             return DATE_TOKEN_MONDAY;
                         case 'A':
-                            switch (MAKE_UPPER(lpszDay[index+2])) {
+                            switch (char.ToUpper(day[index + 2]))
+                            {
                                 case 'R':
                                     return DATE_TOKEN_MARCH;
                                 case 'Y':
@@ -156,20 +123,20 @@ namespace System.Net
                             // fall through to error
                             break;
                     }
-
                     return DATE_TOKEN_ERROR;
 
                 case 'N':
                     return DATE_TOKEN_NOVEMBER;
 
                 case 'J':
-
-                    switch (MAKE_UPPER(lpszDay[index+1])) {
+                    switch (char.ToUpper(day[index + 1]))
+                    {
                         case 'A':
                             return DATE_TOKEN_JANUARY;
 
                         case 'U':
-                            switch (MAKE_UPPER(lpszDay[index+2])) {
+                            switch (char.ToUpper(day[index + 2]))
+                            {
                                 case 'N':
                                     return DATE_TOKEN_JUNE;
                                 case 'L':
@@ -179,15 +146,14 @@ namespace System.Net
                             // fall through to error
                             break;
                     }
-
                     return DATE_TOKEN_ERROR;
 
                 case 'O':
                     return DATE_TOKEN_OCTOBER;
 
                 case 'S':
-                    
-                    switch (MAKE_UPPER(lpszDay[index+1])) {
+                    switch (char.ToUpper(day[index + 1]))
+                    {
                         case 'A':
                             return DATE_TOKEN_SATURDAY;
                         case 'U':
@@ -195,18 +161,16 @@ namespace System.Net
                         case 'E':
                             return DATE_TOKEN_SEPTEMBER;
                     }
-
                     return DATE_TOKEN_ERROR;
 
-
                 case 'T':
-                    switch (MAKE_UPPER(lpszDay[index+1])) {
+                    switch (char.ToUpper(day[index + 1]))
+                    {
                         case 'U':
                             return DATE_TOKEN_TUESDAY;
                         case 'H':
                             return DATE_TOKEN_THURSDAY;
                     }
-
                     return DATE_TOKEN_ERROR;
 
                 case 'U':
@@ -214,54 +178,22 @@ namespace System.Net
 
                 case 'W':
                     return DATE_TOKEN_WEDNESDAY;
-
             }
 
             return DATE_TOKEN_ERROR;
         }
 
-        /*++
-
-        Routine Description:
-
-            Parses through a ANSI, RFC850, or RFC1123 date format and covents it into
-             a FILETIME/SYSTEMTIME time format.
-
-            Important this a time-critical function and should only be changed
-             with the intention of optimizing or a critical need work item.
-
-        Arguments:
-
-            lpft - Ptr to FILETIME structure.  Used to store converted result.
-                    Must be NULL if not intended to be used !!!
-
-            lpSysTime - Ptr to SYSTEMTIME struture. Used to return Systime if needed.
-
-            lpcszDateStr - Const Date string to parse.
-
-        Return Value:
-
-            BOOL
-            Success - TRUE
-
-            Failure - FALSE
-
-        --*/
-        public
-        static
-        bool
-        ParseHttpDate(
-                     String DateString,
-                     out DateTime dtOut
-                     ) {
+        /// <summary>
+        /// Parses through an ANSI, RFC850, or RFC1123 date format and converts it to a <see cref="DateTime"/>.
+        /// </summary>
+        public static bool ParseHttpDate(string dateString, out DateTime result)
+        {
             int index = 0;
             int i = 0, iLastLettered = -1;
-            bool fIsANSIDateFormat = false;
-            int [] rgdwDateParseResults = new int[MAX_FIELD_DATE_ENTRIES];
-            bool fRet = true;
-            char [] lpInputBuffer = DateString.ToCharArray();
+            bool isANSIDateFormat = false;
+            int[] dateParseResults = new int[MAX_FIELD_DATE_ENTRIES];
 
-            dtOut = new DateTime();
+            result = new DateTime();
 
             //
             // Date Parsing v2 (1 more to go), and here is how it works...
@@ -269,53 +201,53 @@ namespace System.Net
             //  integers to integers, Month,Day, and GMT strings into integers,
             //  and all is then placed IN order in a temp array.
             //
-            // At the completetion of the parse stage, we simple look at
-            //  the data, and then map the results into the correct
-            //  places in the SYSTIME structure.  Simple, No allocations, and
-            //  No dirting the data.
+            // At the completion of the parse stage, we simple look at
+            //  the data, and then map the results into a new DateTime.
             //
             // The end of the function does something munging and pretting
             //  up of the results to handle the year 2000, and TZ offsets
             //  Note: do we need to fully handle TZs anymore?
             //
 
-            while (index < DateString.Length && i < MAX_FIELD_DATE_ENTRIES) {
-                if (lpInputBuffer[index] >= '0' && lpInputBuffer[index] <= '9') {
+            while (index < dateString.Length && i < MAX_FIELD_DATE_ENTRIES)
+            {
+                if (dateString[index] >= '0' && dateString[index] <= '9')
+                {
                     //
                     // we have a numerical entry, scan through it and convent to DWORD
                     //
 
-                    rgdwDateParseResults[i] = 0;
+                    dateParseResults[i] = 0;
 
-                    do {
-                        rgdwDateParseResults[i] *= BASE_DEC;
-                        rgdwDateParseResults[i] += (lpInputBuffer[index] - '0');
+                    do
+                    {
+                        dateParseResults[i] *= BASE_DEC;
+                        dateParseResults[i] += (dateString[index] - '0');
                         index++;
-                    } while (index < DateString.Length &&
-                             lpInputBuffer[index] >= '0' &&
-                             lpInputBuffer[index] <= '9');
+                    } while (index < dateString.Length &&
+                             dateString[index] >= '0' &&
+                             dateString[index] <= '9');
 
                     i++; // next token
                 }
-                else if ((lpInputBuffer[index] >= 'A' && lpInputBuffer[index] <= 'Z') ||
-                         (lpInputBuffer[index] >= 'a' && lpInputBuffer[index] <= 'z')) {
+                else if ((dateString[index] >= 'A' && dateString[index] <= 'Z') ||
+                         (dateString[index] >= 'a' && dateString[index] <= 'z'))
+                {
                     //
                     // we have a string, should be a day, month, or GMT
                     //   lets skim to the end of the string
                     //
 
-                    rgdwDateParseResults[i] =
-                    MapDayMonthToDword(lpInputBuffer, index);
+                    dateParseResults[i] = MapDayMonthToDword(dateString, index);
 
                     iLastLettered = i;
 
                     // We want to ignore the possibility of a time zone such as PST or EST in a non-standard
                     // date format such as "Thu Dec 17 16:01:28 PST 1998" (Notice that the year is _after_ the time zone
-                    if ((rgdwDateParseResults[i] == DATE_TOKEN_ERROR)
-                        &&
-                        !(fIsANSIDateFormat && (i==DATE_ANSI_INDEX_YEAR))) {
-                        fRet = false;
-                        goto quit;
+                    if ((dateParseResults[i] == DATE_TOKEN_ERROR) &&
+                        !(isANSIDateFormat && (i == DATE_ANSI_INDEX_YEAR)))
+                    {
+                        return false;
                     }
 
                     //
@@ -324,8 +256,9 @@ namespace System.Net
                     //  looking at a ANSI type DATE format.
                     //
 
-                    if (i == DATE_ANSI_INDEX_MONTH) {
-                        fIsANSIDateFormat = true;
+                    if (i == DATE_ANSI_INDEX_MONTH)
+                    {
+                        isANSIDateFormat = true;
                     }
 
                     //
@@ -333,15 +266,17 @@ namespace System.Net
                     //  as MapDayMonthToDword only peeks at a few characters
                     //
 
-                    do {
+                    do
+                    {
                         index++;
-                    } while (index < DateString.Length &&
-                             ( (lpInputBuffer[index] >= 'A' && lpInputBuffer[index] <= 'Z') ||
-                               (lpInputBuffer[index] >= 'a' && lpInputBuffer[index] <= 'z') ));
+                    } while ((index < dateString.Length) &&
+                             ((dateString[index] >= 'A' && dateString[index] <= 'Z') ||
+                              (dateString[index] >= 'a' && dateString[index] <= 'z')));
 
                     i++; // next token
                 }
-                else {
+                else
+                {
                     //
                     // For the generic case its either a space, comma, semi-colon, etc.
                     //  the point is we really don't care, nor do we need to waste time
@@ -368,30 +303,34 @@ namespace System.Net
             int second;
             int millisecond;
 
-            millisecond =  0;
+            millisecond = 0;
 
-            if (fIsANSIDateFormat) {
-                day    = rgdwDateParseResults[DATE_ANSI_INDEX_DAY];
-                month  = rgdwDateParseResults[DATE_ANSI_INDEX_MONTH];
-                hour   = rgdwDateParseResults[DATE_ANSI_INDEX_HRS];
-                minute = rgdwDateParseResults[DATE_ANSI_INDEX_MINS];
-                second = rgdwDateParseResults[DATE_ANSI_INDEX_SECS];
-                if (iLastLettered != DATE_ANSI_INDEX_YEAR) {
-                    year   = rgdwDateParseResults[DATE_ANSI_INDEX_YEAR];
+            if (isANSIDateFormat)
+            {
+                day = dateParseResults[DATE_ANSI_INDEX_DAY];
+                month = dateParseResults[DATE_ANSI_INDEX_MONTH];
+                hour = dateParseResults[DATE_ANSI_INDEX_HRS];
+                minute = dateParseResults[DATE_ANSI_INDEX_MINS];
+                second = dateParseResults[DATE_ANSI_INDEX_SECS];
+                if (iLastLettered != DATE_ANSI_INDEX_YEAR)
+                {
+                    year = dateParseResults[DATE_ANSI_INDEX_YEAR];
                 }
-                else {
+                else
+                {
                     // This is a fix to get around toString/toGMTstring (where the timezone is
                     // appended at the end. (See above)
-                    year   = rgdwDateParseResults[DATE_INDEX_TZ];
+                    year = dateParseResults[DATE_INDEX_TZ];
                 }
             }
-            else {
-                day    = rgdwDateParseResults[DATE_1123_INDEX_DAY];
-                month  = rgdwDateParseResults[DATE_1123_INDEX_MONTH];
-                year   = rgdwDateParseResults[DATE_1123_INDEX_YEAR];
-                hour   = rgdwDateParseResults[DATE_1123_INDEX_HRS];
-                minute = rgdwDateParseResults[DATE_1123_INDEX_MINS];
-                second = rgdwDateParseResults[DATE_1123_INDEX_SECS];
+            else
+            {
+                day = dateParseResults[DATE_1123_INDEX_DAY];
+                month = dateParseResults[DATE_1123_INDEX_MONTH];
+                year = dateParseResults[DATE_1123_INDEX_YEAR];
+                hour = dateParseResults[DATE_1123_INDEX_HRS];
+                minute = dateParseResults[DATE_1123_INDEX_MINS];
+                second = dateParseResults[DATE_1123_INDEX_SECS];
             }
 
             //
@@ -400,7 +339,8 @@ namespace System.Net
             //  we all look bad.
             //
 
-            if (year < 100) {
+            if (year < 100)
+            {
                 year += ((year < 80) ? 2000 : 1900);
             }
 
@@ -409,29 +349,30 @@ namespace System.Net
             // !lpszHrs || !lpszMins || !lpszSec
             //
 
-            if ((i < 4)
-                || (day > 31)
-                || (hour > 23)
-                || (minute > 59)
-                || (second > 59)) {
-                fRet = false;
-                goto quit;
+            if ((i < 4) ||
+                (day > 31) ||
+                (hour > 23) ||
+                (minute > 59) ||
+                (second > 59))
+            {
+                return false;
             }
 
             //
             // Now do the DateTime conversion
             //
 
-            dtOut = new DateTime (year, month, day, hour, minute, second, millisecond);
+            result = new DateTime(year, month, day, hour, minute, second, millisecond);
 
             //
             // we want the system time to be accurate. This is _suhlow_
             // The time passed in is in the local time zone; we have to convert this into GMT.
             //
 
-            if (iLastLettered==DATE_ANSI_INDEX_YEAR) {
+            if (iLastLettered == DATE_ANSI_INDEX_YEAR)
+            {
                 // this should be an unusual case.
-                dtOut = dtOut.ToUniversalTime();
+                result = result.ToUniversalTime();
             }
 
             //
@@ -439,27 +380,23 @@ namespace System.Net
             //   then convert to appropriate GMT time
             //
 
-            if ((i > DATE_INDEX_TZ &&
-                 rgdwDateParseResults[DATE_INDEX_TZ] != DATE_TOKEN_GMT)) {
+            if (i > DATE_INDEX_TZ &&
+                dateParseResults[DATE_INDEX_TZ] != DATE_TOKEN_GMT)
+            {
 
                 //
                 // if we received +/-nnnn as offset (hhmm), modify the output FILETIME
                 //
 
-                double offset;
-
-                offset = (double) rgdwDateParseResults[DATE_INDEX_TZ];
-                dtOut.AddHours(offset);
+                double offset = dateParseResults[DATE_INDEX_TZ];
+                result.AddHours(offset);
             }
 
             // In the end, we leave it all in LocalTime
 
-            dtOut = dtOut.ToLocalTime();
+            result = result.ToLocalTime();
 
-            quit:
-
-            return fRet;
+            return true;
         }
     }
-
-} // namespace System.Net
+}

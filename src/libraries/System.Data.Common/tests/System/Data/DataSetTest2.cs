@@ -27,7 +27,7 @@
 using Xunit;
 using System.Text;
 using System.IO;
-
+using System.Diagnostics;
 using System.Xml;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
@@ -35,7 +35,7 @@ using System.Globalization;
 
 namespace System.Data.Tests
 {
-    public class DataSetTest2
+    public class DataSetTest2 : RemoteExecutorTestBase
     {
         private DataSet _ds = null;
         private bool _eventRaised = false;
@@ -1007,20 +1007,18 @@ namespace System.Data.Tests
         [Fact]
         public void DataSetSpecificCulture()
         {
-            CultureInfo orig = CultureInfo.CurrentCulture;
-            try
+            RemoteInvoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("cs-CZ");
+
                 var ds = new DataSet();
                 ds.Locale = CultureInfo.GetCultureInfo(1033);
                 var dt = ds.Tables.Add("machine");
                 dt.Locale = ds.Locale;
                 Assert.Same(dt, ds.Tables["MACHINE"]);
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = orig;
-            }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]

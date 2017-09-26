@@ -58,7 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 int nCount = 0;
                 for (int i = 0; i < pTypeArgs.Count; i++)
                 {
-                    if (pTypeArgs[i].IsErrorType())
+                    if (pTypeArgs[i] is ErrorType)
                     {
                         nCount++;
                     }
@@ -78,13 +78,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // If we don't have a winner yet, go through each element's type args.
                     for (int i = 0; i < max; i++)
                     {
-                        if (pTypeArgs1[i].IsAggregateType())
+                        if (pTypeArgs1[i] is AggregateType aggArg1)
                         {
-                            leftErrors += NumberOfErrorTypes(pTypeArgs1[i].AsAggregateType().GetTypeArgsAll());
+                            leftErrors += NumberOfErrorTypes(aggArg1.GetTypeArgsAll());
                         }
-                        if (pTypeArgs2[i].IsAggregateType())
+                        if (pTypeArgs2[i] is AggregateType aggArg2)
                         {
-                            rightErrors += NumberOfErrorTypes(pTypeArgs2[i].AsAggregateType().GetTypeArgsAll());
+                            rightErrors += NumberOfErrorTypes(aggArg2.GetTypeArgsAll());
                         }
                     }
                 }

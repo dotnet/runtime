@@ -187,8 +187,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
                 ErrorEventHandler errEventHandler = new ErrorEventHandler(com1);
-                byte[] frameErrorBytes = new byte[1];
-                Random rndGen = new Random();
 
                 Debug.WriteLine("Verifying Frame event");
                 com1.DataBits = 7;
@@ -199,16 +197,10 @@ namespace System.IO.Ports.Tests
 
                 com1.ErrorReceived += errEventHandler.HandleEvent;
 
-                for (int i = 0; i < frameErrorBytes.Length; i++)
-                {
-                    frameErrorBytes[i] = (byte)rndGen.Next(0, 256);
-                }
-
                 //This should cause a frame error since the 8th bit is not set 
                 //and com1 is set to 7 data bits ao the 8th bit will +12v where
                 //com1 expects the stop bit at the 8th bit to be -12v
-                frameErrorBytes[0] = 0x01;
-
+                var frameErrorBytes = new byte[] { 0x01 };
                 for (int i = 0; i < NUM_TRYS; i++)
                 {
                     Debug.WriteLine("Verifying Frame event try: {0}", i);
@@ -221,7 +213,7 @@ namespace System.IO.Ports.Tests
                         errEventHandler.Validate(SerialError.Frame, -1);
                     }
                 }
-
+                
                 lock (com1)
                 {
                     if (com1.IsOpen)

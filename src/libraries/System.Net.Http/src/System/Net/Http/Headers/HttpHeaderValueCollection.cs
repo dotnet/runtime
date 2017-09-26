@@ -34,7 +34,7 @@ namespace System.Net.Http.Headers
     //   - Property TransferEncodingChunked: is set to "true".
     public sealed class HttpHeaderValueCollection<T> : ICollection<T> where T : class
     {
-        private string _headerName;
+        private HeaderDescriptor _descriptor;
         private HttpHeaders _store;
         private T _specialValue;
         private Action<HttpHeaderValueCollection<T>, T> _validator;
@@ -58,34 +58,34 @@ namespace System.Net.Http.Headers
                 {
                     return false;
                 }
-                return _store.ContainsParsedValue(_headerName, _specialValue);
+                return _store.ContainsParsedValue(_descriptor, _specialValue);
             }
         }
 
-        internal HttpHeaderValueCollection(string headerName, HttpHeaders store)
-            : this(headerName, store, null, null)
+        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store)
+            : this(descriptor, store, null, null)
         {
         }
 
-        internal HttpHeaderValueCollection(string headerName, HttpHeaders store,
+        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store,
             Action<HttpHeaderValueCollection<T>, T> validator)
-            : this(headerName, store, null, validator)
+            : this(descriptor, store, null, validator)
         {
         }
 
-        internal HttpHeaderValueCollection(string headerName, HttpHeaders store, T specialValue)
-            : this(headerName, store, specialValue, null)
+        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T specialValue)
+            : this(descriptor, store, specialValue, null)
         {
         }
 
-        internal HttpHeaderValueCollection(string headerName, HttpHeaders store, T specialValue,
+        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T specialValue,
             Action<HttpHeaderValueCollection<T>, T> validator)
         {
-            Debug.Assert(headerName != null);
+            Debug.Assert(descriptor.Name != null);
             Debug.Assert(store != null);
 
             _store = store;
-            _headerName = headerName;
+            _descriptor = descriptor;
             _specialValue = specialValue;
             _validator = validator;
         }
@@ -93,28 +93,28 @@ namespace System.Net.Http.Headers
         public void Add(T item)
         {
             CheckValue(item);
-            _store.AddParsedValue(_headerName, item);
+            _store.AddParsedValue(_descriptor, item);
         }
 
         public void ParseAdd(string input)
         {
-            _store.Add(_headerName, input);
+            _store.Add(_descriptor, input);
         }
 
         public bool TryParseAdd(string input)
         {
-            return _store.TryParseAndAddValue(_headerName, input);
+            return _store.TryParseAndAddValue(_descriptor, input);
         }
 
         public void Clear()
         {
-            _store.Remove(_headerName);
+            _store.Remove(_descriptor);
         }
 
         public bool Contains(T item)
         {
             CheckValue(item);
-            return _store.ContainsParsedValue(_headerName, item);
+            return _store.ContainsParsedValue(_descriptor, item);
         }
 
         public void CopyTo(T[] array, int arrayIndex)
@@ -129,7 +129,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
-            object storeValue = _store.GetParsedValues(_headerName);
+            object storeValue = _store.GetParsedValues(_descriptor);
 
             if (storeValue == null)
             {
@@ -158,14 +158,14 @@ namespace System.Net.Http.Headers
         public bool Remove(T item)
         {
             CheckValue(item);
-            return _store.RemoveParsedValue(_headerName, item);
+            return _store.RemoveParsedValue(_descriptor, item);
         }
 
         #region IEnumerable<T> Members
 
         public IEnumerator<T> GetEnumerator()
         {
-            object storeValue = _store.GetParsedValues(_headerName);
+            object storeValue = _store.GetParsedValues(_descriptor);
 
             if (storeValue == null)
             {
@@ -203,7 +203,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            return _store.GetHeaderString(_headerName);
+            return _store.GetHeaderString(_descriptor);
         }
 
         internal string GetHeaderStringWithoutSpecial()
@@ -212,7 +212,7 @@ namespace System.Net.Http.Headers
             {
                 return ToString();
             }
-            return _store.GetHeaderString(_headerName, _specialValue);
+            return _store.GetHeaderString(_descriptor, _specialValue);
         }
 
         internal void SetSpecialValue()
@@ -220,9 +220,9 @@ namespace System.Net.Http.Headers
             Debug.Assert(_specialValue != null,
                 "This method can only be used if the collection has a 'special value' set.");
 
-            if (!_store.ContainsParsedValue(_headerName, _specialValue))
+            if (!_store.ContainsParsedValue(_descriptor, _specialValue))
             {
-                _store.AddParsedValue(_headerName, _specialValue);
+                _store.AddParsedValue(_descriptor, _specialValue);
             }
         }
 
@@ -233,7 +233,7 @@ namespace System.Net.Http.Headers
 
             // We're not interested in the return value. It's OK if the "special value" wasn't in the store
             // before calling RemoveParsedValue().
-            _store.RemoveParsedValue(_headerName, _specialValue);
+            _store.RemoveParsedValue(_descriptor, _specialValue);
         }
 
         private void CheckValue(T item)
@@ -254,7 +254,7 @@ namespace System.Net.Http.Headers
         {
             // This is an O(n) operation.
 
-            object storeValue = _store.GetParsedValues(_headerName);
+            object storeValue = _store.GetParsedValues(_descriptor);
 
             if (storeValue == null)
             {

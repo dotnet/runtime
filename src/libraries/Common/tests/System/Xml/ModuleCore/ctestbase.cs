@@ -316,6 +316,9 @@ namespace OLEDB.Test.ModuleCore
         {
             return tagVARIATION_STATUS.eVariationStatusPassed;
         }
+
+        public abstract IEnumerable<XunitTestCase> TestCases();
+
         public int CompareTo(object o)
         {
             return this.id.CompareTo(((CTestBase)o).id);

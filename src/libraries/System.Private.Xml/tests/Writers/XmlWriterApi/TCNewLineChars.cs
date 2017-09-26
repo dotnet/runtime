@@ -4,55 +4,126 @@
 
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    public partial class TCNewLineChars : XmlFactoryWriterTestCaseBase
+    public class TCNewLineChars
     {
-        // Type is System.Xml.Tests.TCNewLineChars
-        // Test Case
-        public override void AddChildren()
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void NewLineChars_1(XmlWriterUtils utils)
         {
-            if (WriterType == WriterType.CustomWriter)
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.NewLineChars = "\x9";
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.NewLineChars, "\x9", "Mismatch in NewLineChars");
+            w.WriteStartElement("root");
+            w.WriteString("Test\r\nNewLine");
+            w.WriteEndElement();
+            w.Dispose();
+
+            Assert.True(utils.CompareString("<root>Test\x9NewLine</root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void NewLineChars_2(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.NewLineChars = "     ";
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.NewLineChars, "     ", "Mismatch in NewLineChars");
+            w.WriteStartElement("root");
+            w.WriteString("Test\r\nNewLine");
+            w.WriteEndElement();
+            w.Dispose();
+
+            Assert.True(utils.CompareString("<root>Test     NewLine</root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void NewLineChars_3(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.NewLineChars = "\xA";
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.NewLineChars, "\xA", "Mismatch in NewLineChars");
+            w.WriteStartElement("root");
+            w.WriteString("Test\r\nNewLine");
+            w.WriteEndElement();
+            w.Dispose();
+
+            Assert.True(utils.CompareString("<root>Test\xANewLine</root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void NewLineChars_4(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.NewLineChars = "\xD";
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.NewLineChars, "\xD", "Mismatch in NewLineChars");
+            w.WriteStartElement("root");
+            w.WriteString("Test\r\nNewLine");
+            w.WriteEndElement();
+            w.Dispose();
+
+            Assert.True(utils.CompareString("<root>Test\xDNewLine</root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void NewLineChars_5(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.NewLineChars = "\x20";
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.NewLineChars, "\x20", "Mismatch in NewLineChars");
+            w.WriteStartElement("root");
+            w.WriteString("Test\r\nNewLine");
+            w.WriteEndElement();
+            w.Dispose();
+
+            Assert.True(utils.CompareString("<root>Test\x20NewLine</root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData("<")]
+        [XmlWriterInlineData("&")]
+        [XmlWriterInlineData("<!--")]
+        public void NewLineChars_6(XmlWriterUtils utils, string newLineChars)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.CloseOutput = true;
+            wSettings.NewLineChars = newLineChars;
+
+            XmlWriter w = null;
+
+            try
             {
+                w = utils.CreateWriter(wSettings);
+            }
+            catch (ArgumentException e)
+            {
+                CError.WriteLineIgnore("Exception: " + e.ToString());
                 return;
             }
-            // for function NewLineChars_1
-            {
-                this.AddChild(new CVariation(NewLineChars_1) { Attribute = new Variation("Set to tab char") { id = 1, Pri = 0 } });
-            }
 
-
-            // for function NewLineChars_2
-            {
-                this.AddChild(new CVariation(NewLineChars_2) { Attribute = new Variation("Set to multiple whitespace chars") { id = 2, Pri = 0 } });
-            }
-
-
-            // for function NewLineChars_3
-            {
-                this.AddChild(new CVariation(NewLineChars_3) { Attribute = new Variation("Set to 0xA") { id = 3, Pri = 0 } });
-            }
-
-
-            // for function NewLineChars_4
-            {
-                this.AddChild(new CVariation(NewLineChars_4) { Attribute = new Variation("Set to 0xD") { id = 4, Pri = 0 } });
-            }
-
-
-            // for function NewLineChars_5
-            {
-                this.AddChild(new CVariation(NewLineChars_5) { Attribute = new Variation("Set to 0x20") { id = 5, Pri = 0 } });
-            }
-
-
-            // for function NewLineChars_6
-            {
-                this.AddChild(new CVariation(NewLineChars_6) { Attribute = new Variation("Set to comment start tag") { Param = "<!--", id = 8, Pri = 1 } });
-                this.AddChild(new CVariation(NewLineChars_6) { Attribute = new Variation("Set to <") { Param = "<", id = 6, Pri = 1 } });
-                this.AddChild(new CVariation(NewLineChars_6) { Attribute = new Variation("Set to &") { Param = "&", id = 7, Pri = 1 } });
-            }
+            CError.WriteLine("Did not throw ArgumentException");
+            Assert.True((utils.WriterType == WriterType.CharCheckingWriter));
         }
     }
 }

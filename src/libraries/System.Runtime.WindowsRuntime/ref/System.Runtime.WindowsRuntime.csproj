@@ -22,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\external\winrt\winrt.depproj" />
+    <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />

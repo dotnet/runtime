@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.IO;
 
 namespace System.Security.Cryptography
@@ -82,6 +83,23 @@ namespace System.Security.Cryptography
             return SignHash(hash);
         }
 
+        public virtual bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        {
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+            {
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            }
+
+            if (TryHashData(source, destination, hashAlgorithm, out int hashLength) &&
+                TrySignHash(destination.Slice(0, hashLength), destination, out bytesWritten))
+            {
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
         public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm)
         {
             if (data == null)
@@ -118,6 +136,32 @@ namespace System.Security.Cryptography
             return VerifyHash(hash, signature);
         }
 
+        public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm)
+        {
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+            {
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            }
+
+            for (int i = 256; ; i = checked(i * 2))
+            {
+                int hashLength = 0;
+                byte[] hash = ArrayPool<byte>.Shared.Rent(i);
+                try
+                {
+                    if (TryHashData(data, hash, hashAlgorithm, out hashLength))
+                    {
+                        return VerifyHash(new ReadOnlySpan<byte>(hash, 0, hashLength), signature);
+                    }
+                }
+                finally
+                {
+                    Array.Clear(hash, 0, hashLength);
+                    ArrayPool<byte>.Shared.Return(hash);
+                }
+            }
+        }
+
         public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
             if (data == null)
@@ -146,5 +190,50 @@ namespace System.Security.Cryptography
         {
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         }
+
+        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        {
+            byte[] array = ArrayPool<byte>.Shared.Rent(source.Length);
+            try
+            {
+                source.CopyTo(array);
+                byte[] hash = HashData(array, 0, source.Length, hashAlgorithm);
+                if (hash.Length <= destination.Length)
+                {
+                    new ReadOnlySpan<byte>(hash).CopyTo(destination);
+                    bytesWritten = hash.Length;
+                    return true;
+                }
+                else
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+            }
+            finally
+            {
+                Array.Clear(array, 0, source.Length);
+                ArrayPool<byte>.Shared.Return(array);
+            }
+        }
+
+        public virtual bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            byte[] result = SignHash(source.ToArray());
+            if (result.Length <= destination.Length)
+            {
+                new ReadOnlySpan<byte>(result).CopyTo(destination);
+                bytesWritten = result.Length;
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        public virtual bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+            VerifyHash(hash.ToArray(), signature.ToArray());
     }
 }

@@ -193,7 +193,7 @@ namespace System.SpanTests
             }
 
             var found = span[index];
-            Assert.Equal((byte)expectResult, (byte)found);
+            Assert.Equal((byte)expectResult, found);
             Assert.Equal(expectIndex, index);
         }
 

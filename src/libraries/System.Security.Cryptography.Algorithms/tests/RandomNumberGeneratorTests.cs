@@ -10,44 +10,8 @@ using Xunit;
 
 namespace System.Security.Cryptography.RNG.Tests
 {
-    public class RandomNumberGeneratorTests
+    public partial class RandomNumberGeneratorTests
     {
-        [Fact]
-        public static void DifferentSequential_10()
-        {
-            DifferentSequential(10);
-        }
-
-        [Fact]
-        public static void DifferentSequential_256()
-        {
-            DifferentSequential(256);
-        }
-
-        [Fact]
-        public static void DifferentSequential_65536()
-        {
-            DifferentSequential(65536);
-        }
-
-        [Fact]
-        public static void DifferentParallel_10()
-        {
-            DifferentParallel(10);
-        }
-
-        [Fact]
-        public static void DifferentParallel_256()
-        {
-            DifferentParallel(256);
-        }
-
-        [Fact]
-        public static void DifferentParallel_65536()
-        {
-            DifferentParallel(65536);
-        }
-
         [Fact]
         public static void RandomDistribution()
         {
@@ -136,7 +100,7 @@ namespace System.Security.Cryptography.RNG.Tests
         }
 
         [Fact]
-        public static void GetNonZeroBytes()
+        public static void GetNonZeroBytes_Array()
         {
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
@@ -172,7 +136,7 @@ namespace System.Security.Cryptography.RNG.Tests
         }
 
         [Fact]
-        public static void GetBytes_Offset_ZeroCount()
+        public static void GetBytes_Array_Offset_ZeroCount()
         {
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
@@ -192,7 +156,11 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
-        private static void DifferentSequential(int arraySize)
+        [Theory]
+        [InlineData(10)]
+        [InlineData(256)]
+        [InlineData(65536)]
+        public static void DifferentSequential_Array(int arraySize)
         {
             // Ensure that the RNG doesn't produce a stable set of data.
             byte[] first = new byte[arraySize];
@@ -214,7 +182,11 @@ namespace System.Security.Cryptography.RNG.Tests
             Assert.NotEqual(first, second);
         }
 
-        private static void DifferentParallel(int arraySize)
+        [Theory]
+        [InlineData(10)]
+        [InlineData(256)]
+        [InlineData(65536)]
+        public static void DifferentParallel(int arraySize)
         {
             // Ensure that two RNGs don't produce the same data series (such as being implemented via new Random(1)).
             byte[] first = new byte[arraySize];

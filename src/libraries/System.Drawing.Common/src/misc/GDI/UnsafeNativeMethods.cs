@@ -22,7 +22,7 @@ namespace System.Drawing.Internal
         }
 
         /// <summary>
-        /// NOTE: DeleteDC is to be used to delete the hdc created from CreateCompatibleDC ONLY. All other hdcs shoul
+        /// NOTE: DeleteDC is to be used to delete the hdc created from CreateCompatibleDC ONLY. All other hdcs should
         /// be deleted with DeleteHDC.
         /// </summary>
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "DeleteDC", CharSet = CharSet.Auto)]

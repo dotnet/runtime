@@ -73,7 +73,7 @@
     </member>
     <member name="M:System.Threading.Tasks.Dataflow.ActionBlock`1.ToString">
       <summary>Returns a string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</summary>
-      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> nstance.</returns>
+      <returns>A string that represents the formatted name of this <see cref="T:System.Threading.Tasks.Dataflow.IDataflowBlock" /> instance.</returns>
     </member>
     <member name="T:System.Threading.Tasks.Dataflow.BatchBlock`1">
       <summary>Provides a dataflow block that batches inputs into arrays.</summary>

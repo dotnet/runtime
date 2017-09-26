@@ -257,7 +257,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                // Don't allow the connection to be changed while in a async operation.
+                // Don't allow the connection to be changed while in an async operation.
                 if (_activeConnection != value && _activeConnection != null)
                 { // If new value...
                     if (cachedAsyncState.PendingAsyncOperation)
@@ -363,7 +363,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                // Don't allow the transaction to be changed while in a async operation.
+                // Don't allow the transaction to be changed while in an async operation.
                 if (_transaction != value && _activeConnection != null)
                 { // If new value...
                     if (cachedAsyncState.PendingAsyncOperation)

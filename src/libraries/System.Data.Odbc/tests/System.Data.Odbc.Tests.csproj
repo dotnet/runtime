@@ -10,6 +10,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="IntegrationTestBase.cs" />
+    <Compile Include="CommandBuilderTests.cs" />
     <Compile Include="ReaderTests.cs" />
     <Compile Include="SmokeTest.cs" />
   </ItemGroup>

@@ -146,7 +146,7 @@ namespace System.Xml.Xsl.Xslt
                 --record                             // in reverce direction
             )
             {
-                Debug.Assert(0 < record, "first record is lookup bariaer, so we don't need to check this condition runtime");
+                Debug.Assert(0 < record, "first record is lookup barrier, so we don't need to check this condition runtime");
                 if (_records[record].prefix == prefix)
                 {
                     return _records[record].nsUri;

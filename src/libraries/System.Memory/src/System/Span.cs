@@ -17,7 +17,7 @@ namespace System
     /// </summary>
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("Length = {Length}")]
-    public struct Span<T>
+    public readonly ref struct Span<T>
     {
         /// <summary>
         /// Creates a new span over the entirety of the target array.
@@ -37,35 +37,6 @@ namespace System
             _length = array.Length;
             _pinnable = Unsafe.As<Pinnable<T>>(array);
             _byteOffset = SpanHelpers.PerTypeValues<T>.ArrayAdjustment;
-        }
-
-        /// <summary>
-        /// Creates a new span over the portion of the target array beginning
-        /// at 'start' index and covering the remainder of the array.
-        /// </summary>
-        /// <param name="array">The target array.</param>
-        /// <param name="start">The index at which to begin the span.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
-        /// reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> is not in the range (&lt;0 or &gt;=Length).
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Span(T[] array, int start)
-        {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (default(T) == null && array.GetType() != typeof(T[]))
-                ThrowHelper.ThrowArrayTypeMismatchException_ArrayTypeMustBeExactMatch(typeof(T));
-
-            int arrayLength = array.Length;
-            if ((uint)start > (uint)arrayLength)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-
-            _length = arrayLength - start;
-            _pinnable = Unsafe.As<Pinnable<T>>(array);
-            _byteOffset = SpanHelpers.PerTypeValues<T>.ArrayAdjustment.Add<T>(start);
         }
 
         /// <summary>
@@ -133,6 +104,7 @@ namespace System
         /// <param name="objectData">A reference to data within that object.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Span<T> DangerousCreate(object obj, ref T objectData, int length)
         {
             Pinnable<T> pinnable = Unsafe.As<Pinnable<T>>(obj);
@@ -446,6 +418,7 @@ namespace System
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public ref T DangerousGetPinnableReference()
         {
             if (_pinnable == null)

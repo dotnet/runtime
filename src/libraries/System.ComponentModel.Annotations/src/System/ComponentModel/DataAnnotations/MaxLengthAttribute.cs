@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -42,12 +44,9 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the maximum allowable length of the collection/string data.
         /// </summary>
-        public int Length { get; private set; }
+        public int Length { get; }
 
-        private static string DefaultErrorMessageString
-        {
-            get { return SR.MaxLengthAttribute_ValidationError; }
-        }
+        private static string DefaultErrorMessageString => SR.MaxLengthAttribute_ValidationError;
 
         /// <summary>
         ///     Determines whether a specified object is valid. (Overrides <see cref="ValidationAttribute.IsValid(object)" />)
@@ -76,16 +75,13 @@ namespace System.ComponentModel.DataAnnotations
             {
                 length = str.Length;
             }
+            else if (CountPropertyHelper.TryGetCount(value, out var count))
+            {
+                length = count;
+            }
             else
             {
-                if (value is ICollection collection)
-                {
-                    length = collection.Count;
-                }
-                else
-                {
-                    throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
-                }
+                throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
             }
 
             return MaxAllowableLength == Length || length <= Length;
@@ -96,11 +92,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="name">The name to include in the formatted string.</param>
         /// <returns>A localized string to describe the maximum acceptable length.</returns>
-        public override string FormatErrorMessage(string name)
-        {
+        public override string FormatErrorMessage(string name) =>
             // An error occurred, so we know the value is greater than the maximum if it was specified
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-        }
+            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
 
         /// <summary>
         ///     Checks that Length has a legal value.
@@ -113,6 +107,41 @@ namespace System.ComponentModel.DataAnnotations
                 throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
                     SR.MaxLengthAttribute_InvalidMaxLength));
             }
+        }
+    }
+
+    internal static class CountPropertyHelper
+    {
+        public static bool TryGetCount(object value, out int count)
+        {
+            Debug.Assert(value != null);
+
+            if (value is ICollection collection)
+            {
+                count = collection.Count;
+                return true;
+            }
+
+            PropertyInfo property = null;
+            try
+            {
+                // On CoreRT, this property may not be enabled for reflection.
+                // It may be possible to eliminate the exception by using direct reflection
+                // (i.e. not via the RuntimeReflectionExtensions or the new split TypeInfo format.
+                property = value.GetType().GetRuntimeProperty("Count");
+            }
+            catch (TypeAccessException)
+            {
+            }
+
+            if (property != null && property.CanRead && property.PropertyType == typeof(int))
+            {
+                count = (int)property.GetValue(value);
+                return true;
+            }
+
+            count = -1;
+            return false;
         }
     }
 }

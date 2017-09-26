@@ -26,7 +26,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the maximum acceptable length of the string
         /// </summary>
-        public int MaximumLength { get; private set; }
+        public int MaximumLength { get; }
 
         /// <summary>
         ///     Gets or sets the minimum acceptable length of the string

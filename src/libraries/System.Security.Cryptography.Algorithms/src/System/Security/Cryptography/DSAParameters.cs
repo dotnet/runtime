@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         public byte[] G;
         public byte[] Y;
         public byte[] J;
-        [NonSerialized] public byte[] X;
+        public byte[] X;
         public byte[] Seed;
         public int Counter;
     }

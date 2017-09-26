@@ -60,7 +60,7 @@ namespace System.Xml.Xsl
         public abstract XmlTypeCode TypeCode { get; }
 
         /// <summary>
-        /// Set of alowed names for element, document{element}, attribute and PI
+        /// Set of allowed names for element, document{element}, attribute and PI
         /// Returns XmlQualifiedName.Wildcard for all other types
         /// </summary>
         public abstract XmlQualifiedNameTest NameTest { get; }
@@ -70,7 +70,7 @@ namespace System.Xml.Xsl
         /// SchemaType will follow these rules:
         ///   1. If TypeCode is an atomic type code, then SchemaType will be the corresponding non-null simple type
         ///   2. If TypeCode is Element or Attribute, then SchemaType will be the non-null content type
-        ///   3. If TypeCode is Item, Node, Comment, PI, Text, Document, Namespacce, None, then SchemaType will be AnyType
+        ///   3. If TypeCode is Item, Node, Comment, PI, Text, Document, Namespace, None, then SchemaType will be AnyType
         /// </summary>
         public abstract XmlSchemaType SchemaType { get; }
 

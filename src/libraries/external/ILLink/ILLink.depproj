@@ -8,21 +8,30 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <NugetRuntimeIdentifier>$(ToolRuntimeRID)</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
+    <ILLinkTasksPackageId>illink.tasks</ILLinkTasksPackageId>
+    <ILLinkTasksPackageVersion>0.1.4-preview-981901</ILLinkTasksPackageVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.ILLink">
-      <Version>0.1.9-preview</Version>
-      <IncludeAssets>Analyzers;Build;ContentFiles;Native;Runtime</IncludeAssets>
+    <PackageReference Include="$(ILLinkTasksPackageId)">
+      <Version>$(ILLinkTasksPackageVersion)</Version>
     </PackageReference>
-    <Content Include="illink.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Target Name="IncludeAllFiles"
+  <Target Name="IncludeToolsFiles"
           AfterTargets="ResolveNuGetPackages">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="%(ReferenceCopyLocalPaths.RootDir)%(ReferenceCopyLocalPaths.Directory)\*.*" />
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)\$(ILLinkTasksPackageId)\$(ILLinkTasksPackageVersion)\tools\netcoreapp2.0\*.*">
+        <NuGetPackageId>$(ILLinkTasksPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(ILLinkTasksPackageVersion)</NuGetPackageVersion>
+        <SubFolder>/netcoreapp2.0/</SubFolder>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)\$(ILLinkTasksPackageId)\$(ILLinkTasksPackageVersion)\tools\net46\*.*">
+        <NuGetPackageId>$(ILLinkTasksPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(ILLinkTasksPackageVersion)</NuGetPackageVersion>
+        <SubFolder>/net46/</SubFolder>
+      </ReferenceCopyLocalPaths>
     </ItemGroup>
   </Target>
 </Project>

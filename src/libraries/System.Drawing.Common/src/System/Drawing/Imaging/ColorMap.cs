@@ -30,7 +30,7 @@ namespace System.Drawing.Imaging
             set { _oldColor = value; }
         }
         /// <summary>
-        /// Specifes the new <see cref='Color'/> to which to convert.
+        /// Specifies the new <see cref='Color'/> to which to convert.
         /// </summary>
         public Color NewColor
         {

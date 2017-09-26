@@ -14,7 +14,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentCulture()
         {
-            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
+            if (PlatformDetection.IsNetNative && !PlatformDetection.IsInAppContainer) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
                 return;
 
             RemoteInvoke(() =>
@@ -43,7 +43,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentUICulture()
         {
-            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
+            if (PlatformDetection.IsNetNative && !PlatformDetection.IsInAppContainer) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
                 return;
 
             RemoteInvoke(() =>

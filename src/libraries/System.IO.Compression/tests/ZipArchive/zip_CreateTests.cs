@@ -53,16 +53,17 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [InlineData("small")]
-        [InlineData("normal")]
-        [InlineData("empty")]
-        [InlineData("emptydir")]
-        public static async Task CreateNormal_Seekable(string folder)
+        [InlineData("small", false)]
+        [InlineData("normal", false)]
+        [InlineData("normal", true)]
+        [InlineData("empty", false)]
+        [InlineData("emptydir", false)]
+        public static async Task CreateNormal_Seekable(string folder, bool useSpansForWriting)
         {
             using (var s = new MemoryStream())
             {
                 var testStream = new WrappedStream(s, false, true, true, null);
-                await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create);
+                await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create, useSpansForWriting);
 
                 IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
             }

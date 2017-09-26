@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -16,11 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
-
   <ItemGroup>
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTest.cs" />
-    <Compile Include="System\PinnableBufferCacheTest.cs" />
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslState.cs" />
@@ -33,9 +31,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
-    <Compile Include="..\..\src\System\PinnableBufferCache.cs">
-      <Link>ProductionCode\System\PinnableBufferCache.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs">
       <Link>ProductionCode\System\Net\Security\SslStream.cs</Link>
     </Compile>

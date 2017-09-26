@@ -19,11 +19,14 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestReset")]
         internal extern static int EvpDigestReset(SafeEvpMdCtxHandle ctx, IntPtr type);
 
+        internal static int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ReadOnlySpan<byte> d, int cnt) =>
+            EvpDigestUpdate(ctx, ref d.DangerousGetPinnableReference(), cnt);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestUpdate")]
-        internal extern static unsafe int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, byte* d, int cnt);
+        private extern static int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ref byte d, int cnt);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalEx")]
-        internal extern static unsafe int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, byte* md, ref uint s);
+        internal extern static int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal extern static int EvpMdSize(IntPtr md);

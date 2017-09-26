@@ -1346,7 +1346,7 @@ namespace System.Xml.Xsl
         }
 
         /// <summary>
-        /// Converts type of sequence of items to type of sequnce of atomic value
+        /// Converts type of sequence of items to type of sequence of atomic value
         //  See http://www.w3.org/TR/2004/xquery-semantics/#jd_data for the detailed description
         /// </summary>
         /// <param name="source">source type</param>
@@ -1529,7 +1529,7 @@ namespace System.Xml.Xsl
                 case XmlTypeCode.Element:
                     XmlSchemaType sourceSchemaType = sourceItem.SchemaType;
                     if (sourceSchemaType == XmlSchemaComplexType.UntypedAnyType) {
-                        // attfibutes of of xdt:untypedAny are attribute(*, xdt:untypedAtomic)*
+                        // attributes of xdt:untypedAny are attribute(*, xdt:untypedAtomic)*
                         card |= AddFilteredPrime(list, UntypedAttribute, filter) * XmlQueryCardinality.ZeroOrOne;
                     }
                     else {

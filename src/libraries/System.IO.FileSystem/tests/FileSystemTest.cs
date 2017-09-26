@@ -61,7 +61,7 @@ namespace System.IO.Tests
 
         protected string GetNamedPipeServerStreamName()
         {
-            if (PlatformDetection.IsWinRT)
+            if (PlatformDetection.IsInAppContainer)
             {
                 return @"LOCAL\" + Guid.NewGuid().ToString("N");
             }

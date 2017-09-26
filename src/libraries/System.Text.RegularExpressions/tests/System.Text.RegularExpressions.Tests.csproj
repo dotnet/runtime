@@ -12,9 +12,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\tests\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="CaptureCollectionTests.cs" />
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />

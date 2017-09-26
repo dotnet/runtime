@@ -67,6 +67,12 @@ namespace System.Runtime.Serialization
             _isGetOnlyCollection = true;
         }
 
+        internal void ResetCollectionMemberInfo()
+        {
+            _getOnlyCollectionValue = null;
+            _isGetOnlyCollection = false;
+        }
+
 #if USE_REFEMIT
         public static void ThrowNullValueReturnedForGetOnlyCollectionException(Type type)
 #else

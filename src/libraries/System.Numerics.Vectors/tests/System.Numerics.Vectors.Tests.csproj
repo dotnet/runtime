@@ -32,9 +32,6 @@
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="..\..\Common\src\System\MathF.netstandard.cs">
       <Link>System\MathF.netstandard.cs</Link>
     </Compile>

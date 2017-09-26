@@ -72,6 +72,27 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", validationResults[0].ErrorMessage);
         }
 
+        [Fact]
+        public static void TryValidateObject_collection_can_have_multiple_results()
+        {
+            HasDoubleFailureProperty objectToBeValidated = new HasDoubleFailureProperty();
+            ValidationContext validationContext = new ValidationContext(objectToBeValidated);
+            List<ValidationResult> results = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(objectToBeValidated, validationContext, results, true));
+            Assert.Equal(2, results.Count);
+        }
+
+
+        [Fact]
+        public static void TryValidateObject_collection_can_have_multiple_results_from_type_attributes()
+        {
+            DoublyInvalid objectToBeValidated = new DoublyInvalid();
+            ValidationContext validationContext = new ValidationContext(objectToBeValidated);
+            List<ValidationResult> results = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(objectToBeValidated, validationContext, results, true));
+            Assert.Equal(2, results.Count);
+        }
+
         // TryValidateObject_returns_true_if_validateAllProperties_is_false_and_Required_test_passes_even_if_there_are_other_errors()
         [Fact]
         public static void TestTryValidateObjectSuccessEvenWithOtherErrors()
@@ -430,6 +451,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void TryValidateProperty_collection_can_have_multiple_results()
+        {
+            ValidationContext validationContext = new ValidationContext(new HasDoubleFailureProperty());
+            validationContext.MemberName = nameof(HasDoubleFailureProperty.WillAlwaysFailTwice);
+            List<ValidationResult> results = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateProperty("Nope", validationContext, results));
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
         public static void TryValidateProperty_returns_true_if_all_attributes_are_valid()
         {
             var validationContext = new ValidationContext(new ToBeValidated());
@@ -636,6 +667,19 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void TryValidateValue_collection_can_have_multiple_results()
+        {
+            ValidationContext validationContext = new ValidationContext(new HasDoubleFailureProperty());
+            validationContext.MemberName = nameof(HasDoubleFailureProperty.WillAlwaysFailTwice);
+            ValidationAttribute[] attributesToValidate =
+                {new ValidValueStringPropertyAttribute(), new ValidValueStringPropertyDuplicateAttribute()};
+
+            List<ValidationResult> results = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateValue("Not Valid", validationContext, results, attributesToValidate));
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
         public static void TryValidateValue_returns_true_if_Property_has_RequiredAttribute_and_value_is_valid()
         {
             var validationContext = new ValidationContext(new ToBeValidated());
@@ -779,18 +823,60 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
         }
 
+        // Allows easy testing that multiple failures can be reported
+        [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+        public class ValidValueStringPropertyDuplicateAttribute : ValidationAttribute
+        {
+            protected override ValidationResult IsValid(object value, ValidationContext _)
+            {
+                if (value == null)
+                { return ValidationResult.Success; }
+                var valueAsString = value as string;
+                if ("Valid Value".Equals(valueAsString))
+                { return ValidationResult.Success; }
+                return new ValidationResult("ValidValueStringPropertyAttribute.IsValid failed for value " + value);
+            }
+        }
+
         [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
         public class ValidClassAttribute : ValidationAttribute
         {
             protected override ValidationResult IsValid(object value, ValidationContext _)
             {
-                if (value == null) { return ValidationResult.Success; }
+                if (value == null)
+                { return ValidationResult.Success; }
                 if (value.GetType().Name.ToLowerInvariant().Contains("invalid"))
                 {
                     return new ValidationResult("ValidClassAttribute.IsValid failed for class of type " + value.GetType().FullName);
                 }
                 return ValidationResult.Success;
             }
+        }
+
+        [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+        public class ValidClassDuplicateAttribute : ValidationAttribute
+        {
+            protected override ValidationResult IsValid(object value, ValidationContext _)
+            {
+                if (value == null)
+                { return ValidationResult.Success; }
+                if (value.GetType().Name.ToLowerInvariant().Contains("invalid"))
+                {
+                    return new ValidationResult("ValidClassAttribute.IsValid failed for class of type " + value.GetType().FullName);
+                }
+                return ValidationResult.Success;
+            }
+        }
+
+        public class HasDoubleFailureProperty
+        {
+            [ValidValueStringProperty, ValidValueStringPropertyDuplicate]
+            public string WillAlwaysFailTwice => "This is never valid.";
+        }
+
+        [ValidClass, ValidClassDuplicate]
+        public class DoublyInvalid
+        {
         }
 
         [ValidClass]

@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Configuration;
 using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 using Xunit.NetCore.Extensions;
-using ThreadState = System.Threading.ThreadState;
 
 namespace System.IO.Ports.Tests
 {
@@ -136,7 +135,7 @@ namespace System.IO.Ports.Tests
             {
                 var rndGen = new Random(-55);
                 var asyncEnableRts = new AsyncEnableRts();
-                var t = new Thread(asyncEnableRts.EnableRTS);
+                var t = new Task(asyncEnableRts.EnableRTS);
 
                 com1.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
                 com1.Handshake = Handshake.RequestToSend;
@@ -150,14 +149,7 @@ namespace System.IO.Ports.Tests
                 // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
                 // before the timeout is reached
                 t.Start();
-                var waitTime = 0;
-
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForTaskToStart(t);
 
                 try
                 {
@@ -169,9 +161,7 @@ namespace System.IO.Ports.Tests
 
                 asyncEnableRts.Stop();
 
-                while (t.IsAlive)
-                    Thread.Sleep(100);
-
+                TCSupport.WaitForTaskCompletion(t);
                 VerifyTimeout(com1);
             }
         }
@@ -182,7 +172,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, s_BYTE_SIZE_BYTES_TO_WRITE);
-                var t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
+                var t = new Task(asyncWriteRndByteArray.WriteRndByteArray);
 
                 Debug.WriteLine("Verifying BytesToWrite with one call to Write");
 
@@ -192,20 +182,11 @@ namespace System.IO.Ports.Tests
 
                 // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
                 t.Start();
-                var waitTime = 0;
-
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForTaskToStart(t);
 
                 TCSupport.WaitForWriteBufferToLoad(com, s_BYTE_SIZE_BYTES_TO_WRITE);
 
-                // Wait for write method to timeout
-                while (t.IsAlive)
-                    Thread.Sleep(100);
+                TCSupport.WaitForTaskCompletion(t);
             }
         }
 
@@ -216,8 +197,8 @@ namespace System.IO.Ports.Tests
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, s_BYTE_SIZE_BYTES_TO_WRITE);
-                var t1 = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
-                var t2 = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
+                var t1 = new Task(asyncWriteRndByteArray.WriteRndByteArray);
+                var t2 = new Task(asyncWriteRndByteArray.WriteRndByteArray);
 
                 Debug.WriteLine("Verifying BytesToWrite with successive calls to Write");
 
@@ -227,33 +208,17 @@ namespace System.IO.Ports.Tests
 
                 // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
                 t1.Start();
-                var waitTime = 0;
-
-                while (t1.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
+                TCSupport.WaitForTaskToStart(t1);
                 TCSupport.WaitForExactWriteBufferLoad(com, s_BYTE_SIZE_BYTES_TO_WRITE);
 
                 // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
                 t2.Start();
-                waitTime = 0;
-
-                while (t2.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
+                TCSupport.WaitForTaskToStart(t2);
                 TCSupport.WaitForExactWriteBufferLoad(com, s_BYTE_SIZE_BYTES_TO_WRITE * 2);
 
                 // Wait for both write methods to timeout
-                while (t1.IsAlive || t2.IsAlive)
-                    Thread.Sleep(100);
+                var aggregatedException = Assert.Throws<AggregateException>(() => TCSupport.WaitForTaskCompletion(t2));
+                Assert.IsType<IOException>(aggregatedException.InnerException);
             }
         }
 
@@ -263,25 +228,14 @@ namespace System.IO.Ports.Tests
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, s_BYTE_SIZE_HANDSHAKE);
-                var t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
+                var t = new Task(asyncWriteRndByteArray.WriteRndByteArray);
 
                 // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
                 Debug.WriteLine("Verifying Handshake=None");
 
                 com.Open();
                 t.Start();
-                var waitTime = 0;
-
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
-                // Wait for write method to timeout
-                while (t.IsAlive)
-                    Thread.Sleep(100);
+                TCSupport.WaitForTaskCompletion(t);
 
                 Assert.Equal(0, com.BytesToWrite);
             }
@@ -438,11 +392,10 @@ namespace System.IO.Ports.Tests
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
                 var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com1, s_BYTE_SIZE_HANDSHAKE);
-                var t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
+                var t = new Task(asyncWriteRndByteArray.WriteRndByteArray);
 
                 var XOffBuffer = new byte[1];
                 var XOnBuffer = new byte[1];
-                int waitTime;
 
                 XOffBuffer[0] = 19;
                 XOnBuffer[0] = 17;
@@ -467,15 +420,7 @@ namespace System.IO.Ports.Tests
 
                 // Write a random byte asynchronously so we can verify some things while the write call is blocking
                 t.Start();
-                waitTime = 0;
-
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
+                TCSupport.WaitForTaskToStart(t);
                 TCSupport.WaitForWriteBufferToLoad(com1, s_BYTE_SIZE_HANDSHAKE);
 
                 // Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
@@ -496,9 +441,7 @@ namespace System.IO.Ports.Tests
                     com2.BaseStream.Write(XOnBuffer, 0, 1);
                 }
 
-                // Wait till write finishes
-                while (t.IsAlive)
-                    Thread.Sleep(100);
+                TCSupport.WaitForTaskCompletion(t);
 
                 // Verify that the correct number of bytes are in the buffer
                 Assert.Equal(0, com1.BytesToWrite);

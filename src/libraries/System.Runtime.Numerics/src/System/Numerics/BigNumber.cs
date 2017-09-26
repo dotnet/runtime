@@ -325,6 +325,18 @@ namespace System.Numerics
         [SecuritySafeCritical]
         internal static bool TryParseBigInteger(string value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
+            if (value == null)
+            {
+                result = default(BigInteger);
+                return false;
+            }
+
+            return TryParseBigInteger(AsReadOnlySpan(value), style, info, out result);
+        }
+
+        [SecuritySafeCritical]
+        internal static bool TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        {
             unsafe
             {
                 result = BigInteger.Zero;
@@ -357,8 +369,26 @@ namespace System.Numerics
         internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
+            return ParseBigInteger(AsReadOnlySpan(value), style, info);
+        }
+
+        // TODO #22688: Remove this and replace it with the real AsReadOnlySpan extension
+        // method from System.Memory once the System.Memory package is marked stable
+        // and the package validation system allows us to take a dependency on it.
+        private static unsafe ReadOnlySpan<char> AsReadOnlySpan(string s)
+        {
+            fixed (char* c = s)
+            {
+                return new ReadOnlySpan<char>(c, s.Length);
+            }
+        }
+
+        internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
+        {
             ArgumentException e;
             if (!TryValidateParseStyleInteger(style, out e))
                 throw e;

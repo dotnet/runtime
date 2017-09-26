@@ -258,7 +258,7 @@ namespace System.DirectoryServices.AccountManagement
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetAsPrincipal: using path={0}", (null != de ? de.Path : "searchResult"));
 
-            // Construct a appropriate Principal object.
+            // Construct an appropriate Principal object.
 
             bool targetIsFromGC = SDSUtils.IsObjectFromGC(path);
             try

@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             : base(ExpressionKind.Call, type)
         {
             Debug.Assert(
-                (flags & ~(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CONSTRAINED | EXPRFLAG.EXF_BASECALL
+                (flags & ~(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CONSTRAINED
                            | EXPRFLAG.EXF_NEWSTRUCTASSG | EXPRFLAG.EXF_IMPLICITSTRUCTASSG | EXPRFLAG.EXF_MASK_ANY)) == 0);
             Flags = flags;
             OptionalArguments = arguments;
@@ -33,7 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public MethWithInst MethWithInst { get; set; }
 
-        public PREDEFMETH PredefinedMethod { get; set; }
+        public PREDEFMETH PredefinedMethod { get; set; } = PREDEFMETH.PM_COUNT;
 
         public NullableCallLiftKind NullableCallLiftKind { get; set; }
 
@@ -42,11 +42,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr CastOfNonLiftedResultToLiftedType { get; set; }
 
         SymWithType IExprWithArgs.GetSymWithType() => MethWithInst;
-
-        public override void SetMismatchedStaticBit()
-        {
-            MemberGroup?.SetMismatchedStaticBit();
-            base.SetMismatchedStaticBit();
-        }
     }
 }

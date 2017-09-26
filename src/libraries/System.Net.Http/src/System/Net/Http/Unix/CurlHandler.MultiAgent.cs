@@ -434,7 +434,7 @@ namespace System.Net.Http
             }
 
             /// <summary>
-            /// Drains the incoming requests queue, dequeueing each request and handling it according to its type.
+            /// Drains the incoming requests queue, dequeuing each request and handling it according to its type.
             /// </summary>
             private void HandleIncomingRequests()
             {

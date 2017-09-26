@@ -97,7 +97,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Test that in a parallel Foreach loop can be dependecies between iterations if a partitioner of chunk size 1 is used
+        /// Test that in a parallel Foreach loop can be dependencies between iterations if a partitioner of chunk size 1 is used
         /// </summary>
         /// <param name="length"></param>
         [Fact]

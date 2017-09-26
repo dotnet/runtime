@@ -957,7 +957,7 @@ namespace System.Diagnostics.Tests
             Process.Start(info); // Returns null after navigating browser
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
         [MemberData(nameof(UseShellExecute))]
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -994,9 +994,8 @@ namespace System.Diagnostics.Tests
                 }
             }
         }
-
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer),  // Nano does not support UseShellExecute
-                         nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindows8x))]   // https://github.com/dotnet/corefx/issues/20388
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
+                                                    nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/corefx/issues/20388
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         // Re-enabling with extra diagnostic info
@@ -1087,7 +1086,7 @@ namespace System.Diagnostics.Tests
         }
 
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))] 
         public void ShellExecute_Nano_Fails_Start()
         {
             string tempFile = GetTestFilePath() + ".txt";

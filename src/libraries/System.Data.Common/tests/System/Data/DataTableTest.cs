@@ -29,19 +29,16 @@
 
 using System.Collections.Generic;
 using System.Data.SqlTypes;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Xml;
-
-
-
 using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataTableTest : DataSetAssertion
+    public class DataTableTest : RemoteExecutorTestBase
     {
         public DataTableTest()
         {
@@ -847,10 +844,8 @@ Assert.False(true);
         [Fact]
         public void PropertyExceptions()
         {
-            CultureInfo orig = CultureInfo.CurrentCulture;
-            try
+            RemoteInvoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("en-US");
                 DataSet set = new DataSet();
                 DataTable table = new DataTable();
                 DataTable table1 = new DataTable();
@@ -882,40 +877,23 @@ Assert.False(true);
                 DataRelation dr = new DataRelation("DR", table.Columns[0], table1.Columns[0]);
                 set.Relations.Add(dr);
 
-                try
+                Assert.Throws<ArgumentException>(() =>
                 {
                     table.CaseSensitive = true;
                     table1.CaseSensitive = true;
-                    Assert.False(true);
-                }
-                catch (ArgumentException)
-                {
-                }
+                });
 
-                try
+                Assert.Throws<ArgumentException>(() =>
                 {
                     CultureInfo cultureInfo = new CultureInfo("en-gb");
                     table.Locale = cultureInfo;
                     table1.Locale = cultureInfo;
-                    Assert.False(true);
-                }
-                catch (ArgumentException)
-                {
-                }
+                });
 
-                try
-                {
-                    table.Prefix = "Prefix#1";
-                    Assert.False(true);
-                }
-                catch (DataException)
-                {
-                }
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = orig;
-            }
+                Assert.Throws<DataException>(() => table.Prefix = "Prefix#1");
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
@@ -3323,16 +3301,16 @@ Assert.False(true);
         [Fact]
         public void WriteXmlSchema()
         {
-            CultureInfo orig = CultureInfo.CurrentCulture;
-            try
+            RemoteInvoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-GB");
+
                 var ds = new DataSet();
                 ds.ReadXml(new StringReader(DataProvider.region));
                 TextWriter writer = new StringWriter();
                 ds.Tables[0].WriteXmlSchema(writer);
 
-                string TextString = GetNormalizedSchema(writer.ToString());
+                string TextString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
                 //string TextString = writer.ToString ();
 
                 string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
@@ -3401,11 +3379,9 @@ Assert.False(true);
                 Assert.Equal("  </xs:element>", substring);
 
                 Assert.Equal("</xs:schema>", TextString);
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = orig;
-            }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
@@ -4037,7 +4013,7 @@ Assert.False(true);
 
     [Serializable]
 
-    public class AppDomainsAndFormatInfo
+    public class AppDomainsAndFormatInfo : RemoteExecutorTestBase
     {
         public void Remote()
         {
@@ -4048,56 +4024,51 @@ Assert.False(true);
         [Fact]
         public void Bug55978()
         {
-            CultureInfo orig = CultureInfo.CurrentCulture;
-            try
+            DataTable dt = new DataTable();
+            dt.Columns.Add("StartDate", typeof(DateTime));
+
+            DataRow dr;
+            DateTime date = DateTime.Now;
+
+            for (int i = 0; i < 10; i++)
             {
-                CultureInfo.CurrentCulture = new CultureInfo("en-US");
-                DataTable dt = new DataTable();
-                dt.Columns.Add("StartDate", typeof(DateTime));
-
-                DataRow dr;
-                DateTime date = DateTime.Now;
-
-                for (int i = 0; i < 10; i++)
-                {
-                    dr = dt.NewRow();
-                    dr["StartDate"] = date.AddDays(i);
-                    dt.Rows.Add(dr);
-                }
-
-                DataView dv = dt.DefaultView;
-                dv.RowFilter = string.Format(CultureInfo.InvariantCulture,
-                                  "StartDate >= '{0}' and StartDate <= '{1}'",
-                                  DateTime.Now.AddDays(2),
-                                  DateTime.Now.AddDays(4));
-                Assert.Equal(10, dt.Rows.Count);
-                Assert.Equal(2, dv.Count);
+                dr = dt.NewRow();
+                dr["StartDate"] = date.AddDays(i);
+                dt.Rows.Add(dr);
             }
-            finally
-            {
-                CultureInfo.CurrentCulture = orig;
-            }
+
+            DataView dv = dt.DefaultView;
+            dv.RowFilter = string.Format(CultureInfo.InvariantCulture,
+                                "StartDate >= '{0}' and StartDate <= '{1}'",
+                                DateTime.Now.AddDays(2),
+                                DateTime.Now.AddDays(4));
+            Assert.Equal(10, dt.Rows.Count);
+            Assert.Equal(2, dv.Count);
+
         }
 
         [Fact]
         public void Bug82109()
         {
-            DataTable tbl = new DataTable();
-            tbl.Columns.Add("data", typeof(DateTime));
-            DataRow row = tbl.NewRow();
-            row["Data"] = new DateTime(2007, 7, 1);
-            tbl.Rows.Add(row);
+            RemoteInvoke(() =>
+            {
+                DataTable tbl = new DataTable();
+                tbl.Columns.Add("data", typeof(DateTime));
+                DataRow row = tbl.NewRow();
+                row["Data"] = new DateTime(2007, 7, 1);
+                tbl.Rows.Add(row);
 
-            CultureInfo currentCulture = CultureInfo.CurrentCulture; ;
-            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-            Select(tbl);
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+                Select(tbl);
 
-            CultureInfo.CurrentCulture = new CultureInfo("it-IT");
-            Select(tbl);
+                CultureInfo.CurrentCulture = new CultureInfo("it-IT");
+                Select(tbl);
 
-            CultureInfo.CurrentCulture = new CultureInfo("fr-FR");
-            Select(tbl);
-            CultureInfo.CurrentCulture = currentCulture;
+                CultureInfo.CurrentCulture = new CultureInfo("fr-FR");
+                Select(tbl);
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         private static void Select(DataTable tbl)

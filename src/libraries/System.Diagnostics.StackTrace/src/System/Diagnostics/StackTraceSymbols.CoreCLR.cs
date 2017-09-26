@@ -198,7 +198,7 @@ namespace System.Diagnostics
                 if (peReader.TryOpenAssociatedPortablePdb(assemblyPath, TryOpenFile, out provider, out pdbPath))
                 {
                     // TODO: 
-                    // Consider caching the provider in a global cache (accross stack traces) if the PDB is embedded (pdbPath == null),
+                    // Consider caching the provider in a global cache (across stack traces) if the PDB is embedded (pdbPath == null),
                     // as decompressing embedded PDB takes some time.
                     return provider;
                 }

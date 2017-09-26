@@ -16,15 +16,9 @@ namespace System.Security.Cryptography
     {
         protected SHA512() { }
 
-        public static new SHA512 Create()
-        {
-            return new Implementation();
-        }
+        public static new SHA512 Create() => new Implementation();
 
-        public static new SHA512 Create(string hashName)
-        {
-            return (SHA512)CryptoConfig.CreateFromName(hashName);
-        }
+        public static new SHA512 Create(string hashName) => (SHA512)CryptoConfig.CreateFromName(hashName);
 
         private sealed class Implementation : SHA512
         {
@@ -36,21 +30,22 @@ namespace System.Security.Cryptography
                 HashSizeValue = _hashProvider.HashSizeInBytes * 8;
             }
 
-            protected sealed override void HashCore(byte[] array, int ibStart, int cbSize)
-            {
+            protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) =>
                 _hashProvider.AppendHashData(array, ibStart, cbSize);
-            }
 
-            protected sealed override byte[] HashFinal()
-            {
-                return _hashProvider.FinalizeHashAndReset();
-            }
+            protected sealed override void HashCore(ReadOnlySpan<byte> source) =>
+                _hashProvider.AppendHashData(source);
+
+            protected sealed override byte[] HashFinal() =>
+                _hashProvider.FinalizeHashAndReset();
+
+            protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
+                _hashProvider.TryFinalizeHashAndReset(destination, out bytesWritten);
 
             public sealed override void Initialize()
             {
                 // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the 
                 // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
-                return;
             }
 
             protected sealed override void Dispose(bool disposing)

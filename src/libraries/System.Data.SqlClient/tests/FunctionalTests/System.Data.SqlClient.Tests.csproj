@@ -2,8 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- [ActiveIssue(https://github.com/dotnet/corefx/issues/22416, TargetFrameworkMonikers.UapAot)] Crashes on UapAot -->
-    <ILCBuildType Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x86'">chk</ILCBuildType>
     <ProjectGuid>{F3E72F35-0351-4D67-9388-725BCAD807BA}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
@@ -27,12 +25,9 @@
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />
     <Compile Include="TcpDefaultForAzureTest.cs" />
-    <Compile Include="SqlConnectionTest.cs" />
+    <Compile Include="SqlConnectionBasicTests.cs" />
     <Compile Include="TestTdsServer.cs" />
     <Compile Include="..\ManualTests\DataCommon\DataTestUtility.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tools\TDS\TDS.Servers\TDS.Servers.csproj">

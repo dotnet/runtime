@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Ports
 {
-    internal sealed class SerialStream : Stream
+    internal sealed partial class SerialStream : Stream
     {
         private const int ErrorEvents = (int)(SerialError.Frame | SerialError.Overrun |
                                  SerialError.RXOver | SerialError.RXParity | SerialError.TXFull);
@@ -50,9 +50,9 @@ namespace System.IO.Ports
         private Interop.Kernel32.COMSTAT _comStat;
         private Interop.Kernel32.COMMPROP _commProp;
 
-        // internal-use members
-        internal SafeFileHandle _handle = null;
-        internal EventLoopRunner _eventRunner;
+        private SafeFileHandle _handle = null;
+        private ThreadPoolBoundHandle _threadPoolBinding = null;
+        private EventLoopRunner _eventRunner;
         private Task _waitForComEventTask = null;
 
         private byte[] _tempBuf;                 // used to avoid multiple array allocations in ReadByte()
@@ -590,19 +590,16 @@ namespace System.IO.Ports
         internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
-            int flags = NativeMethods.FILE_FLAG_OVERLAPPED;
-
-            if ((portName == null) || !portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase))
+            if ((portName == null) ||
+                !portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || 
+                !uint.TryParse(portName.Substring(3), out uint portNumber))
+            {
                 throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
+            }
 
             // Error checking done in SerialPort.
 
-            SafeFileHandle tempHandle = Interop.Kernel32.CreateFileDefaultSecurity(
-                @"\\?\" + portName,
-                Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
-                0,              // comm devices must be opened w/exclusive-access
-                FileMode.Open,  // comm devices must use OPEN_EXISTING
-                flags);
+            SafeFileHandle tempHandle = OpenPort(portNumber);
 
             if (tempHandle.IsInvalid)
             {
@@ -705,10 +702,7 @@ namespace System.IO.Ports
 
                 if (_isAsync)
                 {
-                    if (!ThreadPool.BindHandle(_handle))
-                    {
-                        throw new IOException(SR.IO_BindHandleFailed);
-                    }
+                    _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
                 }
 
                 // monitor all events except TXEMPTY
@@ -725,6 +719,7 @@ namespace System.IO.Ports
                 // handle before we let them continue up.
                 tempHandle.Close();
                 _handle = null;
+                _threadPoolBinding?.Dispose();
                 throw;
             }
         }
@@ -805,6 +800,7 @@ namespace System.IO.Ports
                         {
                             _handle.Close();
                             _handle = null;
+                            _threadPoolBinding.Dispose();
                         }
 #pragma warning restore CA2002
                     }
@@ -812,6 +808,7 @@ namespace System.IO.Ports
                     {
                         _handle.Close();
                         _handle = null;
+                        _threadPoolBinding.Dispose();
                     }
                     base.Dispose(disposing);
                 }
@@ -957,7 +954,12 @@ namespace System.IO.Ports
             // Free memory, GC handles.
             NativeOverlapped* overlappedPtr = afsar._overlapped;
             if (overlappedPtr != null)
-                Overlapped.Free(overlappedPtr);
+            {
+                // Legacy behavior as indicated by tests (e.g.: System.IO.Ports.Tests.SerialStream_EndRead.EndReadAfterClose)
+                // expects to be able to call EndRead after Close/Dispose - even if disposed _threadPoolBinding can free the
+                // native overlapped.
+                _threadPoolBinding.FreeNativeOverlapped(overlappedPtr);
+            }
 
             // Check for non-timeout errors during the read.
             if (afsar._errorCode != 0)
@@ -1016,7 +1018,12 @@ namespace System.IO.Ports
             // Free memory, GC handles.
             NativeOverlapped* overlappedPtr = afsar._overlapped;
             if (overlappedPtr != null)
-                Overlapped.Free(overlappedPtr);
+            {
+                // Legacy behavior as indicated by tests (e.g.: System.IO.Ports.Tests.SerialStream_EndWrite.EndWriteAfterSerialStreamClose)
+                // expects to be able to call EndWrite after Close/Dispose - even if disposed _threadPoolBinding can free the
+                // native overlapped.
+                _threadPoolBinding.FreeNativeOverlapped(overlappedPtr);
+            }
 
             // Now check for any error during the write.
             if (afsar._errorCode != 0)
@@ -1396,7 +1403,6 @@ namespace System.IO.Ports
 
         unsafe private SerialStreamAsyncResult BeginReadCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
         {
-
             // Create and store async stream class library specific data in the
             // async result
             SerialStreamAsyncResult asyncResult = new SerialStreamAsyncResult();
@@ -1409,20 +1415,14 @@ namespace System.IO.Ports
             ManualResetEvent waitHandle = new ManualResetEvent(false);
             asyncResult._waitHandle = waitHandle;
 
-            // Create a managed overlapped class
-            // We will set the file offsets later
-            Overlapped overlapped = new Overlapped(0, 0, IntPtr.Zero, asyncResult);
-
-            // Pack the Overlapped class, and store it in the async result
-            NativeOverlapped* intOverlapped = overlapped.Pack(s_IOCallback, array);
+            NativeOverlapped* intOverlapped = _threadPoolBinding.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
 
             asyncResult._overlapped = intOverlapped;
 
             // queue an async ReadFile operation and pass in a packed overlapped
             //int r = ReadFile(_handle, array, numBytes, null, intOverlapped);
             int hr = 0;
-            int r = ReadFileNative(array, offset, numBytes,
-             intOverlapped, out hr);
+            int r = ReadFileNative(array, offset, numBytes, intOverlapped, out hr);
 
             // ReadFile, the OS version, will return 0 on failure.  But
             // my ReadFileNative wrapper returns -1.  My wrapper will return
@@ -1462,12 +1462,7 @@ namespace System.IO.Ports
             ManualResetEvent waitHandle = new ManualResetEvent(false);
             asyncResult._waitHandle = waitHandle;
 
-            // Create a managed overlapped class
-            // We will set the file offsets later
-            Overlapped overlapped = new Overlapped(0, 0, IntPtr.Zero, asyncResult);
-
-            // Pack the Overlapped class, and store it in the async result
-            NativeOverlapped* intOverlapped = overlapped.Pack(s_IOCallback, array);
+            NativeOverlapped* intOverlapped = _threadPoolBinding.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
 
             asyncResult._overlapped = intOverlapped;
 
@@ -1603,14 +1598,11 @@ namespace System.IO.Ports
         // This is a the callback prompted when a thread completes any async I/O operation.
         unsafe private static void AsyncFSCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
         {
-            // Unpack overlapped
-            Overlapped overlapped = Overlapped.Unpack(pOverlapped);
-
             // Extract async the result from overlapped structure
             SerialStreamAsyncResult asyncResult =
-                (SerialStreamAsyncResult)overlapped.AsyncResult;
-            asyncResult._numBytes = (int)numBytes;
+                (SerialStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
 
+            asyncResult._numBytes = (int)numBytes;
             asyncResult._errorCode = (int)errorCode;
 
             // Call the user-provided callback.  Note that it can and often should
@@ -1642,6 +1634,7 @@ namespace System.IO.Ports
             private WeakReference streamWeakReference;
             internal ManualResetEvent waitCommEventWaitHandle = new ManualResetEvent(false);
             private SafeFileHandle handle = null;
+            private ThreadPoolBoundHandle threadPoolBinding = null;
             private bool isAsync;
             internal bool endEventLoop;
             private int eventsOccurred;
@@ -1658,6 +1651,7 @@ namespace System.IO.Ports
             internal unsafe EventLoopRunner(SerialStream stream)
             {
                 handle = stream._handle;
+                threadPoolBinding = stream._threadPoolBinding;
                 streamWeakReference = new WeakReference(stream);
 
                 callErrorEvents = new WaitCallback(CallErrorEvents);
@@ -1703,9 +1697,8 @@ namespace System.IO.Ports
                         asyncResult._waitHandle = waitCommEventWaitHandle;
 
                         waitCommEventWaitHandle.Reset();
-                        Overlapped overlapped = new Overlapped(0, 0, waitCommEventWaitHandle.SafeWaitHandle.DangerousGetHandle(), asyncResult);
-                        // Pack the Overlapped class, and store it in the async result
-                        intOverlapped = overlapped.Pack(freeNativeOverlappedCallback, null);
+                        intOverlapped = threadPoolBinding.AllocateNativeOverlapped(freeNativeOverlappedCallback, asyncResult, null);
+                        intOverlapped->EventHandle = waitCommEventWaitHandle.SafeWaitHandle.DangerousGetHandle();
                     }
 
                     fixed (int* eventsOccurredPtr = &eventsOccurred)
@@ -1763,7 +1756,7 @@ namespace System.IO.Ports
                     if (isAsync)
                     {
                         if (Interlocked.Decrement(ref asyncResult._numBytes) == 0)
-                            Overlapped.Free(intOverlapped);
+                            threadPoolBinding.FreeNativeOverlapped(intOverlapped);
                     }
                 } // while (!ShutdownLoop)
 
@@ -1771,21 +1764,18 @@ namespace System.IO.Ports
                 {
                     // the rest will be handled in Dispose()
                     endEventLoop = true;
-                    Overlapped.Free(intOverlapped);
+                    threadPoolBinding.FreeNativeOverlapped(intOverlapped);
                 }
             }
 
             private unsafe void FreeNativeOverlappedCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                // Unpack overlapped
-                Overlapped overlapped = Overlapped.Unpack(pOverlapped);
-
                 // Extract the async result from overlapped structure
-                SerialStreamAsyncResult asyncResult =
-                    (SerialStreamAsyncResult)overlapped.AsyncResult;
+                SerialStreamAsyncResult asyncResult = 
+                    (SerialStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
 
                 if (Interlocked.Decrement(ref asyncResult._numBytes) == 0)
-                    Overlapped.Free(pOverlapped);
+                    threadPoolBinding.FreeNativeOverlapped(pOverlapped);
             }
 
             private void CallEvents(int nativeEvents)
@@ -1804,7 +1794,7 @@ namespace System.IO.Ports
                         // We don't want to throw an exception from the background thread which is un-catchable and hence tear down the process.
                         // At present we don't have a first class event that we can raise for this class of fatal errors. One possibility is 
                         // to overload SeralErrors event to include another enum (perhaps CE_IOE) that we can use for this purpose. 
-                        // In the absene of that, it is better to eat this error silently than tearing down the process (lesser of the evil). 
+                        // In the absence of that, it is better to eat this error silently than tearing down the process (lesser of the evil). 
                         // This uncleared comm error will most likely blow up when the device is accessed by other APIs (such as Read) on the 
                         // main thread and hence become known. It is bit roundabout but acceptable.  
                         //  

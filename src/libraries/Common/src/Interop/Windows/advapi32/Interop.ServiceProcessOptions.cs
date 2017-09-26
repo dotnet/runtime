@@ -2,13 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Runtime.InteropServices;
+
 internal partial class Interop
 {
     internal partial class Advapi32
     {
         internal partial class AcceptOptions
         {
+            internal const int ACCEPT_POWEREVENT = 0x00000040;
             internal const int ACCEPT_PAUSE_CONTINUE = 0x00000002;
+            internal const int ACCEPT_SESSIONCHANGE = 0x00000080;
             internal const int ACCEPT_SHUTDOWN = 0x00000004;
             internal const int ACCEPT_STOP = 0x00000001;
         }
@@ -16,8 +21,19 @@ internal partial class Interop
         internal partial class ControlOptions
         {
             internal const int CONTROL_CONTINUE = 0x00000003;
+            internal const int CONTROL_INTERROGATE = 0x00000004;
             internal const int CONTROL_PAUSE = 0x00000002;
+            internal const int CONTROL_POWEREVENT = 0x0000000D;
+            internal const int CONTROL_SESSIONCHANGE = 0x0000000E;
+            internal const int CONTROL_SHUTDOWN = 0x00000005;
             internal const int CONTROL_STOP = 0x00000001;
+        }
+
+        internal partial class ServiceConfigOptions
+        {
+            internal const int SERVICE_CONFIG_DESCRIPTION = 0x00000001;
+            internal const int SERVICE_CONFIG_FAILURE_ACTIONS = 0x00000002;
+            internal const int SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 0x00000003;
         }
 
         internal partial class ServiceOptions
@@ -44,6 +60,7 @@ internal partial class Interop
                 SERVICE_INTERROGATE |
                 SERVICE_USER_DEFINED_CONTROL;
 
+            internal const int STANDARD_RIGHTS_DELETE = 0x00010000;
             internal const int STANDARD_RIGHTS_REQUIRED = 0x000F0000;
         }
 
@@ -68,6 +85,30 @@ internal partial class Interop
                 SERVICE_TYPE_ADAPTER |
                 SERVICE_TYPE_DRIVER |
                 SERVICE_TYPE_INTERACTIVE_PROCESS;
+        }
+
+        internal partial class ServiceAccessOptions
+        {
+            internal const int ACCESS_TYPE_CHANGE_CONFIG = 0x0002;
+            internal const int ACCESS_TYPE_ENUMERATE_DEPENDENTS = 0x0008;
+            internal const int ACCESS_TYPE_INTERROGATE = 0x0080;
+            internal const int ACCESS_TYPE_PAUSE_CONTINUE = 0x0040;
+            internal const int ACCESS_TYPE_QUERY_CONFIG = 0x0001;
+            internal const int ACCESS_TYPE_QUERY_STATUS = 0x0004;
+            internal const int ACCESS_TYPE_START = 0x0010;
+            internal const int ACCESS_TYPE_STOP = 0x0020;
+            internal const int ACCESS_TYPE_USER_DEFINED_CONTROL = 0x0100;
+            internal const int ACCESS_TYPE_ALL =
+                ServiceOptions.STANDARD_RIGHTS_REQUIRED |
+                ACCESS_TYPE_QUERY_CONFIG |
+                ACCESS_TYPE_CHANGE_CONFIG |
+                ACCESS_TYPE_QUERY_STATUS |
+                ACCESS_TYPE_ENUMERATE_DEPENDENTS |
+                ACCESS_TYPE_START |
+                ACCESS_TYPE_STOP |
+                ACCESS_TYPE_PAUSE_CONTINUE |
+                ACCESS_TYPE_INTERROGATE |
+                ACCESS_TYPE_USER_DEFINED_CONTROL;
         }
 
         internal partial class ServiceStartModes
@@ -104,11 +145,57 @@ internal partial class Interop
             internal const int STATE_STOP_PENDING = 0x00000003;
         }
 
+        internal partial class ServiceStartErrorModes
+        {
+            internal const int ERROR_CONTROL_CRITICAL = 0x00000003;
+            internal const int ERROR_CONTROL_IGNORE = 0x00000000;
+            internal const int ERROR_CONTROL_NORMAL = 0x00000001;
+            internal const int ERROR_CONTROL_SEVERE = 0x00000002;
+        }
+
         internal partial class ServiceControllerOptions
         {
-            internal const int SC_MANAGER_CONNECT = 0x0001;
-            internal const int SC_MANAGER_ENUMERATE_SERVICE = 0x0004;
             internal const int SC_ENUM_PROCESS_INFO = 0;
+            internal const int SC_MANAGER_CONNECT = 0x0001;
+            internal const int SC_MANAGER_CREATE_SERVICE = 0x0002;
+            internal const int SC_MANAGER_ENUMERATE_SERVICE = 0x0004;
+            internal const int SC_MANAGER_LOCK = 0x0008;
+            internal const int SC_MANAGER_MODIFY_BOOT_CONFIG = 0x0020;
+            internal const int SC_MANAGER_QUERY_LOCK_STATUS = 0x0010;
+            internal const int SC_MANAGER_ALL =
+                ServiceOptions.STANDARD_RIGHTS_REQUIRED |
+                SC_MANAGER_CONNECT |
+                SC_MANAGER_CREATE_SERVICE |
+                SC_MANAGER_ENUMERATE_SERVICE |
+                SC_MANAGER_LOCK |
+                SC_MANAGER_QUERY_LOCK_STATUS |
+                SC_MANAGER_MODIFY_BOOT_CONFIG;
+        }
+
+        internal partial class PowerBroadcastStatus
+        {
+            internal const int PBT_APMBATTERYLOW = 0x0009;
+            internal const int PBT_APMOEMEVENT = 0x000B;
+            internal const int PBT_APMPOWERSTATUSCHANGE = 0x000A;
+            internal const int PBT_APMQUERYSUSPEND = 0x0000;
+            internal const int PBT_APMQUERYSUSPENDFAILED = 0x0002;
+            internal const int PBT_APMRESUMEAUTOMATIC = 0x0012;
+            internal const int PBT_APMRESUMECRITICAL = 0x0006;
+            internal const int PBT_APMRESUMESUSPEND = 0x0007;
+            internal const int PBT_APMSUSPEND = 0x0004;
+        }
+
+        internal partial class SessionStateChange
+        {
+            internal const int WTS_CONSOLE_CONNECT = 0x1;
+            internal const int WTS_CONSOLE_DISCONNECT = 0x2;
+            internal const int WTS_REMOTE_CONNECT = 0x3;
+            internal const int WTS_REMOTE_DISCONNECT = 0x4;
+            internal const int WTS_SESSION_LOGON = 0x5;
+            internal const int WTS_SESSION_LOGOFF = 0x6;
+            internal const int WTS_SESSION_LOCK = 0x7;
+            internal const int WTS_SESSION_UNLOCK = 0x8;
+            internal const int WTS_SESSION_REMOTE_CONTROL = 0x9;
         }
     }
 }

@@ -21,7 +21,7 @@ namespace System.Threading
     ///    whether there were any intermediate writes. Downgrading from a writer lock restores the state of the lock.
     /// 7. Supports functionality to release all locks owned by a thread (see <see cref="ReleaseLock"/>).
     ///    <see cref="RestoreLock(ref LockCookie)"/> restores the lock state.
-    /// 8. Recovers from most common failures such as creation of events. In other words, the lock mainitains consistent
+    /// 8. Recovers from most common failures such as creation of events. In other words, the lock maintains consistent
     ///    internal state and remains usable
     /// </summary>
     public sealed class ReaderWriterLock : CriticalFinalizerObject

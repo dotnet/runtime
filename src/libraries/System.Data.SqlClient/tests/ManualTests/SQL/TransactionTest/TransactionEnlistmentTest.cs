@@ -62,7 +62,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 txScope.Complete();
             }
 
-            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            DataTable result = DataTestUtility.RunQuery(ConnectionString, $"select col2 from {TestTableName} where col1 = {InputCol1}");
             Assert.True(result.Rows.Count == 1);
             Assert.True(string.Equals(result.Rows[0][0], InputCol2));
         }
@@ -86,7 +86,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
 
-            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            DataTable result = DataTestUtility.RunQuery(ConnectionString, $"select col2 from {TestTableName} where col1 = {InputCol1}");
             Assert.True(result.Rows.Count == 0);
         }
 
@@ -110,7 +110,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
 
-            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            DataTable result = DataTestUtility.RunQuery(ConnectionString, $"select col2 from {TestTableName} where col1 = {InputCol1}");
             Assert.True(result.Rows.Count == 0);
         }
 
@@ -133,7 +133,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
 
-            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            DataTable result = DataTestUtility.RunQuery(ConnectionString, $"select col2 from {TestTableName} where col1 = {InputCol1}");
             Assert.True(result.Rows.Count == 1);
             Assert.True(string.Equals(result.Rows[0][0], InputCol2));
         }
@@ -159,7 +159,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
 
-            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            DataTable result = DataTestUtility.RunQuery(ConnectionString, $"select col2 from {TestTableName} where col1 = {InputCol1}");
             Assert.True(result.Rows.Count == 1);
             Assert.True(string.Equals(result.Rows[0][0], InputCol2));
         }
@@ -190,53 +190,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         private static void RunTestFormat(Action testCase)
         {
-            TestTableName = GenerateTableName();
-            RunNonQuery($"create table {TestTableName} (col1 int, col2 text)");
+            TestTableName = DataTestUtility.GenerateTableName();
+            DataTestUtility.RunNonQuery(ConnectionString, $"create table {TestTableName} (col1 int, col2 text)");
             try
             {
                 testCase();
             }
             finally
             {
-                RunNonQuery($"drop table {TestTableName}");
+                DataTestUtility.RunNonQuery(ConnectionString, $"drop table {TestTableName}");
             }
-        }
-
-        private static void RunNonQuery(string sql)
-        {
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
-            {
-                connection.Open();
-                using (SqlCommand command = connection.CreateCommand())
-                {
-                    command.CommandText = sql;
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private static DataTable RunQuery(string sql)
-        {
-            DataTable result = null;
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
-            {
-                connection.Open();
-                using (SqlCommand command = connection.CreateCommand())
-                {
-                    command.CommandText = sql;
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        result = new DataTable();
-                        result.Load(reader);
-                    }
-                }
-            }
-            return result;
-        }
-
-        private static string GenerateTableName()
-        {
-            return string.Format("TEST_{0}{1}{2}", Environment.GetEnvironmentVariable("ComputerName"), Environment.TickCount, Guid.NewGuid()).Replace('-', '_');
         }
     }
 }

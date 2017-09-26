@@ -2,6 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Authors:
+//   Patrik Torstensson (Patrik.Torstensson@labs2.com)
+//   Wictor Wilén (decode/encode functions) (wictor@ibizkit.se)
+//   Tim Coleman (tim@timcoleman.com)
+//   Gonzalo Paniagua Javier (gonzalo@ximian.com)
+//
+// Copyright (C) 2005-2010 Novell, Inc (http://www.novell.com)
+//
+// Permission is hereby granted, free of charge, to any person obtaining
+// a copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+
 using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
@@ -44,47 +72,37 @@ namespace System.Web
         public static NameValueCollection ParseQueryString(string query, Encoding encoding)
         {
             if (query == null)
+            {
                 throw new ArgumentNullException(nameof(query));
+            }
 
             if (encoding == null)
+            {
                 throw new ArgumentNullException(nameof(encoding));
+            }
 
-            if ((query.Length > 0) && (query[0] == '?'))
-                query = query.Substring(1);
+            HttpQSCollection result = new HttpQSCollection();
+            int queryLength = query.Length;
+            int namePos = queryLength > 0 && query[0] == '?' ? 1 : 0;
+            if (queryLength == namePos)
+            {
+                return result;
+            }
 
-            var result = new HttpQSCollection();
-            ParseQueryString(query, encoding, result);
-            return result;
-        }
-
-        private static void ParseQueryString(string query, Encoding encoding, NameValueCollection result)
-        {
-            if (query.Length == 0)
-                return;
-
-            var decoded = HtmlDecode(query);
-            var decodedLength = decoded.Length;
-            var namePos = 0;
-            var first = true;
-            while (namePos <= decodedLength)
+            while (namePos <= queryLength)
             {
                 int valuePos = -1, valueEnd = -1;
-                for (var q = namePos; q < decodedLength; q++)
-                    if ((valuePos == -1) && (decoded[q] == '='))
+                for (int q = namePos; q < queryLength; q++)
+                {
+                    if (valuePos == -1 && query[q] == '=')
                     {
                         valuePos = q + 1;
                     }
-                    else if (decoded[q] == '&')
+                    else if (query[q] == '&')
                     {
                         valueEnd = q;
                         break;
                     }
-
-                if (first)
-                {
-                    first = false;
-                    if (decoded[namePos] == '?')
-                        namePos++;
                 }
 
                 string name;
@@ -95,23 +113,20 @@ namespace System.Web
                 }
                 else
                 {
-                    name = UrlDecode(decoded.Substring(namePos, valuePos - namePos - 1), encoding);
+                    name = UrlDecode(query.Substring(namePos, valuePos - namePos - 1), encoding);
                 }
+
                 if (valueEnd < 0)
                 {
-                    namePos = -1;
-                    valueEnd = decoded.Length;
+                    valueEnd = query.Length;
                 }
-                else
-                {
-                    namePos = valueEnd + 1;
-                }
-                var value = UrlDecode(decoded.Substring(valuePos, valueEnd - valuePos), encoding);
 
+                namePos = valueEnd + 1;
+                string value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
                 result.Add(name, value);
-                if (namePos == -1)
-                    break;
             }
+
+            return result;
         }
 
         public static string HtmlDecode(string s)

@@ -46,6 +46,14 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) { throw CreateArgumentOutOfRangeException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentOutOfRangeException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
+
+        internal static void ThrowInvalidOperationException_OutstandingReferences() { throw CreateInvalidOperationException_OutstandingReferences(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateInvalidOperationException_OutstandingReferences() { return new InvalidOperationException(SR.OutstandingReferences); }
+
+        internal static void ThrowObjectDisposedException_MemoryDisposed(string objectName) { throw CreateObjectDisposedException_MemoryDisposed(objectName); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateObjectDisposedException_MemoryDisposed(string objectName) { return new ObjectDisposedException(objectName, SR.MemoryDisposed); }
     }
 
     internal enum ExceptionArgument
@@ -55,5 +63,6 @@ namespace System
         start,
         text,
         obj,
+        ownedMemory
     }
 }

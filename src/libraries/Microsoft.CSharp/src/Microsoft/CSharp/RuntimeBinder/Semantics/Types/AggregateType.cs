@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // Represents a generic constructed (or instantiated) type. Parent is the AggregateSymbol.
     // ----------------------------------------------------------------------------
 
-    internal partial class AggregateType : CType
+    internal sealed class AggregateType : CType
     {
         private TypeArray _pTypeArgsThis;
         private TypeArray _pTypeArgsAll;         // includes args from outer types
@@ -127,34 +127,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             TypeArray pCheckedOuterTypeArgs = outerTypeArgs;
             TypeManager pTypeManager = getAggregate().GetTypeManager();
-
-            if (_pTypeArgsThis.Count > 0 && AreAllTypeArgumentsUnitTypes(_pTypeArgsThis))
-            {
-                if (outerTypeArgs.Count > 0 && !AreAllTypeArgumentsUnitTypes(outerTypeArgs))
-                {
-                    // We have open placeholder types in our type, but not the parent.
-                    pCheckedOuterTypeArgs = pTypeManager.CreateArrayOfUnitTypes(outerTypeArgs.Count);
-                }
-            }
             _pTypeArgsAll = pTypeManager.ConcatenateTypeArrays(pCheckedOuterTypeArgs, _pTypeArgsThis);
-        }
-
-        private bool AreAllTypeArgumentsUnitTypes(TypeArray typeArray)
-        {
-            if (typeArray.Count == 0)
-            {
-                return true;
-            }
-
-            for (int i = 0; i < typeArray.Count; i++)
-            {
-                Debug.Assert(typeArray[i] != null);
-                if (!typeArray[i].IsOpenTypePlaceholderType())
-                {
-                    return false;
-                }
-            }
-            return true;
         }
 
         public TypeArray GetTypeArgsThis()
@@ -185,7 +158,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 for (int i = 0; i < ifaces.Count; i++)
                 {
-                    AggregateType type = ifaces[i].AsAggregateType();
+                    AggregateType type = ifaces[i] as AggregateType;
                     Debug.Assert(type.isInterfaceType());
 
                     if (type.IsCollectionType())

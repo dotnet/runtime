@@ -264,7 +264,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
                 // Compiler can generate temporaries or re-order so just check the ones we expect are there.
                 // (They could get optimized away too. If that happens in practice, change this test to use hard-coded signatures.)
-                Assert.Contains("uint8& pinned", localTypes);
+                Assert.Contains("uint8[] pinned", localTypes);
                 Assert.Contains("uint8[]", localTypes);
             }
         }

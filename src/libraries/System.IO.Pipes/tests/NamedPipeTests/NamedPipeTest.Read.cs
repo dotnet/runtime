@@ -67,8 +67,7 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
 
-        // InOut pipes can be written/read from either direction
-        public override void WriteToReadOnlyPipe_Throws_NotSupportedException() { }
+        public override bool SupportsBidirectionalReadingWriting => true;
     }
     
     [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
@@ -90,7 +89,6 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
 
-        // InOut pipes can be written/read from either direction
-        public override void WriteToReadOnlyPipe_Throws_NotSupportedException() { }
+        public override bool SupportsBidirectionalReadingWriting => true;
     }
 }
