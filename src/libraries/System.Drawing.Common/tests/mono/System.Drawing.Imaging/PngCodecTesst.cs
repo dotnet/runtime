@@ -44,7 +44,7 @@ namespace MonoTests.System.Drawing.Imaging
     {
 
         /* Get suffix to add to the filename */
-        internal string getOutSufix()
+        internal string GetOutSufix()
         {
             string s;
 
@@ -205,6 +205,8 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(bmp.Width, data.Width);
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(864, data.Stride);
+                    Assert.Equal(384, data.Height);
+
                     int size = data.Height * data.Stride;
                     unsafe
                     {
@@ -371,6 +373,8 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(bmp.Width, data.Width);
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(300, data.Stride);
+                    Assert.Equal(100, data.Height);
+
                     int size = data.Height * data.Stride;
                     unsafe
                     {
@@ -639,7 +643,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void Save(PixelFormat original, PixelFormat expected, bool colorCheck)
         {
-            string sOutFile = String.Format("linerect{0}-{1}.png", getOutSufix(), expected.ToString());
+            string sOutFile = String.Format("linerect{0}-{1}.png", GetOutSufix(), expected.ToString());
 
             // Save		
             Bitmap bmp = new Bitmap(100, 100, original);
