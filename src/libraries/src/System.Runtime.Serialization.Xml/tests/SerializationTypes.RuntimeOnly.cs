@@ -4360,3 +4360,30 @@ public class TypeWithCollectionAndDateTimeOffset
 
     public DateTimeOffset DateTimeOffset { get; set; }
 }
+
+[KnownType(typeof(bool))]
+[KnownType(typeof(byte[]))]
+[KnownType(typeof(char))]
+[KnownType(typeof(DateTime))]
+[KnownType(typeof(decimal))]
+[KnownType(typeof(double))]
+[KnownType(typeof(float))]
+[KnownType(typeof(Guid))]
+[KnownType(typeof(int))]
+[KnownType(typeof(long))]
+[KnownType(typeof(object))]
+[KnownType(typeof(XmlQualifiedName))]
+[KnownType(typeof(short))]
+[KnownType(typeof(sbyte))]
+[KnownType(typeof(string))]
+[KnownType(typeof(TimeSpan))]
+[KnownType(typeof(byte))]
+[KnownType(typeof(uint))]
+[KnownType(typeof(ulong))]
+[KnownType(typeof(ushort))]
+[KnownType(typeof(Uri))]
+[CollectionDataContract]
+public class TypeWithPrimitiveKnownTypes : List<object>
+{
+
+}
