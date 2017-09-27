@@ -1316,7 +1316,10 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             if (intType == TYP_LONG)
             {
                 assert(info->numRegs == 2);
-                intArg->AsMultiRegOp()->gtOtherReg = REG_NEXT(info->regNum);
+                regNumber regNext = REG_NEXT(info->regNum);
+                // double type arg regs can only be either r0:r1 or r2:r3.
+                assert((info->regNum == REG_R0 && regNext == REG_R1) || (info->regNum == REG_R2 && regNext == REG_R3));
+                intArg->AsMultiRegOp()->gtOtherReg = regNext;
             }
 #endif // ARM_SOFTFP
 
