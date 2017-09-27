@@ -9,14 +9,14 @@ namespace System.Diagnostics
     /// </summary>    
     public struct CounterSample
     {
-        private long _rawValue;
-        private long _baseValue;
-        private long _timeStamp;
-        private long _counterFrequency;
-        private PerformanceCounterType _counterType;
-        private long _timeStamp100nSec;
-        private long _systemFrequency;
-        private long _counterTimeStamp;
+        private readonly long _rawValue;
+        private readonly long _baseValue;
+        private readonly long _timeStamp;
+        private readonly long _counterFrequency;
+        private readonly PerformanceCounterType _counterType;
+        private readonly long _timeStamp100nSec;
+        private readonly long _systemFrequency;
+        private readonly long _counterTimeStamp;
 
         public static CounterSample Empty = new CounterSample(0, 0, 0, 0, 0, 0, PerformanceCounterType.NumberOfItems32);
 

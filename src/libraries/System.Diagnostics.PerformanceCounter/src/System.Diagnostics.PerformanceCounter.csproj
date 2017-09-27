@@ -6,7 +6,7 @@
     <ProjectGuid>{F55047F8-E47B-46E3-B221-C23595AFE168}</ProjectGuid>
     <RootNamespace>System.Diagnostics.PerformanceCounter</RootNamespace>
     <AssemblyName>System.Diagnostics.PerformanceCounter</AssemblyName>
-    <DefineConstants Condition="'$(TargetGroup)' != 'uap'">$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_PerfCounters</GeneratePlatformNotSupportedAssemblyMessage>
@@ -154,8 +154,6 @@
     <Reference Include="System.Diagnostics.FileVersionInfo" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Diagnostics.TextWriterTraceListener" />
-    <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.MemoryMappedFiles" />
     <Reference Include="System.Resources.ResourceManager" />

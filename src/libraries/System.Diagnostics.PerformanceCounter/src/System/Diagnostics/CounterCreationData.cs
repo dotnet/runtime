@@ -35,7 +35,7 @@ namespace System.Diagnostics
             set
             {
                 if (!Enum.IsDefined(typeof(PerformanceCounterType), value))
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(PerformanceCounterType));
+                    throw new InvalidEnumArgumentException(nameof(PerformanceCounterType), (int)value, typeof(PerformanceCounterType));
 
                 _counterType = value;
             }
