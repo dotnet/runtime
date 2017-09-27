@@ -160,7 +160,7 @@ FCIMPLEND
 /*=====================================ModF=====================================
 **
 ==============================================================================*/
-FCIMPL2_VV(float, COMSingle::ModF, float x, float* intptr)
+FCIMPL2_VI(float, COMSingle::ModF, float x, float* intptr)
     FCALL_CONTRACT;
 
     return (float)modff(x, intptr);

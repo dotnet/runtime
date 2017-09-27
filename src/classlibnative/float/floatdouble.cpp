@@ -162,7 +162,7 @@ FCIMPLEND
 /*=====================================ModF=====================================
 **
 ==============================================================================*/
-FCIMPL2_VV(double, COMDouble::ModF, double x, double* intptr)
+FCIMPL2_VI(double, COMDouble::ModF, double x, double* intptr)
     FCALL_CONTRACT;
 
     return (double)modf(x, intptr);
