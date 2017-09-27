@@ -2623,6 +2623,57 @@ namespace System.Threading.Tasks
             }
         }
 
+        /// <summary>
+        /// Sets a continuation onto the <see cref="System.Threading.Tasks.Task"/>.
+        /// The continuation is scheduled to run in the current synchronization context is one exists, 
+        /// otherwise in the current task scheduler.
+        /// </summary>
+        /// <param name="stateMachineBox">The action to invoke when the <see cref="System.Threading.Tasks.Task"/> has completed.</param>
+        /// <param name="continueOnCapturedContext">
+        /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
+        /// </param>
+        /// <exception cref="System.InvalidOperationException">The awaiter was not properly initialized.</exception>
+        internal void UnsafeSetContinuationForAwait(IAsyncStateMachineBox stateMachineBox, bool continueOnCapturedContext)
+        {
+            Debug.Assert(stateMachineBox != null);
+
+            // If the caller wants to continue on the current context/scheduler and there is one,
+            // fall back to using the state machine's delegate.
+            if (continueOnCapturedContext)
+            {
+                SynchronizationContext syncCtx = SynchronizationContext.CurrentNoFlow;
+                if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+                {
+                    Action moveNextAction = stateMachineBox.MoveNextAction;
+                    if (!AddTaskContinuation(new SynchronizationContextAwaitTaskContinuation(syncCtx, moveNextAction, flowExecutionContext: false), addBeforeOthers: false))
+                    {
+                        AwaitTaskContinuation.UnsafeScheduleAction(moveNextAction, this);
+                    }
+                    return;
+                }
+                else
+                {
+                    TaskScheduler scheduler = TaskScheduler.InternalCurrent;
+                    if (scheduler != null && scheduler != TaskScheduler.Default)
+                    {
+                        Action moveNextAction = stateMachineBox.MoveNextAction;
+                        if (!AddTaskContinuation(new TaskSchedulerAwaitTaskContinuation(scheduler, moveNextAction, flowExecutionContext: false), addBeforeOthers: false))
+                        {
+                            AwaitTaskContinuation.UnsafeScheduleAction(moveNextAction, this);
+                        }
+                        return;
+                    }
+                }
+            }
+
+            // Otherwise, add the state machine box directly as the ITaskCompletionAction continuation.
+            // If we're unable to because the task has already completed, queue the delegate.
+            if (!AddTaskContinuation(stateMachineBox, addBeforeOthers: false))
+            {
+                AwaitTaskContinuation.UnsafeScheduleAction(stateMachineBox.MoveNextAction, this);
+            }
+        }
+
         /// <summary>Creates an awaitable that asynchronously yields back to the current context when awaited.</summary>
         /// <returns>
         /// A context that, when awaited, will asynchronously transition back into the current context at the 
