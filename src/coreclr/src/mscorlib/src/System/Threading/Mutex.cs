@@ -105,7 +105,7 @@ namespace System.Threading
             {
                 mutexHandle.SetHandleAsInvalid();
 #if PLATFORM_UNIX
-                if (errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
+                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
                     throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Sys.MaxName), nameof(name));
 #endif
