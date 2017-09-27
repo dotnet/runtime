@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace Microsoft.ServiceModel.Syndication
+namespace System.ServiceModel.Syndication
 {
 
     using System;

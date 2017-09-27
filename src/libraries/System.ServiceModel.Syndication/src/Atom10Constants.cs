@@ -4,7 +4,7 @@
 
 
 
-namespace Microsoft.ServiceModel.Syndication
+namespace System.ServiceModel.Syndication
 {
     public static class Atom10Constants
     {

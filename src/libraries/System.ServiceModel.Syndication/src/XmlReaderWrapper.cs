@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace Microsoft.ServiceModel.Syndication
+namespace System.ServiceModel.Syndication
 {
     internal class XmlReaderWrapper : XmlReader
     {

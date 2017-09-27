@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.ServiceModel.Syndication
+namespace System.ServiceModel.Syndication
 {
-    using Microsoft.ServiceModel;
+    using System.ServiceModel;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
