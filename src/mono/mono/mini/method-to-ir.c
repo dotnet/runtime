@@ -11838,7 +11838,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cfg->dyn_call_var->flags |= MONO_INST_VOLATILE;
 				}
 
-				/* Has to use a call inst since it local regalloc expects it */
+				/* Has to use a call inst since local regalloc expects it */
 				MONO_INST_NEW_CALL (cfg, call, OP_DYN_CALL);
 				ins = (MonoInst*)call;
 				sp -= 2;
@@ -11847,6 +11847,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (cfg->cbb, ins);
 
 				cfg->param_area = MAX (cfg->param_area, cfg->backend->dyn_call_param_area);
+				/* OP_DYN_CALL might need to allocate a dynamically sized param area */
+				cfg->flags |= MONO_CFG_HAS_ALLOCA;
 
 				ip += 2;
 				inline_costs += 10 * num_calls++;

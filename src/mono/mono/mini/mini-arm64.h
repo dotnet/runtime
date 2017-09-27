@@ -89,16 +89,15 @@ typedef struct {
 #define PARAM_REGS 8
 #define FP_PARAM_REGS 8
 
-#define DYN_CALL_STACK_ARGS 6
-
 typedef struct {
-	/* The +1 is for r8 */
-	mgreg_t regs [PARAM_REGS + 1 + DYN_CALL_STACK_ARGS];
 	mgreg_t res, res2;
 	guint8 *ret;
 	double fpregs [FP_PARAM_REGS];
-	int n_fpargs, n_fpret;
+	int n_fpargs, n_fpret, n_stackargs;
 	guint8 buffer [256];
+	/* This should come last as the structure is dynamically extended */
+	/* The +1 is for r8 */
+	mgreg_t regs [PARAM_REGS + 1];
 } DynCallArgs;
 
 typedef struct {
@@ -141,7 +140,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
-#define MONO_ARCH_DYN_CALL_PARAM_AREA (DYN_CALL_STACK_ARGS * 8)
+#define MONO_ARCH_DYN_CALL_PARAM_AREA 0
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
