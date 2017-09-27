@@ -1,6 +1,6 @@
 @if not defined _echo @echo off
 
-REM build.cmd will bootstrap the cli and ultimately call "dotnet build"
+REM build.cmd will bootstrap the cli and ultimately call "dotnet pack"
 
-@call %~dp0dotnet.cmd build %~dp0linker.sln %*
+@call %~dp0dotnet.cmd pack %~dp0integration\ILLink.Tasks\ILLink.Tasks.csproj %*
 @exit /b %ERRORLEVEL%
