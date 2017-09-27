@@ -503,7 +503,6 @@ struct _MonoDynamicImage {
 	GHashTable *typespec;
 	GHashTable *typeref;
 	GHashTable *handleref;
-	MonoGHashTable *handleref_managed;
 	MonoGHashTable *tokens;
 	GHashTable *blob_cache;
 	GHashTable *standalonesig_cache;
