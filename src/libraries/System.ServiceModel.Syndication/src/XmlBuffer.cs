@@ -4,7 +4,6 @@
 
 namespace Microsoft.ServiceModel
 {
-    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.Generic;
     using System.IO;

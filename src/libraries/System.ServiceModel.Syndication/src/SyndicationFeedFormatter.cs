@@ -6,7 +6,6 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Globalization;
     using System.Runtime.Serialization;
