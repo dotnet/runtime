@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26906.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceModel.Syndication", "src\System.ServiceModel.Syndication.csproj", "{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceModel.Syndication.Tests", "tests\System.ServiceModel.Syndication.Tests.csproj", "{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		netstandard-Debug|Any CPU = netstandard-Debug|Any CPU
+		netstandard-Release|Any CPU = netstandard-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C509160C-D427-4B6F-A515-169B6BB2B210}
+	EndGlobalSection
+EndGlobal
