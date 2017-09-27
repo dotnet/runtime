@@ -3,11 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{4B93E684-0630-45F4-8F63-6C7788C9892F}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BitmapTests.cs" />
     <Compile Include="BrushTests.cs" />
@@ -31,6 +28,12 @@
     <Compile Include="Imaging\ImageAttributesTests.cs" />
     <Compile Include="Imaging\MetafileTests.cs" />
     <Compile Include="Imaging\PropertyItemTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\BmpCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\GifCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\IconCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\JpegCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\PngCodecTesst.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\TiffCodecTests.cs" />
     <Compile Include="mono\System.Drawing\GraphicsTests.cs" />
     <Compile Include="mono\System.Imaging\MetafileTest.cs" />
     <Compile Include="PenTests.cs" />
