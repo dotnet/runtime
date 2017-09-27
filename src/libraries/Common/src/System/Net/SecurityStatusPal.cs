@@ -67,6 +67,7 @@ namespace System.Net
         SmartcardLogonRequired,
         UnsupportedPreauth,
         BadBinding,
-        DowngradeDetected
+        DowngradeDetected,
+        ApplicationProtocolMismatch
     }
 }

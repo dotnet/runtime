@@ -22,6 +22,7 @@ namespace System.Net
         private static readonly BidirectionalDictionary<Interop.SECURITY_STATUS, SecurityStatusPalErrorCode> s_statusDictionary = new BidirectionalDictionary<Interop.SECURITY_STATUS, SecurityStatusPalErrorCode>(StatusDictionarySize)
         {
             { Interop.SECURITY_STATUS.AlgorithmMismatch, SecurityStatusPalErrorCode.AlgorithmMismatch },
+            { Interop.SECURITY_STATUS.ApplicationProtocolMismatch, SecurityStatusPalErrorCode.ApplicationProtocolMismatch },
             { Interop.SECURITY_STATUS.BadBinding, SecurityStatusPalErrorCode.BadBinding },
             { Interop.SECURITY_STATUS.BufferNotEnough, SecurityStatusPalErrorCode.BufferNotEnough },
             { Interop.SECURITY_STATUS.CannotInstall, SecurityStatusPalErrorCode.CannotInstall },

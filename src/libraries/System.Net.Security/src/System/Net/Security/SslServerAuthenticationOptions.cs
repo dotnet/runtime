@@ -22,9 +22,9 @@ namespace System.Net.Security
 
         public bool ClientCertificateRequired { get; set; }
 
-        public IList<SslApplicationProtocol> ApplicationProtocols { get; }
+        public IList<SslApplicationProtocol> ApplicationProtocols { get; set; }
 
-        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get;set; }
+        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
 
         public X509Certificate ServerCertificate
         {
