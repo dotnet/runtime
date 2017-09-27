@@ -991,8 +991,8 @@ public:
 #define GTF_RELOP_ZTT               0x08000000 // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                                //               with explicit "loop test" in the header block.
 
-#define GTF_JCMP_EQ                 0x80000000 // GTF_JCMP_EQ  -- Branch on equalrather than not equal
-#define GTF_JCMP_TST                0x40000000 // GTF_JCMP_TST -- Use test rather than compare
+#define GTF_JCMP_EQ                 0x80000000 // GTF_JCMP_EQ  -- Branch on equal rather than not equal
+#define GTF_JCMP_TST                0x40000000 // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
 
 #define GTF_RET_MERGED              0x80000000 // GT_RETURN -- This is a return generated during epilog merging.
 
