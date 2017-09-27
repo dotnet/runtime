@@ -689,25 +689,24 @@ namespace System.Net.WebSockets
                     Debug.Assert(header.Opcode == MessageOpcode.Binary || header.Opcode == MessageOpcode.Text, $"Unexpected opcode {header.Opcode}");
 
                     // If there's no data to read, return an appropriate result.
-                    int bytesToRead = (int)Math.Min(payloadBuffer.Count, header.PayloadLength);
-                    if (bytesToRead == 0)
+                    if (header.PayloadLength == 0 || payloadBuffer.Count == 0)
                     {
                         _lastReceiveHeader = header;
                         return new WebSocketReceiveResult(
                             0,
                             header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                            header.PayloadLength == 0 ? header.Fin : false);
+                            header.Fin && header.PayloadLength == 0);
                     }
 
                     // Otherwise, read as much of the payload as we can efficiently, and upate the header to reflect how much data
                     // remains for future reads.
-
-                    if (_receiveBufferCount == 0)
+                    int bytesToCopy = Math.Min(payloadBuffer.Count, (int)Math.Min(header.PayloadLength, _receiveBuffer.Length));
+                    Debug.Assert(bytesToCopy > 0, $"Expected {nameof(bytesToCopy)} > 0");
+                    if (_receiveBufferCount < bytesToCopy)
                     {
-                        await EnsureBufferContainsAsync(1, cancellationToken, throwOnPrematureClosure: false).ConfigureAwait(false);
+                        await EnsureBufferContainsAsync(bytesToCopy, cancellationToken, throwOnPrematureClosure: true).ConfigureAwait(false);
                     }
 
-                    int bytesToCopy = Math.Min(bytesToRead, _receiveBufferCount);
                     if (_isServer)
                     {
                         _receivedMaskOffsetOffset = ApplyMask(_receiveBuffer, _receiveBufferOffset, header.Mask, _receivedMaskOffsetOffset, bytesToCopy);
@@ -727,7 +726,7 @@ namespace System.Net.WebSockets
                     return new WebSocketReceiveResult(
                         bytesToCopy,
                         header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                        bytesToCopy == 0 || (header.Fin && header.PayloadLength == 0));
+                        header.Fin && header.PayloadLength == 0);
                 }
             }
             catch (Exception exc)
