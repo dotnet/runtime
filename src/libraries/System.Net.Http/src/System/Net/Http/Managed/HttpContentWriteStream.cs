@@ -11,12 +11,9 @@ namespace System.Net.Http
 {
     internal abstract class HttpContentWriteStream : HttpContentStream
     {
-        protected HttpConnection _connection;
-
-        public HttpContentWriteStream(HttpConnection connection, CancellationToken cancellationToken)
+        public HttpContentWriteStream(HttpConnection connection, CancellationToken cancellationToken) : base(connection)
         {
             Debug.Assert(connection != null);
-            _connection = connection;
             RequestCancellationToken = cancellationToken;
         }
 
@@ -29,22 +26,9 @@ namespace System.Net.Http
         internal CancellationToken RequestCancellationToken { get; }
 
         public override bool CanRead => false;
-        public override bool CanSeek => false;
         public override bool CanWrite => true;
 
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get { throw new NotSupportedException(); }
-            set { throw new NotSupportedException(); }
-        }
-
         public override void Flush() => FlushAsync().GetAwaiter().GetResult();
-
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-
-        public override void SetLength(long value) => throw new NotSupportedException();
 
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
@@ -52,19 +36,5 @@ namespace System.Net.Http
             WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
 
         public abstract Task FinishAsync();
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (_connection != null)
-                {
-                    _connection.Dispose();
-                    _connection = null;
-                }
-            }
-
-            base.Dispose(disposing);
-        }
     }
 }
