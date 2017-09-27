@@ -16,7 +16,7 @@
           
   <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
     <ItemGroup>
-      <PackagesToShip Include="$(BinDir)/ForPublishing/*.nupkg" Exclude="$(BinDir)/ForPublishing/*.symbols.nupkg" />
+      <PackagesToShip Include="$(PublishDirectory)*.nupkg" Exclude="$(PublishDirectory)*.symbols.nupkg" />
       <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
       <ShippedNuGetPackage Include="@(PackagesToShip)" />
     </ItemGroup>
