@@ -1,12 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+VisualStudioVersion = 15.0.26923.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.PerformanceCounter", "ref\System.Diagnostics.PerformanceCounter.csproj", "{5BDC8641-E3EE-47B5-BE7B-2D2275402412}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.PerformanceCounter", "src\System.Diagnostics.PerformanceCounter.csproj", "{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.PerformanceCounter", "src\System.Diagnostics.PerformanceCounter.csproj", "{F55047F8-E47B-46E3-B221-C23595AFE168}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,31 +42,34 @@ Global
 		{5BDC8641-E3EE-47B5-BE7B-2D2275402412}.uap-Windows_NT-Debug|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{5BDC8641-E3EE-47B5-BE7B-2D2275402412}.uap-Windows_NT-Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{5BDC8641-E3EE-47B5-BE7B-2D2275402412}.uap-Windows_NT-Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.Debug|Any CPU.ActiveCfg = uapaot-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.Debug|Any CPU.Build.0 = uapaot-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Unix-Debug|Any CPU.ActiveCfg = netcoreapp-Unix-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Unix-Debug|Any CPU.Build.0 = netcoreapp-Unix-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Unix-Release|Any CPU.ActiveCfg = netcoreapp-Unix-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Unix-Release|Any CPU.Build.0 = netcoreapp-Unix-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Windows_NT-Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Windows_NT-Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Windows_NT-Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.netcoreapp-Windows_NT-Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.Release|Any CPU.ActiveCfg = uapaot-Windows_NT-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.Release|Any CPU.Build.0 = uapaot-Windows_NT-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uapaot-Windows_NT-Debug|Any CPU.ActiveCfg = uapaot-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uapaot-Windows_NT-Debug|Any CPU.Build.0 = uapaot-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uapaot-Windows_NT-Release|Any CPU.ActiveCfg = uapaot-Windows_NT-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uapaot-Windows_NT-Release|Any CPU.Build.0 = uapaot-Windows_NT-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uap-Windows_NT-Debug|Any CPU.ActiveCfg = uap-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uap-Windows_NT-Debug|Any CPU.Build.0 = uap-Windows_NT-Debug|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uap-Windows_NT-Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
-		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}.uap-Windows_NT-Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Unix-Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Unix-Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Unix-Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Unix-Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Windows_NT-Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Windows_NT-Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Windows_NT-Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.netcoreapp-Windows_NT-Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uapaot-Windows_NT-Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uapaot-Windows_NT-Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uapaot-Windows_NT-Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uapaot-Windows_NT-Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uap-Windows_NT-Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uap-Windows_NT-Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uap-Windows_NT-Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{F55047F8-E47B-46E3-B221-C23595AFE168}.uap-Windows_NT-Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5BDC8641-E3EE-47B5-BE7B-2D2275402412} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {29572587-9F67-4F7B-9234-68BC2E1C28B1}
 	EndGlobalSection
 EndGlobal

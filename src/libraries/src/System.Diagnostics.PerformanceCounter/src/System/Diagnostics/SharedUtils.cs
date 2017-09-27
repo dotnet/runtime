@@ -2,37 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Diagnostics {
-    using System.Security.Permissions;
-    using System.Security;    
-    using System.Threading;
-    using System.Text;
-    using Microsoft.Win32;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Security.Principal;
-    using System.Security.AccessControl;
-    using System.Runtime.Versioning;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.InteropServices;
-    using Microsoft.Win32.SafeHandles;
-    using System.Diagnostics.CodeAnalysis;
-    
-    internal static class SharedUtils {
-        
+using System.Security.Permissions;
+using System.Threading;
+using System.Text;
+using Microsoft.Win32;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
+
+namespace System.Diagnostics
+{
+    internal static class SharedUtils
+    {
+
         internal const int UnknownEnvironment = 0;
         internal const int W2kEnvironment = 1;
         internal const int NtEnvironment = 2;
-        internal const int NonNtEnvironment = 3;        
-        private static volatile int environment = UnknownEnvironment;                
+        internal const int NonNtEnvironment = 3;
+        private static volatile int s_environment = UnknownEnvironment;
         public const int WAIT_OBJECT_0 = 0x00000000;
-        public const int WAIT_ABANDONED   = 0x00000080;
+        public const int WAIT_ABANDONED = 0x00000080;
 
         private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject {
-            get {
-                if (s_InternalSyncObject == null) {
+        private static Object InternalSyncObject
+        {
+            get
+            {
+                if (s_InternalSyncObject == null)
+                {
                     Object o = new Object();
                     Interlocked.CompareExchange(ref s_InternalSyncObject, o, null);
                 }
@@ -40,75 +38,82 @@ namespace System.Diagnostics {
             }
         }
 
-        internal static Win32Exception CreateSafeWin32Exception() {
+        internal static Win32Exception CreateSafeWin32Exception()
+        {
             return CreateSafeWin32Exception(0);
         }
 
-        internal static Win32Exception CreateSafeWin32Exception(int error) {
+        internal static Win32Exception CreateSafeWin32Exception(int error)
+        {
             Win32Exception newException = null;
-            // Need to assert SecurtiyPermission, otherwise Win32Exception
-            // will not be able to get the error message. At this point the right
-            // permissions have already been demanded.
-            SecurityPermission securityPermission = new SecurityPermission(PermissionState.Unrestricted);
-            securityPermission.Assert();
-            try {
+            try
+            {
                 if (error == 0)
                     newException = new Win32Exception();
                 else
                     newException = new Win32Exception(error);
             }
-            finally {
-                SecurityPermission.RevertAssert();
+            finally
+            {
             }
 
             return newException;
         }
 
-        internal static int CurrentEnvironment {
-            get {
-                if (environment == UnknownEnvironment) { 
-                    lock (InternalSyncObject) {
-                        if (environment == UnknownEnvironment) {
+        internal static int CurrentEnvironment
+        {
+            get
+            {
+                if (s_environment == UnknownEnvironment)
+                {
+                    lock (InternalSyncObject)
+                    {
+                        if (s_environment == UnknownEnvironment)
+                        {
                             // Need to assert Environment permissions here
                             // the environment check is not exposed as a public method                        
-                            if (Environment.OSVersion.Platform == PlatformID.Win32NT)  {
+                            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                            {
                                 if (Environment.OSVersion.Version.Major >= 5)
-                                    environment = W2kEnvironment; 
+                                    s_environment = W2kEnvironment;
                                 else
-                                    environment = NtEnvironment; 
-                            }                                
-                            else                    
-                                environment = NonNtEnvironment;
-                        }                
+                                    s_environment = NtEnvironment;
+                            }
+                            else
+                                s_environment = NonNtEnvironment;
+                        }
                     }
                 }
-            
-                return environment;                        
-            }                
-        }               
-                        
-        internal static void CheckEnvironment() {            
+
+                return s_environment;
+            }
+        }
+
+        internal static void CheckEnvironment()
+        {
             if (CurrentEnvironment == NonNtEnvironment)
                 throw new PlatformNotSupportedException(SR.Format(SR.WinNTRequired));
         }
 
-        internal static void CheckNtEnvironment() {            
+        internal static void CheckNtEnvironment()
+        {
             if (CurrentEnvironment == NtEnvironment)
                 throw new PlatformNotSupportedException(SR.Format(SR.Win2000Required));
         }
-        
-        internal static void EnterMutex(string name, ref Mutex mutex) {
+
+        internal static void EnterMutex(string name, ref Mutex mutex)
+        {
             string mutexName = null;
             if (CurrentEnvironment == W2kEnvironment)
-                mutexName = "Global\\" +  name; 
+                mutexName = "Global\\" + name;
             else
                 mutexName = name;
 
             EnterMutexWithoutGlobal(mutexName, ref mutex);
         }
 
-        [SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts", Justification = "matell: We pass fixed data into sec.AddAccessRule")]
-        internal static void EnterMutexWithoutGlobal(string mutexName, ref Mutex mutex) {
+        internal static void EnterMutexWithoutGlobal(string mutexName, ref Mutex mutex)
+        {
             bool createdNew;
 
             Mutex tmpMutex = new Mutex(false, mutexName, out createdNew);
@@ -131,7 +136,8 @@ namespace System.Diagnostics {
             Debug.Assert(mutexOut == null, "You must pass in a null ref Mutex");
 
             // Wait as long as necessary for the mutex.
-            while (true) {
+            while (true)
+            {
 
                 // Attempt to acquire the mutex but timeout quickly if we can't.
                 if (!SafeWaitForMutexOnce(mutexIn, ref mutexOut))
@@ -155,35 +161,40 @@ namespace System.Diagnostics {
             bool ret;
 
             RuntimeHelpers.PrepareConstrainedRegions();
-            try {} finally {
+            try
+            { }
+            finally
+            {
                 // Wait for the mutex for half a second (long enough to gain the mutex in most scenarios and short enough to avoid
                 // impacting a thread abort for too long).
                 // Holding a mutex requires us to keep thread affinity and announce ourselves as a critical region.
                 Thread.BeginCriticalRegion();
                 Thread.BeginThreadAffinity();
-                int result = WaitForSingleObjectDontCallThis(mutexIn.SafeWaitHandle, 500);
-                switch (result) {
+                int result = Interop.Kernel32.WaitForSingleObjectDontCallThis(mutexIn.SafeWaitHandle, 500);
+                switch (result)
+                {
 
-                case WAIT_OBJECT_0:
-                case WAIT_ABANDONED:
-                    // Mutex was obtained, atomically record that fact.
-                    mutexOut = mutexIn;
-                    ret = true;
-                    break;
+                    case WAIT_OBJECT_0:
+                    case WAIT_ABANDONED:
+                        // Mutex was obtained, atomically record that fact.
+                        mutexOut = mutexIn;
+                        ret = true;
+                        break;
 
-                case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT:
-                    // Couldn't get mutex yet, simply return and we'll try again later.
-                    ret = true;
-                    break;
+                    case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT:
+                        // Couldn't get mutex yet, simply return and we'll try again later.
+                        ret = true;
+                        break;
 
-                default:
-                    // Some sort of failure return immediately all the way to the caller of SafeWaitForMutex.
-                    ret = false;
-                    break;
+                    default:
+                        // Some sort of failure return immediately all the way to the caller of SafeWaitForMutex.
+                        ret = false;
+                        break;
                 }
 
                 // If we're not leaving with the Mutex we don't require thread affinity and we're not a critical region any more.
-                if (mutexOut == null) {
+                if (mutexOut == null)
+                {
                     Thread.EndThreadAffinity();
                     Thread.EndCriticalRegion();
                 }
@@ -192,20 +203,17 @@ namespace System.Diagnostics {
             return ret;
         }
 
-        // P/Invoke for the methods above. Don't call this from anywhere else.
-        [DllImport(ExternDll.Kernel32, ExactSpelling=true, SetLastError=true, EntryPoint="WaitForSingleObject")]
-        private static extern int WaitForSingleObjectDontCallThis(SafeWaitHandle handle, int timeout);
-
-            // What if an app is locked back?  Why would we use this?
-        internal static string GetLatestBuildDllDirectory(string machineName) {
+        // What if an app is locked back?  Why would we use this?
+        internal static string GetLatestBuildDllDirectory(string machineName)
+        {
             string dllDir = "";
             RegistryKey baseKey = null;
             RegistryKey complusReg = null;
-            
+
             //This property is retrieved only when creationg a new category,
             //                          the calling code already demanded PerformanceCounterPermission.
             //                          Therefore the assert below is safe.
-                                                
+
             //This property is retrieved only when creationg a new log,
             //                          the calling code already demanded EventLogPermission.
             //                          Therefore the assert below is safe.
@@ -213,20 +221,25 @@ namespace System.Diagnostics {
             RegistryPermission registryPermission = new RegistryPermission(PermissionState.Unrestricted);
             registryPermission.Assert();
 
-            try {
-                if (machineName.Equals(".")) {
+            try
+            {
+                if (machineName.Equals("."))
+                {
                     return GetLocalBuildDirectory();
                 }
-                else {
+                else
+                {
                     baseKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, machineName);
                 }
                 if (baseKey == null)
                     throw new InvalidOperationException(SR.Format(SR.RegKeyMissingShort, "HKEY_LOCAL_MACHINE", machineName));
 
                 complusReg = baseKey.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework");
-                if (complusReg != null) {
+                if (complusReg != null)
+                {
                     string installRoot = (string)complusReg.GetValue("InstallRoot");
-                    if (installRoot != null && installRoot != String.Empty) {
+                    if (installRoot != null && installRoot != string.Empty)
+                    {
                         // the "policy" subkey contains a v{major}.{minor} subkey for each version installed.  There are also
                         // some extra subkeys like "standards" and "upgrades" we want to ignore.
 
@@ -237,54 +250,71 @@ namespace System.Diagnostics {
                         // This is the full version string of the install on the remote machine we want to use (for example "v2.0.50727")
                         string version = null;
 
-                        if (policyKey != null) {
-                            try {
-                                
+                        if (policyKey != null)
+                        {
+                            try
+                            {
+
                                 // First check to see if there is a version of the runtime with the same minor and major number:
                                 RegistryKey bestKey = policyKey.OpenSubKey(versionPrefix);
 
-                                if (bestKey != null) {
-                                    try {
+                                if (bestKey != null)
+                                {
+                                    try
+                                    {
                                         version = versionPrefix + "." + GetLargestBuildNumberFromKey(bestKey);
-                                    } finally {
+                                    }
+                                    finally
+                                    {
                                         bestKey.Close();
                                     }
-                                } else {
+                                }
+                                else
+                                {
                                     // There isn't an exact match for our version, so we will look for the largest version
                                     // installed.
                                     string[] majorVersions = policyKey.GetSubKeyNames();
                                     int[] largestVersion = new int[] { -1, -1, -1 };
-                                    for (int i = 0; i < majorVersions.Length; i++) {
+                                    for (int i = 0; i < majorVersions.Length; i++)
+                                    {
 
                                         string majorVersion = majorVersions[i];
 
                                         // If this looks like a key of the form v{something}.{something}, we should see if it's a usable build.
-                                        if (majorVersion.Length > 1 && majorVersion[0] == 'v' && majorVersion.Contains(".")) {
+                                        if (majorVersion.Length > 1 && majorVersion[0] == 'v' && majorVersion.Contains("."))
+                                        {
                                             int[] currentVersion = new int[] { -1, -1, -1 };
 
                                             string[] splitVersion = majorVersion.Substring(1).Split('.');
 
-                                            if(splitVersion.Length != 2) {
+                                            if (splitVersion.Length != 2)
+                                            {
                                                 continue;
                                             }
 
-                                            if (!Int32.TryParse(splitVersion[0], out currentVersion[0]) || !Int32.TryParse(splitVersion[1], out currentVersion[1])) {
+                                            if (!Int32.TryParse(splitVersion[0], out currentVersion[0]) || !Int32.TryParse(splitVersion[1], out currentVersion[1]))
+                                            {
                                                 continue;
                                             }
 
                                             RegistryKey k = policyKey.OpenSubKey(majorVersion);
-                                            if (k == null) {
+                                            if (k == null)
+                                            {
                                                 // We may be able to use another subkey
                                                 continue;
                                             }
-                                            try {
+                                            try
+                                            {
                                                 currentVersion[2] = GetLargestBuildNumberFromKey(k);
 
                                                 if (currentVersion[0] > largestVersion[0]
-                                                    || ((currentVersion[0] == largestVersion[0]) && (currentVersion[1] > largestVersion[1]))) {
+                                                    || ((currentVersion[0] == largestVersion[0]) && (currentVersion[1] > largestVersion[1])))
+                                                {
                                                     largestVersion = currentVersion;
                                                 }
-                                            } finally {
+                                            }
+                                            finally
+                                            {
                                                 k.Close();
                                             }
                                         }
@@ -292,11 +322,14 @@ namespace System.Diagnostics {
 
                                     version = "v" + largestVersion[0] + "." + largestVersion[1] + "." + largestVersion[2];
                                 }
-                            } finally {
+                            }
+                            finally
+                            {
                                 policyKey.Close();
                             }
 
-                            if (version != null && version != String.Empty) {
+                            if (version != null && version != string.Empty)
+                            {
                                 StringBuilder installBuilder = new StringBuilder();
                                 installBuilder.Append(installRoot);
                                 if (!installRoot.EndsWith("\\", StringComparison.Ordinal))
@@ -306,31 +339,36 @@ namespace System.Diagnostics {
                             }
                         }
                     }
-                }                                      
+                }
             }
-            catch {
+            catch
+            {
                 // ignore
             }
-            finally {
+            finally
+            {
                 if (complusReg != null)
                     complusReg.Close();
 
                 if (baseKey != null)
                     baseKey.Close();
 
-                RegistryPermission.RevertAssert();                             
+                RegistryPermission.RevertAssert();
             }
 
             return dllDir;
-        }                
+        }
 
-        private static int GetLargestBuildNumberFromKey(RegistryKey rootKey) {
+        private static int GetLargestBuildNumberFromKey(RegistryKey rootKey)
+        {
             int largestBuild = -1;
 
             string[] minorVersions = rootKey.GetValueNames();
-            for (int i = 0; i < minorVersions.Length; i++) {
+            for (int i = 0; i < minorVersions.Length; i++)
+            {
                 int o;
-                if (Int32.TryParse(minorVersions[i], out o)) {
+                if (Int32.TryParse(minorVersions[i], out o))
+                {
                     largestBuild = (largestBuild > o) ? largestBuild : o;
                 }
             }
@@ -338,8 +376,9 @@ namespace System.Diagnostics {
             return largestBuild;
         }
 
-        private static string GetLocalBuildDirectory() {
+        private static string GetLocalBuildDirectory()
+        {
             return RuntimeEnvironment.GetRuntimeDirectory();
         }
     }
-}   
+}

@@ -4,22 +4,27 @@
 
 using System.Configuration;
 
-namespace System.Diagnostics {
-    internal class SystemDiagnosticsSection : ConfigurationSection {
-        private static readonly ConfigurationPropertyCollection _properties;
-        private static readonly ConfigurationProperty _propPerfCounters = new ConfigurationProperty("performanceCounters", typeof(PerfCounterSection), new PerfCounterSection(), ConfigurationPropertyOptions.None);
+namespace System.Diagnostics
+{
+    internal class SystemDiagnosticsSection : ConfigurationSection
+    {
+        private static readonly ConfigurationPropertyCollection s_properties;
+        private static readonly ConfigurationProperty s_propPerfCounters = new ConfigurationProperty("performanceCounters", typeof(PerfCounterSection), new PerfCounterSection(), ConfigurationPropertyOptions.None);
 
-        static SystemDiagnosticsSection() {
-            _properties = new ConfigurationPropertyCollection();
-            _properties.Add(_propPerfCounters);
+        static SystemDiagnosticsSection()
+        {
+            s_properties = new ConfigurationPropertyCollection();
+            s_properties.Add(s_propPerfCounters);
         }
 
         [ConfigurationProperty("performanceCounters")]
-        public PerfCounterSection PerfCounters {
-            get {
-                return (PerfCounterSection) base[_propPerfCounters];
+        public PerfCounterSection PerfCounters
+        {
+            get
+            {
+                return (PerfCounterSection)base[s_propPerfCounters];
             }
         }
     }
 }
-    
+

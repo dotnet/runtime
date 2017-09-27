@@ -8,6 +8,8 @@
     <AssemblyName>System.Diagnostics.PerformanceCounter</AssemblyName>
     <DefineConstants Condition="'$(TargetGroup)' != 'uap'">$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_PerfCounters</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
@@ -16,7 +18,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\Diagnostics\PerformanceCounter.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounter.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Diagnostics\PerformanceCounterCategory.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterCategoryType.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterInstanceLifetime.cs" />
@@ -38,10 +42,10 @@
     <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
     <Compile Include="System\Diagnostics\PerfCounterSection.cs" />
     <Compile Include="misc\EnvironmentHelpers.cs" />
-    <Compile Include="Interop\SafeNativeMethods.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeLocalMemHandle.cs" />
-    <!--<Compile Include="misc\ExternDll.cs" />-->
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\perfcounter\Interop.FormatFromRawValue.cs">
+      <Link>Common\Interop\Windows\perfcounter\Interop.FormatFromRawValue.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.PerformanceCounterOptions.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.PerformanceCounterOptions.cs</Link>
     </Compile>
@@ -56,6 +60,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcessTimes.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetProcessTimes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibrary.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.LoadLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFileMapping.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.CreateFileMapping.cs</Link>
@@ -72,11 +82,17 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OpenProcess.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.OpenProcess.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitForSingleObjectDontCallThis.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.WaitForSingleObjectDontCallThis.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalMemHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalMemHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.LocalAlloc.cs</Link>
@@ -90,11 +106,20 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_SafeProcessHandle.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetComputerName.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetComputerName.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeProcessHandle.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.DuplicateHandle.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ConvertStringSecurityDescriptorToSecurityDescriptor.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.ConvertStringSecurityDescriptorToSecurityDescriptor.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.PERF_INFO.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.PERF_INFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.GetTokenInformation.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.GetTokenInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs</Link>
@@ -116,7 +141,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Condition="'$(TargetGroup)' != 'uap'" Include="Microsoft.Win32.Registry" />
+    <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -156,4 +181,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
-
