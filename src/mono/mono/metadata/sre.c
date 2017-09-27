@@ -746,7 +746,7 @@ is_field_on_inst (MonoClassField *field)
 
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32
-mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObjectHandle f, MonoClassField *field)
+mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field)
 {
 	MonoType *type;
 	guint32 token;
@@ -754,7 +754,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObjectHandle f, M
 	g_assert (field);
 	g_assert (field->parent);
 
-	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, MONO_HANDLE_RAW (f)));
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, field));
 	if (token)
 		return token;
 
@@ -767,7 +767,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObjectHandle f, M
 	token = mono_image_get_memberref_token (assembly, &field->parent->byval_arg,
 											mono_field_get_name (field),
 											mono_dynimage_encode_fieldref_signature (assembly, field->parent->image, type));
-	mono_g_hash_table_insert (assembly->handleref_managed, MONO_HANDLE_RAW (f), GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -1192,7 +1192,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
 			how_collide = MONO_DYN_IMAGE_TOK_NEW;
 		} else {
-			token = mono_image_get_fieldref_token (assembly, obj, field);
+			token = mono_image_get_fieldref_token (assembly, field);
 		}
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
 	} else if (strcmp (klass->name, "MonoArrayMethod") == 0) {
