@@ -400,13 +400,15 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
         // computed into a register.
         if (call->IsFastTailCall())
         {
-            NYI_ARM("tail call");
-
 #ifdef _TARGET_ARM64_
             // Fast tail call - make sure that call target is always computed in IP0
             // so that epilog sequence can generate "br xip0" to achieve fast tail call.
             ctrlExpr->gtLsraInfo.setSrcCandidates(this, genRegMask(REG_IP0));
-#endif // _TARGET_ARM64_
+#else  // !_TARGET_ARM64_
+            // Fast tail call - make sure that call target is always computed in r12
+            // so that epilog sequence can generate "br r12" to achieve fast tail call.
+            ctrlExpr->gtLsraInfo.setSrcCandidates(this, RBM_R12);
+#endif // !_TARGET_ARM64_
         }
     }
 #ifdef _TARGET_ARM_
