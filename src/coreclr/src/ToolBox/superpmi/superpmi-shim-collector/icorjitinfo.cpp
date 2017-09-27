@@ -236,6 +236,16 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HAND
     return result;
 }
 
+// Given T, return the type of the default EqualityComparer<T>.
+// Returns null if the type can't be determined exactly.
+CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getDefaultEqualityComparerClass");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getDefaultEqualityComparerClass(cls);
+    mc->recGetDefaultEqualityComparerClass(cls, result);
+    return result;
+}
+
 void interceptor_ICJI::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
     CORINFO_GENERICHANDLE_RESULT *  pResult)
