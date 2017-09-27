@@ -161,7 +161,7 @@
       <PublishDirectory Condition="'$(PublishDirectory)' == ''">$(BinDir)ForPublishing/</PublishDirectory>
       <!-- if we're not signing packages, publish directly from the download directory, as we won't be
 	       copying them to the indexed directory -->
-      <PublishDirectory Condition="'$(WindowsSdkDir)' == ''">$(DownloadDirectory)</PublishDirectory>
+      <PublishDirectory Condition="'$(WindowsSdkDir)' == '' OR '$(SignType)' != 'real'">$(DownloadDirectory)</PublishDirectory>
     </PropertyGroup>
     <MakeDir Directories="$(DownloadDirectory)"
              Condition="!Exists('$(DownloadDirectory)')" />
@@ -199,7 +199,7 @@
 
   <Target Name="SignSymbolPackages"
           DependsOnTargets="FindDownloadedPackagesForSigning;InjectSignedSymbolCatalogIntoSymbolPackages"
-          Condition="'$(WindowsSdkDir)' != ''">
+          Condition="'$(WindowsSdkDir)' != '' AND '$(SignType)' == 'real'">
     <ItemGroup>
       <EmbedIndexArgPairs Include="@(SymbolPackagesToEmbedIndex -> '%(Identity) $(PublishDirectory)%(Filename)%(Extension)')" />
     </ItemGroup>
