@@ -1033,7 +1033,7 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 
 	mono_thread_detach_internal (internal);
 
-	return(0);
+	return 0;
 }
 
 static gsize WINAPI
@@ -1601,6 +1601,8 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj
 void 
 mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean permanent, gboolean reset, MonoError *error)
 {
+	MonoNativeThreadId tid = 0;
+
 	LOCK_THREAD (this_obj);
 
 	error_init (error);
@@ -1627,14 +1629,16 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 	else
 		this_obj->name = NULL;
 
-	
+	if (!(this_obj->state & ThreadState_Stopped))
+		tid = thread_get_tid (this_obj);
+
 	UNLOCK_THREAD (this_obj);
 
-	if (this_obj->name && this_obj->tid) {
+	if (this_obj->name && tid) {
 		char *tname = mono_string_to_utf8_checked (name, error);
 		return_if_nok (error);
-		MONO_PROFILER_RAISE (thread_name, (this_obj->tid, tname));
-		mono_native_thread_set_name (thread_get_tid (this_obj), tname);
+		MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, tname));
+		mono_native_thread_set_name (tid, tname);
 		mono_free (tname);
 	}
 }
@@ -1830,8 +1834,6 @@ ves_icall_System_Threading_Thread_Join_internal (MonoThread *this_obj, int ms)
 		return FALSE;
 	}
 
-	MonoNativeThreadId tid = thread_get_tid (thread);
-
 	UNLOCK_THREAD (thread);
 
 	if (ms == -1)
@@ -1849,16 +1851,9 @@ ves_icall_System_Threading_Thread_Join_internal (MonoThread *this_obj, int ms)
 	if (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0) {
 		THREAD_DEBUG (g_message ("%s: join successful", __func__));
 
-#ifdef HOST_WIN32
-		/* TODO: Do this on Unix platforms as well. See PR #5454 for context.  */
 		/* Wait for the thread to really exit */
-		MONO_ENTER_GC_SAFE;
-		/* This shouldn't block */
-		mono_threads_join_lock ();
-		mono_native_thread_join (tid);
-		mono_threads_join_unlock ();
-		MONO_EXIT_GC_SAFE;
-#endif
+		MonoNativeThreadId tid = thread_get_tid (thread);
+		mono_thread_join (tid);
 
 		return TRUE;
 	}
