@@ -347,7 +347,7 @@ namespace System.Net.Http
                 }
 
                 // Create the response stream.
-                HttpContentReadStream responseStream;
+                HttpContentStream responseStream;
                 if (request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304)
                 {
                     responseStream = EmptyReadStream.Instance;
@@ -372,7 +372,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    responseStream = new ConnectionCloseReadStream(this);
+                    responseStream = new ConnectionCloseStream(this);
                 }
                 ((HttpConnectionContent)response.Content).SetStream(responseStream);
 

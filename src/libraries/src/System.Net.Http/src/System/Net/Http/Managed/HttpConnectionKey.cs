@@ -12,9 +12,9 @@ namespace System.Net.Http
 
         public HttpConnectionKey(Uri uri)
         {
-            UsingSSL = 
-                uri.Scheme == UriScheme.Http ? false :
-                uri.Scheme == UriScheme.Https ? true :
+            UsingSSL =
+                HttpUtilities.IsSupportedNonSecureScheme(uri.Scheme) ? false :
+                HttpUtilities.IsSupportedSecureScheme(uri.Scheme) ? true :
                 throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(uri));
 
             Host = uri.Host;
