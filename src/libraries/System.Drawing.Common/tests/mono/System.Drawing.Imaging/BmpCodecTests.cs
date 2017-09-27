@@ -46,7 +46,7 @@ namespace MonoTests.System.Drawing.Imaging
     {
 
         /* Get suffix to add to the filename */
-        internal string getOutSufix()
+        internal string GetOutSufix()
         {
             string s;
 
@@ -64,7 +64,7 @@ namespace MonoTests.System.Drawing.Imaging
             return s;
         }
 
-        /* Checks bitmap features on a know 1bbp bitmap */
+        /* Checks bitmap features on a known 1bbp bitmap */
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap1bitFeatures()
         {
@@ -74,7 +74,6 @@ namespace MonoTests.System.Drawing.Imaging
                 GraphicsUnit unit = GraphicsUnit.World;
                 RectangleF rect = bmp.GetBounds(ref unit);
 
-                // ??? why is it a 4bbp ?
                 Assert.Equal(PixelFormat.Format4bppIndexed, bmp.PixelFormat);
                 Assert.Equal(173, bmp.Width);
                 Assert.Equal(183, bmp.Height);
@@ -135,7 +134,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        /* Checks bitmap features on a know 8bbp bitmap */
+        /* Checks bitmap features on a known 8bbp bitmap */
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap8bitFeatures()
         {
@@ -205,8 +204,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-
-        /* Checks bitmap features on a know 24-bits bitmap */
+        /* Checks bitmap features on a known 24-bits bitmap */
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap24bitFeatures()
         {
@@ -289,7 +287,9 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(bmp.Width, data.Width);
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(520, data.Stride);
+                    Assert.Equal(183, data.Height);
                     int size = data.Height * data.Stride;
+
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
@@ -398,7 +398,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        /* Checks bitmap features on a know 32-bits bitmap (codec)*/
+        /* Checks bitmap features on a known 32-bits bitmap (codec)*/
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap32bitFeatures()
         {
@@ -470,7 +470,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void Save(PixelFormat original, PixelFormat expected, bool colorCheck)
         {
-            string sOutFile = String.Format("linerect{0}-{1}.bmp", getOutSufix(), expected.ToString());
+            string sOutFile = String.Format("linerect{0}-{1}.bmp", GetOutSufix(), expected.ToString());
 
             // Save		
             Bitmap bmp = new Bitmap(100, 100, original);
