@@ -2,16 +2,16 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildThisFileDirectory)..\dir.props" />
 
-  <Target Name="Build"
+  <Target Condition="'$(SignType)' == 'real'" Name="Build"
           DependsOnTargets="BuildPrerequisites;
                             Validate" />
 
-  <Target Name="BuildPrerequisites"
+  <Target Condition="'$(SignType)' == 'real'" Name="BuildPrerequisites"
           DependsOnTargets="CreateVersionInfoFile;
                             BuildCustomTasks;
                             RestoreOptionalToolingPackages" />
 
-  <Target Name="Validate">
+  <Target Condition="'$(SignType)' == 'real'" Name="Validate">
     <MSBuild Projects="$(MSBuildThisFileDirectory)\validation.targets" />
   </Target>
   <Import Project="$(MSBuildThisFileDirectory)..\dir.targets" />

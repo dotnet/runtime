@@ -69,7 +69,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)\\build.cmd",
-        "arguments": "-signing-validation -- /p:AzureAccessToken=$(PB_AzureAccessToken) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser) /p:OptionalToolSourcePassword=$(PB_OptionalToolSourcePassword) /p:OfficialBuildId=$(OfficialBuildId) /flp:v=detailed",
+        "arguments": "-signing-validation -- /p:AzureAccessToken=$(PB_AzureAccessToken) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser) /p:OptionalToolSourcePassword=$(PB_OptionalToolSourcePassword) /p:OfficialBuildId=$(OfficialBuildId) /flp:v=detailed /p:SignType=$(PB_SignType)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
