@@ -80,8 +80,6 @@ namespace System.Net.WebSockets
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         /// <summary>Buffer used for reading data from the network.</summary>
         private byte[] _receiveBuffer;
-        /// <summary>Gets whether the receive buffer came from the ArrayPool.</summary>
-        private readonly bool _receiveBufferFromPool;
         /// <summary>
         /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
         /// </summary>
@@ -197,8 +195,12 @@ namespace System.Net.WebSockets
             }
             else
             {
-                _receiveBufferFromPool = true;
-                _receiveBuffer = ArrayPool<byte>.Shared.Rent(Math.Max(receiveBufferSize, MaxMessageHeaderLength));
+                // Just allocate the array.  We avoid using the pool because often many web sockets will be used concurrently,
+                // and if each web socket rents a similarly sized buffer from the pool for its duration, we'll end up draining
+                // the pool, such that other web sockets will allocate anyway, as will anyone else in the process using the
+                // pool.  If someone wants to pool, they can do so by passing in the buffer they want to use, and they can
+                // get it from whatever pool they like.
+                _receiveBuffer = new byte[Math.Max(receiveBufferSize, MaxMessageHeaderLength)];
             }
 
             // Set up the abort source so that if it's triggered, we transition the instance appropriately.
@@ -241,12 +243,6 @@ namespace System.Net.WebSockets
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
                 _stream?.Dispose();
-                if (_receiveBufferFromPool)
-                {
-                    byte[] old = _receiveBuffer;
-                    _receiveBuffer = null;
-                    ArrayPool<byte>.Shared.Return(old);
-                }
                 if (_state < WebSocketState.Aborted)
                 {
                     _state = WebSocketState.Closed;
