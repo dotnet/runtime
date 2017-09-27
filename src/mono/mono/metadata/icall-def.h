@@ -365,11 +365,8 @@ ICALL(MONOIO_5, "DeleteFile(string,System.IO.MonoIOError&)", ves_icall_System_IO
 #endif /* !PLATFORM_RO_FS */
 ICALL(MONOIO_38, "DumpHandles", ves_icall_System_IO_MonoIO_DumpHandles)
 ICALL(MONOIO_34, "DuplicateHandle", ves_icall_System_IO_MonoIO_DuplicateHandle)
-ICALL(MONOIO_37, "FindClose", ves_icall_System_IO_MonoIO_FindClose)
 ICALL(MONOIO_37a, "FindCloseFile", ves_icall_System_IO_MonoIO_FindCloseFile)
-ICALL(MONOIO_35, "FindFirst", ves_icall_System_IO_MonoIO_FindFirst)
 ICALL(MONOIO_35a, "FindFirstFile", ves_icall_System_IO_MonoIO_FindFirstFile)
-ICALL(MONOIO_36, "FindNext", ves_icall_System_IO_MonoIO_FindNext)
 ICALL(MONOIO_36a, "FindNextFile", ves_icall_System_IO_MonoIO_FindNextFile)
 ICALL(MONOIO_6, "Flush(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Flush)
 ICALL(MONOIO_7, "GetCurrentDirectory(System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetCurrentDirectory)

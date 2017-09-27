@@ -136,18 +136,6 @@ extern MonoBoolean
 ves_icall_System_IO_MonoIO_FindCloseFile (gpointer hnd);
 
 extern MonoString *
-ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
-				      MonoString *path_with_pattern,
-				      gint32 *result_mask,
-				      gint32 *error,
-				      gpointer *handle);
-extern MonoString *
-ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_mask, gint32 *error);
-
-extern int
-ves_icall_System_IO_MonoIO_FindClose (gpointer handle);
-
-extern MonoString *
 ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error);
 
 extern MonoBoolean
