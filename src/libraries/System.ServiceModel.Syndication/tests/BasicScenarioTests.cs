@@ -5,14 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.ServiceModel.Syndication;
+using System.ServiceModel.Syndication;
 using System.Xml;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
     
-namespace Microsoft.ServiceModel.Syndication.Tests
+namespace System.ServiceModel.Syndication.Tests
 {
     public static class BasicScenarioTests
     {

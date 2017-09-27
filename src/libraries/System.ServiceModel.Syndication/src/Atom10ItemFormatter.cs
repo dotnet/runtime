@@ -8,7 +8,7 @@
  * 
  * */
 
-namespace Microsoft.ServiceModel.Syndication
+namespace System.ServiceModel.Syndication
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
