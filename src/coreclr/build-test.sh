@@ -37,6 +37,10 @@ initTargetDistroRid()
             export __DistroRid="osx-$__BuildArch"
         fi
     fi
+
+   if [ "$ID.$VERSION_ID" == "ubuntu.16.04" ]; then
+     export __DistroRid="ubuntu.14.04-$__BuildArch"
+   fi
 }
 
 isMSBuildOnNETCoreSupported()
