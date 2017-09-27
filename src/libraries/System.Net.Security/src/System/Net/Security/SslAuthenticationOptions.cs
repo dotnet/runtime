@@ -61,31 +61,6 @@ namespace System.Net.Security
         internal RemoteCertValidationCallback CertValidationDelegate { get; set; }
         internal LocalCertSelectionCallback CertSelectionDelegate { get; set; }
         internal GCHandle AlpnProtocolsHandle { get; set; }
-
-        internal static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> protocols)
-        {
-            int protocolSize = 0;
-            foreach (SslApplicationProtocol protocol in protocols)
-            {
-                if (protocol.Protocol.Length <= 0 || protocol.Protocol.Length > byte.MaxValue)
-                {
-                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(protocols));
-                }
-
-                protocolSize += protocol.Protocol.Length + 1;
-            }
-
-            byte[] buffer = new byte[protocolSize];
-            var offset = 0;
-            foreach (SslApplicationProtocol protocol in protocols)
-            {
-                buffer[offset++] = (byte)(protocol.Protocol.Length);
-                Array.Copy(protocol.Protocol.ToArray(), 0, buffer, offset, protocol.Protocol.Length);
-                offset += protocol.Protocol.Length;
-            }
-
-            return buffer;
-        }
     }
 }
 

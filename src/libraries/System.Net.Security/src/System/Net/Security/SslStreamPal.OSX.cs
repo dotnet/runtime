@@ -75,6 +75,12 @@ namespace System.Net.Security
             return new SafeFreeSslCredentials(certificate, protocols, policy);
         }
 
+        internal static string GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        {
+            // OSX SecureTransport does not export APIs to support ALPN, no-op.
+            return null;
+        }
+
         public static SecurityStatusPal EncryptMessage(
             SafeDeleteContext securityContext,
             ReadOnlyMemory<byte> input,

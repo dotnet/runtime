@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -10,6 +10,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
@@ -38,6 +39,11 @@ namespace System.Net.Security
         public static void VerifyPackageInfo()
         {
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
+        }
+
+        public static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> protocols)
+        {
+            return Interop.Sec_Application_Protocols.ToByteArray(protocols);
         }
 
         public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
@@ -132,12 +138,12 @@ namespace System.Net.Security
 
         internal static string GetNegotiatedApplicationProtocol(SafeDeleteContext context)
         {
-            SecPkgContext_ApplicationProtocol alpnContext = SSPIWrapper.QueryContextAttributes(
+            Interop.SecPkgContext_ApplicationProtocol alpnContext = SSPIWrapper.QueryContextAttributes(
                 GlobalSSPI.SSPISecureChannel,
                 context,
-                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL) as SecPkgContext_ApplicationProtocol;
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL) as Interop.SecPkgContext_ApplicationProtocol;
 
-            if (alpnContext == null || alpnContext.NegotiationExtension != ApplicationProtocolNegotiationExt.ALPN || alpnContext.NegotiationStatus != ApplicationProtocolNegotiationStatus.Success)
+            if (alpnContext == null || alpnContext.NegotiationExtension != Interop.ApplicationProtocolNegotiationExt.ALPN || alpnContext.NegotiationStatus != Interop.ApplicationProtocolNegotiationStatus.Success)
             {
                 return null;
             }

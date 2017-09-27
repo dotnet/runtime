@@ -23,27 +23,6 @@ namespace System.Net.Security.Tests
         protected abstract bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream);
 
         [Fact]
-        [Trait("category", "alpn")]
-        public void SslStream_StreamToStream_Alpn_Success()
-        {
-            VirtualNetwork network = new VirtualNetwork();
-            SslAuthenticationOptions options1 = new SslAuthenticationOptions();
-            options1.ApplicationProtocols = new [] { "h2", "http/1.1"};
-            options1.UserCertificateValidationCallback = AllowAnyServerCertificate;
-            SslAuthenticationOptions options2 = new SslAuthenticationOptions();
-            options2.ApplicationProtocols = new [] { "h2"};
-            using (var clientStream = new VirtualNetworkStream(network, false))
-            using (var serverStream = new VirtualNetworkStream(network, true))
-            using (var client = new SslStream(clientStream, false, options1))
-            using (var server = new SslStream(serverStream, false, options2))
-            {
-                Assert.True(DoHandshake(client, server));
-                Assert.Equal("h2", client.NegotiatedApplicationProtocol);
-                Assert.Equal("h2", server.NegotiatedApplicationProtocol);
-            }
-        }
-
-        [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -166,8 +145,8 @@ namespace System.Net.Security.Tests
         {
             VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer:false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer:true))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
@@ -253,8 +232,8 @@ namespace System.Net.Security.Tests
         {
             VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer:false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer:true))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
@@ -375,7 +354,7 @@ namespace System.Net.Security.Tests
             return expectedBuffer.SequenceEqual(actualBuffer);
         }
 
-        private bool AllowAnyServerCertificate(
+        protected bool AllowAnyServerCertificate(
             object sender,
             X509Certificate certificate,
             X509Chain chain,
@@ -410,6 +389,39 @@ namespace System.Net.Security.Tests
                 Task t1 = clientSslStream.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
                 Task t2 = serverSslStream.AuthenticateAsServerAsync(certificate);
                 return Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds);
+            }
+        }
+
+        internal bool DoOptionsHandshake(SslStream clientSslStream, SslStream serverSslStream, SslClientAuthenticationOptions clientOptions, SslServerAuthenticationOptions serverOptions)
+        {
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
+                serverOptions.ServerCertificate = certificate;
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                return Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds);
+            }
+        }
+
+        [Fact]
+        [Trait("category", "alpn")]
+        public void SslStream_StreamToStream_Alpn_Success()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
+            clientOptions.ApplicationProtocols = new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 };
+            clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
+            serverOptions.ApplicationProtocols = new[] { SslApplicationProtocol.Http2 };
+            using (var clientStream = new VirtualNetworkStream(network, false))
+            using (var serverStream = new VirtualNetworkStream(network, true))
+            using (var client = new SslStream(clientStream, false))
+            using (var server = new SslStream(serverStream, false))
+            {
+                Assert.True(DoOptionsHandshake(client, server, clientOptions, serverOptions));
+                Assert.Equal("h2", client.NegotiatedApplicationProtocol);
+                Assert.Equal("h2", server.NegotiatedApplicationProtocol);
             }
         }
     }

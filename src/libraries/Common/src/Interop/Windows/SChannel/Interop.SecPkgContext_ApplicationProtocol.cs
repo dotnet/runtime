@@ -4,7 +4,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace System.Net
+internal static partial class Interop
 {
     internal enum ApplicationProtocolNegotiationStatus
     {
@@ -20,7 +20,7 @@ namespace System.Net
         ALPN
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     internal class SecPkgContext_ApplicationProtocol
     {
         private const int MAX_PROTOCOL_ID_SIZE = 0xFF;

@@ -17,13 +17,15 @@ namespace System.Net.Security
         //  The public Client and Server classes enforce the parameters rules before
         //  calling into this .ctor.
         //
-        internal SslState(Stream innerStream, SslAuthenticationOptions sslAuthenticationOptions)
+        internal SslState(Stream innerStream)
         {
         }
-        //
-        //
-        //
-        internal void ValidateCreateContext(bool isServer, string targetHost, SslProtocols enabledSslProtocols, X509Certificate serverCertificate, X509CertificateCollection clientCertificates, bool remoteCertRequired, bool checkCertRevocationStatus)
+
+        internal void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        {
+        }
+
+        internal void ValidateCreateContext(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
         }
 
