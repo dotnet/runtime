@@ -17,5 +17,7 @@
     </File>
   </ItemGroup>
 
+  <Import Project="runtimeGroups.props" />
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
