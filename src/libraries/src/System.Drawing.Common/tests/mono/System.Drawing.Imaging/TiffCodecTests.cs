@@ -43,7 +43,7 @@ namespace MonoTests.System.Drawing.Imaging
     public class TiffCodecTest
     {
         /* Get suffix to add to the filename */
-        internal string getOutSufix()
+        internal string GetOutSufix()
         {
             string s;
 
@@ -61,7 +61,7 @@ namespace MonoTests.System.Drawing.Imaging
             return s;
         }
 
-        /* Checks bitmap features on a know 32bbp bitmap */
+        /* Checks bitmap features on a known 32bbp bitmap */
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap32bitsFeatures()
         {
@@ -82,6 +82,19 @@ namespace MonoTests.System.Drawing.Imaging
 
                 Assert.Equal(173, bmp.Size.Width);
                 Assert.Equal(183, bmp.Size.Height);
+            }
+        }
+
+        /* Checks bitmap features on a known 32bbp bitmap */
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        public void Bitmap32bitsPixelFormat()
+        {
+            string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");
+            using (Bitmap bmp = new Bitmap(sInFile))
+            {
+                // GDI+ reports 24 bpp while libgdiplus reports 32 bpp
+                Assert.Equal (PixelFormat.Format24bppRgb, bmp.PixelFormat);
             }
         }
 
@@ -144,6 +157,8 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(bmp.Width, data.Width);
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(520, data.Stride);
+                    Assert.Equal(183, data.Height);
+
                     int size = data.Height * data.Stride;
                     unsafe
                     {
@@ -255,7 +270,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void Save(PixelFormat original, PixelFormat expected, bool colorCheck)
         {
-            string sOutFile = String.Format("linerect{0}-{1}.tif", getOutSufix(), expected.ToString());
+            string sOutFile = String.Format("linerect{0}-{1}.tif", GetOutSufix(), expected.ToString());
 
             // Save		
             Bitmap bmp = new Bitmap(100, 100, original);
