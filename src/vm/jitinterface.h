@@ -743,6 +743,14 @@ public:
         CORINFO_CONTEXT_HANDLE ownerType
         );
 
+    CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
+        CORINFO_CLASS_HANDLE elemType
+        );
+
+    CORINFO_CLASS_HANDLE getDefaultEqualityComparerClassHelper(
+        CORINFO_CLASS_HANDLE elemType
+        );
+
     void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_GENERICHANDLE_RESULT *  pResult);
