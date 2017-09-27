@@ -4,7 +4,7 @@
 
 // DEBUG!!! #if disabled statements 
 
-namespace Microsoft.ServiceModel.Syndication
+namespace System.ServiceModel.Syndication
 {
     using System;
     using System.Globalization;
