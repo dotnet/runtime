@@ -3385,6 +3385,28 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 //------------------------------------------------------------------------
 // genCodeForJumpCompare: Generates code for jmpCompare statement.
 //
+// A GT_JCMP node is created when a comparison and conditional branch
+// can be executed in a single instruction.
+//
+// Arm64 has a few instructions with this behavior.
+//   - cbz/cbnz -- Compare and branch register zero/not zero
+//   - tbz/tbnz -- Test and branch register bit zero/not zero
+//
+// A GT_JCMP cbz/cbnz node is created when there is a GT_EQ or GT_NE
+// integer/unsigned comparison against #0 which is used by a GT_JTRUE
+// condition jump node.
+//
+// A GT_JCMP cbz/cbnz node is created when there is a GT_TEST_EQ or GT_TEST_NE
+// integer/unsigned comparison against against a mask with a single bit set
+// which is used by a GT_JTRUE condition jump node.
+//
+// This node is repsonsible for consuming the register, and emitting the
+// appropriate fused compare/test and branch instruction
+//
+// Two flags guide code generation
+//    GTF_JCMP_TST -- Set if this is a tbz/tbnz rather than cbz/cbnz
+//    GTF_JCMP_EQ  -- Set if this is cbz/tbz rather than cbnz/tbnz
+//
 // Arguments:
 //    tree - The GT_JCMP tree node.
 //
