@@ -37,36 +37,11 @@ internal static partial class Interop
 
         internal static unsafe int SslCtxSetAplnProtos(SafeSslContextHandle ctx, IList<SslApplicationProtocol> protocols)
         {
-            byte[] buffer = AlpnStringListToByteArray(protocols);
+            byte[] buffer = SslAuthenticationOptions.ConvertAlpnProtocolListToByteArray(protocols);
             fixed (byte* b = buffer)
             {
                 return SslCtxSetAlpnProtos(ctx, (IntPtr)b, buffer.Length);
             }
-        }
-
-        internal static byte[] AlpnStringListToByteArray(IList<SslApplicationProtocol> protocols)
-        {
-            int protocolSize = 0;
-            foreach (SslApplicationProtocol protocol in protocols)
-            {
-                if (protocol.Length <= 0 || protocol.Length > byte.MaxValue)
-                {
-                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(protocols));
-                }
-
-                protocolSize += protocol.Length + 1;
-            }
-
-            byte[] buffer = new byte[protocolSize];
-            var offset = 0;
-            foreach (SslApplicationProtocol protocol in protocols)
-            {
-                buffer[offset++] = (byte)(protocol.Length);
-                Array.Copy(protocol.ToArray(), 0, buffer, offset, protocol.Length);
-                offset += protocol.Length;
-            }
-
-            return buffer;
         }
     }
 }

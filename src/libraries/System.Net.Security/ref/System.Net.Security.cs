@@ -106,7 +106,7 @@ namespace System.Net.Security
         public bool ClientCertificateRequired { get { throw null;  } set { } }
         public SslProtocols EnabledSslProtocols { get { throw null;  } set { } }
         public X509RevocationMode CheckCertificateRevocation { get { throw null;  } set { } }
-        public IList<SslApplicationProtocol> ApplicationProtocols { get; }
+        public IList<SslApplicationProtocol> ApplicationProtocols { get { throw null; } set { } }
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null;  } set { } }
         public EncryptionPolicy EncryptionPolicy { get { throw null;  } set { } }
     }
@@ -118,7 +118,7 @@ namespace System.Net.Security
         public LocalCertificateSelectionCallback LocalCertificateSelectionCallback { get { throw null; } set { } }
         public SslProtocols EnabledSslProtocols { get { throw null; } set { } }
         public X509RevocationMode CheckCertificateRevocation { get { throw null; } set { } }
-        public IList<SslApplicationProtocol> ApplicationProtocols { get { throw null; } }
+        public IList<SslApplicationProtocol> ApplicationProtocols { get { throw null; } set { } }
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null; } set { } }
         public EncryptionPolicy EncryptionPolicy { get { throw null; } set { } }
     }

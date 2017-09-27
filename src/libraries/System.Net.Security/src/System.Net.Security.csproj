@@ -165,6 +165,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs">
       <Link>Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\SecPkgContext_ApplicationProtocol.cs">
+      <Link>Common\Interop\Windows\SChannel\SecPkgContext_ApplicationProtocol.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.cs">
       <Link>Common\Interop\Windows\SChannel\UnmanagedCertificateContext.cs</Link>
     </Compile>

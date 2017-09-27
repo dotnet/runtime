@@ -37,6 +37,7 @@ namespace System.Net.Security
         private bool _refreshCredentialNeeded;
 
         private SslAuthenticationOptions _sslAuthenticationOptions;
+        private string _negotiatedApplicationProtocol;
 
         private readonly Oid _serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private readonly Oid _clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
@@ -173,7 +174,7 @@ namespace System.Net.Security
         {
             get
             {
-                return SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
+                return _negotiatedApplicationProtocol;
             }
         }
 
@@ -769,15 +770,38 @@ namespace System.Net.Security
 
             SecurityBuffer incomingSecurity = null;
             SecurityBuffer[] incomingSecurityBuffers = null;
+            SecurityBuffer alpnBuffer = null;
+
+            if (_sslAuthenticationOptions.ApplicationProtocols != null && _sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+            {
+                byte[] alpnBytes = SslAuthenticationOptions.ConvertAlpnProtocolListToByteArray(_sslAuthenticationOptions.ApplicationProtocols);
+                alpnBuffer = new SecurityBuffer(alpnBytes, 0, alpnBytes.Length, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS);
+            }
 
             if (input != null)
             {
                 incomingSecurity = new SecurityBuffer(input, offset, count, SecurityBufferType.SECBUFFER_TOKEN);
-                incomingSecurityBuffers = new SecurityBuffer[]
+                if (alpnBuffer != null)
                 {
-                    incomingSecurity,
-                    new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY)
-                };
+                    incomingSecurityBuffers = new SecurityBuffer[]
+                    {
+                        incomingSecurity,
+                        new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY),
+                        alpnBuffer
+                    };
+                }
+                else
+                {
+                    incomingSecurityBuffers = new SecurityBuffer[]
+                    {
+                        incomingSecurity,
+                        new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY)
+                    };
+                }
+            }
+            else if (alpnBuffer != null)
+            {
+                incomingSecurity = alpnBuffer;
             }
 
             SecurityBuffer outgoingSecurity = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_TOKEN);
@@ -808,13 +832,13 @@ namespace System.Net.Security
                         status = SslStreamPal.AcceptSecurityContext(
                                       ref _credentialsHandle,
                                       ref _securityContext,
-                                      incomingSecurity,
+                                      incomingSecurityBuffers,
                                       outgoingSecurity,
                                       _sslAuthenticationOptions);
                     }
                     else
                     {
-                        if (incomingSecurity == null)
+                        if (incomingSecurityBuffers == null)
                         {
                             status = SslStreamPal.InitializeSecurityContext(
                                            ref _credentialsHandle,
@@ -869,6 +893,7 @@ namespace System.Net.Security
             }
 
             output = outgoingSecurity.token;
+            _negotiatedApplicationProtocol = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
 
             return status;
         }
