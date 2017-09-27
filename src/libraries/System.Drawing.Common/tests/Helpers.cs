@@ -16,6 +16,7 @@ namespace System.Drawing
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
         public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
+        public const string GdiPlusIsAvailableNotWindows7 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotWindows7);
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
 
         public static bool GetGdiplusIsAvailable()
@@ -58,6 +59,16 @@ namespace System.Drawing
         public static bool GetGdiPlusIsAvailableNotRedhat73()
         {
             if (PlatformDetection.IsRedHat)
+            {
+                return false;
+            }
+
+            return GetGdiplusIsAvailable();
+        }
+
+        public static bool GetGdiPlusIsAvailableNotWindows7()
+        {
+            if (PlatformDetection.IsWindows7)
             {
                 return false;
             }
