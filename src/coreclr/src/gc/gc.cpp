@@ -13351,7 +13351,6 @@ try_again:
                     org_hp->alloc_context_count--;
                     max_hp->alloc_context_count++;
                     acontext->set_alloc_heap(GCHeap::GetHeap(max_hp->heap_number));
-#if !defined(FEATURE_PAL)
                     if (CPUGroupInfo::CanEnableGCCPUGroups())
                     {   //only set ideal processor when max_hp and org_hp are in the same cpu
                         //group. DO NOT MOVE THREADS ACROSS CPU GROUPS
@@ -13385,7 +13384,6 @@ try_again:
                                         org_hp->heap_number));
                         }
                     }
-#endif // !FEATURE_PAL
                     dprintf (3, ("Switching context %p (home heap %d) ", 
                                  acontext,
                         acontext->get_home_heap()->pGenGCHeap->heap_number));
