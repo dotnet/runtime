@@ -73,7 +73,7 @@ namespace System.Diagnostics
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (value.Length == 0)
                     throw new ArgumentException(SR.Format(SR.InvalidProperty, "CategoryName", value));
