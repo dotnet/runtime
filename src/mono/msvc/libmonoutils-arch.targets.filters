@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-x86.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-amd64.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-arm.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-arm64.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-unknown.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-arm.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-arm64.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-cross.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-mips.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-os390x.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-ppc.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-sparc.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-wasm.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-x86.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="$(MonoSourceLocation)\mono\utils\win64.asm">
+      <Filter>Resource Files$(MonoUtilsFilterSubFolder)\arch</Filter>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resource Files$(MonoUtilsFilterSubFolder)\arch">
+      <UniqueIdentifier>{CF1B494F-7FC7-4B1F-9356-1E6F4C3AA151}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch">
+      <UniqueIdentifier>{6603FB44-3F5A-490C-A2FB-3FCD4818EA6A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
