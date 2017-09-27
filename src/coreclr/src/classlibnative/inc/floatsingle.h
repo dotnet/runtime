@@ -23,7 +23,7 @@ public:
     FCDECL2_VV(static float, FMod, float x, float y);
     FCDECL1_V(static float, Log, float x);
     FCDECL1_V(static float, Log10, float x);
-    FCDECL2_VV(static float, ModF, float x, float* intptr);
+    FCDECL2_VI(static float, ModF, float x, float* intptr);
     FCDECL2_VV(static float, Pow, float x, float y);
     FCDECL1_V(static float, Sin, float x);
     FCDECL1_V(static float, Sinh, float x);
