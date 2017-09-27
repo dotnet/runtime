@@ -373,11 +373,11 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         /// </summary>
-        public static unsafe Vector256<ulong> Insert(Vector256<ulong> value, ulong* address) => Insert(value, address);
+        public static unsafe Vector256<ulong> Insert(Vector256<ulong> value, ulong* address, byte index) => Insert(value, address, index);
         /// <summary>
         /// __m256 _mm256_insertf128_ps (__m256 a, __m128 b, int imm8)
         /// </summary>
-        public static unsafe Vector256<float> Insert(Vector256<float> value, float* address) => Insert(value, address);
+        public static unsafe Vector256<float> Insert(Vector256<float> value, float* address, byte index) => Insert(value, address, index);
         /// <summary>
         /// __m256d _mm256_insertf128_pd (__m256d a, __m128d b, int imm8)
         /// </summary>
