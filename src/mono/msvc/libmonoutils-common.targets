@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
+  <ItemGroup Label="monoutils_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\atomic.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\bsearch.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\checked-build.c" />
@@ -162,7 +162,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\parse.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\strenc.c" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Label="monoutils_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\atomic.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\bsearch.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\checked-build.h" />
@@ -242,7 +242,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\valgrind.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\w32api.h" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Label="libmonoutilsinclude_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-publib.h" />

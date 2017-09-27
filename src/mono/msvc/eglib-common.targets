@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
+  <ItemGroup Label="common_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\garray.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gbytearray.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gerror.c" />
@@ -23,12 +23,12 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gutf8.c" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Label="common_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\glib.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\sort.frag.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MonoSourceLocation)\eglib\src\Makefile.am" />
+    <None Include="$(MonoSourceLocation)\mono\eglib\Makefile.am" />
   </ItemGroup>
 </Project>

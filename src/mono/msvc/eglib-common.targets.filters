@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
+  <ItemGroup Label="common_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\garray.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -65,7 +65,7 @@
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Label="common_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\glib.h">
       <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
     </ClInclude>
@@ -77,7 +77,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MonoSourceLocation)\eglib\src\Makefile.am">
+    <None Include="$(MonoSourceLocation)\mono\eglib\Makefile.am">
       <Filter>Resource Files$(EGLibFilterSubFolder)\common</Filter>
     </None>
   </ItemGroup>

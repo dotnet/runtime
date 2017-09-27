@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
+  <ItemGroup Label="win32_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gdate-win32.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
     </ClCompile>
@@ -26,7 +26,7 @@
       <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Label="win32_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32-internals.h">
       <Filter>Header Files$(EGLibFilterSubFolder)\win32</Filter>
     </ClInclude>
