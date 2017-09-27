@@ -104,6 +104,7 @@
       "alwaysRun": false,
       "displayName": "Inject signed symbol catalogs",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), ne(variables['PB_SignType'], 'oss'))",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -113,8 +114,7 @@
         "filename": "msbuild",
         "arguments": "/t:InjectSignedSymbolCatalogIntoSymbolPackages /p:SymbolPackagesToPublishGlob=$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerSymbolPackageGlob) /p:SymbolCatalogCertificateId=$(PB_SymbolCatalogCertificateId)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "failOnStandardError": "true",
-        "condition": "and(succeeded(), ne(variables['PB_SignType'], 'oss'))"
+        "failOnStandardError": "true"
       }
     },
     {
