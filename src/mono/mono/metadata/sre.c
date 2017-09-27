@@ -1180,7 +1180,21 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 				how_collide = MONO_DYN_IMAGE_TOK_NEW;
 			}
 		} else {
-			token = mono_image_get_methodref_token (assembly, method, create_open_instance);
+			guint32 methodref_token = mono_image_get_methodref_token (assembly, method, create_open_instance);
+			/* We need to register a 'canonical' object.  The same
+			 * MonoMethod could have been reflected via different
+			 * classes so the MonoReflectionMethod:reftype could be
+			 * different, and the object lookup in
+			 * dynamic_image_register_token would assert assert. So
+			 * we pick the MonoReflectionMethod object that has the
+			 * reflected type as NULL (ie, take the declaring type
+			 * of the method) */
+			MonoReflectionMethodHandle canonical_obj =
+				mono_method_get_object_handle (MONO_HANDLE_DOMAIN (obj), method, NULL, error);
+			if (!is_ok (error))
+				goto leave;
+			MONO_HANDLE_ASSIGN (register_obj, canonical_obj);
+			token = methodref_token;
 		}
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	} else if (strcmp (klass->name, "MonoField") == 0) {
@@ -1192,7 +1206,15 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
 			how_collide = MONO_DYN_IMAGE_TOK_NEW;
 		} else {
-			token = mono_image_get_fieldref_token (assembly, field);
+			guint32 fieldref_token = mono_image_get_fieldref_token (assembly, field);
+			/* Same as methodref: get a canonical object to
+			 * register with the token. */
+			MonoReflectionFieldHandle canonical_obj =
+				mono_field_get_object_handle (MONO_HANDLE_DOMAIN (obj), field->parent, field, error);
+			if (!is_ok (error))
+				goto leave;
+			MONO_HANDLE_ASSIGN (register_obj, canonical_obj);
+			token = fieldref_token;
 		}
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
 	} else if (strcmp (klass->name, "MonoArrayMethod") == 0) {
