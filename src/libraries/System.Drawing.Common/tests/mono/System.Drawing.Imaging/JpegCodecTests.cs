@@ -108,15 +108,15 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [ConditionalFact(Helpers.GdiPlusIsAvailableNotWindows7)]
         public void Bitmap8bbpIndexedGreyscalePixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature-greyscale.jpg");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
                 // sampling values from a well known bitmap
-                // Assert.Equal(-7697782, bmp.GetPixel(0, 0).ToArgb());
-                // Assert.Equal(-12171706, bmp.GetPixel(0, 32).ToArgb());
+                Assert.Equal(-7697782, bmp.GetPixel(0, 0).ToArgb());
+                Assert.Equal(-12171706, bmp.GetPixel(0, 32).ToArgb());
                 Assert.Equal(-14013910, bmp.GetPixel(0, 64).ToArgb());
                 Assert.Equal(-15132391, bmp.GetPixel(0, 96).ToArgb());
                 Assert.Equal(-328966, bmp.GetPixel(32, 0).ToArgb());
@@ -134,7 +134,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [ConditionalFact(Helpers.GdiPlusIsAvailableNotWindows7)]
         public void Bitmap8bbpIndexedGreyscaleData()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature-greyscale.jpg");
@@ -153,8 +153,8 @@ namespace MonoTests.System.Drawing.Imaging
                     {
                         byte* scan = (byte*)data.Scan0;
                         // sampling values from a well known bitmap
-                        // Assert.Equal(138, *(scan + 0));
-                        // Assert.Equal(203, *(scan + 1009));
+                        Assert.Equal(138, *(scan + 0));
+                        Assert.Equal(203, *(scan + 1009));
                         Assert.Equal(156, *(scan + 2018));
                         Assert.Equal(248, *(scan + 3027));
                         Assert.Equal(221, *(scan + 4036));
