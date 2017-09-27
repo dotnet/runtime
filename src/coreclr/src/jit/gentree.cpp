@@ -1308,6 +1308,16 @@ AGAIN:
                         return false;
                     }
                     break;
+#ifdef FEATURE_SIMD
+                case GT_SIMD:
+                    if ((op1->AsSIMD()->gtSIMDIntrinsicID != op2->AsSIMD()->gtSIMDIntrinsicID) ||
+                        (op1->AsSIMD()->gtSIMDBaseType != op2->AsSIMD()->gtSIMDBaseType) ||
+                        (op1->AsSIMD()->gtSIMDSize != op2->AsSIMD()->gtSIMDSize))
+                    {
+                        return false;
+                    }
+                    break;
+#endif // FEATURE_SIMD
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
@@ -1895,7 +1905,6 @@ AGAIN:
                     hash =
                         genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtObj.gtClass)));
                     break;
-
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
                     break;
