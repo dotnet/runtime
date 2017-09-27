@@ -52,7 +52,7 @@ namespace System.Net.Security
 
             _protocol = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(protocol));
         }
-
+        
         public ReadOnlyMemory<byte> Protocol => _protocol;
 
         public bool Equals(SslApplicationProtocol other)
