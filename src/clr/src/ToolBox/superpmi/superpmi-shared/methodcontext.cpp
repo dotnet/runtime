@@ -3012,6 +3012,23 @@ CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HAND
     return (CORINFO_METHOD_HANDLE)result;
 }
 
+void MethodContext::recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetDefaultEqualityComparerClass == nullptr)
+        GetDefaultEqualityComparerClass = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetDefaultEqualityComparerClass->Add((DWORDLONG)cls, (DWORDLONG)result);
+}
+void MethodContext::dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetDefaultEqualityComparerClass key cls-%016llX, value cls-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)
+{
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultEqualityComparerClass->Get((DWORDLONG)cls);
+    return result;
+}
+
 void MethodContext::recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result)
 {
     if (GetTokenTypeAsHandle == nullptr)

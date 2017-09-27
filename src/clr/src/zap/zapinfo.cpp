@@ -3704,6 +3704,12 @@ CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
     return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
 }
 
+CORINFO_CLASS_HANDLE ZapInfo::getDefaultEqualityComparerClass(
+    CORINFO_CLASS_HANDLE elemType)
+{
+    return m_pEEJitInfo->getDefaultEqualityComparerClass(elemType);
+}
+
 void ZapInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
     CORINFO_GENERICHANDLE_RESULT *  pResult)
