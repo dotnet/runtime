@@ -2544,6 +2544,11 @@ GenTreePtr Compiler::gtReverseCond(GenTree* tree)
     }
     else if (tree->OperIs(GT_JCMP))
     {
+        // Flip the GTF_JCMP_EQ
+        //
+        // This causes switching
+        //     cbz <=> cbnz
+        //     tbz <=> tbnz
         tree->gtFlags ^= GTF_JCMP_EQ;
     }
     else
