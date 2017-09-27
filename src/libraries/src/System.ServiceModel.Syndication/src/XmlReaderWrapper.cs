@@ -1,5 +1,4 @@
-﻿using Microsoft.ServiceModel.Syndication.Resources;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Xml;

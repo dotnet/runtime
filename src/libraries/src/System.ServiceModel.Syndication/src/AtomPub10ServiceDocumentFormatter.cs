@@ -5,7 +5,6 @@
 namespace Microsoft.ServiceModel.Syndication
 {
 
-    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
