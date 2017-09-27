@@ -3392,11 +3392,14 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 //   - cbz/cbnz -- Compare and branch register zero/not zero
 //   - tbz/tbnz -- Test and branch register bit zero/not zero
 //
+// The cbz/cbnz supports the normal +/- 1MB branch range for conditional branches
+// The tbz/tbnz supports a  smaller +/- 32KB branch range
+//
 // A GT_JCMP cbz/cbnz node is created when there is a GT_EQ or GT_NE
 // integer/unsigned comparison against #0 which is used by a GT_JTRUE
 // condition jump node.
 //
-// A GT_JCMP cbz/cbnz node is created when there is a GT_TEST_EQ or GT_TEST_NE
+// A GT_JCMP tbz/tbnz node is created when there is a GT_TEST_EQ or GT_TEST_NE
 // integer/unsigned comparison against against a mask with a single bit set
 // which is used by a GT_JTRUE condition jump node.
 //
