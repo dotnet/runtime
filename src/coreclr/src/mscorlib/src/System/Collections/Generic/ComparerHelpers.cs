@@ -23,7 +23,8 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="type">The type to create the default comparer for.</param>
         /// <remarks>
-        /// The logic in this method is replicated in vm/compile.cpp to ensure that NGen saves the right instantiations.
+        /// The logic in this method is replicated in vm/compile.cpp to ensure that NGen saves the right instantiations,
+        /// and in vm/jitinterface.cpp so the jit can model the behavior of this method.
         /// </remarks>
         internal static object CreateDefaultComparer(Type type)
         {

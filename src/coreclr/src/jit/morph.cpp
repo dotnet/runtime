@@ -8865,7 +8865,7 @@ NO_TAIL_CALL:
             // Check for a new-style jit intrinsic.
             const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
 
-            if (ni == NI_Enum_HasFlag)
+            if (ni == NI_System_Enum_HasFlag)
             {
                 GenTree* thisOp  = call->gtCallObjp;
                 GenTree* flagOp  = call->gtCallArgs->gtOp.gtOp1;

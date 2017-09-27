@@ -3654,6 +3654,8 @@ struct GenTreeCall final : public GenTree
                                                     // to restore real function address and load hidden argument
                                                     // as the first argument for calli. It is CoreRT replacement for instantiating
                                                     // stubs, because executable code cannot be generated at runtime.
+#define GTF_CALL_M_HELPER_SPECIAL_DCE    0x00020000 // GT_CALL -- this helper call can be removed if it is part of a comma and
+                                                    // the comma result is unused.
 
     // clang-format on
 
@@ -4997,7 +4999,7 @@ protected:
 
 struct GenTreeRetExpr : public GenTree
 {
-    GenTreePtr gtInlineCandidate;
+    GenTree* gtInlineCandidate;
 
     CORINFO_CLASS_HANDLE gtRetClsHnd;
 
