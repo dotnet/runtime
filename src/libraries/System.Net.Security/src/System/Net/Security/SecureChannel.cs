@@ -774,7 +774,7 @@ namespace System.Net.Security
 
             if (_sslAuthenticationOptions.ApplicationProtocols != null && _sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                byte[] alpnBytes = SslAuthenticationOptions.ConvertAlpnProtocolListToByteArray(_sslAuthenticationOptions.ApplicationProtocols);
+                byte[] alpnBytes = SslStreamPal.ConvertAlpnProtocolListToByteArray(_sslAuthenticationOptions.ApplicationProtocols);
                 alpnBuffer = new SecurityBuffer(alpnBytes, 0, alpnBytes.Length, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS);
             }
 

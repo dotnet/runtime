@@ -10,7 +10,7 @@ namespace System.Net
 {
     internal static class SecurityStatusAdapterPal
     {
-        private const int StatusDictionarySize = 40;
+        private const int StatusDictionarySize = 41;
 
 #if DEBUG
         static SecurityStatusAdapterPal()

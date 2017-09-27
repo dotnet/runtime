@@ -22,7 +22,7 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, bool isServer)
+        public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
             : base(credential)
         {
             Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
@@ -35,7 +35,7 @@ namespace System.Net
                     _writeCallback = WriteToConnection;
                 }
 
-                _sslContext = CreateSslContext(credential, isServer);
+                _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
 
                 int osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
                     _sslContext,

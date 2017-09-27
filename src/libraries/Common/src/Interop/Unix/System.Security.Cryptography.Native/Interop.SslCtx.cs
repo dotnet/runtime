@@ -37,7 +37,7 @@ internal static partial class Interop
 
         internal static unsafe int SslCtxSetAplnProtos(SafeSslContextHandle ctx, IList<SslApplicationProtocol> protocols)
         {
-            byte[] buffer = SslAuthenticationOptions.ConvertAlpnProtocolListToByteArray(protocols);
+            byte[] buffer = SslStreamPal.ConvertAlpnProtocolListToByteArray(protocols);
             fixed (byte* b = buffer)
             {
                 return SslCtxSetAlpnProtos(ctx, (IntPtr)b, buffer.Length);
