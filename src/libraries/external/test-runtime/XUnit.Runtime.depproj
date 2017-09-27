@@ -99,7 +99,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
-    <UAPToolsPackageVersion>1.0.15</UAPToolsPackageVersion>
+    <UAPToolsPackageVersion>1.0.17</UAPToolsPackageVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
