@@ -127,7 +127,7 @@
     <Compile Include="System\Net\Http\Managed\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\ConnectHelper.cs" />
-    <Compile Include="System\Net\Http\Managed\ConnectionCloseReadStream.cs" />
+    <Compile Include="System\Net\Http\Managed\ConnectionCloseStream.cs" />
     <Compile Include="System\Net\Http\Managed\ContentLengthReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\ContentLengthWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\CookieHandler.cs" />
@@ -140,6 +140,7 @@
     <Compile Include="System\Net\Http\Managed\HttpConnectionPool.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionPools.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionSettings.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpContentDuplexStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpContentReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpContentStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />

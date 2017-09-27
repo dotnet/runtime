@@ -10,10 +10,9 @@ namespace System.Net.Http
 {
     internal sealed partial class HttpConnection : IDisposable
     {
-        private sealed class ConnectionCloseReadStream : HttpContentReadStream
+        private sealed class ConnectionCloseStream : HttpContentDuplexStream
         {
-            public ConnectionCloseReadStream(HttpConnection connection)
-                : base(connection)
+            public ConnectionCloseStream(HttpConnection connection) : base(connection)
             {
             }
 
@@ -28,7 +27,6 @@ namespace System.Net.Http
                 }
 
                 int bytesRead = await _connection.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-
                 if (bytesRead == 0)
                 {
                     // We cannot reuse this connection, so close it.
@@ -40,6 +38,19 @@ namespace System.Net.Http
                 return bytesRead;
             }
 
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateBufferArgs(buffer, offset, count);
+                return
+                    _connection == null ? Task.FromException(new IOException(SR.net_http_io_write)) :
+                    count > 0 ? _connection.WriteWithoutBufferingAsync(buffer, offset, count, cancellationToken) :
+                    Task.CompletedTask;
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken) =>
+                _connection != null ? _connection.FlushAsync(cancellationToken) :
+                Task.CompletedTask;
+
             public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 if (destination == null)
@@ -47,17 +58,14 @@ namespace System.Net.Http
                     throw new ArgumentNullException(nameof(destination));
                 }
 
-                if (_connection == null)
+                if (_connection != null) // null if response body fully consumed
                 {
-                    // Response body fully consumed
-                    return;
+                    await _connection.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
+
+                    // We cannot reuse this connection, so close it.
+                    _connection.Dispose();
+                    _connection = null;
                 }
-
-                await _connection.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
-
-                // We cannot reuse this connection, so close it.
-                _connection.Dispose();
-                _connection = null;
             }
         }
     }
