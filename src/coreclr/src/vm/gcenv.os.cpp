@@ -83,7 +83,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 
 #if !defined(FEATURE_CORESYSTEM)
     SetThreadIdealProcessor(GetCurrentThread(), (DWORD)affinity->Processor);
-#elif !defined(FEATURE_PAL)
+#else
     PROCESSOR_NUMBER proc;
 
     if (affinity->Group != -1)
@@ -94,6 +94,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
         
         success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
     }
+#if !defined(FEATURE_PAL)
     else
     {
         if (GetThreadIdealProcessorEx(GetCurrentThread(), &proc))
@@ -102,6 +103,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
             success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, &proc);
         }        
     }
+#endif // !defined(FEATURE_PAL)
 #endif
 
     return success;
