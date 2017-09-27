@@ -3821,7 +3821,12 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             // on x64 we must materialize the target using specific registers.
             addr->gtRegNum = comp->virtualStubParamInfo->GetReg();
 
+// On ARM we must use a proper address in R12(thunk register) without dereferencing.
+// So for the jump we use the default register.
+// TODO: specifying register probably unnecessary for other platforms, too.
+#if !defined(_TARGET_UNIX_) && !defined(_TARGET_ARM_)
             indir->gtRegNum = REG_JUMP_THUNK_PARAM;
+#endif
             indir->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
 #endif
             result = indir;
