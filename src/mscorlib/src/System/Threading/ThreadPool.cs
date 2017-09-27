@@ -1268,9 +1268,12 @@ namespace System.Threading
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
-            QueueUserWorkItem(callBack, null);
+            QueueUserWorkItem(callBack, null, preferLocal: false);
 
-        public static bool QueueUserWorkItem(WaitCallback callBack, object state)
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state) =>
+            QueueUserWorkItem(callBack, state, preferLocal: false);
+
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state, bool preferLocal)
         {
             if (callBack == null)
             {
@@ -1285,7 +1288,7 @@ namespace System.Threading
                 new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
                 (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
 
-            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: !preferLocal);
 
             return true;
         }
