@@ -14,21 +14,4 @@
       <UniqueIdentifier>{9B2D78CC-201F-48DF-8710-839BCDB0AEE9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Header Files$(EGLibFilterSubFolder)\Common">
-      <UniqueIdentifier>{04853f35-873a-4b07-990a-61dc8ebd5105}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files$(EGLibFilterSubFolder)\Win32">
-      <UniqueIdentifier>{80953075-5d05-41b9-be90-82497081b11c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files$(EGLibFilterSubFolder)\Common">
-      <UniqueIdentifier>{7a01f670-6a6a-4837-b3ac-cd6c08075b4e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files$(EGLibFilterSubFolder)\Win32">
-      <UniqueIdentifier>{c6e3ed6c-6b52-4823-bc4f-2dc9f84e3f5d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files$(EGLibFilterSubFolder)\Posix">
-      <UniqueIdentifier>{3c958a68-b6a1-40d3-834c-b50be09cb819}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
 </Project>

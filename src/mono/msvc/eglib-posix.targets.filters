@@ -2,7 +2,12 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile-posix.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\Posix</Filter>
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(EGLibFilterSubFolder)\posix">
+      <UniqueIdentifier>{3c958a68-b6a1-40d3-834c-b50be09cb819}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
