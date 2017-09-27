@@ -2,59 +2,68 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Diagnostics {
+using System.ComponentModel;
 
-    using System.Diagnostics;
-
-    using System;
-    using System.ComponentModel;
-    
+namespace System.Diagnostics
+{
     /// <summary>
     ///     A struct defining the counter type, name and help string for a custom counter.
     /// </summary>
-    public class CounterCreationData {
-        private PerformanceCounterType counterType = PerformanceCounterType.NumberOfItems32;
-        private string counterName = String.Empty;
-        private string counterHelp = String.Empty;
+    public class CounterCreationData
+    {
+        private PerformanceCounterType _counterType = PerformanceCounterType.NumberOfItems32;
+        private string _counterName = string.Empty;
+        private string _counterHelp = string.Empty;
 
-        public CounterCreationData() {            
+        public CounterCreationData()
+        {
         }
-    
-        public CounterCreationData(string counterName, string counterHelp, PerformanceCounterType counterType) {
+
+        public CounterCreationData(string counterName, string counterHelp, PerformanceCounterType counterType)
+        {
             CounterType = counterType;
             CounterName = counterName;
             CounterHelp = counterHelp;
         }
 
-        public PerformanceCounterType CounterType {
-            get {
-                return counterType;
+        public PerformanceCounterType CounterType
+        {
+            get
+            {
+                return _counterType;
             }
-            set {
-                if (!Enum.IsDefined(typeof(PerformanceCounterType), value)) 
+            set
+            {
+                if (!Enum.IsDefined(typeof(PerformanceCounterType), value))
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(PerformanceCounterType));
-            
-                counterType = value;
+
+                _counterType = value;
             }
         }
 
-        public string CounterName {
-            get {
-                return counterName;
+        public string CounterName
+        {
+            get
+            {
+                return _counterName;
             }
-            set {
+            set
+            {
                 PerformanceCounterCategory.CheckValidCounter(value);
-                counterName = value;
+                _counterName = value;
             }
         }
 
-        public string CounterHelp {
-            get {
-                return counterHelp;
+        public string CounterHelp
+        {
+            get
+            {
+                return _counterHelp;
             }
-            set {
+            set
+            {
                 PerformanceCounterCategory.CheckValidHelp(value);
-                counterHelp = value;
+                _counterHelp = value;
             }
         }
     }

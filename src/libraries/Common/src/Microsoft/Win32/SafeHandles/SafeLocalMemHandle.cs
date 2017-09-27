@@ -21,18 +21,10 @@ namespace Microsoft.Win32.SafeHandles {
             SetHandle(existingHandle);
         }
 
-
-        [DllImport(ExternDll.Advapi32, CharSet=System.Runtime.InteropServices.CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern unsafe bool ConvertStringSecurityDescriptorToSecurityDescriptor(string StringSecurityDescriptor, int StringSDRevision, out SafeLocalMemHandle pSecurityDescriptor, IntPtr SecurityDescriptorSize);
-
-        [DllImport(ExternDll.Kernel32)]
-        private static extern IntPtr LocalFree(IntPtr hMem);
-
         override protected bool ReleaseHandle()
         {
-            return LocalFree(handle) == IntPtr.Zero;
+            return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
         }
-
     }
 }
 

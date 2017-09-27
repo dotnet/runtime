@@ -3,6 +3,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp-Windows_NT;
+      netstandard;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
