@@ -4168,20 +4168,17 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
 
 #ifdef _TARGET_ARM_
-        if (tree->OperIsPutArgSplit())
+        if (tree->OperIsPutArgSplit()
+#ifdef ARM_SOFTFP
+            // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
+            || tree->OperIsMultiRegOp() || tree->OperGet() == GT_BITCAST
+#endif // ARM_SOFTFP
+            )
         {
             // get i-th candidate
             currCandidates = genFindLowestReg(candidates);
             candidates &= ~currCandidates;
         }
-#ifdef ARM_SOFTFP
-        // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
-        else if (tree->OperIsMultiRegOp() || tree->OperGet() == GT_BITCAST)
-        {
-            currCandidates = genFindLowestReg(candidates);
-            candidates &= ~currCandidates;
-        }
-#endif // ARM_SOFTFP
 #endif // _TARGET_ARM_
 
         if (interval == nullptr)
