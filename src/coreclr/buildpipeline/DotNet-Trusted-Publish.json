@@ -110,9 +110,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "msbuild",
-        "arguments": "/t:InjectSignedSymbolCatalogIntoSymbolPackages /p:SymbolPackagesToPublishGlob=$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerSymbolPackageGlob) /p:SymbolCatalogCertificateId=$(PB_SymbolCatalogCertificateId)",
+        "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(AzureContainerSymbolPackageGlob) -PipelineSrcDir $(Pipeline.SourcesDirectory) -SignType $(PB_SignType)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $PipelineSrcDir, $SignType=\"unset\" )\n\nif ($SignType.ToLower() -ne \"real\" ) { Write-host \"Chose not to sign symbol catalogs\"; exit }\n\n\n msbuild /t:InjectSignedSymbolCatalogIntoSymbolPackages `\n/p:SymbolPackagesToPublishGlob=$PipelineSrcDir\\packages\\AzureTransfer\\$ConfigGroup\\$SymPkgGlob `\n/p:SymbolCatalogCertificateId=400",
         "failOnStandardError": "true"
       }
     },
