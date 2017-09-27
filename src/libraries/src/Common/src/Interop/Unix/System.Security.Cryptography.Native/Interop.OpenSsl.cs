@@ -102,7 +102,7 @@ internal static partial class Interop
                 {
                     if (sslAuthenticationOptions.IsServer)
                     {
-                        byte[] protos = sslAuthenticationOptions.ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                        byte[] protos = SslStreamPal.ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
                         sslAuthenticationOptions.AlpnProtocolsHandle = GCHandle.Alloc(protos);
                         Interop.Ssl.SslCtxSetAplnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(sslAuthenticationOptions.AlpnProtocolsHandle));
                     }

@@ -102,6 +102,31 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(((SafeDeleteSslContext)securityContext).SslContext);
         }
 
+        public static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
+
+                protocolSize += protocol.Protocol.Length + 1;
+            }
+
+            byte[] buffer = new byte[protocolSize];
+            var offset = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                buffer[offset++] = (byte)(protocol.Protocol.Length);
+                Array.Copy(protocol.Protocol.ToArray(), 0, buffer, offset, protocol.Protocol.Length);
+                offset += protocol.Protocol.Length;
+            }
+
+            return buffer;
+        }
+
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context, SecurityBuffer inputBuffer,
             SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {

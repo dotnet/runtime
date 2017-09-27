@@ -477,7 +477,7 @@ namespace System.Net
                     break;
 
                 case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL:
-                    nativeBlockSize = Marshal.SizeOf<SecPkgContext_ApplicationProtocol>();
+                    nativeBlockSize = Marshal.SizeOf<Interop.SecPkgContext_ApplicationProtocol>();
                     break;
 
                 default:
@@ -550,7 +550,7 @@ namespace System.Net
                         {
                             fixed (void *ptr = nativeBuffer)
                             {
-                                attribute = Marshal.PtrToStructure<SecPkgContext_ApplicationProtocol>(new IntPtr(ptr));
+                                attribute = Marshal.PtrToStructure<Interop.SecPkgContext_ApplicationProtocol>(new IntPtr(ptr));
                             }
                         }
                         break;

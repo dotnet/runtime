@@ -34,6 +34,18 @@
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs">
       <Link>ProductionCode\System\Net\Security\SslStream.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslClientAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslClientAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslServerAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslServerAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslApplicationProtocol.cs">
+      <Link>ProductionCode\System\Net\Security\SslApplicationProtocol.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs">
       <Link>ProductionCode\System\Net\SslStreamContext.cs</Link>
     </Compile>

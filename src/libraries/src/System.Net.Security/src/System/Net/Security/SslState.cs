@@ -155,7 +155,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _context.NegotiatedApplicationProtocol;
+                return _context?.NegotiatedApplicationProtocol;
             }
         }
 
