@@ -120,12 +120,6 @@ ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error);
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error);
 
-MonoArray *
-ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
-						 MonoString *path_with_pattern,
-						 gint mask, gint attrs,
-						 gint32 *error);
-
 extern gpointer
 ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path_with_pattern,
 						MonoString **file_name,
