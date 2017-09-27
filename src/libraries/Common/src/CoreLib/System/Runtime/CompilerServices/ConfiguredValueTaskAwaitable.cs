@@ -39,7 +39,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>The value being awaited.</summary>
             private ValueTask<TResult> _value; // Methods are called on this; avoid making it readonly so as to avoid unnecessary copies
             /// <summary>The value to pass to ConfigureAwait.</summary>
-            private readonly bool _continueOnCapturedContext;
+            internal readonly bool _continueOnCapturedContext;
 
             /// <summary>Initializes the awaiter.</summary>
             /// <param name="value">The value to be awaited.</param>
@@ -66,6 +66,9 @@ namespace System.Runtime.CompilerServices
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
             public void UnsafeOnCompleted(Action continuation) =>
                 _value.AsTask().ConfigureAwait(_continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(continuation);
+
+            /// <summary>Gets the task underlying <see cref="_value"/>.</summary>
+            internal Task<TResult> AsTask() => _value.AsTask();
         }
     }
 }
