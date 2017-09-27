@@ -44,9 +44,9 @@ namespace System.Diagnostics
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
-            for (int i = 0; ((i) < (value.Length)); i = ((i) + (1)))
+            for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
@@ -56,10 +56,10 @@ namespace System.Diagnostics
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             int currentCount = value.Count;
-            for (int i = 0; i < currentCount; i = ((i) + (1)))
+            for (int i = 0; i < currentCount; i++)
             {
                 Add(value[i]);
             }
@@ -93,7 +93,7 @@ namespace System.Diagnostics
         protected override void OnValidate(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             CounterCreationData dataToAdd = value as CounterCreationData;
             if (dataToAdd == null)

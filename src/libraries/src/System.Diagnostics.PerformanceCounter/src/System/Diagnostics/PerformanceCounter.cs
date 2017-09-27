@@ -145,7 +145,7 @@ namespace System.Diagnostics
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (_categoryName == null || string.Compare(_categoryName, value, StringComparison.OrdinalIgnoreCase) != 0)
                 {
@@ -188,7 +188,7 @@ namespace System.Diagnostics
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (_counterName == null || string.Compare(_counterName, value, StringComparison.OrdinalIgnoreCase) != 0)
                 {
@@ -231,7 +231,7 @@ namespace System.Diagnostics
             set
             {
                 if (value > PerformanceCounterInstanceLifetime.Process || value < PerformanceCounterInstanceLifetime.Global)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 if (_initialized)
                     throw new InvalidOperationException(SR.Format(SR.CantSetLifetimeAfterInitialized));
