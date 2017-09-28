@@ -27,6 +27,7 @@ extern gboolean mono_align_small_structs;
 typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
 typedef struct _MonoMethodPInvoke MonoMethodPInvoke;
+typedef struct _MonoDynamicMethod MonoDynamicMethod;
 
 /* Properties that applies to a group of structs should better use a higher number
  * to avoid colision with type specific properties.
@@ -98,6 +99,11 @@ struct _MonoMethodWrapper {
 	MonoMethod method;
 	MonoMethodHeader *header;
 	void *method_data;
+};
+
+struct _MonoDynamicMethod {
+	MonoMethodWrapper method;
+	MonoAssembly *assembly;
 };
 
 struct _MonoMethodPInvoke {

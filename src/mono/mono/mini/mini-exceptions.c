@@ -1415,6 +1415,11 @@ wrap_non_exception_throws (MonoMethod *m)
 	int i;
 	gboolean val = FALSE;
 
+	if (m->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+		MonoDynamicMethod *dm = (MonoDynamicMethod *)m;
+		if (dm->assembly)
+			ass = dm->assembly;
+	}
 	g_assert (ass);
 	if (ass->wrap_non_exception_throws_inited)
 		return ass->wrap_non_exception_throws;

@@ -375,6 +375,12 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 	mono_loader_unlock ();
 
 }
+#else
+//FIXME some code compiled under DISABLE_REFLECTION_EMIT depends on this function, we should be more aggressively disabling things
+static void
+mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
+{
+}
 #endif
 
 guint32
@@ -2777,7 +2783,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			(rmb->iattrs & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		m = (MonoMethod *)image_g_new0 (image, MonoMethodPInvoke, 1);
 	else
-		m = (MonoMethod *)image_g_new0 (image, MonoMethodWrapper, 1);
+		m = (MonoMethod *)image_g_new0 (image, MonoDynamicMethod, 1);
 
 	wrapperm = (MonoMethodWrapper*)m;
 
@@ -2872,6 +2878,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		}
 
 		wrapperm->header = header;
+		MonoDynamicMethod *dm = (MonoDynamicMethod*)wrapperm;
+		dm->assembly = klass->image->assembly;
 	}
 
 	if (rmb->generic_params) {
@@ -3908,6 +3916,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 		rmb.refs [i + 1] = handle_class;
 	}		
 
+	MonoAssembly *ass = NULL;
 	if (mb->owner) {
 		MonoType *owner_type = mono_reflection_type_get_handle ((MonoReflectionType*)mb->owner, error);
 		if (!is_ok (error)) {
@@ -3915,11 +3924,14 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 			return FALSE;
 		}
 		klass = mono_class_from_mono_type (owner_type);
+		ass = klass->image->assembly;
 	} else {
 		klass = mono_defaults.object_class;
+		ass = (mb->module && mb->module->image) ? mb->module->image->assembly : NULL;
 	}
 
 	mb->mhandle = handle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
+	((MonoDynamicMethod*)handle)->assembly = ass;
 	g_free (rmb.refs);
 	return_val_if_nok (error, FALSE);
 
@@ -4369,6 +4381,18 @@ void
 ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	mono_reflection_dynimage_basic_init (assemblyb);
+}
+
+void
+ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes (MonoReflectionAssemblyBuilderHandle assemblyb, MonoError *error)
+{
+	MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, assemblyb, cattrs);
+
+	MonoReflectionAssemblyHandle assembly_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, assemblyb);
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_handle, assembly);
+	g_assert (assembly);
+
+	mono_save_custom_attrs (assembly->image, assembly, MONO_HANDLE_RAW (cattrs));
 }
 
 void
