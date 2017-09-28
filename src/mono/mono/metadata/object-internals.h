@@ -1927,7 +1927,7 @@ void
 ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb);
 
 void
-ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes (MonoReflectionAssemblyBuilderHandle assemblyb);
+ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes (MonoReflectionAssemblyBuilderHandle assemblyb, MonoError *error);
 
 MonoArray*
 ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues);

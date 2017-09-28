@@ -376,7 +376,7 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 
 }
 #else
-//For some WTF reason, users of this function are DISABLE_REFLECTION_EMIT
+//FIXME some code compiled under DISABLE_REFLECTION_EMIT depends on this function, we should be more aggressively disabling things
 static void
 mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 {
@@ -4384,7 +4384,7 @@ ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 }
 
 void
-ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes (MonoReflectionAssemblyBuilderHandle assemblyb)
+ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes (MonoReflectionAssemblyBuilderHandle assemblyb, MonoError *error)
 {
 	MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, assemblyb, cattrs);
 
