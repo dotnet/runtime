@@ -86,11 +86,13 @@ sealed public class SealedFinal : Middle {
 }
 
 
-class Tests {
+class DevirtualizationTests {
 
+#if !__MOBILE__
 	static int Main  (string[] args) {
-		return TestDriver.RunTests (typeof (Tests), args);
+		return TestDriver.RunTests (typeof (DevirtualizationTests), args);
 	}
+#endif
 	
 	static public int test_0_sealed_class_devirt_right_method () {
 		SealedFinal x = new SealedFinal ();

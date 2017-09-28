@@ -70,6 +70,8 @@ update_current_thread_stack (void *start)
 
 #if !defined(MONO_CROSS_COMPILE) && MONO_ARCH_HAS_MONO_CONTEXT
 	MONO_CONTEXT_GET_CURRENT (info->client_info.ctx);
+#elif defined (HOST_WASM)
+	//nothing
 #else
 	g_error ("Sgen STW requires a working mono-context");
 #endif

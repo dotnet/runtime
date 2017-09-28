@@ -352,6 +352,8 @@ mono_class_is_magic_assembly (MonoClass *klass)
 	/* regression test suite */
 	if (!strcmp ("builtin-types", klass->image->assembly_name))
 		return TRUE;
+	if (!strcmp ("mini_tests", klass->image->assembly_name))
+		return TRUE;
 	return FALSE;
 }
 

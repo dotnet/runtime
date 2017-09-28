@@ -2503,7 +2503,7 @@ sgen_ensure_free_space (size_t size, int generation)
  * LOCKING: Assumes the GC lock is held.
  */
 void
-sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw)
+sgen_perform_collection_inner (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw)
 {
 	TV_DECLARE (gc_total_start);
 	TV_DECLARE (gc_total_end);
@@ -2582,6 +2582,52 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		sgen_restart_world (oldest_generation_collected);
 }
 
+#ifdef HOST_WASM
+
+typedef struct {
+	size_t requested_size;
+	int generation_to_collect;
+	const char *reason;
+} SgenGcRequest;
+
+static SgenGcRequest gc_request;
+static gboolean pending_request;
+
+extern void request_gc_cycle (void);
+
+#include <emscripten.h>
+
+EMSCRIPTEN_KEEPALIVE void
+mono_gc_pump_callback (void)
+{
+	if (!pending_request)
+		return;
+	pending_request = FALSE;
+	sgen_perform_collection_inner (gc_request.requested_size, gc_request.generation_to_collect, gc_request.reason, TRUE, TRUE);	
+}
+#endif
+
+void
+sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw)
+{
+#ifdef HOST_WASM
+	g_assert (stw); //can't handle non-stw mode (IE, domain unload)
+	//we ignore wait_to_finish
+	if (!pending_request || gc_request.generation_to_collect <= generation_to_collect) { //no active request or request was for a smaller part of the heap
+		gc_request.requested_size = requested_size;
+		gc_request.generation_to_collect = generation_to_collect;
+		gc_request.reason = reason;
+		if (!pending_request) {
+			request_gc_cycle ();
+			pending_request = TRUE;
+		}
+	}
+
+	degraded_mode = 1; //enable degraded mode so allocation can continue
+#else
+	sgen_perform_collection_inner (requested_size, generation_to_collect, reason, wait_to_finish, stw);
+#endif
+}
 /*
  * ######################################################################
  * ########  Memory allocation from the OS

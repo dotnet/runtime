@@ -416,7 +416,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 	g_free (fname);
 
 	if (!ebp) {
-		printf (") ip: %p\n", RETURN_ADDRESS_N (1));
+		printf (") ip: %p\n", MONO_RETURN_ADDRESS_N (1));
 		goto unlock;
 	}
 
@@ -426,7 +426,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	if (method->is_inflated) {
 		/* FIXME: Might be better to pass the ji itself */
-		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)RETURN_ADDRESS (), NULL);
+		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_RETURN_ADDRESS (), NULL);
 		if (ji) {
 			gsctx = mono_jit_info_get_generic_sharing_context (ji);
 			if (gsctx && gsctx->is_gsharedvt) {
@@ -590,7 +590,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 
 	if (method->is_inflated) {
 		/* FIXME: Might be better to pass the ji itself */
-		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)RETURN_ADDRESS (), NULL);
+		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_RETURN_ADDRESS (), NULL);
 		if (ji) {
 			gsctx = mono_jit_info_get_generic_sharing_context (ji);
 			if (gsctx && gsctx->is_gsharedvt) {
@@ -698,7 +698,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 		printf ("(unknown return type %x)", mono_method_signature (method)->ret->type);
 	}
 
-	//printf (" ip: %p\n", RETURN_ADDRESS_N (1));
+	//printf (" ip: %p\n", MONO_RETURN_ADDRESS_N (1));
 	printf ("\n");
 	fflush (stdout);
 
