@@ -3,6 +3,7 @@
   <PropertyGroup>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoWarn>2008;8021</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

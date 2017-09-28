@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Don't import props files above this folder since they don't work with the .NET Core SDK. -->
-  <!--<Import Project="..\dir.props" />-->
+
 
   <PropertyGroup>
-    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))/</RepoRoot>
-    <VersionPrefix>2.0.2</VersionPrefix>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -45,5 +43,5 @@
     </Content>
   </ItemGroup>
 
-  <Import Condition="Exists('$(RepoRoot)Tools/versioning.props')" Project="$(RepoRoot)Tools/versioning.props" /> 
+  <Import Condition="Exists('$(ToolsDir)versioning.props')" Project="$(ToolsDir)versioning.props" />
 </Project>
