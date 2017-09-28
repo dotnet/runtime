@@ -11,6 +11,7 @@ namespace System.IO.Tests
     public class File_Create_Tests : FileSystemWatcherTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/14154", TestPlatforms.AnyUnix)]
         public void FileSystemWatcher_File_Create()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
