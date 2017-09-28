@@ -17,10 +17,15 @@ namespace System.IO.Pipes.Tests
     public abstract partial class PipeTest_Read : PipeTestBase
     {
         public virtual bool SupportsBidirectionalReadingWriting => false;
+        protected virtual bool ShouldSkipTest() => false;
 
         [Fact]
         public void ReadWithNullBuffer_Throws_ArgumentNullException()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;
@@ -44,6 +49,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ReadWithNegativeOffset_Throws_ArgumentOutOfRangeException()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;
@@ -59,6 +68,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ReadWithNegativeCount_Throws_ArgumentOutOfRangeException()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;
@@ -74,6 +87,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ReadWithOutOfBoundsArray_Throws_ArgumentException()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;
@@ -121,6 +138,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void WriteToReadOnlyPipe_Throws_NotSupportedException()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             if (SupportsBidirectionalReadingWriting)
             {
                 return;
@@ -150,6 +171,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public async Task ReadWithZeroLengthBuffer_Nop()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;
@@ -164,6 +189,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ReadPipeUnsupportedMembers_Throws_NotSupportedException()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;
@@ -184,6 +213,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ReadOnDisposedReadablePipe_Throws_ObjectDisposedException()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;
@@ -202,6 +235,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void CopyToAsync_InvalidArgs_Throws()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 AssertExtensions.Throws<ArgumentNullException>("destination", () => { pair.readablePipe.CopyToAsync(null); });
@@ -218,6 +255,10 @@ namespace System.IO.Pipes.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "There is a bug in netfx around async read on a broken PipeStream. See #2601 and #2899. This bug is fixed in netcore.")]
         public virtual async Task ReadFromPipeWithClosedPartner_ReadNoBytes()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 pair.writeablePipe.Dispose();
@@ -237,6 +278,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public async Task ValidWriteAsync_ValidReadAsync()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 Assert.True(pair.writeablePipe.IsConnected);
@@ -255,6 +300,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ValidWrite_ValidRead()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 Assert.True(pair.writeablePipe.IsConnected);
@@ -274,6 +323,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ValidWriteByte_ValidReadByte()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 Assert.True(pair.writeablePipe.IsConnected);
@@ -289,6 +342,10 @@ namespace System.IO.Pipes.Tests
         [MemberData(nameof(AsyncReadWriteChain_MemberData))]
         public async Task AsyncReadWriteChain_ReadWrite(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             var writeBuffer = new byte[writeBufferSize];
             var readBuffer = new byte[readBufferSize];
             var rand = new Random();
@@ -325,6 +382,10 @@ namespace System.IO.Pipes.Tests
         [MemberData(nameof(AsyncReadWriteChain_MemberData))]
         public async Task AsyncReadWriteChain_CopyToAsync(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             var writeBuffer = new byte[writeBufferSize * iterations];
             new Random().NextBytes(writeBuffer);
             var cancellationToken = cancelableToken ? new CancellationTokenSource().Token : CancellationToken.None;
@@ -360,6 +421,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public async Task ValidWriteAsync_ValidReadAsync_APM()
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 Assert.True(pair.writeablePipe.IsConnected);
@@ -381,6 +446,10 @@ namespace System.IO.Pipes.Tests
         [MemberData(nameof(AsyncReadWriteChain_MemberData))]
         public async Task AsyncReadWriteChain_ReadWrite_APM(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
         {
+            if (ShouldSkipTest())
+            {
+                return;
+            }
             var writeBuffer = new byte[writeBufferSize];
             var readBuffer = new byte[readBufferSize];
             var rand = new Random();
