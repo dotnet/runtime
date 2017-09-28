@@ -9,8 +9,8 @@ namespace System.Diagnostics
     /// </summary>    
     public class InstanceData
     {
-        private string _instanceName;
-        private CounterSample _sample;
+        private readonly string _instanceName;
+        private readonly CounterSample _sample;
 
         public InstanceData(string instanceName, CounterSample sample)
         {

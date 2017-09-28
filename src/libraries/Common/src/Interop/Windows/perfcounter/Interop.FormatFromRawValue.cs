@@ -12,12 +12,12 @@ internal partial class Interop
 #pragma warning disable BCL0015 // Invalid Pinvoke call
         [DllImport(Libraries.PerfCounter, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
         public static unsafe extern int FormatFromRawValue(
-          uint dwCounterType,
-          uint dwFormat,
-          ref long pTimeBase,
-          Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue1,
-          Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue2,
-          Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pFmtValue
+            uint dwCounterType,
+            uint dwFormat,
+            ref long pTimeBase,
+            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue1,
+            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue2,
+            Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pFmtValue
         );
 #pragma warning restore BCL0015
     }

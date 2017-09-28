@@ -7,7 +7,7 @@ using System.ComponentModel;
 namespace System.Diagnostics
 {
     /// <summary>
-    ///     A struct defining the counter type, name and help string for a custom counter.
+    ///     A class defining the counter type, name and help string for a custom counter.
     /// </summary>
     public class CounterCreationData
     {

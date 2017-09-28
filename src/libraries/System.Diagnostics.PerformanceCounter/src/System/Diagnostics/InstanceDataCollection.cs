@@ -15,13 +15,13 @@ namespace System.Diagnostics
     /// </summary>    
     public class InstanceDataCollection : DictionaryBase
     {
-        private string _counterName;
+        private readonly string _counterName;
 
         [Obsolete("This constructor has been deprecated.  Please use System.Diagnostics.InstanceDataCollectionCollection.get_Item to get an instance of this collection instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public InstanceDataCollection(string counterName)
         {
             if (counterName == null)
-                throw new ArgumentNullException("counterName");
+                throw new ArgumentNullException(nameof(counterName));
             _counterName = counterName;
         }
 
@@ -51,7 +51,7 @@ namespace System.Diagnostics
             get
             {
                 if (instanceName == null)
-                    throw new ArgumentNullException("instanceName");
+                    throw new ArgumentNullException(nameof(instanceName));
 
                 if (instanceName.Length == 0)
                     instanceName = PerformanceCounterLib.SingleInstanceName;
@@ -70,7 +70,7 @@ namespace System.Diagnostics
         public bool Contains(string instanceName)
         {
             if (instanceName == null)
-                throw new ArgumentNullException("instanceName");
+                throw new ArgumentNullException(nameof(instanceName));
 
             object objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
             return Dictionary.Contains(objectName);

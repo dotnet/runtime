@@ -10,7 +10,6 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        // P/Invoke for the methods above. Don't call this from anywhere else.
         [DllImport(Libraries.Kernel32, ExactSpelling=true, SetLastError=true, EntryPoint="WaitForSingleObject")]
         internal static extern int WaitForSingleObjectDontCallThis(SafeWaitHandle handle, int timeout);
     }
