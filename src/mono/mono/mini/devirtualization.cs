@@ -90,7 +90,7 @@ class DevirtualizationTests {
 
 #if !__MOBILE__
 	static int Main  (string[] args) {
-		return TestDriver.RunTests (typeof (Tests), args);
+		return TestDriver.RunTests (typeof (DevirtualizationTests), args);
 	}
 #endif
 	
