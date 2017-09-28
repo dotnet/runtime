@@ -198,7 +198,6 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(16, data.Height);
 
-                    int size = data.Height * data.Stride;
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
@@ -676,7 +675,6 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(48, data.Height);
 
-                    int size = data.Height * data.Stride;
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
@@ -903,7 +901,6 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(64, data.Height);
 
-                    int size = data.Height * data.Stride;
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
@@ -1701,7 +1698,6 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(96, data.Height);
 
-                    int size = data.Height * data.Stride;
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
