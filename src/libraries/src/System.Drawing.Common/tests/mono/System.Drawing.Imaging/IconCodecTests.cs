@@ -83,7 +83,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Image16_PaletteEntries_Unix()
         {
@@ -95,7 +95,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Image16_PaletteEntries_Windows()
         {
@@ -141,7 +141,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap16Features_Palette_Entries_Unix()
         {
@@ -169,7 +169,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap16Features_Palette_Entries_Windows()
         {
@@ -328,7 +328,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap32Features_PaletteEntries_Unix()
         {
@@ -357,7 +357,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap32Features_PaletteEntries_Windows()
         {
@@ -573,7 +573,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap48Features_Palette_Entries_Unix()
         {
@@ -587,7 +587,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap48Features_Palette_Entries_Windows()
         {
@@ -820,7 +820,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap64Features_Palette_Entries_Unix()
         {
@@ -832,7 +832,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap64Features_Palette_Entries_Windows()
         {
@@ -1101,7 +1101,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap96Features_Palette_Entries_Unix()
         {
@@ -1113,7 +1113,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ActiveIssue(20844, TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap96Features_Palette_Entries_Windows()
         {
