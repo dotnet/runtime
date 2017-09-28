@@ -2361,6 +2361,10 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 {
 	scan_area_arg_start = start_nursery;
 	scan_area_arg_end = end_nursery;
+#ifdef HOST_WASM
+	//Under WASM we don't scan thread stacks and we can't trust the values we find there either.
+	return;
+#endif
 
 	FOREACH_THREAD (info) {
 		int skip_reason = 0;
