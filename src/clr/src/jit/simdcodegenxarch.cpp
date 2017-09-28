@@ -680,7 +680,7 @@ void CodeGen::genSIMDScalarMove(
                 if (srcReg != targetReg)
                 {
                     instruction ins = ins_Store(baseType);
-                    if (getEmitter()->IsThreeOperandMoveAVXInstruction(ins))
+                    if (getEmitter()->IsDstSrcSrcAVXInstruction(ins))
                     {
                         // In general, when we use a three-operands move instruction, we want to merge the src with
                         // itself. This is an exception in that we actually want the "merge" behavior, so we must
@@ -709,7 +709,7 @@ void CodeGen::genSIMDScalarMove(
                 if (srcReg != targetReg)
                 {
                     instruction ins = ins_Copy(baseType);
-                    assert(!getEmitter()->IsThreeOperandMoveAVXInstruction(ins));
+                    assert(!getEmitter()->IsDstSrcSrcAVXInstruction(ins));
                     inst_RV_RV(ins, targetReg, srcReg, baseType, emitTypeSize(baseType));
                 }
                 break;
