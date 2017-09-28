@@ -16,6 +16,10 @@
     </BuildTargets>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <CommonProjectArgs>$(MSBuildPassThroughPropertyList) /p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid)</CommonProjectArgs>
+  </PropertyGroup>
+
   <Target Name="Build" DependsOnTargets="$(BuildTargets)" />
 
   <Target Name="PublishSharedFrameworkAndSharedHost"
@@ -23,7 +27,7 @@
     
     <PropertyGroup>
       <SharedFrameworkSourceRoot>$(MSBuildThisFileDirectory)framework</SharedFrameworkSourceRoot>
-      <CommonSharedFrameworkArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
+      <CommonSharedFrameworkArgs>$(CommonProjectArgs) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
     </PropertyGroup>  
 
     <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
@@ -109,7 +113,7 @@
 
   <Target Name="GenerateRuntimeGraph">
     <PropertyGroup>
-      <SharedFrameworkAssetsFile>$(SharedFrameworkSourceRoot)/obj/project.assets.json</SharedFrameworkAssetsFile>
+      <SharedFrameworkAssetsFile>$(IntermediateOutputRootPath)/framework/project.assets.json</SharedFrameworkAssetsFile>
       <SharedFrameworkDepsFile>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</SharedFrameworkDepsFile>
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
@@ -133,7 +137,7 @@
   <Target Name="RestoreLockedCoreHost">
     <PropertyGroup>
       <LockedHostSourceRoot>$(MSBuildThisFileDirectory)lockedhost</LockedHostSourceRoot>
-      <CommonLockedHostArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid) /p:HostResolverVersion=$(HostResolverVersion) /p:HostVersion=$(HostVersion)</CommonLockedHostArgs>
+      <CommonLockedHostArgs>$(CommonProjectArgs) /p:HostResolverVersion=$(HostResolverVersion) /p:HostVersion=$(HostVersion)</CommonLockedHostArgs>
     </PropertyGroup>
 
     <RemoveDir Directories="$(CoreHostLockedDir)" />

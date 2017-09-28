@@ -2,6 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
+  <PropertyGroup>
+    <!-- Directory.Build.props imports this .props file, so ensure it isn't imported again -->
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+  </PropertyGroup>
+
   <Import Project="dependencies.props" />
 
   <!-- Build as portable by default -->
@@ -9,19 +14,8 @@
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
-  <!-- Branch Info -->
-  <PropertyGroup>
-    <MajorVersion>2</MajorVersion>
-    <MinorVersion>0</MinorVersion>
-    <PatchVersion>2</PatchVersion>
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <PreReleaseLabel>servicing</PreReleaseLabel>
-    <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
-    <ReleaseBrandSuffix></ReleaseBrandSuffix>
-    <Channel>release/2.0.0</Channel>
-    <BranchName>release/2.0.0</BranchName>
-  </PropertyGroup>
-
+  <Import Project="$(MSBuildThisFileDirectory)BranchInfo.props" />
+  
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>
@@ -35,42 +29,13 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
-  <!-- Common repo directories -->
-  <PropertyGroup>
-    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src/</SourceDir>
-
-    <!-- Output directories -->
-    <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)Bin/</BinDir>
-    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
-    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
-
-    <!-- Input Directories -->
-    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
-    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
-    <LocalToolRuntimePath Condition="'$(LocalToolRuntimePath)' == ''">$(ToolRuntimePath)local/</LocalToolRuntimePath>
-    <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <BuildToolsTaskDir>$(ToolRuntimePath)</BuildToolsTaskDir>
-    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net46/</BuildToolsTaskDir>
-    <LocalBuildToolsTaskDir>$(LocalToolRuntimePath)</LocalBuildToolsTaskDir>
-    <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
-    <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
-  </PropertyGroup>
-
+  <Import Project="$(MSBuildThisFileDirectory)RepoDirectories.props" />
+  
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
   <!-- Versioning -->
   <PropertyGroup>
-    <!-- Dev builds get a minor version, by default, of '0'.  Our tests restore packages with
-         a -* version, and include myget sources, so any package published the same day to myget
-         will conflict with the local build and override the local built package.  Prevent this
-         by setting the non-official build minor version to 9 -->
-    <BuildNumberMinor Condition="'$(BuildNumberMinor)' == '0'">9</BuildNumberMinor>
-
     <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
     <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
     <VersionSuffix Condition="'$(StabilizePackageVersion)' =='true'"></VersionSuffix>
@@ -139,10 +104,7 @@
   <ItemGroup>
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\pkg\deps\deps.csproj" />
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj">
-      <!-- Workaround https://github.com/NuGet/Home/issues/4337 -->
-      <ExtraRestoreArgs>/p:VersionSuffix=$(VersionSuffix)</ExtraRestoreArgs>
-    </SdkRestoreProjects>
+    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <DotnetRestorePrefix Condition="'$(RunningOnUnix)' == 'true'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 </DotnetRestorePrefix>
@@ -302,14 +264,6 @@
 
   </PropertyGroup>
 
-  <!-- Disable some standard properties for building our projects -->
-  <PropertyGroup>
-    <NoStdLib>true</NoStdLib>
-    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
-    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-  </PropertyGroup>
-
   <!-- Set up handling of build warnings -->
   <PropertyGroup>
     <WarningLevel>4</WarningLevel>
@@ -415,7 +369,13 @@
     <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
+    <!-- Disable some standard properties for building our projects -->
+    <NoStdLib>true</NoStdLib>
+    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)documentation</_TargetFrameworkDirectories>
@@ -427,7 +387,22 @@
     <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
 
-  <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" />
+  <PropertyGroup>
+    <!-- Never use the NuGet fallback folder that comes with the SDK we use to build. 
+         The NuGet fallback folder can/will contain packages we are building in this repo, and we
+         want to ensure we use the correct packages.
+    -->
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- These properties should be passed through to new msbuild instances (like 'dotnet build') 
+         in order to get the correct output directories in the child project.
+    -->
+    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:DistroRid=$(DistroRid) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
+  </PropertyGroup>
+
+  <!-- Use Roslyn Compilers to build, if we are not using the .NET SDK to build --> 
+  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 
+  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" /> 
 </Project>
