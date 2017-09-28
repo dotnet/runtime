@@ -287,7 +287,7 @@ int __cdecl main(int argc, char* argv[])
         {
             SimpleTimer stInitJit;
 
-            jit = JitInstance::InitJit(o.nameOfJit, o.breakOnAssert, &stInitJit, mc, o.jitOptions);
+            jit = JitInstance::InitJit(o.nameOfJit, o.breakOnAssert, &stInitJit, mc, o.forceJitOptions, o.jitOptions);
             if (jit == nullptr)
             {
                 // InitJit already printed a failure message
@@ -296,7 +296,7 @@ int __cdecl main(int argc, char* argv[])
 
             if (o.nameOfJit2 != nullptr)
             {
-                jit2 = JitInstance::InitJit(o.nameOfJit2, o.breakOnAssert, &stInitJit, mc, o.jit2Options);
+                jit2 = JitInstance::InitJit(o.nameOfJit2, o.breakOnAssert, &stInitJit, mc, o.forceJit2Options, o.jit2Options);
                 if (jit2 == nullptr)
                 {
                     // InitJit already printed a failure message
