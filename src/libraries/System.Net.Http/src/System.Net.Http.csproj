@@ -127,7 +127,7 @@
     <Compile Include="System\Net\Http\Managed\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\ConnectHelper.cs" />
-    <Compile Include="System\Net\Http\Managed\ConnectionCloseStream.cs" />
+    <Compile Include="System\Net\Http\Managed\ConnectionCloseReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\ContentLengthReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\ContentLengthWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\CookieHandler.cs" />
@@ -146,6 +146,7 @@
     <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.cs" />
     <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\RawConnectionStream.cs" />
   </ItemGroup>
   <!-- Common, except for Windows net46 build -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx'">
