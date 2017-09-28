@@ -1,0 +1,13 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MajorVersion>2</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>2</PatchVersion>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <PreReleaseLabel>servicing</PreReleaseLabel>
+    <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
+    <ReleaseBrandSuffix></ReleaseBrandSuffix>
+    <Channel>release/2.0.0</Channel>
+    <BranchName>release/2.0.0</BranchName>
+  </PropertyGroup>
+</Project>

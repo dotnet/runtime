@@ -143,7 +143,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 sourceTestProject.ProjectName,
                 testArtifactDirectory);
 
-            EnsureGlobalJson(testArtifactDirectory);
+            EnsureDirectoryBuildProps(testArtifactDirectory);
 
             sourceTestProject.CopyProjectFiles(copiedTestProjectDirectory);
             return new TestProject(
@@ -153,18 +153,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 sharedLibraryPrefix);
         }
 
-        private void EnsureGlobalJson(string testArtifactDirectory)
+        private void EnsureDirectoryBuildProps(string testArtifactDirectory)
         {
-            string globalJsonPath = Path.Combine(testArtifactDirectory, "global.json");
+            string directoryBuildPropsPath = Path.Combine(testArtifactDirectory, "Directory.Build.props");
             Directory.CreateDirectory(testArtifactDirectory);
 
-            for(int i = 0; i < 3 && !File.Exists(globalJsonPath); i++)
+            for(int i = 0; i < 3 && !File.Exists(directoryBuildPropsPath); i++)
             {
                 try
                 {
-                    // write an empty global.json to ensure that restore doesn't look elsewhere
-                    // for package dependencies to replace with projects.
-                    File.WriteAllText(globalJsonPath, "{}");
+                    // write an empty Directory.Build.props to ensure that msbuild doesn't pick up
+                    // the repo's root Directory.Build.props.
+                    File.WriteAllText(directoryBuildPropsPath, "<Project></Project>");
                 }
                 catch (IOException)
                 {}
@@ -285,9 +285,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 storeArgs.Add("-o");
                 storeArgs.Add(outputDirectory);
             }
-
-            storeArgs.Add("--working-dir");
-            storeArgs.Add("store_workin_dir");
 
             storeArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
 
