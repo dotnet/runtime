@@ -197,6 +197,7 @@ namespace System.IO.Tests
         /// EndInit will begin EnableRaisingEvents if we previously set EnableRaisingEvents=true
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/14154", TestPlatforms.AnyUnix)]
         public void EndInit_ResumesPausedEnableRaisingEvents()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -215,6 +216,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/14154", TestPlatforms.AnyUnix)]
         public void EndInit_ResumesPausedEnableRaisingEvents(bool setBeforeBeginInit)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
