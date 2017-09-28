@@ -11,45 +11,42 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public static partial class GroupCollectionTests
+    public static partial class MatchCollectionTests
     {
         [Fact]
         public static void IListOfT_Item_Get()
         {
-            IList<Group> collection = CreateCollection();
-            Assert.Equal("212-555-6666", collection[0].ToString());
-            Assert.Equal("212", collection[1].ToString());
-            Assert.Equal("555-6666", collection[2].ToString());
+            IList<Match> collection = CreateCollection();
+            Assert.Equal("t", collection[0].ToString());
+            Assert.Equal("t", collection[1].ToString());
         }
 
         [Fact]
         public static void IReadOnlyListOfT_Item_Get()
         {
-            IReadOnlyList<Group> collection = CreateCollection();
-            Assert.Equal("212-555-6666", collection[0].ToString());
-            Assert.Equal("212", collection[1].ToString());
-            Assert.Equal("555-6666", collection[2].ToString());
+            IReadOnlyList<Match> collection = CreateCollection();
+            Assert.Equal("t", collection[0].ToString());
+            Assert.Equal("t", collection[1].ToString());
         }
 
         [Fact]
         public static void IList_Item_Get()
         {
             IList collection = CreateCollection();
-            Assert.Equal("212-555-6666", collection[0].ToString());
-            Assert.Equal("212", collection[1].ToString());
-            Assert.Equal("555-6666", collection[2].ToString());
+            Assert.Equal("t", collection[0].ToString());
+            Assert.Equal("t", collection[1].ToString());
         }
 
         [Fact]
         public static void ICollectionOfT_Contains()
         {
-            ICollection<Group> collection = CreateCollection();
-            foreach (Group item in collection)
+            ICollection<Match> collection = CreateCollection();
+            foreach (Match item in collection)
             {
                 Assert.True(collection.Contains(item));
             }
 
-            foreach (Group item in CreateCollection())
+            foreach (Match item in CreateCollection())
             {
                 Assert.False(collection.Contains(item));
             }
@@ -75,16 +72,16 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void IListOfT_IndexOf()
         {
-            IList<Group> collection = CreateCollection();
+            IList<Match> collection = CreateCollection();
 
             int i = 0;
-            foreach (Group item in collection)
+            foreach (Match item in collection)
             {
                 Assert.Equal(i, collection.IndexOf(item));
                 i++;
             }
 
-            foreach (Group item in CreateCollection())
+            foreach (Match item in CreateCollection())
             {
                 Assert.Equal(-1, collection.IndexOf(item));
             }
@@ -113,10 +110,10 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo()
         {
-            string[] expected = new[] { "212-555-6666", "212", "555-6666" };
-            ICollection<Group> collection = CreateCollection();
+            string[] expected = new[] { "t", "t" };
+            ICollection<Match> collection = CreateCollection();
 
-            Group[] array = new Group[collection.Count];
+            Match[] array = new Match[collection.Count];
             collection.CopyTo(array, 0);
 
             Assert.Equal(expected, array.Select(c => c.ToString()));
@@ -125,25 +122,25 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo_Invalid()
         {
-            ICollection<Group> collection = CreateCollection();
-            AssertExtensions.Throws<ArgumentNullException>("array", () => collection.CopyTo(null, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Group[1], -1));
-            AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Group[1], 0));
-            AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Group[1], 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Group[1], 2));
+            ICollection<Match> collection = CreateCollection();
+            Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(new Match[1], -1));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => collection.CopyTo(new Match[1], 0));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => collection.CopyTo(new Match[1], 1));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => collection.CopyTo(new Match[1], 2));
         }
 
         [Fact]
         public static void IListOfT_IsReadOnly()
         {
-            IList<Group> list = CreateCollection();
+            IList<Match> list = CreateCollection();
             Assert.True(list.IsReadOnly);
-            Assert.Throws<NotSupportedException>(() => list.Add(default(Group)));
+            Assert.Throws<NotSupportedException>(() => list.Add(default(Match)));
             Assert.Throws<NotSupportedException>(() => list.Clear());
-            Assert.Throws<NotSupportedException>(() => list.Insert(0, default(Group)));
-            Assert.Throws<NotSupportedException>(() => list.Remove(default(Group)));
+            Assert.Throws<NotSupportedException>(() => list.Insert(0, default(Match)));
+            Assert.Throws<NotSupportedException>(() => list.Remove(default(Match)));
             Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => list[0] = default(Group));
+            Assert.Throws<NotSupportedException>(() => list[0] = default(Match));
         }
 
         [Fact]
@@ -152,29 +149,31 @@ namespace System.Text.RegularExpressions.Tests
             IList list = CreateCollection();
             Assert.True(list.IsReadOnly);
             Assert.True(list.IsFixedSize);
-            Assert.Throws<NotSupportedException>(() => list.Add(default(Group)));
+            Assert.Throws<NotSupportedException>(() => list.Add(default(Match)));
             Assert.Throws<NotSupportedException>(() => list.Clear());
-            Assert.Throws<NotSupportedException>(() => list.Insert(0, default(Group)));
-            Assert.Throws<NotSupportedException>(() => list.Remove(default(Group)));
+            Assert.Throws<NotSupportedException>(() => list.Insert(0, default(Match)));
+            Assert.Throws<NotSupportedException>(() => list.Remove(default(Match)));
             Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => list[0] = default(Group));
+            Assert.Throws<NotSupportedException>(() => list[0] = default(Match));
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)]
         public static void DebuggerAttributeTests()
         {
-            GroupCollection col = CreateCollection();
+            MatchCollection col = CreateCollection();
             DebuggerAttributes.ValidateDebuggerDisplayReferences(col);
             DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(col);
             PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            Group[] items = itemProperty.GetValue(info.Instance) as Group[];
+            Match[] items = itemProperty.GetValue(info.Instance) as Match[];
             Assert.Equal(col, items);
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)]
         public static void DebuggerAttributeTests_Null()
         {
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(GroupCollection), null));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(MatchCollection), null));
             Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
     }
