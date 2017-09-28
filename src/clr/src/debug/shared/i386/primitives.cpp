@@ -93,7 +93,7 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     pDRD->Ebx = (pRD->GetEbxLocation() == NULL ? 0 : *pRD->GetEbxLocation());
     pDRD->Edx = (pRD->GetEdxLocation() == NULL ? 0 : *pRD->GetEdxLocation());
     pDRD->Ecx = (pRD->GetEcxLocation() == NULL ? 0 : *pRD->GetEcxLocation());
-    pDRD->Eax = (pRD->GetEsiLocation() == NULL ? 0 : *pRD->GetEaxLocation());
+    pDRD->Eax = (pRD->GetEaxLocation() == NULL ? 0 : *pRD->GetEaxLocation());
 
 #if defined(USE_REMOTE_REGISTER_ADDRESS)
     pDRD->pFP = PushedRegAddr(pRD, FPAddress);
