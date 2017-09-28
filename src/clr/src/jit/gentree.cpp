@@ -7161,6 +7161,10 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
             }
             break;
 
+        case GT_CNS_LNG:
+            copy = gtNewLconNode(tree->gtLngCon.gtLconVal);
+            break;
+
         case GT_LCL_VAR:
             // Remember that the LclVar node has been cloned. The flag will be set
             // on 'copy' as well.
@@ -12834,6 +12838,7 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
     if (thisVal->IsIntegralConst())
     {
         thisValOpt = gtClone(thisVal);
+        assert(thisValOpt != nullptr);
     }
     else
     {
@@ -12846,8 +12851,10 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
 
     if (flagVal->IsIntegralConst())
     {
-        flagValOpt     = gtClone(flagVal);
+        flagValOpt = gtClone(flagVal);
+        assert(flagValOpt != nullptr);
         flagValOptCopy = gtClone(flagVal);
+        assert(flagValOptCopy != nullptr);
     }
     else
     {
