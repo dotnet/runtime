@@ -107,8 +107,9 @@ namespace System.Net.WebSockets
         {
             try
             {
+                // Create the request message, including a uri with ws{s} switched to http{s}.
+                uri = new UriBuilder(uri) { Scheme = (uri.Scheme == UriScheme.Ws) ? UriScheme.Http : UriScheme.Https }.Uri;
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
-
                 if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                 {
                     foreach (string key in options.RequestHeaders)
@@ -121,6 +122,7 @@ namespace System.Net.WebSockets
                 KeyValuePair<string, string> secKeyAndSecWebSocketAccept = CreateSecKeyAndSecWebSocketAccept();
                 AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key, options);
 
+                // Create the handler for this request and populate it with all of the options.
                 DirectManagedHttpClientHandler handler = DirectManagedHttpClientHandler.CreateHandler();
                 handler.UseDefaultCredentials = options.UseDefaultCredentials;
                 handler.Credentials = options.Credentials;
@@ -132,6 +134,7 @@ namespace System.Net.WebSockets
                     handler.ClientCertificates.AddRange(options.ClientCertificates);
                 }
 
+                // Issue the request.  The response must be status code 101.
                 HttpResponseMessage response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
@@ -161,7 +164,10 @@ namespace System.Net.WebSockets
                     }
                 }
 
+                // Get the response stream and wrap it in a web socket.
                 Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                Debug.Assert(connectedStream.CanWrite);
+                Debug.Assert(connectedStream.CanRead);
                 _webSocket = WebSocket.CreateClientWebSocket( // TODO https://github.com/dotnet/corefx/issues/21537: Use new API when available
                     connectedStream,
                     subprotocol,
