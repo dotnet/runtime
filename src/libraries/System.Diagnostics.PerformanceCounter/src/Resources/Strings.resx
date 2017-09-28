@@ -297,7 +297,7 @@
   <data name="CantReadCategory" xml:space="preserve">
     <value>Cannot read Category {0}.</value>
   </data>
-  <data name="PlatformNotSupported_PerCounters" xml:space="preserve">
-    <value>Performance Counters are not supported on this platform</value>
+  <data name="PlatformNotSupported_PerfCounters" xml:space="preserve">
+    <value>Performance Counters are not supported on this platform.</value>
   </data>
 </root>

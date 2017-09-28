@@ -26,7 +26,7 @@ namespace System.Diagnostics
             get
             {
                 if (counterName == null)
-                    throw new ArgumentNullException("counterName");
+                    throw new ArgumentNullException(nameof(counterName));
 
                 object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
                 return (InstanceDataCollection)Dictionary[objectName];
@@ -55,7 +55,7 @@ namespace System.Diagnostics
         public bool Contains(string counterName)
         {
             if (counterName == null)
-                throw new ArgumentNullException("counterName");
+                throw new ArgumentNullException(nameof(counterName));
 
             object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
             return Dictionary.Contains(objectName);

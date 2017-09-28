@@ -45,7 +45,7 @@ namespace System.Diagnostics
         public PerformanceCounterCategory(string categoryName, string machineName)
         {
             if (categoryName == null)
-                throw new ArgumentNullException("categoryName");
+                throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));
@@ -164,7 +164,7 @@ namespace System.Diagnostics
         public bool CounterExists(string counterName)
         {
             if (counterName == null)
-                throw new ArgumentNullException("counterName");
+                throw new ArgumentNullException(nameof(counterName));
 
             if (_categoryName == null)
                 throw new InvalidOperationException(SR.Format(SR.CategoryNameNotSet));
@@ -186,10 +186,10 @@ namespace System.Diagnostics
         public static bool CounterExists(string counterName, string categoryName, string machineName)
         {
             if (counterName == null)
-                throw new ArgumentNullException("counterName");
+                throw new ArgumentNullException(nameof(counterName));
 
             if (categoryName == null)
-                throw new ArgumentNullException("categoryName");
+                throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));
@@ -231,9 +231,9 @@ namespace System.Diagnostics
         public static PerformanceCounterCategory Create(string categoryName, string categoryHelp, PerformanceCounterCategoryType categoryType, CounterCreationDataCollection counterData)
         {
             if (categoryType < PerformanceCounterCategoryType.Unknown || categoryType > PerformanceCounterCategoryType.MultiInstance)
-                throw new ArgumentOutOfRangeException("categoryType");
+                throw new ArgumentOutOfRangeException(nameof(categoryType));
             if (counterData == null)
-                throw new ArgumentNullException("counterData");
+                throw new ArgumentNullException(nameof(counterData));
 
             CheckValidCategory(categoryName);
             if (categoryHelp != null)
@@ -274,7 +274,7 @@ namespace System.Diagnostics
         internal static void CheckValidCategory(string categoryName)
         {
             if (categoryName == null)
-                throw new ArgumentNullException("categoryName");
+                throw new ArgumentNullException(nameof(categoryName));
 
             if (!CheckValidId(categoryName, MaxCategoryNameLength))
                 throw new ArgumentException(SR.Format(SR.PerfInvalidCategoryName, 1, MaxCategoryNameLength));
@@ -288,7 +288,7 @@ namespace System.Diagnostics
         internal static void CheckValidCounter(string counterName)
         {
             if (counterName == null)
-                throw new ArgumentNullException("counterName");
+                throw new ArgumentNullException(nameof(counterName));
 
             if (!CheckValidId(counterName, MaxCounterNameLength))
                 throw new ArgumentException(SR.Format(SR.PerfInvalidCounterName, 1, MaxCounterNameLength));
@@ -320,7 +320,7 @@ namespace System.Diagnostics
         internal static void CheckValidHelp(string help)
         {
             if (help == null)
-                throw new ArgumentNullException("help");
+                throw new ArgumentNullException(nameof(help));
             if (help.Length > MaxHelpLength)
                 throw new ArgumentException(SR.Format(SR.PerfInvalidHelp, 0, MaxHelpLength));
         }
@@ -450,7 +450,7 @@ namespace System.Diagnostics
         public static bool Exists(string categoryName, string machineName)
         {
             if (categoryName == null)
-                throw new ArgumentNullException("categoryName");
+                throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));
@@ -504,7 +504,7 @@ namespace System.Diagnostics
         public PerformanceCounter[] GetCounters(string instanceName)
         {
             if (instanceName == null)
-                throw new ArgumentNullException("instanceName");
+                throw new ArgumentNullException(nameof(instanceName));
 
             if (_categoryName == null)
                 throw new InvalidOperationException(SR.Format(SR.CategoryNameNotSet));
@@ -565,7 +565,7 @@ namespace System.Diagnostics
         public bool InstanceExists(string instanceName)
         {
             if (instanceName == null)
-                throw new ArgumentNullException("instanceName");
+                throw new ArgumentNullException(nameof(instanceName));
 
             if (_categoryName == null)
                 throw new InvalidOperationException(SR.Format(SR.CategoryNameNotSet));
@@ -588,10 +588,10 @@ namespace System.Diagnostics
         public static bool InstanceExists(string instanceName, string categoryName, string machineName)
         {
             if (instanceName == null)
-                throw new ArgumentNullException("instanceName");
+                throw new ArgumentNullException(nameof(instanceName));
 
             if (categoryName == null)
-                throw new ArgumentNullException("categoryName");
+                throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));

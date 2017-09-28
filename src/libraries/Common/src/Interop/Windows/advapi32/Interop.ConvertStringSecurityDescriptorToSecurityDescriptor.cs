@@ -11,6 +11,10 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Interop.Libraries.Advapi32, CharSet=System.Runtime.InteropServices.CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern unsafe bool ConvertStringSecurityDescriptorToSecurityDescriptor(string StringSecurityDescriptor, int StringSDRevision, out SafeLocalMemHandle pSecurityDescriptor, IntPtr SecurityDescriptorSize);
+        internal static extern unsafe bool ConvertStringSecurityDescriptorToSecurityDescriptor(
+                string StringSecurityDescriptor,
+                int StringSDRevision,
+                out SafeLocalMemHandle pSecurityDescriptor,
+                IntPtr SecurityDescriptorSize);
     }
 }
