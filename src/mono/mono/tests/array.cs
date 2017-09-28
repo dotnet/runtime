@@ -1,14 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 public class Test {
 
-	static void puts (string s)
-	{
-		Console.WriteLine (s);
-	}
-
-	public static int jagged ()
+	public static int test_0_jagged ()
 	{
 		int[][] j2 = new int [3][];
 
@@ -32,7 +28,7 @@ public class Test {
 		return 0;
 	}
 
-	public static int stest ()
+	public static int test_0_stest ()
 	{
 		string[] sa = new string[32];
 
@@ -44,13 +40,13 @@ public class Test {
 
 		for (int i = 0; i < sa.Length; i++){
 			if (sa [i] != null)
-				puts (sa [i]);
+				Console.WriteLine (sa [i]);
 		}
 		
 		return 0;
 	}
 	
-	public static int atest2 ()
+	public static int test_0_atest2 ()
 	{
 		int[,] ia = new int[32,32];
 
@@ -71,7 +67,7 @@ public class Test {
 		return 0;
 	}
 	
-	public static int atest ()
+	public static int test_0_atest ()
 	{
 		int[] ia = new int[32];
 
@@ -93,34 +89,50 @@ public class Test {
 
 		for (int i = 0; i <ia.Length; i++)
 			if ((int)ia.GetValue (i) != i*i*i){
-				puts ("Crap: " + i + " " + (int) ia.GetValue (i) );
+				Console.WriteLine ("Crap: " + i + " " + (int) ia.GetValue (i) );
 
 				return 4;
 			}
 		
 		return 0;
 	}
-	
 
-	public static int Main () {
-		puts ("a");
-		if (atest () != 0)
-			return atest ();
-	 	puts ("b");	
-		if (atest2 () != 0)
+	enum Foo { a, b };
+	public static int test_0_enum_array_casting () {
+        var x = new Foo[10];
+		try {
+			var y = (IReadOnlyList<int>)(object)x;
+		} catch (Exception e) {
 			return 1;
-		puts ("c");
-		if (atest2 () != 0)
-			return 1;
-		puts ("d");	
-		if (stest () != 0)
-			return 1;
-	 	puts ("e");	
-		if (jagged () != 0)
-			return 1;
-		
-		
+		}
+		try {
+			var y = (IList<int>)(object)x;
+		} catch (Exception e) {
+			return 2;
+		}
+
+		try {
+			var y = (ICollection<int>)(object)x;
+		} catch (Exception e) {
+			return 3;
+		}
+
+		try {
+			var y = (IEnumerable<int>)(object)x;
+		} catch (Exception e) {
+			return 4;
+		}
+
+		try {
+			var y = (IReadOnlyCollection<int>)(object)x;
+		} catch (Exception e) {
+			return 5;
+		}
 		return 0;
+	}
+
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Test), args);
 	}
 }
 
