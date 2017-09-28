@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="common_sources">
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\eglib-remap.h">
+      <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\sort.frag.h">
+      <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\glib.h">
+      <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\garray.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gbytearray.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gerror.c">
@@ -19,60 +25,64 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\giconv.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\glist.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmarkup.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmem.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule.h">
+      <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\goutput.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpattern.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gptrarray.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqsort.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqueue.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gshell.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gstr.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gslist.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gspawn.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gstr.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gstring.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gptrarray.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\glist.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqueue.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpath.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gshell.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gspawn.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile-posix.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpattern.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmarkup.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gutf8.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup Label="common_headers">
-    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\glib.h">
-      <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule.h">
-      <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\sort.frag.h">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\unicode-data.h">
       <Filter>Header Files$(EGLibFilterSubFolder)\common</Filter>
     </ClInclude>
   </ItemGroup>
