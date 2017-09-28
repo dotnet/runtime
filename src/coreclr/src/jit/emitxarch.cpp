@@ -73,7 +73,7 @@ bool emitter::IsAVXInstruction(instruction ins)
 // TODO-XArch-Cleanup: This is a temporary solution for now. Eventually this needs to
 // be formalized by adding an additional field to instruction table to
 // to indicate whether a 3-operand instruction.
-bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
+bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
 {
     return IsAVXInstruction(ins) &&
            (ins == INS_cvtsi2ss || ins == INS_cvtsi2sd || ins == INS_cvtss2sd || ins == INS_cvtsd2ss ||
@@ -84,13 +84,12 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
             ins == INS_xorps || ins == INS_xorpd || ins == INS_dpps || ins == INS_dppd || ins == INS_haddpd ||
             ins == INS_por || ins == INS_pand || ins == INS_pandn || ins == INS_pcmpeqd || ins == INS_pcmpgtd ||
             ins == INS_pcmpeqw || ins == INS_pcmpgtw || ins == INS_pcmpeqb || ins == INS_pcmpgtb ||
-            ins == INS_pcmpeqq || ins == INS_pcmpgtq || ins == INS_pmulld || ins == INS_pmullw ||
-
-            ins == INS_shufps || ins == INS_shufpd || ins == INS_minps || ins == INS_minss || ins == INS_minpd ||
-            ins == INS_minsd || ins == INS_divps || ins == INS_divpd || ins == INS_maxps || ins == INS_maxpd ||
-            ins == INS_maxss || ins == INS_maxsd || ins == INS_andnps || ins == INS_andnpd || ins == INS_paddb ||
-            ins == INS_paddw || ins == INS_paddd || ins == INS_paddq || ins == INS_psubb || ins == INS_psubw ||
-            ins == INS_psubd || ins == INS_psubq || ins == INS_pmuludq || ins == INS_pxor || ins == INS_insertps ||
+            ins == INS_pcmpeqq || ins == INS_pcmpgtq || ins == INS_pmulld || ins == INS_pmullw || ins == INS_shufps ||
+            ins == INS_shufpd || ins == INS_minps || ins == INS_minss || ins == INS_minpd || ins == INS_minsd ||
+            ins == INS_divps || ins == INS_divpd || ins == INS_maxps || ins == INS_maxpd || ins == INS_maxss ||
+            ins == INS_maxsd || ins == INS_andnps || ins == INS_andnpd || ins == INS_paddb || ins == INS_paddw ||
+            ins == INS_paddd || ins == INS_paddq || ins == INS_psubb || ins == INS_psubw || ins == INS_psubd ||
+            ins == INS_psubq || ins == INS_pmuludq || ins == INS_pxor || ins == INS_insertps ||
             ins == INS_vinsertf128 || ins == INS_punpckldq || ins == INS_phaddd || ins == INS_pminub ||
             ins == INS_pminsw || ins == INS_pminsb || ins == INS_pminsd || ins == INS_pminuw || ins == INS_pminud ||
             ins == INS_pmaxub || ins == INS_pmaxsw || ins == INS_pmaxsb || ins == INS_pmaxsd || ins == INS_pmaxuw ||
@@ -100,16 +99,15 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
             ins == INS_packusdw || ins == INS_vperm2i128);
 }
 
-// Returns true if the AVX instruction is a move operator that requires 3 operands.
-// When we emit an instruction with only two operands, we will duplicate the source
-// register in the vvvv field.  This is because these merge sources into the dest.
+// Returns true if the AVX instruction requires 3 operands that duplicate the source
+// register in the vvvv field.
 // TODO-XArch-Cleanup: This is a temporary solution for now. Eventually this needs to
 // be formalized by adding an additional field to instruction table to
 // to indicate whether a 3-operand instruction.
-bool emitter::IsThreeOperandMoveAVXInstruction(instruction ins)
+bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 {
     return IsAVXInstruction(ins) && (ins == INS_movlpd || ins == INS_movlps || ins == INS_movhpd || ins == INS_movhps ||
-                                     ins == INS_movss || ins == INS_movlhps);
+                                     ins == INS_movss || ins == INS_movlhps || ins == INS_sqrtss || ins == INS_sqrtsd);
 }
 
 // ------------------------------------------------------------------------------
@@ -7608,7 +7606,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     code = AddVexPrefixIfNeededAndNotPresent(ins, code, size);
 
     // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-    if (IsThreeOperandBinaryAVXInstruction(ins))
+    if (IsDstDstSrcAVXInstruction(ins))
     {
         // Encode source operand reg in 'vvvv' bits in 1's complement form
         // The order of operands are reversed, therefore use reg2 as the source.
@@ -9248,12 +9246,12 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     //
     // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
     // now we use the single source as source1 and source2.
-    if (IsThreeOperandBinaryAVXInstruction(ins))
+    if (IsDstDstSrcAVXInstruction(ins))
     {
         // encode source/dest operand reg in 'vvvv' bits in 1's complement form
         code = insEncodeReg3456(ins, reg1, size, code);
     }
-    else if (IsThreeOperandMoveAVXInstruction(ins))
+    else if (IsDstSrcSrcAVXInstruction(ins))
     {
         // encode source operand reg in 'vvvv' bits in 1's complement form
         code = insEncodeReg3456(ins, reg2, size, code);
@@ -10806,7 +10804,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (TakesVexPrefix(ins))
             {
-                if (IsThreeOperandBinaryAVXInstruction(ins))
+                if (IsDstDstSrcAVXInstruction(ins))
                 {
                     // Encode source/dest operand reg in 'vvvv' bits in 1's complement form
                     // This code will have to change when we support 3 operands.
@@ -10816,7 +10814,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // (see x64 manual Table 2-9. Instructions with a VEX.vvvv destination)
                     code = insEncodeReg3456(ins, id->idReg1(), size, code);
                 }
-                else if (IsThreeOperandMoveAVXInstruction(ins))
+                else if (IsDstSrcSrcAVXInstruction(ins))
                 {
                     // This is a "merge" move instruction.
                     // Encode source operand reg in 'vvvv' bits in 1's complement form
@@ -11058,7 +11056,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
                 // now we use the single source as source1 and source2.
                 // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-                if (IsThreeOperandBinaryAVXInstruction(ins))
+                if (IsDstDstSrcAVXInstruction(ins))
                 {
                     // encode source operand reg in 'vvvv' bits in 1's compliement form
                     code = insEncodeReg3456(ins, id->idReg1(), size, code);
@@ -11081,7 +11079,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
             // now we use the single source as source1 and source2.
             // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-            if (IsThreeOperandBinaryAVXInstruction(ins))
+            if (IsDstDstSrcAVXInstruction(ins))
             {
                 // encode source operand reg in 'vvvv' bits in 1's compliement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
@@ -11139,7 +11137,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
                 // now we use the single source as source1 and source2.
                 // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-                if (IsThreeOperandBinaryAVXInstruction(ins))
+                if (IsDstDstSrcAVXInstruction(ins))
                 {
                     // encode source operand reg in 'vvvv' bits in 1's compliement form
                     code = insEncodeReg3456(ins, id->idReg1(), size, code);
@@ -11161,7 +11159,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
             // now we use the single source as source1 and source2.
             // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-            if (IsThreeOperandBinaryAVXInstruction(ins))
+            if (IsDstDstSrcAVXInstruction(ins))
             {
                 // encode source operand reg in 'vvvv' bits in 1's compliement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
@@ -11185,7 +11183,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
             // now we use the single source as source1 and source2.
             // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-            if (IsThreeOperandBinaryAVXInstruction(ins))
+            if (IsDstDstSrcAVXInstruction(ins))
             {
                 // encode source operand reg in 'vvvv' bits in 1's compliement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
