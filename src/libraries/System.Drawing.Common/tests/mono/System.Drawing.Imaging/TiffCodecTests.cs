@@ -33,34 +33,12 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Security.Permissions;
-using System.Text;
 using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-
     public class TiffCodecTest
     {
-        /* Get suffix to add to the filename */
-        internal string GetOutSufix()
-        {
-            string s;
-
-            int p = (int)Environment.OSVersion.Platform;
-            if ((p == 4) || (p == 128) || (p == 6))
-                s = "-unix";
-            else
-                s = "-windows";
-
-            if (Type.GetType("Mono.Runtime", false) == null)
-                s += "-msnet";
-            else
-                s += "-mono";
-
-            return s;
-        }
-
         /* Checks bitmap features on a known 32bbp bitmap */
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Bitmap32bitsFeatures()
@@ -270,7 +248,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void Save(PixelFormat original, PixelFormat expected, bool colorCheck)
         {
-            string sOutFile = String.Format("linerect{0}-{1}.tif", GetOutSufix(), expected.ToString());
+            string sOutFile = $"linerect-{expected}.tif";
 
             // Save		
             Bitmap bmp = new Bitmap(100, 100, original);

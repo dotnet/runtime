@@ -33,35 +33,12 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Security.Permissions;
-using System.Text;
 using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-
     public class PngCodecTest
     {
-
-        /* Get suffix to add to the filename */
-        internal string GetOutSufix()
-        {
-            string s;
-
-            int p = (int)Environment.OSVersion.Platform;
-            if ((p == 4) || (p == 128) || (p == 6))
-                s = "-unix";
-            else
-                s = "-windows";
-
-            if (Type.GetType("Mono.Runtime", false) == null)
-                s += "-msnet";
-            else
-                s += "-mono";
-
-            return s;
-        }
-
         private bool IsArm64Process()
         {
             if (Environment.OSVersion.Platform != PlatformID.Unix || !Environment.Is64BitProcess)
@@ -643,7 +620,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void Save(PixelFormat original, PixelFormat expected, bool colorCheck)
         {
-            string sOutFile = String.Format("linerect{0}-{1}.png", GetOutSufix(), expected.ToString());
+            string sOutFile = $"linerect-{expected}.png";
 
             // Save		
             Bitmap bmp = new Bitmap(100, 100, original);

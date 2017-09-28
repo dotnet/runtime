@@ -29,39 +29,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Security.Permissions;
-using System.Text;
 using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-
     public class GifCodecTest
     {
-
-        /* Get suffix to add to the filename */
-        internal string GetOutSufix()
-        {
-            string s;
-
-            int p = (int)Environment.OSVersion.Platform;
-            if ((p == 4) || (p == 128) || (p == 6))
-                s = "-unix";
-            else
-                s = "-windows";
-
-            if (Type.GetType("Mono.Runtime", false) == null)
-                s += "-msnet";
-            else
-                s += "-mono";
-
-            return s;
-        }
-
         /* Checks bitmap features on a known 1bbp bitmap */
         private void Bitmap8bitsFeatures(string filename)
         {
@@ -146,7 +122,6 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(PixelFormat.Format24bppRgb, data.PixelFormat);
                     Assert.Equal(332, data.Stride);
                     Assert.Equal(100, data.Height);
-                    int size = data.Height * data.Stride;
 
                     unsafe
                     {
@@ -213,7 +188,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void Save(PixelFormat original, PixelFormat expected, bool exactColorCheck)
         {
-            string sOutFile = String.Format("linerect{0}-{1}.gif", GetOutSufix(), expected.ToString());
+            string sOutFile = $"linerect-{expected}.gif";
 
             // Save		
             Bitmap bmp = new Bitmap(100, 100, original);
