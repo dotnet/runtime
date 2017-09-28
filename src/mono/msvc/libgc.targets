@@ -1,94 +1,181 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
+  <ItemGroup Label="libmonogc_la_sources">
     <ClCompile Include="$(MonoSourceLocation)\libgc\allchblk.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\alloc.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\blacklst.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\checksums.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\dbg_mlc.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\dyn_load.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\finalize.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\gc_dlopen.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\gcj_mlc.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\headers.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\libgc\mach_dep.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\malloc.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\mallocx.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\mark.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\mark_rts.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\misc.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\new_hblk.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\obj_map.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\os_dep.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pcr_interface.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\ptr_chck.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\real_malloc.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\reclaim.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\solaris_pthreads.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\solaris_threads.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\specific.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\stubborn.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\typd_mlc.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\backgraph.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\libgc\win32_threads.c">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClCompile>
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pthread_support.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pthread_stop_world.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\darwin_stop_world.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\openbsd_stop_world.c">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mach_dep.c">
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc.h">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_hdrs.h">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_locks.h">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc_mark.h">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_pmark.h">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_priv.h">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gcconfig.h">
-		<ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
-	</ClInclude>
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_priv.h">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_hdrs.h">
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc.h">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc_gcj.h">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc_mark.h">
+		  <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+	  </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_locks.h">
+      <ExcludedFromBuild Condition="'$(MONO_TARGET_GC)'!='boehm'">true</ExcludedFromBuild>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\libgc\Makefile.am" />
   </ItemGroup>
 </Project>
