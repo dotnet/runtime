@@ -1,23 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="monoutils_sources">
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\atomic.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\bsearch.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\checked-build.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\dlmalloc.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\hazard-pointer.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\json.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-alloc.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-array-queue.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-queue.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\monobitset.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\memfuncs.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-md5.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-sha1.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-logger.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-codeman.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-conc-hashtable.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-context.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\dlmalloc.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\dlmalloc.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-counters.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-compiler.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-complex.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl-windows.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl-darwin.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -36,71 +31,113 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl-windows.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-error.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-filemap.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-internal-hash.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-io-portability.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-linked-list-set.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-logger.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-android.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl-windows-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-windows.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-common.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-darwin.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-posix.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-windows.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-android.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-darwin.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-internal-hash.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-internal-hash.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-io-portability.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-io-portability.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\monobitset.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-filemap.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-math.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-md5.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-networkinterfaces.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-internals.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows-internals.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-path.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-poll.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-wait.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-coop-mutex.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-once.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-lazy-init.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-networkinterfaces.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-networkinterfaces.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-proclib.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-proclib-windows.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-property-hash.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-proclib.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-proclib-windows-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-publib.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-rand.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-rand-windows.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-sha1.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-string.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-time.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-time.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\strenc.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-uri.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-poll.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-path.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-semaphore.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-coop-semaphore.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-sigcontext.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-stdlib.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-property-hash.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-property-hash.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-value-hash.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-value-hash.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-elf_common.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-elf32.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-elf64.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-dwarf.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\dtrace.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\gc_wrapper.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-error.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error-internals.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\monobitset.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-codeman.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-digest.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-machine.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-math.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-membar.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-path.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-poll.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-uri.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-stdlib.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\valgrind.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mach-support.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\memcheck.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-context.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-context.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-stack-unwinding.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\hazard-pointer.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\hazard-pointer.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-queue.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-queue.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-alloc.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-alloc.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-array-queue.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-array-queue.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-linked-list-set.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-linked-list-set.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-android.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-state-machine.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-posix.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-coop.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-freebsd.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-haiku.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-linux.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-posix-signals.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -118,6 +155,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-windows.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-linux.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-freebsd.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-netbsd.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -130,124 +180,72 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-posix.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-android.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-posix-signals.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-haiku.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-state-machine.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-wasm.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-windows.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-time.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads-debug.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads-api.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-coop.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads-coop.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-tls.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-tls.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-uri.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-value-hash.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\linux_magic.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-memory-model.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\atomic.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\atomic.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-hwcap.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-vars.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\bsearch.h" />        
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\bsearch.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-signal-handler.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-conc-hashtable.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-conc-hashtable.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\json.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\json.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\networking.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\networking-posix.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\networking-fallback.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\networking-missing.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\networking-windows.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\parse.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\strenc.c" />
-  </ItemGroup>
-  <ItemGroup Label="monoutils_headers">
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\atomic.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\bsearch.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\checked-build.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\dlmalloc.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\dtrace.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-dwarf.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-elf32.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-elf64.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\freebsd-elf_common.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\gc_wrapper.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\hazard-pointer.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\json.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\linux_magic.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-alloc.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-array-queue.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-queue.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mach-support.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\memcheck.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\memfuncs.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\monobitset.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-codeman.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-compiler.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-complex.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-conc-hashtable.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-context.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-coop-mutex.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-coop-semaphore.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-digest.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl-windows-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-hwcap.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-vars.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-internal-hash.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-io-portability.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-lazy-init.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-linked-list-set.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-machine.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-math.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-membar.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-memory-model.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-networkinterfaces.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-once.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-semaphore.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-wait.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-path.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-poll.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-proclib.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-proclib-windows-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-property-hash.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\networking.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-rand.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-rand-windows.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-rand.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-rand-windows-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-sigcontext.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-signal-handler.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-stack-unwinding.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-stdlib.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-string.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads-debug.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads-api.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads-coop.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-time.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-tls.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-uri.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-value-hash.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\networking.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\os-event.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\memfuncs.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\memfuncs.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\parse.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\parse.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\checked-build.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\checked-build.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\os-event.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\refcount.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\unlocked.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\valgrind.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\w32api.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\unlocked.h" />  
   </ItemGroup>
   <ItemGroup Label="libmonoutilsinclude_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error.h" />    
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-publib.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl-fallback.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-counters.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-counters.h" />    
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MonoSourceLocation)\mono\utils\Makefile.am" />
