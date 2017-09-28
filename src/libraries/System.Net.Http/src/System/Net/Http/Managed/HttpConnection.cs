@@ -370,9 +370,13 @@ namespace System.Net.Http
                 {
                     responseStream = new ChunkedEncodingReadStream(this);
                 }
+                else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
+                {
+                    responseStream = new RawConnectionStream(this);
+                }
                 else
                 {
-                    responseStream = new ConnectionCloseStream(this);
+                    responseStream = new ConnectionCloseReadStream(this);
                 }
                 ((HttpConnectionContent)response.Content).SetStream(responseStream);
 
