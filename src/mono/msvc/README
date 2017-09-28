@@ -11,19 +11,24 @@ BUILDING
 
 	From this directory type:
 
-	     msbuild.exe mono.sln /p:Configuration=Debug_eglib
+	     msbuild.exe mono.sln /p:Configuration=Debug /p:Platform=x64
 
 	msbuild must be in your path, it comes with the .NET Framework.
 
 MAINTENANCE
 
-	When new exported API calls are added to the runtime, issue the
-	command:
+	Source files added to the different project .target files matches project makefile structure.
+	NOTE, all sources added to makefiles should also be added to corresponding targets files for consistency.
+	Files that should not be build on Windows should be excluded  using this configuration:
 
-		make update-def
+	<ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-wasm.c">
+		<ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+		<ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+		<ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+		<ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+	</ClCompile>
 
-	in this directory and commit the resulting mono.def file.
+	All header files added to makefiles should be included in the different targets files for consistency.
 
-	This must happen on a Linux system, because we get the list of
-	the exported symbols from the generated shared library.
-
+	Each target file has a corresponding filter file, files added to target files should also be added to the corresponding
+	filter file.
