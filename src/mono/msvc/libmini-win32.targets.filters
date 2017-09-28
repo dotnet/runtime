@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="windows_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-windows.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-windows.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\win32</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\win32">
+      <UniqueIdentifier>{B67D965A-45EE-4B01-AE98-CC6470F6DC9E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\win32">
+      <UniqueIdentifier>{2F0E3758-B8D9-4009-8B48-47F48303D00E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
