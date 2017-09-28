@@ -46,6 +46,8 @@ namespace System
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 16215;
         public static bool IsWindows10Version16251OrGreater => 
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 16251;
+        public static bool IsWindows10Version16256OrGreater => IsWindows &&
+           GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 16256;
         public static bool IsWindowsRedStone2 => // Creators Update version 
             GetWindowsVersion() == 10 && (GetWindowsBuildNumber() / 1000) == 15; // any build with 15xxx. e.g 15063
 

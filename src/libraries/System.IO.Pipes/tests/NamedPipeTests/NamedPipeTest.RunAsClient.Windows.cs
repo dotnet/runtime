@@ -13,9 +13,10 @@ namespace System.IO.Pipes.Tests
 {
     public partial class NamedPipeTest_RunAsClient : RemoteExecutorTestBase
     {
-        [Fact]
+        public static bool IsNotWinRTOrIsWindows10Version16256OrGreater => PlatformDetection.IsNotWinRTSupported || PlatformDetection.IsWindows10Version16256OrGreater;
+
+        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
         public async Task RunAsClient_Windows()
         {
             string pipeName = GetUniquePipeName();
