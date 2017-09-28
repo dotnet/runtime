@@ -42,6 +42,8 @@ public:
             , compileList(nullptr)
             , offset(-1)
             , increment(-1)
+            , forceJitOptions(nullptr)
+            , forceJit2Options(nullptr)
             , jitOptions(nullptr)
             , jit2Options(nullptr)
         {
@@ -69,11 +71,15 @@ public:
         char* compileList;
         int   offset;
         int   increment;
+        LightWeightMap<DWORD, DWORD>* forceJitOptions;
+        LightWeightMap<DWORD, DWORD>* forceJit2Options;
         LightWeightMap<DWORD, DWORD>* jitOptions;
         LightWeightMap<DWORD, DWORD>* jit2Options;
     };
 
     static bool Parse(int argc, char* argv[], /* OUT */ Options* o);
+
+    static bool AddJitOption(int& currArgument, int argc, char* argv[], LightWeightMap<DWORD, DWORD>** pJitOptions, LightWeightMap<DWORD, DWORD>** pForceJitOptions);
 
 private:
     static void DumpHelp(const char* program);
