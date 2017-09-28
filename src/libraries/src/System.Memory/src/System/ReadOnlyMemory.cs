@@ -16,7 +16,7 @@ namespace System
     /// ReadOnlyMemory represents a contiguous region of arbitrary similar to ReadOnlySpan.
     /// Unlike ReadOnlySpan, it is not a byref-like type.
     /// </summary>
-    public struct ReadOnlyMemory<T>
+    public readonly struct ReadOnlyMemory<T>
     {
         // The highest order bit of _index is used to discern whether _arrayOrOwnedMemory is an array or an owned memory
         // if (_index >> 31) == 1, object _arrayOrOwnedMemory is an OwnedMemory<T>

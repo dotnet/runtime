@@ -1637,7 +1637,7 @@ namespace System
         public MemberAccessException(string message, System.Exception inner) { }
         protected MemberAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public struct Memory<T>
+    public readonly struct Memory<T>
     {
         public static Memory<T> Empty { get { throw null; } }
         public Memory(T[] array) { throw null;}
@@ -1861,7 +1861,7 @@ namespace System
         public RankException(string message, System.Exception innerException) { }
         protected RankException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public struct ReadOnlyMemory<T>
+    public readonly struct ReadOnlyMemory<T>
     {
         public static ReadOnlyMemory<T> Empty { get { throw null; } }
         public ReadOnlyMemory(T[] array) { throw null;}
