@@ -140,7 +140,7 @@
     </RuntimeGroupWithQualifiers>
   </ItemGroup>
 
-  <Target Name="GenerateRuntimeJson" BeforeTargets="CreatePackage">
+  <Target Name="GenerateRuntimeJson">
     <!-- Note that we intentionally modify the runtime*json that is under source control.
          We want to keep this up to date in source control so that we can see the diff in the 
          runtime.json over time as changes are made to RuntimeGroups. -->
