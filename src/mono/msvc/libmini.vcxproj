@@ -22,6 +22,9 @@
     <ProjectReference Include="eglib.vcxproj">
       <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
     </ProjectReference>
+    <ProjectReference Include="genmdesc.vcxproj">
+      <Project>{b7098dfa-31e6-4006-8a15-1c9a4e925149}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{88D2EB79-592D-45F8-B849-AE021C1D983A}</ProjectGuid>
