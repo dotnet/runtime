@@ -137,7 +137,6 @@ namespace MonoTests.System.Drawing.Imaging
                     Assert.Equal(520, data.Stride);
                     Assert.Equal(183, data.Height);
 
-                    int size = data.Height * data.Stride;
                     unsafe
                     {
                         byte* scan = (byte*)data.Scan0;
