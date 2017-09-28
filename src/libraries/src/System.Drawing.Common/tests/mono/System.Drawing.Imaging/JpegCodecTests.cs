@@ -39,29 +39,8 @@ using System.Security.Permissions;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-
     public class JpegCodecTest
     {
-
-        /* Get suffix to add to the filename */
-        internal string GetOutSufix()
-        {
-            string s;
-
-            int p = (int)Environment.OSVersion.Platform;
-            if ((p == 4) || (p == 128) || (p == 6))
-                s = "-unix";
-            else
-                s = "-windows";
-
-            if (Type.GetType("Mono.Runtime", false) == null)
-                s += "-msnet";
-            else
-                s += "-mono";
-
-            return s;
-        }
-
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap8bbpIndexedGreyscaleFeatures()
         {
@@ -382,7 +361,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         private void Save(PixelFormat original, PixelFormat expected)
         {
-            string sOutFile = String.Format("linerect{0}-{1}.jpeg", GetOutSufix(), expected.ToString());
+            string sOutFile = $"linerect-{expected}.jpeg";
 
             // Save		
             Bitmap bmp = new Bitmap(100, 100, original);
