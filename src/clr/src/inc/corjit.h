@@ -155,7 +155,38 @@ public:
         CORJIT_FLAG_UNUSED11                = 41,
 #endif // !defined(_TARGET_ARM_)
 
-        CORJIT_FLAG_NO_INLINING             = 42 // JIT should not inline any called method into this method
+        CORJIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+
+        CORJIT_FLAG_USE_SSE3                = 43,
+        CORJIT_FLAG_USE_SSSE3               = 44,
+        CORJIT_FLAG_USE_SSE41               = 45,
+        CORJIT_FLAG_USE_SSE42               = 46,
+        CORJIT_FLAG_USE_AES                 = 47,
+        CORJIT_FLAG_USE_BMI1                = 48,
+        CORJIT_FLAG_USE_BMI2                = 49,
+        CORJIT_FLAG_USE_FMA                 = 50,
+        CORJIT_FLAG_USE_LZCNT               = 51,
+        CORJIT_FLAG_USE_PCLMULQDQ           = 52,
+        CORJIT_FLAG_USE_POPCNT              = 53
+        
+
+#else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+
+        CORJIT_FLAG_UNUSED12                = 43,
+        CORJIT_FLAG_UNUSED13                = 44,
+        CORJIT_FLAG_UNUSED14                = 45,
+        CORJIT_FLAG_UNUSED15                = 46,
+        CORJIT_FLAG_UNUSED16                = 47,
+        CORJIT_FLAG_UNUSED17                = 48,
+        CORJIT_FLAG_UNUSED18                = 49,
+        CORJIT_FLAG_UNUSED19                = 50,
+        CORJIT_FLAG_UNUSED20                = 51,
+        CORJIT_FLAG_UNUSED21                = 52,
+        CORJIT_FLAG_UNUSED22                = 53
+
+#endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
     };
 
     CORJIT_FLAGS()
