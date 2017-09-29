@@ -13,7 +13,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
-            "DockerTag": "rhel-7-dd8aa64-20170320090348",
+            "DockerTag": "centos-7-34f1db9-20171620021620",
             "Rid": "linux"
           },
           "ReportingParameters": {
@@ -110,7 +110,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
+            "DockerTag": "ubuntu-14.04-cross-0cd4667-20170319080304",
             "Architecture": "arm",
             "Rid": "linux"
           },
