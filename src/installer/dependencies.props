@@ -9,23 +9,23 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>f006d08d7c64156d910caa8e1c47ec012fde7ae8</CoreFxCurrentRef>
+    <CoreFxCurrentRef>dd0def21a8b6ce7af7956481880b314431705332</CoreFxCurrentRef>
     <CoreClrCurrentRef>25ba17a5976512ca07a8e746dac1a746a73fa081</CoreClrCurrentRef>
     <StandardCurrentRef>f006d08d7c64156d910caa8e1c47ec012fde7ae8</StandardCurrentRef>
-    <WCFCurrentRef>25ba17a5976512ca07a8e746dac1a746a73fa081</WCFCurrentRef>
-    <BuildToolsCurrentRef>28c7860c2887d685986bc1c85de1e822fee91122</BuildToolsCurrentRef>
+    <WCFCurrentRef>dd0def21a8b6ce7af7956481880b314431705332</WCFCurrentRef>
+    <BuildToolsCurrentRef>dd0def21a8b6ce7af7956481880b314431705332</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25728-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25728-02</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview1-25728-02</PlatformPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25729-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25729-01</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25729-01</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25720-03</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
     <NETStandardVersion>2.1.0-preview1-25728-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.5.0-preview2-25720-01</WcfVersion>
+    <WcfVersion>4.5.0-preview2-25728-13</WcfVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
