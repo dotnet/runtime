@@ -18,7 +18,6 @@ using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Threading;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420

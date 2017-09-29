@@ -6,12 +6,6 @@ using System;
 using System.Collections.Generic;
 using Interlocked = System.Threading.Interlocked;
 
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
-
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
@@ -97,7 +91,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(name));
             }
 
-            Contract.EndContractBlock();
 
             this.typeInfos = MakeArray(paramInfos);
             this.name = name;
@@ -135,7 +128,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(defaultName));
             }
 
-            Contract.EndContractBlock();
 
             this.typeInfos = typeInfos;
             this.name = defaultName;
@@ -215,7 +207,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(paramInfos));
             }
 
-            Contract.EndContractBlock();
 
             var recursionCheck = new List<Type>(paramInfos.Length);
             var result = new TraceLoggingTypeInfo[paramInfos.Length];
@@ -234,7 +225,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(types));
             }
 
-            Contract.EndContractBlock();
 
             var recursionCheck = new List<Type>(types.Length);
             var result = new TraceLoggingTypeInfo[types.Length];
@@ -254,7 +244,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(typeInfos));
             }
 
-            Contract.EndContractBlock();
 
             return (TraceLoggingTypeInfo[])typeInfos.Clone(); ;
         }

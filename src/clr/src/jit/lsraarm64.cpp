@@ -260,9 +260,9 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            // TODO-ARM64-NYI
-            // Right now only Abs/Round/Sqrt are treated as math intrinsics
             noway_assert((tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Abs) ||
+                         (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Ceiling) ||
+                         (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Floor) ||
                          (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Round) ||
                          (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Sqrt));
 
@@ -302,17 +302,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             {
                 castOpType = genUnsignedType(castOpType);
             }
-#ifdef DEBUG
-            if (!tree->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(castOpType)))
-            {
-                // If converting to float/double, the operand must be 4 or 8 byte in size.
-                if (varTypeIsFloating(castToType))
-                {
-                    unsigned opSize = genTypeSize(castOpType);
-                    assert(opSize == 4 || opSize == 8);
-                }
-            }
-#endif // DEBUG
+
             // Some overflow checks need a temp reg
 
             Lowering::CastInfo castInfo;
@@ -364,6 +354,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_JCMP:
             TreeNodeInfoInitCmp(tree);
             break;
 

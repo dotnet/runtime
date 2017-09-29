@@ -18,7 +18,6 @@ namespace System.Reflection.Emit
     using System.IO;
     using System.Runtime.Versioning;
     using System.Diagnostics.SymbolStore;
-    using System.Diagnostics.Contracts;
 
     // This is a package private class. This class hold all of the managed
     // data member for AssemblyBuilder. Note that what ever data members added to

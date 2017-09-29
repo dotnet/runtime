@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Text
 {

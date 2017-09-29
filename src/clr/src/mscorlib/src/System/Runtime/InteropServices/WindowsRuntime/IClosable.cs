@@ -8,7 +8,6 @@ using System;
 using System.Security;
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -199,7 +198,6 @@ namespace System.Globalization
         private unsafe SortKey InvariantCreateSortKey(string source, CompareOptions options)
         {
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
-            Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {

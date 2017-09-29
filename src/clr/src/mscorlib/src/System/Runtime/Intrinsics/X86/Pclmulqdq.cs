@@ -13,15 +13,15 @@ namespace System.Runtime.Intrinsics.X86
     [CLSCompliant(false)]
     public static class Pclmulqdq
     {
-        public static bool IsSupported { get { return false; } }
+        public static bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)
         /// </summary>
-        public static Vector128<long> CarryLessMultiply(Vector128<long> left, Vector128<long> right, byte control) { throw new NotImplementedException(); }
+        public static Vector128<long> CarryLessMultiply(Vector128<long> left, Vector128<long> right, byte control) => CarryLessMultiply(left, right, control);
         /// <summary>
         /// __m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)
         /// </summary>
-        public static Vector128<ulong> CarryLessMultiply(Vector128<ulong> left, Vector128<ulong> right, byte control) { throw new NotImplementedException(); }
+        public static Vector128<ulong> CarryLessMultiply(Vector128<ulong> left, Vector128<ulong> right, byte control) => CarryLessMultiply(left, right, control);
     }
 }

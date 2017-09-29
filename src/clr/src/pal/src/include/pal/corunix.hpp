@@ -773,7 +773,8 @@ namespace CorUnix
         RegisterWaitingThread(
             WaitType eWaitType,
             DWORD dwIndex,
-            bool fAltertable
+            bool fAltertable,
+            bool fPrioritize
             ) = 0;
 
         //

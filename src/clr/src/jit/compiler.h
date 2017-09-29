@@ -2033,6 +2033,8 @@ public:
 
     GenTree* gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg);
 
+    GenTree* gtNewBitCastNode(var_types type, GenTreePtr arg);
+
 protected:
     void gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOrFillVal, bool isVolatile);
 
@@ -2218,7 +2220,12 @@ public:
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
     {
-        return (call->gtCallMethHnd == impInlineRoot()->info.compMethodHnd);
+        return gtIsRecursiveCall(call->gtCallMethHnd);
+    }
+
+    bool gtIsRecursiveCall(CORINFO_METHOD_HANDLE callMethodHandle)
+    {
+        return (callMethodHandle == impInlineRoot()->info.compMethodHnd);
     }
 
     //-------------------------------------------------------------------------
@@ -2890,6 +2897,13 @@ public:
     CORINFO_CLASS_HANDLE impGetStringClass();
     CORINFO_CLASS_HANDLE impGetObjectClass();
 
+    // Returns underlying type of handles returned by ldtoken instruction
+    inline var_types GetRuntimeHandleUnderlyingType()
+    {
+        // RuntimeTypeHandle is backed by raw pointer on CoreRT and by object reference on other runtimes
+        return IsTargetAbi(CORINFO_CORERT_ABI) ? TYP_I_IMPL : TYP_REF;
+    }
+
     //=========================================================================
     //                          PROTECTED
     //=========================================================================
@@ -2952,11 +2966,12 @@ protected:
                             IL_OFFSET          rawILOffset);
 
     void impDevirtualizeCall(GenTreeCall*            call,
-                             GenTreePtr              thisObj,
                              CORINFO_METHOD_HANDLE*  method,
                              unsigned*               methodFlags,
                              CORINFO_CONTEXT_HANDLE* contextHandle,
                              CORINFO_CONTEXT_HANDLE* exactContextHandle);
+
+    CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE specialIntrinsicHandle);
 
     bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo);
 
@@ -2995,6 +3010,11 @@ protected:
                             bool                  isJitIntrinsic,
                             CorInfoIntrinsics*    pIntrinsicID,
                             bool*                 isSpecialIntrinsic = nullptr);
+    GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
+                              CORINFO_SIG_INFO*     sig,
+                              var_types             callType,
+                              CorInfoIntrinsics     intrinsicID,
+                              bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,
@@ -8324,10 +8344,8 @@ public:
         unsigned  compArgsCount;     // Number of arguments (incl. implicit and     hidden)
 
 #if FEATURE_FASTTAILCALL
-        unsigned compArgRegCount;      // Number of incoming integer argument registers used for incoming arguments
-        unsigned compFloatArgRegCount; // Number of incoming floating argument registers used for incoming arguments
-        size_t   compArgStackSize;     // Incoming argument stack size in bytes
-#endif                                 // FEATURE_FASTTAILCALL
+        size_t compArgStackSize; // Incoming argument stack size in bytes
+#endif                           // FEATURE_FASTTAILCALL
 
         unsigned compRetBuffArg; // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
         int compTypeCtxtArg; // position of hidden param for type context for generic code (CORINFO_CALLCONV_PARAMTYPE)
@@ -10275,23 +10293,8 @@ const instruction INS_SQRT  = INS_vsqrt;
 
 #ifdef _TARGET_ARM64_
 
-const instruction INS_SHIFT_LEFT_LOGICAL  = INS_lsl;
-const instruction INS_SHIFT_RIGHT_LOGICAL = INS_lsr;
-const instruction INS_SHIFT_RIGHT_ARITHM  = INS_asr;
-
-const instruction INS_AND             = INS_and;
-const instruction INS_OR              = INS_orr;
-const instruction INS_XOR             = INS_eor;
-const instruction INS_NEG             = INS_neg;
-const instruction INS_TEST            = INS_tst;
-const instruction INS_MUL             = INS_mul;
-const instruction INS_MULADD          = INS_madd;
-const instruction INS_SIGNED_DIVIDE   = INS_sdiv;
-const instruction INS_UNSIGNED_DIVIDE = INS_udiv;
-const instruction INS_BREAKPOINT      = INS_bkpt;
-const instruction INS_ADDC            = INS_adc;
-const instruction INS_SUBC            = INS_sbc;
-const instruction INS_NOT             = INS_mvn;
+const instruction INS_MULADD     = INS_madd;
+const instruction INS_BREAKPOINT = INS_bkpt;
 
 const instruction INS_ABS   = INS_fabs;
 const instruction INS_ROUND = INS_frintn;

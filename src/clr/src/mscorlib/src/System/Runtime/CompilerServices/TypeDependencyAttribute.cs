@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
 
 namespace System.Runtime.CompilerServices
 {
@@ -17,7 +16,6 @@ namespace System.Runtime.CompilerServices
         public TypeDependencyAttribute(string typeName)
         {
             if (typeName == null) throw new ArgumentNullException(nameof(typeName));
-            Contract.EndContractBlock();
             this.typeName = typeName;
         }
     }

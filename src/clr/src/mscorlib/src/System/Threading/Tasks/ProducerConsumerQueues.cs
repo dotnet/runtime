@@ -25,7 +25,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
 namespace System.Threading.Tasks
@@ -164,7 +163,7 @@ namespace System.Threading.Tasks
         /// <param name="segment">The segment in which to first attempt to store the item.</param>
         private void EnqueueSlow(T item, ref Segment segment)
         {
-            Contract.Requires(segment != null, "Expected a non-null segment.");
+            Debug.Assert(segment != null, "Expected a non-null segment.");
 
             if (segment.m_state.m_firstCopy != segment.m_state.m_first)
             {
@@ -220,8 +219,8 @@ namespace System.Threading.Tasks
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
         private bool TryDequeueSlow(ref Segment segment, ref T[] array, out T result)
         {
-            Contract.Requires(segment != null, "Expected a non-null segment.");
-            Contract.Requires(array != null, "Expected a non-null item array.");
+            Debug.Assert(segment != null, "Expected a non-null segment.");
+            Debug.Assert(array != null, "Expected a non-null item array.");
 
             if (segment.m_state.m_last != segment.m_state.m_lastCopy)
             {
@@ -322,7 +321,7 @@ namespace System.Threading.Tasks
             /// <param name="size">The size to use for this segment.</param>
             internal Segment(int size)
             {
-                Contract.Requires((size & (size - 1)) == 0, "Size must be a power of 2");
+                Debug.Assert((size & (size - 1)) == 0, "Size must be a power of 2");
                 m_array = new T[size];
             }
         }
@@ -361,7 +360,7 @@ namespace System.Threading.Tasks
             /// <param name="enumerable">The queue being debugged.</param>
             public SingleProducerSingleConsumerQueue_DebugView(SingleProducerSingleConsumerQueue<T> queue)
             {
-                Contract.Requires(queue != null, "Expected a non-null queue.");
+                Debug.Assert(queue != null, "Expected a non-null queue.");
                 m_queue = queue;
             }
         }

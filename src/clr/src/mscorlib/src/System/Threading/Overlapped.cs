@@ -31,7 +31,6 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Collections.Concurrent;
 
 namespace System.Threading
@@ -348,7 +347,6 @@ namespace System.Threading
         {
             if (nativeOverlappedPtr == null)
                 throw new ArgumentNullException(nameof(nativeOverlappedPtr));
-            Contract.EndContractBlock();
 
             Overlapped overlapped = OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr).m_overlapped;
 
@@ -360,7 +358,6 @@ namespace System.Threading
         {
             if (nativeOverlappedPtr == null)
                 throw new ArgumentNullException(nameof(nativeOverlappedPtr));
-            Contract.EndContractBlock();
 
             Overlapped overlapped = OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr).m_overlapped;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);

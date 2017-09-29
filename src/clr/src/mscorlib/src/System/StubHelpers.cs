@@ -17,7 +17,6 @@ namespace System.StubHelpers
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
     internal static class AnsiCharMarshaler
     {
@@ -1446,8 +1445,6 @@ namespace System.StubHelpers
 
         static internal unsafe Exception ConvertToManaged(int hr)
         {
-            Contract.Ensures(Contract.Result<Exception>() != null || hr >= 0);
-
             if (!Environment.IsWinRTSupported)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);

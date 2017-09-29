@@ -1308,6 +1308,16 @@ AGAIN:
                         return false;
                     }
                     break;
+#ifdef FEATURE_SIMD
+                case GT_SIMD:
+                    if ((op1->AsSIMD()->gtSIMDIntrinsicID != op2->AsSIMD()->gtSIMDIntrinsicID) ||
+                        (op1->AsSIMD()->gtSIMDBaseType != op2->AsSIMD()->gtSIMDBaseType) ||
+                        (op1->AsSIMD()->gtSIMDSize != op2->AsSIMD()->gtSIMDSize))
+                    {
+                        return false;
+                    }
+                    break;
+#endif // FEATURE_SIMD
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
@@ -1895,7 +1905,6 @@ AGAIN:
                     hash =
                         genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtObj.gtClass)));
                     break;
-
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
                     break;
@@ -2541,6 +2550,15 @@ GenTreePtr Compiler::gtReverseCond(GenTree* tree)
     {
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenTree::ReverseRelop(cc->gtCondition);
+    }
+    else if (tree->OperIs(GT_JCMP))
+    {
+        // Flip the GTF_JCMP_EQ
+        //
+        // This causes switching
+        //     cbz <=> cbnz
+        //     tbz <=> tbnz
+        tree->gtFlags ^= GTF_JCMP_EQ;
     }
     else
     {
@@ -6415,6 +6433,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
 }
 
 GenTreePtr Compiler::gtNewInlineCandidateReturnExpr(GenTreePtr inlineCandidate, var_types type)
+
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
@@ -7058,7 +7077,7 @@ GenTree* Compiler::gtNewBlkOpNode(
 //    Returns the newly created PutArgReg node.
 //
 // Notes:
-//    The node is generated as GenTreeMultiRegOp on armel, as GenTreeOp on all the other archs
+//    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, GenTreeOp on all the other archs.
 //
 GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg)
 {
@@ -7072,6 +7091,35 @@ GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber ar
     node            = gtNewOperNode(GT_PUTARG_REG, type, arg);
 #endif
     node->gtRegNum = argReg;
+
+    return node;
+}
+
+//------------------------------------------------------------------------
+// gtNewBitCastNode: Creates a new BitCast node.
+//
+// Arguments:
+//    type   - The actual type of the argument
+//    arg    - The argument node
+//    argReg - The register that the argument will be passed in
+//
+// Return Value:
+//    Returns the newly created BitCast node.
+//
+// Notes:
+//    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, as GenTreeOp on all the other archs.
+//
+GenTreePtr Compiler::gtNewBitCastNode(var_types type, GenTreePtr arg)
+{
+    assert(arg != nullptr);
+
+    GenTreePtr node = nullptr;
+#if !defined(LEGACY_BACKEND) && defined(ARM_SOFTFP)
+    // A BITCAST could be a MultiRegOp on armel since we could move a double register to two int registers.
+    node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
+#else
+    node            = gtNewOperNode(GT_BITCAST, type, arg);
+#endif
 
     return node;
 }
@@ -7111,6 +7159,10 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
                     GenTreeIntCon(tree->gtType, tree->gtIntCon.gtIconVal, tree->gtIntCon.gtFieldSeq);
                 copy->gtIntCon.gtCompileTimeHandle = tree->gtIntCon.gtCompileTimeHandle;
             }
+            break;
+
+        case GT_CNS_LNG:
+            copy = gtNewLconNode(tree->gtLngCon.gtLconVal);
             break;
 
         case GT_LCL_VAR:
@@ -8258,23 +8310,7 @@ bool GenTree::gtSetFlags() const
         return false;
     }
 
-#if FEATURE_SET_FLAGS
-    assert(OperIsSimple());
-
-    if ((gtFlags & GTF_SET_FLAGS) && gtOper != GT_IND)
-    {
-        // GTF_SET_FLAGS is not valid on GT_IND and is overlaid with GTF_NONFAULTING_IND
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-
-#else // !FEATURE_SET_FLAGS
-
-#ifdef LEGACY_BACKEND
-#ifdef _TARGET_XARCH_
+#if defined(LEGACY_BACKEND) && !FEATURE_SET_FLAGS && defined(_TARGET_XARCH_)
     // Return true if/when the codegen for this node will set the flags
     //
     //
@@ -8290,13 +8326,11 @@ bool GenTree::gtSetFlags() const
     {
         return true;
     }
-#else
-    // Otherwise for other architectures we should return false
-    return false;
-#endif
+#else // !(defined(LEGACY_BACKEND) && !FEATURE_SET_FLAGS && defined(_TARGET_XARCH_))
 
-#else // !LEGACY_BACKEND
-#ifdef _TARGET_XARCH_
+#if FEATURE_SET_FLAGS
+    assert(OperIsSimple());
+#endif
     if (((gtFlags & GTF_SET_FLAGS) != 0) && (gtOper != GT_IND))
     {
         // GTF_SET_FLAGS is not valid on GT_IND and is overlaid with GTF_NONFAULTING_IND
@@ -8306,12 +8340,7 @@ bool GenTree::gtSetFlags() const
     {
         return false;
     }
-#else
-    unreached();
-#endif
-#endif // !LEGACY_BACKEND
-
-#endif // !FEATURE_SET_FLAGS
+#endif // !(defined(LEGACY_BACKEND) && !FEATURE_SET_FLAGS && defined(_TARGET_XARCH_))
 }
 
 bool GenTree::gtRequestSetFlags()
@@ -9868,6 +9897,11 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
                 }
                 goto DASH;
 
+            case GT_JCMP:
+                printf((tree->gtFlags & GTF_JCMP_TST) ? "T" : "C");
+                printf((tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+                goto DASH;
+
             default:
             DASH:
                 printf("-");
@@ -10780,6 +10814,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_SETCC:
             printf(" cond=%s", GenTree::OpName(tree->AsCC()->gtCondition));
             break;
+        case GT_JCMP:
+            printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
+                   (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
 
         default:
             assert(!"don't know how to display tree leaf node");
@@ -12525,13 +12562,38 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     GenTree* boxTypeHandle = nullptr;
     if (options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
     {
-        // Note we might see GenTreeAllocObj here, if impImportAndPushBox
-        // starts using it instead of a bare helper call.
-        GenTree* asgSrc = asg->gtOp.gtOp2;
-        assert(asgSrc->IsCall());
-        GenTreeCall*    newobjCall = asgSrc->AsCall();
-        GenTreeArgList* newobjArgs = newobjCall->gtCallArgs->AsArgList();
-        boxTypeHandle              = newobjArgs->Current();
+        GenTree*   asgSrc     = asg->gtOp.gtOp2;
+        genTreeOps asgSrcOper = asgSrc->OperGet();
+
+        // Allocation may be via AllocObj or via helper call, depending
+        // on when this is invoked and whether the jit is using AllocObj
+        // for R2R allocations.
+        if (asgSrcOper == GT_ALLOCOBJ)
+        {
+            GenTreeAllocObj* allocObj = asgSrc->AsAllocObj();
+            boxTypeHandle             = allocObj->gtOp.gtOp1;
+        }
+        else if (asgSrcOper == GT_CALL)
+        {
+            GenTreeCall* newobjCall = asgSrc->AsCall();
+            GenTree*     newobjArgs = newobjCall->gtCallArgs;
+
+            // In R2R expansions the handle may not be an explicit operand to the helper,
+            // so we can't remove the box.
+            if (newobjArgs == nullptr)
+            {
+                assert(newobjCall->IsHelperCall(this, CORINFO_HELP_READYTORUN_NEW));
+                JITDUMP("bailing; newobj via R2R helper\n");
+                return nullptr;
+            }
+
+            boxTypeHandle = newobjArgs->AsArgList()->Current();
+        }
+        else
+        {
+            unreached();
+        }
+
         assert(boxTypeHandle != nullptr);
     }
 
@@ -12776,6 +12838,7 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
     if (thisVal->IsIntegralConst())
     {
         thisValOpt = gtClone(thisVal);
+        assert(thisValOpt != nullptr);
     }
     else
     {
@@ -12788,8 +12851,10 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
 
     if (flagVal->IsIntegralConst())
     {
-        flagValOpt     = gtClone(flagVal);
+        flagValOpt = gtClone(flagVal);
+        assert(flagValOpt != nullptr);
         flagValOptCopy = gtClone(flagVal);
+        assert(flagValOptCopy != nullptr);
     }
     else
     {
@@ -15580,9 +15645,19 @@ bool GenTree::canBeContained() const
 {
     assert(IsLIR());
 
+    if (gtHasReg())
+    {
+        return false;
+    }
+
     // It is not possible for nodes that do not produce values or that are not containable values
     // to be contained.
-    return (OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) == 0;
+    if ((OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) != 0)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -15607,7 +15682,7 @@ bool GenTree::isContained() const
     const bool isMarkedContained = ((gtFlags & GTF_CONTAINED) != 0);
 
 #ifdef DEBUG
-    if (!canBeContained() || gtHasReg())
+    if (!canBeContained())
     {
         assert(!isMarkedContained);
     }
@@ -15628,20 +15703,10 @@ bool GenTree::isContained() const
         assert(!isMarkedContained);
     }
 
-#if !defined(_TARGET_64BIT_)
-    if (OperGet() == GT_LONG)
-    {
-        // GT_LONG nodes are normally contained. The only exception is when the result
-        // of a TYP_LONG operation is not used and this can only happen if the GT_LONG
-        // has no parent.
-        assert(isMarkedContained || (gtGetParent(nullptr) == nullptr));
-    }
-#endif
-
     // if it's contained it better have a user
     if (isMarkedContained)
     {
-        assert((gtNext != nullptr) || OperIsLocal());
+        assert(gtNext != nullptr);
     }
 #endif // DEBUG
     return isMarkedContained;

@@ -9,7 +9,6 @@ using System.Security;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -31,7 +30,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // int Count { get }
-        [Pure]
         internal int Count<T>()
         {
             IVectorView<T> _this = Unsafe.As<IVectorView<T>>(this);

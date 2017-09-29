@@ -1901,6 +1901,90 @@ BOOL ObjHeader::TryEnterObjMonitor(INT32 timeOut)
     return GetSyncBlock()->TryEnterMonitor(timeOut);
 }
 
+AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurThread)
+{
+    CONTRACTL{
+        SO_TOLERANT;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // Note: EnterObjMonitorHelper must be called before this function (see below)
+
+    if (g_SystemInfo.dwNumberOfProcessors == 1)
+    {
+        return AwareLock::EnterHelperResult_Contention;
+    }
+
+    for (DWORD spinCount = g_SpinConstants.dwInitialDuration; AwareLock::SpinWaitAndBackOffBeforeOperation(&spinCount);)
+    {
+        LONG oldValue = m_SyncBlockValue.LoadWithoutBarrier();
+
+        // Since spinning has begun, chances are good that the monitor has already switched to AwareLock mode, so check for that
+        // case first
+        if (oldValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+        {
+            // If we have a hash code already, we need to create a sync block
+            if (oldValue & BIT_SBLK_IS_HASHCODE)
+            {
+                return AwareLock::EnterHelperResult_UseSlowPath;
+            }
+
+            // Check the recursive case once before the spin loop. If it's not the recursive case in the beginning, it will not
+            // be in the future, so the spin loop can avoid checking the recursive case.
+            SyncBlock *syncBlock = g_pSyncTable[oldValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
+            _ASSERTE(syncBlock != NULL);
+            AwareLock *awareLock = &syncBlock->m_Monitor;
+            if (awareLock->EnterHelper(pCurThread, true /* checkRecursiveCase */))
+            {
+                return AwareLock::EnterHelperResult_Entered;
+            }
+            while (AwareLock::SpinWaitAndBackOffBeforeOperation(&spinCount))
+            {
+                if (awareLock->EnterHelper(pCurThread, false /* checkRecursiveCase */))
+                {
+                    return AwareLock::EnterHelperResult_Entered;
+                }
+            }
+            break;
+        }
+
+        DWORD tid = pCurThread->GetThreadId();
+        if ((oldValue & (BIT_SBLK_SPIN_LOCK +
+            SBLK_MASK_LOCK_THREADID +
+            SBLK_MASK_LOCK_RECLEVEL)) == 0)
+        {
+            if (tid > SBLK_MASK_LOCK_THREADID)
+            {
+                return AwareLock::EnterHelperResult_UseSlowPath;
+            }
+
+            LONG newValue = oldValue | tid;
+            if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+            {
+                pCurThread->IncLockCount();
+                return AwareLock::EnterHelperResult_Entered;
+            }
+
+            continue;
+        }
+
+        // EnterObjMonitorHelper handles the thin lock recursion case. If it's not that case, it won't become that case. If
+        // EnterObjMonitorHelper failed to increment the recursion level, it will go down the slow path and won't come here. So,
+        // no need to check the recursion case here.
+        _ASSERTE(
+            // The header is transitioning - treat this as if the lock was taken
+            oldValue & BIT_SBLK_SPIN_LOCK ||
+            // Here we know we have the "thin lock" layout, but the lock is not free.
+            // It can't be the recursion case though, because the call to EnterObjMonitorHelper prior to this would have taken
+            // the slow path in the recursive case.
+            tid != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID));
+    }
+
+    return AwareLock::EnterHelperResult_Contention;
+}
+
 BOOL ObjHeader::LeaveObjMonitor()
 {
     CONTRACTL

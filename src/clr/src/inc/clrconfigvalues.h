@@ -472,7 +472,7 @@ CONFIG_DWORD_INFO_EX(INTERNAL_JitNoCSE, W("JitNoCSE"), 0, "", CLRConfig::REGUTIL
 CONFIG_DWORD_INFO_EX(INTERNAL_JitNoCSE2, W("JitNoCSE2"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JitNoHoist, W("JitNoHoist"), 0, "", CLRConfig::REGUTIL_default)
 
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitNoInline, W("JitNoInline"), 0, "Disables inlining of all methods", CLRConfig::REGUTIL_default)
+CONFIG_DWORD_INFO_EX(INTERNAL_JitNoInline, W("JitNoInline"), 0, "Disables inlining of all methods", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitAggressiveInlining, W("JitAggressiveInlining"), 0, "Aggressive inlining of all methods", CLRConfig::REGUTIL_default)
 
 CONFIG_STRING_INFO_EX(INTERNAL_JitNoProcedureSplitting, W("JitNoProcedureSplitting"), "Disallow procedure splitting for specified methods", CLRConfig::REGUTIL_default)
@@ -943,7 +943,12 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPoo
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation, W("ThreadPool_DebugBreakOnWorkerStarvation"), 0, "Breaks into the debugger if the ThreadPool detects work queue starvation")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_EnableWorkerTracking, W("ThreadPool_EnableWorkerTracking"), 0, "Enables extra expensive tracking of how many workers threads are working simultaneously")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 50, "Per processor limit used when calculating spin duration in UnfairSemaphore::Wait")
+#ifdef _TARGET_ARM64_
+// Spinning scheme is currently different on ARM64, see CLRLifoSemaphore::Wait(DWORD, UINT32, UINT32)
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x32, "Maximum number of spins per processor a thread pool worker thread performs before waiting for work")
+#else // !_TARGET_ARM64_
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
+#endif // _TARGET_ARM64_
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies if to automatically distribute thread across CPU Groups")
 
 CONFIG_DWORD_INFO(INTERNAL_ThreadpoolTickCountAdjustment, W("ThreadpoolTickCountAdjustment"), 0, "")

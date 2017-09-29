@@ -97,10 +97,16 @@ namespace System.IO
                     ignoreNotSupported: true); // just a hint.
             }
 
-            // Jump to the end of the file if opened as Append.
             if (_mode == FileMode.Append)
             {
+                // Jump to the end of the file if opened as Append.
                 _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
+            }
+            else if (mode == FileMode.Create || mode == FileMode.Truncate)
+            {
+                // Truncate the file now if the file mode requires it. This ensures that the file only will be truncated
+                // if opened successfully.
+                CheckFileCall(Interop.Sys.FTruncate(_fileHandle, 0));
             }
         }
 
@@ -128,23 +134,17 @@ namespace System.IO
             {
                 default:
                 case FileMode.Open: // Open maps to the default behavior for open(...).  No flags needed.
+                case FileMode.Truncate: // We truncate the file after getting the lock
                     break;
 
                 case FileMode.Append: // Append is the same as OpenOrCreate, except that we'll also separately jump to the end later
                 case FileMode.OpenOrCreate:
+                case FileMode.Create: // We truncate the file after getting the lock
                     flags |= Interop.Sys.OpenFlags.O_CREAT;
-                    break;
-
-                case FileMode.Create:
-                    flags |= (Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_TRUNC);
                     break;
 
                 case FileMode.CreateNew:
                     flags |= (Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL);
-                    break;
-
-                case FileMode.Truncate:
-                    flags |= Interop.Sys.OpenFlags.O_TRUNC;
                     break;
             }
 

@@ -6691,7 +6691,20 @@ void emitter::emitSetShortJump(instrDescJmp* id)
     insFormat fmt = IF_NONE;
     if (emitIsCondJump(id))
     {
-        fmt = IF_BI_0B;
+        switch (id->idIns())
+        {
+            case INS_cbz:
+            case INS_cbnz:
+                fmt = IF_BI_1A;
+                break;
+            case INS_tbz:
+            case INS_tbnz:
+                fmt = IF_BI_1B;
+                break;
+            default:
+                fmt = IF_BI_0B;
+                break;
+        }
     }
     else if (emitIsLoadLabel(id))
     {
@@ -6784,7 +6797,81 @@ void emitter::emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumb
 
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    NYI("emitIns_J_R");
+    assert((ins == INS_cbz) || (ins == INS_cbnz));
+
+    assert(dst != nullptr);
+    assert((dst->bbFlags & BBF_JMP_TARGET) != 0);
+
+    insFormat fmt = IF_LARGEJMP;
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idReg1(reg);
+    id->idjShort = false;
+    id->idOpSize(EA_SIZE(attr));
+
+    id->idAddr()->iiaBBlabel = dst;
+    id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+
+    /* Record the jump's IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg, int imm)
+{
+    assert((ins == INS_tbz) || (ins == INS_tbnz));
+
+    assert(dst != nullptr);
+    assert((dst->bbFlags & BBF_JMP_TARGET) != 0);
+    assert((EA_SIZE(attr) == EA_4BYTE) || (EA_SIZE(attr) == EA_8BYTE));
+    assert(imm < ((EA_SIZE(attr) == EA_4BYTE) ? 32 : 64));
+
+    insFormat fmt = IF_LARGEJMP;
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idReg1(reg);
+    id->idjShort = false;
+    id->idSmallCns(imm);
+    id->idOpSize(EA_SIZE(attr));
+
+    id->idAddr()->iiaBBlabel = dst;
+    id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+
+    /* Record the jump's IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
@@ -8253,7 +8340,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // Short conditional/unconditional jump
             assert(!id->idjKeepLong);
             assert(emitJumpCrossHotColdBoundary(srcOffs, dstOffs) == false);
-            assert((fmt == IF_BI_0A) || (fmt == IF_BI_0B));
+            assert((fmt == IF_BI_0A) || (fmt == IF_BI_0B) || (fmt == IF_BI_1A) || (fmt == IF_BI_1B));
         }
         else
         {
@@ -8278,13 +8365,39 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // the correct offset. Note also that this works for both integer and floating-point conditions, because
             // the condition inversion takes ordered/unordered into account, preserving NaN behavior. For example,
             // "GT" (greater than) is inverted to "LE" (less than, equal, or unordered).
+
+            instruction reverseIns;
+            insFormat   reverseFmt;
+
+            switch (ins)
+            {
+                case INS_cbz:
+                    reverseIns = INS_cbnz;
+                    reverseFmt = IF_BI_1A;
+                    break;
+                case INS_cbnz:
+                    reverseIns = INS_cbz;
+                    reverseFmt = IF_BI_1A;
+                    break;
+                case INS_tbz:
+                    reverseIns = INS_tbnz;
+                    reverseFmt = IF_BI_1B;
+                    break;
+                case INS_tbnz:
+                    reverseIns = INS_tbz;
+                    reverseFmt = IF_BI_1B;
+                    break;
+                default:
+                    reverseIns = emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
+                    reverseFmt = IF_BI_0B;
+            }
+
             dst =
                 emitOutputShortBranch(dst,
-                                      emitJumpKindToIns(emitReverseJumpKind(
-                                          emitInsToJumpKind(ins))), // reverse the conditional instruction
-                                      IF_BI_0B,
+                                      reverseIns, // reverse the conditional instruction
+                                      reverseFmt,
                                       8, /* 8 bytes from start of this large conditional pseudo-instruction to L_not. */
-                                      nullptr /* only used for tbz/tbnzcbz/cbnz */);
+                                      id);
 
             // Now, pretend we've got a normal unconditional branch, and fall through to the code to emit that.
             ins = INS_b;
@@ -11335,11 +11448,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     bool isMulOverflow = false;
     if (dst->gtOverflowEx())
     {
-        if (ins == INS_add)
+        if ((ins == INS_add) || (ins == INS_adds))
         {
             ins = INS_adds;
         }
-        else if (ins == INS_sub)
+        else if ((ins == INS_sub) || (ins == INS_subs))
         {
             ins = INS_subs;
         }

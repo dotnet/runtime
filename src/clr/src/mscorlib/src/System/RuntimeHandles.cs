@@ -20,7 +20,6 @@ namespace System
     using System.Globalization;
     using System.Security;
     using Microsoft.Win32.SafeHandles;
-    using System.Diagnostics.Contracts;
     using StackCrawlMark = System.Threading.StackCrawlMark;
 
     public unsafe struct RuntimeTypeHandle : ISerializable
@@ -476,7 +475,6 @@ namespace System
         {
             if (name == null || name.Length == 0)
                 throw new ArgumentException(null, nameof(name));
-            Contract.EndContractBlock();
 
             RuntimeType type = null;
             GetTypeByNameUsingCARules(name, scope.GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
@@ -806,7 +804,6 @@ namespace System
             return handle.Value == Value;
         }
 
-        [Pure]
         internal bool IsNullHandle()
         {
             return m_value == null;
@@ -838,7 +835,6 @@ namespace System
             return _GetCurrentMethod(ref stackMark);
         }
 
-        [Pure]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern MethodAttributes GetAttributes(RuntimeMethodHandleInternal method);
 
@@ -878,7 +874,7 @@ namespace System
 
         internal static int GetSlot(IRuntimeMethodInfo method)
         {
-            Contract.Requires(method != null);
+            Debug.Assert(method != null);
 
             int slot = RuntimeMethodHandle.GetSlot(method.Value);
             GC.KeepAlive(method);

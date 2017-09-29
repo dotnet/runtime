@@ -64,7 +64,7 @@ private:
     bool m_deleteDeferred;
 
     // Private constructor because all providers are created through EventPipe::CreateProvider.
-    EventPipeProvider(const SString &providerName, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
+    EventPipeProvider(EventPipeConfiguration *pConfig, const SString &providerName, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
 
 public:
 

@@ -4,21 +4,13 @@
 
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
     partial struct Guid
     {
-        // This will create a new guid.  Since we've now decided that constructors should 0-init,
-        // we need a method that allows users to create a guid.
         public static Guid NewGuid()
         {
-            // CoCreateGuid should never return Guid.Empty, since it attempts to maintain some
-            // uniqueness guarantees.  It should also never return a known GUID, but it's unclear
-            // how extensively it checks for known values.
-            Contract.Ensures(Contract.Result<Guid>() != Guid.Empty);
-
             Guid guid;
             Marshal.ThrowExceptionForHR(Win32Native.CoCreateGuid(out guid), new IntPtr(-1));
             return guid;
