@@ -140,14 +140,15 @@
     </RuntimeGroupWithQualifiers>
   </ItemGroup>
 
-  <Target Name="GenerateRuntimeJson">
-    <!-- Note that we intentionally modify the runtime*json that is under source control.
-         We want to keep this up to date in source control so that we can see the diff in the 
-         runtime.json over time as changes are made to RuntimeGroups. -->
+  <Target Name="GenerateRuntimeJson" BeforeTargets="CreatePackage">
+    <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
+         Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
+         The graph can be visualized using the generated dmgl -->
     <MakeDir Directories="$(PackageReportDir)" />
     <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           RuntimeJson="runtime.json"
                           CompatibilityMap="runtime.compatibility.json"
-                          RuntimeDirectedGraph="$(PackageReportDir)$(Id)$(NuspecSuffix)-runtime.json.dgml" />
+                          RuntimeDirectedGraph="$(PackageReportDir)$(Id)$(NuspecSuffix)-runtime.json.dgml"
+                          UpdateRuntimeFiles="$(UpdateRuntimeFiles)" />
   </Target>
 </Project>
