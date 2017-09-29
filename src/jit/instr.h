@@ -274,16 +274,34 @@ enum emitAttr : unsigned
 
 #define EmitSize(x)                 (EA_ATTR(genTypeSize(TypeGet(x))))
 
-// Enum specifying the instruction set for generating floating point or SIMD code.
-// These enums are ordered such that each one is inclusive of previous instruction sets
-// and the VM ensures this as well when setting the CONFIG flags.
 enum InstructionSet
 {
 #ifdef _TARGET_XARCH_
-    InstructionSet_SSE2,      // SSE2 Instruction set
-    InstructionSet_SSE3_4,    // SSE3, SSSE3, SSE4.1 and SSE4.2 instruction set
-    InstructionSet_AVX,       // AVX2 instruction set
-                              // TODO-Cleaup - This should be named as InstructionSet_AVX2
+    // Linear order start
+    InstructionSet_ILLEGAL = 0,
+    InstructionSet_SSE     = 1,
+    InstructionSet_SSE2    = 2,
+    InstructionSet_SSE3    = 3,
+    InstructionSet_SSSE3   = 4,
+    InstructionSet_SSE41   = 5,
+    InstructionSet_SSE42   = 6,
+    InstructionSet_SSE3_4  = 7,    // SSE3, SSSE3, SSE4.1 and SSE4.2 instruction set
+    InstructionSet_AVX     = 8,
+    InstructionSet_AVX2    = 9,
+    // Linear order end
+    // TODO - Instruction sets have the linear order only in above area.
+    // We should no long compare the return value of getSIMDInstructionSet()
+    // or getFloatingPointInstructionSet() to the InstructionSet values.
+    // Should refactor SIMD code only to be aware of SIMD feature levels 
+    // (SSE2, SSE3_4, AVX, and AVX2, etc.) rather than concrete ISA.
+    
+    InstructionSet_AES     = 32,
+    InstructionSet_BMI1    = 33,
+    InstructionSet_BMI2    = 34,
+    InstructionSet_FMA     = 35,
+    InstructionSet_LZCNT   = 36,
+    InstructionSet_PCLMULQDQ  = 37,
+    InstructionSet_POPCNT  = 38,
 #elif defined(_TARGET_ARM_)
     InstructionSet_NEON,
 #endif
