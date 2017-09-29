@@ -76,6 +76,7 @@
 /mono/metadata/threads* @luhenry @kumpera
 /mono/metadata/threadpool* @luhenry
 /mono/metadata/w32* @luhenry
+/mono/metadata/*-win* @lateralusX @luhenry
 
 /mono/mini @vargaz @kumpera
 /mono/mini/*cfgdump* @lewurm
@@ -95,8 +96,9 @@
 /mono/utils/mono-hwcap* @alexrp
 /mono/utils/mono-mem* @alexrp
 /mono/utils/mono-threads* @luhenry @kumpera
+/mono/utils/*-win* @lateralusX @kumpera
 
-/msvc @ntherning
+/msvc @lateralusX
 /msvc/*profiler* @alexrp
 /msvc/scripts @akoeplinger
 
