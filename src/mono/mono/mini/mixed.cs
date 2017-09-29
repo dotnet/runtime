@@ -244,6 +244,7 @@ class Tests
 		return 1;
 	}
 
+	[Category ("!WASM")] //Stack traces / EH are super broken on WASM + Interpreter
 	public static int test_0_stack_traces () {
 		//
 		// Get a stacktrace for an interp->jit->interp call stack
