@@ -6,13 +6,14 @@
       "alwaysRun": false,
       "displayName": "Install Signing Plugin",
       "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SignType'], 'oss')",
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "signType": "$(SignType)",
+        "signType": "real",
         "zipSources": "false",
         "version": "",
         "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
@@ -86,7 +87,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority)",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority) -- /p:SignType=$(PB_SignType)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -106,7 +107,7 @@
         "solution": "src\\sign.builds",
         "platform": "",
         "configuration": "",
-        "msbuildArguments": "/p:SignType=$(SignType) /p:BuildType=$(PB_BuildType) /p:BuildArch=$(Architecture)",
+        "msbuildArguments": "/p:SignType=$(PB_SignType) /p:BuildType=$(PB_BuildType) /p:BuildArch=$(Architecture)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -131,7 +132,7 @@
       },
       "inputs": {
         "filename": "build-packages.cmd",
-        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) -- /p:OfficialBuildId=$(OfficialBuildId)",
+        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) -- /p:SignType=$(PB_SignType) /p:OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -276,8 +277,9 @@
     "Label": {
       "value": "$(Build.BuildNumber)"
     },
-    "SignType": {
-      "value": "test"
+    "PB_SignType": {
+      "value": "test",
+      "allowOverride": true
     },
     "TeamName": {
       "value": "DotNetCore"

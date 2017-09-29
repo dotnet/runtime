@@ -539,7 +539,7 @@ namespace SOS
 
                         DebugInfo debugInfo = new DebugInfo();
                         debugInfo.lineNumber = point.StartLine;
-                        debugInfo.fileName = GetFileName(openedReader.Reader.GetString(openedReader.Reader.GetDocument(point.Document).Name));
+                        debugInfo.fileName = openedReader.Reader.GetString(openedReader.Reader.GetDocument(point.Document).Name);
                         debugInfo.ilOffset = point.Offset;
                         points.Add(debugInfo);
                     }

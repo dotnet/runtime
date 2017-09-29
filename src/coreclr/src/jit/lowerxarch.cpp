@@ -36,53 +36,6 @@ void Lowering::LowerRotate(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// LowerShift: Lower shift nodes
-//
-// Arguments:
-//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
-//
-// Notes:
-//    Remove unnecessary shift count masking, xarch shift instructions
-//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
-
-void Lowering::LowerShift(GenTreeOp* shift)
-{
-    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
-
-    size_t mask = 0x1f;
-#ifdef _TARGET_AMD64_
-    if (varTypeIsLong(shift->TypeGet()))
-    {
-        mask = 0x3f;
-    }
-#else
-    assert(!varTypeIsLong(shift->TypeGet()));
-#endif
-
-    for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
-    {
-        GenTree* maskOp = andOp->gtGetOp2();
-
-        if (!maskOp->IsCnsIntOrI())
-        {
-            break;
-        }
-
-        if ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & mask) != mask)
-        {
-            break;
-        }
-
-        shift->gtOp2 = andOp->gtGetOp1();
-        BlockRange().Remove(andOp);
-        BlockRange().Remove(maskOp);
-        // The parent was replaced, clear contain and regOpt flag.
-        shift->gtOp2->ClearContained();
-    }
-    ContainCheckShiftRotate(shift);
-}
-
-//------------------------------------------------------------------------
 // LowerStoreLoc: Lower a store of a lclVar
 //
 // Arguments:
@@ -1373,25 +1326,10 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 #endif // _TARGET_X86_
                 if (ctrlExpr->isIndir())
             {
-                MakeSrcContained(call, ctrlExpr);
                 // We may have cases where we have set a register target on the ctrlExpr, but if it
                 // contained we must clear it.
                 ctrlExpr->gtRegNum = REG_NA;
-            }
-        }
-    }
-    // If there is an explicit this pointer, we don't want that node to produce anything
-    // as it is redundant
-    if (call->gtCallObjp != nullptr)
-    {
-        GenTreePtr thisPtrNode = call->gtCallObjp;
-
-        if (thisPtrNode->canBeContained())
-        {
-            MakeSrcContained(call, thisPtrNode);
-            if (thisPtrNode->gtOper == GT_PUTARG_REG)
-            {
-                MakeSrcContained(call, thisPtrNode->gtOp.gtOp1);
+                MakeSrcContained(call, ctrlExpr);
             }
         }
     }
@@ -1921,9 +1859,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         }
         else if (op1->IsCnsIntOrI())
         {
-            // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm,
-            // but there is currently an assert in CodeGen::genCompareInt().
-            // https://github.com/dotnet/coreclr/issues/7270
             SetRegOptional(op2);
         }
         else

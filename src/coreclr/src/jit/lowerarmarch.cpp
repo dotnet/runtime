@@ -130,6 +130,10 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_TEST_NE:
                 return emitter::emitIns_valid_imm_for_alu(immVal, size);
                 break;
+            case GT_JCMP:
+                assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
+                return true;
+                break;
 #elif defined(_TARGET_ARM_)
             case GT_EQ:
             case GT_NE:
@@ -351,18 +355,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else // CopyBlk
         {
-#ifdef _TARGET_ARM64_
             // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
             // we should unroll the loop to improve CQ.
             // For reference see the code in lowerxarch.cpp.
-            // TODO-ARM-CQ: cpblk loop unrolling is currently not implemented.
 
             if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT))
             {
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
             }
             else
-#endif // _TARGET_ARM64_
             {
                 // In case we have a constant integer this means we went beyond
                 // CPBLK_UNROLL_LIMIT bytes of size, still we should never have the case of
@@ -393,13 +394,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //    None.
 //
 // Notes:
-//    Casts from small int type to float/double are transformed as follows:
-//    GT_CAST(byte, float/double)     =   GT_CAST(GT_CAST(byte, int32), float/double)
-//    GT_CAST(sbyte, float/double)    =   GT_CAST(GT_CAST(sbyte, int32), float/double)
-//    GT_CAST(int16, float/double)    =   GT_CAST(GT_CAST(int16, int32), float/double)
-//    GT_CAST(uint16, float/double)   =   GT_CAST(GT_CAST(uint16, int32), float/double)
-//
-//    Similarly casts from float/double to a smaller int type are transformed as follows:
+//    Casts from float/double to a smaller int type are transformed as follows:
 //    GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
 //    GT_CAST(float/double, sbyte)    =   GT_CAST(GT_CAST(float/double, int32), sbyte)
 //    GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
@@ -419,7 +414,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     GenTreePtr op1     = tree->gtOp.gtOp1;
     var_types  dstType = tree->CastToType();
-    var_types  srcType = op1->TypeGet();
+    var_types  srcType = genActualType(op1->TypeGet());
     var_types  tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
@@ -427,15 +422,10 @@ void Lowering::LowerCast(GenTree* tree)
         noway_assert(!tree->gtOverflow());
     }
 
-    // Case of src is a small type and dst is a floating point type.
-    if (varTypeIsSmall(srcType) && varTypeIsFloating(dstType))
-    {
-        // These conversions can never be overflow detecting ones.
-        noway_assert(!tree->gtOverflow());
-        tmpType = TYP_INT;
-    }
+    assert(!varTypeIsSmall(srcType));
+
     // case of src is a floating point type and dst is a small type.
-    else if (varTypeIsFloating(srcType) && varTypeIsSmall(dstType))
+    if (varTypeIsFloating(srcType) && varTypeIsSmall(dstType))
     {
         NYI_ARM("Lowering for cast from float to small type"); // Not tested yet.
         tmpType = TYP_INT;
@@ -506,22 +496,7 @@ void Lowering::LowerRotate(GenTreePtr tree)
 //
 void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 {
-    GenTree* ctrlExpr = call->gtControlExpr;
-    // If there is an explicit this pointer, we don't want that node to produce anything
-    // as it is redundant
-    if (call->gtCallObjp != nullptr)
-    {
-        GenTreePtr thisPtrNode = call->gtCallObjp;
-
-        if (thisPtrNode->canBeContained())
-        {
-            MakeSrcContained(call, thisPtrNode);
-            if (thisPtrNode->gtOper == GT_PUTARG_REG)
-            {
-                MakeSrcContained(call, thisPtrNode->gtOp.gtOp1);
-            }
-        }
-    }
+    // There are no contained operands for arm.
 }
 
 //------------------------------------------------------------------------
@@ -719,7 +694,68 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    ContainCheckBinary(cmp);
+    if (CheckImmedAndMakeContained(cmp, cmp->gtOp2))
+    {
+#ifdef _TARGET_ARM64_
+        GenTreePtr op1 = cmp->gtOp.gtOp1;
+        GenTreePtr op2 = cmp->gtOp.gtOp2;
+
+        // If op1 codegen can set flags op2 is an immediate 0
+        // we don't need to generate cmp instruction,
+        // provided we don't have another GenTree node between op1
+        // and cmp that could potentially modify flags.
+        //
+        // TODO-CQ: right now the below peep is inexpensive and
+        // gets the benefit in most of cases because in majority
+        // of cases op1, op2 and cmp would be in that order in
+        // execution.  In general we should be able to check that all
+        // the nodes that come after op1 in execution order do not
+        // modify the flags so that it is safe to avoid generating a
+        // test instruction.  Such a check requires that on each
+        // GenTree node we need to set the info whether its codegen
+        // will modify flags.
+        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
+            !cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && op1->OperIs(GT_ADD, GT_AND, GT_SUB))
+        {
+            assert(!op1->gtSetFlags());
+            op1->gtFlags |= GTF_SET_FLAGS;
+            cmp->gtFlags |= GTF_USE_FLAGS;
+        }
+
+        if (!varTypeIsFloating(cmp) && op2->IsCnsIntOrI() && ((cmp->gtFlags & GTF_USE_FLAGS) == 0))
+        {
+            LIR::Use cmpUse;
+            bool     useJCMP = false;
+            uint64_t flags   = 0;
+
+            if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && BlockRange().TryGetUse(cmp, &cmpUse) &&
+                cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                // Codegen will use cbz or cbnz in codegen which do not affect the flag register
+                flags   = cmp->OperIs(GT_EQ) ? GTF_JCMP_EQ : 0;
+                useJCMP = true;
+            }
+            else if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(op2->gtIntCon.IconValue()) &&
+                     BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                // Codegen will use tbz or tbnz in codegen which do not affect the flag register
+                flags   = GTF_JCMP_TST | (cmp->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : 0);
+                useJCMP = true;
+            }
+
+            if (useJCMP)
+            {
+                cmp->gtLsraInfo.isNoRegCompare = true;
+                cmp->SetOper(GT_JCMP);
+
+                cmp->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+                cmp->gtFlags |= flags;
+
+                BlockRange().Remove(cmpUse.User());
+            }
+        }
+#endif // _TARGET_ARM64_
+    }
 }
 
 //------------------------------------------------------------------------

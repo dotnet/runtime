@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
@@ -75,8 +74,6 @@ namespace System.Reflection
             RuntimeMethodHandleInternal handle, RuntimeType declaringType, RuntimeTypeCache reflectedTypeCache,
             MethodAttributes methodAttributes, BindingFlags bindingFlags)
         {
-            Contract.Ensures(methodAttributes == RuntimeMethodHandle.GetAttributes(handle));
-
             m_bindingFlags = bindingFlags;
             m_reflectedTypeCache = reflectedTypeCache;
             m_declaringType = declaringType;
@@ -161,7 +158,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -175,7 +171,6 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
@@ -244,7 +239,6 @@ namespace System.Reflection
             return m_parameters;
         }
 
-        [Pure]
         public override ParameterInfo[] GetParameters()
         {
             ParameterInfo[] parameters = GetParametersNoCopy();
@@ -293,7 +287,6 @@ namespace System.Reflection
         {
             if (declaringType == null)
                 throw new ArgumentNullException(nameof(declaringType));
-            Contract.EndContractBlock();
 
             // ctor is ReflectOnly
             if (declaringType is ReflectionOnlyType)

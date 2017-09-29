@@ -24,7 +24,6 @@
 using System;
 using System.Security;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,7 +76,6 @@ namespace System.Runtime.CompilerServices
             {
                 // Validate arguments
                 if (continuation == null) throw new ArgumentNullException(nameof(continuation));
-                Contract.EndContractBlock();
 
                 if (TplEtwProvider.Log.IsEnabled())
                 {
@@ -124,26 +122,26 @@ namespace System.Runtime.CompilerServices
                 // fire the correlation ETW event
                 TplEtwProvider.Log.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, (currentTask != null) ? currentTask.Id : 0, continuationId);
 
-                return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, () =>
+                return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, (innerContinuation,continuationIdTask) =>
                 {
                     var etwLog = TplEtwProvider.Log;
-                    etwLog.TaskWaitContinuationStarted(continuationId);
+                    etwLog.TaskWaitContinuationStarted(((Task<int>)continuationIdTask).Result);
 
                     // ETW event for Task Wait End.
                     Guid prevActivityId = new Guid();
                     // Ensure the continuation runs under the correlated activity ID generated above
                     if (etwLog.TasksSetActivityIds)
-                        EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(continuationId), out prevActivityId);
+                        EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(((Task<int>)continuationIdTask).Result), out prevActivityId);
 
                     // Invoke the original continuation provided to OnCompleted.
-                    continuation();
+                    innerContinuation();
                     // Restore activity ID
 
                     if (etwLog.TasksSetActivityIds)
                         EventSource.SetCurrentThreadActivityId(prevActivityId);
 
-                    etwLog.TaskWaitContinuationComplete(continuationId);
-                });
+                    etwLog.TaskWaitContinuationComplete(((Task<int>)continuationIdTask).Result);
+                }, Task.FromResult(continuationId)); // pass the ID in a task to avoid a closure
             }
 
             /// <summary>WaitCallback that invokes the Action supplied as object state.</summary>

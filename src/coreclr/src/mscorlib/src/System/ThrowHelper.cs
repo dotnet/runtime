@@ -39,11 +39,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [Pure]
     internal static class ThrowHelper
     {
         internal static void ThrowArrayTypeMismatchException()
@@ -432,7 +430,8 @@ namespace System
         s,
         keyValuePair,
         input,
-        ownedMemory
+        ownedMemory,
+        pointer
     }
 
     //

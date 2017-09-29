@@ -22,7 +22,6 @@ namespace System.Threading
     using System.Reflection;
     using System.Security;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
 
@@ -143,7 +142,6 @@ namespace System.Threading
             {
                 throw new ArgumentNullException(nameof(waitHandles));
             }
-            Contract.EndContractBlock();
 
             return WaitHelperNative(waitHandles, waitAll, millisecondsTimeout);
         }

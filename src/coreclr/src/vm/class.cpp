@@ -1641,7 +1641,14 @@ bool MethodTable::IsHFA()
 #ifdef DACCESS_COMPILE
     return false;
 #else
-    return GetClass()->CheckForHFA();
+    if (GetClass()->GetMethodTable()->IsValueType())
+    {
+        return GetClass()->CheckForHFA();
+    }
+    else
+    {
+        return false;
+    }
 #endif
 }
 #endif // !FEATURE_HFA

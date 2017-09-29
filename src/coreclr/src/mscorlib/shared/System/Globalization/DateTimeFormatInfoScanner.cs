@@ -24,7 +24,6 @@ using System.Text;
 
 namespace System.Globalization
 {
-
 #if CORECLR
     using StringStringDictionary = Dictionary<string, string>;
     using StringList = List<string>;

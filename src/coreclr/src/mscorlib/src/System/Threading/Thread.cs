@@ -28,7 +28,6 @@ namespace System.Threading
     using System.Security;
     using System.Runtime.Versioning;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
     internal delegate Object InternalCrossContextDelegate(Object[] args);
 
@@ -166,7 +165,6 @@ namespace System.Threading
             {
                 throw new ArgumentNullException(nameof(start));
             }
-            Contract.EndContractBlock();
             SetStartHelper((Delegate)start, 0);  //0 will setup Thread with default stackSize
         }
 
@@ -178,7 +176,6 @@ namespace System.Threading
             }
             if (0 > maxStackSize)
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
             SetStartHelper((Delegate)start, maxStackSize);
         }
         public Thread(ParameterizedThreadStart start)
@@ -187,7 +184,6 @@ namespace System.Threading
             {
                 throw new ArgumentNullException(nameof(start));
             }
-            Contract.EndContractBlock();
             SetStartHelper((Delegate)start, 0);
         }
 
@@ -199,7 +195,6 @@ namespace System.Threading
             }
             if (0 > maxStackSize)
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
             SetStartHelper((Delegate)start, maxStackSize);
         }
 
@@ -354,7 +349,6 @@ namespace System.Threading
         {
             get
             {
-                Contract.Ensures(Contract.Result<Thread>() != null);
                 return GetCurrentThreadNative();
             }
         }
@@ -439,7 +433,6 @@ namespace System.Threading
         {
             get
             {
-                Contract.Ensures(Contract.Result<CultureInfo>() != null);
                 return CultureInfo.CurrentUICulture;
             }
 
@@ -473,14 +466,11 @@ namespace System.Threading
         {
             get
             {
-                Contract.Ensures(Contract.Result<CultureInfo>() != null);
                 return CultureInfo.CurrentCulture;
             }
 
             set
             {
-                Contract.EndContractBlock();
-
                 // If you add more pre-conditions to this method, check to see if you also need to 
                 // add them to CultureInfo.DefaultThreadCurrentCulture.set.
 
@@ -506,8 +496,6 @@ namespace System.Threading
 
         internal static AppDomain GetDomain()
         {
-            Contract.Ensures(Contract.Result<AppDomain>() != null);
-
 
             AppDomain ad;
             ad = GetFastDomainInternal();

@@ -9,7 +9,6 @@ namespace System.Reflection.Emit
     using System.Runtime.InteropServices;
     using System;
     using System.Reflection;
-    using System.Diagnostics.Contracts;
     using CultureInfo = System.Globalization.CultureInfo;
 
     internal enum TypeKind
@@ -234,7 +233,6 @@ namespace System.Reflection.Emit
         {
             if (baseType == null)
                 throw new ArgumentNullException(nameof(baseType));
-            Contract.EndContractBlock();
 
             m_baseType = baseType;
         }
@@ -294,7 +292,6 @@ namespace System.Reflection.Emit
         {
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
-            Contract.EndContractBlock();
 
             string szrank = "";
             if (rank == 1)
@@ -316,7 +313,6 @@ namespace System.Reflection.Emit
         {
             if (!IsArray)
                 throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-            Contract.EndContractBlock();
 
             return m_cRank;
         }

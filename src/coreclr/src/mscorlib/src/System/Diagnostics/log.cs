@@ -10,7 +10,6 @@ namespace System.Diagnostics
     using System.Runtime.CompilerServices;
     using Encoding = System.Text.Encoding;
     using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
     using Console = Internal.Console;
@@ -87,7 +86,6 @@ namespace System.Diagnostics
 
             if (level < 0)
                 throw new ArgumentOutOfRangeException(nameof(level), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // Is logging for this level for this switch enabled?
             if (logswitch.CheckLevel(level) == true)

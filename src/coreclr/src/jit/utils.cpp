@@ -1769,13 +1769,16 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
 
 // Rounds a double-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
-// Note this should align with classlib in floatdouble.cpp
-// Specializing for x86 using a x87 instruction is optional since
-// this outcome is identical across targets.
 double FloatingPointUtils::round(double x)
 {
+    // ************************************************************************************
+    // IMPORTANT: Do not change this implementation without also updating Math.Round(double),
+    //            MathF.Round(float), and FloatingPointUtils::round(float)
+    // ************************************************************************************
+
     // If the number has no fractional part do nothing
     // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+
     if (x == (double)((INT64)x))
     {
         return x;
@@ -1784,10 +1787,9 @@ double FloatingPointUtils::round(double x)
     // We had a number that was equally close to 2 integers.
     // We need to return the even one.
 
-    double tempVal    = (x + 0.5);
-    double flrTempVal = floor(tempVal);
+    double flrTempVal = floor(x + 0.5);
 
-    if ((flrTempVal == tempVal) && (fmod(tempVal, 2.0) != 0))
+    if ((x == (floor(x) + 0.5)) && (fmod(flrTempVal, 2.0) != 0))
     {
         flrTempVal -= 1.0;
     }
@@ -1809,13 +1811,16 @@ double FloatingPointUtils::round(double x)
 
 // Rounds a single-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
-// Note this should align with classlib in floatsingle.cpp
-// Specializing for x86 using a x87 instruction is optional since
-// this outcome is identical across targets.
 float FloatingPointUtils::round(float x)
 {
+    // ************************************************************************************
+    // IMPORTANT: Do not change this implementation without also updating MathF.Round(float),
+    //            Math.Round(double), and FloatingPointUtils::round(double)
+    // ************************************************************************************
+
     // If the number has no fractional part do nothing
     // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+
     if (x == (float)((INT32)x))
     {
         return x;
@@ -1824,10 +1829,9 @@ float FloatingPointUtils::round(float x)
     // We had a number that was equally close to 2 integers.
     // We need to return the even one.
 
-    float tempVal    = (x + 0.5f);
-    float flrTempVal = floorf(tempVal);
+    float flrTempVal = floorf(x + 0.5f);
 
-    if ((flrTempVal == tempVal) && (fmodf(tempVal, 2.0f) != 0))
+    if ((x == (floorf(x) + 0.5f)) && (fmodf(flrTempVal, 2.0f) != 0))
     {
         flrTempVal -= 1.0f;
     }

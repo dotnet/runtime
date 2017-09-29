@@ -923,7 +923,7 @@ BOOL PrintCallInfo(DWORD_PTR vEBP, DWORD_PTR IP, DumpStackFlag& DSFlag, BOOL bSy
 
             // if AMD64 ever becomes a cross platform target this must be resolved through
             // virtual dispatch rather than conditional compilation
-#ifdef _TARGET_AMD64_ 
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
             // degrade gracefully for debuggees that don't have a runtime loaded, or a DAC available
             eTargetType ett = ettUnk;
             if (!g_bDacBroken)
@@ -940,7 +940,7 @@ BOOL PrintCallInfo(DWORD_PTR vEBP, DWORD_PTR IP, DumpStackFlag& DSFlag, BOOL bSy
                     methodDesc = finalMDorIP;
                 }
             }
-#endif // _TARGET_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_X86_
             if (methodDesc == 0) 
             {
                 PrintNativeStack(IP, DSFlag.fSuppressSrcInfo);
@@ -962,14 +962,14 @@ BOOL PrintCallInfo(DWORD_PTR vEBP, DWORD_PTR IP, DumpStackFlag& DSFlag, BOOL bSy
             else if ((name = HelperFuncName(IP)) != NULL) {
                 ExtOut(" (JitHelp: %s)", name);
             }
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
             else if (ett == ettMD || ett == ettStub)
             {
                 NameForMD_s(methodDesc, g_mdName,mdNameLen);                    
                 DMLOut("%s (stub for %S)", DMLIP(IP), g_mdName);
                 // fallthrough to return
             }
-#endif // _TARGET_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_X86_
             else
             {
                 DMLOut(DMLIP(IP));

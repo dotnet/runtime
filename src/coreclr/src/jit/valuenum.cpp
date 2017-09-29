@@ -3514,6 +3514,12 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
                 case CORINFO_INTRINSIC_Abs:
                     res = fabs(arg0Val);
                     break;
+                case CORINFO_INTRINSIC_Ceiling:
+                    res = ceil(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Floor:
+                    res = floor(arg0Val);
+                    break;
                 case CORINFO_INTRINSIC_Round:
                     res = FloatingPointUtils::round(arg0Val);
                     break;
@@ -3543,6 +3549,12 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
                     break;
                 case CORINFO_INTRINSIC_Abs:
                     res = fabsf(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Ceiling:
+                    res = ceilf(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Floor:
+                    res = floorf(arg0Val);
                     break;
                 case CORINFO_INTRINSIC_Round:
                     res = FloatingPointUtils::round(arg0Val);
