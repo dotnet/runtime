@@ -544,20 +544,10 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_MonEnter         JIT_MonEnter
-#define JIT_MonEnterWorker   JIT_MonEnterWorker_InlineGetThread
-#define JIT_MonReliableEnter JIT_MonEnterWorker
-#define JIT_MonTryEnter      JIT_MonTryEnter_InlineGetThread
-#define JIT_MonExit          JIT_MonExit
-#define JIT_MonExitWorker    JIT_MonExitWorker_InlineGetThread
-#define JIT_MonEnterStatic   JIT_MonEnterStatic_InlineGetThread
-#define JIT_MonExitStatic    JIT_MonExitStatic_InlineGetThread
-
 #define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_InlineGetAppDomain
 #define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_InlineGetAppDomain
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_InlineGetAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_InlineGetAppDomain
-
 #endif // FEATURE_IMPLICIT_TLS
 
 #ifndef FEATURE_PAL

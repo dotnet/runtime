@@ -28,7 +28,6 @@ namespace System
     using System.Runtime.Versioning;
     using Microsoft.Win32;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     using System.Security;
 
     //
@@ -72,8 +71,7 @@ namespace System
         //
         internal unsafe static string SmallCharToUpper(string strIn)
         {
-            Contract.Requires(strIn != null);
-            Contract.EndContractBlock();
+            Debug.Assert(strIn != null);
             //
             // Get the length and pointers to each of the buffers.  Walk the length
             // of the string and copy the characters from the inBuffer to the outBuffer,
@@ -102,7 +100,6 @@ namespace System
 
         // Gets the character at a specified position.
         //
-        // Spec#: Apply the precondition here using a contract assembly.  Potential perf issue.
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public extern char this[int index]
         {
@@ -127,7 +124,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexCount);
             if (destinationIndex > destination.Length - count || destinationIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_IndexCount);
-            Contract.EndContractBlock();
 
             // Note: fixed does not like empty arrays
             if (count > 0)
@@ -164,7 +160,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
-            Contract.EndContractBlock();
 
             if (length > 0)
             {
@@ -179,13 +174,11 @@ namespace System
             return Array.Empty<char>();
         }
 
-        [Pure]
         public static bool IsNullOrEmpty(String value)
         {
             return (value == null || value.Length == 0);
         }
 
-        [Pure]
         public static bool IsNullOrWhiteSpace(String value)
         {
             if (value == null) return true;
@@ -205,7 +198,6 @@ namespace System
         ///        for(int i = 0; i < str.Length; i++) str[i]
         /// The actually code generated for this will be one instruction and will be inlined.
         //
-        // Spec#: Add postcondition in a contract assembly.  Potential perf problem.
         public extern int Length
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -265,8 +257,8 @@ namespace System
         unsafe static internal String CreateStringFromEncoding(
             byte* bytes, int byteLength, Encoding encoding)
         {
-            Contract.Requires(bytes != null);
-            Contract.Requires(byteLength >= 0);
+            Debug.Assert(bytes != null);
+            Debug.Assert(byteLength >= 0);
 
             // Get our string length
             int stringLength = encoding.GetCharCount(bytes, byteLength, null);
@@ -437,7 +429,6 @@ namespace System
 
             if (startIndex > value.Length - length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            Contract.EndContractBlock();
 
             if (length > 0)
             {
@@ -637,7 +628,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
-            Contract.EndContractBlock();
             Debug.Assert(this == null, "this == null");        // this is the string constructor, we allocate it
 
             char* pFrom = ptr + startIndex;
@@ -710,15 +700,11 @@ namespace System
         // Returns this string.
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
-            Contract.EndContractBlock();
             return this;
         }
 
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
-            Contract.EndContractBlock();
             return this;
         }
 
@@ -726,8 +712,6 @@ namespace System
         // There's no point in cloning a string since they're immutable, so we simply return this.
         public Object Clone()
         {
-            Contract.Ensures(Contract.Result<Object>() != null);
-            Contract.EndContractBlock();
             return this;
         }
 
@@ -737,8 +721,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            Contract.Ensures(Contract.Result<String>() != null);
-            Contract.EndContractBlock();
 
             int length = str.Length;
 
@@ -758,22 +740,16 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            Contract.Ensures(Contract.Result<String>().Length == str.Length);
-            Contract.Ensures(str.Equals(Contract.Result<String>()));
-            Contract.EndContractBlock();
 
             return Thread.GetDomain().GetOrInternString(str);
         }
 
-        [Pure]
         public static String IsInterned(String str)
         {
             if (str == null)
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            Contract.Ensures(Contract.Result<String>() == null || Contract.Result<String>().Length == str.Length);
-            Contract.EndContractBlock();
 
             return Thread.GetDomain().IsStringInterned(str);
         }
@@ -882,24 +858,18 @@ namespace System
 
         public CharEnumerator GetEnumerator()
         {
-            Contract.Ensures(Contract.Result<CharEnumerator>() != null);
-            Contract.EndContractBlock();
             BCLDebug.Perf(false, "Avoid using String's CharEnumerator until C# special cases foreach on String - use the indexed property on String instead.");
             return new CharEnumerator(this);
         }
 
         IEnumerator<char> IEnumerable<char>.GetEnumerator()
         {
-            Contract.Ensures(Contract.Result<IEnumerator<char>>() != null);
-            Contract.EndContractBlock();
             BCLDebug.Perf(false, "Avoid using String's CharEnumerator until C# special cases foreach on String - use the indexed property on String instead.");
             return new CharEnumerator(this);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            Contract.Ensures(Contract.Result<IEnumerator>() != null);
-            Contract.EndContractBlock();
             BCLDebug.Perf(false, "Avoid using String's CharEnumerator until C# special cases foreach on String - use the indexed property on String instead.");
             return new CharEnumerator(this);
         }

@@ -289,12 +289,40 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         {
             assert(actualVal->IsCnsIntOrI());
 
-            if (actualVal->gtIntCon.gtIconVal > INT32_MAX)
+            if ((actualVal->AsIntCon()->IconValue() < 0) || (actualVal->AsIntCon()->IconValue() > INT32_MAX))
             {
-                // Don't propagate array lengths that are beyond the maximum value of a GT_ARR_LENGTH.
+                // Don't propagate array lengths that are beyond the maximum value of a GT_ARR_LENGTH or negative.
                 // node. CORINFO_HELP_NEWARR_1_OBJ helper call allows to take a long integer as the
                 // array length argument, but the type of GT_ARR_LENGTH is always INT32.
                 return false;
+            }
+
+            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_ARR_BOUNDS_CHECK
+            // nodes that have constant operands and thus can be trivially proved to be useless. It's
+            // better to remove these range checks here, otherwise they'll pass through assertion prop
+            // (creating useless (c1 < c2)-like assertions) and reach RangeCheck where they are finally
+            // removed. Common patterns like new int[] { x, y, z } benefit from this.
+
+            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_ARR_BOUNDS_CHECK))
+            {
+                GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
+
+                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI() &&
+                    (check->gtIndex->AsIntCon()->IconValue() >= 0) &&
+                    (check->gtIndex->AsIntCon()->IconValue() < actualVal->AsIntCon()->IconValue()))
+                {
+                    GenTree* comma = check->gtGetParent(nullptr);
+
+                    if ((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check))
+                    {
+                        GenTree* next = check->gtNext;
+                        optRemoveRangeCheck(comma, root);
+                        // Both `tree` and `check` have been removed from the statement. Ensure that optEarlyProp
+                        // can process the rest of the statment by changing tree->gtNext appropriately.
+                        tree->gtNext = next;
+                        return true;
+                    }
+                }
             }
         }
         else if (propKind == optPropKind::OPK_OBJ_GETTYPE)

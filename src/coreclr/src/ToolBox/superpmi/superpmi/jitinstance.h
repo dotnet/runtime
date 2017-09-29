@@ -25,6 +25,7 @@ private:
     ICorJitInfo*   icji;
     SimpleTimer    stj;
 
+    LightWeightMap<DWORD, DWORD>* forceOptions;
     LightWeightMap<DWORD, DWORD>* options;
 
     JitInstance(){};
@@ -43,7 +44,7 @@ public:
     ICorJitCompiler* pJitInstance;
 
     // Allocate and initialize the jit provided
-    static JitInstance* InitJit(char* nameOfJit, bool breakOnAssert, SimpleTimer* st1, MethodContext* firstContext, LightWeightMap<DWORD, DWORD>* options);
+    static JitInstance* InitJit(char* nameOfJit, bool breakOnAssert, SimpleTimer* st1, MethodContext* firstContext, LightWeightMap<DWORD, DWORD>* forceOptions, LightWeightMap<DWORD, DWORD>* options);
 
     HRESULT StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
     bool reLoad(MethodContext* firstContext);
@@ -52,7 +53,9 @@ public:
 
     Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
+    const wchar_t* getForceOption(const wchar_t* key);
     const wchar_t* getOption(const wchar_t* key);
+    const wchar_t* getOption(const wchar_t* key, LightWeightMap<DWORD, DWORD>* options);
 
     void* allocateArray(ULONG size);
     void* allocateLongLivedArray(ULONG size);

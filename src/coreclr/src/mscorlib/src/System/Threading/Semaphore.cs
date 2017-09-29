@@ -5,7 +5,6 @@
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;

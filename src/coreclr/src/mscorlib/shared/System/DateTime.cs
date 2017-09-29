@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Globalization;
 using System.Runtime;
@@ -18,7 +17,6 @@ using Calendar = System.Globalization.Calendar;
 
 namespace System
 {
-
     // This value type represents a date and time.  Every DateTime 
     // object has a private field (Ticks) of type Int64 that stores the 
     // date and time as the number of 100 nanosecond intervals since 
@@ -147,7 +145,6 @@ namespace System
         {
             if (ticks < MinTicks || ticks > MaxTicks)
                 throw new ArgumentOutOfRangeException(nameof(ticks), SR.ArgumentOutOfRange_DateTimeBadTicks);
-            Contract.EndContractBlock();
             _dateData = (UInt64)ticks;
         }
 
@@ -166,7 +163,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_InvalidDateTimeKind, nameof(kind));
             }
-            Contract.EndContractBlock();
             _dateData = ((UInt64)ticks | ((UInt64)kind << KindShift));
         }
 
@@ -177,7 +173,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(ticks), SR.ArgumentOutOfRange_DateTimeBadTicks);
             }
             Debug.Assert(kind == DateTimeKind.Local, "Internal Constructor is for local times only");
-            Contract.EndContractBlock();
             _dateData = ((UInt64)ticks | (isAmbiguousDst ? KindLocalAmbiguousDst : KindLocal));
         }
 
@@ -212,7 +207,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_InvalidDateTimeKind, nameof(kind));
             }
-            Contract.EndContractBlock();
             Int64 ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
             _dateData = ((UInt64)ticks | ((UInt64)kind << KindShift));
         }
@@ -224,7 +218,6 @@ namespace System
         {
             if (calendar == null)
                 throw new ArgumentNullException(nameof(calendar));
-            Contract.EndContractBlock();
             _dateData = (UInt64)calendar.ToDateTime(year, month, day, hour, minute, second, 0).Ticks;
         }
 
@@ -237,7 +230,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecond), SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
             }
-            Contract.EndContractBlock();
             Int64 ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
             ticks += millisecond * TicksPerMillisecond;
             if (ticks < MinTicks || ticks > MaxTicks)
@@ -255,7 +247,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_InvalidDateTimeKind, nameof(kind));
             }
-            Contract.EndContractBlock();
             Int64 ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
             ticks += millisecond * TicksPerMillisecond;
             if (ticks < MinTicks || ticks > MaxTicks)
@@ -274,7 +265,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecond), SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
             }
-            Contract.EndContractBlock();
             Int64 ticks = calendar.ToDateTime(year, month, day, hour, minute, second, 0).Ticks;
             ticks += millisecond * TicksPerMillisecond;
             if (ticks < MinTicks || ticks > MaxTicks)
@@ -294,7 +284,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_InvalidDateTimeKind, nameof(kind));
             }
-            Contract.EndContractBlock();
             Int64 ticks = calendar.ToDateTime(year, month, day, hour, minute, second, 0).Ticks;
             ticks += millisecond * TicksPerMillisecond;
             if (ticks < MinTicks || ticks > MaxTicks)
@@ -306,7 +295,6 @@ namespace System
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
 
             Boolean foundTicks = false;
             Boolean foundDateData = false;
@@ -452,7 +440,6 @@ namespace System
         public DateTime AddMonths(int months)
         {
             if (months < -120000 || months > 120000) throw new ArgumentOutOfRangeException(nameof(months), SR.ArgumentOutOfRange_DateTimeBadMonths);
-            Contract.EndContractBlock();
             GetDatePart(out int y, out int m, out int d);
             int i = m - 1 + months;
             if (i >= 0)
@@ -515,7 +502,6 @@ namespace System
                 // parameter name out of the two for the exception.
                 throw new ArgumentOutOfRangeException("years", SR.ArgumentOutOfRange_DateTimeBadYears);
             }
-            Contract.EndContractBlock();
             return AddMonths(value * 12);
         }
 
@@ -589,7 +575,6 @@ namespace System
         public static int DaysInMonth(int year, int month)
         {
             if (month < 1 || month > 12) throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
-            Contract.EndContractBlock();
             // IsLeapYear checks the year argument
             int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
             return days[month] - days[month - 1];
@@ -725,7 +710,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_FileTimeInvalid);
             }
-            Contract.EndContractBlock();
 
             // This is the ticks in Universal time for this fileTime.
             long universalTicks = fileTime + FileTimeOffset;
@@ -745,7 +729,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(info));
             }
-            Contract.EndContractBlock();
 
             // Serialize both the old and the new format
             info.AddValue(TicksField, InternalTicks);
@@ -909,8 +892,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 1);
-                Contract.Ensures(Contract.Result<int>() <= 31);
                 return GetDatePart(DatePartDay);
             }
         }
@@ -924,8 +905,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<DayOfWeek>() >= DayOfWeek.Sunday);
-                Contract.Ensures(Contract.Result<DayOfWeek>() <= DayOfWeek.Saturday);
                 return (DayOfWeek)((InternalTicks / TicksPerDay + 1) % 7);
             }
         }
@@ -937,8 +916,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 1);
-                Contract.Ensures(Contract.Result<int>() <= 366);  // leap year
                 return GetDatePart(DatePartDayOfYear);
             }
         }
@@ -958,8 +935,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                Contract.Ensures(Contract.Result<int>() < 24);
                 return (int)((InternalTicks / TicksPerHour) % 24);
             }
         }
@@ -969,7 +944,6 @@ namespace System
             return (InternalKind == KindLocalAmbiguousDst);
         }
 
-        [Pure]
         public DateTimeKind Kind
         {
             get
@@ -993,8 +967,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                Contract.Ensures(Contract.Result<int>() < 1000);
                 return (int)((InternalTicks / TicksPerMillisecond) % 1000);
             }
         }
@@ -1006,8 +978,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                Contract.Ensures(Contract.Result<int>() < 60);
                 return (int)((InternalTicks / TicksPerMinute) % 60);
             }
         }
@@ -1019,7 +989,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 1);
                 return GetDatePart(DatePartMonth);
             }
         }
@@ -1030,8 +999,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<DateTime>().Kind == DateTimeKind.Local);
-
                 DateTime utc = UtcNow;
                 Boolean isAmbiguousLocalDst = false;
                 Int64 offset = TimeZoneInfo.GetDateTimeNowUtcOffsetFromUtc(utc, out isAmbiguousLocalDst).Ticks;
@@ -1055,8 +1022,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                Contract.Ensures(Contract.Result<int>() < 60);
                 return (int)((InternalTicks / TicksPerSecond) % 60);
             }
         }
@@ -1103,7 +1068,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 1 && Contract.Result<int>() <= 9999);
                 return GetDatePart(DatePartYear);
             }
         }
@@ -1117,7 +1081,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_Year);
             }
-            Contract.EndContractBlock();
             return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
         }
 
@@ -1265,49 +1228,41 @@ namespace System
 
         public String ToLongDateString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, "D", DateTimeFormatInfo.CurrentInfo);
         }
 
         public String ToLongTimeString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, "T", DateTimeFormatInfo.CurrentInfo);
         }
 
         public String ToShortDateString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, "d", DateTimeFormatInfo.CurrentInfo);
         }
 
         public String ToShortTimeString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, "t", DateTimeFormatInfo.CurrentInfo);
         }
 
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, null, DateTimeFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, format, DateTimeFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, null, DateTimeFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return DateTimeFormat.Format(this, format, DateTimeFormatInfo.GetInstance(provider));
         }
 
@@ -1402,7 +1357,6 @@ namespace System
         // time strings for the current instance of DateTime.
         public String[] GetDateTimeFormats()
         {
-            Contract.Ensures(Contract.Result<String[]>() != null);
             return (GetDateTimeFormats(CultureInfo.CurrentCulture));
         }
 
@@ -1411,7 +1365,6 @@ namespace System
         // time strings for the current instance of DateTime.
         public String[] GetDateTimeFormats(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String[]>() != null);
             return (DateTimeFormat.GetAllDateTimes(this, DateTimeFormatInfo.GetInstance(provider)));
         }
 
@@ -1421,7 +1374,6 @@ namespace System
         // time strings for the current instance of DateTime.
         public String[] GetDateTimeFormats(char format)
         {
-            Contract.Ensures(Contract.Result<String[]>() != null);
             return (GetDateTimeFormats(format, CultureInfo.CurrentCulture));
         }
 
@@ -1430,7 +1382,6 @@ namespace System
         // time strings for the current instance of DateTime.
         public String[] GetDateTimeFormats(char format, IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String[]>() != null);
             return (DateTimeFormat.GetAllDateTimes(this, format, DateTimeFormatInfo.GetInstance(provider)));
         }
 

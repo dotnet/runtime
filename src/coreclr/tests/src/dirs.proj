@@ -30,7 +30,6 @@
       <DisabledProjects Include="Performance\performance.csproj" />
       <DisabledProjects Include="Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
-      <DisabledProjects Include="tracing\**" Condition="'$(BuildOS)' != 'Linux'" />
     </ItemGroup>
     
     <ItemGroup>

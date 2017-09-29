@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
 namespace System.Collections
@@ -12,7 +11,6 @@ namespace System.Collections
     {
         // Returns an IEnumerator for this enumerable Object.  The enumerator provides
         // a simple way to access all the contents of a collection.
-        [Pure]
         IEnumerator GetEnumerator();
     }
 }

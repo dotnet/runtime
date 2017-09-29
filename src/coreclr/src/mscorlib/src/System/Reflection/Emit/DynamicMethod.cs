@@ -15,7 +15,6 @@ namespace System.Reflection.Emit
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     using System.Runtime.InteropServices;
 
     public sealed class DynamicMethod : MethodInfo
@@ -220,7 +219,6 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
             if ((attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)
                 throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
-            Contract.EndContractBlock();
 
             // only standard or varargs supported
             if (callingConvention != CallingConventions.Standard && callingConvention != CallingConventions.VarArgs)
@@ -431,7 +429,6 @@ namespace System.Reflection.Emit
 
         public override MethodInfo GetBaseDefinition() { return this; }
 
-        [Pure]
         public override ParameterInfo[] GetParameters() { return m_dynMethod.GetParameters(); }
 
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_dynMethod.GetMethodImplementationFlags(); }
@@ -464,7 +461,6 @@ namespace System.Reflection.Emit
         {
             if ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
                 throw new NotSupportedException(SR.NotSupported_CallToVarArg);
-            Contract.EndContractBlock();
 
             //
             // We do not demand any permission here because the caller already has access
@@ -648,7 +644,6 @@ namespace System.Reflection.Emit
                 return this;
             }
 
-            [Pure]
             public override ParameterInfo[] GetParameters()
             {
                 ParameterInfo[] privateParameters = LoadParameters();
@@ -677,7 +672,6 @@ namespace System.Reflection.Emit
             {
                 if (attributeType == null)
                     throw new ArgumentNullException(nameof(attributeType));
-                Contract.EndContractBlock();
 
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                     return new Object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
@@ -695,7 +689,6 @@ namespace System.Reflection.Emit
             {
                 if (attributeType == null)
                     throw new ArgumentNullException(nameof(attributeType));
-                Contract.EndContractBlock();
 
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                     return true;

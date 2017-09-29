@@ -7,7 +7,6 @@ namespace System.Runtime.InteropServices
     using System;
     using System.Runtime.CompilerServices;
     using System.Threading;
-    using System.Diagnostics.Contracts;
 #if BIT64
     using nint = System.Int64;
 #else
@@ -61,7 +60,6 @@ namespace System.Runtime.InteropServices
             // Make sure the type parameter is within the valid range for the enum.
             if ((uint)type > (uint)MaxHandleType)
                 ThrowArgumentOutOfRangeException_ArgumentOutOfRange_Enum();
-            Contract.EndContractBlock();
 
             IntPtr handle = InternalAlloc(value, type);
 
@@ -160,7 +158,6 @@ namespace System.Runtime.InteropServices
         public static GCHandle FromIntPtr(IntPtr value)
         {
             ValidateHandle(value);
-            Contract.EndContractBlock();
 
 #if MDA_SUPPORTED
             IntPtr handle = value;

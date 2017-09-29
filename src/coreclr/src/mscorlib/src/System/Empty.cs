@@ -6,7 +6,6 @@
 //    This class represents an empty variant
 ////////////////////////////////////////////////////////////////////////////////
 
-using System.Diagnostics.Contracts;
 
 using System;
 using System.Runtime.Serialization;

@@ -19,7 +19,6 @@ namespace System.Threading.Tasks
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     using System.Runtime.ExceptionServices;
     using System.Security;
 
@@ -58,7 +57,7 @@ namespace System.Threading.Tasks
         /// <param name="task">The task this holder belongs to.</param>
         internal TaskExceptionHolder(Task task)
         {
-            Contract.Requires(task != null, "Expected a non-null task.");
+            Debug.Assert(task != null, "Expected a non-null task.");
             m_task = task;
             EnsureADUnloadCallbackRegistered();
         }
@@ -162,8 +161,8 @@ namespace System.Threading.Tasks
         /// </remarks>
         internal void Add(object exceptionObject, bool representsCancellation)
         {
-            Contract.Requires(exceptionObject != null, "TaskExceptionHolder.Add(): Expected a non-null exceptionObject");
-            Contract.Requires(
+            Debug.Assert(exceptionObject != null, "TaskExceptionHolder.Add(): Expected a non-null exceptionObject");
+            Debug.Assert(
                 exceptionObject is Exception || exceptionObject is IEnumerable<Exception> ||
                 exceptionObject is ExceptionDispatchInfo || exceptionObject is IEnumerable<ExceptionDispatchInfo>,
                 "TaskExceptionHolder.Add(): Expected Exception, IEnumerable<Exception>, ExceptionDispatchInfo, or IEnumerable<ExceptionDispatchInfo>");
@@ -179,7 +178,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         private void SetCancellationException(object exceptionObject)
         {
-            Contract.Requires(exceptionObject != null, "Expected exceptionObject to be non-null.");
+            Debug.Assert(exceptionObject != null, "Expected exceptionObject to be non-null.");
 
             Debug.Assert(m_cancellationException == null,
                 "Expected SetCancellationException to be called only once.");
@@ -216,7 +215,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         private void AddFaultException(object exceptionObject)
         {
-            Contract.Requires(exceptionObject != null, "AddFaultException(): Expected a non-null exceptionObject");
+            Debug.Assert(exceptionObject != null, "AddFaultException(): Expected a non-null exceptionObject");
 
             // Initialize the exceptions list if necessary.  The list should be non-null iff it contains exceptions.
             var exceptions = m_faultExceptions;

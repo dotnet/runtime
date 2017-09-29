@@ -204,7 +204,7 @@ call :PrecompileFX
 
 if  defined __GenerateLayoutOnly (
     REM Delete the unecessary mscorlib.ni file.
-    del %CORE_ROOT%\mscorlib.ni.dll
+    if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
     exit /b 0
 )
 
@@ -240,7 +240,7 @@ echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting the test run ...
 
 REM Delete the unecessary mscorlib.ni file.
-del %CORE_ROOT%\mscorlib.ni.dll
+if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
 
 set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:Runtests=true /clp:showcommandline

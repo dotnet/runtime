@@ -26,6 +26,11 @@ struct InitVarDscInfo
     bool      anyFloatStackArgs;
 #endif // _TARGET_ARM_
 
+#if FEATURE_FASTTAILCALL
+    // It is used to calculate argument stack size information in byte
+    unsigned stackArgSize;
+#endif // FEATURE_FASTTAILCALL
+
 public:
     // set to initial values
     void Init(LclVarDsc* lvaTable, bool _hasRetBufArg)
@@ -42,6 +47,10 @@ public:
         fltArgSkippedRegMask = RBM_NONE;
         anyFloatStackArgs    = false;
 #endif // _TARGET_ARM_
+
+#if FEATURE_FASTTAILCALL
+        stackArgSize = 0;
+#endif // FEATURE_FASTTAILCALL
     }
 
     // return ref to current register arg for this type

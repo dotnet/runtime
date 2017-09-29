@@ -7056,6 +7056,19 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
 
+    // If we're importing the special EqualityComparer<T>.Default
+    // intrinsic, flag the helper call. Later during inlining, we can
+    // remove the helper call if the associated field lookup is unused.
+    if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    {
+        NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
+        if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+        {
+            JITDUMP("\nmarking helper call [06%u] as special dce...\n", result->gtTreeID);
+            result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
+        }
+    }
+
     return result;
 }
 
@@ -8185,7 +8198,7 @@ private:
     // returns that constant (up to the limit on number of returns); in
     // `returnConstants` we track the constant values returned by these
     // merged constant return blocks.
-    ssize_t returnConstants[ReturnCountHardLimit];
+    INT64 returnConstants[ReturnCountHardLimit];
 
     // Indicators of where in the lexical block list we'd like to place
     // each constant return block.
@@ -8361,7 +8374,7 @@ private:
         if (returnConst != nullptr)
         {
             returnExpr             = comp->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
-            returnConstants[index] = returnConst->IconValue();
+            returnConstants[index] = returnConst->IntegralValue();
         }
         else if (comp->compMethodHasRetVal())
         {
@@ -8629,7 +8642,7 @@ private:
     //
     BasicBlock* FindConstReturnBlock(GenTreeIntConCommon* constExpr, unsigned searchLimit, unsigned* index)
     {
-        ssize_t constVal = constExpr->IconValue();
+        INT64 constVal = constExpr->IntegralValue();
 
         for (unsigned i = 0; i < searchLimit; ++i)
         {
@@ -9952,6 +9965,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
     switch (oper)
     {
         case GT_JTRUE:
+        case GT_JCMP:
         case GT_JCC:
         case GT_SWITCH:
         case GT_LABEL:
@@ -22233,7 +22247,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                 CORINFO_METHOD_HANDLE  method      = call->gtCallMethHnd;
                 unsigned               methodFlags = 0;
                 CORINFO_CONTEXT_HANDLE context     = nullptr;
-                comp->impDevirtualizeCall(call, tree, &method, &methodFlags, &context, nullptr);
+                comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr);
             }
         }
     }
@@ -22928,8 +22942,8 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     GenTreeStmt* callStmt     = inlineInfo->iciStmt;
     IL_OFFSETX   callILOffset = callStmt->gtStmtILoffsx;
     GenTreeStmt* postStmt     = callStmt->gtNextStmt;
-    GenTreePtr   afterStmt    = callStmt; // afterStmt is the place where the new statements should be inserted after.
-    GenTreePtr   newStmt      = nullptr;
+    GenTree*     afterStmt    = callStmt; // afterStmt is the place where the new statements should be inserted after.
+    GenTree*     newStmt      = nullptr;
     GenTreeCall* call         = inlineInfo->iciCall->AsCall();
 
     noway_assert(call->gtOper == GT_CALL);
@@ -23074,6 +23088,8 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 if (argInfo.argHasSideEff)
                 {
                     noway_assert(argInfo.argIsUsed == false);
+                    newStmt     = nullptr;
+                    bool append = true;
 
                     if (argNode->gtOper == GT_OBJ || argNode->gtOper == GT_MKREFANY)
                     {
@@ -23084,16 +23100,92 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     }
                     else
                     {
-                        newStmt = gtNewStmt(gtUnusedValNode(argNode), callILOffset);
-                    }
-                    afterStmt = fgInsertStmtAfter(block, afterStmt, newStmt);
+                        // In some special cases, unused args with side effects can
+                        // trigger further changes.
+                        //
+                        // (1) If the arg is a static field access and the field access
+                        // was produced by a call to EqualityComparer<T>.get_Default, the
+                        // helper call to ensure the field has a value can be suppressed.
+                        // This helper call is marked as a "Special DCE" helper during
+                        // importation, over in fgGetStaticsCCtorHelper.
+                        //
+                        // (2) NYI. If, after tunneling through GT_RET_VALs, we find that
+                        // the actual arg expression has no side effects, we can skip
+                        // appending all together. This will help jit TP a bit.
+                        //
+                        // Chase through any GT_RET_EXPRs to find the actual argument
+                        // expression.
+                        GenTree* actualArgNode = argNode;
+                        while (actualArgNode->gtOper == GT_RET_EXPR)
+                        {
+                            actualArgNode = actualArgNode->gtRetExpr.gtInlineCandidate;
+                        }
 
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        gtDispTree(afterStmt);
+                        // For case (1)
+                        //
+                        // Look for the following tree shapes
+                        // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
+                        // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
+                        if (actualArgNode->gtOper == GT_COMMA)
+                        {
+                            // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
+                            GenTree* op1 = actualArgNode->gtOp.gtOp1;
+                            GenTree* op2 = actualArgNode->gtOp.gtOp2;
+                            if (op1->IsCall() && ((op1->gtCall.gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
+                                (op2->gtOper == GT_FIELD) && ((op2->gtFlags & GTF_EXCEPT) == 0))
+                            {
+                                JITDUMP("\nPerforming special dce on unused arg [%06u]:"
+                                        " actual arg [%06u] helper call [%06u]\n",
+                                        argNode->gtTreeID, actualArgNode->gtTreeID, op1->gtTreeID);
+                                // Drop the whole tree
+                                append = false;
+                            }
+                        }
+                        else if (actualArgNode->gtOper == GT_IND)
+                        {
+                            // Look for (IND (ADD (CONST, CALL(special dce helper...))))
+                            GenTree* addr = actualArgNode->gtOp.gtOp1;
+
+                            if (addr->gtOper == GT_ADD)
+                            {
+                                GenTree* op1 = addr->gtOp.gtOp1;
+                                GenTree* op2 = addr->gtOp.gtOp2;
+                                if (op1->IsCall() &&
+                                    ((op1->gtCall.gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
+                                    op2->IsCnsIntOrI())
+                                {
+                                    // Drop the whole tree
+                                    JITDUMP("\nPerforming special dce on unused arg [%06u]:"
+                                            " actual arg [%06u] helper call [%06u]\n",
+                                            argNode->gtTreeID, actualArgNode->gtTreeID, op1->gtTreeID);
+                                    append = false;
+                                }
+                            }
+                        }
                     }
+
+                    if (!append)
+                    {
+                        assert(newStmt == nullptr);
+                        JITDUMP("Arg tree side effects were discardable, not appending anything for arg\n");
+                    }
+                    else
+                    {
+                        // If we don't have something custom to append,
+                        // just append the arg node as an unused value.
+                        if (newStmt == nullptr)
+                        {
+                            newStmt = gtNewStmt(gtUnusedValNode(argNode), callILOffset);
+                        }
+
+                        afterStmt = fgInsertStmtAfter(block, afterStmt, newStmt);
+#ifdef DEBUG
+                        if (verbose)
+                        {
+                            gtDispTree(afterStmt);
+                        }
 #endif // DEBUG
+                    }
                 }
                 else if (argNode->IsBoxedValue())
                 {

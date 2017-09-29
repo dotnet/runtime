@@ -15,12 +15,12 @@
 namespace System
 {
     using System;
+    using System.Diagnostics;
     using System.Runtime;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
     using CultureInfo = System.Globalization.CultureInfo;
     using FieldInfo = System.Reflection.FieldInfo;
     using BindingFlags = System.Reflection.BindingFlags;
@@ -97,7 +97,6 @@ namespace System
 
         // Returns a Type object which represent this object instance.
         // 
-        [Pure]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern Type GetType();
 
@@ -121,8 +120,8 @@ namespace System
         // 
         private void FieldSetter(String typeName, String fieldName, Object val)
         {
-            Contract.Requires(typeName != null);
-            Contract.Requires(fieldName != null);
+            Debug.Assert(typeName != null);
+            Debug.Assert(fieldName != null);
 
             // Extract the field info object
             FieldInfo fldInfo = GetFieldInfo(typeName, fieldName);
@@ -151,8 +150,8 @@ namespace System
         // 
         private void FieldGetter(String typeName, String fieldName, ref Object val)
         {
-            Contract.Requires(typeName != null);
-            Contract.Requires(fieldName != null);
+            Debug.Assert(typeName != null);
+            Debug.Assert(fieldName != null);
 
             // Extract the field info object
             FieldInfo fldInfo = GetFieldInfo(typeName, fieldName);
@@ -165,9 +164,8 @@ namespace System
         // 
         private FieldInfo GetFieldInfo(String typeName, String fieldName)
         {
-            Contract.Requires(typeName != null);
-            Contract.Requires(fieldName != null);
-            Contract.Ensures(Contract.Result<FieldInfo>() != null);
+            Debug.Assert(typeName != null);
+            Debug.Assert(fieldName != null);
 
             Type t = GetType();
             while (null != t)
