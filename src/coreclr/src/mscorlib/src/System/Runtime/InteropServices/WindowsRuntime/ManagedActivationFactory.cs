@@ -5,7 +5,6 @@
 //
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;

@@ -7,7 +7,6 @@
 using System.Text;
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -289,8 +288,8 @@ namespace System.Reflection.Emit
             // This function will not increase the argument count. It only fills in bytes 
             // in the signature based on clsArgument. This helper is called for return type.
 
-            Contract.Requires(clsArgument != null);
-            Contract.Requires((optionalCustomModifiers == null && requiredCustomModifiers == null) || !clsArgument.ContainsGenericParameters);
+            Debug.Assert(clsArgument != null);
+            Debug.Assert((optionalCustomModifiers == null && requiredCustomModifiers == null) || !clsArgument.ContainsGenericParameters);
 
             if (optionalCustomModifiers != null)
             {

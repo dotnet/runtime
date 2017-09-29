@@ -2149,8 +2149,8 @@ void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirectio
     if ((GetHelperFtn == nullptr) || (GetHelperFtn->GetIndex((DWORD)ftnNum) == -1))
     {
 #ifdef sparseMC
-        LogDebug("Sparse - repGetHelperFtn returning 0xCAFE0002 and 0XCAFE0003");
-        *ppIndirection = (void*)(size_t)0xCAFE0002;
+        LogDebug("Sparse - repGetHelperFtn returning nullptr and 0XCAFE0003");
+        *ppIndirection = nullptr;
         return (void*)(size_t)0xCAFE0003;
 #else
         LogException(EXCEPTIONCODE_MC, "Encountered an empty LWM while looking for %08X", (DWORD)ftnNum);
@@ -3010,6 +3010,23 @@ CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HAND
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
     return (CORINFO_METHOD_HANDLE)result;
+}
+
+void MethodContext::recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetDefaultEqualityComparerClass == nullptr)
+        GetDefaultEqualityComparerClass = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetDefaultEqualityComparerClass->Add((DWORDLONG)cls, (DWORDLONG)result);
+}
+void MethodContext::dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetDefaultEqualityComparerClass key cls-%016llX, value cls-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)
+{
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultEqualityComparerClass->Get((DWORDLONG)cls);
+    return result;
 }
 
 void MethodContext::recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result)

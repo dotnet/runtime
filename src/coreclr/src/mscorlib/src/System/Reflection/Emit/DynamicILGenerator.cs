@@ -16,7 +16,6 @@ namespace System.Reflection.Emit
     using System.Threading;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Diagnostics.Contracts;
     using System.Security;
 
     internal class DynamicILGenerator : ILGenerator
@@ -49,7 +48,6 @@ namespace System.Reflection.Emit
             LocalBuilder localBuilder;
             if (localType == null)
                 throw new ArgumentNullException(nameof(localType));
-            Contract.EndContractBlock();
 
             RuntimeType rtType = localType as RuntimeType;
 
@@ -72,7 +70,6 @@ namespace System.Reflection.Emit
         {
             if (meth == null)
                 throw new ArgumentNullException(nameof(meth));
-            Contract.EndContractBlock();
 
             int stackchange = 0;
             int token = 0;
@@ -128,7 +125,6 @@ namespace System.Reflection.Emit
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
-            Contract.EndContractBlock();
 
             RuntimeConstructorInfo rtConstructor = con as RuntimeConstructorInfo;
             if (rtConstructor == null)
@@ -156,7 +152,6 @@ namespace System.Reflection.Emit
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
 
@@ -173,7 +168,6 @@ namespace System.Reflection.Emit
         {
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
-            Contract.EndContractBlock();
 
             RuntimeFieldInfo runtimeField = field as RuntimeFieldInfo;
             if (runtimeField == null)
@@ -194,7 +188,6 @@ namespace System.Reflection.Emit
         {
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
-            Contract.EndContractBlock();
 
             int tempVal = GetTokenForString(str);
             EnsureCapacity(7);
@@ -261,7 +254,6 @@ namespace System.Reflection.Emit
 
             if (methodInfo.DeclaringType != null && methodInfo.DeclaringType.ContainsGenericParameters)
                 throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(methodInfo));
-            Contract.EndContractBlock();
 
             int tk;
             int stackchange = 0;
@@ -292,7 +284,6 @@ namespace System.Reflection.Emit
         {
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
-            Contract.EndContractBlock();
 
             int stackchange = 0;
             EnsureCapacity(7);
@@ -343,7 +334,6 @@ namespace System.Reflection.Emit
         {
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
-            Contract.EndContractBlock();
 
             __ExceptionInfo current = CurrExcStack[CurrExcStackCount - 1];
 
@@ -389,13 +379,11 @@ namespace System.Reflection.Emit
         // debugger related calls. 
         //
         //
-        [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
         public override void UsingNamespace(String ns)
         {
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
         }
 
-        [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
         public override void MarkSequencePoint(ISymbolDocumentWriter document,
                                                int startLine,
                                                int startColumn,

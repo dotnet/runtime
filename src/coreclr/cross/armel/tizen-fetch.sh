@@ -154,8 +154,8 @@ fetch_tizen_pkgs()
 	done
 }
 
-Inform "Initialize base"
-fetch_tizen_pkgs_init standard base
+Inform "Initialize arm 4.0-base"
+fetch_tizen_pkgs_init arm 4.0-base
 Inform "fetch common packages"
 fetch_tizen_pkgs armv7l gcc glibc glibc-devel
 fetch_tizen_pkgs noarch linux-glibc-devel
@@ -164,12 +164,12 @@ fetch_tizen_pkgs armv7l lldb lldb-devel libuuid libuuid-devel libgcc libstdc++ l
 Inform "fetch corefx packages"
 fetch_tizen_pkgs armv7l libcom_err libcom_err-devel zlib zlib-devel libopenssl libopenssl-devel
 
-Inform "Initialize unified"
-fetch_tizen_pkgs_init standard unified
+Inform "Initialize standard 4.0-unified"
+fetch_tizen_pkgs_init standard 4.0-unified
 Inform "fetch common packages"
 fetch_tizen_pkgs armv7l libicu-devel
 Inform "fetch coreclr packages"
-fetch_tizen_pkgs armv7l tizen-release
+fetch_tizen_pkgs armv7l tizen-release lttng-ust-devel lttng-ust userspace-rcu-devel userspace-rcu
 Inform "fetch corefx packages"
 fetch_tizen_pkgs armv7l gssdp gssdp-devel krb5 krb5-devel libcurl libcurl-devel
 

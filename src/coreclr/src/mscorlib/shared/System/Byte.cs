@@ -185,28 +185,24 @@ namespace System
         [Pure]
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public String ToString(String format)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         [Pure]
         public String ToString(String format, IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 

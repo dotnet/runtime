@@ -75,6 +75,35 @@ WaitForSingleObject(IN HANDLE hHandle,
 
 /*++
 Function:
+  WaitForSingleObjectPrioritized
+
+Similar to WaitForSingleObject, except uses a LIFO release policy for waiting threads by prioritizing new waiters (registering
+them at the beginning of the wait queue rather than at the end).
+--*/
+DWORD
+PALAPI
+PAL_WaitForSingleObjectPrioritized(IN HANDLE hHandle,
+                                   IN DWORD dwMilliseconds)
+{
+    DWORD dwRet;
+
+    PERF_ENTRY(PAL_WaitForSingleObjectPrioritized);
+    ENTRY("PAL_WaitForSingleObjectPrioritized(hHandle=%p, dwMilliseconds=%u)\n",
+          hHandle, dwMilliseconds);
+
+    CPalThread * pThread = InternalGetCurrentThread();
+
+    dwRet = InternalWaitForMultipleObjectsEx(pThread, 1, &hHandle, FALSE,
+                                             dwMilliseconds, FALSE, TRUE /* bPrioritize */);
+
+    LOGEXIT("PAL_WaitForSingleObjectPrioritized returns DWORD %u\n", dwRet);
+    PERF_EXIT(PAL_WaitForSingleObjectPrioritized);
+    return dwRet;
+}
+
+
+/*++
+Function:
   WaitForSingleObjectEx
 
 See MSDN doc.
@@ -285,7 +314,8 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     CONST HANDLE *lpHandles,
     BOOL bWaitAll,
     DWORD dwMilliseconds,
-    BOOL bAlertable)
+    BOOL bAlertable,
+    BOOL bPrioritize)
 {
     DWORD dwRet = WAIT_FAILED;
     PAL_ERROR palErr = NO_ERROR;
@@ -530,7 +560,8 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
             palErr = ppISyncWaitCtrlrs[i]->RegisterWaitingThread(
                                                         wtWaitType, 
                                                         i,
-                                                        (TRUE == bAlertable));
+                                                        (TRUE == bAlertable),
+                                                        bPrioritize != FALSE);
             if (NO_ERROR != palErr)
             {               
                 ERROR("RegisterWaitingThread() failed for %d-th object "

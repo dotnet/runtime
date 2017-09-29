@@ -31,7 +31,6 @@ namespace System.Resources
     using System.Collections.Generic;
     using System.Runtime.Versioning;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
 #if FEATURE_APPX
     //
@@ -281,7 +280,6 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(baseName));
             if (null == resourceDir)
                 throw new ArgumentNullException(nameof(resourceDir));
-            Contract.EndContractBlock();
 
             BaseNameField = baseName;
 
@@ -306,7 +304,6 @@ namespace System.Resources
 
             if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
-            Contract.EndContractBlock();
 
             if (!(assembly is RuntimeAssembly))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
@@ -336,7 +333,6 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(baseName));
             if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
-            Contract.EndContractBlock();
 
             if (!(assembly is RuntimeAssembly))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
@@ -363,7 +359,6 @@ namespace System.Resources
         {
             if (null == resourceSource)
                 throw new ArgumentNullException(nameof(resourceSource));
-            Contract.EndContractBlock();
 
             if (!(resourceSource is RuntimeType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
@@ -597,7 +592,6 @@ namespace System.Resources
         {
             if (null == culture)
                 throw new ArgumentNullException(nameof(culture));
-            Contract.EndContractBlock();
 
             Dictionary<String, ResourceSet> localResourceSets = _resourceSets;
             ResourceSet rs;
@@ -756,7 +750,6 @@ namespace System.Resources
             {
                 throw new ArgumentNullException(nameof(a), SR.ArgumentNull_Assembly);
             }
-            Contract.EndContractBlock();
 
             // Return null. The calling code will use the assembly version instead to avoid potential type
             // and library loads caused by CA lookup. NetCF uses the assembly version always.
@@ -1086,7 +1079,6 @@ namespace System.Resources
         {
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
 #if FEATURE_APPX
             if (s_IsAppXModel)
@@ -1196,7 +1188,6 @@ namespace System.Resources
         {
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
 #if FEATURE_APPX
             if (s_IsAppXModel)

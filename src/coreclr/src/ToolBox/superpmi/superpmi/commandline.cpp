@@ -119,11 +119,13 @@ void CommandLine::DumpHelp(const char* program)
     printf("     Ignored: neither MSVCDIS nor CoreDisTools is available.\n");
 #endif // USE_COREDISTOOLS
     printf("\n");
-    printf(" -jitoption key=value\n");
-    printf("     Set the JIT option named \"key\" to \"value\" for JIT 1. NOTE: do not use a \"COMPlus_\" prefix!\n");
+    printf(" -jitoption [force] key=value\n");
+    printf("     Set the JIT option named \"key\" to \"value\" for JIT 1 if the option was not set.");
+    printf("     With optional force flag overwrites the existing value if it was already set. NOTE: do not use a \"COMPlus_\" prefix!\n");
     printf("\n");
-    printf(" -jit2option key=value\n");
-    printf("     Set the JIT option named \"key\" to \"value\" for JIT 2. NOTE: do not use a \"COMPlus_\" prefix!\n");
+    printf(" -jit2option [force] key=value\n");
+    printf("     Set the JIT option named \"key\" to \"value\" for JIT 2 if the option was not set.");
+    printf("     With optional force flag overwrites the existing value if it was already set. NOTE: do not use a \"COMPlus_\" prefix!\n");
     printf("\n");
     printf("Inputs are case sensitive.\n");
     printf("\n");
@@ -163,10 +165,6 @@ static bool ParseJitOption(const char* optionString, wchar_t** key, wchar_t **va
     tempKey[i] = '\0';
 
     const char* tempVal = &optionString[i + 1];
-    if (tempVal[0] == '\0')
-    {
-        return false;
-    }
 
     const unsigned keyLen = i;
     wchar_t* keyBuf = new wchar_t[keyLen + 1];
@@ -522,51 +520,22 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
             }
-            else if ((_strnicmp(&argv[i][1], "jitoption", argLen) == 0))
+            else if (_strnicmp(&argv[i][1], "jitoption", argLen) == 0)
             {
                 i++;
-
-                wchar_t *key, *value;
-                if ((i >= argc) || !ParseJitOption(argv[i], &key, &value))
+                if (!AddJitOption(i, argc, argv, &o->jitOptions, &o->forceJitOptions))
                 {
-                    DumpHelp(argv[0]);
                     return false;
                 }
-
-                if (o->jitOptions == nullptr)
-                {
-                    o->jitOptions = new LightWeightMap<DWORD, DWORD>();
-                }
-
-                DWORD keyIndex = (DWORD)o->jitOptions->AddBuffer((unsigned char*)key, sizeof(wchar_t) * ((unsigned int)wcslen(key) + 1));
-                DWORD valueIndex = (DWORD)o->jitOptions->AddBuffer((unsigned char*)value, sizeof(wchar_t) * ((unsigned int)wcslen(value) + 1));
-                o->jitOptions->Add(keyIndex, valueIndex);
-
-                delete[] key;
-                delete[] value;
             }
-            else if ((_strnicmp(&argv[i][1], "jit2option", argLen) == 0))
+            else if (_strnicmp(&argv[i][1], "jit2option", argLen) == 0)
             {
-                i++;
-
-                wchar_t *key, *value;
-                if ((i >= argc) || !ParseJitOption(argv[i], &key, &value))
+                i++;                
+                if (!AddJitOption(i, argc, argv, &o->jit2Options, &o->forceJit2Options))
                 {
-                    DumpHelp(argv[0]);
                     return false;
                 }
 
-                if (o->jit2Options == nullptr)
-                {
-                    o->jit2Options = new LightWeightMap<DWORD, DWORD>();
-                }
-
-                DWORD keyIndex = (DWORD)o->jit2Options->AddBuffer((unsigned char*)key, sizeof(wchar_t) * ((unsigned int)wcslen(key) + 1));
-                DWORD valueIndex = (DWORD)o->jit2Options->AddBuffer((unsigned char*)value, sizeof(wchar_t) * ((unsigned int)wcslen(value) + 1));
-                o->jit2Options->Add(keyIndex, valueIndex);
-
-                delete[] key;
-                delete[] value;
             }
             else
             {
@@ -635,5 +604,64 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         DumpHelp(argv[0]);
         return false;
     }
+    return true;
+}
+
+//-------------------------------------------------------------
+// AddJitOption: Parse the value that was passed with -jitOption flag.
+//
+// Arguments:
+//    currArgument     - current argument number. Points to the token next to -jitOption. After the function
+//                       points to the last parsed token
+//    argc             - number of all arguments
+//    argv             - arguments as array of char*
+//    pJitOptions      - a jit options map, that sets the option, if it was not already set.
+//    pForceJitOptions - a jit options map, that forces the option even if it was already set.
+//
+// Returns:
+//    False if an error occurred, true if the option was parsed and added.
+bool CommandLine::AddJitOption(int& currArgument, int argc, char* argv[], LightWeightMap<DWORD, DWORD>** pJitOptions, LightWeightMap<DWORD, DWORD>** pForceJitOptions)
+{
+    if (currArgument >= argc)
+    {
+        DumpHelp(argv[0]);
+        return false;
+    }
+
+    LightWeightMap<DWORD, DWORD>* targetjitOptions = nullptr;
+
+
+    if (_strnicmp(argv[currArgument], "force", strlen(argv[currArgument])) == 0)
+    {
+        if (*pForceJitOptions == nullptr)
+        {
+            *pForceJitOptions = new LightWeightMap<DWORD, DWORD>();
+        }
+        targetjitOptions = *pForceJitOptions;
+        currArgument++;
+    }
+    else
+    {
+        if (*pJitOptions == nullptr)
+        {
+            *pJitOptions = new LightWeightMap<DWORD, DWORD>();
+        }
+        targetjitOptions = *pJitOptions;
+    }
+
+    wchar_t* key;
+    wchar_t* value;
+    if ((currArgument >= argc) || !ParseJitOption(argv[currArgument], &key, &value))
+    {
+        DumpHelp(argv[0]);
+        return false;
+    }
+
+    DWORD keyIndex = (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(wchar_t) * ((unsigned int)wcslen(key) + 1));
+    DWORD valueIndex = (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(wchar_t) * ((unsigned int)wcslen(value) + 1));
+    targetjitOptions->Add(keyIndex, valueIndex);
+
+    delete[] key;
+    delete[] value;
     return true;
 }

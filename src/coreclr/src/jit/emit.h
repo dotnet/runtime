@@ -2382,11 +2382,12 @@ inline emitAttr emitTypeSize(T type)
 
 extern const unsigned short emitTypeActSz[TYP_COUNT];
 
-inline emitAttr emitActualTypeSize(var_types type)
+template <class T>
+inline emitAttr emitActualTypeSize(T type)
 {
-    assert(type < TYP_COUNT);
-    assert(emitTypeActSz[type] > 0);
-    return (emitAttr)emitTypeActSz[type];
+    assert(TypeGet(type) < TYP_COUNT);
+    assert(emitTypeActSz[TypeGet(type)] > 0);
+    return (emitAttr)emitTypeActSz[TypeGet(type)];
 }
 
 /*****************************************************************************

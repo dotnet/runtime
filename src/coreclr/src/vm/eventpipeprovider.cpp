@@ -11,13 +11,14 @@
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeProvider::EventPipeProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
+EventPipeProvider::EventPipeProvider(EventPipeConfiguration *pConfig, const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(pConfig != NULL);
     }
     CONTRACTL_END;
 
@@ -28,11 +29,7 @@ EventPipeProvider::EventPipeProvider(const SString &providerName, EventPipeCallb
     m_pEventList = new SList<SListElem<EventPipeEvent*>>();
     m_pCallbackFunction = pCallbackFunction;
     m_pCallbackData = pCallbackData;
-    m_pConfig = EventPipe::GetConfiguration();
-    _ASSERTE(m_pConfig != NULL);
-
-    // Register the provider.
-    m_pConfig->RegisterProvider(*this);
+    m_pConfig = pConfig;
 }
 
 EventPipeProvider::~EventPipeProvider()
@@ -44,15 +41,6 @@ EventPipeProvider::~EventPipeProvider()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    // Unregister the provider.
-    // This call is re-entrant.
-    // NOTE: We don't use the cached event pipe configuration pointer
-    // in case this runs during shutdown and the configuration has already
-    // been freed.
-    EventPipeConfiguration* pConfig = EventPipe::GetConfiguration();
-    _ASSERTE(pConfig != NULL);
-    pConfig->UnregisterProvider(*this);
 
     // Free all of the events.
     if(m_pEventList != NULL)

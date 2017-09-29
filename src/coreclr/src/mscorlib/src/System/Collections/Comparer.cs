@@ -14,7 +14,6 @@
 ===========================================================*/
 
 using System.Globalization;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -35,7 +34,6 @@ namespace System.Collections
             {
                 throw new ArgumentNullException(nameof(culture));
             }
-            Contract.EndContractBlock();
             m_compareInfo = culture.CompareInfo;
         }
 

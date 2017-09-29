@@ -7,7 +7,6 @@
     <_PlatformDoesNotSupportCreatedump Condition="'$(Platform)' == 'arm64'">true</_PlatformDoesNotSupportCreatedump>
     <_PlatformDoesNotSupportCreatedump Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportCreatedump>
     <_PlatformDoesNotSupportEventTrace Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportEventTrace>
-    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'arm64'">true</_PlatformDoesNotSupportEventTrace>
     <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
     <_PlatformDoesNotSupportSosPlugin Condition="'$(_runtimeOSFamily)' == 'android'">true</_PlatformDoesNotSupportSosPlugin>
     <_PlatformDoesNotSupportSosPlugin Condition="'$(Platform)' == 'arm64'">true</_PlatformDoesNotSupportSosPlugin>
