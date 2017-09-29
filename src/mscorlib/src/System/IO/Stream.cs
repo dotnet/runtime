@@ -111,36 +111,7 @@ namespace System.IO
 
         public Task CopyToAsync(Stream destination)
         {
-            int bufferSize = _DefaultCopyBufferSize;
-
-            if (CanSeek)
-            {
-                long length = Length;
-                long position = Position;
-                if (length <= position) // Handles negative overflows
-                {
-                    // If we go down this branch, it means there are
-                    // no bytes left in this stream.
-
-                    // Ideally we would just return Task.CompletedTask here,
-                    // but CopyToAsync(Stream, int, CancellationToken) was already
-                    // virtual at the time this optimization was introduced. So
-                    // if it does things like argument validation (checking if destination
-                    // is null and throwing an exception), then await fooStream.CopyToAsync(null)
-                    // would no longer throw if there were no bytes left. On the other hand,
-                    // we also can't roll our own argument validation and return Task.CompletedTask,
-                    // because it would be a breaking change if the stream's override didn't throw before,
-                    // or in a different order. So for simplicity, we just set the bufferSize to 1
-                    // (not 0 since the default implementation throws for 0) and forward to the virtual method.
-                    bufferSize = 1;
-                }
-                else
-                {
-                    long remaining = length - position;
-                    if (remaining > 0) // In the case of a positive overflow, stick to the default size
-                        bufferSize = (int)Math.Min(bufferSize, remaining);
-                }
-            }
+            int bufferSize = GetCopyBufferSize();
 
             return CopyToAsync(destination, bufferSize);
         }
@@ -148,6 +119,13 @@ namespace System.IO
         public Task CopyToAsync(Stream destination, Int32 bufferSize)
         {
             return CopyToAsync(destination, bufferSize, CancellationToken.None);
+        }
+
+        public Task CopyToAsync(Stream destination, CancellationToken cancellationToken)
+        {
+            int bufferSize = GetCopyBufferSize();
+
+            return CopyToAsync(destination, bufferSize, cancellationToken);
         }
 
         public virtual Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
@@ -188,26 +166,7 @@ namespace System.IO
         // the current position.
         public void CopyTo(Stream destination)
         {
-            int bufferSize = _DefaultCopyBufferSize;
-
-            if (CanSeek)
-            {
-                long length = Length;
-                long position = Position;
-                if (length <= position) // Handles negative overflows
-                {
-                    // No bytes left in stream
-                    // Call the other overload with a bufferSize of 1,
-                    // in case it's made virtual in the future
-                    bufferSize = 1;
-                }
-                else
-                {
-                    long remaining = length - position;
-                    if (remaining > 0) // In the case of a positive overflow, stick to the default size
-                        bufferSize = (int)Math.Min(bufferSize, remaining);
-                }
-            }
+            int bufferSize = GetCopyBufferSize();
 
             CopyTo(destination, bufferSize);
         }
@@ -232,6 +191,36 @@ namespace System.IO
                 Array.Clear(buffer, 0, highwaterMark); // clear only the most we used
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: false);
             }
+        }
+
+        private int GetCopyBufferSize()
+        {
+            int bufferSize = _DefaultCopyBufferSize;
+
+            if (CanSeek)
+            {
+                long length = Length;
+                long position = Position;
+                if (length <= position) // Handles negative overflows
+                {
+                    // There are no bytes left in the stream to copy.
+                    // However, because CopyTo{Async} is virtual, we need to
+                    // ensure that any override is still invoked to provide its
+                    // own validation, so we use the smallest legal buffer size here.
+                    bufferSize = 1;
+                }
+                else
+                {
+                    long remaining = length - position;
+                    if (remaining > 0)
+                    {
+                        // In the case of a positive overflow, stick to the default size
+                        bufferSize = (int)Math.Min(bufferSize, remaining);
+                    }
+                }
+            }
+
+            return bufferSize;
         }
 
         // Stream used to require that all cleanup logic went into Close(),
