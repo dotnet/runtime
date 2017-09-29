@@ -12,6 +12,7 @@
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
 
     <!-- Input Directories -->
+    <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
     <PackagesDir Condition="'$(PackagesDir)'==''">$(RepoRoot)packages/</PackagesDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(RepoRoot)Tools/</ToolRuntimePath>
     <LocalToolRuntimePath Condition="'$(LocalToolRuntimePath)' == ''">$(ToolRuntimePath)local/</LocalToolRuntimePath>
