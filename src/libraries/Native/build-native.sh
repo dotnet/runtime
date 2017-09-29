@@ -366,18 +366,8 @@ esac
 
 # Set the default clang version if not already set
 if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
-    if [ $__CrossBuild == 1 ]; then
-        if [[ "$__BuildArch" == "arm" || "$__BuildArch" == "armel" ]]; then
-            __ClangMajorVersion=3
-            __ClangMinorVersion=9
-        else
-            __ClangMajorVersion=3
-            __ClangMinorVersion=6
-        fi
-    else
-        __ClangMajorVersion=3
-        __ClangMinorVersion=5
-    fi
+    __ClangMajorVersion=3
+    __ClangMinorVersion=9
 fi
 
 # Set the remaining variables based upon the determined build configuration
