@@ -7,7 +7,7 @@ Debugging CoreCLR on Windows
 ============================
 
 1. Perform a build of the repo.
-2. Open \<repo_root\>\bin\obj\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in VS. \<platform\> and \<configurtion\> are based
+2. Open Solution \<reporoot\>\bin\obj\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in VS. \<platform\> and \<configuration\> are based
     on type of build you did. By default they are 'x64' and 'Debug'.
 3. Right click the INSTALL project and choose ‘Set as StartUp Project’
 4. Bring up the properties page for the INSTALL project
@@ -41,7 +41,7 @@ Only lldb is supported by the SOS plugin. gdb can be used to debug the coreclr c
 1. Perform a build of the coreclr repo.
 2. Install the corefx managed assemblies to the binaries directory.
 3. cd to build's binaries: `cd ~/coreclr/bin/Product/Linux.x64.Debug`
-4. Start lldb (the version the plugin was built with, currently 3.6): `lldb-3.6 corerun HelloWorld.exe linux`
+4. Start lldb (the version the plugin was built with, currently 3.9): `lldb-3.9 corerun HelloWorld.exe linux`
 5. Now at the lldb command prompt, load SOS plugin: `plugin load libsosplugin.so`
 6. Launch program: `process launch -s`
 7. To stop annoying breaks on SIGUSR1/SIGUSR2 signals used by the runtime run: `process handle -s false SIGUSR1 SIGUSR2`
@@ -50,11 +50,11 @@ Only lldb is supported by the SOS plugin. gdb can be used to debug the coreclr c
 
 You can combine steps 4-8 and pass everything on the lldb command line:
 
-`lldb-3.6 -o "plugin load libsosplugin.so" -o "process launch -s" -o "process handle -s false SIGUSR1 SIGUSR2" -o "breakpoint set -n LoadLibraryExW" corerun HelloWorld.exe linux`
+`lldb-3.9 -o "plugin load libsosplugin.so" -o "process launch -s" -o "process handle -s false SIGUSR1 SIGUSR2" -o "breakpoint set -n LoadLibraryExW" corerun HelloWorld.exe linux`
 
 ### SOS commands ###
 
-This is the full list of commands currently supported by SOS. LLDB is case-sensitive unlike windbg.
+This is the full list of commands currently supported by SOS. lldb is case-sensitive unlike windbg.
 
 	Type "soshelp <functionname>" for detailed info on that function.
 
@@ -76,7 +76,7 @@ This is the full list of commands currently supported by SOS. LLDB is case-sensi
 	DumpDomain                         VerifyHeap
 	EEHeap (eeheap)                    FindAppDomain
 	Name2EE (name2ee)                  DumpLog (dumplog)
-	DumpMT (dumpmt)
+	DumpMT (dumpmt)                    CreateDump (createdump)
 	DumpClass (dumpclass)
 	DumpMD (dumpmd)
 	Token2EE
@@ -104,7 +104,8 @@ However the common commands have been aliased so that you don't need the SOS pre
     clrstack        -> sos ClrStack
     clrthreads      -> sos Threads
     clru            -> sos U
-    dso             -> sos DumpStackObjects
+    createdump      -> sos CreateDump
+	dso             -> sos DumpStackObjects
     dumpclass       -> sos DumpClass
     dumpheap        -> sos DumpHeap
     dumpil          -> sos DumpIL
@@ -127,18 +128,42 @@ However the common commands have been aliased so that you don't need the SOS pre
     pe              -> sos PrintException
     soshelp         -> sos Help
 
+### Debugging core dumps with lldb
 
-### Problems and limitations of lldb and SOS ###
+It is also possible to debug .NET Core crash dumps using lldb and SOS. In order to do this, you need all of the following:
 
-Many of the SOS commands like clrstack or dso don't work on core dumps because lldb doesn't 
-return the actual OS thread id for a native thread. The "setsostid" command can be used to work
-around this lldb bug. Use the "clrthreads" to find the os tid and the lldb command "thread list"
-to find the thread index (#1 for example) for the current thread (* in first column). The first
-setsostid argument is the os tid and the second is the thread index: "setsosid ecd5 1".
+- The crash dump file. We have a service called "Dumpling" which collects, uploads, and archives crash dump files during all of our CI jobs and official builds.
+- On Linux, there is an utility called `createdump` (see [doc](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
+- Matching coreclr/corefx runtime bits from the crash. To get these, you should either:
+  - Download the matching Jenkins archive onto your repro machine.
+  - Check out the coreclr and corefx repositories at the appropriate commit and re-build the necessary portions.
+  - You can also download the matching "symbols" nuget package from myget.org. There is a "Download Symbols" button in the myget UI for this purpose.
+- lldb version 3.9. The SOS plugin (i.e. libsosplugin.so) provided is now built for lldb 3.9.
 
-The "gcroot" command either crashes lldb 3.6 or returns invalid results. Works fine with lldb 3.7 and 3.8.
+Once you have everything listed above, you are ready to start debugging. You need to specify an extra parameter to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
 
-Loading Linux core dumps with lldb 3.7 doesn't work. lldb 3.7 loads OS X and FreeBSD core dumps 
-just fine. lldb 3.8 loads all the platform's core dumps without problem.
+```
+lldb-3.9 -O "settings set target.exec-search-paths <runtime-path>" --core <core-file-path> <host-path>
+```
 
-For more information on SOS commands click [here](https://msdn.microsoft.com/en-us/library/bb190764(v=vs.110).aspx).
+- `<runtime-path>`: The path containing libcoreclr.so.dbg, as well as the rest of the runtime and framework assemblies.
+- `<core-file-path>`: The path to the core dump you are attempting to debug.
+- `<host-path>`: The path to the dotnet or corerun executable, potentially in the `<runtime-path>` folder.
+
+lldb should start debugging successfully at this point. You should see stacktraces with resolved symbols for libcoreclr.so. At this point, you can run `plugin load <libsosplugin.so-path>`, and begin using SOS commands, as above.
+
+Using Visual Studio Code
+========================
+
+- Install [Visual Studio Code](https://code.visualstudio.com/)
+- Install the [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
+- Open the folder containing the source you want to debug in VS Code
+- Open the debug window: `ctrl-shift-D` or click on the button on the left
+- Click the gear button at the top to create a launch configuration, select `.NET Core` from the selection dropdown
+- In the `.NET Core Launch (console)` configuration do the following
+  - delete the `preLaunchTask` property
+  - set `program` to the full path to corerun in the test directory
+  - set `cwd` to the test directory
+  - set `args` to the command line arguments to pass to the test
+    - something like: `[ "xunit.console.netcore.exe", "<test>.dll", "-notrait", .... ]`
+- Set a breakpoint and launch the debugger, inspecting variables and call stacks will now work
