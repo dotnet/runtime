@@ -154,12 +154,6 @@
     <Compile Include="System\Xml\Serialization\XmlElementAttributeExtension.cs" />
     <Compile Include="System\Xml\Serialization\XmlRootAttributeExtensions.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Resources.ResourceManager" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Import Project=".\GenerateThisAssemblyCs.targets" />
 </Project>
