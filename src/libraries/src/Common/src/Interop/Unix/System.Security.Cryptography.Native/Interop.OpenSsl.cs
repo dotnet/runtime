@@ -89,9 +89,8 @@ internal static partial class Interop
                     SetSslCertificate(innerContext, certHandle, certKeyHandle);
                 }
 
-                if (sslAuthenticationOptions.RemoteCertRequired)
+                if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                 {
-                    Debug.Assert(sslAuthenticationOptions.IsServer, "isServer flag should be true");
                     Ssl.SslCtxSetVerify(innerContext, s_verifyClientCertificate);
 
                     //update the client CA list 
@@ -102,13 +101,13 @@ internal static partial class Interop
                 {
                     if (sslAuthenticationOptions.IsServer)
                     {
-                        byte[] protos = SslStreamPal.ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                        byte[] protos = Interop.Ssl.ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
                         sslAuthenticationOptions.AlpnProtocolsHandle = GCHandle.Alloc(protos);
                         Interop.Ssl.SslCtxSetAplnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(sslAuthenticationOptions.AlpnProtocolsHandle));
                     }
                     else
                     {
-                        if (Interop.Ssl.SslCtxSetAplnProtos(innerContext, sslAuthenticationOptions.ApplicationProtocols) != 0)
+                        if (Interop.Ssl.SslCtxSetAlpnProtos(innerContext, sslAuthenticationOptions.ApplicationProtocols) != 0)
                         {
                             throw CreateSslException(SR.net_alpn_notsupported);
                         }

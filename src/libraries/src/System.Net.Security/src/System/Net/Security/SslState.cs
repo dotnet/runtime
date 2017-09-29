@@ -37,7 +37,7 @@ namespace System.Net.Security
 
         private SecurityStatusPal _securityStatus;
         private ExceptionDispatchInfo _exception;
-        
+
         private enum CachedSessionStatus : byte
         {
             Unknown = 0,
@@ -94,7 +94,7 @@ namespace System.Net.Security
             {
                 throw new InvalidOperationException(SR.net_auth_client_server);
             }
-            
+
             if (sslClientAuthenticationOptions.TargetHost == null)
             {
                 throw new ArgumentNullException(nameof(sslClientAuthenticationOptions.TargetHost));
@@ -151,11 +151,14 @@ namespace System.Net.Security
             }
         }
 
-        internal string NegotiatedApplicationProtocol
+        internal SslApplicationProtocol NegotiatedApplicationProtocol
         {
             get
             {
-                return _context?.NegotiatedApplicationProtocol;
+                if (Context == null)
+                    return default;
+
+                return Context.NegotiatedApplicationProtocol;
             }
         }
 

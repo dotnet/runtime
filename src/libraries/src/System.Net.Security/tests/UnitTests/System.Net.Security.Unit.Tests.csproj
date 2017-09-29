@@ -17,6 +17,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="SslApplicationProtocolTests.cs" />
+    <Compile Include="SslAuthenticationOptionsTests.cs" />
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTest.cs" />
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />

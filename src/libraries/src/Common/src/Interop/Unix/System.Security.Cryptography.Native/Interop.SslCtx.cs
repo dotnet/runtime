@@ -35,13 +35,38 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAplnSelectCb")]
         internal static unsafe extern void SslCtxSetAplnSelectCb(SafeSslContextHandle ctx, SslCtxSetAplnCallback callback, IntPtr arg);
 
-        internal static unsafe int SslCtxSetAplnProtos(SafeSslContextHandle ctx, IList<SslApplicationProtocol> protocols)
+        internal static unsafe int SslCtxSetAlpnProtos(SafeSslContextHandle ctx, IList<SslApplicationProtocol> protocols)
         {
-            byte[] buffer = SslStreamPal.ConvertAlpnProtocolListToByteArray(protocols);
+            byte[] buffer = ConvertAlpnProtocolListToByteArray(protocols);
             fixed (byte* b = buffer)
             {
                 return SslCtxSetAlpnProtos(ctx, (IntPtr)b, buffer.Length);
             }
+        }
+
+        internal static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
+
+                protocolSize += protocol.Protocol.Length + 1;
+            }
+
+            byte[] buffer = new byte[protocolSize];
+            var offset = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                buffer[offset++] = (byte)(protocol.Protocol.Length);
+                Array.Copy(protocol.Protocol.ToArray(), 0, buffer, offset, protocol.Protocol.Length);
+                offset += protocol.Protocol.Length;
+            }
+
+            return buffer;
         }
     }
 }

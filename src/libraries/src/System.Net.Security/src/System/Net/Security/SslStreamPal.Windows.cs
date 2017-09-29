@@ -99,6 +99,45 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
+        public static SecurityBuffer[] GetIncomingSecurityBuffers(SslAuthenticationOptions options, ref SecurityBuffer incomingSecurity)
+        {
+            SecurityBuffer alpnBuffer = null;
+            SecurityBuffer[] incomingSecurityBuffers = null;
+
+            if (options.ApplicationProtocols != null && options.ApplicationProtocols.Count != 0)
+            {
+                byte[] alpnBytes = SslStreamPal.ConvertAlpnProtocolListToByteArray(options.ApplicationProtocols);
+                alpnBuffer = new SecurityBuffer(alpnBytes, 0, alpnBytes.Length, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS);
+            }
+
+            if (incomingSecurity != null)
+            {
+                if (alpnBuffer != null)
+                {
+                    incomingSecurityBuffers = new SecurityBuffer[]
+                    {
+                        incomingSecurity,
+                        new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY),
+                        alpnBuffer
+                    };
+                }
+                else
+                {
+                    incomingSecurityBuffers = new SecurityBuffer[]
+                    {
+                        incomingSecurity,
+                        new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY)
+                    };
+                }
+            }
+            else if (alpnBuffer != null)
+            {
+                incomingSecurity = alpnBuffer;
+            }
+
+            return incomingSecurityBuffers;
+        }
+
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
@@ -136,7 +175,7 @@ namespace System.Net.Security
             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        internal static string GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        internal static byte[] GetNegotiatedApplicationProtocol(SafeDeleteContext context)
         {
             Interop.SecPkgContext_ApplicationProtocol alpnContext = SSPIWrapper.QueryContextAttributes(
                 GlobalSSPI.SSPISecureChannel,

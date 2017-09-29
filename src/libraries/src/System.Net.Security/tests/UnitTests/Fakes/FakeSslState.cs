@@ -29,11 +29,11 @@ namespace System.Net.Security
         {
         }
 
-        internal string NegotiatedApplicationProtocol
+        internal SslApplicationProtocol NegotiatedApplicationProtocol
         {
             get
             {
-                return null;
+                return default;
             }
         }
 
