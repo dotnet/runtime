@@ -887,7 +887,8 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     }
 
     // try to use an inc or dec
-    if (oper == GT_ADD && !varTypeIsFloating(treeNode) && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
+    if (oper == GT_ADD && !varTypeIsFloating(treeNode) && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx() &&
+        !treeNode->gtSetFlags())
     {
         if (src->IsIntegralConst(1))
         {
