@@ -16,7 +16,6 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Configuration.Assemblies;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
@@ -171,7 +170,6 @@ namespace System.Reflection
             {
                 if (index < 0 || index >= m_length)
                     throw new IndexOutOfRangeException();
-                Contract.EndContractBlock();
 
                 unsafe
                 {
@@ -262,7 +260,7 @@ namespace System.Reflection
         {
             get
             {
-                Contract.Requires(0 <= index && index < Length);
+                Debug.Assert(0 <= index && index < Length);
                 if (largeResult != null)
                     return largeResult[index];
 

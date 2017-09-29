@@ -321,7 +321,6 @@ namespace System
         {
             get
             {
-                Contract.Ensures(Contract.Result<AppDomain>() != null);
                 return Thread.GetDomain();
             }
         }
@@ -372,7 +371,6 @@ namespace System
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
             lock (((ICollection)LocalStore).SyncRoot)
             {
@@ -385,7 +383,6 @@ namespace System
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
             object data;
             lock (((ICollection)LocalStore).SyncRoot)
@@ -403,7 +400,7 @@ namespace System
 
         private AppDomain()
         {
-            throw new NotSupportedException(SR.GetResourceString(ResId.NotSupported_Constructor));
+            throw new NotSupportedException(SR.NotSupported_Constructor);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -632,7 +629,7 @@ namespace System
 
         private void SetupFusionStore(AppDomainSetup info, AppDomainSetup oldInfo)
         {
-            Contract.Requires(info != null);
+            Debug.Assert(info != null);
 
             if (info.ApplicationBase == null)
             {
@@ -694,9 +691,6 @@ namespace System
 
         private static Object Setup(Object arg)
         {
-            Contract.Requires(arg != null && arg is Object[]);
-            Contract.Requires(((Object[])arg).Length >= 8);
-
             Object[] args = (Object[])arg;
             String friendlyName = (String)args[0];
             AppDomainSetup setup = (AppDomainSetup)args[1];

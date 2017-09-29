@@ -10,7 +10,6 @@ using System.Security;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -83,14 +82,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool IsFixedSize { get }
-        [Pure]
         internal bool IsFixedSize()
         {
             return false;
         }
 
         // bool IsReadOnly { get }
-        [Pure]
         internal bool IsReadOnly()
         {
             return false;

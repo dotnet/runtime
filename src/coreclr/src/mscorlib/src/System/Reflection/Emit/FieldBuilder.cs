@@ -10,7 +10,6 @@ namespace System.Reflection.Emit
     using System;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Reflection;
-    using System.Diagnostics.Contracts;
 
     public sealed class FieldBuilder : FieldInfo
     {
@@ -41,7 +40,6 @@ namespace System.Reflection.Emit
 
             if (type == typeof(void))
                 throw new ArgumentException(SR.Argument_BadFieldType);
-            Contract.EndContractBlock();
 
             m_fieldName = fieldName;
             m_typeBuilder = typeBuilder;
@@ -191,7 +189,6 @@ namespace System.Reflection.Emit
 
             if (binaryAttribute == null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
-            Contract.EndContractBlock();
 
             ModuleBuilder module = m_typeBuilder.Module as ModuleBuilder;
 
@@ -205,7 +202,6 @@ namespace System.Reflection.Emit
         {
             if (customBuilder == null)
                 throw new ArgumentNullException(nameof(customBuilder));
-            Contract.EndContractBlock();
 
             m_typeBuilder.ThrowIfCreated();
 

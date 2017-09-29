@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Security;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -147,7 +146,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(nullableType));
             }
-            Contract.EndContractBlock();
             Type result = null;
             if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
             {

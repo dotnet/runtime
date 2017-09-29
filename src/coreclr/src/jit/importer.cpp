@@ -3360,97 +3360,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
         case CORINFO_INTRINSIC_Exp:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-
-            // These are math intrinsics
-
-            assert(callType != TYP_STRUCT);
-
-            op1 = nullptr;
-
-#if defined(LEGACY_BACKEND)
-            if (IsTargetIntrinsic(intrinsicID))
-#elif !defined(_TARGET_X86_)
-            // Intrinsics that are not implemented directly by target instructions will
-            // be re-materialized as users calls in rationalizer. For prefixed tail calls,
-            // don't do this optimization, because
-            //  a) For back compatibility reasons on desktop.Net 4.6 / 4.6.1
-            //  b) It will be non-trivial task or too late to re-materialize a surviving
-            //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
-            if (!IsIntrinsicImplementedByUserCall(intrinsicID) || !tailCall)
-#else
-            // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
-            // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
-            // code generation for certain EH constructs.
-            if (!IsIntrinsicImplementedByUserCall(intrinsicID))
-#endif
-            {
-                switch (sig->numArgs)
-                {
-                    case 1:
-                        op1 = impPopStack().val;
-
-#if FEATURE_X87_DOUBLES
-
-                        // X87 stack doesn't differentiate between float/double
-                        // so it doesn't need a cast, but everybody else does
-                        // Just double check it is at least a FP type
-                        noway_assert(varTypeIsFloating(op1));
-
-#else // FEATURE_X87_DOUBLES
-
-                        if (op1->TypeGet() != callType)
-                        {
-                            op1 = gtNewCastNode(callType, op1, callType);
-                        }
-
-#endif // FEATURE_X87_DOUBLES
-
-                        op1 = new (this, GT_INTRINSIC)
-                            GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
-                        break;
-
-                    case 2:
-                        op2 = impPopStack().val;
-                        op1 = impPopStack().val;
-
-#if FEATURE_X87_DOUBLES
-
-                        // X87 stack doesn't differentiate between float/double
-                        // so it doesn't need a cast, but everybody else does
-                        // Just double check it is at least a FP type
-                        noway_assert(varTypeIsFloating(op2));
-                        noway_assert(varTypeIsFloating(op1));
-
-#else // FEATURE_X87_DOUBLES
-
-                        if (op2->TypeGet() != callType)
-                        {
-                            op2 = gtNewCastNode(callType, op2, callType);
-                        }
-                        if (op1->TypeGet() != callType)
-                        {
-                            op1 = gtNewCastNode(callType, op1, callType);
-                        }
-
-#endif // FEATURE_X87_DOUBLES
-
-                        op1 = new (this, GT_INTRINSIC)
-                            GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicID, method);
-                        break;
-
-                    default:
-                        NO_WAY("Unsupported number of args for Math Instrinsic");
-                }
-
-#ifndef LEGACY_BACKEND
-                if (IsIntrinsicImplementedByUserCall(intrinsicID))
-                {
-                    op1->gtFlags |= GTF_CALL;
-                }
-#endif
-            }
-
-            retNode = op1;
+            retNode = impMathIntrinsic(method, sig, callType, intrinsicID, tailCall);
             break;
 
 #ifdef _TARGET_XARCH_
@@ -3828,7 +3738,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
 
         switch (ni)
         {
-            case NI_Enum_HasFlag:
+            case NI_System_Enum_HasFlag:
             {
                 GenTree* thisOp  = impStackTop(1).val;
                 GenTree* flagOp  = impStackTop(0).val;
@@ -3847,6 +3757,25 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
                     isSpecial = true;
                 }
 
+                break;
+            }
+
+            case NI_MathF_Round:
+            case NI_Math_Round:
+            {
+                // Math.Round and MathF.Round used to be a traditional JIT intrinsic. In order
+                // to simplify the transition, we will just treat it as if it was still the
+                // old intrinsic, CORINFO_INTRINSIC_Round. This should end up flowing properly
+                // everywhere else.
+
+                retNode = impMathIntrinsic(method, sig, callType, CORINFO_INTRINSIC_Round, tailCall);
+                break;
+            }
+
+            case NI_System_Collections_Generic_EqualityComparer_get_Default:
+            {
+                // Flag for later handling during devirtualization.
+                isSpecial = true;
                 break;
             }
 
@@ -3873,6 +3802,112 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
     return retNode;
 }
 
+GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig,
+                                    var_types             callType,
+                                    CorInfoIntrinsics     intrinsicID,
+                                    bool                  tailCall)
+{
+    GenTree* op1;
+    GenTree* op2;
+
+    assert(callType != TYP_STRUCT);
+    assert((intrinsicID == CORINFO_INTRINSIC_Sin) || (intrinsicID == CORINFO_INTRINSIC_Sqrt) ||
+           (intrinsicID == CORINFO_INTRINSIC_Abs) || (intrinsicID == CORINFO_INTRINSIC_Cos) ||
+           (intrinsicID == CORINFO_INTRINSIC_Round) || (intrinsicID == CORINFO_INTRINSIC_Cosh) ||
+           (intrinsicID == CORINFO_INTRINSIC_Sinh) || (intrinsicID == CORINFO_INTRINSIC_Tan) ||
+           (intrinsicID == CORINFO_INTRINSIC_Tanh) || (intrinsicID == CORINFO_INTRINSIC_Asin) ||
+           (intrinsicID == CORINFO_INTRINSIC_Acos) || (intrinsicID == CORINFO_INTRINSIC_Atan) ||
+           (intrinsicID == CORINFO_INTRINSIC_Atan2) || (intrinsicID == CORINFO_INTRINSIC_Log10) ||
+           (intrinsicID == CORINFO_INTRINSIC_Pow) || (intrinsicID == CORINFO_INTRINSIC_Exp) ||
+           (intrinsicID == CORINFO_INTRINSIC_Ceiling) || (intrinsicID == CORINFO_INTRINSIC_Floor));
+
+    op1 = nullptr;
+
+#if defined(LEGACY_BACKEND)
+    if (IsTargetIntrinsic(intrinsicID))
+#elif !defined(_TARGET_X86_)
+    // Intrinsics that are not implemented directly by target instructions will
+    // be re-materialized as users calls in rationalizer. For prefixed tail calls,
+    // don't do this optimization, because
+    //  a) For back compatibility reasons on desktop.Net 4.6 / 4.6.1
+    //  b) It will be non-trivial task or too late to re-materialize a surviving
+    //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
+    if (!IsIntrinsicImplementedByUserCall(intrinsicID) || !tailCall)
+#else
+    // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
+    // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
+    // code generation for certain EH constructs.
+    if (!IsIntrinsicImplementedByUserCall(intrinsicID))
+#endif
+    {
+        switch (sig->numArgs)
+        {
+            case 1:
+                op1 = impPopStack().val;
+
+#if FEATURE_X87_DOUBLES
+
+                // X87 stack doesn't differentiate between float/double
+                // so it doesn't need a cast, but everybody else does
+                // Just double check it is at least a FP type
+                noway_assert(varTypeIsFloating(op1));
+
+#else // FEATURE_X87_DOUBLES
+
+                if (op1->TypeGet() != callType)
+                {
+                    op1 = gtNewCastNode(callType, op1, callType);
+                }
+
+#endif // FEATURE_X87_DOUBLES
+
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
+                break;
+
+            case 2:
+                op2 = impPopStack().val;
+                op1 = impPopStack().val;
+
+#if FEATURE_X87_DOUBLES
+
+                // X87 stack doesn't differentiate between float/double
+                // so it doesn't need a cast, but everybody else does
+                // Just double check it is at least a FP type
+                noway_assert(varTypeIsFloating(op2));
+                noway_assert(varTypeIsFloating(op1));
+
+#else // FEATURE_X87_DOUBLES
+
+                if (op2->TypeGet() != callType)
+                {
+                    op2 = gtNewCastNode(callType, op2, callType);
+                }
+                if (op1->TypeGet() != callType)
+                {
+                    op1 = gtNewCastNode(callType, op1, callType);
+                }
+
+#endif // FEATURE_X87_DOUBLES
+
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicID, method);
+                break;
+
+            default:
+                NO_WAY("Unsupported number of args for Math Instrinsic");
+        }
+
+#ifndef LEGACY_BACKEND
+        if (IsIntrinsicImplementedByUserCall(intrinsicID))
+        {
+            op1->gtFlags |= GTF_CALL;
+        }
+#endif
+    }
+
+    return op1;
+}
+
 //------------------------------------------------------------------------
 // lookupNamedIntrinsic: map method to jit named intrinsic value
 //
@@ -3895,14 +3930,31 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     const char* namespaceName = nullptr;
     const char* methodName    = info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName);
 
-    if ((namespaceName != nullptr) && strcmp(namespaceName, "System") == 0)
+    if ((namespaceName == nullptr) || (className == nullptr) || (methodName == nullptr))
     {
-        if ((className != nullptr) && strcmp(className, "Enum") == 0)
+        return result;
+    }
+
+    if (strcmp(namespaceName, "System") == 0)
+    {
+        if ((strcmp(className, "Enum") == 0) && (strcmp(methodName, "HasFlag") == 0))
         {
-            if ((methodName != nullptr) && strcmp(methodName, "HasFlag") == 0)
-            {
-                result = NI_Enum_HasFlag;
-            }
+            result = NI_System_Enum_HasFlag;
+        }
+        else if ((strcmp(className, "MathF") == 0) && (strcmp(methodName, "Round") == 0))
+        {
+            result = NI_MathF_Round;
+        }
+        else if ((strcmp(className, "Math") == 0) && (strcmp(methodName, "Round") == 0))
+        {
+            result = NI_Math_Round;
+        }
+    }
+    else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
+    {
+        if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
+        {
+            result = NI_System_Collections_Generic_EqualityComparer_get_Default;
         }
     }
 
@@ -5449,12 +5501,13 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                 return;
             }
 
-            op1 = gtNewHelperCallNode(info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd), TYP_REF,
-                                      gtNewArgList(op2));
+            op1 = gtNewAllocObjNode(info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd),
+                                    pResolvedToken->hClass, TYP_REF, op2);
         }
 
-        /* Remember that this basic block contains 'new' of an object */
+        /* Remember that this basic block contains 'new' of an object, and so does this method */
         compCurBB->bbFlags |= BBF_HAS_NEWOBJ;
+        optMethodFlags |= OMF_HAS_NEWOBJ;
 
         GenTreePtr asg = gtNewTempAssign(impBoxTemp, op1);
 
@@ -6992,7 +7045,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup == TRUE;
 
         // Recursive call is treated as a loop to the begining of the method.
-        if (methHnd == info.compMethodHnd)
+        if (gtIsRecursiveCall(methHnd))
         {
 #ifdef DEBUG
             if (verbose)
@@ -7702,29 +7755,25 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
         }
 
-        /* Is this a virtual or interface call? */
+        // Store the "this" value in the call
+        call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
+        call->gtCall.gtCallObjp = obj;
 
+        // Is this a virtual or interface call?
         if ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT)
         {
-            /* only true object pointers can be virtual */
+            // only true object pointers can be virtual
             assert(obj->gtType == TYP_REF);
 
             // See if we can devirtualize.
-            impDevirtualizeCall(call->AsCall(), obj, &callInfo->hMethod, &callInfo->methodFlags,
-                                &callInfo->contextHandle, &exactContextHnd);
+            impDevirtualizeCall(call->AsCall(), &callInfo->hMethod, &callInfo->methodFlags, &callInfo->contextHandle,
+                                &exactContextHnd);
         }
-        else
+
+        if (impIsThis(obj))
         {
-            if (impIsThis(obj))
-            {
-                call->gtCall.gtCallMoreFlags |= GTF_CALL_M_NONVIRT_SAME_THIS;
-            }
+            call->gtCall.gtCallMoreFlags |= GTF_CALL_M_NONVIRT_SAME_THIS;
         }
-
-        /* Store the "this" value in the call */
-
-        call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
-        call->gtCall.gtCallObjp = obj;
     }
 
     //-------------------------------------------------------------------------
@@ -14235,7 +14284,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, TYP_STRUCT, helperArgs);
 
                     // The handle struct is returned in register
-                    op1->gtCall.gtReturnType = TYP_REF;
+                    op1->gtCall.gtReturnType = GetRuntimeHandleUnderlyingType();
 
                     tiRetVal = typeInfo(TI_STRUCT, impGetTypeHandleClass());
                 }
@@ -14275,7 +14324,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = gtNewHelperCallNode(helper, TYP_STRUCT, helperArgs);
 
                 // The handle struct is returned in register
-                op1->gtCall.gtReturnType = TYP_REF;
+                op1->gtCall.gtReturnType = GetRuntimeHandleUnderlyingType();
 
                 tiRetVal = verMakeTypeInfo(tokenType);
                 impPushOnStack(op1, tiRetVal);
@@ -17646,7 +17695,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         inlCurArgInfo->argIsInvariant = true;
         if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->gtIntCon.gtIconVal == 0))
         {
-            /* Abort, but do not mark as not inlinable */
+            // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
             return;
         }
@@ -18700,6 +18749,8 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Abs:
         case CORINFO_INTRINSIC_Round:
+        case CORINFO_INTRINSIC_Floor:
+        case CORINFO_INTRINSIC_Ceiling:
             return true;
 
         default:
@@ -18789,9 +18840,8 @@ bool Compiler::IsMathIntrinsic(GenTreePtr tree)
 //
 // Arguments:
 //     call -- the call node to examine/modify
-//     thisObj  -- the value of 'this' for the call
 //     method   -- [IN/OUT] the method handle for call. Updated iff call devirtualized.
-//     methodAttribs -- [IN/OUT] flags for the method to call. Updated iff call devirtualized.
+//     methodFlags -- [IN/OUT] flags for the method to call. Updated iff call devirtualized.
 //     contextHandle -- [IN/OUT] context handle for the call. Updated iff call devirtualized.
 //     exactContextHnd -- [OUT] updated context handle iff call devirtualized
 //
@@ -18813,7 +18863,6 @@ bool Compiler::IsMathIntrinsic(GenTreePtr tree)
 //     the 'this obj' of a subsequent virtual call.
 //
 void Compiler::impDevirtualizeCall(GenTreeCall*            call,
-                                   GenTreePtr              thisObj,
                                    CORINFO_METHOD_HANDLE*  method,
                                    unsigned*               methodFlags,
                                    CORINFO_CONTEXT_HANDLE* contextHandle,
@@ -18898,9 +18947,41 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
     // See what we know about the type of 'this' in the call.
-    bool                 isExact      = false;
-    bool                 objIsNonNull = false;
-    CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
+    GenTree*             thisObj       = call->gtCallObjp->gtEffectiveVal(false);
+    GenTree*             actualThisObj = nullptr;
+    bool                 isExact       = false;
+    bool                 objIsNonNull  = false;
+    CORINFO_CLASS_HANDLE objClass      = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
+
+    // See if we have special knowlege that can get us a type or a better type.
+    if ((objClass == nullptr) || !isExact)
+    {
+        actualThisObj = thisObj;
+
+        // Walk back through any return expression placeholders
+        while (actualThisObj->OperGet() == GT_RET_EXPR)
+        {
+            actualThisObj = actualThisObj->gtRetExpr.gtInlineCandidate;
+        }
+
+        // See if we landed on a call to a special intrinsic method
+        if (actualThisObj->IsCall())
+        {
+            GenTreeCall* thisObjCall = actualThisObj->AsCall();
+            if ((thisObjCall->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
+            {
+                assert(thisObjCall->gtCallType == CT_USER_FUNC);
+                CORINFO_METHOD_HANDLE specialIntrinsicHandle = thisObjCall->gtCallMethHnd;
+                CORINFO_CLASS_HANDLE  specialObjClass = impGetSpecialIntrinsicExactReturnType(specialIntrinsicHandle);
+                if (specialObjClass != nullptr)
+                {
+                    objClass     = specialObjClass;
+                    isExact      = true;
+                    objIsNonNull = true;
+                }
+            }
+        }
+    }
 
     // Bail if we know nothing.
     if (objClass == nullptr)
@@ -19120,6 +19201,64 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                baseMethodName, derivedClassName, derivedMethodName, note);
     }
 #endif // defined(DEBUG)
+}
+
+//------------------------------------------------------------------------
+// impGetSpecialIntrinsicExactReturnType: Look for special cases where a call
+//   to an intrinsic returns an exact type
+//
+// Arguments:
+//     methodHnd -- handle for the special intrinsic method
+//
+// Returns:
+//     Exact class handle returned by the intrinsic call, if known.
+//     Nullptr if not known, or not likely to lead to beneficial optimization.
+
+CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE methodHnd)
+{
+    JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));
+
+    CORINFO_CLASS_HANDLE result = nullptr;
+
+    // See what intrinisc we have...
+    const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
+    switch (ni)
+    {
+        case NI_System_Collections_Generic_EqualityComparer_get_Default:
+        {
+            // Expect one class generic parameter; figure out which it is.
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(methodHnd, &sig);
+            assert(sig.sigInst.classInstCount == 1);
+            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
+            assert(typeHnd != nullptr);
+            const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
+            const bool  isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
+
+            // If we do not have a final type, devirt & inlining is
+            // unlikely to result in much simplification.
+            if (isFinalType)
+            {
+                result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+                JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
+                        result != nullptr ? eeGetClassName(result) : "unknown");
+            }
+            else
+            {
+                JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n", eeGetClassName(typeHnd));
+            }
+
+            break;
+        }
+
+        default:
+        {
+            JITDUMP("This special intrinsic not handled, sorry...\n");
+            break;
+        }
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------

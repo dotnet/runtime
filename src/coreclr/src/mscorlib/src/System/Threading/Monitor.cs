@@ -22,7 +22,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
@@ -217,7 +216,6 @@ namespace System.Threading
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            Contract.EndContractBlock();
 
             ObjPulse(obj);
         }
@@ -233,7 +231,6 @@ namespace System.Threading
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            Contract.EndContractBlock();
 
             ObjPulseAll(obj);
         }

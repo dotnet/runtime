@@ -25,7 +25,6 @@
 //  RFC 3492 - Punycode: A Bootstring encoding of Unicode for Internationalized Domain Names in Applications (IDNA)
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.Globalization
@@ -62,7 +61,6 @@ namespace System.Globalization
         {
             if (unicode == null)
                 throw new ArgumentNullException(nameof(unicode));
-            Contract.EndContractBlock();
             return GetAscii(unicode, index, unicode.Length - index);
         }
 
@@ -76,7 +74,6 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             if (index > unicode.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(unicode), SR.ArgumentOutOfRange_IndexCountBuffer);
-            Contract.EndContractBlock();
 
             if (count == 0)
             {
@@ -111,7 +108,6 @@ namespace System.Globalization
         {
             if (ascii == null)
                 throw new ArgumentNullException(nameof(ascii));
-            Contract.EndContractBlock();
             return GetUnicode(ascii, index, ascii.Length - index);
         }
 
@@ -131,7 +127,6 @@ namespace System.Globalization
             // The Win32 APIs fail on an embedded null, but not on a terminating null.
             if (count > 0 && ascii[index + count - 1] == (char)0)
                 throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
-            Contract.EndContractBlock();
 
             if (GlobalizationMode.Invariant)
             {
@@ -328,7 +323,7 @@ namespace System.Globalization
             {
                 // Find end of this segment
                 iNextDot = unicode.IndexOfAny(c_Dots, iAfterLastDot);
-                Contract.Assert(iNextDot <= unicode.Length, "[IdnMapping.punycode_encode]IndexOfAny is broken");
+                Debug.Assert(iNextDot <= unicode.Length, "[IdnMapping.punycode_encode]IndexOfAny is broken");
                 if (iNextDot < 0)
                     iNextDot = unicode.Length;
 
@@ -469,7 +464,7 @@ namespace System.Globalization
                             if (test < n)
                             {
                                 delta++;
-                                Contract.Assert(delta > 0, "[IdnMapping.cs]2 punycode_encode - delta overflowed int");
+                                Debug.Assert(delta > 0, "[IdnMapping.cs]2 punycode_encode - delta overflowed int");
                             }
 
                             if (test == n)

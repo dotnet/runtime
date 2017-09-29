@@ -400,13 +400,15 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
         // computed into a register.
         if (call->IsFastTailCall())
         {
-            NYI_ARM("tail call");
-
 #ifdef _TARGET_ARM64_
             // Fast tail call - make sure that call target is always computed in IP0
             // so that epilog sequence can generate "br xip0" to achieve fast tail call.
             ctrlExpr->gtLsraInfo.setSrcCandidates(this, genRegMask(REG_IP0));
-#endif // _TARGET_ARM64_
+#else  // !_TARGET_ARM64_
+            // Fast tail call - make sure that call target is always computed in r12
+            // so that epilog sequence can generate "br r12" to achieve fast tail call.
+            ctrlExpr->gtLsraInfo.setSrcCandidates(this, RBM_R12);
+#endif // !_TARGET_ARM64_
         }
     }
 #ifdef _TARGET_ARM_
@@ -890,24 +892,20 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
             if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
             {
-                // TODO-ARM-CQ: cpblk loop unrolling is currently not implemented.
                 // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
                 // we should unroll the loop to improve CQ.
                 // For reference see the code in lsraxarch.cpp.
-                NYI_ARM("cpblk loop unrolling is currently not implemented.");
-
-#ifdef _TARGET_ARM64_
 
                 internalIntCount      = 1;
                 internalIntCandidates = RBM_ALLINT;
 
+#ifdef _TARGET_ARM64_
                 if (size >= 2 * REGSIZE_BYTES)
                 {
                     // We will use ldp/stp to reduce code size and improve performance
                     // so we need to reserve an extra internal register
                     internalIntCount++;
                 }
-
 #endif // _TARGET_ARM64_
             }
             else

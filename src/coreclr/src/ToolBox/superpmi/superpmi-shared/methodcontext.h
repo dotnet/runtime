@@ -872,6 +872,11 @@ public:
                                                   CORINFO_CLASS_HANDLE   implClass,
                                                   CORINFO_CONTEXT_HANDLE ownerType);
 
+    void recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls);
+
+
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result);
     void dmpGetTokenTypeAsHandle(const GetTokenTypeAsHandleValue& key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken);
@@ -1252,7 +1257,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 161
+// Highest packet number: 162
 // *************************************************************************************
 enum mcPackets
 {
@@ -1319,6 +1324,7 @@ enum mcPackets
     Packet_GetIntConfigValue                             = 151, // Added 2/12/2015
     Packet_GetStringConfigValue                          = 152, // Added 2/12/2015
     Packet_GetCookieForPInvokeCalliSig                   = 48,
+    Packet_GetDefaultEqualityComparerClass               = 162, // Added 9/24/2017
     Packet_GetDelegateCtor                               = 49,
     Packet_GetEEInfo                                     = 50,
     Packet_GetEHinfo                                     = 51,

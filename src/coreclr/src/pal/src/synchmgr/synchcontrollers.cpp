@@ -262,7 +262,8 @@ namespace CorUnix
     PAL_ERROR CSynchWaitController::RegisterWaitingThread(
         WaitType wtWaitType,
         DWORD dwIndex,
-        bool fAlertable)
+        bool fAlertable,
+        bool fPrioritize)
     {
         VALIDATEOBJECT(m_psdSynchData);
         
@@ -421,12 +422,12 @@ namespace CorUnix
         // Add new node to queue
         if (fSharedObject)
         {
-            m_psdSynchData->SharedWaiterEnqueue(shridNewNode);
+            m_psdSynchData->SharedWaiterEnqueue(shridNewNode, fPrioritize);
             ptwiWaitInfo->lSharedObjCount += 1;
         }
         else
         {
-            m_psdSynchData->WaiterEnqueue(pwtlnNewNode);
+            m_psdSynchData->WaiterEnqueue(pwtlnNewNode, fPrioritize);
         }
 
         // Succeeded: update object count
@@ -1821,7 +1822,7 @@ namespace CorUnix
     Note: this method must be called while holding the local process 
           synchronization lock.
     --*/    
-    void CSynchData::WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode)
+    void CSynchData::WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode, bool fPrioritize)
     {
         VALIDATEOBJECT(this);
         VALIDATEOBJECT(pwtlnNewNode);
@@ -1833,26 +1834,55 @@ namespace CorUnix
                     "Trying to add a WaitingThreadsListNode marked as shared "
                     "as it was a local one\n");
 
-        WaitingThreadsListNode * pwtlnCurrLast = m_ptrWTLTail.ptr;
-
-        pwtlnNewNode->ptrNext.ptr = NULL;
-        if (NULL == pwtlnCurrLast)
+        if (!fPrioritize)
         {
-            _ASSERT_MSG(NULL == m_ptrWTLHead.ptr,
-                        "Corrupted waiting list on local CSynchData @ %p\n", 
-                        this);
+            // Enqueue normally to the end of the queue
+            WaitingThreadsListNode * pwtlnCurrLast = m_ptrWTLTail.ptr;
+
+            pwtlnNewNode->ptrNext.ptr = NULL;
+            if (NULL == pwtlnCurrLast)
+            {
+                _ASSERT_MSG(NULL == m_ptrWTLHead.ptr,
+                            "Corrupted waiting list on local CSynchData @ %p\n", 
+                            this);
                 
-            pwtlnNewNode->ptrPrev.ptr = NULL;
-            m_ptrWTLHead.ptr = pwtlnNewNode;
-            m_ptrWTLTail.ptr = pwtlnNewNode;
+                pwtlnNewNode->ptrPrev.ptr = NULL;
+                m_ptrWTLHead.ptr = pwtlnNewNode;
+                m_ptrWTLTail.ptr = pwtlnNewNode;
+            }
+            else
+            {
+                VALIDATEOBJECT(pwtlnCurrLast);
+            
+                pwtlnNewNode->ptrPrev.ptr = pwtlnCurrLast;
+                pwtlnCurrLast->ptrNext.ptr = pwtlnNewNode;                
+                m_ptrWTLTail.ptr = pwtlnNewNode;
+            }
         }
         else
         {
-            VALIDATEOBJECT(pwtlnCurrLast);
+            // The wait is prioritized, enqueue to the beginning of the queue
+            WaitingThreadsListNode * pwtlnCurrFirst = m_ptrWTLHead.ptr;
+
+            pwtlnNewNode->ptrPrev.ptr = NULL;
+            if (NULL == pwtlnCurrFirst)
+            {
+                _ASSERT_MSG(NULL == m_ptrWTLTail.ptr,
+                            "Corrupted waiting list on local CSynchData @ %p\n", 
+                            this);
+                
+                pwtlnNewNode->ptrNext.ptr = NULL;
+                m_ptrWTLHead.ptr = pwtlnNewNode;
+                m_ptrWTLTail.ptr = pwtlnNewNode;
+            }
+            else
+            {
+                VALIDATEOBJECT(pwtlnCurrFirst);
             
-            pwtlnNewNode->ptrPrev.ptr = pwtlnCurrLast;
-            pwtlnCurrLast->ptrNext.ptr = pwtlnNewNode;                
-            m_ptrWTLTail.ptr = pwtlnNewNode;
+                pwtlnNewNode->ptrNext.ptr = pwtlnCurrFirst;
+                pwtlnCurrFirst->ptrPrev.ptr = pwtlnNewNode;
+                m_ptrWTLHead.ptr = pwtlnNewNode;
+            }
         }
 
         m_ulcWaitingThreads += 1;
@@ -1872,7 +1902,7 @@ namespace CorUnix
     Note: this method must be called while holding both local and shared 
           synchronization locks.
     --*/    
-    void CSynchData::SharedWaiterEnqueue(SharedID shridNewNode)
+    void CSynchData::SharedWaiterEnqueue(SharedID shridNewNode, bool fPrioritize)
     {
         VALIDATEOBJECT(this);
 
@@ -1880,37 +1910,77 @@ namespace CorUnix
                     "Trying to enqueue a WaitingThreadsListNode as shared "
                     "on a local object\n");
 
-        SharedID shridCurrLast;
-        WaitingThreadsListNode * pwtlnCurrLast, * pwtlnNewNode;
-
-        shridCurrLast = m_ptrWTLTail.shrid;
-        pwtlnCurrLast = SharedIDToTypePointer(WaitingThreadsListNode, shridCurrLast);
-        pwtlnNewNode = SharedIDToTypePointer(WaitingThreadsListNode, shridNewNode);
-
-        _ASSERT_MSG(1 == (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNewNode->dwFlags),
-                    "Trying to add a WaitingThreadsListNode marked as local "
-                    "as it was a shared one\n");        
-
-        VALIDATEOBJECT(pwtlnNewNode);
-
-        pwtlnNewNode->ptrNext.shrid = NULL;
-        if (NULL == pwtlnCurrLast)
+        if (!fPrioritize)
         {
-            _ASSERT_MSG(NULL == m_ptrWTLHead.shrid, 
-                        "Corrupted waiting list on shared CSynchData at "
-                        "{shrid=%p, p=%p}\n", m_shridThis, this);
+            // Enqueue normally to the end of the queue
+            SharedID shridCurrLast;
+            WaitingThreadsListNode * pwtlnCurrLast, * pwtlnNewNode;
+
+            shridCurrLast = m_ptrWTLTail.shrid;
+            pwtlnCurrLast = SharedIDToTypePointer(WaitingThreadsListNode, shridCurrLast);
+            pwtlnNewNode = SharedIDToTypePointer(WaitingThreadsListNode, shridNewNode);
+
+            _ASSERT_MSG(1 == (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNewNode->dwFlags),
+                        "Trying to add a WaitingThreadsListNode marked as local "
+                        "as it was a shared one\n");        
+
+            VALIDATEOBJECT(pwtlnNewNode);
+
+            pwtlnNewNode->ptrNext.shrid = NULL;
+            if (NULL == pwtlnCurrLast)
+            {
+                _ASSERT_MSG(NULL == m_ptrWTLHead.shrid, 
+                            "Corrupted waiting list on shared CSynchData at "
+                            "{shrid=%p, p=%p}\n", m_shridThis, this);
             
-            pwtlnNewNode->ptrPrev.shrid = NULL;
-            m_ptrWTLHead.shrid = shridNewNode;
-            m_ptrWTLTail.shrid = shridNewNode;
+                pwtlnNewNode->ptrPrev.shrid = NULL;
+                m_ptrWTLHead.shrid = shridNewNode;
+                m_ptrWTLTail.shrid = shridNewNode;
+            }
+            else
+            {
+                VALIDATEOBJECT(pwtlnCurrLast);
+            
+                pwtlnNewNode->ptrPrev.shrid = shridCurrLast;
+                pwtlnCurrLast->ptrNext.shrid = shridNewNode;                
+                m_ptrWTLTail.shrid = shridNewNode;
+            }
         }
         else
         {
-            VALIDATEOBJECT(pwtlnCurrLast);
+            // The wait is prioritized, enqueue to the beginning of the queue
+            SharedID shridCurrFirst;
+            WaitingThreadsListNode * pwtlnCurrFirst, * pwtlnNewNode;
+
+            shridCurrFirst = m_ptrWTLHead.shrid;
+            pwtlnCurrFirst = SharedIDToTypePointer(WaitingThreadsListNode, shridCurrFirst);
+            pwtlnNewNode = SharedIDToTypePointer(WaitingThreadsListNode, shridNewNode);
+
+            _ASSERT_MSG(1 == (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNewNode->dwFlags),
+                        "Trying to add a WaitingThreadsListNode marked as local "
+                        "as it was a shared one\n");        
+
+            VALIDATEOBJECT(pwtlnNewNode);
+
+            pwtlnNewNode->ptrPrev.shrid = NULL;
+            if (NULL == pwtlnCurrFirst)
+            {
+                _ASSERT_MSG(NULL == m_ptrWTLTail.shrid,
+                            "Corrupted waiting list on shared CSynchData at "
+                            "{shrid=%p, p=%p}\n", m_shridThis, this);
             
-            pwtlnNewNode->ptrPrev.shrid = shridCurrLast;
-            pwtlnCurrLast->ptrNext.shrid = shridNewNode;                
-            m_ptrWTLTail.shrid = shridNewNode;
+                pwtlnNewNode->ptrNext.shrid = NULL;
+                m_ptrWTLHead.shrid = shridNewNode;
+                m_ptrWTLTail.shrid = shridNewNode;
+            }
+            else
+            {
+                VALIDATEOBJECT(pwtlnCurrFirst);
+            
+                pwtlnNewNode->ptrNext.shrid = shridCurrFirst;
+                pwtlnCurrFirst->ptrPrev.shrid = shridNewNode;                
+                m_ptrWTLHead.shrid = shridNewNode;
+            }
         }
 
         m_ulcWaitingThreads += 1;

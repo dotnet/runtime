@@ -16,7 +16,6 @@ using System;
 
 namespace System.Reflection.Emit
 {
-
     ///<summary>
     /// Internal enum OpCodeValues for opcode values.
     ///</summary>
@@ -263,7 +262,6 @@ namespace System.Reflection.Emit
     /// <seealso topic='IL Instruction Set Specification'/>
     public class OpCodes
     {
-
         private OpCodes()
         {
         }

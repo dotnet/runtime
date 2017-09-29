@@ -8,157 +8,141 @@
 
 #ifndef DACCESS_COMPILE
 
-FORCEINLINE AwareLock::EnterHelperResult AwareLock::EnterHelper(Thread* pCurThread)
+FORCEINLINE bool AwareLock::SpinWaitAndBackOffBeforeOperation(DWORD *spinCountRef)
 {
-    CONTRACTL {
+    CONTRACTL{
+        SO_TOLERANT;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    _ASSERTE(spinCountRef != nullptr);
+    DWORD &spinCount = *spinCountRef;
+    _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 1);
+
+    if (spinCount > g_SpinConstants.dwMaximumDuration)
+    {
+        return false;
+    }
+
+    for (DWORD i = 0; i < spinCount; i++)
+    {
+        YieldProcessor();
+    }
+
+    spinCount *= g_SpinConstants.dwBackoffFactor;
+    return true;
+}
+
+FORCEINLINE bool AwareLock::EnterHelper(Thread* pCurThread, bool checkRecursiveCase)
+{
+    CONTRACTL{
         SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
 
-    for (;;)
+    LONG state = m_MonitorHeld.LoadWithoutBarrier();
+    if (state == 0)
     {
-        LONG state = m_MonitorHeld.LoadWithoutBarrier();
-
-        if (state == 0)
+        if (InterlockedCompareExchangeAcquire((LONG*)&m_MonitorHeld, 1, 0) == 0)
         {
-            if (InterlockedCompareExchangeAcquire((LONG*)&m_MonitorHeld, 1, 0) == 0)
-            {
-                m_HoldingThread = pCurThread;
-                m_Recursion = 1;
-                pCurThread->IncLockCount();
-                return AwareLock::EnterHelperResult_Entered;
-            }
-        }
-        else
-        {
-            if (GetOwningThread() == pCurThread) /* monitor is held, but it could be a recursive case */
-            {
-                m_Recursion++;
-                return AwareLock::EnterHelperResult_Entered;
-            }
-
-            return AwareLock::EnterHelperResult_Contention;
+            m_HoldingThread = pCurThread;
+            m_Recursion = 1;
+            pCurThread->IncLockCount();
+            return true;
         }
     }
+    else if (checkRecursiveCase && GetOwningThread() == pCurThread) /* monitor is held, but it could be a recursive case */
+    {
+        m_Recursion++;
+        return true;
+    }
+    return false;
 }
 
 FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread* pCurThread)
 {
-    CONTRACTL {
+    CONTRACTL{
         SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    DWORD tid = pCurThread->GetThreadId();
+    LONG oldValue = m_SyncBlockValue.LoadWithoutBarrier();
 
-    LONG oldvalue = m_SyncBlockValue.LoadWithoutBarrier();
-            
-    if ((oldvalue & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX + 
-                    BIT_SBLK_SPIN_LOCK + 
-                    SBLK_MASK_LOCK_THREADID + 
-                    SBLK_MASK_LOCK_RECLEVEL)) == 0)
+    if ((oldValue & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX +
+                     BIT_SBLK_SPIN_LOCK +
+                     SBLK_MASK_LOCK_THREADID +
+                     SBLK_MASK_LOCK_RECLEVEL)) == 0)
     {
+        DWORD tid = pCurThread->GetThreadId();
         if (tid > SBLK_MASK_LOCK_THREADID)
         {
             return AwareLock::EnterHelperResult_UseSlowPath;
         }
 
-        LONG newvalue = oldvalue | tid;
-        if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newvalue, oldvalue) == oldvalue)
+        LONG newValue = oldValue | tid;
+        if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
         {
             pCurThread->IncLockCount();
             return AwareLock::EnterHelperResult_Entered;
         }
-    }
-    else
-    if (oldvalue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-    {
-         // If we have a hash code already, we need to create a sync block
-         if (oldvalue & BIT_SBLK_IS_HASHCODE)
-         {
-             return AwareLock::EnterHelperResult_UseSlowPath;
-         }
 
-         SyncBlock *syncBlock = g_pSyncTable [oldvalue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
-         _ASSERTE(syncBlock != NULL);
-
-         return syncBlock->m_Monitor.EnterHelper(pCurThread);
+        return AwareLock::EnterHelperResult_Contention;
     }
-    else
+
+    if (oldValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
     {
-        // The header is transitioning - treat this as if the lock was taken
-        if (oldvalue & BIT_SBLK_SPIN_LOCK)
+        // If we have a hash code already, we need to create a sync block
+        if (oldValue & BIT_SBLK_IS_HASHCODE)
         {
-            return AwareLock::EnterHelperResult_Contention;
+            return AwareLock::EnterHelperResult_UseSlowPath;
         }
 
-        // Here we know we have the "thin lock" layout, but the lock is not free.
-        // It could still be the recursion case - compare the thread id to check
-        if (tid == (DWORD) (oldvalue & SBLK_MASK_LOCK_THREADID))
+        SyncBlock *syncBlock = g_pSyncTable[oldValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
+        _ASSERTE(syncBlock != NULL);
+        if (syncBlock->m_Monitor.EnterHelper(pCurThread, true /* checkRecursiveCase */))
         {
-            // Ok, the thread id matches, it's the recursion case.
-            // Bump up the recursion level and check for overflow
-            LONG newvalue = oldvalue + SBLK_LOCK_RECLEVEL_INC;
-
-            if ((newvalue & SBLK_MASK_LOCK_RECLEVEL) == 0)
-            {
-                return AwareLock::EnterHelperResult_UseSlowPath;
-            }
-
-            if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newvalue, oldvalue) == oldvalue)
-            {
-                return AwareLock::EnterHelperResult_Entered;
-            }
+            return AwareLock::EnterHelperResult_Entered;
         }
+
+        return AwareLock::EnterHelperResult_Contention;
     }
 
-    return AwareLock::EnterHelperResult_Contention;
-}
-
-inline AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurThread)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    if (1 == g_SystemInfo.dwNumberOfProcessors)
+    // The header is transitioning - treat this as if the lock was taken
+    if (oldValue & BIT_SBLK_SPIN_LOCK)
     {
         return AwareLock::EnterHelperResult_Contention;
     }
 
-    DWORD spincount = g_SpinConstants.dwInitialDuration;
-
-    for (;;)
+    // Here we know we have the "thin lock" layout, but the lock is not free.
+    // It could still be the recursion case - compare the thread id to check
+    if (pCurThread->GetThreadId() != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID))
     {
-        //
-        // exponential backoff
-        //
-        for (DWORD i = 0; i < spincount; i++)
-        {
-            YieldProcessor();
-        }
-
-        AwareLock::EnterHelperResult result = EnterObjMonitorHelper(pCurThread);
-        if (result != AwareLock::EnterHelperResult_Contention)
-        {
-            return result;
-        }
-
-        spincount *= g_SpinConstants.dwBackoffFactor;
-        if (spincount > g_SpinConstants.dwMaximumDuration)
-        {
-            break;
-        }
+        return AwareLock::EnterHelperResult_Contention;
     }
 
-    return AwareLock::EnterHelperResult_Contention;
+    // Ok, the thread id matches, it's the recursion case.
+    // Bump up the recursion level and check for overflow
+    LONG newValue = oldValue + SBLK_LOCK_RECLEVEL_INC;
+
+    if ((newValue & SBLK_MASK_LOCK_RECLEVEL) == 0)
+    {
+        return AwareLock::EnterHelperResult_UseSlowPath;
+    }
+
+    if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+    {
+        return AwareLock::EnterHelperResult_Entered;
+    }
+
+    // Use the slow path instead of spinning. The compare-exchange above would not fail often, and it's not worth forcing the
+    // spin loop that typically follows the call to this function to check the recursive case, so just bail to the slow path.
+    return AwareLock::EnterHelperResult_UseSlowPath;
 }
 
 // Helper encapsulating the core logic for releasing monitor. Returns what kind of 
@@ -185,31 +169,20 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
     pCurThread->m_pTrackSync->LeaveSync(caller, this);
 #endif
 
-    if (--m_Recursion != 0)
+    if (--m_Recursion == 0)
     {
-        return AwareLock::LeaveHelperAction_None;
-    }
-
-    m_HoldingThread->DecLockCount();
-    m_HoldingThread = NULL;
-
-    for (;;)
-    {
-        // Read existing lock state
-        LONG state = m_MonitorHeld.LoadWithoutBarrier();
+        m_HoldingThread->DecLockCount();
+        m_HoldingThread = NULL;
 
         // Clear lock bit.
-        if (InterlockedCompareExchangeRelease((LONG*)&m_MonitorHeld, state - 1, state) == state)
+        LONG state = InterlockedDecrementRelease((LONG*)&m_MonitorHeld);
+
+        // If wait count is non-zero on successful clear, we must signal the event.
+        if (state & ~1)
         {
-            // If wait count is non-zero on successful clear, we must signal the event.
-            if (state & ~1)
-            {
-                return AwareLock::LeaveHelperAction_Signal;
-            }
-            break;
+            return AwareLock::LeaveHelperAction_Signal;
         }
     }
-
     return AwareLock::LeaveHelperAction_None;
 }
 
@@ -234,16 +207,7 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
             return AwareLock::LeaveHelperAction_Error;                
         }
 
-        if (syncBlockValue & SBLK_MASK_LOCK_RECLEVEL)
-        {
-            // recursion and ThinLock
-            DWORD newValue = syncBlockValue - SBLK_LOCK_RECLEVEL_INC;
-            if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
-            {
-                return AwareLock::LeaveHelperAction_Yield;
-            }
-        }
-        else
+        if (!(syncBlockValue & SBLK_MASK_LOCK_RECLEVEL))
         {
             // We are leaving the lock
             DWORD newValue = (syncBlockValue & (~SBLK_MASK_LOCK_THREADID));
@@ -253,15 +217,24 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
             }
             pCurThread->DecLockCount();
         }
+        else
+        {
+            // recursion and ThinLock
+            DWORD newValue = syncBlockValue - SBLK_LOCK_RECLEVEL_INC;
+            if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
+            {
+                return AwareLock::LeaveHelperAction_Yield;
+            }
+        }
 
         return AwareLock::LeaveHelperAction_None;
     }
 
-    if ((syncBlockValue & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX + BIT_SBLK_IS_HASHCODE)) == BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+    if ((syncBlockValue & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASHCODE)) == 0)
     {
-        SyncBlock *syncBlock = g_pSyncTable [syncBlockValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
+        _ASSERTE((syncBlockValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0);
+        SyncBlock *syncBlock = g_pSyncTable[syncBlockValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
         _ASSERTE(syncBlock != NULL);
-
         return syncBlock->m_Monitor.LeaveHelper(pCurThread);
     }
 

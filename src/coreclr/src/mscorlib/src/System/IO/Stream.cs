@@ -25,7 +25,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 
 namespace System.IO
@@ -53,20 +52,17 @@ namespace System.IO
 
         public abstract bool CanRead
         {
-            [Pure]
             get;
         }
 
         // If CanSeek is false, Position, Seek, Length, and SetLength should throw.
         public abstract bool CanSeek
         {
-            [Pure]
             get;
         }
 
         public virtual bool CanTimeout
         {
-            [Pure]
             get
             {
                 return false;
@@ -75,7 +71,6 @@ namespace System.IO
 
         public abstract bool CanWrite
         {
-            [Pure]
             get;
         }
 
@@ -94,7 +89,6 @@ namespace System.IO
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
             set
@@ -107,7 +101,6 @@ namespace System.IO
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
             set
@@ -118,36 +111,7 @@ namespace System.IO
 
         public Task CopyToAsync(Stream destination)
         {
-            int bufferSize = _DefaultCopyBufferSize;
-
-            if (CanSeek)
-            {
-                long length = Length;
-                long position = Position;
-                if (length <= position) // Handles negative overflows
-                {
-                    // If we go down this branch, it means there are
-                    // no bytes left in this stream.
-
-                    // Ideally we would just return Task.CompletedTask here,
-                    // but CopyToAsync(Stream, int, CancellationToken) was already
-                    // virtual at the time this optimization was introduced. So
-                    // if it does things like argument validation (checking if destination
-                    // is null and throwing an exception), then await fooStream.CopyToAsync(null)
-                    // would no longer throw if there were no bytes left. On the other hand,
-                    // we also can't roll our own argument validation and return Task.CompletedTask,
-                    // because it would be a breaking change if the stream's override didn't throw before,
-                    // or in a different order. So for simplicity, we just set the bufferSize to 1
-                    // (not 0 since the default implementation throws for 0) and forward to the virtual method.
-                    bufferSize = 1;
-                }
-                else
-                {
-                    long remaining = length - position;
-                    if (remaining > 0) // In the case of a positive overflow, stick to the default size
-                        bufferSize = (int)Math.Min(bufferSize, remaining);
-                }
-            }
+            int bufferSize = GetCopyBufferSize();
 
             return CopyToAsync(destination, bufferSize);
         }
@@ -155,6 +119,13 @@ namespace System.IO
         public Task CopyToAsync(Stream destination, Int32 bufferSize)
         {
             return CopyToAsync(destination, bufferSize, CancellationToken.None);
+        }
+
+        public Task CopyToAsync(Stream destination, CancellationToken cancellationToken)
+        {
+            int bufferSize = GetCopyBufferSize();
+
+            return CopyToAsync(destination, bufferSize, cancellationToken);
         }
 
         public virtual Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
@@ -166,10 +137,10 @@ namespace System.IO
 
         private async Task CopyToAsyncInternal(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
         {
-            Contract.Requires(destination != null);
-            Contract.Requires(bufferSize > 0);
-            Contract.Requires(CanRead);
-            Contract.Requires(destination.CanWrite);
+            Debug.Assert(destination != null);
+            Debug.Assert(bufferSize > 0);
+            Debug.Assert(CanRead);
+            Debug.Assert(destination.CanWrite);
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             bufferSize = 0; // reuse same field for high water mark to avoid needing another field in the state machine
@@ -195,26 +166,7 @@ namespace System.IO
         // the current position.
         public void CopyTo(Stream destination)
         {
-            int bufferSize = _DefaultCopyBufferSize;
-
-            if (CanSeek)
-            {
-                long length = Length;
-                long position = Position;
-                if (length <= position) // Handles negative overflows
-                {
-                    // No bytes left in stream
-                    // Call the other overload with a bufferSize of 1,
-                    // in case it's made virtual in the future
-                    bufferSize = 1;
-                }
-                else
-                {
-                    long remaining = length - position;
-                    if (remaining > 0) // In the case of a positive overflow, stick to the default size
-                        bufferSize = (int)Math.Min(bufferSize, remaining);
-                }
-            }
+            int bufferSize = GetCopyBufferSize();
 
             CopyTo(destination, bufferSize);
         }
@@ -241,6 +193,36 @@ namespace System.IO
             }
         }
 
+        private int GetCopyBufferSize()
+        {
+            int bufferSize = _DefaultCopyBufferSize;
+
+            if (CanSeek)
+            {
+                long length = Length;
+                long position = Position;
+                if (length <= position) // Handles negative overflows
+                {
+                    // There are no bytes left in the stream to copy.
+                    // However, because CopyTo{Async} is virtual, we need to
+                    // ensure that any override is still invoked to provide its
+                    // own validation, so we use the smallest legal buffer size here.
+                    bufferSize = 1;
+                }
+                else
+                {
+                    long remaining = length - position;
+                    if (remaining > 0)
+                    {
+                        // In the case of a positive overflow, stick to the default size
+                        bufferSize = (int)Math.Min(bufferSize, remaining);
+                    }
+                }
+            }
+
+            return bufferSize;
+        }
+
         // Stream used to require that all cleanup logic went into Close(),
         // which was thought up before we invented IDisposable.  However, we
         // need to follow the IDisposable pattern so that users can write 
@@ -251,11 +233,8 @@ namespace System.IO
         // should put their cleanup starting in V2.
         public virtual void Close()
         {
-            /* These are correct, but we'd have to fix PipeStream & NetworkStream very carefully.
-            Contract.Ensures(CanRead == false);
-            Contract.Ensures(CanWrite == false);
-            Contract.Ensures(CanSeek == false);
-            */
+            // Ideally we would assert CanRead == CanWrite == CanSeek = false, 
+            // but we'd have to fix PipeStream & NetworkStream very carefully.
 
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -263,11 +242,8 @@ namespace System.IO
 
         public void Dispose()
         {
-            /* These are correct, but we'd have to fix PipeStream & NetworkStream very carefully.
-            Contract.Ensures(CanRead == false);
-            Contract.Ensures(CanWrite == false);
-            Contract.Ensures(CanSeek == false);
-            */
+            // Ideally we would assert CanRead == CanWrite == CanSeek = false, 
+            // but we'd have to fix PipeStream & NetworkStream very carefully.
 
             Close();
         }
@@ -296,13 +272,11 @@ namespace System.IO
         [Obsolete("CreateWaitHandle will be removed eventually.  Please use \"new ManualResetEvent(false)\" instead.")]
         protected virtual WaitHandle CreateWaitHandle()
         {
-            Contract.Ensures(Contract.Result<WaitHandle>() != null);
             return new ManualResetEvent(false);
         }
 
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
         {
-            Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             return BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
         }
 
@@ -310,7 +284,6 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback callback, Object state,
             bool serializeAsynchronously, bool apm)
         {
-            Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             if (!CanRead) __Error.ReadNotSupported();
 
             // To avoid a race with a stream's position pointer & generating race conditions 
@@ -372,8 +345,6 @@ namespace System.IO
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.EndContractBlock();
 
             var readTask = _activeReadWriteTask;
 
@@ -471,7 +442,6 @@ namespace System.IO
 
         public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
         {
-            Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             return BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
         }
 
@@ -479,7 +449,6 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback callback, Object state,
             bool serializeAsynchronously, bool apm)
         {
-            Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             if (!CanWrite) __Error.WriteNotSupported();
 
             // To avoid a race condition with a stream's position pointer & generating conditions 
@@ -539,9 +508,8 @@ namespace System.IO
 
         private void RunReadWriteTaskWhenReady(Task asyncWaiter, ReadWriteTask readWriteTask)
         {
-            Debug.Assert(readWriteTask != null);  // Should be Contract.Requires, but CCRewrite is doing a poor job with
-                                                  // preconditions in async methods that await.  
-            Debug.Assert(asyncWaiter != null);    // Ditto
+            Debug.Assert(readWriteTask != null);
+            Debug.Assert(asyncWaiter != null);
 
             // If the wait has already completed, run the task.
             if (asyncWaiter.IsCompleted)
@@ -562,7 +530,7 @@ namespace System.IO
 
         private void RunReadWriteTask(ReadWriteTask readWriteTask)
         {
-            Contract.Requires(readWriteTask != null);
+            Debug.Assert(readWriteTask != null);
             Debug.Assert(_activeReadWriteTask == null, "Expected no other readers or writers");
 
             // Schedule the task.  ScheduleAndStart must happen after the write to _activeReadWriteTask to avoid a race.
@@ -585,7 +553,6 @@ namespace System.IO
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
-            Contract.EndContractBlock();
 
             var writeTask = _activeReadWriteTask;
             if (writeTask == null)
@@ -652,10 +619,9 @@ namespace System.IO
                 Stream stream, byte[] buffer, int offset, int count, AsyncCallback callback) :
                 base(function, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach)
             {
-                Contract.Requires(function != null);
-                Contract.Requires(stream != null);
-                Contract.Requires(buffer != null);
-                Contract.EndContractBlock();
+                Debug.Assert(function != null);
+                Debug.Assert(stream != null);
+                Debug.Assert(buffer != null);
 
                 // Store the arguments
                 _isRead = isRead;
@@ -807,9 +773,6 @@ namespace System.IO
         // significantly for people who are reading one byte at a time.
         public virtual int ReadByte()
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-            Contract.Ensures(Contract.Result<int>() < 256);
-
             byte[] oneByteArray = new byte[1];
             int r = Read(oneByteArray, 0, 1);
             if (r == 0)
@@ -846,8 +809,6 @@ namespace System.IO
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
-            Contract.Ensures(Contract.Result<Stream>() != null);
-            Contract.EndContractBlock();
             if (stream is SyncStream)
                 return stream;
 
@@ -861,8 +822,6 @@ namespace System.IO
 
         internal IAsyncResult BlockingBeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
         {
-            Contract.Ensures(Contract.Result<IAsyncResult>() != null);
-
             // To avoid a race with a stream's position pointer & generating conditions
             // with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -890,15 +849,11 @@ namespace System.IO
 
         internal static int BlockingEndRead(IAsyncResult asyncResult)
         {
-            Contract.Ensures(Contract.Result<int>() >= 0);
-
             return SynchronousAsyncResult.EndRead(asyncResult);
         }
 
         internal IAsyncResult BlockingBeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
         {
-            Contract.Ensures(Contract.Result<IAsyncResult>() != null);
-
             // To avoid a race condition with a stream's position pointer & generating conditions 
             // with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -935,19 +890,16 @@ namespace System.IO
 
             public override bool CanRead
             {
-                [Pure]
                 get { return true; }
             }
 
             public override bool CanWrite
             {
-                [Pure]
                 get { return true; }
             }
 
             public override bool CanSeek
             {
-                [Pure]
                 get { return true; }
             }
 
@@ -1007,7 +959,6 @@ namespace System.IO
             {
                 if (asyncResult == null)
                     throw new ArgumentNullException(nameof(asyncResult));
-                Contract.EndContractBlock();
 
                 return BlockingEndRead(asyncResult);
             }
@@ -1023,7 +974,6 @@ namespace System.IO
             {
                 if (asyncResult == null)
                     throw new ArgumentNullException(nameof(asyncResult));
-                Contract.EndContractBlock();
 
                 BlockingEndWrite(asyncResult);
             }
@@ -1192,31 +1142,26 @@ namespace System.IO
             {
                 if (stream == null)
                     throw new ArgumentNullException(nameof(stream));
-                Contract.EndContractBlock();
                 _stream = stream;
             }
 
             public override bool CanRead
             {
-                [Pure]
                 get { return _stream.CanRead; }
             }
 
             public override bool CanWrite
             {
-                [Pure]
                 get { return _stream.CanWrite; }
             }
 
             public override bool CanSeek
             {
-                [Pure]
                 get { return _stream.CanSeek; }
             }
 
             public override bool CanTimeout
             {
-                [Pure]
                 get
                 {
                     return _stream.CanTimeout;
@@ -1356,8 +1301,6 @@ namespace System.IO
             {
                 if (asyncResult == null)
                     throw new ArgumentNullException(nameof(asyncResult));
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                Contract.EndContractBlock();
 
                 lock (_stream)
                     return _stream.EndRead(asyncResult);
@@ -1415,7 +1358,6 @@ namespace System.IO
             {
                 if (asyncResult == null)
                     throw new ArgumentNullException(nameof(asyncResult));
-                Contract.EndContractBlock();
 
                 lock (_stream)
                     _stream.EndWrite(asyncResult);

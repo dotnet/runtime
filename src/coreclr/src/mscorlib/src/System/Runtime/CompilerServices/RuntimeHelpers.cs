@@ -21,7 +21,6 @@ namespace System.Runtime.CompilerServices
     using System.Runtime.Serialization;
     using System.Threading;
     using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
 
     public static class RuntimeHelpers
     {

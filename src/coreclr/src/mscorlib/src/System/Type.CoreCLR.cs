@@ -4,7 +4,6 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System
@@ -111,7 +110,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeType GetTypeFromHandleUnsafe(IntPtr handle);
 
-        [Pure]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Type GetTypeFromHandle(RuntimeTypeHandle handle);
 
@@ -121,13 +119,11 @@ namespace System
 #if FEATURE_COMINTEROP
         internal bool IsWindowsRuntimeObject
         {
-            [Pure]
             get { return IsWindowsRuntimeObjectImpl(); }
         }
 
         internal bool IsExportedToWindowsRuntime
         {
-            [Pure]
             get { return IsExportedToWindowsRuntimeImpl(); }
         }
 
@@ -156,11 +152,9 @@ namespace System
             throw new NotImplementedException();
         }
 
-        [Pure]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern bool operator ==(Type left, Type right);
 
-        [Pure]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern bool operator !=(Type left, Type right);
 

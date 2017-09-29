@@ -1183,6 +1183,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
   #define CPU_USES_BLOCK_MOVE      0
+
+  #define CPBLK_UNROLL_LIMIT       32      // Upper bound to let the code generator to loop unroll CpBlk.
+  #define INITBLK_UNROLL_LIMIT     32      // Upper bound to let the code generator to loop unroll InitBlk.
+
   #define FEATURE_WRITE_BARRIER    1       // Generate the proper WriteBarrier calls for GC    
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
@@ -1529,7 +1533,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define FEATURE_MULTIREG_STRUCT_PROMOTE 1  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
+  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register  
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register  
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register  
@@ -1803,6 +1807,9 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define JCC_DIST_SMALL_MAX_NEG  (-1048576)
   #define JCC_DIST_SMALL_MAX_POS  (+1048575)
+
+  #define TB_DIST_SMALL_MAX_NEG   (-32768)
+  #define TB_DIST_SMALL_MAX_POS   (+32767)
 
   #define JCC_SIZE_SMALL          (4)
   #define JCC_SIZE_LARGE          (8)
