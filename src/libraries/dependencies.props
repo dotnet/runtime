@@ -16,7 +16,7 @@
     <ProjectNTfsCurrentRef>51ef262cdd8c0893016af376f7d0b38cdba18fb5</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>51ef262cdd8c0893016af376f7d0b38cdba18fb5</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
-    <StandardCurrentRef>f006d08d7c64156d910caa8e1c47ec012fde7ae8</StandardCurrentRef>
+    <StandardCurrentRef>c831433a9613ccd4b0aa20be422ac2cb6661b003</StandardCurrentRef>
     <BuildToolsCurrentRef>dd0def21a8b6ce7af7956481880b314431705332</BuildToolsCurrentRef>
   </PropertyGroup>
 
@@ -29,7 +29,7 @@
     <ProjectNTfsExpectedPrerelease>beta-25729-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25729-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25729-00</ProjectNTfsTestILCPackageVersion>
-    <NETStandardPackageVersion>2.1.0-preview1-25728-01</NETStandardPackageVersion>
+    <NETStandardPackageVersion>2.1.0-preview1-25729-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25728-02</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
