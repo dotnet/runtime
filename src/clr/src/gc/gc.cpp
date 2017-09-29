@@ -2327,7 +2327,7 @@ void stomp_write_barrier_ephemeral(uint8_t* ephemeral_low, uint8_t* ephemeral_hi
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
-void stomp_write_barrier_initialize()
+void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_high)
 {
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::Initialize;
@@ -2341,8 +2341,8 @@ void stomp_write_barrier_initialize()
     
     args.lowest_address = g_gc_lowest_address;
     args.highest_address = g_gc_highest_address;
-    args.ephemeral_low = reinterpret_cast<uint8_t*>(1);
-    args.ephemeral_high = reinterpret_cast<uint8_t*>(~0);
+    args.ephemeral_low = ephemeral_low;
+    args.ephemeral_high = ephemeral_high;
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
@@ -10602,7 +10602,18 @@ gc_heap::init_gc_heap (int  h_number)
     make_background_mark_stack (b_arr);
 #endif //BACKGROUND_GC
 
-    adjust_ephemeral_limits();
+    ephemeral_low = generation_allocation_start(generation_of(max_generation - 1));
+    ephemeral_high = heap_segment_reserved(ephemeral_heap_segment);
+    if (heap_number == 0)
+    {
+        stomp_write_barrier_initialize(
+#ifdef MULTIPLE_HEAPS
+            reinterpret_cast<uint8_t*>(1), reinterpret_cast<uint8_t*>(~0)
+#else
+            ephemeral_low, ephemeral_high
+#endif //!MULTIPLE_HEAPS
+        );
+    }
 
 #ifdef MARK_ARRAY
     // why would we clear the mark array for this page? it should be cleared..
@@ -33574,8 +33585,6 @@ HRESULT GCHeap::Initialize ()
     {
         return E_FAIL;
     }
-
-    stomp_write_barrier_initialize();
 
 #ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
 #if defined (STRESS_HEAP) && !defined (MULTIPLE_HEAPS)

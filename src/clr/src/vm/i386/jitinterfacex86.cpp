@@ -1675,20 +1675,20 @@ void ValidateWriteBarrierHelpers()
 // When a GC happens, the upper and lower bounds of the ephemeral
 // generation change.  This routine updates the WriteBarrier thunks
 // with the new values.
-void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
+int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+    int stompWBCompleteActions = SWB_PASS;
+
 #ifdef WRITE_BARRIER_CHECK 
         // Don't do the fancy optimization if we are checking write barrier
     if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
-        return;
+        return stompWBCompleteActions;
 #endif // WRITE_BARRIER_CHECK
-
-    BOOL flushICache = FALSE;
 
     // Update the lower bound.
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
@@ -1703,7 +1703,7 @@ void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
         //avoid trivial self modifying code
         if (*pfunc != (size_t) g_ephemeral_low)
         {
-            flushICache = TRUE;
+            stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             *pfunc = (size_t) g_ephemeral_low;
         }
         if (!WriteBarrierIsPreGrow())
@@ -1716,15 +1716,13 @@ void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
             //avoid trivial self modifying code
             if (*pfunc != (size_t) g_ephemeral_high)
             {
-                flushICache = TRUE;
+                stompWBCompleteActions |= SWB_ICACHE_FLUSH;
                 *pfunc = (size_t) g_ephemeral_high;
             }
         }
     }
 
-    if (flushICache)
-        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
-            (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
+    return stompWBCompleteActions;
 }
 
 /*********************************************************************/
@@ -1733,23 +1731,23 @@ void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 // to the PostGrow thunk that checks both upper and lower bounds.
 // regardless we need to update the thunk with the
 // card_table - lowest_address.
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     CONTRACTL {
         NOTHROW;
         if (GetThread()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
     } CONTRACTL_END;
 
+    int stompWBCompleteActions = SWB_PASS;
+
 #ifdef WRITE_BARRIER_CHECK 
         // Don't do the fancy optimization if we are checking write barrier
     if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
-        return;
+        return stompWBCompleteActions;
 #endif // WRITE_BARRIER_CHECK
 
     bool bWriteBarrierIsPreGrow = WriteBarrierIsPreGrow();
     bool bStompWriteBarrierEphemeral = false;
-
-    BOOL bEESuspendedHere = FALSE;
 
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
     {
@@ -1765,9 +1763,9 @@ void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
             if (bReqUpperBoundsCheck)
             {
                 GCX_MAYBE_COOP_NO_THREAD_BROKEN((GetThread()!=NULL));
-                if( !isRuntimeSuspended && !bEESuspendedHere) {
+                if( !isRuntimeSuspended && !(stompWBCompleteActions & SWB_EE_RESTART) ) {
                     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_GC_PREP);
-                    bEESuspendedHere = TRUE;
+                    stompWBCompleteActions |= SWB_EE_RESTART;
                 }
 
                 pfunc = (size_t *) JIT_WriteBarrierReg_PostGrow;
@@ -1855,16 +1853,15 @@ void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
     if (bStompWriteBarrierEphemeral)
     {
-        _ASSERTE(isRuntimeSuspended || bEESuspendedHere);
-        StompWriteBarrierEphemeral(true);
+        _ASSERTE(isRuntimeSuspended || (stompWBCompleteActions & SWB_EE_RESTART));
+        stompWBCompleteActions |= StompWriteBarrierEphemeral(true);
     }
-    else
-    {
-        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
-            (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
-    }
+    return stompWBCompleteActions;
+}
 
-    if(bEESuspendedHere)
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+void FlushWriteBarrierInstructionCache()
+{
+    FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
+        (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
 }
 
