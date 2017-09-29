@@ -442,15 +442,9 @@ void UpdateGCWriteBarriers(bool postGrow = false)
 
         pDesc++;
     }
-
-    // We've changed code so we must flush the instruction cache.
-    BYTE *pbAlteredRange;
-    DWORD cbAlteredRange;
-    ComputeWriteBarrierRange(&pbAlteredRange, &cbAlteredRange);
-    FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
 }
 
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     // The runtime is not always suspended when this is called (unlike StompWriteBarrierEphemeral) but we have
     // no way to update the barrier code atomically on ARM since each 32-bit value we change is loaded over
@@ -462,26 +456,36 @@ void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
     // suspend/resuming the EE under GC stress will trigger a GC and if we're holding the
     // GC lock due to allocating a LOH segment it will cause a deadlock so disable it here.
     GCStressPolicy::InhibitHolder iholder;
+    int stompWBCompleteActions = SWB_ICACHE_FLUSH;
 
-    bool fSuspended = false;
     if (!isRuntimeSuspended)
     {
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-        fSuspended = true;
+        stompWBCompleteActions |= SWB_EE_RESTART;
     }
 
     UpdateGCWriteBarriers(bReqUpperBoundsCheck);
 
-    if (fSuspended)
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+    return stompWBCompleteActions;
 }
 
-void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
+int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
+    return SWB_ICACHE_FLUSH;
 }
+
+void FlushWriteBarrierInstructionCache()
+{
+    // We've changed code so we must flush the instruction cache.
+    BYTE *pbAlteredRange;
+    DWORD cbAlteredRange;
+    ComputeWriteBarrierRange(&pbAlteredRange, &cbAlteredRange);
+    FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
+}
+
 #endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE

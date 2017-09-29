@@ -22,6 +22,14 @@
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
 #endif // !FEATURE_PAL
 
+
+enum StompWriteBarrierCompletionAction
+{
+    SWB_PASS = 0x0,
+    SWB_ICACHE_FLUSH = 0x1,
+    SWB_EE_RESTART = 0x2
+};
+
 class Stub;
 class MethodDesc;
 class FieldDesc;
@@ -294,20 +302,20 @@ public:
     WriteBarrierManager();
     void Initialize();
     
-    void UpdateEphemeralBounds(bool isRuntimeSuspended);
-    void UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
+    int UpdateEphemeralBounds(bool isRuntimeSuspended);
+    int UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    void SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
-    void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
+    int SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
+    int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    size_t GetCurrentWriteBarrierSize();
 
 protected:
-    size_t GetCurrentWriteBarrierSize();
     size_t GetSpecificWriteBarrierSize(WriteBarrierType writeBarrier);
     PBYTE  CalculatePatchLocation(LPVOID base, LPVOID label, int offset);
     PCODE  GetCurrentWriteBarrierCode();
-    void   ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
+    int ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
     bool   NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, WriteBarrierType* pNewWriteBarrierType);
 
 private:    
