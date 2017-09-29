@@ -278,14 +278,14 @@ PBYTE WriteBarrierManager::CalculatePatchLocation(LPVOID base, LPVOID label, int
     return ((LPBYTE)GetEEFuncEntryPoint(JIT_WriteBarrier) + ((LPBYTE)GetEEFuncEntryPoint(label) - (LPBYTE)GetEEFuncEntryPoint(base) + offset));
 }
 
-void WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended)
+int WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended)
 {
     GCX_MAYBE_COOP_NO_THREAD_BROKEN((!isRuntimeSuspended && GetThread() != NULL));
-    BOOL bEESuspendedHere = FALSE;
-    if(!isRuntimeSuspended && m_currentWriteBarrier != WRITE_BARRIER_UNINITIALIZED)
+    int stompWBCompleteActions = SWB_PASS;
+    if (!isRuntimeSuspended && m_currentWriteBarrier != WRITE_BARRIER_UNINITIALIZED)
     {
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_GC_PREP);
-        bEESuspendedHere = TRUE;
+        stompWBCompleteActions |= SWB_EE_RESTART;
     }
 
     _ASSERTE(m_currentWriteBarrier != newWriteBarrier);
@@ -409,13 +409,10 @@ void WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier,
             UNREACHABLE_MSG("unexpected write barrier type!");
     }
 
-    UpdateEphemeralBounds(true);
-    UpdateWriteWatchAndCardTableLocations(true, false);
+    stompWBCompleteActions |= UpdateEphemeralBounds(true);
+    stompWBCompleteActions |= UpdateWriteWatchAndCardTableLocations(true, false);
 
-    if(bEESuspendedHere)
-    {
-        ThreadSuspend::RestartEE(FALSE, TRUE);
-    }
+    return stompWBCompleteActions;
 }
 
 #undef CALC_PATCH_LOCATION
@@ -521,21 +518,20 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, W
     return m_currentWriteBarrier != writeBarrierType;
 }
 
-void WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
+int WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
 {
-    bool needToFlushCache = false;
-
     WriteBarrierType newType;
     if (NeedDifferentWriteBarrier(false, &newType))
     {
-        ChangeWriteBarrierTo(newType, isRuntimeSuspended);
-        return; 
+        return ChangeWriteBarrierTo(newType, isRuntimeSuspended);
     }
+
+    int stompWBCompleteActions = SWB_PASS;
 
 #ifdef _DEBUG
     // Using debug-only write barrier?
     if (m_currentWriteBarrier == WRITE_BARRIER_UNINITIALIZED)
-        return;
+        return stompWBCompleteActions;
 #endif
 
     switch (m_currentWriteBarrier)
@@ -549,7 +545,7 @@ void WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
             if (*(UINT64*)m_pUpperBoundImmediate != (size_t)g_ephemeral_high)
             {
                 *(UINT64*)m_pUpperBoundImmediate = (size_t)g_ephemeral_high;
-                needToFlushCache = true;
+                stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
         }
         //
@@ -564,7 +560,7 @@ void WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
             if (*(UINT64*)m_pLowerBoundImmediate != (size_t)g_ephemeral_low)
             {
                 *(UINT64*)m_pLowerBoundImmediate = (size_t)g_ephemeral_low;
-                needToFlushCache = true;
+                stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
             break;
         }
@@ -583,13 +579,10 @@ void WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
             UNREACHABLE_MSG("unexpected m_currentWriteBarrier in UpdateEphemeralBounds");
     }
 
-    if (needToFlushCache)
-    {
-        FlushInstructionCache(GetCurrentProcess(), (PVOID)JIT_WriteBarrier, GetCurrentWriteBarrierSize());
-    }
+    return stompWBCompleteActions;
 }
 
-void WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     // If we are told that we require an upper bounds check (GC did some heap reshuffling),
     // we need to switch to the WriteBarrier_PostGrow function for good.
@@ -597,17 +590,16 @@ void WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSu
     WriteBarrierType newType;
     if (NeedDifferentWriteBarrier(bReqUpperBoundsCheck, &newType))
     {
-        ChangeWriteBarrierTo(newType, isRuntimeSuspended);
-        return;
+        return ChangeWriteBarrierTo(newType, isRuntimeSuspended);
     }
+    
+    int stompWBCompleteActions = SWB_PASS;
 
 #ifdef _DEBUG
     // Using debug-only write barrier?
     if (m_currentWriteBarrier == WRITE_BARRIER_UNINITIALIZED)
-        return;
+        return stompWBCompleteActions;
 #endif
-
-    bool fFlushCache = false;
     
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     switch (m_currentWriteBarrier)
@@ -620,7 +612,7 @@ void WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSu
             if (*(UINT64*)m_pWriteWatchTableImmediate != (size_t)g_sw_ww_table)
             {
                 *(UINT64*)m_pWriteWatchTableImmediate = (size_t)g_sw_ww_table;
-                fFlushCache = true;
+                stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
             break;
 
@@ -632,32 +624,29 @@ void WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSu
     if (*(UINT64*)m_pCardTableImmediate != (size_t)g_card_table)
     {
         *(UINT64*)m_pCardTableImmediate = (size_t)g_card_table;
-        fFlushCache = true;
+        stompWBCompleteActions |= SWB_ICACHE_FLUSH;
     }
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     if (*(UINT64*)m_pCardBundleTableImmediate != (size_t)g_card_bundle_table)
     {
         *(UINT64*)m_pCardBundleTableImmediate = (size_t)g_card_bundle_table;
-        fFlushCache = true;
+        stompWBCompleteActions |= SWB_ICACHE_FLUSH;
     }
 #endif
 
-    if (fFlushCache)
-    {
-        FlushInstructionCache(GetCurrentProcess(), (LPVOID)JIT_WriteBarrier, GetCurrentWriteBarrierSize());
-    }
+    return stompWBCompleteActions;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-void WriteBarrierManager::SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+int WriteBarrierManager::SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
     WriteBarrierType newWriteBarrierType;
     switch (m_currentWriteBarrier)
     {
         case WRITE_BARRIER_UNINITIALIZED:
             // Using the debug-only write barrier
-            return;
+            return SWB_PASS;
 
         case WRITE_BARRIER_PREGROW64:
             newWriteBarrierType = WRITE_BARRIER_WRITE_WATCH_PREGROW64;
@@ -677,17 +666,17 @@ void WriteBarrierManager::SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
             UNREACHABLE();
     }
 
-    ChangeWriteBarrierTo(newWriteBarrierType, isRuntimeSuspended);
+    return ChangeWriteBarrierTo(newWriteBarrierType, isRuntimeSuspended);
 }
 
-void WriteBarrierManager::SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+int WriteBarrierManager::SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
     WriteBarrierType newWriteBarrierType;
     switch (m_currentWriteBarrier)
     {
         case WRITE_BARRIER_UNINITIALIZED:
             // Using the debug-only write barrier
-            return;
+            return SWB_PASS;
 
         case WRITE_BARRIER_WRITE_WATCH_PREGROW64:
             newWriteBarrierType = WRITE_BARRIER_PREGROW64;
@@ -707,42 +696,47 @@ void WriteBarrierManager::SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
             UNREACHABLE();
     }
 
-    ChangeWriteBarrierTo(newWriteBarrierType, isRuntimeSuspended);
+    return ChangeWriteBarrierTo(newWriteBarrierType, isRuntimeSuspended);
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 // This function bashes the super fast amd64 version of the JIT_WriteBarrier
 // helper.  It should be called by the GC whenever the ephermeral region 
 // bounds get changed, but still remain on the top of the GC Heap. 
-void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
+int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     WRAPPER_NO_CONTRACT;
 
-    g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
+    return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
 }
 
 // This function bashes the super fast amd64 versions of the JIT_WriteBarrier
 // helpers.  It should be called by the GC whenever the ephermeral region gets moved
 // from being at the top of the GC Heap, and/or when the cards table gets moved.
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     WRAPPER_NO_CONTRACT;
 
-    g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
+    return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
+}
+
+void FlushWriteBarrierInstructionCache()
+{
+    FlushInstructionCache(GetCurrentProcess(), (PVOID)JIT_WriteBarrier, g_WriteBarrierManager.GetCurrentWriteBarrierSize());
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-void SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
     WRAPPER_NO_CONTRACT;
 
-    g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
+    return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
 }
 
-void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
     WRAPPER_NO_CONTRACT;
 
-    g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
+    return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
