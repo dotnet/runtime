@@ -4062,7 +4062,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             // for Use position of v02 also needs to take into account
             // of kill set of its consuming node.
             unsigned minRegCountForUsePos = minRegCount;
-            if (delayRegFree)
+            if (delayRegFree && (lsraStressMask != 0))
             {
                 regMaskTP killMask = getKillSetForNode(tree);
                 if (killMask != RBM_NONE)
