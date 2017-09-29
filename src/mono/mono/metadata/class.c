@@ -4955,12 +4955,19 @@ mono_class_init (MonoClass *klass)
 		ghcimpl = cached_info.ghcimpl;
 		has_cctor = cached_info.has_cctor;
 	} else if (klass->rank == 1 && klass->byval_arg.type == MONO_TYPE_SZARRAY) {
-		/* SZARRAY can have 2 vtable layouts, with and without the stelemref method.
+		/* SZARRAY can have 3 vtable layouts, with and without the stelemref method and enum element type
 		 * The first slot if for array with.
 		 */
-		static int szarray_vtable_size[2] = { 0 };
+		static int szarray_vtable_size[3] = { 0 };
 
-		int slot = MONO_TYPE_IS_REFERENCE (&klass->element_class->byval_arg) ? 0 : 1;
+		int slot;
+
+		if (MONO_TYPE_IS_REFERENCE (&klass->element_class->byval_arg))
+			slot = 0;
+		else if (klass->element_class->enumtype)
+			slot = 1;
+		else
+			slot = 2;
 
 		/* SZARRAY case */
 		if (!szarray_vtable_size [slot]) {
@@ -10540,8 +10547,8 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 	if (klass->rank == 1 && klass->byval_arg.type != MONO_TYPE_ARRAY) {
 		MonoType *args [1];
 
-		/* generic IList, ICollection, IEnumerable */
-		interface_count = 2;
+		/* IList and IReadOnlyList -> 2x if enum*/
+		interface_count = klass->element_class->enumtype ? 4 : 2;
 		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count);
 
 		args [0] = &klass->element_class->byval_arg;
@@ -10549,6 +10556,13 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 			mono_defaults.generic_ilist_class, 1, args, FALSE);
 		interfaces [1] = mono_class_bind_generic_parameters (
 			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
+		if (klass->element_class->enumtype) {
+			args [0] = mono_class_enum_basetype (klass->element_class);
+			interfaces [2] = mono_class_bind_generic_parameters (
+				mono_defaults.generic_ilist_class, 1, args, FALSE);
+			interfaces [3] = mono_class_bind_generic_parameters (
+				   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
+		}
 	} else if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
