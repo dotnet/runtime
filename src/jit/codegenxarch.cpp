@@ -1917,9 +1917,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_LIST:
         case GT_FIELD_LIST:
-        case GT_ARGPLACE:
             // Should always be marked contained.
-            assert(!"LIST, FIELD_LIST and ARGPLACE nodes should always be marked contained.");
+            assert(!"LIST, FIELD_LIST nodes should always be marked contained.");
             break;
 
         case GT_SWAP:
@@ -5508,11 +5507,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             void* pAddr = nullptr;
             addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-
-            if (addr == nullptr)
-            {
-                addr = pAddr;
-            }
+            assert(pAddr == nullptr);
 
             // tracking of region protected by the monitor in synchronized methods
             if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
@@ -5525,6 +5520,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // Direct call to a non-virtual user function.
             addr = call->gtDirectCallAddress;
         }
+
+        assert(addr != nullptr);
 
         // Non-virtual direct calls to known addresses
 
@@ -6249,6 +6246,9 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     // Case of op1 == 0 or op1 != 0:
     // Optimize generation of 'test' instruction if op1 sets flags.
     //
+    // TODO-Cleanup Review GTF_USE_FLAGS usage
+    // https://github.com/dotnet/coreclr/issues/14093
+    //
     // Note that if LSRA has inserted any GT_RELOAD/GT_COPY before
     // op1, it will not modify the flags set by codegen of op1.
     // Similarly op1 could also be reg-optional at its use and
@@ -6305,9 +6305,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
 
     genConsumeOperands(tree);
 
-    // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm.
-    // https://github.com/dotnet/coreclr/issues/7270
-    assert(!op1->isContainedIntOrIImmed()); // We no longer support
+    assert(!op1->isContainedIntOrIImmed());
     assert(!varTypeIsFloating(op2Type));
 
     instruction ins;

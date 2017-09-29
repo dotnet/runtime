@@ -9,7 +9,6 @@ namespace System.Reflection.Emit
     using System.Runtime.InteropServices;
     using System;
     using System.Reflection;
-    using System.Diagnostics.Contracts;
     using CultureInfo = System.Globalization.CultureInfo;
 
     internal sealed class SymbolMethod : MethodInfo
@@ -96,7 +95,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodBase Overrides
-        [Pure]
         public override ParameterInfo[] GetParameters()
         {
             throw new NotSupportedException(SR.NotSupported_SymbolMethod);

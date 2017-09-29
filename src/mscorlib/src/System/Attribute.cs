@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 
 namespace System
@@ -25,9 +24,9 @@ namespace System
         #region PropertyInfo
         private static Attribute[] InternalGetCustomAttributes(PropertyInfo element, Type type, bool inherit)
         {
-            Contract.Requires(element != null);
-            Contract.Requires(type != null);
-            Contract.Requires(type.IsSubclassOf(typeof(Attribute)) || type == typeof(Attribute));
+            Debug.Assert(element != null);
+            Debug.Assert(type != null);
+            Debug.Assert(type.IsSubclassOf(typeof(Attribute)) || type == typeof(Attribute));
 
             // walk up the hierarchy chain
             Attribute[] attributes = (Attribute[])element.GetCustomAttributes(type, inherit);
@@ -90,7 +89,7 @@ namespace System
 
         private static PropertyInfo GetParentDefinition(PropertyInfo property, Type[] propertyParameters)
         {
-            Contract.Requires(property != null);
+            Debug.Assert(property != null);
 
             // for the current property get the base class of the getter and the setter, they might be different
             // note that this only works for RuntimeMethodInfo
@@ -127,9 +126,9 @@ namespace System
         #region EventInfo
         private static Attribute[] InternalGetCustomAttributes(EventInfo element, Type type, bool inherit)
         {
-            Contract.Requires(element != null);
-            Contract.Requires(type != null);
-            Contract.Requires(type.IsSubclassOf(typeof(Attribute)) || type == typeof(Attribute));
+            Debug.Assert(element != null);
+            Debug.Assert(type != null);
+            Debug.Assert(type.IsSubclassOf(typeof(Attribute)) || type == typeof(Attribute));
 
             // walk up the hierarchy chain
             Attribute[] attributes = (Attribute[])element.GetCustomAttributes(type, inherit);
@@ -158,7 +157,7 @@ namespace System
 
         private static EventInfo GetParentDefinition(EventInfo ev)
         {
-            Contract.Requires(ev != null);
+            Debug.Assert(ev != null);
 
             // note that this only works for RuntimeMethodInfo
             MethodInfo add = ev.GetAddMethod(true);
@@ -176,7 +175,7 @@ namespace System
 
         private static bool InternalIsDefined(EventInfo element, Type attributeType, bool inherit)
         {
-            Contract.Requires(element != null);
+            Debug.Assert(element != null);
 
             // walk up the hierarchy chain
             if (element.IsDefined(attributeType, inherit))
@@ -207,7 +206,7 @@ namespace System
         #region ParameterInfo
         private static ParameterInfo GetParentDefinition(ParameterInfo param)
         {
-            Contract.Requires(param != null);
+            Debug.Assert(param != null);
 
             // note that this only works for RuntimeMethodInfo
             RuntimeMethodInfo rtMethod = param.Member as RuntimeMethodInfo;
@@ -236,7 +235,7 @@ namespace System
 
         private static Attribute[] InternalParamGetCustomAttributes(ParameterInfo param, Type type, bool inherit)
         {
-            Contract.Requires(param != null);
+            Debug.Assert(param != null);
 
             // For ParameterInfo's we need to make sure that we chain through all the MethodInfo's in the inheritance chain that
             // have this ParameterInfo defined. .We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes 
@@ -326,8 +325,8 @@ namespace System
 
         private static bool InternalParamIsDefined(ParameterInfo param, Type type, bool inherit)
         {
-            Contract.Requires(param != null);
-            Contract.Requires(type != null);
+            Debug.Assert(param != null);
+            Debug.Assert(type != null);
 
             // For ParameterInfo's we need to make sure that we chain through all the MethodInfo's in the inheritance chain.
             // We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes 
@@ -461,7 +460,6 @@ namespace System
 
             if (!type.IsSubclassOf(typeof(Attribute)) && type != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
-            Contract.EndContractBlock();
 
             switch (element.MemberType)
             {
@@ -485,7 +483,6 @@ namespace System
         {
             if (element == null)
                 throw new ArgumentNullException(nameof(element));
-            Contract.EndContractBlock();
 
             switch (element.MemberType)
             {
@@ -516,7 +513,6 @@ namespace System
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
-            Contract.EndContractBlock();
 
             switch (element.MemberType)
             {
@@ -576,7 +572,6 @@ namespace System
             if (element.Member == null)
                 throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
-            Contract.EndContractBlock();
 
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
@@ -593,7 +588,6 @@ namespace System
             if (element.Member == null)
                 throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
-            Contract.EndContractBlock();
 
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
@@ -618,7 +612,6 @@ namespace System
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
-            Contract.EndContractBlock();
 
             MemberInfo member = element.Member;
 
@@ -679,7 +672,6 @@ namespace System
         {
             if (element == null)
                 throw new ArgumentNullException(nameof(element));
-            Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
         }
@@ -694,7 +686,6 @@ namespace System
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
-            Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(attributeType, inherit);
         }
@@ -715,7 +706,6 @@ namespace System
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
-            Contract.EndContractBlock();
 
             return element.IsDefined(attributeType, false);
         }
@@ -758,7 +748,6 @@ namespace System
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
-            Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(attributeType, inherit);
         }
@@ -772,7 +761,6 @@ namespace System
         {
             if (element == null)
                 throw new ArgumentNullException(nameof(element));
-            Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
         }
@@ -793,7 +781,6 @@ namespace System
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
-            Contract.EndContractBlock();
 
             return element.IsDefined(attributeType, false);
         }

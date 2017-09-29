@@ -21,7 +21,6 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -33,9 +32,9 @@ namespace System.IO
         {
             public SearchData(String fullPath, String userPath, SearchOption searchOption)
             {
-                Contract.Requires(fullPath != null && fullPath.Length > 0);
-                Contract.Requires(userPath != null && userPath.Length > 0);
-                Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+                Debug.Assert(fullPath != null && fullPath.Length > 0);
+                Debug.Assert(userPath != null && userPath.Length > 0);
+                Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
                 this.fullPath = fullPath;
                 this.userPath = userPath;
@@ -56,18 +55,15 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
-            Contract.EndContractBlock();
 
             return InternalEnumerateFiles(path, searchPattern, searchOption);
         }
 
         private static IEnumerable<String> InternalEnumerateFiles(String path, String searchPattern, SearchOption searchOption)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, false);
         }
@@ -75,10 +71,9 @@ namespace System.IO
         private static IEnumerable<String> EnumerateFileSystemNames(String path, String searchPattern, SearchOption searchOption,
                                                             bool includeFiles, bool includeDirs)
         {
-            Contract.Requires(path != null);
-            Contract.Requires(searchPattern != null);
-            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Debug.Assert(path != null);
+            Debug.Assert(searchPattern != null);
+            Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             return FileSystemEnumerableFactory.CreateFileNameIterator(path, path, searchPattern,
                                                                         includeFiles, includeDirs, searchOption, true);

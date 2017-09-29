@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 
 namespace Internal
 {
-
     /// <summary>A class for common padding constants and eventually routines.</summary>
     internal static class PaddingHelpers
     {

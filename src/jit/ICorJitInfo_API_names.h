@@ -168,5 +168,6 @@ DEF_CLR_API(getModuleNativeEntryPointRange)
 DEF_CLR_API(getExpectedTargetArchitecture)
 DEF_CLR_API(resolveVirtualMethod)
 DEF_CLR_API(expandRawHandleIntrinsic)
+DEF_CLR_API(getDefaultEqualityComparerClass)
 
 #undef DEF_CLR_API

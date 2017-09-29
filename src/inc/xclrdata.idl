@@ -2536,3 +2536,17 @@ interface IXCLRDataExceptionNotification4 : IXCLRDataExceptionNotification3
      */
     HRESULT ExceptionCatcherEnter([in] IXCLRDataMethodInstance* catchingMethod, DWORD catcherNativeOffset);
 }
+
+[
+    object,
+    local,
+    uuid(e77a39ea-3548-44d9-b171-8569ed1a9423)
+]
+interface IXCLRDataExceptionNotification5 : IXCLRDataExceptionNotification4
+{
+    /*
+     * New code was generated for a method. The given address is the start address of 
+     * the native newly jitted code.
+     */
+    HRESULT OnCodeGenerated2([in] IXCLRDataMethodInstance* method, [in] CLRDATA_ADDRESS nativeCodeLocation);
+}

@@ -10,7 +10,6 @@ using System.Security;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -32,7 +31,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // int Count { get }
-        [Pure]
         internal int Count()
         {
             IBindableVector _this = Unsafe.As<IBindableVector>(this);
@@ -46,21 +44,18 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool IsSynchronized { get }
-        [Pure]
         internal bool IsSynchronized()
         {
             return false;
         }
 
         // object SyncRoot { get }
-        [Pure]
         internal object SyncRoot()
         {
             return this;
         }
 
         // void CopyTo(Array array, int index)
-        [Pure]
         internal void CopyTo(Array array, int arrayIndex)
         {
             if (array == null)

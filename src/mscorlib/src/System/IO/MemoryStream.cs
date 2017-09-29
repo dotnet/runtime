@@ -20,7 +20,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,7 +38,6 @@ namespace System.IO
         private byte[] _buffer;    // Either allocated internally or externally.
         private int _origin;       // For user-provided arrays, start at this origin
         private int _position;     // read/write head.
-        [ContractPublicPropertyName("Length")]
         private int _length;       // Number of bytes within the memory stream
         private int _capacity;     // length of usable portion of buffer for stream
         // Note that _capacity == _buffer.Length for non-user-provided byte[]'s
@@ -64,7 +62,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
             }
-            Contract.EndContractBlock();
 
             _buffer = capacity != 0 ? new byte[capacity] : Array.Empty<byte>();
             _capacity = capacity;
@@ -83,7 +80,6 @@ namespace System.IO
         public MemoryStream(byte[] buffer, bool writable)
         {
             if (buffer == null) throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            Contract.EndContractBlock();
             _buffer = buffer;
             _length = _capacity = buffer.Length;
             _writable = writable;
@@ -112,7 +108,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             _buffer = buffer;
             _origin = _position = index;
@@ -125,19 +120,16 @@ namespace System.IO
 
         public override bool CanRead
         {
-            [Pure]
             get { return _isOpen; }
         }
 
         public override bool CanSeek
         {
-            [Pure]
             get { return _isOpen; }
         }
 
         public override bool CanWrite
         {
-            [Pure]
             get { return _writable; }
         }
 
@@ -301,8 +293,6 @@ namespace System.IO
                 // Only update the capacity if the MS is expandable and the value is different than the current capacity.
                 // Special behavior if the MS isn't expandable: we don't throw if value is the same as the current capacity
                 if (value < Length) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
-                Contract.Ensures(_capacity - _origin == value);
-                Contract.EndContractBlock();
 
                 if (!_isOpen) __Error.StreamIsClosed();
                 if (!_expandable && (value != Capacity)) __Error.MemoryStreamNotExpandable();
@@ -345,8 +335,6 @@ namespace System.IO
             {
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.Ensures(Position == value);
-                Contract.EndContractBlock();
 
                 if (!_isOpen) __Error.StreamIsClosed();
 
@@ -366,7 +354,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             if (!_isOpen) __Error.StreamIsClosed();
 
@@ -431,7 +418,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock(); // contract validation copied from Read(...)
 
             // If cancellation was requested, bail early
             if (cancellationToken.IsCancellationRequested)
@@ -464,7 +450,22 @@ namespace System.IO
 
             try
             {
-                return new ValueTask<int>(Read(destination.Span));
+                // ReadAsync(Memory<byte>,...) needs to delegate to an existing virtual to do the work, in case an existing derived type
+                // has changed or augmented the logic associated with reads.  If the Memory wraps an array, we could delegate to
+                // ReadAsync(byte[], ...), but that would defeat part of the purpose, as ReadAsync(byte[], ...) often needs to allocate
+                // a Task<int> for the return value, so we want to delegate to one of the synchronous methods.  We could always
+                // delegate to the Read(Span<byte>) method, and that's the most efficient solution when dealing with a concrete
+                // MemoryStream, but if we're dealing with a type derived from MemoryStream, Read(Span<byte>) will end up delegating
+                // to Read(byte[], ...), which requires it to get a byte[] from ArrayPool and copy the data.  So, we special-case the
+                // very common case of the Memory<byte> wrapping an array: if it does, we delegate to Read(byte[], ...) with it,
+                // as that will be efficient in both cases, and we fall back to Read(Span<byte>) if the Memory<byte> wrapped something
+                // else; if this is a concrete MemoryStream, that'll be efficient, and only in the case where the Memory<byte> wrapped
+                // something other than an array and this is a MemoryStream-derived type that doesn't override Read(Span<byte>) will
+                // it then fall back to doing the ArrayPool/copy behavior.
+                return new ValueTask<int>(
+                    destination.TryGetArray(out ArraySegment<byte> destinationArray) ?
+                        Read(destinationArray.Array, destinationArray.Offset, destinationArray.Count) :
+                        Read(destination.Span));
             }
             catch (OperationCanceledException oce)
             {
@@ -614,8 +615,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
             }
-            Contract.Ensures(_length - _origin == value);
-            Contract.EndContractBlock();
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
@@ -651,7 +650,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             if (!_isOpen) __Error.StreamIsClosed();
             EnsureWriteable();
@@ -741,7 +739,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock(); // contract validation copied from Write(...)
 
             // If cancellation is already requested, bail early
             if (cancellationToken.IsCancellationRequested)
@@ -771,7 +768,16 @@ namespace System.IO
 
             try
             {
-                Write(source.Span);
+                // See corresponding comment in ReadAsync for why we don't just always use Write(ReadOnlySpan<byte>).
+                // Unlike ReadAsync, we could delegate to WriteAsync(byte[], ...) here, but we don't for consistency.
+                if (source.DangerousTryGetArray(out ArraySegment<byte> sourceArray))
+                {
+                    Write(sourceArray.Array, sourceArray.Offset, sourceArray.Count);
+                }
+                else
+                {
+                    Write(source.Span);
+                }
                 return Task.CompletedTask;
             }
             catch (OperationCanceledException oce)
@@ -811,7 +817,6 @@ namespace System.IO
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
-            Contract.EndContractBlock();
 
             if (!_isOpen) __Error.StreamIsClosed();
             stream.Write(_buffer, _origin, _length - _origin);

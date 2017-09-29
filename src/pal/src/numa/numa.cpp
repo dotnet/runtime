@@ -867,3 +867,115 @@ VirtualAllocExNuma(
 
     return result;
 }
+
+/*++
+Function:
+  SetThreadIdealProcessorEx
+
+See MSDN doc.
+--*/
+BOOL
+PALAPI
+SetThreadIdealProcessorEx(
+  IN HANDLE hThread,
+  IN PPROCESSOR_NUMBER lpIdealProcessor,
+  OUT PPROCESSOR_NUMBER lpPreviousIdealProcessor)
+{
+    PERF_ENTRY(SetThreadIdealProcessorEx);
+    ENTRY("SetThreadIdealProcessorEx(hThread=%p, lpIdealProcessor=%p)\n", hThread, lpIdealProcessor);
+
+    CPalThread *pCurrentThread = InternalGetCurrentThread();
+    CPalThread *pTargetThread = NULL;
+    IPalObject *pTargetThreadObject = NULL;
+
+    PAL_ERROR palErr =
+        InternalGetThreadDataFromHandle(pCurrentThread, hThread,
+                                        0, // THREAD_SET_CONTEXT
+                                        &pTargetThread, &pTargetThreadObject);
+
+    if (NO_ERROR != palErr)
+    {
+        ERROR("Unable to obtain thread data for handle %p (error %x)!\n", hThread,
+              palErr);
+        return 0;
+    }
+
+    pthread_t thread = pTargetThread->GetPThreadSelf();
+
+#if HAVE_PTHREAD_GETAFFINITY_NP
+    int cpu = -1;
+    if ((lpIdealProcessor->Group < g_groupCount) &&
+        (lpIdealProcessor->Number < MaxCpusPerGroup) &&
+        (lpIdealProcessor->Reserved == 0))
+    {
+        cpu = g_groupAndIndexToCpu[lpIdealProcessor->Group * MaxCpusPerGroup + lpIdealProcessor->Number];
+    }
+
+    if (cpu == -1)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    if (lpPreviousIdealProcessor != NULL)
+    {
+        cpu_set_t prevCpuSet;
+        CPU_ZERO(&prevCpuSet);
+        DWORD prevCpu = GetCurrentProcessorNumber();
+
+        int st = pthread_getaffinity_np(thread, sizeof(cpu_set_t), &prevCpuSet);
+
+        if (st == 0)
+        {
+            for (int i = 0; i < g_possibleCpuCount; i++)
+            {
+                if (CPU_ISSET(i, &prevCpuSet))
+                {
+                    prevCpu = i;
+                    break;
+                }
+            }
+        }
+
+        _ASSERTE(prevCpu < g_possibleCpuCount);
+        lpPreviousIdealProcessor->Group = g_cpuToAffinity[prevCpu].Group;
+        lpPreviousIdealProcessor->Number = g_cpuToAffinity[prevCpu].Number;
+        lpPreviousIdealProcessor->Reserved = 0;
+    }
+
+    cpu_set_t cpuSet;
+    CPU_ZERO(&cpuSet);
+    CPU_SET(cpu, &cpuSet);
+
+    int st = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuSet);
+
+    if (st != 0)
+    {
+        switch (st)
+        {
+        case EINVAL:
+            // There is no processor in the mask that is allowed to execute the
+            // process
+            SetLastError(ERROR_INVALID_PARAMETER);
+            break;
+        case ESRCH:
+            SetLastError(ERROR_INVALID_HANDLE);
+            break;
+        default:
+            SetLastError(ERROR_GEN_FAILURE);
+            break;
+        }
+    }
+
+    BOOL success = (st == 0);
+
+#else  // HAVE_PTHREAD_GETAFFINITY_NP
+    // There is no API to manage thread affinity, so let's ignore the request
+    BOOL success = FALSE;
+#endif // HAVE_PTHREAD_GETAFFINITY_NP
+
+    LOGEXIT("SetThreadIdealProcessorEx returns BOOL %d\n", success);
+    PERF_EXIT(SetThreadIdealProcessorEx);
+
+    return success;
+}

@@ -17,7 +17,6 @@ namespace System.Reflection.Emit
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using System.Diagnostics.Contracts;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using CultureInfo = System.Globalization.CultureInfo;
@@ -293,9 +292,6 @@ namespace System.Reflection.Emit
             return m_typeBuilder.HasElementType;
         }
 
-        // About the SuppressMessageAttribute here - CCRewrite wants us to repeat the base type's precondition
-        // here, but it will always be true.  Rather than adding dead code, I'll silence the warning. 
-        [SuppressMessage("Microsoft.Contracts", "CC1055")]
         // Legacy: JScript needs it.
         public override Type GetEnumUnderlyingType()
         {

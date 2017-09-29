@@ -21,7 +21,6 @@ namespace System.Threading
     using Microsoft.Win32.SafeHandles;
     using System.Runtime.Versioning;
     using System.Runtime.ConstrainedExecution;
-    using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
     using Win32Native = Microsoft.Win32.Win32Native;
 
@@ -154,7 +153,6 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
-            Contract.EndContractBlock();
             return WaitOne((long)millisecondsTimeout, exitContext);
         }
 
@@ -196,7 +194,6 @@ namespace System.Threading
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
-            Contract.EndContractBlock();
             int ret = WaitOneNative(waitableSafeHandle, (uint)millisecondsTimeout, hasThreadAffinity, exitContext);
 
             if (ret == WAIT_ABANDONED)
@@ -214,7 +211,6 @@ namespace System.Threading
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
-            Contract.EndContractBlock();
 
             long timeout = -1;
             int ret = WaitOneNative(safeWaitHandle, (uint)timeout, hasThreadAffinity, false);
@@ -267,7 +263,6 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
-            Contract.EndContractBlock();
             WaitHandle[] internalWaitHandles = new WaitHandle[waitHandles.Length];
             for (int i = 0; i < waitHandles.Length; i++)
             {
@@ -357,7 +352,6 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
-            Contract.EndContractBlock();
             WaitHandle[] internalWaitHandles = new WaitHandle[waitHandles.Length];
             for (int i = 0; i < waitHandles.Length; i++)
             {
@@ -484,7 +478,6 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
-            Contract.EndContractBlock();
 
             //NOTE: This API is not supporting Pause/Resume as it's not exposed in CoreCLR (not in WP or SL)
             int ret = SignalAndWaitOne(toSignal.safeWaitHandle, toWaitOn.safeWaitHandle, millisecondsTimeout,

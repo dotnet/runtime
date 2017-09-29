@@ -130,6 +130,15 @@ FCIMPL1_V(float, COMSingle::Floor, float x)
     return (float)floorf(x);
 FCIMPLEND
 
+/*=====================================FMod=====================================
+**
+==============================================================================*/
+FCIMPL2_VV(float, COMSingle::FMod, float x, float y)
+    FCALL_CONTRACT;
+
+    return (float)fmodf(x, y);
+FCIMPLEND
+
 /*=====================================Log======================================
 **
 ==============================================================================*/
@@ -151,10 +160,10 @@ FCIMPLEND
 /*=====================================ModF=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::ModF, float* iptr)
+FCIMPL2_VI(float, COMSingle::ModF, float x, float* intptr)
     FCALL_CONTRACT;
 
-    return (float)modff(*iptr, iptr);
+    return (float)modff(x, intptr);
 FCIMPLEND
 
 /*=====================================Pow======================================
@@ -164,30 +173,6 @@ FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
 
     return (float)powf(x, y);
-FCIMPLEND
-
-/*====================================Round=====================================
-**
-==============================================================================*/
-FCIMPL1_V(float, COMSingle::Round, float x)
-    FCALL_CONTRACT;
-
-    // If the number has no fractional part do nothing
-    // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
-    if (x == (float)((INT32)x)) {
-        return x;
-    }
-
-    // We had a number that was equally close to 2 integers.
-    // We need to return the even one.
-
-    float flrTempVal = floorf(x + 0.5f);
-
-    if ((x == (floorf(x) + 0.5f)) && (fmod(flrTempVal, 2.0f) != 0)) {
-        flrTempVal -= 1.0f;
-    }
-
-    return _copysignf(flrTempVal, x);
 FCIMPLEND
 
 /*=====================================Sin======================================

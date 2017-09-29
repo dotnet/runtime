@@ -5156,7 +5156,7 @@ static BOOL IsIPinVirtualStub(PCODE f_IP)
     }
 
     VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    VirtualCallStubManager::FindStubManager(f_IP, &sk, FALSE /* usePredictStubKind */);
 
     if (sk == VirtualCallStubManager::SK_DISPATCH)
     {

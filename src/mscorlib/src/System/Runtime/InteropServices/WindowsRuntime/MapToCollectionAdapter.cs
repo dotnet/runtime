@@ -9,7 +9,6 @@ using System.Security;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -34,7 +33,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // int Count { get }
-        [Pure]
         internal int Count<K, V>()
         {
             object _this = Unsafe.As<object>(this);
@@ -145,7 +143,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (array.Length - arrayIndex < Count<K, V>())
                 throw new ArgumentException(SR.Argument_InsufficientSpaceToCopyCollection);
 
-            Contract.EndContractBlock();
 
             IIterable<KeyValuePair<K, V>> _this = Unsafe.As<IIterable<KeyValuePair<K, V>>>(this);
             foreach (KeyValuePair<K, V> mapping in _this)

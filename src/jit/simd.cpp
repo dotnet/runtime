@@ -691,7 +691,8 @@ GenTreePtr Compiler::impSIMDPopStack(var_types type, bool expectAddr)
     }
     else if (tree->gtType == TYP_BYREF)
     {
-        assert(tree->IsLocal() || (tree->gtOper == GT_ADDR) && varTypeIsSIMD(tree->gtGetOp1()));
+        assert(tree->IsLocal() || (tree->OperGet() == GT_RET_EXPR) ||
+               (tree->gtOper == GT_ADDR) && varTypeIsSIMD(tree->gtGetOp1()));
     }
 
     return tree;

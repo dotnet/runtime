@@ -28,7 +28,6 @@ namespace System.Resources
     using System.Text;
     using System.Threading;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     using Microsoft.Win32;
 
     //
@@ -48,7 +47,7 @@ namespace System.Resources
         {
             // here and below: convert asserts to preconditions where appropriate when we get
             // contracts story in place.
-            Contract.Requires(mediator != null, "mediator shouldn't be null; check caller");
+            Debug.Assert(mediator != null, "mediator shouldn't be null; check caller");
             _mediator = mediator;
         }
 
@@ -317,8 +316,8 @@ namespace System.Resources
 
         private Stream GetManifestResourceStream(RuntimeAssembly satellite, String fileName, ref StackCrawlMark stackMark)
         {
-            Contract.Requires(satellite != null, "satellite shouldn't be null; check caller");
-            Contract.Requires(fileName != null, "fileName shouldn't be null; check caller");
+            Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
+            Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
             // If we're looking in the main assembly AND if the main assembly was the person who
             // created the ResourceManager, skip a security check for private manifest resources.
@@ -341,8 +340,8 @@ namespace System.Resources
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private Stream CaseInsensitiveManifestResourceStreamLookup(RuntimeAssembly satellite, String name)
         {
-            Contract.Requires(satellite != null, "satellite shouldn't be null; check caller");
-            Contract.Requires(name != null, "name shouldn't be null; check caller");
+            Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
+            Debug.Assert(name != null, "name shouldn't be null; check caller");
 
             StringBuilder sb = new StringBuilder();
             if (_mediator.LocationInfo != null)
