@@ -10,7 +10,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection.Emit
 {
@@ -55,7 +54,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodBase Members
-        [Pure]
         public override ParameterInfo[] GetParameters() { return m_method.GetParameters(); }
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_method.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle { get { return m_method.MethodHandle; } }
@@ -73,7 +71,6 @@ namespace System.Reflection.Emit
         {
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException(SR.Arg_NotGenericMethodDefinition);
-            Contract.EndContractBlock();
 
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArgs);
         }
@@ -151,7 +148,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodBase Members
-        [Pure]
         public override ParameterInfo[] GetParameters() { return m_ctor.GetParameters(); }
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_ctor.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle { get { return m_ctor.MethodHandle; } }

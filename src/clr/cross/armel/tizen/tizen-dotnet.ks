@@ -4,8 +4,12 @@ timezone --utc Asia/Seoul
 
 part / --fstype="ext4" --size=3500 --ondisk=mmcblk0 --label rootfs --fsoptions=defaults,noatime
 
-repo --name=mobile  --baseurl=http://download.tizen.org/releases/weekly/tizen/mobile/latest/repos/arm-wayland/packages/ --ssl_verify=no
-repo --name=base    --baseurl=http://download.tizen.org/releases/weekly/tizen/base/latest/repos/arm/packages/           --ssl_verify=no
+rootpw tizen
+desktop --autologinuser=root
+user --name root  --groups audio,video --password 'tizen'
+
+repo --name=standard  --baseurl=http://download.tizen.org/releases/daily/tizen/4.0-unified/latest/repos/standard/packages/ --ssl_verify=no
+repo --name=base      --baseurl=http://download.tizen.org/releases/daily/tizen/4.0-base/latest/repos/arm/packages/ --ssl_verify=no
 
 %packages
 tar
@@ -19,9 +23,12 @@ perl
 binutils
 findutils
 util-linux
+lttng-ust
+userspace-rcu
 procps-ng
 tzdata
 ca-certificates
+
 
 ### Core FX
 libicu

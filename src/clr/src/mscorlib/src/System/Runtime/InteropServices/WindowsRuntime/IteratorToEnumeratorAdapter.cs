@@ -8,7 +8,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -109,7 +108,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal IteratorToEnumeratorAdapter(IIterator<T> iterator)
         {
-            Contract.Requires(iterator != null);
+            Debug.Assert(iterator != null);
             m_iterator = iterator;
             m_hadCurrent = true;
             m_isInitialized = false;

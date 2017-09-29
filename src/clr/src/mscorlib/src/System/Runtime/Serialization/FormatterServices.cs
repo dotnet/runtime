@@ -24,7 +24,6 @@ using System.IO;
 using System.Text;
 using System.Globalization;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Runtime.Serialization
 {
@@ -45,7 +44,6 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(type));
             }
-            Contract.EndContractBlock();
 
             if (!(type is RuntimeType))
             {

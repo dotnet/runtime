@@ -7,7 +7,6 @@ using System.IO;
 using System.Configuration.Assemblies;
 using StackCrawlMark = System.Threading.StackCrawlMark;
 using System.Runtime.Serialization;
-using System.Diagnostics.Contracts;
 using System.Runtime.Loader;
 
 namespace System.Reflection
@@ -114,9 +113,6 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(String assemblyString)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoad(assemblyString, ref stackMark);
         }
@@ -157,9 +153,6 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(AssemblyName assemblyRef)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-            
             AssemblyName modifiedAssemblyRef = null;
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
@@ -180,9 +173,6 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static Assembly Load(AssemblyName assemblyRef, IntPtr ptrLoadContextBinder)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
             AssemblyName modifiedAssemblyRef = null;
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
@@ -206,9 +196,6 @@ namespace System.Reflection
         public static Assembly Load(byte[] rawAssembly,
                                     byte[] rawSymbolStore)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
             AppDomain.CheckLoadByteArraySupported();
 
             if (rawAssembly == null)
@@ -223,9 +210,6 @@ namespace System.Reflection
 
         public static Assembly LoadFile(String path)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
             AppDomain.CheckLoadFileSupported();
 
             Assembly result = null;

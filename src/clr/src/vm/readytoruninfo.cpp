@@ -495,12 +495,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    if (!pLayout->IsNativeMachineFormat())
-    {
-        // For CoreCLR, be strict about disallowing machine mismatches.
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // Ignore ReadyToRun during NGen
     if (IsCompilationProcess() && !IsNgenPDBCompilationProcess())
@@ -509,6 +503,12 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 #endif
+
+    if (!pLayout->IsNativeMachineFormat())
+    {
+        // For CoreCLR, be strict about disallowing machine mismatches.
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
 
 #ifndef CROSSGEN_COMPILE
     // The file must have been loaded using LoadLibrary

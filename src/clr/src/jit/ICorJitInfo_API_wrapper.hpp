@@ -1620,6 +1620,16 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::resolveVirtualMethod(
     return result;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
+    CORINFO_CLASS_HANDLE elemType)
+{
+    API_ENTER(getDefaultEqualityComparerClass);
+    CORINFO_CLASS_HANDLE result = wrapHnd->getDefaultEqualityComparerClass(elemType);
+    API_LEAVE(getDefaultEqualityComparerClass);
+    return result;
+}
+
+
 void WrapICorJitInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
     CORINFO_GENERICHANDLE_RESULT *  pResult)

@@ -502,6 +502,9 @@ OPTIMIZECAST:
     /* Reset the call flag */
     tree->gtFlags &= ~GTF_CALL;
 
+    /* Reset the assignment flag */
+    tree->gtFlags &= ~GTF_ASG;
+
     /* unless we have an overflow cast, reset the except flag */
     if (!tree->gtOverflow())
     {
@@ -2459,6 +2462,8 @@ void fgArgInfo::EvalArgsToTemps()
                 noway_assert(parent->OperIsList());
                 noway_assert(parent->gtOp.gtOp1 == argx);
 
+                parent->gtFlags |= (setupArg->gtFlags & GTF_ALL_EFFECT);
+
                 parent->gtOp.gtOp1 = setupArg;
             }
             else
@@ -2482,8 +2487,12 @@ void fgArgInfo::EvalArgsToTemps()
             noway_assert(tmpRegArgNext->OperIsList());
             noway_assert(tmpRegArgNext->Current());
             tmpRegArgNext->gtOp.gtOp2 = compiler->gtNewArgList(defArg);
-            tmpRegArgNext             = tmpRegArgNext->Rest();
+
+            tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
+            tmpRegArgNext = tmpRegArgNext->Rest();
         }
+
+        tmpRegArgNext->gtFlags |= (defArg->gtFlags & GTF_ALL_EFFECT);
 
         curArgTabEntry->node       = defArg;
         curArgTabEntry->lateArgInx = regArgInx++;
@@ -7244,8 +7253,8 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee)
     // Note that callee being a vararg method is not a problem since we can account the params being passed.
     unsigned nCallerArgs = info.compArgsCount;
 
-    size_t callerArgRegCount      = info.compArgRegCount;
-    size_t callerFloatArgRegCount = info.compFloatArgRegCount;
+    size_t callerArgRegCount      = codeGen->intRegState.rsCalleeRegArgCount;
+    size_t callerFloatArgRegCount = codeGen->floatRegState.rsCalleeRegArgCount;
 
     // Count the callee args including implicit and hidden.
     // Note that GenericContext and VarargCookie are added by importer while
@@ -8856,7 +8865,7 @@ NO_TAIL_CALL:
             // Check for a new-style jit intrinsic.
             const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
 
-            if (ni == NI_Enum_HasFlag)
+            if (ni == NI_System_Enum_HasFlag)
             {
                 GenTree* thisOp  = call->gtCallObjp;
                 GenTree* flagOp  = call->gtCallArgs->gtOp.gtOp1;
@@ -14276,6 +14285,13 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     /* Both tree and op1 are GT_COMMA nodes */
                     /* Change the tree's op1 to the throw node: op1->gtOp.gtOp1 */
                     tree->gtOp.gtOp1 = throwNode;
+
+                    // Possibly reset the assignment flag
+                    if (((throwNode->gtFlags & GTF_ASG) == 0) && ((op2 == nullptr) || ((op2->gtFlags & GTF_ASG) == 0)))
+                    {
+                        tree->gtFlags &= ~GTF_ASG;
+                    }
+
                     return tree;
                 }
                 else if (oper != GT_NOP)

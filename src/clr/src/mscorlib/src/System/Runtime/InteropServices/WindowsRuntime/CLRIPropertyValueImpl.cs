@@ -5,7 +5,7 @@
 //
 
 using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -52,13 +52,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public PropertyType Type
         {
-            [Pure]
             get { return _type; }
         }
 
         public bool IsNumericScalar
         {
-            [Pure]
             get
             {
                 return IsNumericScalarImpl(_type, _data);
@@ -77,13 +75,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        [Pure]
         public Byte GetUInt8()
         {
             return CoerceScalarValue<Byte>(PropertyType.UInt8);
         }
 
-        [Pure]
         public Int16 GetInt16()
         {
             return CoerceScalarValue<Int16>(PropertyType.Int16);
@@ -94,260 +90,211 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return CoerceScalarValue<UInt16>(PropertyType.UInt16);
         }
 
-        [Pure]
         public Int32 GetInt32()
         {
             return CoerceScalarValue<Int32>(PropertyType.Int32);
         }
 
-        [Pure]
         public UInt32 GetUInt32()
         {
             return CoerceScalarValue<UInt32>(PropertyType.UInt32);
         }
 
-        [Pure]
         public Int64 GetInt64()
         {
             return CoerceScalarValue<Int64>(PropertyType.Int64);
         }
 
-        [Pure]
         public UInt64 GetUInt64()
         {
             return CoerceScalarValue<UInt64>(PropertyType.UInt64);
         }
 
-        [Pure]
         public Single GetSingle()
         {
             return CoerceScalarValue<Single>(PropertyType.Single);
         }
 
-        [Pure]
         public Double GetDouble()
         {
             return CoerceScalarValue<Double>(PropertyType.Double);
         }
 
-        [Pure]
         public char GetChar16()
         {
             if (this.Type != PropertyType.Char16)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Char16"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (char)_data;
         }
 
-        [Pure]
         public Boolean GetBoolean()
         {
             if (this.Type != PropertyType.Boolean)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Boolean"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (bool)_data;
         }
 
-        [Pure]
         public String GetString()
         {
             return CoerceScalarValue<String>(PropertyType.String);
         }
 
 
-        [Pure]
         public Guid GetGuid()
         {
             return CoerceScalarValue<Guid>(PropertyType.Guid);
         }
 
 
-        [Pure]
         public DateTimeOffset GetDateTime()
         {
             if (this.Type != PropertyType.DateTime)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "DateTime"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (DateTimeOffset)_data;
         }
 
-        [Pure]
         public TimeSpan GetTimeSpan()
         {
             if (this.Type != PropertyType.TimeSpan)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "TimeSpan"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (TimeSpan)_data;
         }
 
-        [Pure]
         public Point GetPoint()
         {
             if (this.Type != PropertyType.Point)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Point"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
 
             return Unbox<Point>(IReferenceFactory.s_pointType);
         }
 
-        [Pure]
         public Size GetSize()
         {
             if (this.Type != PropertyType.Size)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Size"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
 
             return Unbox<Size>(IReferenceFactory.s_sizeType);
         }
 
-        [Pure]
         public Rect GetRect()
         {
             if (this.Type != PropertyType.Rect)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Rect"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
 
             return Unbox<Rect>(IReferenceFactory.s_rectType);
         }
 
-        [Pure]
         public Byte[] GetUInt8Array()
         {
             return CoerceArrayValue<Byte>(PropertyType.UInt8Array);
         }
 
-        [Pure]
         public Int16[] GetInt16Array()
         {
             return CoerceArrayValue<Int16>(PropertyType.Int16Array);
         }
 
-        [Pure]
         public UInt16[] GetUInt16Array()
         {
             return CoerceArrayValue<UInt16>(PropertyType.UInt16Array);
         }
 
-        [Pure]
         public Int32[] GetInt32Array()
         {
             return CoerceArrayValue<Int32>(PropertyType.Int32Array);
         }
 
-        [Pure]
         public UInt32[] GetUInt32Array()
         {
             return CoerceArrayValue<UInt32>(PropertyType.UInt32Array);
         }
 
-        [Pure]
         public Int64[] GetInt64Array()
         {
             return CoerceArrayValue<Int64>(PropertyType.Int64Array);
         }
 
-        [Pure]
         public UInt64[] GetUInt64Array()
         {
             return CoerceArrayValue<UInt64>(PropertyType.UInt64Array);
         }
 
-        [Pure]
         public Single[] GetSingleArray()
         {
             return CoerceArrayValue<Single>(PropertyType.SingleArray);
         }
 
-        [Pure]
         public Double[] GetDoubleArray()
         {
             return CoerceArrayValue<Double>(PropertyType.DoubleArray);
         }
 
-        [Pure]
         public char[] GetChar16Array()
         {
             if (this.Type != PropertyType.Char16Array)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Char16[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (char[])_data;
         }
 
-        [Pure]
         public Boolean[] GetBooleanArray()
         {
             if (this.Type != PropertyType.BooleanArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Boolean[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (bool[])_data;
         }
 
-        [Pure]
         public String[] GetStringArray()
         {
             return CoerceArrayValue<String>(PropertyType.StringArray);
         }
 
-        [Pure]
         public Object[] GetInspectableArray()
         {
             if (this.Type != PropertyType.InspectableArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Inspectable[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (Object[])_data;
         }
 
-        [Pure]
         public Guid[] GetGuidArray()
         {
             return CoerceArrayValue<Guid>(PropertyType.GuidArray);
         }
 
-        [Pure]
         public DateTimeOffset[] GetDateTimeArray()
         {
             if (this.Type != PropertyType.DateTimeArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "DateTimeOffset[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (DateTimeOffset[])_data;
         }
 
-        [Pure]
         public TimeSpan[] GetTimeSpanArray()
         {
             if (this.Type != PropertyType.TimeSpanArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "TimeSpan[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
             return (TimeSpan[])_data;
         }
 
-        [Pure]
         public Point[] GetPointArray()
         {
             if (this.Type != PropertyType.PointArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Point[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
 
             return UnboxArray<Point>(IReferenceFactory.s_pointType);
         }
 
-        [Pure]
         public Size[] GetSizeArray()
         {
             if (this.Type != PropertyType.SizeArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Size[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
 
 
             return UnboxArray<Size>(IReferenceFactory.s_sizeType);
         }
 
-        [Pure]
         public Rect[] GetRectArray()
         {
             if (this.Type != PropertyType.RectArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Rect[]"), HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
 
             return UnboxArray<Rect>(IReferenceFactory.s_rectType);
         }
@@ -531,11 +478,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // Unbox the data stored in the property value to a structurally equivilent type
-        [Pure]
         private unsafe T Unbox<T>(Type expectedBoxedType) where T : struct
         {
-            Contract.Requires(expectedBoxedType != null);
-            Contract.Requires(Marshal.SizeOf(expectedBoxedType) == Marshal.SizeOf(typeof(T)));
+            Debug.Assert(expectedBoxedType != null);
+            Debug.Assert(Marshal.SizeOf(expectedBoxedType) == Marshal.SizeOf(typeof(T)));
 
             if (_data.GetType() != expectedBoxedType)
             {
@@ -554,11 +500,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // Convert the array stored in the property value to a structurally equivilent array type
-        [Pure]
         private unsafe T[] UnboxArray<T>(Type expectedArrayElementType) where T : struct
         {
-            Contract.Requires(expectedArrayElementType != null);
-            Contract.Requires(Marshal.SizeOf(expectedArrayElementType) == Marshal.SizeOf(typeof(T)));
+            Debug.Assert(expectedArrayElementType != null);
+            Debug.Assert(Marshal.SizeOf(expectedArrayElementType) == Marshal.SizeOf(typeof(T)));
 
             Array dataArray = _data as Array;
             if (dataArray == null || _data.GetType().GetElementType() != expectedArrayElementType)

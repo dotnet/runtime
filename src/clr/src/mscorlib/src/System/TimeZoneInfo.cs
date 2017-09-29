@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -168,7 +167,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_DateTimeOffsetIsNotAmbiguous, nameof(dateTimeOffset));
             }
-            Contract.EndContractBlock();
 
             DateTime adjustedTime = ConvertTime(dateTimeOffset, this).DateTime;
 
@@ -215,7 +213,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_DateTimeIsNotAmbiguous, nameof(dateTime));
             }
-            Contract.EndContractBlock();
 
             DateTime adjustedTime;
             if (dateTime.Kind == DateTimeKind.Local)
@@ -603,7 +600,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(destinationTimeZone));
             }
-            Contract.EndContractBlock();
 
             // calculate the destination time zone offset
             DateTime utcDateTime = dateTimeOffset.UtcDateTime;
@@ -627,7 +623,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(destinationTimeZone));
             }
-            Contract.EndContractBlock();
 
             // Special case to give a way clearing the cache without exposing ClearCachedData()
             if (dateTime.Ticks == 0)
@@ -662,7 +657,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(destinationTimeZone));
             }
-            Contract.EndContractBlock();
 
             DateTimeKind sourceKind = cachedData.GetCorrespondingKind(sourceTimeZone);
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && (dateTime.Kind != DateTimeKind.Unspecified) && (dateTime.Kind != sourceKind))
@@ -788,7 +782,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSerializedString, source), nameof(source));
             }
-            Contract.EndContractBlock();
 
             return StringSerializer.GetDeserializedTimeZoneInfo(source);
         }
@@ -847,7 +840,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(other));
             }
-            Contract.EndContractBlock();
 
             // check the utcOffset and supportsDaylightSavingTime members
             if (_baseUtcOffset != other._baseUtcOffset ||
@@ -1039,7 +1031,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(info));
             }
-            Contract.EndContractBlock();
 
             info.AddValue("Id", _id); // Do not rename (binary serialization)
             info.AddValue("DisplayName", _displayName); // Do not rename (binary serialization)
@@ -1929,7 +1920,6 @@ namespace System
         /// <summary>
         /// Helper function that validates the TimeSpan is within +/- 14.0 hours
         /// </summary>
-        [Pure]
         internal static bool UtcOffsetOutOfRange(TimeSpan offset) =>
             offset.TotalHours < -14.0 || offset.TotalHours > 14.0;
 
@@ -1958,7 +1948,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_TimeSpanHasSeconds, nameof(baseUtcOffset));
             }
-            Contract.EndContractBlock();
 
             adjustmentRulesSupportDst = false;
 

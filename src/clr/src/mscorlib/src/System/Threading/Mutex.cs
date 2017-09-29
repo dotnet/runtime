@@ -24,7 +24,6 @@ namespace System.Threading
     using System.Runtime.Versioning;
     using System.Security;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
     public sealed class Mutex : WaitHandle
     {
@@ -55,7 +54,6 @@ namespace System.Threading
                 throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
             }
 #endif // PLATFORM_WINDOWS
-            Contract.EndContractBlock();
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
 
             CreateMutexWithGuaranteedCleanup(initiallyOwned, name, out createdNew, secAttrs);
@@ -230,7 +228,6 @@ namespace System.Threading
                 throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
             }
 #endif
-            Contract.EndContractBlock();
 
             result = null;
 

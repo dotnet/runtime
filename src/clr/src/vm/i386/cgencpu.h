@@ -558,24 +558,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
     return TRUE;
 }
 
-#ifndef FEATURE_IMPLICIT_TLS
-//
-// JIT HELPER ALIASING FOR PORTABILITY.
-//
-// Create alias for optimized implementations of helpers provided on this platform
-//
-
-#define JIT_MonEnter         JIT_MonEnterWorker
-#define JIT_MonEnterWorker   JIT_MonEnterWorker
-#define JIT_MonReliableEnter JIT_MonReliableEnter
-#define JIT_MonTryEnter      JIT_MonTryEnter
-#define JIT_MonExit          JIT_MonExitWorker
-#define JIT_MonExitWorker    JIT_MonExitWorker
-#define JIT_MonEnterStatic   JIT_MonEnterStatic
-#define JIT_MonExitStatic    JIT_MonExitStatic
-
-#endif
-
 // optimized static helpers generated dynamically at runtime
 // #define JIT_GetSharedGCStaticBase
 // #define JIT_GetSharedNonGCStaticBase

@@ -134,7 +134,6 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
-            Contract.EndContractBlock();
 
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
             _store = new BinaryReader(stream, Encoding.UTF8);
@@ -151,9 +150,9 @@ namespace System.Resources
         // and values, coupled to this ResourceReader).
         internal ResourceReader(Stream stream, Dictionary<String, ResourceLocator> resCache)
         {
-            Contract.Requires(stream != null, "Need a stream!");
-            Contract.Requires(stream.CanRead, "Stream should be readable!");
-            Contract.Requires(resCache != null, "Need a Dictionary!");
+            Debug.Assert(stream != null, "Need a stream!");
+            Debug.Assert(stream.CanRead, "Stream should be readable!");
+            Debug.Assert(resCache != null, "Need a Dictionary!");
 
             _resCache = resCache;
             _store = new BinaryReader(stream, Encoding.UTF8);
@@ -420,20 +419,9 @@ namespace System.Resources
 
                     String s = null;
                     char* charPtr = (char*)_ums.PositionPointer;
-#if IA64
-                    if (((int)charPtr & 1) != 0) {
-                        char[] destArray = new char[byteLen/2];
-                        fixed(char* pDest = destArray) {
-                            Buffer.Memcpy((byte*)pDest, (byte*)charPtr, byteLen);
-                        }
-                        s = new String(destArray);
-                    }
-                    else {
-#endif //IA64
+
                     s = new String(charPtr, 0, byteLen / 2);
-#if IA64
-                    }
-#endif //IA64
+
                     _ums.Position += byteLen;
                     dataOffset = _store.ReadInt32();
                     if (dataOffset < 0 || dataOffset >= _store.BaseStream.Length - _dataSectionOffset)
@@ -1057,7 +1045,6 @@ namespace System.Resources
         {
             if (resourceName == null)
                 throw new ArgumentNullException(nameof(resourceName));
-            Contract.EndContractBlock();
             if (_resCache == null)
                 throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
@@ -1122,7 +1109,7 @@ namespace System.Resources
 
         private String TypeNameFromTypeCode(ResourceTypeCode typeCode)
         {
-            Contract.Requires(typeCode >= 0, "can't be negative");
+            Debug.Assert(typeCode >= 0, "can't be negative");
             if (typeCode < ResourceTypeCode.StartOfUserTypes)
             {
                 Debug.Assert(!String.Equals(typeCode.ToString(), "LastPrimitive"), "Change ResourceTypeCode metadata order so LastPrimitive isn't what Enum.ToString prefers.");
@@ -1181,8 +1168,8 @@ namespace System.Resources
             {
                 get
                 {
-                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
-                    if (!_currentIsValid) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                    if (!_currentIsValid) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
                     return _reader.AllocateStringForNameIndex(_currentName, out _dataPosition);
@@ -1210,8 +1197,8 @@ namespace System.Resources
             {
                 get
                 {
-                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
-                    if (!_currentIsValid) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                    if (!_currentIsValid) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
                     String key;
@@ -1248,8 +1235,8 @@ namespace System.Resources
             {
                 get
                 {
-                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
-                    if (!_currentIsValid) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                    if (!_currentIsValid) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
                     // Consider using _resCache here, eventually, if

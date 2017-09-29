@@ -8,7 +8,6 @@ using System;
 using System.Security;
 using System.Reflection;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;

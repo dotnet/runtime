@@ -974,7 +974,7 @@ void VirtualCallStubManager::Reclaim()
 
 //----------------------------------------------------------------------------
 /* static */
-VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddress,  StubKind* wbStubKind)
+VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddress,  StubKind* wbStubKind, BOOL usePredictStubKind)
 {
     CONTRACTL {
         NOTHROW;
@@ -999,7 +999,7 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
     // VirtualCallStubManager::isDispatchingStub
     //
     CONTRACT_VIOLATION(SOToleranceViolation);
-    kind = pCur->getStubKind(stubAddress);
+    kind = pCur->getStubKind(stubAddress, usePredictStubKind);
     if (kind != SK_UNKNOWN)
     {
         if (wbStubKind)
@@ -1011,7 +1011,7 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
     // See if we are managed by the shared domain
     //
     pCur = SharedDomain::GetDomain()->GetLoaderAllocator()->GetVirtualCallStubManager();
-    kind = pCur->getStubKind(stubAddress);
+    kind = pCur->getStubKind(stubAddress, usePredictStubKind);
     if (kind != SK_UNKNOWN)
     {
         if (wbStubKind)
@@ -1026,7 +1026,7 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
     {
         _ASSERTE(pCur != NULL);
 
-        kind = pCur->getStubKind(stubAddress);
+        kind = pCur->getStubKind(stubAddress, usePredictStubKind);
         if (kind != SK_UNKNOWN)
         {
             if (wbStubKind)

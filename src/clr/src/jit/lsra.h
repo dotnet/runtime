@@ -69,8 +69,8 @@ struct LsraBlockInfo
 {
     // bbNum of the predecessor to use for the register location of live-in variables.
     // 0 for fgFirstBB.
-    BasicBlock::weight_t weight;
     unsigned int         predBBNum;
+    BasicBlock::weight_t weight;
     bool                 hasCriticalInEdge;
     bool                 hasCriticalOutEdge;
 
@@ -776,6 +776,8 @@ private:
 
     // Given some tree node add refpositions for all the registers this node kills
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc);
+
+    bool killGCRefs(GenTree* tree);
 
     regMaskTP allRegs(RegisterType rt);
     regMaskTP allRegs(GenTree* tree);

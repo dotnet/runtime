@@ -13,7 +13,6 @@
 ** 
 ===========================================================*/
 
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -49,7 +48,6 @@ namespace System.Collections
 
             if (array.Length - index < this.Count)
                 throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
-            Contract.EndContractBlock();
 
             // the actual copy is a NOP
         }
@@ -88,7 +86,6 @@ namespace System.Collections
                 {
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
-                Contract.EndContractBlock();
                 return null;
             }
             set
@@ -103,7 +100,6 @@ namespace System.Collections
 
                 if ((value != null) && (!value.GetType().IsSerializable))
                     throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
-                Contract.EndContractBlock();
 
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
@@ -142,7 +138,6 @@ namespace System.Collections
 
             if ((value != null) && (!value.GetType().IsSerializable))
                 throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
-            Contract.EndContractBlock();
 
             throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
         }

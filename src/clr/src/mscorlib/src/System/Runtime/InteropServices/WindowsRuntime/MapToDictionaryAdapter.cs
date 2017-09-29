@@ -9,7 +9,6 @@ using System.Security;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -36,7 +35,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            Contract.EndContractBlock();
 
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             return Lookup(_this, key);
@@ -48,7 +46,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            Contract.EndContractBlock();
 
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             Insert(_this, key, value);
@@ -71,7 +68,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool ContainsKey(K key)
-        [Pure]
         internal bool ContainsKey<K, V>(K key)
         {
             if (key == null)
@@ -90,7 +86,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (ContainsKey<K, V>(key))
                 throw new ArgumentException(SR.Argument_AddingDuplicate);
 
-            Contract.EndContractBlock();
 
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             Insert(_this, key, value);
@@ -149,7 +144,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private static V Lookup<K, V>(IMap<K, V> _this, K key)
         {
-            Contract.Requires(null != key);
+            Debug.Assert(null != key);
 
             try
             {
@@ -165,7 +160,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private static bool Insert<K, V>(IMap<K, V> _this, K key, V value)
         {
-            Contract.Requires(null != key);
+            Debug.Assert(null != key);
 
             bool replaced = _this.Insert(key, value);
             return replaced;

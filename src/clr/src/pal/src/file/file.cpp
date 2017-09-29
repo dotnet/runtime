@@ -3521,6 +3521,9 @@ DWORD FILEGetLastErrorFromErrno( void )
     case EIO:
         dwRet = ERROR_WRITE_FAULT;
         break;
+    case EMFILE:
+        dwRet = ERROR_TOO_MANY_OPEN_FILES;
+        break;
     case ERANGE:
         dwRet = ERROR_BAD_PATHNAME;
         break;

@@ -17,7 +17,6 @@ namespace System
     using System.Security;
     using Path = System.IO.Path;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     using System.Collections.Generic;
 
     internal sealed class AppDomainSetup
@@ -128,7 +127,6 @@ namespace System
 
         public String ApplicationBase
         {
-            [Pure]
             get
             {
                 return Value[(int)LoaderInformation.ApplicationBaseValue];

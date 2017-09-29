@@ -44,6 +44,7 @@ void Lowering::MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode)
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
     childNode->SetContained();
+    assert(childNode->isContained());
 }
 
 //------------------------------------------------------------------------
@@ -187,6 +188,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_CMP:
+        case GT_JCMP:
             LowerCompare(node);
             break;
 
@@ -210,7 +212,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerCast(node);
             break;
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
         case GT_ARR_BOUNDS_CHECK:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
@@ -240,7 +242,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
             LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
@@ -548,6 +550,21 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     flowList* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
     comp->fgAddRefPred(jumpTab[jumpCnt - 1], originalSwitchBB, oldEdge);
 
+    bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
+
+#if defined(_TARGET_UNIX_) && defined(_TARGET_ARM_)
+    // Force using an inlined jumping instead switch table generation.
+    // Switch jump table is generated with incorrect values in CoreRT case,
+    // so any large switch will crash after loading to PC any such value.
+    // I think this is due to the fact that we use absolute addressing
+    // instead of relative. But in CoreRT is used as a rule relative
+    // addressing when we generate an executable.
+    // This bug is also present in Legacy JIT.
+    // See also https://github.com/dotnet/coreclr/issues/13194
+    // Also https://github.com/dotnet/coreclr/pull/13197
+    useJumpSequence = useJumpSequence || comp->IsTargetAbi(CORINFO_CORERT_ABI);
+#endif // defined(_TARGET_UNIX_) && defined(_TARGET_ARM_)
+
     // If we originally had 2 unique successors, check to see whether there is a unique
     // non-default case, in which case we can eliminate the switch altogether.
     // Note that the single unique successor case is handled above.
@@ -593,7 +610,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
     // transformation.
-    else if ((jumpCnt < minSwitchTabJumpCnt) || comp->compStressCompile(Compiler::STRESS_SWITCH_CMP_BR_EXPANSION, 50))
+    else if (useJumpSequence || comp->compStressCompile(Compiler::STRESS_SWITCH_CMP_BR_EXPANSION, 50))
     {
         // Lower the switch into a series of compare and branch IR trees.
         //
@@ -761,7 +778,7 @@ void Lowering::ReplaceArgWithPutArgOrCopy(GenTree** argSlot, GenTree* putArgOrCo
 {
     assert(argSlot != nullptr);
     assert(*argSlot != nullptr);
-    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_COPY));
+    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_BITCAST));
 
     GenTree* arg = *argSlot;
 
@@ -1294,12 +1311,15 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         {
             var_types intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
 
-            GenTreePtr intArg = new (comp, GT_COPY) GenTreeCopyOrReload(GT_COPY, intType, arg);
-
-            if (comp->opts.compUseSoftFP)
+            GenTreePtr intArg = comp->gtNewBitCastNode(intType, arg);
+            intArg->gtRegNum  = info->regNum;
+#ifdef ARM_SOFTFP
+            if (intType == TYP_LONG)
             {
-                intArg->gtFlags |= GTF_VAR_DEATH;
+                assert(info->numRegs == 2);
+                intArg->AsMultiRegOp()->gtOtherReg = REG_NEXT(info->regNum);
             }
+#endif // ARM_SOFTFP
 
             info->node = intArg;
             ReplaceArgWithPutArgOrCopy(ppArg, intArg);
@@ -2347,7 +2367,7 @@ void Lowering::LowerCompare(GenTree* cmp)
     }
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_64BIT_
     if (cmp->gtGetOp1()->TypeGet() != cmp->gtGetOp2()->TypeGet())
     {
         bool op1Is64Bit = (genTypeSize(cmp->gtGetOp1()->TypeGet()) == 8);
@@ -2368,7 +2388,11 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             GenTree*  longOp       = op1Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
             GenTree** smallerOpUse = op2Is64Bit ? &cmp->gtOp.gtOp1 : &cmp->gtOp.gtOp2;
-            var_types smallerType  = (*smallerOpUse)->TypeGet();
+#ifdef _TARGET_AMD64_
+            var_types smallerType = (*smallerOpUse)->TypeGet();
+#elif defined(_TARGET_ARM64_)
+            var_types smallerType  = genActualType((*smallerOpUse)->TypeGet());
+#endif // _TARGET_AMD64_
 
             assert(genTypeSize(smallerType) < 8);
 
@@ -2389,7 +2413,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             }
         }
     }
-#endif // _TARGET_AMD64_
+#endif // _TARGET_64BIT_
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
     if (cmp->gtGetOp2()->IsIntegralConst())
@@ -2411,7 +2435,9 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             op2->gtType = op1Type;
         }
-        else if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
+        else
+#endif
+            if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
         {
             GenTreeCast* cast       = op1->AsCast();
             var_types    castToType = cast->CastToType();
@@ -2429,12 +2455,26 @@ void Lowering::LowerCompare(GenTree* cmp)
                 // situations. In particular this include CALL, sometimes the JIT unnecessarilly widens
                 // the result of bool returning calls.
                 //
+                bool removeCast =
+#ifdef _TARGET_ARM64_
+                    (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
+#endif
+                    (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp));
 
-                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp))
+                if (removeCast)
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
+#ifdef _TARGET_ARM64_
+                    bool cmpEq = cmp->OperIs(GT_EQ);
+
+                    cmp->SetOperRaw(cmpEq ? GT_TEST_EQ : GT_TEST_NE);
+                    op2->SetIconValue(0xff);
+                    op2->gtType = castOp->gtType;
+#else
                     castOp->gtType = castToType;
+                    op2->gtType    = castToType;
+#endif
                     // If we have any contained memory ops on castOp, they must now not be contained.
                     if (castOp->OperIsLogical())
                     {
@@ -2450,15 +2490,12 @@ void Lowering::LowerCompare(GenTree* cmp)
                         }
                     }
                     cmp->gtOp.gtOp1 = castOp;
-                    op2->gtType     = castToType;
 
                     BlockRange().Remove(cast);
                 }
             }
         }
-        else
-#endif
-            if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
+        else if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
         {
             //
             // Transform ((x AND y) EQ|NE 0) into (x TEST_EQ|TEST_NE y) when possible.
@@ -3785,7 +3822,12 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             // on x64 we must materialize the target using specific registers.
             addr->gtRegNum = comp->virtualStubParamInfo->GetReg();
 
+// On ARM we must use a proper address in R12(thunk register) without dereferencing.
+// So for the jump we use the default register.
+// TODO: specifying register probably unnecessary for other platforms, too.
+#if !defined(_TARGET_UNIX_) && !defined(_TARGET_ARM_)
             indir->gtRegNum = REG_JUMP_THUNK_PARAM;
+#endif
             indir->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
 #endif
             result = indir;
@@ -4577,6 +4619,53 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTreePtr node)
     return next;
 }
 
+//------------------------------------------------------------------------
+// LowerShift: Lower shift nodes
+//
+// Arguments:
+//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
+//
+// Notes:
+//    Remove unnecessary shift count masking, xarch shift instructions
+//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+
+void Lowering::LowerShift(GenTreeOp* shift)
+{
+    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+
+    size_t mask = 0x1f;
+#ifdef _TARGET_64BIT_
+    if (varTypeIsLong(shift->TypeGet()))
+    {
+        mask = 0x3f;
+    }
+#else
+    assert(!varTypeIsLong(shift->TypeGet()));
+#endif
+
+    for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
+    {
+        GenTree* maskOp = andOp->gtGetOp2();
+
+        if (!maskOp->IsCnsIntOrI())
+        {
+            break;
+        }
+
+        if ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & mask) != mask)
+        {
+            break;
+        }
+
+        shift->gtOp2 = andOp->gtGetOp1();
+        BlockRange().Remove(andOp);
+        BlockRange().Remove(maskOp);
+        // The parent was replaced, clear contain and regOpt flag.
+        shift->gtOp2->ClearContained();
+    }
+    ContainCheckShiftRotate(shift);
+}
+
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 {
 #ifdef FEATURE_SIMD
@@ -5266,6 +5355,7 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_CMP:
+        case GT_JCMP:
             ContainCheckCompare(node->AsOp());
             break;
 
