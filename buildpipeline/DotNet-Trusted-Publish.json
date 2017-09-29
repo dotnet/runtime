@@ -32,7 +32,7 @@
             "definitionType": "task"
         },
         "inputs": {
-            "signType": "real",
+            "signType": "$(PB_SignType)",
             "zipSources": "true",
             "version": "",
             "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
@@ -522,6 +522,10 @@
     },
     "PB_SymbolCatalogCertificateId": {
       "value": "400"
+    },
+    "PB_SignType": {
+      "value": "real",
+      "allowOverride": true
     }
   },
   "retentionRules": [
