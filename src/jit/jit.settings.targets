@@ -103,6 +103,7 @@
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\CodeGenXArch.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\SIMD.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\SIMDCodeGenXArch.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\hwintrinsicxarch.cpp" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArch)'=='amd64'">
         <!-- AMD64 target is always RyuJIT backend -->
@@ -114,6 +115,7 @@
         <CppCompile Include="..\SIMD.cpp" />
         <CppCompile Include="..\SIMDCodeGenXArch.cpp" />
         <CppCompile Include="..\unwindAmd64.cpp" />
+        <CppCompile Include="..\hwintrinsicxarch.cpp" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArch)'=='arm'">
         <CppCompile Include="..\emitarm.cpp" />
