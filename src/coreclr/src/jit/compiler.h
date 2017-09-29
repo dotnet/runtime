@@ -3016,6 +3016,28 @@ protected:
                               CorInfoIntrinsics     intrinsicID,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+
+#ifdef _TARGET_XARCH_
+    InstructionSet lookupHWIntrinsicISA(const char* className);
+    NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
+    InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
+    GenTree* impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSE41Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impAVXIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impAVX2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impAESIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impBMI1Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impFMAIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+#endif
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,
                                        int                  memberRef,
@@ -7802,6 +7824,15 @@ private:
 #endif
     }
 
+    bool compSupports(InstructionSet isa)
+    {
+#ifdef _TARGET_XARCH_
+        return (opts.compSupportsISA & (1 << isa)) != 0;
+#else
+        return false;
+#endif
+    }
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -7914,6 +7945,14 @@ public:
         bool compCanUseAVX; // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
 #endif                      // FEATURE_AVX_SUPPORT
 #endif                      // _TARGET_XARCH_
+
+#ifdef _TARGET_XARCH_
+        uint64_t compSupportsISA;
+        void setSupportedISA(InstructionSet isa)
+        {
+            compSupportsISA |= 1 << isa;
+        }
+#endif
 
 // optimize maximally and/or favor speed over size?
 

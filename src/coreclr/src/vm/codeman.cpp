@@ -1313,6 +1313,24 @@ void EEJitManager::SetCpuInfo()
         // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
         // and edx in buffer[12-15].
         // We will set the following flags:
+        // CORJIT_FLAG_USE_SSE3 if the following feature bits are set (input EAX of 1)
+        //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
+        // CORJIT_FLAG_USE_SSSE3 if the following feature bits are set (input EAX of 1)
+        //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
+        //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
+        // CORJIT_FLAG_USE_SSE41 if the following feature bits are set (input EAX of 1)
+        //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
+        //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
+        //    SSE4.1 - ECX bit 19  (buffer[10] & 0x08)
+        // CORJIT_FLAG_USE_SSE42 if the following feature bits are set (input EAX of 1)
+        //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
+        //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
+        //    SSE4.2 - ECX bit 20  (buffer[10] & 0x10)
+        // CORJIT_FLAG_USE_POPCNT if the following feature bits are set (input EAX of 1)
+        //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
+        //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
+        //    SSE4.2 - ECX bit 20  (buffer[10] & 0x10)
+        //    POPCNT - ECX bit 23  (buffer[10] & 0x80)
         // CORJIT_FLAG_USE_SSE3_4 if the following feature bits are set (input EAX of 1)
         //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
         //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
@@ -1321,9 +1339,17 @@ void EEJitManager::SetCpuInfo()
         // CORJIT_FLAG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
         //    OSXSAVE - ECX bit 27 (buffer[11] & 0x08)
         //    AVX - ECX bit 28     (buffer[11] & 0x10)
+        // CORJIT_FLAG_USE_FMA if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
+        //    FMA - ECX bit 12     (buffer[9]  & 0x10)
         // CORJIT_FLAG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
         //    AVX2 - EBX bit 5     (buffer[4]  & 0x20)
         // CORJIT_FLAG_USE_AVX_512 is not currently set, but defined so that it can be used in future without
+        // CORJIT_FLAG_USE_BMI1 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
+        //    BMI1 - EBX bit 3     (buffer[4]  & 0x08)
+        // CORJIT_FLAG_USE_BMI2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
+        //    BMI2 - EBX bit 8     (buffer[5]  & 0x01)
+        // CORJIT_FLAG_USE_LZCNT if the following feature bits are set (input EAX of 80000001H)
+        //    LZCNT - ECX bit 5    (buffer[8]  & 0x20)
         // synchronously updating VM and JIT.
         (void) getcpuid(1, buffer);
         // If SSE2 is not enabled, there is no point in checking the rest.
@@ -1331,24 +1357,56 @@ void EEJitManager::SetCpuInfo()
         // TODO: Determine whether we should break out the various SSE options further.
         if ((buffer[15] & 0x04) != 0)               // SSE2
         {
-            if (((buffer[8]  & 0x01) != 0) &&       // SSE3
-                ((buffer[9]  & 0x02) != 0) &&       // SSSE3
-                ((buffer[10] & 0x08) != 0) &&       // SSE4.1
-                ((buffer[10] & 0x10) != 0))         // SSE4.2
+            if ((buffer[8]  & 0x01) != 0)           // SSE3
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3_4);
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
+                if ((buffer[9]  & 0x02) != 0)           // SSSE3
+                {
+                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
+                    if ((buffer[10] & 0x08) != 0)           // SSE4.1
+                    {
+                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
+                    }
+                    if ((buffer[10] & 0x10) != 0)           // SSE4.2
+                    {
+                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
+                        if ((buffer[10] & 0x80) != 0)       // POPCNT
+                        {
+                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
+                        }
+                    }
+
+                    if (((buffer[10] & 0x08) != 0) &&       // SSE4.1
+                        ((buffer[10] & 0x10) != 0))         // SSE4.2
+                    {
+                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3_4);
+                    }
+                }
             }
-            if ((buffer[11] & 0x18) == 0x18)
+            
+            if ((buffer[11] & 0x01) != 0)           // AESNI
+            {
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
+            }
+            if ((buffer[8] & 0x02) != 0)            // PCLMULQDQ 
+            {
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
+            }
+            if ((buffer[11] & 0x18) == 0x18)        // AVX
             {
                 if(DoesOSSupportAVX())
                 {
                     if (xmmYmmStateSupport() == 1)
                     {
                         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
+                        if ((buffer[9]  & 0x10) != 0) // FMA
+                        {
+                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA);
+                        }
                         if (maxCpuId >= 0x07)
                         {
                             (void) getextcpuid(0, 0x07, buffer);
-                            if ((buffer[4]  & 0x20) != 0)
+                            if ((buffer[4]  & 0x20) != 0) // AVX2
                             {
                                 CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
                             }
@@ -1356,6 +1414,22 @@ void EEJitManager::SetCpuInfo()
                     }
                 }
             }
+            (void) getextcpuid(0, 0x07, buffer);
+            if ((buffer[4]  & 0x08) != 0)           // BMI1
+            {
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1);
+            }
+            if ((buffer[5]  & 0x01) != 0)           //BMI2
+            {
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2);
+            }
+
+            (void) getcpuid(0x80000001, buffer);
+            if ((buffer[8]  & 0x20) != 0)           // LZCNT
+            {
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
+            }
+
             static ConfigDWORD fFeatureSIMD;
             if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
             {
