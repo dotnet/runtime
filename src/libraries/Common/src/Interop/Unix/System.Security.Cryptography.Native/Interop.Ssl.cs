@@ -54,13 +54,18 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static extern void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
-        internal static unsafe string SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static byte[] SslGetAlpnSelected(SafeSslHandle ssl)
         {
             IntPtr protocol;
             int len;
             SslGetAlpnSelected(ssl, out protocol, out len);
-            
-            return len == 0 ? null : Marshal.PtrToStringAnsi(protocol, len);
+
+            if (len == 0)
+                return null;
+
+            byte[] result = new byte[len];
+            Marshal.Copy(protocol, result, 0, len);
+            return result;
         }
 
         internal static string GetProtocolVersion(SafeSslHandle ssl)

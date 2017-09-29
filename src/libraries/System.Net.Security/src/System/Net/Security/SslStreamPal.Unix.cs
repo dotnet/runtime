@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -29,22 +30,49 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
-            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+            SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, true, sslAuthenticationOptions);
+            if (inputBuffers != null)
+            {
+                Debug.Assert(inputBuffers.Length == 2);
+                Debug.Assert(inputBuffers[1].token == null);
+
+                return HandshakeInternal(credential, ref context, inputBuffers[0], outputBuffer, sslAuthenticationOptions);
+            }
+            else
+            {
+                return HandshakeInternal(credential, ref context, inputBuffer: null, outputBuffer, sslAuthenticationOptions);
+            }
         }
 
         public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
             string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, false, false, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(inputBuffers.Length == 2);
             Debug.Assert(inputBuffers[1].token == null);
-            return HandshakeInternal(credential, ref context, inputBuffers[0], outputBuffer, false, false, sslAuthenticationOptions);
+
+            return HandshakeInternal(credential, ref context, inputBuffers[0], outputBuffer, sslAuthenticationOptions);
+        }
+
+        public static SecurityBuffer[] GetIncomingSecurityBuffers(SslAuthenticationOptions options, ref SecurityBuffer incomingSecurity)
+        {
+            SecurityBuffer[] incomingSecurityBuffers = null;
+
+            if (incomingSecurity != null)
+            {
+                incomingSecurityBuffers = new SecurityBuffer[]
+                {
+                    incomingSecurity,
+                    new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY)
+                };
+            }
+
+            return incomingSecurityBuffers;
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
@@ -104,27 +132,7 @@ namespace System.Net.Security
 
         public static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> applicationProtocols)
         {
-            int protocolSize = 0;
-            foreach (SslApplicationProtocol protocol in applicationProtocols)
-            {
-                if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
-                {
-                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
-                }
-
-                protocolSize += protocol.Protocol.Length + 1;
-            }
-
-            byte[] buffer = new byte[protocolSize];
-            var offset = 0;
-            foreach (SslApplicationProtocol protocol in applicationProtocols)
-            {
-                buffer[offset++] = (byte)(protocol.Protocol.Length);
-                Array.Copy(protocol.Protocol.ToArray(), 0, buffer, offset, protocol.Protocol.Length);
-                offset += protocol.Protocol.Length;
-            }
-
-            return buffer;
+            return Interop.Ssl.ConvertAlpnProtocolListToByteArray(applicationProtocols);
         }
 
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context, SecurityBuffer inputBuffer,
@@ -164,8 +172,11 @@ namespace System.Net.Security
             }
         }
 
-        internal static string GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        internal static byte[] GetNegotiatedApplicationProtocol(SafeDeleteContext context)
         {
+            if (context == null)
+                return null;
+
             return Interop.Ssl.SslGetAlpnSelected(((SafeDeleteSslContext)context).SslContext);
         }
 
