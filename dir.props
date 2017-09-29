@@ -30,6 +30,19 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)RepoDirectories.props" />
+
+  <PropertyGroup Condition="'$(DotNetBuildOffline)' != 'true'">
+    <!-- list of nuget package sources passed to NuGet -->
+    <RestoreSources>
+      $(OverridePackageSource);
+      https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
+      https://dotnet.myget.org/F/cli-deps/api/v3/index.json;
+      https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
+      https://www.myget.org/F/nugetbuild/api/v3/index.json;
+      https://api.nuget.org/v3/index.json;
+      https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json;
+    </RestoreSources>
+  </PropertyGroup>
   
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
@@ -87,18 +100,6 @@
     <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
     <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
   </PropertyGroup>
-
-  <!-- list of nuget package sources passed to dnu -->
-  <ItemGroup>
-    <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DotnetSourceList Include="$(OverridePackageSource)" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
-  </ItemGroup>
 
   <!-- list of projects to perform batch restore -->
   <ItemGroup>
