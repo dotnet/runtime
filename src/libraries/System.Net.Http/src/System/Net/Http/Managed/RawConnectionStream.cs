@@ -10,9 +10,9 @@ namespace System.Net.Http
 {
     internal sealed partial class HttpConnection : IDisposable
     {
-        private sealed class ConnectionCloseReadStream : HttpContentReadStream
+        private sealed class RawConnectionStream : HttpContentDuplexStream
         {
-            public ConnectionCloseReadStream(HttpConnection connection) : base(connection)
+            public RawConnectionStream(HttpConnection connection) : base(connection)
             {
             }
 
@@ -54,6 +54,19 @@ namespace System.Net.Http
                     _connection = null;
                 }
             }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateBufferArgs(buffer, offset, count);
+                return
+                    _connection == null ? Task.FromException(new IOException(SR.net_http_io_write)) :
+                    count > 0 ? _connection.WriteWithoutBufferingAsync(buffer, offset, count, cancellationToken) :
+                    Task.CompletedTask;
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken) =>
+                _connection != null ? _connection.FlushAsync(cancellationToken) :
+                Task.CompletedTask;
         }
     }
 }

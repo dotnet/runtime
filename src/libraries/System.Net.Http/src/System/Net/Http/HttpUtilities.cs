@@ -25,11 +25,18 @@ namespace System.Net.Http
         internal static bool IsHttpUri(Uri uri)
         {
             Debug.Assert(uri != null);
-
-            string scheme = uri.Scheme;
-            return string.Equals("http", scheme, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals("https", scheme, StringComparison.OrdinalIgnoreCase);
+            return IsSupportedScheme(uri.Scheme);
         }
+
+        internal static bool IsSupportedScheme(string scheme) =>
+            IsSupportedNonSecureScheme(scheme) ||
+            IsSupportedSecureScheme(scheme);
+
+        internal static bool IsSupportedNonSecureScheme(string scheme) =>
+            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase);
+
+        internal static bool IsSupportedSecureScheme(string scheme) =>
+            string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase);
 
         // Returns true if the task was faulted or canceled and sets tcs accordingly.
         internal static bool HandleFaultsAndCancelation<T>(Task task, TaskCompletionSource<T> tcs)
