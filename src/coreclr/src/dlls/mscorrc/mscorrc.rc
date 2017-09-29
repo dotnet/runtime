@@ -853,6 +853,7 @@ BEGIN
     IDS_EE_SIMD_PARTIAL_TRUST_DISALLOWED    "SIMD intrinsics may not be used by partial trust applications."
     IDS_IBC_MISSING_EXTERNAL_TYPE           "The generic type specified by the IBC data is not available to this assembly"
     IDS_IBC_MISSING_EXTERNAL_METHOD         "The generic method specified by the IBC data is not available to this assembly"
+    IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      "Hardware intrinsics may not be used with ngen."
 
     IDS_INET_E_CANNOT_CONNECT               "Cannot connect to URL for '%1'."
     IDS_INET_E_RESOURCE_NOT_FOUND           "The server or proxy was not found for '%1'."
