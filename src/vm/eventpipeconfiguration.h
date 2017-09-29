@@ -35,6 +35,12 @@ public:
     // Perform initialization that cannot be performed in the constructor.
     void Initialize();
 
+    // Create a new provider.
+    EventPipeProvider* CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData);
+
+    // Delete a provider.
+    void DeleteProvider(EventPipeProvider *pProvider);
+
     // Register a provider.
     bool RegisterProvider(EventPipeProvider &provider);
 

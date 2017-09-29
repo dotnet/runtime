@@ -5162,6 +5162,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
 
 //
 // This method has duplicated logic from bcl\system\collections\generic\equalitycomparer.cs
+// and matching logic in jitinterface.cpp
 //
 static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
 {

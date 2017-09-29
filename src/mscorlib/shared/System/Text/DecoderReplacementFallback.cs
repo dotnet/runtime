@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
@@ -21,7 +20,6 @@ namespace System.Text
         {
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
-            Contract.EndContractBlock();
 
             // Make sure it doesn't have bad surrogate pairs
             bool bFoundHigh = false;

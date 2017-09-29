@@ -317,7 +317,7 @@ public:
     /* know thine own stubs.  It is possible that when multiple
     virtualcallstub managers are built that these may need to become
     non-static, and the callers modified accordingly */
-    StubKind getStubKind(PCODE stubStartAddress)
+    StubKind getStubKind(PCODE stubStartAddress, BOOL usePredictStubKind = TRUE)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
@@ -329,7 +329,7 @@ public:
 
         // Rather than calling IsInRange(stubStartAddress) for each possible stub kind
         // we can peek at the assembly code and predict which kind of a stub we have
-        StubKind predictedKind = predictStubKind(stubStartAddress);
+        StubKind predictedKind = (usePredictStubKind) ? predictStubKind(stubStartAddress) : SK_UNKNOWN;
 
         if (predictedKind == SK_DISPATCH)
         {
@@ -732,7 +732,8 @@ private:
 public:
     // Given a stub address, find the VCSManager that owns it.
     static VirtualCallStubManager *FindStubManager(PCODE addr,
-                                                   StubKind* wbStubKind = NULL);
+                                                   StubKind* wbStubKind = NULL,
+                                                   BOOL usePredictStubKind = TRUE);
 
 #ifndef DACCESS_COMPILE
     // insert a linked list of indirection cells at the beginning of m_RecycledIndCellList

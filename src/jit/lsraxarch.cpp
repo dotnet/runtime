@@ -193,18 +193,11 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 #if !defined(_TARGET_64BIT_)
 
         case GT_LONG:
-            if (tree->IsUnusedValue())
-            {
-                // An unused GT_LONG node needs to consume its sources.
-                info->srcCount = 2;
-                info->dstCount = 0;
-            }
-            else
-            {
-                // Passthrough. Should have been marked contained.
-                info->srcCount = 0;
-                assert(info->dstCount == 0);
-            }
+            assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
+
+            // An unused GT_LONG node needs to consume its sources.
+            info->srcCount = 2;
+            info->dstCount = 0;
             break;
 
 #endif // !defined(_TARGET_64BIT_)
@@ -2671,20 +2664,6 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
         info->srcCount += GetOperandSourceCount(op1);
     }
     info->srcCount += GetOperandSourceCount(op2);
-
-#if !defined(_TARGET_64BIT_)
-    // Long compares will consume GT_LONG nodes, each of which produces two results.
-    // Thus for each long operand there will be an additional source.
-    // TODO-X86-CQ: Mark hiOp2 and loOp2 as contained if it is a constant or a memory op.
-    if (varTypeIsLong(op1Type))
-    {
-        info->srcCount++;
-    }
-    if (varTypeIsLong(op2Type))
-    {
-        info->srcCount++;
-    }
-#endif // !defined(_TARGET_64BIT_)
 }
 
 //------------------------------------------------------------------------

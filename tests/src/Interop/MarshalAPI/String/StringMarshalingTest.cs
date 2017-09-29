@@ -231,6 +231,24 @@ public class StringMarshalingTest
         }
     }
 
+    private void TestNullString()
+    {
+        if (Marshal.PtrToStringUTF8(IntPtr.Zero) != null)
+        {
+            throw new Exception("IntPtr.Zero not marshaled to null for UTF8 strings");
+        }
+
+        if (Marshal.PtrToStringUni(IntPtr.Zero) != null)
+        {
+            throw new Exception("IntPtr.Zero not marshaled to null for Unicode strings");
+        }
+
+        if (Marshal.PtrToStringAnsi(IntPtr.Zero) != null)
+        {
+            throw new Exception("IntPtr.Zero not marshaled to null for ANSI strings");
+        }
+    }
+
     public  bool RunTests()
     {
         StringToBStrToString();
@@ -240,6 +258,7 @@ public class StringMarshalingTest
         StringToHGlobalAnsiToString();
         StringToHGlobalUniToString();
         TestUTF8String();
+        TestNullString();
         return true;
     }
 

@@ -6,7 +6,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 using System.Collections.Generic;
 
 namespace System.Globalization

@@ -279,17 +279,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             {
                 castOpType = genUnsignedType(castOpType);
             }
-#ifdef DEBUG
-            if (!tree->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(castOpType)))
-            {
-                // If converting to float/double, the operand must be 4 or 8 byte in size.
-                if (varTypeIsFloating(castToType))
-                {
-                    unsigned opSize = genTypeSize(castOpType);
-                    assert(opSize == 4 || opSize == 8);
-                }
-            }
-#endif // DEBUG
 
             if (varTypeIsLong(castOpType))
             {
@@ -452,19 +441,11 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_LONG:
-            if (tree->IsUnusedValue())
-            {
-                // An unused GT_LONG node needs to consume its sources.
-                info->srcCount = 2;
-                info->dstCount = 0;
-            }
-            else
-            {
-                // Passthrough. Should have been marked contained.
-                info->srcCount = 0;
-                assert(info->dstCount == 0);
-            }
+            assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
 
+            // An unused GT_LONG node needs to consume its sources.
+            info->srcCount = 2;
+            info->dstCount = 0;
             break;
 
         case GT_CNS_DBL:
@@ -663,6 +644,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
             if (compiler->codeGen->gcInfo.gcIsWriteBarrierAsgNode(tree))
             {
+                info->srcCount = 2;
                 TreeNodeInfoInitGCWriteBarrier(tree);
                 break;
             }
@@ -708,18 +690,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_COPY:
             info->srcCount = 1;
-#ifdef ARM_SOFTFP
-            // This case currently only occurs for double types that are passed as TYP_LONG;
-            // actual long types would have been decomposed by now.
-            if (tree->TypeGet() == TYP_LONG)
-            {
-                info->dstCount = 2;
-            }
-            else
-#endif
-            {
-                assert(info->dstCount == 1);
-            }
+            assert(info->dstCount == 1);
             break;
 
         case GT_PUTARG_SPLIT:
@@ -733,6 +704,28 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_PUTARG_REG:
             TreeNodeInfoInitPutArgReg(tree->AsUnOp());
             break;
+
+        case GT_BITCAST:
+        {
+            info->srcCount = 1;
+            assert(info->dstCount == 1);
+            regNumber argReg  = tree->gtRegNum;
+            regMaskTP argMask = genRegMask(argReg);
+#ifdef ARM_SOFTFP
+            // If type of node is `long` then it is actually `double`.
+            // The actual `long` types must have been transformed as a field list with two fields.
+            if (tree->TypeGet() == TYP_LONG)
+            {
+                info->dstCount++;
+                assert(genRegArgNext(argReg) == REG_NEXT(argReg));
+                argMask |= genRegMask(REG_NEXT(argReg));
+            }
+#endif // ARM_SOFTFP
+            info->setDstCandidates(this, argMask);
+            info->setSrcCandidates(this, argMask);
+            tree->AsUnOp()->gtOp1->gtLsraInfo.isTgtPref = true;
+        }
+        break;
 
         default:
 #ifdef DEBUG

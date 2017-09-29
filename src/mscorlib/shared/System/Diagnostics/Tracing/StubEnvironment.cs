@@ -52,29 +52,6 @@ namespace System.Diagnostics.Tracing.Internal
 
 #if ES_BUILD_AGAINST_DOTNET_V35
 
-namespace Microsoft.Diagnostics.Contracts.Internal
-{
-    internal class Contract
-    {
-        public static void Assert(bool invariant)
-        {
-            Assert(invariant, string.Empty);
-        }
-        public static void Assert(bool invariant, string message)
-        {
-            if (!invariant)
-            {
-                if (System.Diagnostics.Debugger.IsAttached)
-                    System.Diagnostics.Debugger.Break();
-                throw new Exception("Assertion failed: " + message);
-            }
-        }
-        public static void EndContractBlock()
-        { }
-    }
-}
-
-
 namespace Microsoft.Internal
 {
     using System.Text;

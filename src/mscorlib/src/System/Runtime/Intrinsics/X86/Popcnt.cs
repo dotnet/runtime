@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
@@ -13,15 +12,15 @@ namespace System.Runtime.Intrinsics.X86
     [CLSCompliant(false)]
     public static class Popcnt
     {
-        public static bool IsSupported { get { return false; } }
+        public static bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// int _mm_popcnt_u32 (unsigned int a)
         /// </summary>
-        public static int PopCount(uint value) { throw new NotImplementedException(); }
+        public static int PopCount(uint value) => PopCount(value);
         /// <summary>
         /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
         /// </summary>
-        public static long PopCount(ulong value) { throw new NotImplementedException(); }
+        public static long PopCount(ulong value) => PopCount(value);
     }
 }

@@ -179,11 +179,11 @@ void SetContains256bitAVX(bool value)
     contains256bitAVXInstruction = value;
 }
 
-bool IsThreeOperandBinaryAVXInstruction(instruction ins);
-bool IsThreeOperandMoveAVXInstruction(instruction ins);
+bool IsDstDstSrcAVXInstruction(instruction ins);
+bool IsDstSrcSrcAVXInstruction(instruction ins);
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
-    return (IsThreeOperandBinaryAVXInstruction(ins) || IsThreeOperandMoveAVXInstruction(ins));
+    return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
 }
 bool Is4ByteAVXInstruction(instruction ins);
 #else  // !FEATURE_AVX_SUPPORT
@@ -203,11 +203,11 @@ bool hasVexPrefix(code_t code)
 {
     return false;
 }
-bool IsThreeOperandBinaryAVXInstruction(instruction ins)
+bool IsDstDstSrcAVXInstruction(instruction ins)
 {
     return false;
 }
-bool IsThreeOperandMoveAVXInstruction(instruction ins)
+bool IsDstSrcSrcAVXInstruction(instruction ins)
 {
     return false;
 }

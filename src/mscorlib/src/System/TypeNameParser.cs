@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Reflection;
 using System.Security;
@@ -75,7 +74,6 @@ namespace System
                 throw new ArgumentNullException(nameof(typeName));
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
-            Contract.EndContractBlock();
 
             Type ret = null;
 
@@ -192,7 +190,7 @@ namespace System
 
         private static Assembly ResolveAssembly(string asmName, Func<AssemblyName, Assembly> assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)
         {
-            Contract.Requires(asmName != null && asmName.Length > 0);
+            Debug.Assert(asmName != null && asmName.Length > 0);
 
             Assembly assembly = null;
 
@@ -230,7 +228,7 @@ namespace System
 
         private static Type ResolveType(Assembly assembly, string[] names, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            Contract.Requires(names != null && names.Length > 0);
+            Debug.Assert(names != null && names.Length > 0);
 
             Type type = null;
 
