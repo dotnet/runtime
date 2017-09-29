@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.ProjectModel">
-      <Version>3.5.0</Version>
+      <Version>4.3.0-preview2-4095</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyModel">
       <Version>1.1.1</Version>

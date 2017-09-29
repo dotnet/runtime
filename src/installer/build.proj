@@ -41,15 +41,12 @@
     <PropertyGroup>
       <DependencyModelTFM>netstandard1.3</DependencyModelTFM>
       <DependencyModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
-      <NugetModelTFM>netstandard1.3</NugetModelTFM>
-      <NugetModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net45</NugetModelTFM>
     </PropertyGroup>
 
       <ItemGroup>
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
         <CustomTaskDependencies Include="$(PackagesDir)microsoft.extensions.dependencymodel\1.1.1\lib\$(DependencyModelTFM)\Microsoft.Extensions.DependencyModel.dll" />
-        <CustomTaskDependencies Include="$(PackagesDir)nuget.runtimemodel\3.5.0\lib\$(NugetModelTFM)\NuGet.RuntimeModel.dll" />
       </ItemGroup>
       <Copy SourceFiles="@(CustomTaskDependencies)"
             DestinationFolder="$(LocalBuildToolsTaskDir)"
