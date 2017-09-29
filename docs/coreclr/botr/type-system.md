@@ -11,7 +11,7 @@ The CLR type system is our representation the type system described in the ECMA 
 Overview
 --------
 
-The type sytem is composed of a series of data structures, some of which are described in other Book of the Runtime chapters, as well as a set of algorithms which operate on and create those data structures. It is NOT the type system exposed through reflection, although that one does depend on this system.
+The type system is composed of a series of data structures, some of which are described in other Book of the Runtime chapters, as well as a set of algorithms which operate on and create those data structures. It is NOT the type system exposed through reflection, although that one does depend on this system.
 
 The major data structures maintained by the type system are:
 
@@ -50,7 +50,7 @@ The type system is generally a service provided to many parts of the CLR, and mo
 The primary dependencies of the type system follow:
 
 - The **loader** needed to get the correct metadata to work with.
-- The **metadata system** provides a metadata api to gather information.
+- The **metadata system** provides a metadata API to gather information.
 - The **security system** informs the type system whether or not certain type system structures are permitted (e.g. inheritance).
 - The **AppDomain** provides a LoaderAllocator to handle allocation behavior for the type system data structures.
 
@@ -95,7 +95,7 @@ Design of a typical algorithm used at runtime during execution of managed code
 
 The casting algorithm is typical of algorithms in the type system that are heavily used during the execution of managed code.
 
-There are at least 4 separate entrypoints into this algorithm. Each entrypoint is chosen to provide a different fast path, in the hopes that the best performance possible will be achieved.
+There are at least 4 separate entry points into this algorithm. Each entry point is chosen to provide a different fast path, in the hopes that the best performance possible will be achieved.
 
 - Can an object be cast to a particular non-type equivalent non-array type?
 - Can an object be cast to an interface type that does not implement generic variance?
@@ -200,7 +200,7 @@ The type system data structures are a core part of what is saved into NGEN image
 
 In restoration, when a type system data structure is first needed, the data structure is fixed up with correct pointers. This is tied into the type loading levels described in the [Type Loader](type-loader.md) Book of the Runtime chapter.
 
-There also exists the concept of pre-restored data structures. This means that the data structure is sufficiently correct at ngen image load time (after intra-module pointer fixups and eager load type fixups), that the data structure may be used as is. This optimization requires that the ngen image be "hard bound" to its dependent assemblies. See NGEN documentation for further details.
+There also exists the concept of pre-restored data structures. This means that the data structure is sufficiently correct at NGEN image load time (after intra-module pointer fixups and eager load type fixups), that the data structure may be used as is. This optimization requires that the NGEN image be "hard bound" to its dependent assemblies. See NGEN documentation for further details.
 
 Type System and Domain Neutral Loading
 --------------------------------------
