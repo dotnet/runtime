@@ -1348,26 +1348,35 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#ifndef CROSSGEN_COMPILE
-void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
+void FlushWriteBarrierInstructionCache()
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    // this wouldn't be called in arm64, just to comply with gchelpers.h
 }
 
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+#ifndef CROSSGEN_COMPILE
+int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
+}
+
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+{
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-void SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
 }
 
-void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #endif // CROSSGEN_COMPILE
