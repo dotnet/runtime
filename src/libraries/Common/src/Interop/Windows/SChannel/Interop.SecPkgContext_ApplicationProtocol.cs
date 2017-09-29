@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -28,14 +29,14 @@ internal static partial class Interop
         public ApplicationProtocolNegotiationExt NegotiationExtension;
         public byte ProtocolIdSize;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = MAX_PROTOCOL_ID_SIZE)]
-        public char[] ProtocolId;
+        public byte[] ProtocolId;
 
-        public string GetProtocolId()
+        public byte[] GetProtocolId()
         {
-            if (ProtocolId == null)
-                return null;
+            byte[] result = new byte[ProtocolIdSize];
+            Array.Copy(ProtocolId, result, ProtocolIdSize);
 
-            return new string(ProtocolId, 0, ProtocolIdSize);
+            return result;
         }
     }
 }

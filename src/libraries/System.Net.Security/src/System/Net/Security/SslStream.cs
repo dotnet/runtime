@@ -84,7 +84,7 @@ namespace System.Net.Security
             _sslState = new SslState(innerStream);
         }
 
-        public string NegotiatedApplicationProtocol
+        public SslApplicationProtocol NegotiatedApplicationProtocol
         {
             get
             {
