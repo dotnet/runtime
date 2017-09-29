@@ -11,10 +11,12 @@ using Xunit.Sdk;
 namespace System.Drawing
 {
     public static class Helpers
-    {        
+    {
         public const string GdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetGdiplusIsAvailable);
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
+        public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
+        public const string GdiPlusIsAvailableNotWindows7 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotWindows7);
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
 
         public static bool GetGdiplusIsAvailable()
@@ -43,9 +45,30 @@ namespace System.Drawing
             }
         }
 
+        public static bool GetRecentGdiPlusIsAvailable2()
+        {
+            // CentOS 7, RHEL 7 and Ubuntu 14.04, as well as Fedora 25 and OpenSUSE 4.22 are running outdated versions of libgdiplus
+            if (PlatformDetection.IsCentos7 || PlatformDetection.IsRedHat || PlatformDetection.IsUbuntu1404 || PlatformDetection.IsFedora || PlatformDetection.IsOpenSUSE)
+            {
+                return false;
+            }
+
+            return GetGdiplusIsAvailable();
+        }
+
         public static bool GetGdiPlusIsAvailableNotRedhat73()
         {
             if (PlatformDetection.IsRedHat)
+            {
+                return false;
+            }
+
+            return GetGdiplusIsAvailable();
+        }
+
+        public static bool GetGdiPlusIsAvailableNotWindows7()
+        {
+            if (PlatformDetection.IsWindows7)
             {
                 return false;
             }
