@@ -360,7 +360,7 @@
       "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "DockerTag": {
-      "value": "ubuntu1404_cross_prereqs_v1",
+      "value": "ubuntu-14.04-cross-0cd4667-20170319080304",
       "allowOverride": true
     },
     "CloudDropAccountName": {
