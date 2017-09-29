@@ -16,8 +16,7 @@ echo %5
 
 setlocal
 set __sourceDir=%1
-:: VS 2015 is the minimum supported toolset
-set __VSString=14 2015
+set __VSString=15 2017
 
 :: Set the target architecture to a format cmake understands. ANYCPU defaults to x64
 set cm_BaseRid=win10-%2
