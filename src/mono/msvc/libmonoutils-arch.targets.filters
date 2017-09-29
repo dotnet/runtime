@@ -65,7 +65,7 @@
   <ItemGroup Label="arch_cross_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-cross.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\cross</Filter>
-    </ClCompile>    
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resource Files$(MonoUtilsFilterSubFolder)\arch">

@@ -9,5 +9,5 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gtimer-win32.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode-win32.c" />
-   </ItemGroup>
+  </ItemGroup>
 </Project>

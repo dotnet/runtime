@@ -6,16 +6,16 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\appdomain-icalls.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\assembly.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\assembly-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\attach.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\attach.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\attach.c" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cil-coff.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cil-coff.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-inlines.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-accessors.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\cominterop.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cominterop.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-io.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-io.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\coree.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree-internals.h" />
@@ -56,14 +56,14 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mempool-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\metadata.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\metadata-verify.c" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\metadata-internals.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\metadata-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\method-builder.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-config.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-debug.c" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-internals.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-endian.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-endian.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-hash.h" />
@@ -199,15 +199,15 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\blob.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-helpers.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-mono-symfile.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-mono-symfile.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\threads.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\environment.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\environment.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\exception.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\image.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\metadata.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-config.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-debug.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-debug.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-gc.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-bridge.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\object.h" />
@@ -217,7 +217,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\reflection.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\row-indexes.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\tokentype.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\verify.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\verify.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MonoSourceLocation)\mono\metadata\Makefile.am" />

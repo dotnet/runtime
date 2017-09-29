@@ -45,7 +45,7 @@
     </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32error-unix.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
-    </ClCompile>   
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\posix">

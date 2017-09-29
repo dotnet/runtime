@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
   <ItemGroup Label="monoutils_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-md5.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-sha1.c" />
@@ -14,44 +17,26 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl-windows.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl-darwin.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl-posix.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-dl-wasm.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl-windows-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-windows.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-common.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-posix.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-android.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-darwin.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-internal-hash.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-internal-hash.h" />
@@ -132,71 +117,38 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-state-machine.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-posix.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-posix-signals.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-mach.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-mach-helper.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-windows.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-linux.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-freebsd.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-netbsd.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-openbsd.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-android.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-haiku.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-wasm.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-threads-debug.h" />
@@ -212,7 +164,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-hwcap.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-vars.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\bsearch.h" />        
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\bsearch.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\bsearch.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-signal-handler.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-conc-hashtable.h" />
@@ -238,14 +190,14 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\os-event.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\refcount.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\w32api.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\unlocked.h" />  
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\unlocked.h" />
   </ItemGroup>
   <ItemGroup Label="libmonoutilsinclude_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-publib.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl-fallback.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-counters.h" />    
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-counters.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MonoSourceLocation)\mono\utils\Makefile.am" />
