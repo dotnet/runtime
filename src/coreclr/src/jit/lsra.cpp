@@ -140,6 +140,12 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
         GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
         mul->gtOtherReg        = reg;
     }
+    else if (tree->OperGet() == GT_COPY)
+    {
+        assert(regIdx == 1);
+        GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
+        copy->gtOtherRegs[0]      = (regNumberSmall)reg;
+    }
     else if (tree->OperGet() == GT_PUTARG_SPLIT)
     {
         GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
