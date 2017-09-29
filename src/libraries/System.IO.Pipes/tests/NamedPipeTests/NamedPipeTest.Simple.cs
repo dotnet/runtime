@@ -17,8 +17,6 @@ namespace System.IO.Pipes.Tests
     /// </summary>
     public abstract class NamedPipeTest_Simple : NamedPipeTestBase
     {
-        public static bool IsNotWinRTOrIsWindows10Version16256OrGreater => PlatformDetection.IsNotWinRTSupported || PlatformDetection.IsWindows10Version16256OrGreater;
-
         /// <summary>
         /// Yields every combination of testing options for the OneWayReadWrites test
         /// </summary>
@@ -34,7 +32,7 @@ namespace System.IO.Pipes.Tests
                             yield return new object[] { serverOption, clientOption, asyncServerOps, asyncClientOps };
         }
 
-        [ConditionalTheory(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Theory]
         [MemberData(nameof(OneWayReadWritesMemberData))]
         public async Task OneWayReadWrites(PipeOptions serverOptions, PipeOptions clientOptions, bool asyncServerOps, bool asyncClientOps)
         {
@@ -103,7 +101,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task ClonedServer_ActsAsOriginalServer()
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -144,7 +142,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task ClonedClient_ActsAsOriginalClient()
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -183,7 +181,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public void ConnectOnAlreadyConnectedClient_Throws_InvalidOperationException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -201,7 +199,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public void WaitForConnectionOnAlreadyConnectedServer_Throws_InvalidOperationException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -219,7 +217,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task CancelTokenOn_ServerWaitForConnectionAsync_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -239,7 +237,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_OperationCanceledException()
         {
@@ -254,7 +252,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_IOException()
         {
@@ -269,7 +267,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task OperationsOnDisconnectedServer()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -306,7 +304,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public virtual async Task OperationsOnDisconnectedClient()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -351,7 +349,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implemented on sockets, where disposal information doesn't propagate
         public async Task Windows_OperationsOnNamedServerWithDisposedClient()
         {
@@ -384,7 +382,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public void OperationsOnUnconnectedServer()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -418,7 +416,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public void OperationsOnUnconnectedClient()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -449,7 +447,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task DisposedServerPipe_Throws_ObjectDisposedException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -465,7 +463,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task DisposedClientPipe_Throws_ObjectDisposedException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -481,7 +479,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task ReadAsync_DisconnectDuringRead_Returns0()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -503,7 +501,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task WriteAsync_DisconnectDuringWrite_Throws()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -524,7 +522,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [ActiveIssue("dotnet/corefx #16934", TargetFrameworkMonikers.NetFramework)] //Hangs forever in desktop as it doesn't have cancellation support
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -563,7 +561,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -593,7 +591,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -623,7 +621,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [ActiveIssue("dotnet/corefx #16934", TargetFrameworkMonikers.NetFramework)] //Hangs forever in desktop as it doesn't have cancellation support
         public async Task Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -660,7 +658,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -689,7 +687,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -718,7 +716,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ManyConcurrentOperations(bool cancelable)
@@ -756,6 +754,7 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOutRead_ClientInOutWrite : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -769,6 +768,7 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOutWrite_ClientInOutRead : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -782,6 +782,7 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOut_ClientIn : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -795,6 +796,7 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOut_ClientOut : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -808,6 +810,7 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerOut_ClientIn : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -821,6 +824,7 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerIn_ClientOut : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)

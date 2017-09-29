@@ -85,7 +85,6 @@ namespace System
         public static bool IsWindows10Version1607OrGreater { get { throw null; } }
         public static bool IsWindows10Version16251OrGreater { get { throw null; } }
         public static bool IsWindows10Version1703OrGreater { get { throw null; } }
-        public static bool IsWindows10Version16256OrGreater { get { throw null; } }
         public static bool IsWindowsRedStone2 { get { throw null; } }
         public static bool IsWindows7 { get { throw null; } }
         public static bool IsWindows8x { get { throw null; } }

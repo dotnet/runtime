@@ -8,10 +8,9 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Write_ServerOut_ClientIn : PipeTest_Write
     {
-        protected override bool ShouldSkipTest() => PlatformDetection.IsWinRTSupported && !PlatformDetection.IsWindows10Version16256OrGreater;
-
         protected override ServerClientPair CreateServerClientPair()
         {
             ServerClientPair ret = new ServerClientPair();
@@ -29,10 +28,9 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Write_ServerIn_ClientOut : PipeTest_Write
     {
-        protected override bool ShouldSkipTest() => PlatformDetection.IsWinRTSupported && !PlatformDetection.IsWindows10Version16256OrGreater;
-
         protected override ServerClientPair CreateServerClientPair()
         {
             ServerClientPair ret = new ServerClientPair();
@@ -50,10 +48,9 @@ namespace System.IO.Pipes.Tests
         }
     }
     
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Write_ServerInOut_ClientInOut : PipeTest_Write
     {
-        protected override bool ShouldSkipTest() => PlatformDetection.IsWinRTSupported && !PlatformDetection.IsWindows10Version16256OrGreater;
-
         protected override ServerClientPair CreateServerClientPair()
         {
             ServerClientPair ret = new ServerClientPair();
