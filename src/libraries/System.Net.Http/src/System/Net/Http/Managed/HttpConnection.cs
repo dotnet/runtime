@@ -347,7 +347,7 @@ namespace System.Net.Http
                 }
 
                 // Create the response stream.
-                HttpContentReadStream responseStream;
+                HttpContentStream responseStream;
                 if (request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304)
                 {
                     responseStream = EmptyReadStream.Instance;
@@ -369,6 +369,10 @@ namespace System.Net.Http
                 else if (response.Headers.TransferEncodingChunked == true)
                 {
                     responseStream = new ChunkedEncodingReadStream(this);
+                }
+                else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
+                {
+                    responseStream = new RawConnectionStream(this);
                 }
                 else
                 {
