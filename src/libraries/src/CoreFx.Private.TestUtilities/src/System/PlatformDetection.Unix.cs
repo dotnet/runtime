@@ -21,7 +21,6 @@ namespace System
         public static bool IsWindows10Version1703OrGreater => false;
         public static bool IsWindows10InsiderPreviewBuild16215OrGreater => false;
         public static bool IsWindows10Version16251OrGreater => false;
-        public static bool IsWindows10Version16256OrGreater => false;
         public static bool IsNotOneCoreUAP =>  true;
         public static bool IsNetfx462OrNewer() { return false; }
         public static bool IsNetfx470OrNewer() { return false; }

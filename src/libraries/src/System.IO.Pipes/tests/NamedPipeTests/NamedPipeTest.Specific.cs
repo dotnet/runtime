@@ -14,11 +14,10 @@ namespace System.IO.Pipes.Tests
     /// The Specific NamedPipe tests cover edge cases or otherwise narrow cases that
     /// show up within particular server/client directional combinations.
     /// </summary>
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Specific : NamedPipeTestBase
     {
-        public static bool IsNotWinRTOrIsWindows10Version16256OrGreater => PlatformDetection.IsNotWinRTSupported || PlatformDetection.IsWindows10Version16256OrGreater;
-
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public void InvalidConnectTimeout_Throws_ArgumentOutOfRangeException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
@@ -28,7 +27,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task ConnectToNonExistentServer_Throws_TimeoutException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
@@ -40,7 +39,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public async Task CancelConnectToNonExistentServer_Throws_OperationCanceledException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
@@ -56,7 +55,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses bidirectional sockets
         public void ConnectWithConflictingDirections_Throws_UnauthorizedAccessException()
         {
@@ -77,7 +76,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Theory]
         [InlineData(PipeOptions.None)]
         [InlineData(PipeOptions.Asynchronous)]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix currently doesn't support message mode
@@ -168,7 +167,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't support MaxNumberOfServerInstances
         public async Task Windows_Get_NumberOfServerInstances_Succeed()
         {
@@ -190,7 +189,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Win32 P/Invokes to verify the user name
         public async Task Windows_GetImpersonationUserName_Succeed()
         {
@@ -212,7 +211,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invoke to verify the user name
         public async Task Unix_GetImpersonationUserName_Succeed()
         {
@@ -232,14 +231,14 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix currently doesn't support message mode
         public void Unix_MessagePipeTransissionMode()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message));
         }
 
-        [ConditionalTheory(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Theory]
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.Out)]
         [InlineData(PipeDirection.InOut)]
@@ -277,7 +276,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses bidirectional sockets
         public static void Windows_BufferSizeRoundtripping()
         {
@@ -306,7 +305,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         public void PipeTransmissionMode_Returns_Byte()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -316,7 +315,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't currently support message mode
         public void Windows_SetReadModeTo__PipeTransmissionModeByte()
         {
@@ -357,7 +356,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix doesn't currently support message mode
         public void Unix_SetReadModeTo__PipeTransmissionModeByte()
         {
@@ -396,7 +395,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Theory]
         [InlineData(PipeDirection.Out, PipeDirection.In)]
         [InlineData(PipeDirection.In, PipeDirection.Out)]
         public void InvalidReadMode_Throws_ArgumentOutOfRangeException(PipeDirection serverDirection, PipeDirection clientDirection)
@@ -414,7 +413,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNotWinRTOrIsWindows10Version16256OrGreater))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks MaxLength for PipeName on Unix
         public void NameTooLong_MaxLengthPerPlatform()
         {
