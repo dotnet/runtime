@@ -170,6 +170,7 @@ namespace System
                 if (_index < 0)
                 {
                     memoryHandle = ((OwnedMemory<T>)_arrayOrOwnedMemory).Pin();
+                    memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
                 }
                 else
                 {

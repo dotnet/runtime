@@ -430,7 +430,8 @@ namespace System
         s,
         keyValuePair,
         input,
-        ownedMemory
+        ownedMemory,
+        pointer
     }
 
     //
