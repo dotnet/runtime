@@ -76,13 +76,10 @@ GenTreePtr LC_Ident::ToGenTree(Compiler* comp)
     switch (type)
     {
         case Const:
-#ifdef _TARGET_64BIT_
-            return comp->gtNewLconNode(constant);
-#else
-            return comp->gtNewIconNode((ssize_t)constant);
-#endif
+            assert(constant <= INT32_MAX);
+            return comp->gtNewIconNode(constant);
         case Var:
-            return comp->gtNewLclvNode((unsigned)constant, comp->lvaTable[constant].lvType);
+            return comp->gtNewLclvNode(constant, comp->lvaTable[constant].lvType);
         case ArrLen:
             return arrLen.ToGenTree(comp);
         case Null:
@@ -111,12 +108,6 @@ GenTreePtr LC_Expr::ToGenTree(Compiler* comp)
     {
         case Ident:
             return ident.ToGenTree(comp);
-        case IdentPlusConst:
-#ifdef _TARGET_64BIT_
-            return comp->gtNewOperNode(GT_ADD, TYP_LONG, ident.ToGenTree(comp), comp->gtNewLconNode(constant));
-#else
-            return comp->gtNewOperNode(GT_ADD, TYP_INT, ident.ToGenTree(comp), comp->gtNewIconNode((ssize_t)constant));
-#endif
         default:
             assert(!"Could not convert LC_Expr to GenTree");
             unreached();
@@ -135,7 +126,10 @@ GenTreePtr LC_Expr::ToGenTree(Compiler* comp)
 //
 GenTreePtr LC_Condition::ToGenTree(Compiler* comp)
 {
-    return comp->gtNewOperNode(oper, TYP_INT, op1.ToGenTree(comp), op2.ToGenTree(comp));
+    GenTree* op1Tree = op1.ToGenTree(comp);
+    GenTree* op2Tree = op2.ToGenTree(comp);
+    assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
+    return comp->gtNewOperNode(oper, TYP_INT, op1Tree, op2Tree);
 }
 
 //--------------------------------------------------------------------------------------------------
