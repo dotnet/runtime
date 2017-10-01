@@ -178,12 +178,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_CMP:
-        case GT_JCMP:
             return LowerCompare(node);
 
         case GT_JTRUE:
-            ContainCheckJTrue(node->AsOp());
-            break;
+            return LowerJTrue(node->AsOp());
 
         case GT_JMP:
             LowerJmpMethod(node);
@@ -2694,6 +2692,66 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 #endif // _TARGET_XARCH_
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
+}
+
+//------------------------------------------------------------------------
+// Lowering::LowerJTrue: Lowers a JTRUE node.
+//
+// Arguments:
+//    jtrue - the JTRUE node
+//
+// Return Value:
+//    The next node to lower (usually nullptr).
+//
+// Notes:
+//    On ARM64 this may remove the JTRUE node and transform its associated
+//    relop into a JCMP node.
+//
+GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
+{
+#ifdef _TARGET_ARM64_
+    GenTree* relop    = jtrue->gtGetOp1();
+    GenTree* relopOp2 = relop->gtOp.gtGetOp2();
+
+    if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
+    {
+        bool     useJCMP = false;
+        unsigned flags   = 0;
+
+        if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
+        {
+            // Codegen will use cbz or cbnz in codegen which do not affect the flag register
+            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : 0;
+            useJCMP = true;
+        }
+        else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
+        {
+            // Codegen will use tbz or tbnz in codegen which do not affect the flag register
+            flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : 0);
+            useJCMP = true;
+        }
+
+        if (useJCMP)
+        {
+            relop->SetOper(GT_JCMP);
+            relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+            relop->gtFlags |= flags;
+            relop->gtLsraInfo.isNoRegCompare = true;
+
+            relopOp2->SetContained();
+
+            BlockRange().Remove(jtrue);
+
+            assert(relop->gtNext == nullptr);
+            return nullptr;
+        }
+    }
+#endif // _TARGET_ARM64_
+
+    ContainCheckJTrue(jtrue);
+
+    assert(jtrue->gtNext == nullptr);
+    return nullptr;
 }
 
 // Lower "jmp <method>" tail call to insert PInvoke method epilog if required.
