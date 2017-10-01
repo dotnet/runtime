@@ -327,7 +327,7 @@ struct LC_Ident
         Null,
     };
 
-    INT64     constant; // The constant value if this node is of type "Const", or the lcl num if "Var"
+    unsigned  constant; // The constant value if this node is of type "Const", or the lcl num if "Var"
     LC_Array  arrLen;   // The LC_Array if the type is "ArrLen"
     IdentType type;     // The type of this object
 
@@ -355,7 +355,7 @@ struct LC_Ident
         switch (type)
         {
             case Const:
-                printf("%I64d", constant);
+                printf("%u", constant);
                 break;
             case Var:
                 printf("V%02d", constant);
@@ -376,7 +376,7 @@ struct LC_Ident
     LC_Ident() : type(Invalid)
     {
     }
-    LC_Ident(INT64 constant, IdentType type) : constant(constant), type(type)
+    LC_Ident(unsigned constant, IdentType type) : constant(constant), type(type)
     {
     }
     explicit LC_Ident(IdentType type) : type(type)
@@ -392,7 +392,7 @@ struct LC_Ident
 
 /**
  *
- *  Symbolic representation of an expr that involves an "LC_Ident" or an "LC_Ident - constant"
+ *  Symbolic representation of an expr that involves an "LC_Ident"
  */
 struct LC_Expr
 {
@@ -400,11 +400,9 @@ struct LC_Expr
     {
         Invalid,
         Ident,
-        IdentPlusConst
     };
 
     LC_Ident ident;
-    INT64    constant;
     ExprType type;
 
     // Equality operator
@@ -418,12 +416,6 @@ struct LC_Expr
             return false;
         }
 
-        // If the type involves arithmetic, the constant should match.
-        if (type == IdentPlusConst && constant != that.constant)
-        {
-            return false;
-        }
-
         // Check if the ident match.
         return (ident == that.ident);
     }
@@ -431,13 +423,7 @@ struct LC_Expr
 #ifdef DEBUG
     void Print()
     {
-        if (type == IdentPlusConst)
-        {
-            printf("(%I64d - ", constant);
-            ident.Print();
-            printf(")");
-        }
-        else
+        if (type == Ident)
         {
             ident.Print();
         }
@@ -448,9 +434,6 @@ struct LC_Expr
     {
     }
     explicit LC_Expr(const LC_Ident& ident) : ident(ident), type(Ident)
-    {
-    }
-    LC_Expr(const LC_Ident& ident, INT64 constant) : ident(ident), constant(constant), type(IdentPlusConst)
     {
     }
 
