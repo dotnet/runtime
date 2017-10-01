@@ -694,46 +694,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    if (CheckImmedAndMakeContained(cmp, cmp->gtOp2))
-    {
-#ifdef _TARGET_ARM64_
-        GenTreePtr op1 = cmp->gtOp.gtOp1;
-        GenTreePtr op2 = cmp->gtOp.gtOp2;
-
-        if (!varTypeIsFloating(cmp) && op2->IsCnsIntOrI())
-        {
-            LIR::Use cmpUse;
-            bool     useJCMP = false;
-            uint64_t flags   = 0;
-
-            if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && BlockRange().TryGetUse(cmp, &cmpUse) &&
-                cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-                flags   = cmp->OperIs(GT_EQ) ? GTF_JCMP_EQ : 0;
-                useJCMP = true;
-            }
-            else if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(op2->gtIntCon.IconValue()) &&
-                     BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-                flags   = GTF_JCMP_TST | (cmp->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : 0);
-                useJCMP = true;
-            }
-
-            if (useJCMP)
-            {
-                cmp->gtLsraInfo.isNoRegCompare = true;
-                cmp->SetOper(GT_JCMP);
-
-                cmp->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-                cmp->gtFlags |= flags;
-
-                BlockRange().Remove(cmpUse.User());
-            }
-        }
-#endif // _TARGET_ARM64_
-    }
+    CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 
 //------------------------------------------------------------------------
