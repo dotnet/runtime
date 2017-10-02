@@ -1967,7 +1967,7 @@ HRESULT PrintArray(DacpObjectData& objData, DumpArrayFlags& flags, BOOL isPermSe
 
             if (isElementValueType)
             {
-                DMLOut( " %s\n", DMLValueClass(objData.MethodTable, p_Element));
+                DMLOut( " %s\n", DMLValueClass(objData.ElementTypeHandle, p_Element));
             }
             else
             {
