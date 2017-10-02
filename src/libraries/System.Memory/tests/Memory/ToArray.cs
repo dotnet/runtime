@@ -19,6 +19,25 @@ namespace System.MemoryTests
         }
 
         [Fact]
+        public static void ToArrayWithIndex()
+        {
+            int[] a = { 91, 92, 93, 94, 95 };
+            var memory = new Memory<int>(a);
+            int[] copy = memory.Slice(2).ToArray();
+            
+            Assert.Equal<int>(new int[] { 93, 94, 95 }, copy);
+        }
+
+        [Fact]
+        public static void ToArrayWithIndexAndLength()
+        {
+            int[] a = { 91, 92, 93 };
+            var memory = new Memory<int>(a, 1, 1);
+            int[] copy = memory.ToArray();
+            Assert.Equal<int>(new int[] { 92 }, copy);
+        }
+
+        [Fact]
         public static void ToArrayEmpty()
         {
             Memory<int> memory = Memory<int>.Empty;
