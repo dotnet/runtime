@@ -79,7 +79,7 @@
 #include "mini-llvm.h"
 #include "lldb.h"
 
-MonoTraceSpec *mono_jit_trace_calls;
+MonoCallSpec *mono_jit_trace_calls;
 MonoMethodDesc *mono_inject_async_exc_method;
 int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method;

@@ -1816,6 +1816,10 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
+	if (log_config.callspec.len > 0 &&
+	    !mono_callspec_eval (method, &log_config.callspec))
+		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
+
 	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
 	       MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
 	       MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |

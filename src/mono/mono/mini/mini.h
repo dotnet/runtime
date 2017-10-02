@@ -48,6 +48,7 @@
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/exception.h"
+#include "mono/metadata/callspec.h"
 
 /*
  * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
@@ -537,9 +538,8 @@ typedef struct MonoMethodVar MonoMethodVar;
 typedef struct MonoBasicBlock MonoBasicBlock;
 typedef struct MonoLMF MonoLMF;
 typedef struct MonoSpillInfo MonoSpillInfo;
-typedef struct MonoTraceSpec MonoTraceSpec;
 
-extern MonoTraceSpec *mono_jit_trace_calls;
+extern MonoCallSpec *mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
@@ -2992,8 +2992,7 @@ MONO_API void      mono_debugger_run_finally             (MonoContext *start_ctx
 MONO_API gboolean mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guint8 *buf, int size);
 
 /* Tracing */
-MonoTraceSpec *mono_trace_parse_options         (const char *options);
-void           mono_trace_set_assembly          (MonoAssembly *assembly);
+MonoCallSpec *mono_trace_set_options           (const char *options);
 gboolean       mono_trace_eval                  (MonoMethod *method);
 
 extern void

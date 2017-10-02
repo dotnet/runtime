@@ -21,10 +21,10 @@
 #include <string.h>
 #include "mini.h"
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/assembly.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-memory-model.h>
 #include "trace.h"
+#include <mono/metadata/callspec.h>
 
 #if defined (HOST_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
 #  undef printf
@@ -33,304 +33,30 @@
 #  define fprintf(__ignore, ...) g_log ("mono-gc", G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
 #endif
 
-static MonoTraceSpec trace_spec;
+static MonoCallSpec trace_spec;
 
 static volatile gint32 output_lock = 0;
 
-gboolean
-mono_trace_eval_exception (MonoClass *klass)
+gboolean mono_trace_eval_exception (MonoClass *klass)
 {
-	int include = 0;
-	int i;
-
-	if (!klass)
-		return FALSE;
-
-	for (i = 0; i < trace_spec.len; i++) {
-		MonoTraceOperation *op = &trace_spec.ops [i];
-		int inc = 0;
-		
-		switch (op->op){
-		case MONO_TRACEOP_EXCEPTION:
-			if (strcmp ("", op->data) == 0 && strcmp ("all", op->data2) == 0)
-				inc = 1;
-			else if (strcmp ("", op->data) == 0 || strcmp (klass->name_space, op->data) == 0)
-				if (strcmp (klass->name, op->data2) == 0)
-					inc = 1;
-			break;
-		default:
-			break;
-		}
-		if (op->exclude){
-			if (inc)
-				include = 0;
-		} else if (inc)
-			include = 1;
-	}
-
-	return include;
+	return mono_callspec_eval_exception (klass, &trace_spec);
 }
 
-gboolean
-mono_trace_eval (MonoMethod *method)
+gboolean mono_trace_eval (MonoMethod *method)
 {
-	int include = 0;
-	int i;
-
-	for (i = 0; i < trace_spec.len; i++){
-		MonoTraceOperation *op = &trace_spec.ops [i];
-		int inc = 0;
-		
-		switch (op->op){
-		case MONO_TRACEOP_ALL:
-			inc = 1;
-			break;
-		case MONO_TRACEOP_PROGRAM:
-			if (trace_spec.assembly && (method->klass->image == mono_assembly_get_image (trace_spec.assembly)))
-				inc = 1;
-			break;
-		case MONO_TRACEOP_WRAPPER:
-			if ((method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) ||
-				(method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE))
-				inc = 1;
-			break;
-		case MONO_TRACEOP_METHOD:
-			if (mono_method_desc_full_match ((MonoMethodDesc *) op->data, method))
-				inc = 1;
-			break;
-		case MONO_TRACEOP_CLASS:
-			if (strcmp (method->klass->name_space, op->data) == 0)
-				if (strcmp (method->klass->name, op->data2) == 0)
-					inc = 1;
-			break;
-		case MONO_TRACEOP_ASSEMBLY:
-			if (strcmp (mono_image_get_name (method->klass->image), op->data) == 0)
-				inc = 1;
-			break;
-		case MONO_TRACEOP_NAMESPACE:
-			if (strcmp (method->klass->name_space, op->data) == 0)
-				inc = 1;
-			break;
-		case MONO_TRACEOP_EXCEPTION:
-			break;
-		}
-		if (op->exclude) {
-			if (inc)
-				include = 0;
-		} else if (inc) {
-			include = 1;
-		}
-	}
-	return include;
+	return mono_callspec_eval (method, &trace_spec);
 }
 
-static int is_filenamechar (char p)
+MonoCallSpec *mono_trace_set_options (const char *options)
 {
-	if (p >= 'A' && p <= 'Z')
-		return TRUE;
-	if (p >= 'a' && p <= 'z')
-		return TRUE;
-	if (p >= '0' && p <= '9')
-		return TRUE;
-	if (p == '.' || p == ':' || p == '_' || p == '-' || p == '`')
-		return TRUE;
-	return FALSE;
-}
-
-static char *input;
-static char *value;
-
-static void get_string (void)
-{
-	char *start = input;
-	while (is_filenamechar (*input)){
-		input++;
-	}
-	if (value != NULL)
-		g_free (value);
-	size_t len = input - start;
-	value = (char *)g_malloc (len + 1);
-	memcpy (value, start, len);
-	value [len] = 0;
-}
-
-enum Token {
-	TOKEN_METHOD,
-	TOKEN_CLASS,
-	TOKEN_ALL,
-	TOKEN_PROGRAM,
-	TOKEN_EXCEPTION,
-	TOKEN_NAMESPACE,
-	TOKEN_WRAPPER,
-	TOKEN_STRING,
-	TOKEN_EXCLUDE,
-	TOKEN_DISABLED,
-	TOKEN_SEPARATOR,
-	TOKEN_END,
-	TOKEN_ERROR
-};
-
-static int
-get_token (void)
-{
-	while (input [0] == '+')
-		input++;
-
-	if (input [0] == '\0') {
-		return TOKEN_END;
-	}
-	if (input [0] == 'M' && input [1] == ':'){
-		input += 2;
-		get_string ();
-		return TOKEN_METHOD;
-	}
-	if (input [0] == 'N' && input [1] == ':'){
-		input += 2;
-		get_string ();
-		return TOKEN_NAMESPACE;
-	}
-	if (input [0] == 'T' && input [1] == ':'){
-		input += 2;
-		get_string ();
-		return TOKEN_CLASS;
-	}
-	if (input [0] == 'E' && input [1] == ':'){
-		input += 2;
-		get_string ();
-		return TOKEN_EXCEPTION;
-	}
-	if (*input == '-'){
-		input++;
-		return TOKEN_EXCLUDE;
-	}
-	if (is_filenamechar (*input)){
-		get_string ();
-		if (strcmp (value, "all") == 0)
-			return TOKEN_ALL;
-		if (strcmp (value, "program") == 0)
-			return TOKEN_PROGRAM;
-		if (strcmp (value, "wrapper") == 0)
-			return TOKEN_WRAPPER;
-		if (strcmp (value, "disabled") == 0)
-			return TOKEN_DISABLED;
-		return TOKEN_STRING;
-	}
-	if (*input == ','){
-		input++;
-		return TOKEN_SEPARATOR;
+	char *errstr;
+	if (!mono_callspec_parse (options, &trace_spec, &errstr)) {
+		fprintf (stderr, "%s\n", errstr);
+		g_free (errstr);
+		return NULL;
 	}
 
-	fprintf (stderr, "Syntax error at or around '%s'\n", input);	
-	return TOKEN_ERROR;
-}
-
-static void
-cleanup (void)
-{
-	if (value != NULL)
-		g_free (value);
-}
-
-static int
-get_spec (int *last)
-{
-	int token = get_token ();
-	if (token == TOKEN_EXCLUDE){
-		token = get_spec (last);
-		if (token == TOKEN_EXCLUDE){
-			fprintf (stderr, "Expecting an expression");
-			return TOKEN_ERROR;
-		}
-		if (token == TOKEN_ERROR)
-			return token;
-		trace_spec.ops [(*last)-1].exclude = 1;
-		return TOKEN_SEPARATOR;
-	}
-	if (token == TOKEN_END || token == TOKEN_SEPARATOR || token == TOKEN_ERROR)
-		return token;
-	
-	if (token == TOKEN_METHOD){
-		MonoMethodDesc *desc = mono_method_desc_new (value, TRUE);
-		if (desc == NULL){
-			fprintf (stderr, "Invalid method name: %s\n", value);
-			return TOKEN_ERROR;
-		}
-		trace_spec.ops [*last].op = MONO_TRACEOP_METHOD;
-		trace_spec.ops [*last].data = desc;
-	} else if (token == TOKEN_ALL)
-		trace_spec.ops [*last].op = MONO_TRACEOP_ALL;
-	else if (token == TOKEN_PROGRAM)
-		trace_spec.ops [*last].op = MONO_TRACEOP_PROGRAM;
-	else if (token == TOKEN_WRAPPER)
-		trace_spec.ops [*last].op = MONO_TRACEOP_WRAPPER;
-	else if (token == TOKEN_NAMESPACE){
-		trace_spec.ops [*last].op = MONO_TRACEOP_NAMESPACE;
-		trace_spec.ops [*last].data = g_strdup (value);
-	} else if (token == TOKEN_CLASS || token == TOKEN_EXCEPTION){
-		char *p = strrchr (value, '.');
-		if (p) {
-			*p++ = 0;
-			trace_spec.ops [*last].data = g_strdup (value);
-			trace_spec.ops [*last].data2 = g_strdup (p);
-		}
-		else {
-			trace_spec.ops [*last].data = g_strdup ("");
-			trace_spec.ops [*last].data2 = g_strdup (value);
-		}
-		trace_spec.ops [*last].op = token == TOKEN_CLASS ? MONO_TRACEOP_CLASS : MONO_TRACEOP_EXCEPTION;
-	} else if (token == TOKEN_STRING){
-		trace_spec.ops [*last].op = MONO_TRACEOP_ASSEMBLY;
-		trace_spec.ops [*last].data = g_strdup (value);
-	} else if (token == TOKEN_DISABLED) {
-		trace_spec.enabled = FALSE;
-	} else {
-		fprintf (stderr, "Syntax error in trace option specification\n");
-		return TOKEN_ERROR;
-	}
-	(*last)++;
-	return TOKEN_SEPARATOR;
-}
-
-MonoTraceSpec *
-mono_trace_parse_options (const char *options)
-{
-	char *p = (char*)options;
-	int size = 1;
-	int last_used;
-	int token;
-
-	trace_spec.enabled = TRUE;
-	if (*p == 0){
-		trace_spec.len = 1;
-		trace_spec.ops = g_new0 (MonoTraceOperation, 1);
-		trace_spec.ops [0].op = MONO_TRACEOP_ALL;
-		return &trace_spec;
-	}
-		
-	for (p = (char*)options; *p != 0; p++)
-		if (*p == ',')
-			size++;
-	
-	trace_spec.ops = g_new0 (MonoTraceOperation, size);
-
-	input = (char*)options;
-	last_used = 0;
-	
-	while ((token = (get_spec (&last_used))) != TOKEN_END){
-		if (token == TOKEN_ERROR)
-			return NULL;
-		if (token == TOKEN_SEPARATOR)
-			continue;
-	}
-	trace_spec.len = last_used;
-	cleanup ();
 	return &trace_spec;
-}
-
-void
-mono_trace_set_assembly (MonoAssembly *assembly)
-{
-	trace_spec.assembly = assembly;
 }
 
 static

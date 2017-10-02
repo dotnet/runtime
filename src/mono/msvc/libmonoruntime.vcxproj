@@ -23,6 +23,7 @@
     <ClCompile Include="..\mono\metadata\assembly.c" />
     <ClCompile Include="..\mono\metadata\attach.c" />
     <ClCompile Include="..\mono\metadata\boehm-gc.c" />
+    <ClCompile Include="..\mono\metadata\callspec.c" />
     <ClCompile Include="..\mono\metadata\class-accessors.c" />
     <ClCompile Include="..\mono\metadata\class.c" />
     <ClCompile Include="..\mono\metadata\cominterop.c" />
@@ -115,6 +116,7 @@
     <ClInclude Include="..\mono\metadata\appdomain-icalls.h" />
     <ClInclude Include="..\mono\metadata\assembly.h" />
     <ClInclude Include="..\mono\metadata\attach.h" />
+    <ClInclude Include="..\mono\metadata\callspec.h" />
     <ClInclude Include="..\mono\metadata\cil-coff.h" />
     <ClInclude Include="..\mono\metadata\class-internals.h" />
     <ClInclude Include="..\mono\metadata\class.h" />

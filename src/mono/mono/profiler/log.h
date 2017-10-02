@@ -4,6 +4,7 @@
 #include <glib.h>
 #define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/callspec.h>
 
 #define BUF_ID 0x4D504C01
 #define LOG_HEADER_ID 0x4D505A01
@@ -537,6 +538,9 @@ typedef struct {
 
 	// Sample mode. Only used at startup.
 	MonoProfilerSampleMode sampling_mode;
+
+	// Callspec config - which methods are to be instrumented
+	MonoCallSpec callspec;
 } ProfilerConfig;
 
 void proflog_parse_args (ProfilerConfig *config, const char *desc);
