@@ -6134,9 +6134,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_args = cfg->args;
 	prev_arg_types = cfg->arg_types;
 	prev_inlined_method = cfg->inlined_method;
-	cfg->inlined_method = cmethod;
-	cfg->ret_var_set = FALSE;
-	cfg->inline_depth ++;
+	prev_ret_var_set = cfg->ret_var_set;
 	prev_real_offset = cfg->real_offset;
 	prev_cbb_hash = cfg->cbb_hash;
 	prev_cil_offset_to_bb = cfg->cil_offset_to_bb;
@@ -6146,8 +6144,11 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_cbb = cfg->cbb;
 	prev_current_method = cfg->current_method;
 	prev_generic_context = cfg->generic_context;
-	prev_ret_var_set = cfg->ret_var_set;
 	prev_disable_inline = cfg->disable_inline;
+
+	cfg->inlined_method = cmethod;
+	cfg->ret_var_set = FALSE;
+	cfg->inline_depth ++;
 
 	if (ip && *ip == CEE_CALLVIRT && !(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
 		virtual_ = TRUE;
