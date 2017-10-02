@@ -366,13 +366,13 @@ ves_icall_System_IO_MonoIO_CopyFile (const gunichar2 *path, const gunichar2 *des
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error)
+ves_icall_System_IO_MonoIO_DeleteFile (const gunichar2 *path, gint32 *error)
 {
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
 	
-	ret=mono_w32file_delete (mono_string_chars (path));
+	ret=mono_w32file_delete (path);
 	if(ret==FALSE) {
 		*error=mono_w32error_get_last ();
 	}

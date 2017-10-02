@@ -151,7 +151,7 @@ ves_icall_System_IO_MonoIO_CopyFile (const gunichar2 *path, const gunichar2 *des
 				     MonoBoolean overwrite, gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error);
+ves_icall_System_IO_MonoIO_DeleteFile (const gunichar2 *path, gint32 *error);
 
 extern gint32 
 ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error);

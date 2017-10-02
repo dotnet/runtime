@@ -361,7 +361,7 @@ ICALL(MONOIO_1, "Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_Mono
 ICALL(MONOIO_2, "CopyFile(char*,char*,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CopyFile)
 ICALL(MONOIO_3, "CreateDirectory(char*,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CreateDirectory)
 ICALL(MONOIO_4, "CreatePipe", ves_icall_System_IO_MonoIO_CreatePipe)
-ICALL(MONOIO_5, "DeleteFile(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_DeleteFile)
+ICALL(MONOIO_5, "DeleteFile(char*,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_DeleteFile)
 #endif /* !PLATFORM_RO_FS */
 ICALL(MONOIO_38, "DumpHandles", ves_icall_System_IO_MonoIO_DumpHandles)
 ICALL(MONOIO_34, "DuplicateHandle", ves_icall_System_IO_MonoIO_DuplicateHandle)
