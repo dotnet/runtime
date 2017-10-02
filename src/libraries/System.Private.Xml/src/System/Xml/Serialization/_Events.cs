@@ -18,13 +18,22 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+
+#if XMLSERIALIZERGENERATOR
+    internal delegate void XmlAttributeEventHandler(object sender, XmlAttributeEventArgs e);
+#else
     public delegate void XmlAttributeEventHandler(object sender, XmlAttributeEventArgs e);
+#endif
 
     /// <include file='doc\_Events.uex' path='docs/doc[@for="XmlAttributeEventArgs"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal class XmlAttributeEventArgs : EventArgs
+#else
     public class XmlAttributeEventArgs : EventArgs
+#endif
     {
         private object _o;
         private XmlAttribute _attr;
@@ -96,10 +105,18 @@ namespace System.Xml.Serialization
     }
 
     /// <include file='doc\_Events.uex' path='docs/doc[@for="XmlElementEventHandler"]/*' />
+#if XMLSERIALIZERGENERATOR
+    internal delegate void XmlElementEventHandler(object sender, XmlElementEventArgs e);
+#else
     public delegate void XmlElementEventHandler(object sender, XmlElementEventArgs e);
+#endif
 
     /// <include file='doc\_Events.uex' path='docs/doc[@for="XmlElementEventArgs"]/*' />
+#if XMLSERIALIZERGENERATOR
+    internal class XmlElementEventArgs : EventArgs
+#else
     public class XmlElementEventArgs : EventArgs
+#endif
     {
         private object _o;
         private XmlElement _elem;
@@ -156,13 +173,22 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal delegate void XmlNodeEventHandler(object sender, XmlNodeEventArgs e);
+#else
     public delegate void XmlNodeEventHandler(object sender, XmlNodeEventArgs e);
+#endif
+
 
     /// <include file='doc\_Events.uex' path='docs/doc[@for="XmlNodeEventArgs"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal class XmlNodeEventArgs : EventArgs
+#else
     public class XmlNodeEventArgs : EventArgs
+#endif
     {
         private object _o;
         private XmlNode _xmlNode;
@@ -257,10 +283,18 @@ namespace System.Xml.Serialization
     }
 
     /// <include file='doc\_Events.uex' path='docs/doc[@for="UnreferencedObjectEventHandler"]/*' />
+#if XMLSERIALIZERGENERATOR
+    internal delegate void UnreferencedObjectEventHandler(object sender, UnreferencedObjectEventArgs e);
+#else
     public delegate void UnreferencedObjectEventHandler(object sender, UnreferencedObjectEventArgs e);
+#endif
 
     /// <include file='doc\_Events.uex' path='docs/doc[@for="UnreferencedObjectEventArgs"]/*' />
+#if XMLSERIALIZERGENERATOR
+    internal class UnreferencedObjectEventArgs : EventArgs
+#else
     public class UnreferencedObjectEventArgs : EventArgs
+#endif
     {
         private object _o;
         private string _id;
