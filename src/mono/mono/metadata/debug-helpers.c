@@ -490,6 +490,7 @@ static gboolean
 match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 {
 	const char *p;
+	gboolean is_terminal = TRUE;
 
 	if (desc->klass_glob && !strcmp (desc->klass, "*"))
 		return TRUE;
@@ -497,9 +498,14 @@ match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 	if (desc->klass_glob && g_pattern_match_simple (desc->klass, klass->name))
 		return TRUE;
 #endif
+	if (desc->klass[pos] == '/')
+		is_terminal = FALSE;
+
 	p = my_strrchr (desc->klass, '/', &pos);
 	if (!p) {
-		if (strncmp (desc->klass, klass->name, pos))
+		if (is_terminal && strcmp (desc->klass, klass->name))
+			return FALSE;
+		if (!is_terminal && strncmp (desc->klass, klass->name, pos))
 			return FALSE;
 		if (desc->name_space && strcmp (desc->name_space, klass->name_space))
 			return FALSE;
@@ -512,6 +518,15 @@ match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 		return FALSE;
 
 	return match_class (desc, pos, klass->nested_in);
+}
+
+/**
+ * mono_method_desc_is_full:
+ */
+gboolean
+mono_method_desc_is_full (MonoMethodDesc *desc)
+{
+	return desc->klass && desc->klass[0] != '\0';
 }
 
 /**
