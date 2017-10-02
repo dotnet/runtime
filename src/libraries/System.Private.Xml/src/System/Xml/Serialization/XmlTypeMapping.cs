@@ -15,7 +15,11 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal class XmlTypeMapping : XmlMapping
+#else
     public class XmlTypeMapping : XmlMapping
+#endif
     {
         internal XmlTypeMapping(TypeScope scope, ElementAccessor accessor) : base(scope, accessor)
         {

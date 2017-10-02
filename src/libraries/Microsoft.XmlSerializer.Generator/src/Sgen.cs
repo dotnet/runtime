@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Microsoft.XmlSerializer.Generator
 {
-    public class Sgen
+    internal class Sgen
     {
         public static int Main(string[] args)
         {
