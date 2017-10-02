@@ -115,7 +115,7 @@ typedef struct _MonoFSAsyncResult {
 /* System.IO.MonoIO */
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error);
+ves_icall_System_IO_MonoIO_CreateDirectory (const gunichar2 *path, gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error);
