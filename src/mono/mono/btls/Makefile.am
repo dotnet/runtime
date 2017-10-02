@@ -39,6 +39,7 @@ MONO_BTLS_SOURCES_FILES = \
 EXTRA_DIST = $(MONO_BTLS_SOURCES_FILES)
 
 CMAKE_VERBOSE=$(if $(V),VERBOSE=1,)
+NINJA_VERBOSE=$(if ($V),-v,)
 
 if NINJA
 NINJA_ARGS = -G Ninja
@@ -59,7 +60,7 @@ build-shared/$(BUILDFILE):
 
 if NINJA
 build-shared/libmono-btls-shared$(libsuffix): build-shared/$(BUILDFILE) $(MONO_BTLS_SOURCES_FILES)
-	ninja -C build-shared $(CMAKE_VERBOSE)
+	ninja -C build-shared $(NINJA_VERBOSE)
 else
 build-shared/libmono-btls-shared$(libsuffix): build-shared/$(BUILDFILE) $(MONO_BTLS_SOURCES_FILES)
 	$(MAKE) -C build-shared $(CMAKE_VERBOSE)
