@@ -21,13 +21,13 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:centos-6-783abde-201713041
     }
     stage ('Generate version assets') {
         // Generate the version assets.  Do we need to even do this for non-official builds?
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./build-managed.sh -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /p:PortableBuild=false"
+        sh "LD_LIBRARY_PATH=/usr/local/lib ./build-managed.sh -runtimeos=rhel.6 -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /p:PortableBuild=false"
     }
     stage ('Sync') {
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./sync.sh -p -- /p:ArchGroup=x64 /p:PortableBuild=false"
+        sh "LD_LIBRARY_PATH=/usr/local/lib ./sync.sh -p -runtimeos=rhel.6 -- /p:ArchGroup=x64 /p:PortableBuild=false"
     }
     stage ('Build Product') {
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -buildArch=x64 -${params.CGroup} /p:PortableBuild=false"
+        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -buildArch=x64 -runtimeos=rhel.6 -${params.CGroup} -- /p:PortableBuild=false"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
