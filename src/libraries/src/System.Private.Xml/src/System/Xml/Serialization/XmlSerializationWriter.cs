@@ -25,7 +25,11 @@ namespace System.Xml.Serialization
     using System.Xml;
 
     ///<internalonly/>
+#if XMLSERIALIZERGENERATOR
+    internal abstract class XmlSerializationWriter : XmlSerializationGeneratedCode
+#else
     public abstract class XmlSerializationWriter : XmlSerializationGeneratedCode
+#endif
     {
         private XmlWriter _w;
         private XmlSerializerNamespaces _namespaces;
@@ -1440,7 +1444,12 @@ namespace System.Xml.Serialization
 
 
     ///<internalonly/>
+#if XMLSERIALIZERGENERATOR
+    internal delegate void XmlSerializationWriteCallback(object o);
+#else
     public delegate void XmlSerializationWriteCallback(object o);
+#endif
+
 
     internal static class DynamicAssemblies
     {
