@@ -3768,15 +3768,6 @@ AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf strerror_r)
 AC_CHECK_FUNCS(getrlimit)
 AC_CHECK_FUNCS(fork execv execve)
 
-AC_ARG_WITH([overridable-allocators], [  --with-overridable-allocators	allow g_*alloc/g_free to call custom allocators set via g_mem_set_vtable])
-
-if test x$with_overridable_allocators = xyes; then
-	AC_DEFINE(ENABLE_OVERRIDABLE_ALLOCATORS,1,[Overridable allocator support enabled])
-  AC_MSG_NOTICE([Overridable allocator support enabled])
-else
-  AC_MSG_NOTICE([Overridable allocator support disabled])
-fi
-
 #
 # Mono currently supports 10.6, but strndup is not available prior to 10.7; avoiding
 # the detection of strndup on OS X so Mono built on 10.7+ still runs on 10.6. This can be
@@ -3790,7 +3781,7 @@ elif test x$target_ios = xno; then
 AC_CHECK_FUNCS(strndup getpwuid_r)
 fi
 
-AM_CONDITIONAL(NEED_VASPRINTF, test x$ac_cv_func_vasprintf = xno || test x$with_overridable_allocators = xyes)
+AM_CONDITIONAL(NEED_VASPRINTF, true)
 AM_ICONV()
 AC_SEARCH_LIBS(sqrtf, m)
 
