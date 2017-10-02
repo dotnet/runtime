@@ -844,6 +844,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
     int stompWBCompleteActions = SWB_PASS;
+    bool is_runtime_suspended = false;
 
     assert(args != nullptr);
     switch (args->operation)
@@ -900,7 +901,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 
 #if defined(_ARM64_)
         // Need to reupdate for changes to g_highest_address g_lowest_address
-        bool is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || args->is_runtime_suspended;
+        is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || args->is_runtime_suspended;
         stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
 
         is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || args->is_runtime_suspended;
