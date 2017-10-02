@@ -435,13 +435,13 @@ ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error)
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat, gint32 *error)
+ves_icall_System_IO_MonoIO_GetFileStat (const gunichar2 *path, MonoIOStat *stat, gint32 *error)
 {
 	gboolean result;
 
 	*error=ERROR_SUCCESS;
 	
-	result = mono_w32file_get_attributes_ex (mono_string_chars (path), stat);
+	result = mono_w32file_get_attributes_ex (path, stat);
 
 	if (!result) {
 		*error=mono_w32error_get_last ();

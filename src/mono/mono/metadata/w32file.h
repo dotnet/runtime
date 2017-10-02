@@ -164,7 +164,7 @@ extern gint32
 ves_icall_System_IO_MonoIO_GetFileType (gpointer handle, gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
+ves_icall_System_IO_MonoIO_GetFileStat (const gunichar2 *path, MonoIOStat *stat,
 					gint32 *error);
 
 extern gpointer 
