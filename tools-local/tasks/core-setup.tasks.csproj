@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.ProjectModel">
-      <Version>3.5.0</Version>
+      <Version>4.3.0-preview2-4095</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyModel">
       <Version>1.1.1</Version>
@@ -34,18 +34,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net45'">
     <Compile Include="netstandard/FileUtilities.netstandard.cs" />
-    <PackageReference Include="Microsoft.Build">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Framework">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Tasks.Core">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Utilities.Core">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildPackageVersion)" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkPackageVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCorePackageVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCorePackageVersion)" />
     <PackageReference Include="Microsoft.Tpl.Dataflow">
       <Version>4.5.24</Version>
       <IncludeAssets>None</IncludeAssets>
