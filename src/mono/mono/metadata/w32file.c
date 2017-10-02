@@ -381,12 +381,12 @@ ves_icall_System_IO_MonoIO_DeleteFile (const gunichar2 *path, gint32 *error)
 }
 
 gint32 
-ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
+ves_icall_System_IO_MonoIO_GetFileAttributes (const gunichar2 *path, gint32 *error)
 {
 	gint32 ret;
 	*error=ERROR_SUCCESS;
 	
-	ret = mono_w32file_get_attributes (mono_string_chars (path));
+	ret = mono_w32file_get_attributes (path);
 
 	/* 
 	 * The definition of INVALID_FILE_ATTRIBUTES in the cygwin win32
