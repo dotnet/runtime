@@ -2974,7 +2974,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
                 result = INS_OPTS_1D;
                 break;
             default:
-                // TODO-Cleanup: add unreached() here
+                unreached();
                 break;
         }
     }
@@ -2995,7 +2995,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
                 result = INS_OPTS_2D;
                 break;
             default:
-                // TODO-Cleanup: add unreached() here
+                unreached();
                 break;
         }
     }
@@ -3194,7 +3194,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
                     result = (index < 1);
                     break;
                 default:
-                    // TODO-Cleanup: add unreached() here
+                    unreached();
                     break;
             }
         }
@@ -3215,7 +3215,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
                     result = (index < 2);
                     break;
                 default:
-                    // TODO-Cleanup: add unreached() here
+                    unreached();
                     break;
             }
         }
@@ -3265,7 +3265,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             }
             break;
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
     }
     assert(fmt != IF_NONE);
@@ -3555,7 +3555,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -3644,7 +3644,7 @@ void emitter::emitIns_R_F(
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -4100,7 +4100,7 @@ void emitter::emitIns_R_R(
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -4199,7 +4199,7 @@ void emitter::emitIns_R_I_I(
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -4637,7 +4637,7 @@ void emitter::emitIns_R_R_I(
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -5092,7 +5092,7 @@ void emitter::emitIns_R_R_R(
             return;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -5263,7 +5263,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -5475,7 +5475,7 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -5608,7 +5608,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
     }
     assert(fmt != IF_NONE);
@@ -5671,7 +5671,7 @@ void emitter::emitIns_R_R_R_R(
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
     }
     assert(fmt != IF_NONE);
@@ -5713,7 +5713,7 @@ void emitter::emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insC
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -5757,7 +5757,7 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
             fmt      = IF_DR_2D;
             break;
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -5806,7 +5806,7 @@ void emitter::emitIns_R_R_R_COND(
             break;
 
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
 
     } // end switch (ins)
@@ -5854,7 +5854,7 @@ void emitter::emitIns_R_R_FLAGS_COND(
             fmt       = IF_DR_2I;
             break;
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
     } // end switch (ins)
 
@@ -5911,7 +5911,7 @@ void emitter::emitIns_R_I_FLAGS_COND(
             }
             break;
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
     } // end switch (ins)
 
@@ -5951,7 +5951,7 @@ void emitter::emitIns_BARR(instruction ins, insBarrier barrier)
             imm = (ssize_t)barrier;
             break;
         default:
-            // TODO-Cleanup: add unreached() here
+            unreached();
             break;
     } // end switch (ins)
 
@@ -9372,7 +9372,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     cmode = 0xE; // 1110
                     break;
                 default:
-                    // TODO-Cleanup: add unreached() here
+                    unreached();
                     break;
             }
 
