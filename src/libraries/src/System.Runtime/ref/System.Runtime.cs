@@ -3841,7 +3841,8 @@ namespace System.Buffers
         public MemoryHandle(IRetainable owner, void* pinnedPointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
         [System.CLSCompliantAttribute(false)]
         public void* PinnedPointer { get { throw null; } }
-        public void Dispose()  { throw null; }
+        internal void AddOffset(int offset) { throw null; }
+        public void Dispose() { throw null; }
     }
 
     public interface IRetainable 
