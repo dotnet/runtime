@@ -10824,6 +10824,15 @@ void emitter::emitDispIns(
                 emitDispReg(encodingZRtoSP(id->idReg1()), size, true);
                 emitDispReg(encodingZRtoSP(id->idReg2()), size, true);
             }
+            else if ((ins == INS_smull) || (ins == INS_smulh))
+            {
+                // Rd is always 8 bytes
+                emitDispReg(id->idReg1(), EA_8BYTE, true);
+
+                // Rn, Rm effective size depends on instruction type
+                size = (ins == INS_smulh) ? EA_8BYTE : EA_4BYTE;
+                emitDispReg(id->idReg2(), size, true);
+            }
             else
             {
                 emitDispReg(id->idReg1(), size, true);
