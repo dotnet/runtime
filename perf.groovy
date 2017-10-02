@@ -91,8 +91,8 @@ def static getOSGroup(def os) {
                                 //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                                 batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                                 "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=\"\"%\"\n" +
+                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user-email \"dotnet-bot@microsoft.com\"\n" +
                                 "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                                 batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                                 batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
@@ -235,8 +235,8 @@ def static getOSGroup(def os) {
                                 //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                                 batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                                 "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"${benchViewName}\" --user \"dotnet-bot@microsoft.com\"\n" +
+                                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=\"\"%\"\n" +
+                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"${benchViewName}\" --user-email \"dotnet-bot@microsoft.com\"\n" +
                                 "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                                 batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                                 batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}${pgo_build} skiptests")
@@ -350,7 +350,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
                     }
                 }
                 shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
-                "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
+                "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user-email \"dotnet-bot@microsoft.com\"\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
                 shell("""./tests/scripts/run-xunit-perf.sh \\
                 --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
@@ -500,7 +500,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                         }
                     }
                     shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
-                    "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
+                    "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user-email \"dotnet-bot@microsoft.com\"\n" +
                     "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
                     shell("""python3.5 ./tests/scripts/run-throughput-perf.py \\
                     -arch \"${architecture}\" \\
@@ -627,8 +627,8 @@ parallel(
                             //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                             batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                             "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                            "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                            "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=\"\"%\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user-email \"dotnet-bot@microsoft.com\"\n" +
                             "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                             batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                             batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
@@ -723,8 +723,8 @@ parallel(
                 // we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                 batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                 "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                "py \"${benchViewTools}\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=\"\"%\"\n" +
+                "py \"${benchViewTools}\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user-email \"dotnet-bot@microsoft.com\"\n" +
                 "py \"${benchViewTools}\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
 
                 // Generate machine data from BenchView
@@ -816,8 +816,8 @@ parallel(
                             //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                             batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                             "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                            "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                            "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=\"\"%\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user-email \"dotnet-bot@microsoft.com\"\n" +
                             "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                             batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                             batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
