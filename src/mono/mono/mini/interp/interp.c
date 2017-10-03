@@ -5198,8 +5198,20 @@ die_on_ex:
 			++sp;
 			goto main_loop;
 		}
-		goto exit_frame;
+		goto check_lmf;
 	}
+
+check_lmf:
+	{
+		/* make sure we don't miss to pop a LMF */
+		MonoLMF *lmf= mono_get_lmf ();
+		if (lmf && (gsize) lmf->previous_lmf & 2) {
+			MonoLMFExt *ext = (MonoLMFExt *) lmf;
+			if (ext->interp_exit && ext->interp_exit_data == frame->parent)
+				interp_pop_lmf (ext);
+		}
+	}
+
 exit_frame:
 
 	if (!frame->ex && MONO_PROFILER_ENABLED (method_leave) &&
