@@ -10,7 +10,8 @@ namespace System.Reflection
             : base(position)
         {
         }
-    
+
+        public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => true;
     
         public sealed override string Name => "!!" + GenericParameterPosition;
