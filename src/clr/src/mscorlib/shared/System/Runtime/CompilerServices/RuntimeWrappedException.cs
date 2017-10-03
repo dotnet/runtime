@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.CompilerServices
@@ -10,6 +11,8 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Exception used to wrap all non-CLS compliant exceptions.
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class RuntimeWrappedException : Exception
     {
         private Object _wrappedException; // EE expects this name
@@ -25,7 +28,19 @@ namespace System.Runtime.CompilerServices
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+            Contract.EndContractBlock();
             base.GetObjectData(info, context);
+            info.AddValue("WrappedException", _wrappedException, typeof(object));
+        }
+
+        internal RuntimeWrappedException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _wrappedException = info.GetValue("WrappedException", typeof(object));
         }
 
         public Object WrappedException => _wrappedException;
