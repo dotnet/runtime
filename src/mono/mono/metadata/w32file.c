@@ -334,27 +334,19 @@ ves_icall_System_IO_MonoIO_MoveFile (const gunichar2 *path, const gunichar2 *des
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *destinationFileName,
-					MonoString *destinationBackupFileName, MonoBoolean ignoreMetadataErrors,
+ves_icall_System_IO_MonoIO_ReplaceFile (const gunichar2 *source_file_name, const gunichar2 *destination_file_name,
+					const gunichar2 *destination_backup_file_name, MonoBoolean ignore_metadata_errors,
 					gint32 *error)
 {
-	gunichar2 *utf16_sourceFileName = NULL, *utf16_destinationFileName = NULL, *utf16_destinationBackupFileName = NULL;
-	guint32 replaceFlags = REPLACEFILE_WRITE_THROUGH;
-
-	if (sourceFileName)
-		utf16_sourceFileName = mono_string_chars (sourceFileName);
-	if (destinationFileName)
-		utf16_destinationFileName = mono_string_chars (destinationFileName);
-	if (destinationBackupFileName)
-		utf16_destinationBackupFileName = mono_string_chars (destinationBackupFileName);
+	guint32 replace_flags = REPLACEFILE_WRITE_THROUGH;
 
 	*error = ERROR_SUCCESS;
-	if (ignoreMetadataErrors)
-		replaceFlags |= REPLACEFILE_IGNORE_MERGE_ERRORS;
+	if (ignore_metadata_errors)
+		replace_flags |= REPLACEFILE_IGNORE_MERGE_ERRORS;
 
 	/* FIXME: source and destination file names must not be NULL, but apparently they might be! */
-	return mono_w32file_replace (utf16_destinationFileName, utf16_sourceFileName,
-					  utf16_destinationBackupFileName, replaceFlags, error);
+	return mono_w32file_replace (destination_file_name, source_file_name,
+					  destination_backup_file_name, replace_flags, error);
 }
 
 MonoBoolean

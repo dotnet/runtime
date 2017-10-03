@@ -4714,11 +4714,11 @@ mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwr
 }
 
 gboolean
-mono_w32file_replace (gunichar2 *destinationFileName, gunichar2 *sourceFileName, gunichar2 *destinationBackupFileName, guint32 flags, gint32 *error)
+mono_w32file_replace (const gunichar2 *destination_file_name, const gunichar2 *source_file_name, const gunichar2 *destination_backup_file_name, guint32 flags, gint32 *error)
 {
 	gboolean result;
 
-	result = ReplaceFile (destinationFileName, sourceFileName, destinationBackupFileName, flags, NULL, NULL);
+	result = ReplaceFile (destination_file_name, source_file_name, destination_backup_file_name, flags, NULL, NULL);
 	if (!result)
 		*error = mono_w32error_get_last ();
 	return result;

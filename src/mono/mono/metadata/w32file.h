@@ -241,8 +241,8 @@ extern void ves_icall_System_IO_MonoIO_Unlock (gpointer handle, gint64 position,
 					       gint64 length, gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *destinationFileName,
-					MonoString *destinationBackupFileName, MonoBoolean ignoreMetadataErrors,
+ves_icall_System_IO_MonoIO_ReplaceFile (const gunichar2 *source_file_name, const gunichar2 *destination_file_name,
+					const gunichar2 *destination_backup_file_name, MonoBoolean ignore_metadata_errors,
 					gint32 *error);
 
 #if defined (TARGET_IOS) || defined (TARGET_ANDROID)
@@ -403,7 +403,7 @@ gboolean
 mono_w32file_lock (gpointer handle, gint64 position, gint64 length, gint32 *error);
 
 gboolean
-mono_w32file_replace (gunichar2 *destinationFileName, gunichar2 *sourceFileName, gunichar2 *destinationBackupFileName, guint32 flags, gint32 *error);
+mono_w32file_replace (const gunichar2 *destination_file_name, const gunichar2 *source_file_name, const gunichar2 *destination_backup_file_name, guint32 flags, gint32 *error);
 
 gboolean
 mono_w32file_unlock (gpointer handle, gint64 position, gint64 length, gint32 *error);
