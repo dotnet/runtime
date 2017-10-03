@@ -248,9 +248,6 @@
       "value": null,
       "isSecret": true
     },
-    "PB_DistroRid": {
-      "value": "win7-x64"
-    },
     "NUGET_SYMBOLS_FEED_URL": {
       "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
     },
@@ -291,7 +288,7 @@
       "value": "HEAD"
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture)"
+      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture)"
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)"
