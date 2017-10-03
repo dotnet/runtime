@@ -3307,8 +3307,14 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			switch (mint_type (&klass->byval_arg)) {
+				case MINT_TYPE_I1:
+					SIMPLE_OP (td, MINT_STELEM_I1);
+					break;
 				case MINT_TYPE_U1:
 					SIMPLE_OP (td, MINT_STELEM_U1);
+					break;
+				case MINT_TYPE_I2:
+					SIMPLE_OP (td, MINT_STELEM_I2);
 					break;
 				case MINT_TYPE_U2:
 					SIMPLE_OP (td, MINT_STELEM_U2);
@@ -3318,6 +3324,9 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 					break;
 				case MINT_TYPE_I8:
 					SIMPLE_OP (td, MINT_STELEM_I8);
+					break;
+				case MINT_TYPE_R8:
+					SIMPLE_OP (td, MINT_STELEM_R8);
 					break;
 				case MINT_TYPE_O:
 					SIMPLE_OP (td, MINT_STELEM_REF);
