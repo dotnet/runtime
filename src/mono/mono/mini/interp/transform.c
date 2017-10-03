@@ -2908,12 +2908,13 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 				} else {
 					ADD_CODE (td, MINT_LDFLD_I1 + mt - MINT_TYPE_I1);
 					ADD_CODE (td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
+					if (mt == MINT_TYPE_VT)
+						ADD_CODE (td, get_data_item_index (td, field));
 				}
 			}
 			if (mt == MINT_TYPE_VT) {
 				int size = mono_class_value_size (field_klass, NULL);
-				PUSH_VT(td, size);
-				WRITE32(td, &size);
+				PUSH_VT (td, size);
 			}
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (klass, NULL);
@@ -2924,7 +2925,7 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 				WRITE32 (td, &size);
 			}
 			td->ip += 5;
-			SET_TYPE(td->sp - 1, stack_type [mt], field_klass);
+			SET_TYPE (td->sp - 1, stack_type [mt], field_klass);
 			BARRIER_IF_VOLATILE (td);
 			break;
 		}

@@ -88,10 +88,10 @@ OPDEF(MINT_LDFLD_R4, "ldfld.r4", 2, MintOpUShortInt)
 OPDEF(MINT_LDFLD_R8, "ldfld.r8", 2, MintOpUShortInt)
 OPDEF(MINT_LDFLD_O, "ldfld.o", 2, MintOpUShortInt)
 OPDEF(MINT_LDFLD_P, "ldfld.p", 2, MintOpUShortInt)
-OPDEF(MINT_LDFLD_VT, "ldfld.vt", 4, MintOpShortAndInt)
+OPDEF(MINT_LDFLD_VT, "ldfld.vt", 3, MintOpUShortInt)
 
 OPDEF(MINT_LDRMFLD, "ldrmfld", 2, MintOpFieldToken)
-OPDEF(MINT_LDRMFLD_VT, "ldrmfld.vt", 4, MintOpShortAndInt)
+OPDEF(MINT_LDRMFLD_VT, "ldrmfld.vt", 2, MintOpUShortInt)
 
 OPDEF(MINT_LDFLDA, "ldflda", 2, MintOpUShortInt)
 OPDEF(MINT_LDFLDA_UNSAFE, "ldflda.unsafe", 2, MintOpUShortInt)

@@ -3726,11 +3726,15 @@ array_constructed:
 			o = sp [-1].data.p;
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
-			i32 = READ32(ip + 2);
+
+			MonoClassField *field = rtm->data_items[* (guint16 *)(ip + 2)];
+			MonoClass *klass = mono_class_from_mono_type (field->type);
+			i32 = mono_class_value_size (klass, NULL);
+
 			sp [-1].data.p = vt_sp;
-			memcpy(sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), i32);
+			memcpy (sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), i32);
 			vt_sp += (i32 + 7) & ~7;
-			ip += 4;
+			ip += 3;
 			MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDRMFLD) {
@@ -3765,9 +3769,12 @@ array_constructed:
 			o = sp [-1].data.p;
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
+
 			field = rtm->data_items[* (guint16 *)(ip + 1)];
-			i32 = READ32(ip + 2);
-			ip += 4;
+			MonoClass *klass = mono_class_from_mono_type (field->type);
+			i32 = mono_class_value_size (klass, NULL);
+	
+			ip += 2;
 #ifndef DISABLE_REMOTING
 			if (mono_object_is_transparent_proxy (o)) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
