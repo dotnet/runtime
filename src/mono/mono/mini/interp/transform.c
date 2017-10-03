@@ -2503,6 +2503,7 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 #endif
 				break;
 			case STACK_TYPE_MP:
+			case STACK_TYPE_O:
 				break;
 			default:
 				g_assert_not_reached ();
