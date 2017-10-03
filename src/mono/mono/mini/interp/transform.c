@@ -100,18 +100,6 @@ typedef struct
 	gboolean verbose_level;
 } TransformData;
 
-#define MINT_TYPE_I1 0
-#define MINT_TYPE_U1 1
-#define MINT_TYPE_I2 2
-#define MINT_TYPE_U2 3
-#define MINT_TYPE_I4 4
-#define MINT_TYPE_I8 5
-#define MINT_TYPE_R4 6
-#define MINT_TYPE_R8 7
-#define MINT_TYPE_O  8
-#define MINT_TYPE_P  9
-#define MINT_TYPE_VT 10
-
 #define STACK_TYPE_I4 0
 #define STACK_TYPE_I8 1
 #define STACK_TYPE_R8 2
@@ -438,67 +426,6 @@ shift_op(TransformData *td, int mint_op)
 	}
 	ADD_CODE(td, op);
 	--td->sp;
-}
-
-static int 
-mint_type(MonoType *type_)
-{
-	MonoType *type = mini_native_type_replace_type (type_);
-	if (type->byref)
-		return MINT_TYPE_P;
-enum_type:
-	switch (type->type) {
-	case MONO_TYPE_I1:
-		return MINT_TYPE_I1;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-		return MINT_TYPE_U1;
-	case MONO_TYPE_I2:
-		return MINT_TYPE_I2;
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		return MINT_TYPE_U2;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return MINT_TYPE_I4;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
-		return MINT_TYPE_I4;
-#else
-		return MINT_TYPE_I8;
-#endif
-	case MONO_TYPE_PTR:
-		return MINT_TYPE_P;
-	case MONO_TYPE_R4:
-		return MINT_TYPE_R4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MINT_TYPE_I8;
-	case MONO_TYPE_R8:
-		return MINT_TYPE_R8;
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
-		return MINT_TYPE_O;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
-			type = mono_class_enum_basetype (type->data.klass);
-			goto enum_type;
-		} else
-			return MINT_TYPE_VT;
-	case MONO_TYPE_TYPEDBYREF:
-		return MINT_TYPE_VT;
-	case MONO_TYPE_GENERICINST:
-		type = &type->data.generic_class->container_class->byval_arg;
-		goto enum_type;
-	default:
-		g_warning ("got type 0x%02x", type->type);
-		g_assert_not_reached ();
-	}
-	return -1;
 }
 
 static int 

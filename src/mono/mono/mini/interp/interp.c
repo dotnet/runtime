@@ -3498,7 +3498,7 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 			g_assert (c->valuetype);
 			/* if this assertion fails, we need to add a write barrier */
 			g_assert (!MONO_TYPE_IS_REFERENCE (&c->byval_arg));
-			if (c->byval_arg.type == MONO_TYPE_VALUETYPE)
+			if (mint_type (&c->byval_arg) == MINT_TYPE_VT)
 				stackval_from_data (&c->byval_arg, &sp [-2], sp [-1].data.p, FALSE);
 			else
 				stackval_from_data (&c->byval_arg, sp [-2].data.p, sp [-1].data.p, FALSE);
@@ -3511,7 +3511,7 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 			c = rtm->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
 			p = sp [-1].data.p;
-			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
+			if (mint_type (&c->byval_arg) == MINT_TYPE_VT && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
 				sp [-1].data.p = vt_sp;
 				vt_sp += (size + 7) & ~7;
@@ -3994,7 +3994,7 @@ array_constructed:
 			c = rtm->data_items [* (guint16 *)(ip + 1)];
 			guint16 offset = * (guint16 *)(ip + 2);
 
-			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype && !(mono_class_is_magic_int (c) || mono_class_is_magic_float (c))) {
+			if (mint_type (&c->byval_arg) == MINT_TYPE_VT && !c->enumtype && !(mono_class_is_magic_int (c) || mono_class_is_magic_float (c))) {
 				int size = mono_class_value_size (c, NULL);
 				sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, sp [-1 - offset].data.p, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
