@@ -1832,7 +1832,7 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			continue;
 		}
 		if (td->verbose_level > 1) {
-			printf("IL_%04lx %s %-10s -> IL_%04lx, sp %ld, %s %-12s vt_sp %u (max %u)\n", 
+			g_print ("IL_%04lx %s %-10s -> IL_%04lx, sp %ld, %s %-12s vt_sp %u (max %u)\n", 
 				td->ip - td->il_code,
 				td->is_bb_start [td->ip - td->il_code] == 3 ? "<>" :
 				td->is_bb_start [td->ip - td->il_code] == 2 ? "< " :
@@ -4174,11 +4174,11 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 
 	if (td->verbose_level) {
 		const guint16 *p = td->new_code;
-		printf("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
-		printf("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
+		g_print ("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
+		g_print ("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
 		while (p < td->new_ip) {
 			p = mono_interp_dis_mintop(td->new_code, p);
-			printf("\n");
+			g_print ("\n");
 		}
 	}
 	g_assert (td->max_stack_height <= (header->max_stack + 1));

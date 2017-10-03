@@ -1942,7 +1942,7 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 		}
 		break;
 	default:
-		printf ("%s\n", mono_type_full_name (rtype));
+		g_print ("%s\n", mono_type_full_name (rtype));
 		g_assert_not_reached ();
 		break;
 	}
