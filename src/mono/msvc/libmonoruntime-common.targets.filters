@@ -454,12 +454,18 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\custom-attrs.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\fdhandle.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\fdhandle.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\fdhandle.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\callspec.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\callspec.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\runtime.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>

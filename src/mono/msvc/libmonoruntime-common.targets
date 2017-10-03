@@ -152,8 +152,10 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sre-encode.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sre-save.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\custom-attrs.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\fdhandle.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\fdhandle.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\fdhandle.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\callspec.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\callspec.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\runtime.h" />
   </ItemGroup>
   <ItemGroup Label="config_sources">
