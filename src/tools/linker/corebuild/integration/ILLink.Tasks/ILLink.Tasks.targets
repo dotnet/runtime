@@ -323,7 +323,7 @@
        file. -->
   <UsingTask TaskName="ComputeRemovedAssemblies" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_ExcludeRemovedFilesFromDepFileGeneration"
-          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputeLinkedAssemblies;_FindNativeDeps;HandlePublishFileConflicts"
+          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputeLinkedAssemblies;_FindNativeDeps;_HandlePublishFileConflicts"
           BeforeTargets="GeneratePublishDependencyFile"
           Condition=" '$(LinkDuringPublish)' == 'true' ">
     <ComputeRemovedAssemblies InputAssemblies="@(_ManagedResolvedAssembliesToPublish)"
