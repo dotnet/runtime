@@ -172,11 +172,6 @@ static guint32 convert_seekorigin(MonoSeekOrigin origin)
 	return(w32origin);
 }
 
-static gint64 convert_filetime (const FILETIME *filetime)
-{
-	return (gint64) ((((guint64) filetime->dwHighDateTime) << 32) + filetime->dwLowDateTime);
-}
-
 /* Managed file attributes have nearly but not quite the same values
  * as the w32 equivalents.
  */
@@ -187,70 +182,6 @@ static guint32 convert_attrs(MonoFileAttributes attrs)
 	}
 	
 	return(attrs);
-}
-
-/*
- * On Win32, mono_w32file_get_attributes|_ex () seems to try opening the file,
- * which might lead to sharing violation errors, whereas mono_w32file_find_first
- * always succeeds. These 2 wrappers resort to mono_w32file_find_first if
- * mono_w32file_get_attributes|_ex () has failed.
- */
-static guint32
-get_file_attributes (const gunichar2 *path)
-{
-	guint32 res;
-	WIN32_FIND_DATA find_data;
-	HANDLE find_handle;
-	gint32 error;
-
-	res = mono_w32file_get_attributes (path);
-	if (res != -1)
-		return res;
-
-	error = mono_w32error_get_last ();
-
-	if (error != ERROR_SHARING_VIOLATION)
-		return res;
-
-	find_handle = mono_w32file_find_first (path, &find_data);
-
-	if (find_handle == INVALID_HANDLE_VALUE)
-		return res;
-
-	mono_w32file_find_close (find_handle);
-
-	return find_data.dwFileAttributes;
-}
-
-static gboolean
-get_file_attributes_ex (const gunichar2 *path, MonoIOStat *stat)
-{
-	gboolean res;
-	WIN32_FIND_DATA find_data;
-	HANDLE find_handle;
-	gint32 error;
-
-	res = mono_w32file_get_attributes_ex (path, stat);
-	if (res)
-		return TRUE;
-
-	error = mono_w32error_get_last ();
-	if (error != ERROR_SHARING_VIOLATION)
-		return FALSE;
-
-	find_handle = mono_w32file_find_first (path, &find_data);
-
-	if (find_handle == INVALID_HANDLE_VALUE)
-		return FALSE;
-
-	mono_w32file_find_close (find_handle);
-	
-	stat->attributes = find_data.dwFileAttributes;
-	stat->creation_time = convert_filetime (&find_data.ftCreationTime);
-	stat->last_access_time = convert_filetime (&find_data.ftLastAccessTime);
-	stat->last_write_time = convert_filetime (&find_data.ftLastWriteTime);
-	stat->length = ((gint64)find_data.nFileSizeHigh << 32) | find_data.nFileSizeLow;
-	return TRUE;
 }
 
 /* System.IO.MonoIO internal calls */
@@ -455,7 +386,7 @@ ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
 	gint32 ret;
 	*error=ERROR_SUCCESS;
 	
-	ret=get_file_attributes (mono_string_chars (path));
+	ret = mono_w32file_get_attributes (mono_string_chars (path));
 
 	/* 
 	 * The definition of INVALID_FILE_ATTRIBUTES in the cygwin win32
@@ -510,7 +441,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat, gint
 
 	*error=ERROR_SUCCESS;
 	
-	result = get_file_attributes_ex (mono_string_chars (path), stat);
+	result = mono_w32file_get_attributes_ex (mono_string_chars (path), stat);
 
 	if (!result) {
 		*error=mono_w32error_get_last ();
@@ -554,7 +485,7 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 
 	/* If we're opening a directory we need to set the extra flag
 	 */
-	attrs = get_file_attributes (chars);
+	attrs = mono_w32file_get_attributes (chars);
 	if (attrs != INVALID_FILE_ATTRIBUTES) {
 		if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
 			attributes |= FILE_FLAG_BACKUP_SEMANTICS;

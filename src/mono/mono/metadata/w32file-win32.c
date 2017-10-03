@@ -221,34 +221,91 @@ mono_w32file_remove_directory (const gunichar2 *name)
 	return res;
 }
 
+/*
+ * GetFileAttributes|Ex () seems to try opening the file, which might lead to sharing violation errors, whereas
+ * FindFirstFile always succeeds.
+ */
 guint32
 mono_w32file_get_attributes (const gunichar2 *name)
 {
 	guint32 res;
+	guint32 error;
+	HANDLE find_handle;
+	WIN32_FIND_DATA find_data;
+
 	MONO_ENTER_GC_SAFE;
 	res = GetFileAttributes (name);
 	MONO_EXIT_GC_SAFE;
-	return res;
+
+	if (res != INVALID_FILE_ATTRIBUTES)
+		return res;
+
+	error = GetLastError ();
+	if (error != ERROR_SHARING_VIOLATION)
+		return INVALID_FILE_ATTRIBUTES;
+
+	MONO_ENTER_GC_SAFE;
+	find_handle = FindFirstFile (name, &find_data);
+	MONO_EXIT_GC_SAFE;
+
+	if (find_handle == INVALID_HANDLE_VALUE)
+		return INVALID_FILE_ATTRIBUTES;
+
+	MONO_ENTER_GC_SAFE;
+	FindClose (find_handle);
+	MONO_EXIT_GC_SAFE;
+
+	return find_data.dwFileAttributes;
+}
+
+static gint64
+convert_filetime (const FILETIME *filetime)
+{
+	return (gint64) ((((guint64) filetime->dwHighDateTime) << 32) + filetime->dwLowDateTime);
 }
 
 gboolean
 mono_w32file_get_attributes_ex (const gunichar2 *name, MonoIOStat *stat)
 {
-	gboolean result;
-	WIN32_FILE_ATTRIBUTE_DATA data;
+	gboolean res;
+	guint32 error;
+	HANDLE find_handle;
+	WIN32_FIND_DATA find_data;
+	WIN32_FILE_ATTRIBUTE_DATA file_attribute_data;
 
 	MONO_ENTER_GC_SAFE;
-	result = GetFileAttributesEx (name, GetFileExInfoStandard, &data);
+	res = GetFileAttributesEx (name, GetFileExInfoStandard, &file_attribute_data);
 	MONO_EXIT_GC_SAFE;
-	if (result) {
-		stat->attributes = data.dwFileAttributes;
-		stat->creation_time = (gint64) ((((guint64) data.ftCreationTime.dwHighDateTime) << 32) + data.ftCreationTime.dwLowDateTime);
-		stat->last_access_time = (gint64) ((((guint64) data.ftLastAccessTime.dwHighDateTime) << 32) + data.ftLastAccessTime.dwLowDateTime);
-		stat->last_write_time = (gint64) ((((guint64) data.ftLastWriteTime.dwHighDateTime) << 32) + data.ftLastWriteTime.dwLowDateTime);
-		stat->length = ((gint64)data.nFileSizeHigh << 32) | data.nFileSizeLow;
+	if (res) {
+		stat->attributes = file_attribute_data.dwFileAttributes;
+		stat->creation_time = convert_filetime (&file_attribute_data.ftCreationTime);
+		stat->last_access_time = convert_filetime (&file_attribute_data.ftLastAccessTime);
+		stat->last_write_time = convert_filetime (&file_attribute_data.ftLastWriteTime);
+		stat->length = ((gint64)file_attribute_data.nFileSizeHigh << 32) | file_attribute_data.nFileSizeLow;
+		return TRUE;
 	}
 
-	return result;
+	error = GetLastError ();
+	if (error != ERROR_SHARING_VIOLATION)
+		return FALSE;
+
+	MONO_ENTER_GC_SAFE;
+	find_handle = FindFirstFile (name, &find_data);
+	MONO_EXIT_GC_SAFE;
+
+	if (find_handle == INVALID_HANDLE_VALUE)
+		return FALSE;
+
+	MONO_ENTER_GC_SAFE;
+	FindClose (find_handle);
+	MONO_EXIT_GC_SAFE;
+
+	stat->attributes = find_data.dwFileAttributes;
+	stat->creation_time = convert_filetime (&find_data.ftCreationTime);
+	stat->last_access_time = convert_filetime (&find_data.ftLastAccessTime);
+	stat->last_write_time = convert_filetime (&find_data.ftLastWriteTime);
+	stat->length = ((gint64)find_data.nFileSizeHigh << 32) | find_data.nFileSizeLow;
+	return TRUE;
 }
 
 gboolean
