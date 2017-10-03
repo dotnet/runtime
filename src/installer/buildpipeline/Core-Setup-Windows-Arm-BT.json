@@ -391,10 +391,6 @@
     "CertificateId": {
       "value": "400"
     },
-    "PB_DistroRid": {
-      "value": "win-$(PB_TargetArchitecture)",
-      "allowOverride": true
-    },
     "MsbuildSigningArguments": {
       "value": "/p:CertificateId=$(CertificateId) /v:detailed"
     },
@@ -451,7 +447,7 @@
       "value": "real"
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalBuildArguments)"
+      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalBuildArguments)"
     },
     "PB_AdditionalBuildArguments": {
       "value": ""

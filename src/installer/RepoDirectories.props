@@ -26,4 +26,8 @@
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <HostMachineInfoProps>$(BaseIntermediateOutputPath)HostMachineInfo.props</HostMachineInfoProps>
+  </PropertyGroup>
 </Project>
