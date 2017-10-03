@@ -1763,6 +1763,21 @@ mono_arch_unwindinfo_get_code_count (GSList *unwind_ops)
 	return unwindinfo.CountOfCodes;
 }
 
+PUNWIND_INFO
+mono_arch_unwindinfo_alloc_unwind_info (GSList *unwind_ops)
+{
+	if (!unwind_ops)
+		return NULL;
+
+	return initialize_unwind_info_internal (unwind_ops);
+}
+
+void
+mono_arch_unwindinfo_free_unwind_info (PUNWIND_INFO unwind_info)
+{
+	g_free (unwind_info);
+}
+
 guint
 mono_arch_unwindinfo_init_method_unwind_info (gpointer cfg)
 {
@@ -1812,7 +1827,7 @@ mono_arch_unwindinfo_install_method_unwind_info (gpointer *monoui, gpointer code
 	}
 #endif /* ENABLE_CHECKED_BUILD_UNWINDINFO */
 
-	g_free (unwindinfo);
+	mono_arch_unwindinfo_free_unwind_info (unwindinfo);
 	*monoui = 0;
 
 	// Register unwind info in table.

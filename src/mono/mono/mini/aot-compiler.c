@@ -78,6 +78,13 @@
 #define TARGET_WIN32_MSVC
 #endif
 
+// Emit native unwind info on Windows platforms (different from DWARF). Emitted unwind info
+// works when using the MSVC toolchain using Clang for MSVC codegen and linker. Only supported when
+// compiling for AMD64 (Windows x64 platforms).
+#if defined(TARGET_WIN32_MSVC) && defined(MONO_ARCH_HAVE_UNWIND_TABLE)
+#define EMIT_WIN32_UNWIND_INFO
+#endif
+
 #if defined(__linux__)
 #define RODATA_SECT ".rodata"
 #elif defined(TARGET_MACH)
@@ -220,6 +227,14 @@ typedef struct GotInfo {
 	GPtrArray *got_patches;
 } GotInfo;
 
+#ifdef EMIT_WIN32_UNWIND_INFO
+typedef struct _UnwindInfoSectionCacheItem {
+	char *xdata_section_label;
+	PUNWIND_INFO unwind_info;
+	gboolean xdata_section_emitted;
+} UnwindInfoSectionCacheItem;
+#endif
+
 typedef struct MonoAotCompile {
 	MonoImage *image;
 	GPtrArray *methods;
@@ -316,6 +331,9 @@ typedef struct MonoAotCompile {
 	GHashTable *objc_selector_to_index;
 	GList *profile_data;
 	GHashTable *profile_methods;
+#ifdef EMIT_WIN32_UNWIND_INFO
+	GList *unwind_info_section_cache;
+#endif
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
@@ -896,6 +914,20 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 
 #ifdef TARGET_WIN32_MSVC
 #undef EMIT_DWARF_INFO
+#endif
+
+#ifdef EMIT_WIN32_UNWIND_INFO
+static UnwindInfoSectionCacheItem *
+get_cached_unwind_info_section_item_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops);
+
+static void
+free_unwind_info_section_cache_win32 (MonoAotCompile *acfg);
+
+static void
+emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info);
+
+static void
+emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops);
 #endif
 
 #if defined(TARGET_ARM)
@@ -5699,6 +5731,11 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	emit_label (acfg, symbol);
+
+#ifdef EMIT_WIN32_UNWIND_INFO
+	emit_unwind_info_sections_win32 (acfg, cfg->asm_symbol, symbol, cfg->unwind_ops);
+#endif
+
 	g_free (symbol);
 }
 
@@ -6588,6 +6625,12 @@ emit_plt (MonoAotCompile *acfg)
 	emit_symbol_size (acfg, acfg->plt_symbol, ".");
 
 	emit_info_symbol (acfg, "plt_end");
+
+#ifdef EMIT_WIN32_UNWIND_INFO
+	GSList *unwind_ops = mono_unwind_get_cie_program ();
+	emit_unwind_info_sections_win32 (acfg, "plt", "plt_end", unwind_ops);
+	mono_free_unwind_info (unwind_ops);
+#endif
 }
 
 /*
@@ -6695,6 +6738,10 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 		sprintf (symbol, "%s", name);
 		sprintf (symbol2, "%snamed_%s", acfg->temp_prefix, name);
 
+#ifdef EMIT_WIN32_UNWIND_INFO
+		emit_unwind_info_sections_win32 (acfg, start_symbol, end_symbol, unwind_ops);
+#endif
+
 		if (acfg->dwarf)
 			mono_dwarf_writer_emit_trampoline (acfg->dwarf, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
 	}
@@ -6744,25 +6791,38 @@ emit_trampolines (MonoAotCompile *acfg)
 #endif
 			mono_arch_create_generic_trampoline ((MonoTrampolineType)tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
+			mono_tramp_info_free (info);
 		}
 
 		/* Emit the exception related code pieces */
 		mono_arch_get_restore_context (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_call_filter (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_throw_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_rethrow_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_throw_corlib_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
 
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
 		mono_arch_create_sdb_trampoline (TRUE, &info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_create_sdb_trampoline (FALSE, &info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
 #endif
 
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
@@ -6773,6 +6833,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			/* Create a separate out trampoline for more information in stack traces */
 			info->name = g_strdup ("gsharedvt_out_trampoline");
 			emit_trampoline_full (acfg, acfg->got_offset, info, TRUE);
+			mono_tramp_info_free (info);
 		}
 #endif
 
@@ -6795,17 +6856,18 @@ emit_trampolines (MonoAotCompile *acfg)
 			offset = MONO_RGCTX_SLOT_MAKE_RGCTX (i);
 			mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
-			g_free (info);
+			mono_tramp_info_free (info);
 
 			offset = MONO_RGCTX_SLOT_MAKE_MRGCTX (i);
 			mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
-			g_free (info);
+			mono_tramp_info_free (info);
 		}
 
 #ifdef MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE
 		mono_arch_create_general_rgctx_lazy_fetch_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
 #endif
 
 		{
@@ -10203,6 +10265,173 @@ emit_dwarf_info (MonoAotCompile *acfg)
 #endif
 }
 
+#ifdef EMIT_WIN32_UNWIND_INFO
+static UnwindInfoSectionCacheItem *
+get_cached_unwind_info_section_item_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops)
+{
+	UnwindInfoSectionCacheItem *item = NULL;
+
+	if (!acfg->unwind_info_section_cache)
+		acfg->unwind_info_section_cache = g_list_alloc ();
+
+	PUNWIND_INFO unwind_info = mono_arch_unwindinfo_alloc_unwind_info (unwind_ops);
+
+	// Search for unwind info in cache.
+	GList *list = acfg->unwind_info_section_cache;
+	int list_size = 0;
+	while (list && list->data) {
+		item = (UnwindInfoSectionCacheItem*)list->data;
+		if (!memcmp (unwind_info, item->unwind_info, sizeof (UNWIND_INFO))) {
+			// Cache hit, return cached item.
+			return item;
+		}
+		list = list->next;
+		list_size++;
+	}
+
+	// Add to cache.
+	if (acfg->unwind_info_section_cache) {
+		item = g_new0 (UnwindInfoSectionCacheItem, 1);
+		if (item) {
+			// Format .xdata section label for function, used to get unwind info address RVA.
+			// Since the unwind info is similar for most functions, the symbol will be reused.
+			item->xdata_section_label = g_strdup_printf ("%sunwind_%d", acfg->temp_prefix, list_size);
+
+			// Cache unwind info data, used when checking cache for matching unwind info. NOTE, cache takes
+			//over ownership of unwind info.
+			item->unwind_info = unwind_info;
+
+			// Needs to be emitted once.
+			item->xdata_section_emitted = FALSE;
+
+			// Prepend to beginning of list to speed up inserts.
+			acfg->unwind_info_section_cache = g_list_prepend (acfg->unwind_info_section_cache, (gpointer)item);
+		}
+	}
+
+	return item;
+}
+
+static void
+free_unwind_info_section_cache_win32 (MonoAotCompile *acfg)
+{
+	GList *list = acfg->unwind_info_section_cache;
+
+	while (list) {
+		UnwindInfoSectionCacheItem *item = (UnwindInfoSectionCacheItem *)list->data;
+		if (item) {
+			g_free (item->xdata_section_label);
+			mono_arch_unwindinfo_free_unwind_info (item->unwind_info);
+
+			g_free (item);
+			list->data = NULL;
+		}
+
+		list = list->next;
+	}
+
+	g_list_free (acfg->unwind_info_section_cache);
+	acfg->unwind_info_section_cache = NULL;
+}
+
+static void
+emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info)
+{
+	// Emit the unwind info struct.
+	emit_bytes (acfg, (guint8*)unwind_info, sizeof (UNWIND_INFO) - (sizeof (UNWIND_CODE) * MONO_MAX_UNWIND_CODES));
+
+	// Emit all unwind codes encoded in unwind info struct.
+	PUNWIND_CODE current_unwind_node = &unwind_info->UnwindCode[MONO_MAX_UNWIND_CODES - unwind_info->CountOfCodes];
+	PUNWIND_CODE last_unwind_node = &unwind_info->UnwindCode[MONO_MAX_UNWIND_CODES];
+
+	while (current_unwind_node < last_unwind_node) {
+		guint8 node_count = 0;
+		switch (current_unwind_node->UnwindOp) {
+		case UWOP_PUSH_NONVOL:
+		case UWOP_ALLOC_SMALL:
+		case UWOP_SET_FPREG:
+		case UWOP_PUSH_MACHFRAME:
+			node_count = 1;
+			break;
+		case UWOP_SAVE_NONVOL:
+		case UWOP_SAVE_XMM128:
+			node_count = 2;
+			break;
+		case UWOP_SAVE_NONVOL_FAR:
+		case UWOP_SAVE_XMM128_FAR:
+			node_count = 3;
+			break;
+		case UWOP_ALLOC_LARGE:
+			if (current_unwind_node->OpInfo == 0)
+				node_count = 2;
+			else
+				node_count = 3;
+			break;
+		default:
+			g_assert (!"Unknown unwind opcode.");
+		}
+
+		while (node_count > 0) {
+			g_assert (current_unwind_node < last_unwind_node);
+
+			//Emit current node.
+			emit_bytes (acfg, (guint8*)current_unwind_node, sizeof (UNWIND_CODE));
+
+			node_count--;
+			current_unwind_node++;
+		}
+	}
+}
+
+// Emit unwind info sections for each function. Unwind info on Windows x64 is emitted into two different sections.
+// .pdata includes the serialized DWORD aligned RVA's of function start, end and address of serialized
+// UNWIND_INFO struct emitted into .xdata, see https://msdn.microsoft.com/en-us/library/ft9x1kdx.aspx.
+// .xdata section includes DWORD aligned serialized version of UNWIND_INFO struct, https://msdn.microsoft.com/en-us/library/ddssxxy8.aspx.
+static void
+emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops)
+{
+	char *pdata_section_label = NULL;
+
+	int temp_prefix_len = (acfg->temp_prefix != NULL) ? strlen (acfg->temp_prefix) : 0;
+	if (strncmp (function_start, acfg->temp_prefix, temp_prefix_len)) {
+		temp_prefix_len = 0;
+	}
+
+	// Format .pdata section label for function.
+	pdata_section_label = g_strdup_printf ("%spdata_%s", acfg->temp_prefix, function_start + temp_prefix_len);
+
+	UnwindInfoSectionCacheItem *cache_item = get_cached_unwind_info_section_item_win32 (acfg, function_start, function_end, unwind_ops);
+	g_assert (cache_item && cache_item->xdata_section_label && cache_item->unwind_info);
+
+	// Emit .pdata section.
+	emit_section_change (acfg, ".pdata", 0);
+	emit_alignment (acfg, sizeof (DWORD));
+	emit_label (acfg, pdata_section_label);
+
+	// Emit function start address RVA.
+	fprintf (acfg->fp, "\t.long %s@IMGREL\n", function_start);
+
+	// Emit function end address RVA.
+	fprintf (acfg->fp, "\t.long %s@IMGREL\n", function_end);
+
+	// Emit unwind info address RVA.
+	fprintf (acfg->fp, "\t.long %s@IMGREL\n", cache_item->xdata_section_label);
+
+	if (!cache_item->xdata_section_emitted) {
+		// Emit .xdata section.
+		emit_section_change (acfg, ".xdata", 0);
+		emit_alignment (acfg, sizeof (DWORD));
+		emit_label (acfg, cache_item->xdata_section_label);
+
+		// Emit unwind info into .xdata section.
+		emit_unwind_info_data_win32 (acfg, cache_item->unwind_info);
+		cache_item->xdata_section_emitted = TRUE;
+	}
+
+	g_free (pdata_section_label);
+}
+#endif
+
 static gboolean
 collect_methods (MonoAotCompile *acfg)
 {
@@ -11143,6 +11372,9 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_blob_hash);
 	got_info_free (&acfg->got_info);
 	got_info_free (&acfg->llvm_got_info);
+#ifdef EMIT_WIN32_UNWIND_INFO
+	free_unwind_info_section_cache_win32 (acfg);
+#endif
 	mono_mempool_destroy (acfg->mempool);
 	g_free (acfg);
 }

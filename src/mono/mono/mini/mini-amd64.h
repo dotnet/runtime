@@ -568,6 +568,12 @@ mono_arch_unwindinfo_get_size (guchar code_count)
 guchar
 mono_arch_unwindinfo_get_code_count (GSList *unwind_ops);
 
+PUNWIND_INFO
+mono_arch_unwindinfo_alloc_unwind_info (GSList *unwind_ops);
+
+void
+mono_arch_unwindinfo_free_unwind_info (PUNWIND_INFO unwind_info);
+
 guint
 mono_arch_unwindinfo_init_method_unwind_info (gpointer cfg);
 
