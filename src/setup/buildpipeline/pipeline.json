@@ -18,7 +18,6 @@
         {
           "Name": "Core-Setup-Linux-BT",
           "Parameters": {
-            "PB_DistroRid": "rhel.7.2-x64",
             "PB_DockerTag": "rhel7_prereqs_2",
             "PB_AdditionalBuildArguments":"-PortableBuild=true -strip-symbols",
             "PB_PortableBuild": "true"
@@ -33,10 +32,10 @@
         {
           "Name": "Core-Setup-Linux-Arm-BT",
           "Parameters": {
-            "PB_DistroRid": "rhel.6-x64",
             "PB_DockerTag": "centos-6-c8c9b08-20174310104313",
             "PB_TargetArchitecture": "x64",
-            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -DistroRid=rhel.6-x64 -PortableBuild=false -strip-symbols",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols",
+            "PB_AdditionalMSBuildArguments":"/p:OutputRid=rhel.6-x64",
             "PB_PortableBuild": "false"
           },
           "ReportingParameters": {
@@ -48,10 +47,9 @@
         {
           "Name": "Core-Setup-Linux-Arm-BT",
           "Parameters": {
-            "PB_DistroRid": "ubuntu.14.04-arm",
             "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_TargetArchitecture": "arm",
-            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
             "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
             "PB_PortableBuild": "true"
           },
@@ -80,7 +78,6 @@
           "Parameters": {
             "PB_AdditionalBuildArguments": "/p:SkipTests=true",
             "PB_TargetArchitecture": "arm",
-            "PB_DistroRid": "win-arm",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -95,7 +92,6 @@
           "Parameters": {
             "PB_AdditionalBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
             "PB_TargetArchitecture": "arm64",
-            "PB_DistroRid": "win-arm64",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -108,7 +104,6 @@
         {
           "Name": "Core-Setup-Windows-BT",
           "Parameters": {
-            "PB_DistroRid": "win7-x64",
             "PB_TargetArchitecture": "x64",
             "PB_PortableBuild": "true",
             "PB_PublishRidAgnosticPackages": "true",
@@ -124,7 +119,6 @@
         {
           "Name": "Core-Setup-Windows-BT",
           "Parameters": {
-            "PB_DistroRid": "win7-x86",
             "PB_TargetArchitecture": "x86",
             "PB_PortableBuild": "true"
           },
