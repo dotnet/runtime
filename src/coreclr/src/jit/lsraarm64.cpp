@@ -365,16 +365,42 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_CMPXCHG:
-            info->srcCount = 3;
+        {
+            GenTreeCmpXchg* cmpXchgNode = tree->AsCmpXchg();
+            info->srcCount              = cmpXchgNode->gtOpComparand->isContained() ? 2 : 3;
             assert(info->dstCount == 1);
 
-            // TODO-ARM64-NYI
-            NYI("CMPXCHG");
-            break;
+            info->internalIntCount = 1;
+
+            // For ARMv8 exclusives the lifetime of the addr and data must be extended because
+            // it may be used used multiple during retries
+            cmpXchgNode->gtOpLocation->gtLsraInfo.isDelayFree = true;
+            cmpXchgNode->gtOpValue->gtLsraInfo.isDelayFree    = true;
+            if (!cmpXchgNode->gtOpComparand->isContained())
+                cmpXchgNode->gtOpComparand->gtLsraInfo.isDelayFree = true;
+            info->hasDelayFreeSrc                                  = true;
+
+            // Internals may not collide with target
+            info->isInternalRegDelayFree = true;
+        }
+        break;
 
         case GT_LOCKADD:
-            info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
-            assert(info->dstCount == 1);
+        case GT_XADD:
+        case GT_XCHG:
+            assert(info->dstCount == (tree->OperIs(GT_LOCKADD) ? 0 : 1));
+            info->srcCount         = tree->gtOp.gtOp2->isContained() ? 1 : 2;
+            info->internalIntCount = (tree->OperGet() == GT_XCHG) ? 1 : 2;
+
+            // For ARMv8 exclusives the lifetime of the addr and data must be extended because
+            // it may be used used multiple during retries
+            tree->gtOp.gtOp1->gtLsraInfo.isDelayFree = true;
+            if (!tree->gtOp.gtOp2->isContained())
+                tree->gtOp.gtOp2->gtLsraInfo.isDelayFree = true;
+            info->hasDelayFreeSrc                        = true;
+
+            // Internals may not collide with target
+            info->isInternalRegDelayFree = true;
             break;
 
         case GT_PUTARG_STK:
