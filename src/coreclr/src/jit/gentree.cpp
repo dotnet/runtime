@@ -6074,6 +6074,10 @@ GenTreePtr Compiler::gtNewIconEmbHndNode(
         node = gtNewIconHandleNode((size_t)pValue, flags, /*fieldSeq*/ FieldSeqStore::NotAField(), handle1, handle2);
         node->gtIntCon.gtCompileTimeHandle = (size_t)compileTimeHandle;
         node                               = gtNewOperNode(GT_IND, TYP_I_IMPL, node);
+
+        // This indirection won't cause an exception.  It should also
+        // be invariant, but marking it as such leads to bad diffs.
+        node->gtFlags |= GTF_IND_NONFAULTING;
     }
 
     return node;
@@ -12091,6 +12095,115 @@ GenTreePtr Compiler::gtFoldExpr(GenTreePtr tree)
     return tree;
 }
 
+//------------------------------------------------------------------------
+// gtFoldExprCall: see if a call is foldable
+//
+// Arguments:
+//    call - call to examine
+//
+// Returns:
+//    The original call if no folding happened.
+//    An alternative tree if folding happens.
+//
+// Notes:
+//    Checks for calls to Type.op_Equality, Type.op_Inequality, and
+//    Enum.HasFlag, and if the call is to one of these,
+//    attempts to optimize.
+
+GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
+{
+    // Can only fold calls to special intrinsics.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    {
+        return call;
+    }
+
+    // Defer folding if not optimizing.
+    if (opts.compDbgCode || opts.MinOpts())
+    {
+        return call;
+    }
+
+    // Fetch id of the intrinsic.
+    const CorInfoIntrinsics methodID = info.compCompHnd->getIntrinsicID(call->gtCallMethHnd);
+
+    switch (methodID)
+    {
+        case CORINFO_INTRINSIC_TypeEQ:
+        case CORINFO_INTRINSIC_TypeNEQ:
+        {
+            noway_assert(call->TypeGet() == TYP_INT);
+            GenTree* op1 = call->gtCallArgs->gtOp.gtOp1;
+            GenTree* op2 = call->gtCallArgs->gtOp.gtOp2->gtOp.gtOp1;
+
+            // If either operand is known to be a RuntimeType, this can be folded
+            GenTree* result = gtFoldTypeEqualityCall(methodID, op1, op2);
+            if (result != nullptr)
+            {
+                return result;
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    // Check for a new-style jit intrinsic.
+    const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+
+    if (ni == NI_System_Enum_HasFlag)
+    {
+        GenTree* thisOp = call->gtCallObjp;
+        GenTree* flagOp = call->gtCallArgs->gtOp.gtOp1;
+        GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
+
+        if (result != nullptr)
+        {
+            return result;
+        }
+    }
+
+    return call;
+}
+
+//------------------------------------------------------------------------
+// gtFoldTypeEqualityCall: see if a (potential) type equality call is foldable
+//
+// Arguments:
+//    methodID -- type equality intrinsic ID
+//    op1 -- first argument to call
+//    op2 -- second argument to call
+//
+// Returns:
+//    nulltpr if no folding happened.
+//    An alternative tree if folding happens.
+//
+// Notes:
+//    If either operand is known to be a a RuntimeType, then the type
+//    equality methods will simply check object identity and so we can
+//    fold the call into a simple compare of the call's operands.
+
+GenTree* Compiler::gtFoldTypeEqualityCall(CorInfoIntrinsics methodID, GenTree* op1, GenTree* op2)
+{
+    // The method must be be a type equality intrinsic
+    assert(methodID == CORINFO_INTRINSIC_TypeEQ || methodID == CORINFO_INTRINSIC_TypeNEQ);
+
+    if ((gtGetTypeProducerKind(op1) == TPK_Unknown) && (gtGetTypeProducerKind(op2) == TPK_Unknown))
+    {
+        return nullptr;
+    }
+
+    const genTreeOps simpleOp = (methodID == CORINFO_INTRINSIC_TypeEQ) ? GT_EQ : GT_NE;
+
+    JITDUMP("\nFolding call to Type:op_%s to a simple compare via %s\n",
+            methodID == CORINFO_INTRINSIC_TypeEQ ? "Equality" : "Inequality", GenTree::OpName(simpleOp));
+
+    GenTree* compare = gtNewOperNode(simpleOp, TYP_INT, op1, op2);
+
+    return compare;
+}
+
 /*****************************************************************************
  *
  *  Some comparisons can be folded:
@@ -12163,6 +12276,180 @@ GenTreePtr Compiler::gtFoldExprCompare(GenTreePtr tree)
     return cons;
 }
 
+//------------------------------------------------------------------------
+// gtFoldTypeCompare: see if a type comparison can be further simplified
+//
+// Arguments:
+//    tree -- tree possibly comparing types
+//
+// Returns:
+//    An alternative tree if folding happens.
+//    Original tree otherwise.
+//
+// Notes:
+//    Checks for
+//        typeof(...) == obj.GetType()
+//        typeof(...) == typeof(...)
+//
+//    And potentially optimizes away the need to obtain actual
+//    RuntimeType objects to do the comparison.
+
+GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
+{
+    // Only handle EQ and NE
+    // (maybe relop vs null someday)
+    const genTreeOps oper = tree->OperGet();
+    if ((oper != GT_EQ) && (oper != GT_NE))
+    {
+        return tree;
+    }
+
+    // Screen for the right kinds of operands
+    GenTree* const         op1     = tree->gtOp.gtOp1;
+    const TypeProducerKind op1Kind = gtGetTypeProducerKind(op1);
+    if (op1Kind == TPK_Unknown)
+    {
+        return tree;
+    }
+
+    GenTree* const         op2     = tree->gtOp.gtOp2;
+    const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
+    if (op2Kind == TPK_Unknown)
+    {
+        return tree;
+    }
+
+    // We must have a handle on one side or the other here to optimize,
+    // otherwise we can't be sure that optimizing is sound.
+    const bool op1IsFromHandle = (op1Kind == TPK_Handle);
+    const bool op2IsFromHandle = (op2Kind == TPK_Handle);
+
+    if (!(op1IsFromHandle || op2IsFromHandle))
+    {
+        return tree;
+    }
+
+    // If both types are created via handles, we can simply compare
+    // handles (or the indirection cells for handles) instead of the
+    // types that they'd create.
+    if (op1IsFromHandle && op2IsFromHandle)
+    {
+        JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
+        GenTree* op1ClassFromHandle = tree->gtOp.gtOp1->gtCall.gtCallArgs->gtOp.gtOp1;
+        GenTree* op2ClassFromHandle = tree->gtOp.gtOp2->gtCall.gtCallArgs->gtOp.gtOp1;
+
+        // If we see indirs, tunnel through to see if there are compile time handles.
+        if ((op1ClassFromHandle->gtOper == GT_IND) && (op2ClassFromHandle->gtOper == GT_IND))
+        {
+            // The handle indirs we can optimize will be marked as non-faulting.
+            // Certain others (eg from refanytype) may not be.
+            if (((op1ClassFromHandle->gtFlags & GTF_IND_NONFAULTING) != 0) &&
+                ((op2ClassFromHandle->gtFlags & GTF_IND_NONFAULTING) != 0))
+            {
+                GenTree* op1HandleLiteral = op1ClassFromHandle->gtOp.gtOp1;
+                GenTree* op2HandleLiteral = op2ClassFromHandle->gtOp.gtOp1;
+
+                // If, after tunneling, we have constant handles on both
+                // sides, update the operands that will feed the compare.
+                if ((op1HandleLiteral->gtOper == GT_CNS_INT) && (op1HandleLiteral->gtType == TYP_I_IMPL) &&
+                    (op2HandleLiteral->gtOper == GT_CNS_INT) && (op2HandleLiteral->gtType == TYP_I_IMPL))
+                {
+                    JITDUMP("...tunneling through indirs...\n");
+                    op1ClassFromHandle = op1HandleLiteral;
+                    op2ClassFromHandle = op2HandleLiteral;
+
+                    // These handle constants should be class handles.
+                    assert(op1ClassFromHandle->IsIconHandle(GTF_ICON_CLASS_HDL));
+                    assert(op2ClassFromHandle->IsIconHandle(GTF_ICON_CLASS_HDL));
+                }
+            }
+        }
+
+        GenTree* compare = gtNewOperNode(oper, TYP_INT, op1ClassFromHandle, op2ClassFromHandle);
+
+        // Drop any now-irrelvant flags
+        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+
+        return compare;
+    }
+
+    // Just one operand creates a type from a handle.
+    //
+    // If the other operand is fetching the type from an object,
+    // we can sometimes optimize the type compare into a simpler
+    // method table comparison.
+    //
+    // TODO: if other operand is null...
+    if (op1Kind != TPK_GetType && op2Kind != TPK_GetType)
+    {
+        return tree;
+    }
+
+    GenTree* const opHandle = op1IsFromHandle ? op1 : op2;
+    GenTree* const opOther  = op1IsFromHandle ? op2 : op1;
+
+    // Tunnel through the handle operand to get at the class handle involved.
+    GenTree* const opHandleArgument = opHandle->gtCall.gtCallArgs->gtOp.gtOp1;
+    GenTree*       opHandleLiteral  = opHandleArgument;
+
+    // Unwrap any GT_NOP node used to prevent constant folding
+    if ((opHandleLiteral->gtOper == GT_NOP) && (opHandleLiteral->gtType == TYP_I_IMPL))
+    {
+        opHandleLiteral = opHandleLiteral->gtOp.gtOp1;
+    }
+
+    // In the ngen case, we have to go thru an indirection to get the right handle.
+    if (opHandleLiteral->gtOper == GT_IND)
+    {
+        // Handle indirs should be marked as nonfaulting.
+        assert((opHandleLiteral->gtFlags & GTF_IND_NONFAULTING) != 0);
+        opHandleLiteral = opHandleLiteral->gtOp.gtOp1;
+    }
+
+    // If, after tunneling,  we don't have a constant handle, bail.
+    if ((opHandleLiteral->gtOper != GT_CNS_INT) || (opHandleLiteral->gtType != TYP_I_IMPL))
+    {
+        return tree;
+    }
+
+    // We should have a class handle.
+    assert(opHandleLiteral->IsIconHandle(GTF_ICON_CLASS_HDL));
+
+    // Fetch the compile time handle, and use it to ask the VM if
+    // this kind of type can be equality tested by a simple method
+    // table comparison.
+    CORINFO_CLASS_HANDLE clsHnd = CORINFO_CLASS_HANDLE(opHandleLiteral->gtIntCon.gtCompileTimeHandle);
+
+    if (!info.compCompHnd->canInlineTypeCheckWithObjectVTable(clsHnd))
+    {
+        return tree;
+    }
+
+    // We're good to go.
+    JITDUMP("Optimizing compare of obj.GetType()"
+            " and type-from-handle to compare method table pointer\n");
+
+    // opHandleArgument is the method table we're looking for.
+    GenTree* const knownMT = opHandleArgument;
+
+    // Fetch object method table from the object itself
+    GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, opOther->gtUnOp.gtOp1);
+
+    // Update various flags
+    objMT->gtFlags |= GTF_EXCEPT;
+    compCurBB->bbFlags |= BBF_HAS_VTABREF;
+    optMethodFlags |= OMF_HAS_VTABLEREF;
+
+    // Compare the two method tables
+    GenTree* const compare = gtNewOperNode(oper, TYP_INT, objMT, knownMT);
+
+    // Drop any any now irrelevant flags
+    compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+
+    // And we're done
+    return compare;
+}
+
 /*****************************************************************************
  *
  *  Some binary operators can be folded even if they have only one
@@ -12224,6 +12511,7 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
         case GT_EQ:
         case GT_NE:
         case GT_GT:
+
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
@@ -15123,25 +15411,24 @@ void Compiler::gtCheckQuirkAddrExposedLclVar(GenTreePtr tree, GenTreeStack* pare
 }
 
 //------------------------------------------------------------------------
-// gtCanOptimizeTypeEquality: check if tree is a suitable input for a type
-//    equality optimization
+// gtGetTypeProducerKind: determine if a tree produces a runtime type, and
+//    if so, how.
 //
 // Arguments:
 //    tree - tree to examine
 //
 // Return Value:
-//    True, if value of tree can be used to optimize type equality tests
+//    TypeProducerKind for the tree.
 //
 // Notes:
-//    Checks to see if the jit is able to optimize Type::op_Equality or
-//    Type::op_Inequality calls that consume this tree.
+//    Checks to see if this tree returns a RuntimeType value, and if so,
+//    how that value is determined.
 //
-//    The jit can safely convert these methods to GT_EQ/GT_NE if one of
-//    the operands is:
+//    Currently handles these cases
 //    1) The result of Object::GetType
 //    2) The result of typeof(...)
-//    3) Is a null reference
-//    4) Is otherwise known to have type RuntimeType
+//    3) A null reference
+//    4) Tree is otherwise known to have type RuntimeType
 //
 //    The null reference case is surprisingly common because operator
 //    overloading turns the otherwise innocuous
@@ -15151,7 +15438,7 @@ void Compiler::gtCheckQuirkAddrExposedLclVar(GenTreePtr tree, GenTreeStack* pare
 //
 //    into a method call.
 
-bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
+Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
 {
     if (tree->gtOper == GT_CALL)
     {
@@ -15159,24 +15446,24 @@ bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
         {
             if (gtIsTypeHandleToRuntimeTypeHelper(tree->AsCall()))
             {
-                return true;
+                return TPK_Handle;
             }
         }
         else if (tree->gtCall.gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
         {
             if (info.compCompHnd->getIntrinsicID(tree->gtCall.gtCallMethHnd) == CORINFO_INTRINSIC_Object_GetType)
             {
-                return true;
+                return TPK_GetType;
             }
         }
     }
     else if ((tree->gtOper == GT_INTRINSIC) && (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType))
     {
-        return true;
+        return TPK_GetType;
     }
     else if ((tree->gtOper == GT_CNS_INT) && (tree->gtIntCon.gtIconVal == 0))
     {
-        return true;
+        return TPK_Null;
     }
     else
     {
@@ -15186,11 +15473,21 @@ bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
 
         if (clsHnd == info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE))
         {
-            return true;
+            return TPK_Other;
         }
     }
-    return false;
+    return TPK_Unknown;
 }
+
+//------------------------------------------------------------------------
+// gtIsTypeHandleToRuntimeTypeHelperCall -- see if tree is constructing
+//    a RuntimeType from a handle
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Return Value:
+//    True if so
 
 bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call)
 {
