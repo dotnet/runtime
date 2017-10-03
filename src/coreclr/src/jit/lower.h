@@ -137,7 +137,8 @@ private:
     // Call Lowering
     // ------------------------------
     void LowerCall(GenTree* call);
-    void LowerCompare(GenTree* tree);
+    GenTree* LowerCompare(GenTree* tree);
+    GenTree* LowerJTrue(GenTreeOp* jtrue);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTree* ret);
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
