@@ -110,6 +110,7 @@ namespace System.MemoryTests
             handle.Dispose();
         }
 
+        [ActiveIssue(24384, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static void OwnedMemoryRetainWithPinningAndSlice()
         {
