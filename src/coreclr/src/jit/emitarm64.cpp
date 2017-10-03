@@ -978,8 +978,12 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 
     switch (ins)
     {
+        case INS_ldxrb:
         case INS_ldarb:
+        case INS_ldaxrb:
+        case INS_stxrb:
         case INS_stlrb:
+        case INS_stlxrb:
         case INS_ldrb:
         case INS_strb:
         case INS_ldurb:
@@ -987,8 +991,12 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
             result = EA_4BYTE;
             break;
 
+        case INS_ldxrh:
         case INS_ldarh:
+        case INS_ldaxrh:
+        case INS_stxrh:
         case INS_stlrh:
+        case INS_stlxrh:
         case INS_ldrh:
         case INS_strh:
         case INS_ldurh:
@@ -1019,8 +1027,12 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
             result = id->idOpSize();
             break;
 
+        case INS_ldxr:
         case INS_ldar:
+        case INS_ldaxr:
+        case INS_stxr:
         case INS_stlr:
+        case INS_stlxr:
         case INS_ldr:
         case INS_str:
         case INS_ldur:
@@ -8994,10 +9006,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_LS_3D: // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
             code = emitInsCode(ins, fmt);
-            code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rm(id->idReg1());     // mmmmm
-            code |= insEncodeReg_Rt(id->idReg2());     // ttttt
-            code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
+            // Arm64 store exclusive unpredictable cases
+            assert(id->idReg1() != id->idReg2());
+            assert(id->idReg1() != id->idReg3());
+            code |= insEncodeDatasizeLS(code, id->idOpSize()); // X
+            code |= insEncodeReg_Rm(id->idReg1());             // mmmmm
+            code |= insEncodeReg_Rt(id->idReg2());             // ttttt
+            code |= insEncodeReg_Rn(id->idReg3());             // nnnnn
+            dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
