@@ -9,16 +9,36 @@ namespace System.IO.Compression.Tests
 {
     public partial class ManualSyncMemoryStream : MemoryStream
     {
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
             ReadHit = true;
-            return base.ReadAsync(destination, cancellationToken);
+
+            if (isSync)
+            {
+                manualResetEvent.Wait(cancellationToken);
+            }
+            else
+            {
+                await Task.Run(() => manualResetEvent.Wait(cancellationToken));
+            }
+
+            return await base.ReadAsync(destination, cancellationToken);
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public override async Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             WriteHit = true;
-            return base.WriteAsync(source, cancellationToken);
+
+            if (isSync)
+            {
+                manualResetEvent.Wait(cancellationToken);
+            }
+            else
+            {
+                await Task.Run(() => manualResetEvent.Wait(cancellationToken));
+            }
+
+            await base.WriteAsync(source, cancellationToken);
         }
     }
 }
