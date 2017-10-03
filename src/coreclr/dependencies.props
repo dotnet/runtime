@@ -15,7 +15,7 @@
   <PropertyGroup>
     <CoreFxCurrentRef>ab762a3c35e208cd698988fb7761bc92be417be9</CoreFxCurrentRef>
     <CoreClrCurrentRef>2a83ae1685d323e6bd206dd2596b953488479922</CoreClrCurrentRef>
-    <BuildToolsCurrentRef>2a83ae1685d323e6bd206dd2596b953488479922</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>28c7860c2887d685986bc1c85de1e822fee91122</BuildToolsCurrentRef>
     <PgoDataCurrentRef>1a2306063659d9704d06119325ff7c2652b1af0b</PgoDataCurrentRef>
   </PropertyGroup>
 
