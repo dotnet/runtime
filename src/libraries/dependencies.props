@@ -13,8 +13,8 @@
     <CoreClrCurrentRef>e8c451b9f8689521cfd72400347f64ac4e5b186f</CoreClrCurrentRef>
     <CoreSetupCurrentRef>e8c451b9f8689521cfd72400347f64ac4e5b186f</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>e8c451b9f8689521cfd72400347f64ac4e5b186f</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>e8c451b9f8689521cfd72400347f64ac4e5b186f</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>650c1c0a35e6f32204d67c0f5605c6a5a94e0f17</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>650c1c0a35e6f32204d67c0f5605c6a5a94e0f17</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>7e38d64cf9ca1423ef89f17cc2eb80032f13b0af</StandardCurrentRef>
     <BuildToolsCurrentRef>e8c451b9f8689521cfd72400347f64ac4e5b186f</BuildToolsCurrentRef>
@@ -26,9 +26,9 @@
     <CoreFxExpectedPrerelease>preview1-25803-01</CoreFxExpectedPrerelease>
     <CoreClrPackageVersion>2.1.0-preview1-25803-01</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25627-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25802-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-25802-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25802-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25803-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-25803-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25803-00</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.1.0-preview1-25802-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25802-02</MicrosoftNETCoreAppPackageVersion>
