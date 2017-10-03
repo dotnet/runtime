@@ -202,26 +202,14 @@ namespace System.IO.Tests
             AutoResetEvent changed = null, created = null, deleted = null, renamed = null;
             string[] expectedFullPaths = expectedPaths == null ? null : expectedPaths.Select(e => Path.GetFullPath(e)).ToArray();
 
-            // On OSX we get a number of extra events tacked onto valid events. As such, we can not ever confidently
-            // say that an event won't occur, only that one will occur.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                if (verifyChanged = ((expectedEvents & WatcherChangeTypes.Changed) > 0))
-                    changed = WatchChanged(watcher, expectedPaths);
-                if (verifyCreated = ((expectedEvents & WatcherChangeTypes.Created) > 0))
-                    created = WatchCreated(watcher, expectedPaths);
-                if (verifyDeleted = ((expectedEvents & WatcherChangeTypes.Deleted) > 0))
-                    deleted = WatchDeleted(watcher, expectedPaths);
-                if (verifyRenamed = ((expectedEvents & WatcherChangeTypes.Renamed) > 0))
-                    renamed = WatchRenamed(watcher, expectedPaths);
-            }
-            else
-            {
-                changed = WatchChanged(watcher, (expectedEvents & WatcherChangeTypes.Changed) > 0 ? expectedPaths : null);
-                created = WatchCreated(watcher, (expectedEvents & WatcherChangeTypes.Created) > 0 ? expectedPaths : null);
-                deleted = WatchDeleted(watcher, (expectedEvents & WatcherChangeTypes.Deleted) > 0 ? expectedPaths : null);
-                renamed = WatchRenamed(watcher, (expectedEvents & WatcherChangeTypes.Renamed) > 0 ? expectedPaths : null);
-            }
+            if (verifyChanged = ((expectedEvents & WatcherChangeTypes.Changed) > 0))
+                changed = WatchChanged(watcher, expectedPaths);
+            if (verifyCreated = ((expectedEvents & WatcherChangeTypes.Created) > 0))
+                created = WatchCreated(watcher, expectedPaths);
+            if (verifyDeleted = ((expectedEvents & WatcherChangeTypes.Deleted) > 0))
+                deleted = WatchDeleted(watcher, expectedPaths);
+            if (verifyRenamed = ((expectedEvents & WatcherChangeTypes.Renamed) > 0))
+                renamed = WatchRenamed(watcher, expectedPaths);
 
             watcher.EnableRaisingEvents = true;
             action();
