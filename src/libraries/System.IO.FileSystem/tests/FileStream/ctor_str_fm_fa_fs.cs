@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
@@ -115,6 +116,27 @@ namespace System.IO.Tests
                         throw new Exception($"Failed with FileAccess {access} and FileShare {share}", e);
                     }
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(FileMode.Create)]
+        [InlineData(FileMode.Truncate)]
+        public void NoTruncateOnFileShareViolation(FileMode fileMode)
+        {
+            string fileName = GetTestFilePath();
+
+            using (FileStream fs = CreateFileStream(fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+            {
+                fs.Write(new byte[] { 42 }, 0, 1);
+                fs.Flush();
+                FSAssert.ThrowsSharingViolation(() => CreateFileStream(fileName, fileMode, FileAccess.Write, FileShare.None).Dispose());
+            }
+            using (FileStream reader = CreateFileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                byte[] buf = new byte[1];
+                Assert.Equal(1, reader.Read(buf, 0, 1));
+                Assert.Equal(42, buf[0]);
             }
         }
     }
