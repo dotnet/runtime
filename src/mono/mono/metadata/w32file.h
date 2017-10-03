@@ -129,9 +129,10 @@ ves_icall_System_IO_MonoIO_FindFirstFile (const gunichar2 *path_with_pattern,
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_FindNextFile (gpointer hnd,
-						MonoString **file_name,
-						gint32 *file_attr,
-						gint32 *ioerror);
+					 MonoStringHandleOut file_name,
+					 gint32 *file_attr,
+					 gint32 *ioerror,
+					 MonoError *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_FindCloseFile (gpointer hnd);

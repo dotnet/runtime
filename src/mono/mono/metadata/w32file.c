@@ -243,23 +243,24 @@ ves_icall_System_IO_MonoIO_FindFirstFile (const gunichar2 *path_with_pattern, Mo
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_FindNextFile (HANDLE hnd, MonoString **file_name, gint32 *file_attr, gint32 *ioerror)
+ves_icall_System_IO_MonoIO_FindNextFile (HANDLE hnd, MonoStringHandleOut file_name, gint32 *file_attr, gint32 *ioerror, MonoError *error)
 {
 	MonoBoolean res;
 	WIN32_FIND_DATA data;
-	MonoError error;
 
 	res = mono_w32file_find_next (hnd, &data);
 
 	if (res == FALSE) {
-		*file_name = NULL;
+		MONO_HANDLE_ASSIGN (file_name, NULL_HANDLE_STRING);
 		*file_attr = 0;
 		*ioerror = mono_w32error_get_last ();
 		return res;
 	}
 
-	mono_gc_wbarrier_generic_store (file_name, (MonoObject*) mono_string_from_utf16_checked (data.cFileName, &error));
-	mono_error_set_pending_exception (&error);
+	int len = 0;
+	while (data.cFileName [len]) len++;
+	MONO_HANDLE_ASSIGN (file_name, mono_string_new_utf16_handle (mono_domain_get (), data.cFileName, len, error));
+	return_val_if_nok (error, FALSE);
 
 	*file_attr = data.dwFileAttributes;
 	*ioerror = ERROR_SUCCESS;
