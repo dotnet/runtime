@@ -197,33 +197,27 @@
     <Framework>netcoreapp2.0</Framework>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'Windows_NT'">
-    <TargetRid Condition="'$(TargetArchitecture)' == 'x86'">win7-x86</TargetRid>
-    <TargetRid Condition="'$(TargetArchitecture)' == 'x64'">win7-x64</TargetRid>
-    <TargetRid Condition="'$(TargetArchitecture)' == 'arm'">win8-arm</TargetRid>
-    <TargetRid Condition="'$(TargetArchitecture)' == 'arm64'">win10-arm64</TargetRid>
+  <Import Project="$(HostMachineInfoProps)"
+          Condition="Exists('$(HostMachineInfoProps)')" />
+
+  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(HostMachineRid)' != ''">
+    <OutputRid>$(HostMachineRid.Remove($(HostMachineRid.LastIndexOf('-'))))-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'OSX'">
-    <TargetRid>osx.10.12-x64</TargetRid>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetRid)' == '' and '$(DistroRid)' != ''">
-    <TargetRid>$(DistroRid)</TargetRid>
-  </PropertyGroup>
+
   <!-- Portable -->
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
-    <TargetRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</TargetRid>
-    <TargetRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</TargetRid>
-    <TargetRid Condition="'$(OSGroup)' == 'Linux'">linux-$(TargetArchitecture)</TargetRid>
+    <OutputRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
-    <TestTargetRid Condition="'$(TestTargetRid)' == '' and '$(PortableBuild)' != 'true' and '$(OSGroup)' == 'Windows_NT'">win10-$(TargetArchitecture)</TestTargetRid>
-    <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(TargetRid)</TestTargetRid>
+    <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRid)</TestTargetRid>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
-    <OSPlatformConfig>$(TargetRid).$(ConfigurationGroup)</OSPlatformConfig>
+    <OSPlatformConfig>$(OutputRid).$(ConfigurationGroup)</OSPlatformConfig>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
     <BaseOutputRootPath>$(BaseOutputPath)$(OSPlatformConfig)\</BaseOutputRootPath>
@@ -246,7 +240,7 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
-    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(TargetRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
+    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(OutputRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -283,39 +277,39 @@
     <TargetsCentos>false</TargetsCentos>
   </PropertyGroup>
   <Choose>
-    <When Condition="$(TargetRid.StartsWith('win'))">
+    <When Condition="$(OutputRid.StartsWith('win'))">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('osx'))">
+    <When Condition="$(OutputRid.StartsWith('osx'))">
       <PropertyGroup>
         <TargetsOSX>true</TargetsOSX>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('debian'))">
+    <When Condition="$(OutputRid.StartsWith('debian'))">
       <PropertyGroup>
         <TargetsDebian>true</TargetsDebian>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('ubuntu'))">
+    <When Condition="$(OutputRid.StartsWith('ubuntu'))">
       <PropertyGroup>
         <TargetsUbuntu>true</TargetsUbuntu>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('rhel'))">
+    <When Condition="$(OutputRid.StartsWith('rhel'))">
       <PropertyGroup>
         <TargetsRhel>true</TargetsRhel>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-        <When Condition="$(TargetRid.StartsWith('centos'))">
+    <When Condition="$(OutputRid.StartsWith('centos'))">
       <PropertyGroup>
         <TargetsCentos>true</TargetsCentos>
         <TargetsLinux>true</TargetsLinux>
@@ -342,14 +336,14 @@
   </PropertyGroup>
 
   <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
-  <PropertyGroup Condition="'$(TargetRid)' != ''">
-    <PackageTargetRid>$(TargetRid)</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.0-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.4-x64'">rhel.7-x64</PackageTargetRid>
+  <PropertyGroup Condition="'$(OutputRid)' != ''">
+    <PackageTargetRid>$(OutputRid)</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.0-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.4-x64'">rhel.7-x64</PackageTargetRid>
     <ProductMoniker>$(SharedFrameworkNugetVersion)-$(PackageTargetRid)</ProductMoniker>
     <HostResolverVersionMoniker>$(HostResolverVersion)-$(PackageTargetRid)</HostResolverVersionMoniker>
   </PropertyGroup>
