@@ -737,9 +737,9 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
 #ifdef FEATURE_SIMD
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
-#if defined(UNIX_AMD64_ABI) || !defined(FEATURE_AVX_SUPPORT)
+#if defined(UNIX_AMD64_ABI)
   #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 0 // Whether SIMD registers are partially saved at calls
-#else // !UNIX_AMD64_ABI && !FEATURE_AVX_SUPPORT
+#else // !UNIX_AMD64_ABI
   #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
 #endif // !UNIX_AMD64_ABI
 #endif
