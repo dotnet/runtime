@@ -83,6 +83,8 @@ int CacheLineSize;
 #include <kvm.h>
 #endif
 
+#include <algorithm>
+
 using namespace CorUnix;
 
 //
@@ -218,7 +220,7 @@ InitializeDefaultStackSize()
 
         if (errno == 0)
         {
-            g_defaultStackSize = max(size, PTHREAD_STACK_MIN);
+            g_defaultStackSize = std::max(size, (long int)PTHREAD_STACK_MIN);
         }
     }
 
