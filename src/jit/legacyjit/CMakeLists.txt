@@ -9,7 +9,6 @@ remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 # No SIMD in legacy back-end.
 remove_definitions(-DFEATURE_SIMD)
-remove_definitions(-DFEATURE_AVX_SUPPORT)
 
 if(WIN32)
   add_definitions(-DFX_VER_INTERNALNAME_STR=legacyjit.dll)

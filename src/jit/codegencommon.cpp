@@ -11154,7 +11154,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 //
 void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 {
-#ifdef FEATURE_AVX_SUPPORT
     bool emitVzeroUpper = false;
     if (check256bitOnly)
     {
@@ -11170,7 +11169,6 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
         assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
         instGen(INS_vzeroupper);
     }
-#endif
 }
 
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
