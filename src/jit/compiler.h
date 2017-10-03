@@ -2230,8 +2230,8 @@ public:
 
     //-------------------------------------------------------------------------
 
-    GenTreePtr gtFoldExpr(GenTreePtr tree);
-    GenTreePtr
+    GenTree* gtFoldExpr(GenTree* tree);
+    GenTree*
 #ifdef __clang__
         // TODO-Amd64-Unix: Remove this when the clang optimizer is fixed and/or the method implementation is
         // refactored in a simpler code. This is a workaround for a bug in the clang-3.5 optimizer. The issue is that in
@@ -2242,9 +2242,12 @@ public:
         // optimizations for now.
         __attribute__((optnone))
 #endif // __clang__
-        gtFoldExprConst(GenTreePtr tree);
-    GenTreePtr gtFoldExprSpecial(GenTreePtr tree);
-    GenTreePtr gtFoldExprCompare(GenTreePtr tree);
+        gtFoldExprConst(GenTree* tree);
+    GenTree* gtFoldExprSpecial(GenTree* tree);
+    GenTree* gtFoldExprCompare(GenTree* tree);
+    GenTree* gtFoldExprCall(GenTreeCall* call);
+    GenTree* gtFoldTypeCompare(GenTree* tree);
+    GenTree* gtFoldTypeEqualityCall(CorInfoIntrinsics methodID, GenTree* op1, GenTree* op2);
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -4997,7 +5000,17 @@ private:
     void fgLclFldAssign(unsigned lclNum);
 
     static fgWalkPreFn gtHasLocalsWithAddrOpCB;
-    bool gtCanOptimizeTypeEquality(GenTreePtr tree);
+
+    enum TypeProducerKind
+    {
+        TPK_Unknown = 0, // May not be a RuntimeType
+        TPK_Handle  = 1, // RuntimeType via handle
+        TPK_GetType = 2, // RuntimeType via Object.get_Type()
+        TPK_Null    = 3, // Tree value is null
+        TPK_Other   = 4  // RuntimeType via other means
+    };
+
+    TypeProducerKind gtGetTypeProducerKind(GenTree* tree);
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsActiveCSE_Candidate(GenTreePtr tree);
 

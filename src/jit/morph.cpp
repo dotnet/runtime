@@ -8858,61 +8858,13 @@ NO_TAIL_CALL:
     // We need to do these before the arguments are morphed
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC))
     {
-        CorInfoIntrinsics methodID = info.compCompHnd->getIntrinsicID(call->gtCallMethHnd);
+        // See if this is foldable
+        GenTree* optTree = gtFoldExprCall(call);
 
-        if (methodID == CORINFO_INTRINSIC_Illegal)
+        // If we optimized, morph the result
+        if (optTree != call)
         {
-            // Check for a new-style jit intrinsic.
-            const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
-
-            if (ni == NI_System_Enum_HasFlag)
-            {
-                GenTree* thisOp  = call->gtCallObjp;
-                GenTree* flagOp  = call->gtCallArgs->gtOp.gtOp1;
-                GenTree* optTree = gtOptimizeEnumHasFlag(thisOp, flagOp);
-                if (optTree != nullptr)
-                {
-                    return fgMorphTree(optTree);
-                }
-            }
-        }
-
-        genTreeOps simpleOp = GT_CALL;
-        if (methodID == CORINFO_INTRINSIC_TypeEQ)
-        {
-            simpleOp = GT_EQ;
-        }
-        else if (methodID == CORINFO_INTRINSIC_TypeNEQ)
-        {
-            simpleOp = GT_NE;
-        }
-
-        if (simpleOp == GT_EQ || simpleOp == GT_NE)
-        {
-            noway_assert(call->TypeGet() == TYP_INT);
-
-            // Check for GetClassFromHandle(handle) and obj.GetType() both of which will only return RuntimeType
-            // objects. Then if either operand is one of these two calls we can simplify op_Equality/op_Inequality to
-            // GT_NE/GT_NE: One important invariance that should never change is that type equivalency is always
-            // equivalent to object identity equality for runtime type objects in reflection. This is also reflected
-            // in RuntimeTypeHandle::TypeEquals. If this invariance would ever be broken, we need to remove the
-            // optimization below.
-
-            GenTreePtr op1 = call->gtCallArgs->gtOp.gtOp1;
-            GenTreePtr op2 = call->gtCallArgs->gtOp.gtOp2->gtOp.gtOp1;
-
-            if (gtCanOptimizeTypeEquality(op1) || gtCanOptimizeTypeEquality(op2))
-            {
-                JITDUMP("Optimizing call to Type:op_%s to simple compare via %s\n",
-                        methodID == CORINFO_INTRINSIC_TypeEQ ? "Equality" : "Inequality", GenTree::OpName(simpleOp));
-
-                GenTreePtr compare = gtNewOperNode(simpleOp, TYP_INT, op1, op2);
-
-                // fgMorphSmpOp will further optimize the following patterns:
-                //  1. typeof(...) == typeof(...)
-                //  2. typeof(...) == obj.GetType()
-                return fgMorphTree(compare);
-            }
+            return fgMorphTree(optTree);
         }
     }
 
@@ -12014,132 +11966,14 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
         case GT_EQ:
         case GT_NE:
+        {
+            GenTree* optimizedTree = gtFoldTypeCompare(tree);
 
-            // Check for typeof(...) == obj.GetType()
-            // Also check for typeof(...) == typeof(...)
-            // IMPORTANT NOTE: this optimization relies on a one-to-one mapping between
-            // type handles and instances of System.Type
-            // If this invariant is ever broken, the optimization will need updating
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef LEGACY_BACKEND
-            if (op1->gtOper == GT_CALL && op2->gtOper == GT_CALL &&
-                ((op1->gtCall.gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) ||
-                 (op1->gtCall.gtCallType == CT_HELPER)) &&
-                ((op2->gtCall.gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) || (op2->gtCall.gtCallType == CT_HELPER)))
-#else
-            if ((((op1->gtOper == GT_INTRINSIC) &&
-                  (op1->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)) ||
-                 ((op1->gtOper == GT_CALL) && (op1->gtCall.gtCallType == CT_HELPER))) &&
-                (((op2->gtOper == GT_INTRINSIC) &&
-                  (op2->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)) ||
-                 ((op2->gtOper == GT_CALL) && (op2->gtCall.gtCallType == CT_HELPER))))
-#endif
+            if (optimizedTree != tree)
             {
-                GenTreePtr pGetClassFromHandle;
-                GenTreePtr pGetType;
-
-#ifdef LEGACY_BACKEND
-                bool bOp1ClassFromHandle = gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall());
-                bool bOp2ClassFromHandle = gtIsTypeHandleToRuntimeTypeHelper(op2->AsCall());
-#else
-                bool bOp1ClassFromHandle =
-                    op1->gtOper == GT_CALL ? gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) : false;
-                bool bOp2ClassFromHandle =
-                    op2->gtOper == GT_CALL ? gtIsTypeHandleToRuntimeTypeHelper(op2->AsCall()) : false;
-#endif
-
-                // Optimize typeof(...) == typeof(...)
-                // Typically this occurs in generic code that attempts a type switch
-                // e.g. typeof(T) == typeof(int)
-
-                if (bOp1ClassFromHandle && bOp2ClassFromHandle)
-                {
-                    JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
-
-                    GenTreePtr classFromHandleArg1 = tree->gtOp.gtOp1->gtCall.gtCallArgs->gtOp.gtOp1;
-                    GenTreePtr classFromHandleArg2 = tree->gtOp.gtOp2->gtCall.gtCallArgs->gtOp.gtOp1;
-
-                    GenTreePtr compare = gtNewOperNode(oper, TYP_INT, classFromHandleArg1, classFromHandleArg2);
-
-                    compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
-
-                    // Morph and return
-                    return fgMorphTree(compare);
-                }
-                else if (bOp1ClassFromHandle || bOp2ClassFromHandle)
-                {
-                    //
-                    // Now check for GetClassFromHandle(handle) == obj.GetType()
-                    //
-
-                    if (bOp1ClassFromHandle)
-                    {
-                        pGetClassFromHandle = tree->gtOp.gtOp1;
-                        pGetType            = op2;
-                    }
-                    else
-                    {
-                        pGetClassFromHandle = tree->gtOp.gtOp2;
-                        pGetType            = op1;
-                    }
-
-                    GenTreePtr pGetClassFromHandleArgument = pGetClassFromHandle->gtCall.gtCallArgs->gtOp.gtOp1;
-                    GenTreePtr pConstLiteral               = pGetClassFromHandleArgument;
-
-                    // Unwrap GT_NOP node used to prevent constant folding
-                    if (pConstLiteral->gtOper == GT_NOP && pConstLiteral->gtType == TYP_I_IMPL)
-                    {
-                        pConstLiteral = pConstLiteral->gtOp.gtOp1;
-                    }
-
-                    // In the ngen case, we have to go thru an indirection to get the right handle.
-                    if (pConstLiteral->gtOper == GT_IND)
-                    {
-                        pConstLiteral = pConstLiteral->gtOp.gtOp1;
-                    }
-#ifdef LEGACY_BACKEND
-
-                    if (pGetType->gtCall.gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC &&
-                        info.compCompHnd->getIntrinsicID(pGetType->gtCall.gtCallMethHnd) ==
-                            CORINFO_INTRINSIC_Object_GetType &&
-#else
-                    if ((pGetType->gtOper == GT_INTRINSIC) &&
-                        (pGetType->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType) &&
-#endif
-                        pConstLiteral->gtOper == GT_CNS_INT && pConstLiteral->gtType == TYP_I_IMPL)
-                    {
-                        CORINFO_CLASS_HANDLE clsHnd = CORINFO_CLASS_HANDLE(pConstLiteral->gtIntCon.gtCompileTimeHandle);
-
-                        if (info.compCompHnd->canInlineTypeCheckWithObjectVTable(clsHnd))
-                        {
-                            // Fetch object method table from the object itself
-                            JITDUMP("Optimizing compare of obj.GetType()"
-                                    " and type-from-handle to compare handles\n");
-
-                            // Method table constant
-                            GenTree* cnsMT = pGetClassFromHandleArgument;
-#ifdef LEGACY_BACKEND
-                            // Method table from object
-                            GenTree* objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtCall.gtCallObjp);
-#else
-                            // Method table from object
-                            GenTree* objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, pGetType->gtUnOp.gtOp1);
-#endif
-                            objMT->gtFlags |= GTF_EXCEPT; // Null ref exception if object is null
-                            compCurBB->bbFlags |= BBF_HAS_VTABREF;
-                            optMethodFlags |= OMF_HAS_VTABLEREF;
-
-                            GenTreePtr compare = gtNewOperNode(oper, TYP_INT, objMT, cnsMT);
-
-                            compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
-
-                            // Morph and return
-                            return fgMorphTree(compare);
-                        }
-                    }
-                }
+                return fgMorphTree(optimizedTree);
             }
+        }
 
             __fallthrough;
 
