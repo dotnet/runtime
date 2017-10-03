@@ -28,6 +28,7 @@ namespace System.Reflection
         public sealed override bool IsVariableBoundArray => false;
         public sealed override bool IsConstructedGenericType => true;
         public sealed override bool IsGenericParameter => false;
+        public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => false;
         public sealed override bool ContainsGenericParameters
         {
