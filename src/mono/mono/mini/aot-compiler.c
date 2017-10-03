@@ -914,6 +914,7 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 
 #ifdef TARGET_WIN32_MSVC
 #undef EMIT_DWARF_INFO
+#define EMIT_WIN32_CODEVIEW_INFO
 #endif
 
 #ifdef EMIT_WIN32_UNWIND_INFO
@@ -10265,6 +10266,236 @@ emit_dwarf_info (MonoAotCompile *acfg)
 #endif
 }
 
+#ifdef EMIT_WIN32_CODEVIEW_INFO
+typedef struct _CodeViewSubSectionData
+{
+	gchar *start_section;
+	gchar *end_section;
+	gchar *start_section_record;
+	gchar *end_section_record;
+	int section_type;
+	int section_record_type;
+	int section_id;
+} CodeViewSubsectionData;
+
+typedef struct _CodeViewCompilerVersion
+{
+	gint major;
+	gint minor;
+	gint revision;
+	gint patch;
+} CodeViewCompilerVersion;
+
+#define CODEVIEW_SUBSECTION_SYMBOL_TYPE 0xF1
+#define CODEVIEW_SUBSECTION_RECORD_COMPILER_TYPE 0x113c
+#define CODEVIEW_SUBSECTION_RECORD_FUNCTION_START_TYPE 0x1147
+#define CODEVIEW_SUBSECTION_RECORD_FUNCTION_END_TYPE 0x114F
+#define CODEVIEW_CSHARP_LANGUAGE_TYPE 0x0A
+#define CODEVIEW_CPU_TYPE 0x0
+#define CODEVIEW_MAGIC_HEADER 0x4
+
+static void
+codeview_clear_subsection_data (CodeViewSubsectionData *section_data)
+{
+	g_free (section_data->start_section);
+	g_free (section_data->end_section);
+	g_free (section_data->start_section_record);
+	g_free (section_data->end_section_record);
+
+	memset (section_data, 0, sizeof (CodeViewSubsectionData));
+}
+
+static void
+codeview_parse_compiler_version (gchar *version, CodeViewCompilerVersion *data)
+{
+	gint values[4] = { 0 };
+	gint *value = values;
+
+	while (*version && (value < values + G_N_ELEMENTS (values))) {
+		if (isdigit (*version)) {
+			*value *= 10;
+			*value += *version - '0';
+		}
+		else if (*version == '.') {
+			value++;
+		}
+
+		version++;
+	}
+
+	data->major = values[0];
+	data->minor = values[1];
+	data->revision = values[2];
+	data->patch = values[3];
+}
+
+static void
+emit_codeview_start_subsection (MonoAotCompile *acfg, int section_id, int section_type, int section_record_type, CodeViewSubsectionData *section_data)
+{
+	// Starting a new subsection, clear old data.
+	codeview_clear_subsection_data (section_data);
+
+	// Keep subsection data.
+	section_data->section_id = section_id;
+	section_data->section_type = section_type;
+	section_data->section_record_type = section_record_type;
+
+	// Allocate all labels used in subsection.
+	section_data->start_section = g_strdup_printf ("%scvs_%d", acfg->temp_prefix, section_data->section_id);
+	section_data->end_section = g_strdup_printf ("%scvse_%d", acfg->temp_prefix, section_data->section_id);
+	section_data->start_section_record = g_strdup_printf ("%scvsr_%d", acfg->temp_prefix, section_data->section_id);
+	section_data->end_section_record = g_strdup_printf ("%scvsre_%d", acfg->temp_prefix, section_data->section_id);
+
+	// Subsection type, function symbol.
+	emit_int32 (acfg, section_data->section_type);
+
+	// Subsection size.
+	emit_symbol_diff (acfg, section_data->end_section, section_data->start_section, 0);
+	emit_label (acfg, section_data->start_section);
+
+	// Subsection record size.
+	fprintf (acfg->fp, "\t.word %s - %s\n", section_data->end_section_record, section_data->start_section_record);
+	emit_label (acfg, section_data->start_section_record);
+
+	// Subsection record type.
+	emit_int16 (acfg, section_record_type);
+}
+
+static void
+emit_codeview_end_subsection (MonoAotCompile *acfg, CodeViewSubsectionData *section_data, int *section_id)
+{
+	g_assert (section_data->start_section);
+	g_assert (section_data->end_section);
+	g_assert (section_data->start_section_record);
+	g_assert (section_data->end_section_record);
+
+	emit_label (acfg, section_data->end_section_record);
+
+	if (section_data->section_record_type == CODEVIEW_SUBSECTION_RECORD_FUNCTION_START_TYPE) {
+		// Emit record length.
+		emit_int16 (acfg, 2);
+
+		// Emit specific record type end.
+		emit_int16 (acfg, CODEVIEW_SUBSECTION_RECORD_FUNCTION_END_TYPE);
+	}
+
+	emit_label (acfg, section_data->end_section);
+
+	// Next subsection needs to be 4 byte aligned.
+	emit_alignment (acfg, 4);
+
+	*section_id = section_data->section_id + 1;
+	codeview_clear_subsection_data (section_data);
+}
+
+inline static void
+emit_codeview_start_symbol_subsection (MonoAotCompile *acfg, int section_id, int section_record_type, CodeViewSubsectionData *section_data)
+{
+	emit_codeview_start_subsection (acfg, section_id, CODEVIEW_SUBSECTION_SYMBOL_TYPE, section_record_type, section_data);
+}
+
+inline static void
+emit_codeview_end_symbol_subsection (MonoAotCompile *acfg, CodeViewSubsectionData *section_data, int *section_id)
+{
+	emit_codeview_end_subsection (acfg, section_data, section_id);
+}
+
+static void
+emit_codeview_compiler_info (MonoAotCompile *acfg, int *section_id)
+{
+	CodeViewSubsectionData section_data = { 0 };
+	CodeViewCompilerVersion compiler_version = { 0 };
+
+	// Start new compiler record subsection.
+	emit_codeview_start_symbol_subsection (acfg, *section_id, CODEVIEW_SUBSECTION_RECORD_COMPILER_TYPE, &section_data);
+
+	emit_int32 (acfg, CODEVIEW_CSHARP_LANGUAGE_TYPE);
+	emit_int16 (acfg, CODEVIEW_CPU_TYPE);
+
+	// Get compiler version information.
+	codeview_parse_compiler_version (VERSION, &compiler_version);
+
+	// Compiler frontend version, 4 digits.
+	emit_int16 (acfg, compiler_version.major);
+	emit_int16 (acfg, compiler_version.minor);
+	emit_int16 (acfg, compiler_version.revision);
+	emit_int16 (acfg, compiler_version.patch);
+
+	// Compiler backend version, 4 digits (currently same as frontend).
+	emit_int16 (acfg, compiler_version.major);
+	emit_int16 (acfg, compiler_version.minor);
+	emit_int16 (acfg, compiler_version.revision);
+	emit_int16 (acfg, compiler_version.patch);
+
+	// Compiler string.
+	emit_string (acfg, "Mono AOT compiler");
+
+	// Done with section.
+	emit_codeview_end_symbol_subsection (acfg, &section_data, section_id);
+}
+
+static void
+emit_codeview_function_info (MonoAotCompile *acfg, MonoMethod *method, int *section_id, gchar *symbol, gchar *symbol_start, gchar *symbol_end)
+{
+	CodeViewSubsectionData section_data = { 0 };
+	gchar *full_method_name = NULL;
+
+	// Start new function record subsection.
+	emit_codeview_start_symbol_subsection (acfg, *section_id, CODEVIEW_SUBSECTION_RECORD_FUNCTION_START_TYPE, &section_data);
+
+	// Emit 3 int 0 byte padding, currently not used.
+	emit_zero_bytes (acfg, sizeof (int) * 3);
+
+	// Emit size of function.
+	emit_symbol_diff (acfg, symbol_end, symbol_start, 0);
+
+	// Emit 3 int 0 byte padding, currently not used.
+	emit_zero_bytes (acfg, sizeof (int) * 3);
+
+	// Emit reallocation info.
+	fprintf (acfg->fp, "\t.secrel32 %s\n", symbol);
+	fprintf (acfg->fp, "\t.secidx %s\n", symbol);
+
+	// Emit flag, currently not used.
+	emit_zero_bytes (acfg, 1);
+
+	// Emit function name, exclude signature since it should be described by own metadata.
+	full_method_name = mono_method_full_name (method, FALSE);
+	emit_string (acfg, full_method_name ? full_method_name : "");
+	g_free (full_method_name);
+
+	// Done with section.
+	emit_codeview_end_symbol_subsection (acfg, &section_data, section_id);
+}
+
+static void
+emit_codeview_info (MonoAotCompile *acfg)
+{
+	int i;
+	int section_id = 0;
+	gchar symbol_buffer[MAX_SYMBOL_SIZE];
+
+	// Emit codeview debug info section
+	emit_section_change (acfg, ".debug$S", 0);
+
+	// Emit magic header.
+	emit_int32 (acfg, CODEVIEW_MAGIC_HEADER);
+
+	emit_codeview_compiler_info (acfg, &section_id);
+
+	for (i = 0; i < acfg->nmethods; ++i) {
+		MonoCompile *cfg = acfg->cfgs[i];
+
+		if (!cfg)
+			continue;
+
+		int ret = g_snprintf (symbol_buffer, G_N_ELEMENTS (symbol_buffer), "%sme_%x", acfg->temp_prefix, i);
+		if (ret > 0 && ret < G_N_ELEMENTS (symbol_buffer))
+			emit_codeview_function_info (acfg, cfg->method, &section_id, cfg->asm_debug_symbol, cfg->asm_symbol, symbol_buffer);
+	}
+}
+#endif /* EMIT_WIN32_CODEVIEW_INFO */
+
 #ifdef EMIT_WIN32_UNWIND_INFO
 static UnwindInfoSectionCacheItem *
 get_cached_unwind_info_section_item_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops)
@@ -10629,7 +10860,8 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_WIN32_MSVC)
 #define LD_NAME "link.exe"
-#define LD_OPTIONS "/DLL /MACHINE:X64 /NOLOGO"
+#define LD_OPTIONS "/DLL /MACHINE:X64 /NOLOGO /INCREMENTAL:NO"
+#define LD_DEBUG_OPTIONS LD_OPTIONS " /DEBUG"
 #elif defined(TARGET_WIN32) && !defined(TARGET_ANDROID)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-shared"
@@ -10722,8 +10954,8 @@ compile_asm (MonoAotCompile *acfg)
 #ifdef TARGET_WIN32_MSVC
 	g_assert (tmp_outfile_name != NULL);
 	g_assert (objfile != NULL);
-	command = g_strdup_printf ("\"%s%s\" %s %s /OUT:\"%s\" \"%s\"", tool_prefix, LD_NAME, LD_OPTIONS,
-		ld_flags, tmp_outfile_name, objfile);
+	command = g_strdup_printf ("\"%s%s\" %s %s /OUT:\"%s\" \"%s\"", tool_prefix, LD_NAME,
+			acfg->aot_opts.nodebug ? LD_OPTIONS : LD_DEBUG_OPTIONS, ld_flags, tmp_outfile_name, objfile);
 #elif defined(LD_NAME)
 	command = g_strdup_printf ("%s%s %s -o %s %s %s %s", tool_prefix, LD_NAME, LD_OPTIONS,
 		wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
@@ -12031,6 +12263,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		emit_dwarf_info (acfg);
 		mono_dwarf_writer_close (acfg->dwarf);
 	}
+
+#ifdef EMIT_WIN32_CODEVIEW_INFO
+	if (!acfg->aot_opts.nodebug)
+		emit_codeview_info (acfg);
+#endif
 
 	emit_mem_end (acfg);
 
