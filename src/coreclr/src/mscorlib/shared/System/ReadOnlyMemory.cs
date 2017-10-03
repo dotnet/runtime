@@ -16,6 +16,9 @@ namespace System
     [DebuggerTypeProxy(typeof(MemoryDebugView<>))]
     public struct ReadOnlyMemory<T>
     {
+        // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
+        // as code uses Unsafe.As to cast between them.
+
         // The highest order bit of _index is used to discern whether _arrayOrOwnedMemory is an array or an owned memory
         // if (_index >> 31) == 1, object _arrayOrOwnedMemory is an OwnedMemory<T>
         // else, object _arrayOrOwnedMemory is a T[]
