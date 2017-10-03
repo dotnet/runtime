@@ -1859,12 +1859,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
-            if (UseManagedHandler)
-            {
-                // TODO #23132: ManagedHandler doesn't support 1.0 currently.
-                return;
-            }
-
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 0));
             Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
@@ -1882,12 +1876,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
-            if (UseManagedHandler)
-            {
-                // TODO #23132: ManagedHandler requires 1.1 currently.
-                return;
-            }
-
             // The default value for HttpRequestMessage.Version is Version(1,1).
             // So, we need to set something different (0,0), to test the "unknown" version.
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));
