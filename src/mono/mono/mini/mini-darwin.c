@@ -100,8 +100,6 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	kern_return_t ret;
 	mach_msg_type_number_t num_state, num_fpstate;
 	thread_state_t state, fpstate;
-	ucontext_t ctx;
-	mcontext_t mctx;
 	MonoJitTlsData *jit_tls;
 	void *domain;
 	MonoLMF *lmf = NULL;
@@ -116,7 +114,6 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	fpstate = (thread_state_t) alloca (mono_mach_arch_get_thread_fpstate_size ());
-	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
 	do {
 		ret = mono_mach_arch_get_thread_states (info->native_handle, state, &num_state, fpstate, &num_fpstate);
@@ -124,10 +121,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
-	mono_mach_arch_thread_states_to_mcontext (state, fpstate, mctx);
-	ctx.uc_mcontext = mctx;
-
-	mono_sigctx_to_monoctx (&ctx, &tctx->ctx);
+	mono_mach_arch_thread_states_to_mono_context (state, fpstate, &tctx->ctx);
 
 	/* mono_set_jit_tls () sets this */
 	jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);

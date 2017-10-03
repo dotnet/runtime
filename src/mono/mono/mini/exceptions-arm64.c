@@ -43,7 +43,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	labels [0] = code;
 	arm_cbzx (code, ARMREG_IP1, 0);
 	for (i = 0; i < 32; ++i)
-		arm_ldrfpx (code, i, ctx_reg, MONO_STRUCT_OFFSET (MonoContext, fregs) + (i * 8));
+		arm_ldrfpx (code, i, ctx_reg, MONO_STRUCT_OFFSET (MonoContext, fregs) + (i * sizeof (MonoContextSimdReg)));
 	mono_arm_patch (labels [0], code, MONO_R_ARM64_CBZ);
 	/* Restore gregs */
 	// FIXME: Restore less registers
@@ -124,7 +124,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	labels [0] = code;
 	arm_cbzx (code, ARMREG_IP0, 0);
 	for (i = 0; i < num_fregs; ++i)
-		arm_ldrfpx (code, ARMREG_D8 + i, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, fregs) + ((i + 8) * 8));
+		arm_ldrfpx (code, ARMREG_D8 + i, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, fregs) + ((i + 8) * sizeof (MonoContextSimdReg)));
 	mono_arm_patch (labels [0], code, MONO_R_ARM64_CBZ);
 	/* Load fp */
 	arm_ldrx (code, ARMREG_FP, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_FP * 8));
@@ -393,7 +393,8 @@ mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *
 	/* Initialize a ctx based on the arguments */
 	memset (&ctx, 0, sizeof (MonoContext));
 	memcpy (&(ctx.regs [0]), int_regs, sizeof (mgreg_t) * 32);
-	memcpy (&(ctx.fregs [ARMREG_D8]), fp_regs, sizeof (double) * 8);
+	for (int i = 0; i < 8; i++)
+		*((gdouble*)&ctx.fregs [ARMREG_D8 + i]) = fp_regs [i];
 	ctx.has_fregs = 1;
 	ctx.pc = pc;
 
@@ -422,7 +423,8 @@ mono_arm_resume_unwind (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp
 	/* Initialize a ctx based on the arguments */
 	memset (&ctx, 0, sizeof (MonoContext));
 	memcpy (&(ctx.regs [0]), int_regs, sizeof (mgreg_t) * 32);
-	memcpy (&(ctx.fregs [ARMREG_D8]), fp_regs, sizeof (double) * 8);
+	for (int i = 0; i < 8; i++)
+		*((gdouble*)&ctx.fregs [ARMREG_D8 + i]) = fp_regs [i];
 	ctx.has_fregs = 1;
 	ctx.pc = pc;
 
@@ -460,7 +462,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		memcpy (regs, &new_ctx->regs, sizeof (mgreg_t) * 32);
 		/* v8..v15 are callee saved */
-		memcpy (regs + MONO_MAX_IREGS, &(new_ctx->fregs [8]), sizeof (mgreg_t) * 8);
+		for (int i = 0; i < 8; i++)
+			(regs + MONO_MAX_IREGS) [i] = *((mgreg_t*)&new_ctx->fregs [8 + i]);
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
@@ -468,7 +471,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		memcpy (&new_ctx->regs, regs, sizeof (mgreg_t) * 32);
-		memcpy (&(new_ctx->fregs [8]), regs + MONO_MAX_IREGS, sizeof (mgreg_t) * 8);
+		for (int i = 0; i < 8; i++)
+			*((mgreg_t*)&new_ctx->fregs [8 + i]) = (regs + MONO_MAX_IREGS) [i];
 
 		new_ctx->pc = regs [ARMREG_LR];
 		new_ctx->regs [ARMREG_SP] = (mgreg_t)cfa;

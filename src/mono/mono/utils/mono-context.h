@@ -22,8 +22,18 @@
 #define MONO_CONTEXT_OFFSET(field, index, field_type) \
     "i" (offsetof (MonoContext, field) + (index) * sizeof (field_type))
 
+#if defined(TARGET_X86)
 #if defined(__APPLE__)
 typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#endif
+#elif defined(TARGET_AMD64)
+#if defined(__APPLE__)
+typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#elif defined(__linux__)
+typedef struct _libc_xmmreg MonoContextSimdReg;
+#endif
+#elif defined(TARGET_ARM64)
+typedef __uint128_t MonoContextSimdReg;
 #endif
 
 /*
@@ -237,7 +247,7 @@ typedef struct {
 
 typedef struct {
 	mgreg_t gregs [AMD64_NREG];
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 	MonoContextSimdReg fregs [AMD64_XMM_NREG];
 #else
 	double fregs [AMD64_XMM_NREG];
@@ -417,7 +427,8 @@ typedef struct {
 
 typedef struct {
 	mgreg_t regs [32];
-	double fregs [32];
+	/* FIXME not fully saved in trampolines */
+	MonoContextSimdReg fregs [32];
 	mgreg_t pc;
 	/*
 	 * fregs might not be initialized if this context was created from a
@@ -438,12 +449,17 @@ typedef struct {
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
 	arm_unified_thread_state_t thread_state;	\
+	arm_neon_state64_t thread_fpstate;		\
 	int state_flavor = ARM_UNIFIED_THREAD_STATE;	\
+	int fpstate_flavor = ARM_NEON_STATE64;	\
 	unsigned state_count = ARM_UNIFIED_THREAD_STATE_COUNT;	\
+	unsigned fpstate_count = ARM_NEON_STATE64_COUNT;	\
 	thread_port_t self = mach_thread_self ();	\
 	kern_return_t ret = thread_get_state (self, state_flavor, (thread_state_t) &thread_state, &state_count);	\
 	g_assert (ret == 0);	\
-	mono_mach_arch_thread_states_to_mono_context ((thread_state_t)&thread_state, (thread_state_t)NULL, &ctx); \
+	ret = thread_get_state (self, fpstate_flavor, (thread_state_t) &thread_fpstate, &fpstate_count);	\
+	g_assert (ret == 0);	\
+	mono_mach_arch_thread_states_to_mono_context ((thread_state_t) &thread_state, (thread_state_t) &thread_fpstate, &ctx); \
 	mach_port_deallocate (current_task (), self);	\
 } while (0);
 
@@ -470,22 +486,22 @@ typedef struct {
 		"stp x30, xzr, [x16], #8\n"	\
 		"mov x30, sp\n"				\
 		"str x30, [x16], #8\n"		\
-		"stp d0, d1, [x16], #16\n"	\
-		"stp d2, d3, [x16], #16\n"	\
-		"stp d4, d5, [x16], #16\n"	\
-		"stp d6, d7, [x16], #16\n"	\
-		"stp d8, d9, [x16], #16\n"	\
-		"stp d10, d11, [x16], #16\n"	\
-		"stp d12, d13, [x16], #16\n"	\
-		"stp d14, d15, [x16], #16\n"	\
-		"stp d16, d17, [x16], #16\n"	\
-		"stp d18, d19, [x16], #16\n"	\
-		"stp d20, d21, [x16], #16\n"	\
-		"stp d22, d23, [x16], #16\n"	\
-		"stp d24, d25, [x16], #16\n"	\
-		"stp d26, d27, [x16], #16\n"	\
-		"stp d28, d29, [x16], #16\n"	\
-		"stp d30, d31, [x16], #16\n"	\
+		"stp q0, q1, [x16], #32\n"	\
+		"stp q2, q3, [x16], #32\n"	\
+		"stp q4, q5, [x16], #32\n"	\
+		"stp q6, q7, [x16], #32\n"	\
+		"stp q8, q9, [x16], #32\n"	\
+		"stp q10, q11, [x16], #32\n"	\
+		"stp q12, q13, [x16], #32\n"	\
+		"stp q14, q15, [x16], #32\n"	\
+		"stp q16, q17, [x16], #32\n"	\
+		"stp q18, q19, [x16], #32\n"	\
+		"stp q20, q21, [x16], #32\n"	\
+		"stp q22, q23, [x16], #32\n"	\
+		"stp q24, q25, [x16], #32\n"	\
+		"stp q26, q27, [x16], #32\n"	\
+		"stp q28, q29, [x16], #32\n"	\
+		"stp q30, q31, [x16], #32\n"		\
 		:							\
 		: "r" (&ctx.regs)			\
 		: "x16", "x30", "memory"		\
