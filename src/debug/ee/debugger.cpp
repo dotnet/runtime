@@ -12565,7 +12565,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
         CONTEXT ctx;
         ZeroMemory(&rd, sizeof(rd));
         ZeroMemory(&ctx, sizeof(ctx));
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
         rd.ControlPC = ctx.Eip;
         rd.PCTAddr = (TADDR)&(ctx.Eip);
 #else
