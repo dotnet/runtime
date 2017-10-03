@@ -142,45 +142,82 @@ namespace System
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
 
-            using (IEnumerator<T> en = values.GetEnumerator())
+            if (typeof(T) == typeof(char))
             {
-                if (!en.MoveNext())
-                    return string.Empty;
-
-                // We called MoveNext once, so this will be the first item
-                T currentValue = en.Current;
-
-                // Call ToString before calling MoveNext again, since
-                // we want to stay consistent with the below loop
-                // Everything should be called in the order
-                // MoveNext-Current-ToString, unless further optimizations
-                // can be made, to avoid breaking changes
-                string firstString = currentValue?.ToString();
-
-                // If there's only 1 item, simply call ToString on that
-                if (!en.MoveNext())
+                // Special-case T==char, as we can handle that case much more efficiently,
+                // and string.Concat(IEnumerable<char>) can be used as an efficient
+                // enumerable-based equivalent of new string(char[]).
+                using (IEnumerator<char> en = Unsafe.As<IEnumerable<char>>(values).GetEnumerator())
                 {
-                    // We have to handle the case of either currentValue
-                    // or its ToString being null
-                    return firstString ?? string.Empty;
-                }
-
-                StringBuilder result = StringBuilderCache.Acquire();
-
-                result.Append(firstString);
-
-                do
-                {
-                    currentValue = en.Current;
-
-                    if (currentValue != null)
+                    if (!en.MoveNext())
                     {
-                        result.Append(currentValue.ToString());
+                        // There weren't any chars.  Return the empty string.
+                        return Empty;
                     }
-                }
-                while (en.MoveNext());
 
-                return StringBuilderCache.GetStringAndRelease(result);
+                    char c = en.Current; // save the first char
+
+                    if (!en.MoveNext())
+                    {
+                        // There was only one char.  Return a string from it directly.
+                        return CreateFromChar(c);
+                    }
+
+                    // Create the StringBuilder, add the chars we've already enumerated,
+                    // add the rest, and then get the resulting string.
+                    StringBuilder result = StringBuilderCache.Acquire();
+                    result.Append(c); // first value
+                    do
+                    {
+                        c = en.Current;
+                        result.Append(c);
+                    }
+                    while (en.MoveNext());
+                    return StringBuilderCache.GetStringAndRelease(result);
+                }
+            }
+            else
+            {
+                using (IEnumerator<T> en = values.GetEnumerator())
+                {
+                    if (!en.MoveNext())
+                        return string.Empty;
+
+                    // We called MoveNext once, so this will be the first item
+                    T currentValue = en.Current;
+
+                    // Call ToString before calling MoveNext again, since
+                    // we want to stay consistent with the below loop
+                    // Everything should be called in the order
+                    // MoveNext-Current-ToString, unless further optimizations
+                    // can be made, to avoid breaking changes
+                    string firstString = currentValue?.ToString();
+
+                    // If there's only 1 item, simply call ToString on that
+                    if (!en.MoveNext())
+                    {
+                        // We have to handle the case of either currentValue
+                        // or its ToString being null
+                        return firstString ?? string.Empty;
+                    }
+
+                    StringBuilder result = StringBuilderCache.Acquire();
+
+                    result.Append(firstString);
+
+                    do
+                    {
+                        currentValue = en.Current;
+
+                        if (currentValue != null)
+                        {
+                            result.Append(currentValue.ToString());
+                        }
+                    }
+                    while (en.MoveNext());
+
+                    return StringBuilderCache.GetStringAndRelease(result);
+                }
             }
         }
 
