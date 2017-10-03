@@ -28,6 +28,8 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
                     return GetDistroId() ?? "Linux";
                 case Platform.Darwin:
                     return "Mac OS X";
+                case Platform.FreeBSD:
+                    return "FreeBSD";
                 default:
                     return "Unknown";
             }
@@ -43,6 +45,8 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
                     return GetDistroVersionId() ?? string.Empty;
                 case Platform.Darwin:
                     return GetDarwinVersion() ?? string.Empty;
+                case Platform.FreeBSD:
+                    return GetFreeBSDVersion() ?? string.Empty;
                 default:
                     return string.Empty;
             }
@@ -66,6 +70,23 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
                 // https://en.wikipedia.org/wiki/Darwin_%28operating_system%29
                 return $"10.{version.Major - 4}";
             }
+        }
+
+        private static string GetFreeBSDVersion()
+        {
+            // This is same as sysctl kern.version
+            // FreeBSD 11.0-RELEASE-p1 FreeBSD 11.0-RELEASE-p1 #0 r306420: Thu Sep 29 01:43:23 UTC 2016     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC
+            // What we want is major release as minor releases should be compatible.
+            String version = RuntimeInformation.OSDescription;
+            try
+            {
+                // second token up to first dot
+                return RuntimeInformation.OSDescription.Split()[1].Split('.')[0];
+            }
+            catch
+            {
+            }
+            return string.Empty;
         }
 
         public static Platform GetOSPlatform()
@@ -192,6 +213,10 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
                     {
                         return Platform.Linux;
                     }
+                    if (string.Equals(uname, "FreeBSD", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Platform.FreeBSD;
+                    }
                 }
                 catch
                 {
@@ -214,6 +239,11 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
             {
                 return Platform.Darwin;
             }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")))
+            {
+                return Platform.FreeBSD;
+            }
+
             return Platform.Unknown;
         }
 #endif
