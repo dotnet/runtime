@@ -9847,11 +9847,11 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
         {
             chars += printf("[SPILLED_OP2]");
         }
-#endif
         if (tree->gtFlags & GTF_ZSF_SET)
         {
             chars += printf("[ZSF_SET]");
         }
+#endif
 #if FEATURE_SET_FLAGS
         if (tree->gtFlags & GTF_SET_FLAGS)
         {

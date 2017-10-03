@@ -856,11 +856,11 @@ public:
 #ifdef LEGACY_BACKEND
 #define GTF_SPILLED_OPER 0x00000100 // op1 has been spilled
 #define GTF_SPILLED_OP2  0x00000200 // op2 has been spilled
+#define GTF_ZSF_SET      0x00000400 // the zero(ZF) and sign(SF) flags set to the operand
 #else  // !LEGACY_BACKEND
 #define GTF_NOREG_AT_USE 0x00000100 // tree node is in memory at the point of use
 #endif // !LEGACY_BACKEND
 
-#define GTF_ZSF_SET     0x00000400 // the zero(ZF) and sign(SF) flags set to the operand
 #define GTF_SET_FLAGS   0x00000800 // Requires that codegen for this node set the flags. Use gtSetFlags() to check this flag.
 #define GTF_USE_FLAGS   0x00001000 // Indicates that this node uses the flags bits.
 
@@ -2126,12 +2126,14 @@ public:
     bool gtSetFlags() const;
     bool gtRequestSetFlags();
 
+#ifdef LEGACY_BACKEND
     // Returns true if the codegen of this tree node
     // sets ZF and SF flags.
     bool gtSetZSFlags() const
     {
         return (gtFlags & GTF_ZSF_SET) != 0;
     }
+#endif
 
 #ifdef DEBUG
     bool       gtIsValid64RsltMul();

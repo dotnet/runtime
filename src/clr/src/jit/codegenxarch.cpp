@@ -887,7 +887,8 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     }
 
     // try to use an inc or dec
-    if (oper == GT_ADD && !varTypeIsFloating(treeNode) && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
+    if (oper == GT_ADD && !varTypeIsFloating(treeNode) && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx() &&
+        !treeNode->gtSetFlags())
     {
         if (src->IsIntegralConst(1))
         {
@@ -6242,66 +6243,6 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     var_types  op1Type   = op1->TypeGet();
     var_types  op2Type   = op2->TypeGet();
     regNumber  targetReg = tree->gtRegNum;
-
-    // Case of op1 == 0 or op1 != 0:
-    // Optimize generation of 'test' instruction if op1 sets flags.
-    //
-    // TODO-Cleanup Review GTF_USE_FLAGS usage
-    // https://github.com/dotnet/coreclr/issues/14093
-    //
-    // Note that if LSRA has inserted any GT_RELOAD/GT_COPY before
-    // op1, it will not modify the flags set by codegen of op1.
-    // Similarly op1 could also be reg-optional at its use and
-    // it was spilled after producing its result in a register.
-    // Spill code too will not modify the flags set by op1.
-    GenTree* realOp1 = op1->gtSkipReloadOrCopy();
-    if ((tree->gtFlags & GTF_USE_FLAGS) != 0)
-    {
-        // op1 must set ZF and SF flags
-        assert(realOp1->gtSetZSFlags());
-        assert(realOp1->gtSetFlags());
-
-        // Must be (in)equality against zero.
-        assert(tree->OperIs(GT_EQ, GT_NE));
-        assert(op2->IsIntegralConst(0));
-        assert(op2->isContained());
-
-        // Just consume the operands
-        genConsumeOperands(tree);
-
-        // No need to generate test instruction since
-        // op1 sets flags
-
-        // Are we evaluating this into a register?
-        if (targetReg != REG_NA)
-        {
-            genSetRegToCond(targetReg, tree);
-            genProduceReg(tree);
-        }
-
-        return;
-    }
-
-#ifdef FEATURE_SIMD
-    // If we have GT_JTRUE(GT_EQ/NE(GT_SIMD((in)Equality, v1, v2), true/false)),
-    // then we don't need to generate code for GT_EQ/GT_NE, since SIMD (in)Equality intrinsic
-    // would set or clear Zero flag.
-    if ((targetReg == REG_NA) && tree->OperIs(GT_EQ, GT_NE))
-    {
-        // Is it a SIMD (in)Equality that doesn't need to materialize result into a register?
-        if ((op1->gtRegNum == REG_NA) && op1->IsSIMDEqualityOrInequality())
-        {
-            // Must be comparing against true or false.
-            assert(op2->IsIntegralConst(0) || op2->IsIntegralConst(1));
-            assert(op2->isContainedIntOrIImmed());
-
-            // In this case SIMD (in)Equality will set or clear
-            // Zero flag, based on which GT_JTRUE would generate
-            // the right conditional jump.
-            return;
-        }
-    }
-#endif // FEATURE_SIMD
 
     genConsumeOperands(tree);
 

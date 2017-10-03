@@ -694,68 +694,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    if (CheckImmedAndMakeContained(cmp, cmp->gtOp2))
-    {
-#ifdef _TARGET_ARM64_
-        GenTreePtr op1 = cmp->gtOp.gtOp1;
-        GenTreePtr op2 = cmp->gtOp.gtOp2;
-
-        // If op1 codegen can set flags op2 is an immediate 0
-        // we don't need to generate cmp instruction,
-        // provided we don't have another GenTree node between op1
-        // and cmp that could potentially modify flags.
-        //
-        // TODO-CQ: right now the below peep is inexpensive and
-        // gets the benefit in most of cases because in majority
-        // of cases op1, op2 and cmp would be in that order in
-        // execution.  In general we should be able to check that all
-        // the nodes that come after op1 in execution order do not
-        // modify the flags so that it is safe to avoid generating a
-        // test instruction.  Such a check requires that on each
-        // GenTree node we need to set the info whether its codegen
-        // will modify flags.
-        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
-            !cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && op1->OperIs(GT_ADD, GT_AND, GT_SUB))
-        {
-            assert(!op1->gtSetFlags());
-            op1->gtFlags |= GTF_SET_FLAGS;
-            cmp->gtFlags |= GTF_USE_FLAGS;
-        }
-
-        if (!varTypeIsFloating(cmp) && op2->IsCnsIntOrI() && ((cmp->gtFlags & GTF_USE_FLAGS) == 0))
-        {
-            LIR::Use cmpUse;
-            bool     useJCMP = false;
-            uint64_t flags   = 0;
-
-            if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && BlockRange().TryGetUse(cmp, &cmpUse) &&
-                cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-                flags   = cmp->OperIs(GT_EQ) ? GTF_JCMP_EQ : 0;
-                useJCMP = true;
-            }
-            else if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(op2->gtIntCon.IconValue()) &&
-                     BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-                flags   = GTF_JCMP_TST | (cmp->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : 0);
-                useJCMP = true;
-            }
-
-            if (useJCMP)
-            {
-                cmp->gtLsraInfo.isNoRegCompare = true;
-                cmp->SetOper(GT_JCMP);
-
-                cmp->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-                cmp->gtFlags |= flags;
-
-                BlockRange().Remove(cmpUse.User());
-            }
-        }
-#endif // _TARGET_ARM64_
-    }
+    CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 
 //------------------------------------------------------------------------
