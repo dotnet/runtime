@@ -781,11 +781,10 @@ static int mono_class_get_magic_index (MonoClass *k)
 
 
 static void
-interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class, gboolean readonly)
+interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class, gboolean readonly, MonoError *error)
 {
 	MonoImage *image = method->klass->image;
 	MonoMethodSignature *csignature;
-	MonoError error;
 	int virtual = *td->ip == CEE_CALLVIRT;
 	int calli = *td->ip == CEE_CALLI || *td->ip == CEE_MONO_CALLI_EXTRA_ARG;
 	int i;
@@ -808,8 +807,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				csignature = mono_metadata_parse_signature (image, token);
 
 			if (generic_context) {
-				csignature = mono_inflate_generic_signature (csignature, generic_context, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				csignature = mono_inflate_generic_signature (csignature, generic_context, error);
+				return_if_nok (error);
 			}
 
 			target_method = NULL;
@@ -821,10 +820,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			csignature = mono_method_signature (target_method);
 
 			if (generic_context) {
-				csignature = mono_inflate_generic_signature (csignature, generic_context, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-				target_method = mono_class_inflate_generic_method_checked (target_method, generic_context, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				csignature = mono_inflate_generic_signature (csignature, generic_context, error);
+				return_if_nok (error);
+				target_method = mono_class_inflate_generic_method_checked (target_method, generic_context, error);
+				return_if_nok (error);
 			}
 		}
 	} else {
@@ -1003,11 +1002,11 @@ no_intrinsic:
 #if DEBUG_INTERP
 		g_print ("CONSTRAINED.CALLVIRT: %s::%s.  %s (%p) ->\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 #endif
-		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, &error);
+		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, error);
 #if DEBUG_INTERP
 		g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 #endif
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		return_if_nok (error);
 		mono_class_setup_vtable (target_method->klass);
 
 		if (constrained_class->valuetype && (target_method->klass == mono_defaults.object_class || target_method->klass == mono_defaults.enum_class->parent || target_method->klass == mono_defaults.enum_class)) {
@@ -1111,6 +1110,14 @@ no_intrinsic:
 		if (!virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 	}
+
+	if (csignature->call_convention == MONO_CALL_VARARG) {
+		char *fullname = mono_method_full_name (method, TRUE);
+		mono_error_set_execution_engine (error, "__arglist not supported yet: %s\n", fullname);
+		g_free (fullname);
+		return;
+	}
+
 	g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C);
 	td->sp -= csignature->param_count + !!csignature->hasthis;
 	for (i = 0; i < csignature->param_count; ++i) {
@@ -1153,8 +1160,8 @@ no_intrinsic:
 		}
 	} else if (!calli && !virtual && jit_call_supported (target_method, csignature)) {
 		ADD_CODE(td, MINT_JIT_CALL);
-		ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, &error)));
-		mono_error_assert_ok (&error);
+		ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error)));
+		mono_error_assert_ok (error);
 	} else {
 		if (calli)
 			ADD_CODE(td, native ? MINT_CALLI_NAT : MINT_CALLI);
@@ -1166,8 +1173,8 @@ no_intrinsic:
 		if (calli) {
 			ADD_CODE(td, get_data_item_index (td, (void *)csignature));
 		} else {
-			ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, &error)));
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error)));
+			return_if_nok (error);
 		}
 	}
 	td->ip += 5;
@@ -1543,14 +1550,13 @@ emit_seq_point (TransformData *td, int il_offset, InterpBasicBlock *cbb, gboolea
 	} while (0)
 
 static void
-generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, MonoGenericContext *generic_context)
+generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, MonoGenericContext *generic_context, MonoError *error)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = mono_method_signature (method);
 	MonoImage *image = method->klass->image;
 	MonoDomain *domain = rtm->domain;
 	MonoClass *constrained_class = NULL;
-	MonoError error;
 	int offset, mt, i, i32;
 	gboolean readonly = FALSE;
 	gboolean volatile_ = FALSE;
@@ -1961,8 +1967,8 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			token = read32 (td->ip + 1);
 			m = mono_get_method_full (image, token, NULL, generic_context);
 			ADD_CODE (td, MINT_JMP);
-			ADD_CODE (td, get_data_item_index (td, mono_interp_get_imethod (domain, m, &error)));
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			ADD_CODE (td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+			return_if_nok (error);
 			td->ip += 5;
 			break;
 		}
@@ -1974,7 +1980,8 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			if (sym_seq_points && !mono_bitset_test_fast (seq_point_locs, td->ip + 5 - header->code))
 				need_seq_point = TRUE;
 
-			interp_transform_call (td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, constrained_class, readonly);
+			interp_transform_call (td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, constrained_class, readonly, error);
+			return_if_nok (error);
 
 			if (need_seq_point) {
 				InterpBasicBlock *cbb = td->offset_to_bb [td->ip - header->code];
@@ -2667,12 +2674,14 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			td->sp -= csignature->param_count;
 			if (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass)) {
 				ADD_CODE (td, MINT_NEWOBJ_MAGIC);
-				ADD_CODE (td, get_data_item_index (td, mono_interp_get_imethod (domain, m, &error)));
+				ADD_CODE (td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+				return_if_nok (error);
+
 				PUSH_TYPE (td, stack_type [mint_type (&klass->byval_arg)], klass);
 			} else {
 				ADD_CODE(td, MINT_NEWOBJ);
-				ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, &error)));
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+				return_if_nok (error);
 
 				if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
 					vt_res_size = mono_class_value_size (klass, NULL);
@@ -2763,7 +2772,9 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			} else if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td->ip is incremented by interp_transform_call */
-				interp_transform_call (td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE);
+				interp_transform_call (td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE, error);
+
+				return_if_nok (error);
 			} else {
 				int mt = mint_type (&klass->byval_arg);
 				ADD_CODE (td, MINT_UNBOX);
@@ -3023,7 +3034,8 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
 				/* td->ip is incremented by interp_transform_call */
-				interp_transform_call (td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE);
+				interp_transform_call (td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE, error);
+				return_if_nok (error);
 			} else if (!klass->valuetype) {
 				/* already boxed, do nothing. */
 				td->ip += 5;
@@ -3567,8 +3579,8 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 					handle = &((MonoClass *) handle)->byval_arg;
 
 				if (generic_context) {
-					handle = mono_class_inflate_generic_type_checked (handle, generic_context, &error);
-					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+					handle = mono_class_inflate_generic_type_checked (handle, generic_context, error);
+					return_if_nok (error);
 				}
 			} else {
 				handle = mono_ldtoken (image, token, &klass, generic_context);
@@ -3638,7 +3650,8 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 					ADD_CODE (td, MINT_POP);
 					ADD_CODE (td, 1);
 					--td->sp;
-					interp_transform_call (td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE);
+					interp_transform_call (td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE, error);
+					return_if_nok (error);
 					break;
 				case CEE_MONO_JIT_ICALL_ADDR: {
 					guint32 token;
@@ -3911,8 +3924,8 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 					m = mono_marshal_get_synchronized_wrapper (m);
 
 				ADD_CODE(td, *td->ip == CEE_LDFTN ? MINT_LDFTN : MINT_LDVIRTFTN);
-				ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, &error)));
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+				return_if_nok (error);
 				td->ip += 5;
 				PUSH_SIMPLE_TYPE (td, STACK_TYPE_F);
 				break;
@@ -4217,6 +4230,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context)
 	MonoGenericContext *generic_context = NULL;
 	MonoDomain *domain = imethod->domain;
 
+	error_init (&error);
 	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 	method_class_vt = mono_class_vtable_full (domain, imethod->method->klass, &error);
 	if (!is_ok (&error))
@@ -4488,7 +4502,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context)
 	imethod->args_size = offset;
 	g_assert (imethod->args_size < 10000);
 
-	generate (method, imethod, is_bb_start, generic_context);
+	error_init (&error);
+	generate (method, imethod, is_bb_start, generic_context, &error);
+
+	if (!mono_error_ok (&error)) {
+		mono_os_mutex_unlock (&calc_section);
+		return mono_error_convert_to_exception (&error);
+	}
 
 	g_free (is_bb_start);
 
