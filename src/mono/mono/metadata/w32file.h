@@ -137,8 +137,8 @@ ves_icall_System_IO_MonoIO_FindNextFile (gpointer hnd,
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_FindCloseFile (gpointer hnd);
 
-extern MonoString *
-ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error);
+extern MonoStringHandle
+ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error, MonoError *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_SetCurrentDirectory (const gunichar2 *path,

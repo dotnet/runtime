@@ -274,20 +274,18 @@ ves_icall_System_IO_MonoIO_FindCloseFile (HANDLE hnd)
 	return mono_w32file_find_close (hnd);
 }
 
-MonoString *
-ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error)
+MonoStringHandle
+ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error, MonoError *error)
 {
-	MonoError error;
-	MonoString *result;
+	MonoStringHandle result;
 	gunichar2 *buf;
 	int len, res_len;
 
 	len = MAX_PATH + 1; /*FIXME this is too smal under most unix systems.*/
 	buf = g_new (gunichar2, len);
 	
-	error_init (&error);
-	*io_error=ERROR_SUCCESS;
-	result = NULL;
+	*io_error = ERROR_SUCCESS;
+	result = MONO_HANDLE_NEW (MonoString, NULL);
 
 	res_len = mono_w32file_get_cwd (len, buf);
 	if (res_len > len) { /*buf is too small.*/
@@ -302,13 +300,13 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error)
 		while (buf [len])
 			++ len;
 
-		result = mono_string_new_utf16_checked (mono_domain_get (), buf, len, &error);
+		MONO_HANDLE_ASSIGN (result, mono_string_new_utf16_handle (mono_domain_get (), buf, len, error));
 	} else {
 		*io_error=mono_w32error_get_last ();
 	}
 
 	g_free (buf);
-	mono_error_set_pending_exception (&error);
+	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return result;
 }
 
