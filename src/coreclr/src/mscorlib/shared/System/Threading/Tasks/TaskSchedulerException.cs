@@ -20,6 +20,8 @@ namespace System.Threading.Tasks
     /// Represents an exception used to communicate an invalid operation by a
     /// <see cref="T:System.Threading.Tasks.TaskScheduler"/>.
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class TaskSchedulerException : Exception
     {
         /// <summary>
@@ -71,7 +73,6 @@ namespace System.Threading.Tasks
         protected TaskSchedulerException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 }
