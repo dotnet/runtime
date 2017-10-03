@@ -121,10 +121,11 @@ extern MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (const gunichar2 *path, gint32 *error);
 
 extern gpointer
-ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path_with_pattern,
-						MonoString **file_name,
-						gint32 *file_attr,
-						gint32 *ioerror);
+ves_icall_System_IO_MonoIO_FindFirstFile (const gunichar2 *path_with_pattern,
+					  MonoStringHandleOut file_name,
+					  gint32 *file_attr,
+					  gint32 *ioerror,
+					  MonoError *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_FindNextFile (gpointer hnd,

@@ -366,7 +366,7 @@ ICALL(MONOIO_5, "DeleteFile(char*,System.IO.MonoIOError&)", ves_icall_System_IO_
 ICALL(MONOIO_38, "DumpHandles", ves_icall_System_IO_MonoIO_DumpHandles)
 ICALL(MONOIO_34, "DuplicateHandle", ves_icall_System_IO_MonoIO_DuplicateHandle)
 ICALL(MONOIO_37a, "FindCloseFile", ves_icall_System_IO_MonoIO_FindCloseFile)
-ICALL(MONOIO_35a, "FindFirstFile", ves_icall_System_IO_MonoIO_FindFirstFile)
+HANDLES(ICALL(MONOIO_35a, "FindFirstFile", ves_icall_System_IO_MonoIO_FindFirstFile))
 ICALL(MONOIO_36a, "FindNextFile", ves_icall_System_IO_MonoIO_FindNextFile)
 ICALL(MONOIO_6, "Flush(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Flush)
 ICALL(MONOIO_7, "GetCurrentDirectory(System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetCurrentDirectory)

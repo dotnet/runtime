@@ -217,23 +217,24 @@ ves_icall_System_IO_MonoIO_RemoveDirectory (const gunichar2 *path, gint32 *error
 }
 
 HANDLE
-ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path_with_pattern, MonoString **file_name, gint32 *file_attr, gint32 *ioerror)
+ves_icall_System_IO_MonoIO_FindFirstFile (const gunichar2 *path_with_pattern, MonoStringHandleOut file_name, gint32 *file_attr, gint32 *ioerror, MonoError *error)
 {
 	HANDLE hnd;
 	WIN32_FIND_DATA data;
-	MonoError error;
 
-	hnd = mono_w32file_find_first (mono_string_chars (path_with_pattern), &data);
+	hnd = mono_w32file_find_first (path_with_pattern, &data);
 
 	if (hnd == INVALID_HANDLE_VALUE) {
-		*file_name = NULL;
+		MONO_HANDLE_ASSIGN (file_name, NULL_HANDLE_STRING);
 		*file_attr = 0;
 		*ioerror = mono_w32error_get_last ();
 		return hnd;
 	}
 
-	mono_gc_wbarrier_generic_store (file_name, (MonoObject*) mono_string_from_utf16_checked (data.cFileName, &error));
-	mono_error_set_pending_exception (&error);
+	int len = 0;
+	while (data.cFileName [len]) len++;
+	MONO_HANDLE_ASSIGN (file_name, mono_string_new_utf16_handle (mono_domain_get (), data.cFileName, len, error));
+	return_val_if_nok (error, INVALID_HANDLE_VALUE);
 
 	*file_attr = data.dwFileAttributes;
 	*ioerror = ERROR_SUCCESS;
