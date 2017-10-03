@@ -3298,40 +3298,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
 
-    // Case of op1 == 0 or op1 != 0:
-    // Optimize generation of 'test' instruction if op1 sets flags.
-    //
-    // This behavior is designed to match the unexpected behavior
-    // of XARCH genCompareInt();
-    //
-    // TODO-Cleanup Review GTF_USE_FLAGS usage
-    // https://github.com/dotnet/coreclr/issues/14093
-    if ((tree->gtFlags & GTF_USE_FLAGS) != 0)
-    {
-        // op1 must set flags
-        assert(op1->gtSetFlags());
-
-        // Must be compare against zero.
-        assert(!tree->OperIs(GT_TEST_EQ, GT_TEST_NE));
-        assert(op2->IsIntegralConst(0));
-        assert(op2->isContained());
-
-        // Just consume the operands
-        genConsumeOperands(tree);
-
-        // No need to generate compare instruction since
-        // op1 sets flags
-
-        // Are we evaluating this into a register?
-        if (targetReg != REG_NA)
-        {
-            genSetRegToCond(targetReg, tree);
-            genProduceReg(tree);
-        }
-
-        return;
-    }
-
     genConsumeOperands(tree);
 
     emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
