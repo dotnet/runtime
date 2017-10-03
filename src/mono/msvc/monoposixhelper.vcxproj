@@ -75,10 +75,8 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MonoPosixHelper</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MonoPosixHelper</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MonoPosixHelper</TargetName>
@@ -89,25 +87,17 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;__i386__;TARGET_X86;_WIN32_WINNT=0x0600;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CompileAs>CompileAsC</CompileAs>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_EGLIB_SOURCE_DIR);$(MONO_DIR)/support;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>monoposixhelper.def</ModuleDefinitionFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
-      <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -122,21 +112,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;__x86_64__;_WIN32_WINNT=0x0600;WIN64;_WIN64;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CompileAs>CompileAsC</CompileAs>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_EGLIB_SOURCE_DIR);$(MONO_DIR)/support;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>monoposixhelper.def</ModuleDefinitionFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
-      <TargetMachine>MachineX64</TargetMachine>
       <AdditionalDependencies>eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -146,28 +129,20 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <Optimization>MinSpace</Optimization>
       <PreprocessorDefinitions>NDEBUG;__i386__;TARGET_X86;i386;_WIN32_WINNT=0x0600;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CompileAs>CompileAsC</CompileAs>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_EGLIB_SOURCE_DIR);$(MONO_DIR)/support;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <AdditionalDependencies>eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>monoposixhelper.def</ModuleDefinitionFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
-      <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -179,24 +154,17 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <Optimization>MinSpace</Optimization>
       <PreprocessorDefinitions>NDEBUG;__x86_64__;_WIN32_WINNT=0x0600;WIN64;_WIN64;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CompileAs>CompileAsC</CompileAs>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_EGLIB_SOURCE_DIR);$(MONO_DIR)/support;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
-      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>monoposixhelper.def</ModuleDefinitionFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
-      <TargetMachine>MachineX64</TargetMachine>
       <AdditionalDependencies>eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -205,59 +173,11 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\support\adler32.c" />
-    <ClCompile Include="..\support\compress.c" />
-    <ClCompile Include="..\support\crc32.c" />
-    <ClCompile Include="..\support\deflate.c" />
-    <ClCompile Include="..\support\errno.c" />
-    <ClCompile Include="..\support\fcntl.c" />
-    <ClCompile Include="..\support\infback.c" />
-    <ClCompile Include="..\support\inffast.c" />
-    <ClCompile Include="..\support\inflate.c" />
-    <ClCompile Include="..\support\inftrees.c" />
-    <ClCompile Include="..\support\map.c" />
-    <ClCompile Include="..\support\minizip\ioapi.c" />
-    <ClCompile Include="..\support\minizip\iowin32.c" />
-    <ClCompile Include="..\support\minizip\minizip.c" />
-    <ClCompile Include="..\support\minizip\unzip.c" />
-    <ClCompile Include="..\support\minizip\zip.c" />
-    <ClCompile Include="..\support\signal.c" />
-    <ClCompile Include="..\support\stdio.c" />
-    <ClCompile Include="..\support\stdlib.c" />
-    <ClCompile Include="..\support\string.c" />
-    <ClCompile Include="..\support\sys-stat.c" />
-    <ClCompile Include="..\support\trees.c" />
-    <ClCompile Include="..\support\uncompr.c" />
-    <ClCompile Include="..\support\zlib-helper.c" />
-    <ClCompile Include="..\support\zutil.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\support\inffast.h" />
-    <ClInclude Include="..\support\crc32.h" />
-    <ClInclude Include="..\support\deflate.h" />
-    <ClInclude Include="..\support\inffixed.h" />
-    <ClInclude Include="..\support\inflate.h" />
-    <ClInclude Include="..\support\inftrees.h" />
-    <ClInclude Include="..\support\map.h" />
-    <ClInclude Include="..\support\minizip\crypt.h" />
-    <ClInclude Include="..\support\minizip\ioapi.h" />
-    <ClInclude Include="..\support\minizip\iowin32.h" />
-    <ClInclude Include="..\support\minizip\unzip.h" />
-    <ClInclude Include="..\support\minizip\zip.h" />
-    <ClInclude Include="..\support\mph.h" />
-    <ClInclude Include="..\support\trees.h" />
-    <ClInclude Include="..\support\zconf.h" />
-    <ClInclude Include="..\support\zlib.h" />
-    <ClInclude Include="..\support\zutil.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="monoposixhelper.def" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="eglib.vcxproj">
       <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="monoposixhelper.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

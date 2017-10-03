@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="darwin_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-darwin.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\darwin</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="posix_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-posix.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\posix</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\darwin">
+      <UniqueIdentifier>{E3BEC2F7-4DE6-43BC-A38D-67414D6CAB8B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\posix">
+      <UniqueIdentifier>{B80745E3-E5F0-47A7-BE31-CBEC8615EDFE}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="monosgen_sources">
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\gc-internal-agnostic.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-alloc.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-archdep.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-cardtable.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-cardtable.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-client.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-conf.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-copy-object.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-debug.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-descriptor.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-descriptor.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-fin-weak-hash.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-gc.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-gc.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-gchandles.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-gray.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-gray.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-hash-table.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-hash-table.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-internal.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-layout-stats.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-layout-stats.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-los.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-major-copy-object.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-marksweep-drain-gray-stack.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-marksweep.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-memory-governor.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-memory-governor.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-minor-copy-object.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-minor-scan-object.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-nursery-allocator.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-pinning-stats.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-pinning.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-pinning.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-pointer-queue.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-pointer-queue.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-array-list.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-array-list.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-protocol-def.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-protocol.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-protocol.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-qsort.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-qsort.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-scan-object.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-simple-nursery.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-split-nursery.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-tagged-pointer.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-thread-pool.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-thread-pool.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-workers.c">
+      <Filter>Source Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-workers.h">
+      <Filter>Header Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\mono\sgen\Makefile.am">
+      <Filter>Resource Files$(MonoGCsgenFilterSubFolder)</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(MonoGCsgenFilterSubFolder)'!=''">
+    <Filter Include="Header Files$(MonoGCsgenFilterSubFolder)">
+      <UniqueIdentifier>{09852EE2-29A8-4C5A-9DE0-748F4113132B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(MonoGCsgenFilterSubFolder)">
+      <UniqueIdentifier>{D551BA3A-A20D-4FB2-BFF4-0174A3CB19E1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoGCsgenFilterSubFolder)">
+      <UniqueIdentifier>{37293C0E-9158-42C3-BE90-8FE4B63CDFF5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

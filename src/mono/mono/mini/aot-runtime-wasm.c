@@ -438,4 +438,8 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 
 	return code;
 }
-#endif
+#else /* TARGET_WASM */
+
+MONO_EMPTY_SOURCE_FILE (aot_runtime_wasm);
+
+#endif /* TARGET_WASM */

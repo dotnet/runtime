@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="libmini.targets.filters" />
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{30FB3E7A-9BC7-47A9-BABB-D34F7CD6F466}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{A4810F67-8B76-40A9-9A43-6048BC8A65F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3E49E932-95E1-4900-89D8-0ABFD8094726}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

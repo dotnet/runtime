@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="win32_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\console-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-win32-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cominterop-win32-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32file-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32file-win32-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\icall-windows.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\icall-windows-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\marshal-windows.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-windows-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-security-windows.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-security-windows-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32mutex-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32semaphore-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32event-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32process-win32-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32socket-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32error-win32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\win32</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\win32">
+      <UniqueIdentifier>{C6938EF2-A57F-4941-90EB-FCD7CF1E035D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\win32">
+      <UniqueIdentifier>{56DCE5E4-A83E-487B-BFED-577E1F784C14}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -77,8 +77,6 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mono-profiler-vtune$(MONO_TARGET_SUFFIX)</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mono-profiler-vtune$(MONO_TARGET_SUFFIX)</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mono-profiler-vtune$(MONO_TARGET_SUFFIX)</TargetName>
@@ -86,24 +84,17 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_LIBGC_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);$(VTUNE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <TargetMachine>MachineX86</TargetMachine>
       <ModuleDefinitionFile>mono-profiler-vtune.def</ModuleDefinitionFile>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(GC_LIB);eglib.lib;jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProgramFiles)\Intel\VTune Amplifier XE 2013\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -112,23 +103,17 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_LIBGC_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);$(VTUNE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ModuleDefinitionFile>mono-profiler-vtune.def</ModuleDefinitionFile>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(GC_LIB);eglib.lib;jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProgramFiles)\Intel\VTune Amplifier XE 2013\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -141,18 +126,13 @@
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_LIBGC_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);$(VTUNE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(GC_LIB);eglib.lib;jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProgramFiles)\Intel\VTune Amplifier XE 2013\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <TargetMachine>MachineX86</TargetMachine>
       <ModuleDefinitionFile>mono-profiler-vtune.def</ModuleDefinitionFile>
     </Link>
     <ProjectReference>
@@ -164,17 +144,13 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_LIBGC_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);$(VTUNE_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(GC_LIB);eglib.lib;jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProgramFiles)\Intel\VTune Amplifier XE 2013\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
       <ModuleDefinitionFile>mono-profiler-vtune.def</ModuleDefinitionFile>
     </Link>
     <ProjectReference>
@@ -188,17 +164,8 @@
     <None Include="mono-profiler-vtune.def" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="eglib.vcxproj">
-      <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
-    </ProjectReference>
-    <ProjectReference Include="libgc.vcxproj">
-      <Project>{eb56000b-c80b-4e8b-908d-d84d31b517d3}</Project>
-    </ProjectReference>
-    <ProjectReference Include="libgcmonosgen.vcxproj">
-      <Project>{c36612bd-22d3-4b95-85e2-7fdc4fc5d740}</Project>
-    </ProjectReference>
-    <ProjectReference Include="libmono.vcxproj">
-      <Project>{cb0d9e92-293c-439c-9ac7-c5f59b6e0771}</Project>
+    <ProjectReference Include="libmono-dynamic.vcxproj">
+      <Project>{675f4175-ffb1-480d-ad36-f397578844d4}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

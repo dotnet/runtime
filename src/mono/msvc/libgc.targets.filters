@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="libmonogc_la_sources">
+    <ClCompile Include="$(MonoSourceLocation)\libgc\allchblk.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\alloc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\blacklst.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\checksums.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\dbg_mlc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\dyn_load.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\finalize.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\gc_dlopen.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\gcj_mlc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\headers.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\malloc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mallocx.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mark.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mark_rts.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\misc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\new_hblk.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\obj_map.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\os_dep.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pcr_interface.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\ptr_chck.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\real_malloc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\reclaim.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\solaris_pthreads.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\solaris_threads.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\specific.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\stubborn.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\typd_mlc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\backgraph.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\win32_threads.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pthread_support.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pthread_stop_world.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\darwin_stop_world.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\openbsd_stop_world.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mach_dep.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gcconfig.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_priv.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_hdrs.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc_gcj.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc_mark.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_locks.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\libgc\Makefile.am">
+      <Filter>Resource Files$(GCboehmFilterSubFolder)</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(GCboehmFilterSubFolder)'!=''">
+    <Filter Include="Header Files$(GCboehmFilterSubFolder)">
+      <UniqueIdentifier>{9671D54B-CA64-4CFA-89BD-D90D90D38F6B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(GCboehmFilterSubFolder)">
+      <UniqueIdentifier>{AA2FEF48-1466-481B-AA60-BF0DA57967BC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(GCboehmFilterSubFolder)">
+      <UniqueIdentifier>{67EC6108-4A9F-4B19-B019-734A71CDFE30}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

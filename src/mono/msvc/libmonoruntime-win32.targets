@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="win32_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\console-win32.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-win32-internals.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cominterop-win32-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32file-win32.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32file-win32-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\icall-windows.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\icall-windows-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\marshal-windows.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-windows-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-security-windows.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-security-windows-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32mutex-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32semaphore-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32event-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-win32.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32process-win32-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32socket-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32error-win32.c" />
+  </ItemGroup>
+</Project>

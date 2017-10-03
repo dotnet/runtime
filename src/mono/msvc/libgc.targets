@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+    <ExcludeBoehmGCFromBuild>true</ExcludeBoehmGCFromBuild>
+    <ExcludeBoehmGCFromBuild Condition="'$(MONO_TARGET_GC)'=='boehm' And '$(Platform)'=='Win32'">false</ExcludeBoehmGCFromBuild>
+  </PropertyGroup>
+  <ItemGroup Label="libmonogc_la_sources">
+    <ClCompile Include="$(MonoSourceLocation)\libgc\allchblk.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\alloc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\blacklst.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\checksums.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\dbg_mlc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\dyn_load.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\finalize.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\gc_dlopen.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\gcj_mlc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\headers.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\malloc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mallocx.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mark.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mark_rts.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\misc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\new_hblk.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\obj_map.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\os_dep.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pcr_interface.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\ptr_chck.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\real_malloc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\reclaim.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\solaris_pthreads.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\solaris_threads.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\specific.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\stubborn.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\typd_mlc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\backgraph.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\win32_threads.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pthread_support.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\pthread_stop_world.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\darwin_stop_world.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\openbsd_stop_world.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\libgc\mach_dep.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gcconfig.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_priv.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_hdrs.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc_gcj.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\gc_mark.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\libgc\include\private\gc_locks.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\libgc\Makefile.am" />
+  </ItemGroup>
+</Project>

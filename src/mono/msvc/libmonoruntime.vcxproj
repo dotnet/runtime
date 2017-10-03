@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,210 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\mono\metadata\appdomain.c" />
-    <ClCompile Include="..\mono\metadata\assembly.c" />
-    <ClCompile Include="..\mono\metadata\attach.c" />
-    <ClCompile Include="..\mono\metadata\boehm-gc.c" />
-    <ClCompile Include="..\mono\metadata\callspec.c" />
-    <ClCompile Include="..\mono\metadata\class-accessors.c" />
-    <ClCompile Include="..\mono\metadata\class.c" />
-    <ClCompile Include="..\mono\metadata\cominterop.c" />
-    <ClCompile Include="..\mono\metadata\console-win32.c" />
-    <ClCompile Include="..\mono\metadata\property-bag.c" />
-    <ClCompile Include="..\mono\metadata\w32socket-win32.c" />
-    <ClCompile Include="..\mono\metadata\w32file-win32.c" />
-    <ClCompile Include="..\mono\metadata\w32error-win32.c" />
-    <ClCompile Include="..\mono\metadata\icall-windows.c" />
-    <ClCompile Include="..\mono\metadata\marshal-windows.c" />
-    <ClCompile Include="..\mono\metadata\mono-security-windows.c" />
-    <ClCompile Include="..\mono\metadata\w32mutex-win32.c" />
-    <ClCompile Include="..\mono\metadata\w32semaphore-win32.c" />
-    <ClCompile Include="..\mono\metadata\w32event-win32.c" />
-    <ClCompile Include="..\mono\metadata\w32process.c" />
-    <ClCompile Include="..\mono\metadata\w32process-win32.c" />
-    <ClCompile Include="..\mono\metadata\coree.c" />
-    <ClCompile Include="..\mono\metadata\custom-attrs.c" />
-    <ClCompile Include="..\mono\metadata\debug-helpers.c" />
-    <ClCompile Include="..\mono\metadata\debug-mono-ppdb.c" />
-    <ClCompile Include="..\mono\metadata\debug-mono-symfile.c" />
-    <ClCompile Include="..\mono\metadata\decimal-ms.c" />
-    <ClCompile Include="..\mono\metadata\dynamic-image.c" />
-    <ClCompile Include="..\mono\metadata\dynamic-stream.c" />
-    <ClCompile Include="..\mono\metadata\domain.c" />
-    <ClCompile Include="..\mono\metadata\environment.c" />
-    <ClCompile Include="..\mono\metadata\exception.c" />
-    <ClCompile Include="..\mono\metadata\w32file.c" />
-    <ClCompile Include="..\mono\metadata\file-mmap-windows.c" />
-    <ClCompile Include="..\mono\metadata\filewatcher.c" />
-    <ClCompile Include="..\mono\metadata\gc-stats.c" />
-    <ClCompile Include="..\mono\metadata\gc.c" />
-    <ClCompile Include="..\mono\metadata\handle.c" />
-    <ClCompile Include="..\mono\metadata\icall.c" />
-    <ClCompile Include="..\mono\metadata\image.c" />
-    <ClCompile Include="..\mono\metadata\jit-info.c" />
-    <ClCompile Include="..\mono\metadata\loader.c" />
-    <ClCompile Include="..\mono\metadata\locales.c" />
-    <ClCompile Include="..\mono\metadata\lock-tracer.c" />
-    <ClCompile Include="..\mono\metadata\marshal.c" />
-    <ClCompile Include="..\mono\metadata\mempool.c" />
-    <ClCompile Include="..\mono\metadata\metadata-verify.c" />
-    <ClCompile Include="..\mono\metadata\metadata.c" />
-    <ClCompile Include="..\mono\metadata\metadata-cross-helpers.c" />
-    <ClCompile Include="..\mono\metadata\method-builder.c" />
-    <ClCompile Include="..\mono\metadata\monitor.c" />
-    <ClCompile Include="..\mono\metadata\mono-basic-block.c" />
-    <ClCompile Include="..\mono\metadata\mono-config.c" />
-    <ClCompile Include="..\mono\metadata\mono-config-dirs.c" />
-    <ClCompile Include="..\mono\metadata\mono-debug.c" />
-    <ClCompile Include="..\mono\metadata\mono-endian.c" />
-    <ClCompile Include="..\mono\metadata\mono-hash.c" />
-    <ClCompile Include="..\mono\metadata\mono-conc-hash.c" />
-    <ClCompile Include="..\mono\metadata\mono-mlist.c" />
-    <ClCompile Include="..\mono\metadata\mono-perfcounters.c" />
-    <ClCompile Include="..\mono\metadata\null-gc.c" />
-    <ClCompile Include="..\mono\metadata\number-ms.c" />
-    <ClCompile Include="..\mono\metadata\object.c" />
-    <ClCompile Include="..\mono\metadata\opcodes.c" />
-    <ClCompile Include="..\mono\metadata\profiler.c" />
-    <ClCompile Include="..\mono\metadata\rand.c" />
-    <ClCompile Include="..\mono\metadata\reflection.c" />
-    <ClCompile Include="..\mono\metadata\remoting.c" />
-    <ClCompile Include="..\mono\metadata\runtime.c" />
-    <ClCompile Include="..\mono\metadata\security-core-clr.c" />
-    <ClCompile Include="..\mono\metadata\security-manager.c" />
-    <ClCompile Include="..\mono\metadata\mono-security.c" />
-    <ClCompile Include="..\mono\metadata\seq-points-data.c" />
-    <ClCompile Include="..\mono\metadata\sgen-mono.c" />
-    <ClCompile Include="..\mono\metadata\threadpool-io.c" />
-    <ClCompile Include="..\mono\metadata\threadpool.c" />
-    <ClCompile Include="..\mono\metadata\threadpool-worker-default.c" />
-    <ClCompile Include="..\mono\metadata\sgen-bridge.c" />
-    <ClCompile Include="..\mono\metadata\sgen-new-bridge.c" />
-    <ClCompile Include="..\mono\metadata\sgen-old-bridge.c" />
-    <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c" />
-    <ClCompile Include="..\mono\metadata\sgen-toggleref.c" />
-    <ClCompile Include="..\mono\metadata\sgen-stw.c" />
-    <ClCompile Include="..\mono\metadata\w32socket.c" />
-    <ClCompile Include="..\mono\metadata\sre.c" />
-    <ClCompile Include="..\mono\metadata\sre-encode.c" />
-    <ClCompile Include="..\mono\metadata\sre-save.c" />
-    <ClCompile Include="..\mono\metadata\string-icalls.c" />
-    <ClCompile Include="..\mono\metadata\sysmath.c" />
-    <ClCompile Include="..\mono\metadata\threads.c" />
-    <ClCompile Include="..\mono\metadata\verify.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\mono\metadata\appdomain.h" />
-    <ClInclude Include="..\mono\metadata\appdomain-icalls.h" />
-    <ClInclude Include="..\mono\metadata\assembly.h" />
-    <ClInclude Include="..\mono\metadata\attach.h" />
-    <ClInclude Include="..\mono\metadata\callspec.h" />
-    <ClInclude Include="..\mono\metadata\cil-coff.h" />
-    <ClInclude Include="..\mono\metadata\class-internals.h" />
-    <ClInclude Include="..\mono\metadata\class.h" />
-    <ClInclude Include="..\mono\metadata\cominterop-win32-internals.h" />
-    <ClInclude Include="..\mono\metadata\cominterop.h" />
-    <ClInclude Include="..\mono\metadata\console-io.h" />
-    <ClInclude Include="..\mono\metadata\console-win32-internals.h" />
-    <ClInclude Include="..\mono\metadata\coree-internals.h" />
-    <ClInclude Include="..\mono\metadata\coree.h" />
-    <ClInclude Include="..\mono\metadata\culture-info-tables.h" />
-    <ClInclude Include="..\mono\metadata\culture-info.h" />
-    <ClInclude Include="..\mono\metadata\custom-attrs-internals.h" />
-    <ClInclude Include="..\mono\metadata\debug-helpers.h" />
-    <ClInclude Include="..\mono\metadata\debug-mono-ppdb.h" />
-    <ClInclude Include="..\mono\metadata\debug-mono-symfile.h" />
-    <ClInclude Include="..\mono\metadata\domain-internals.h" />
-    <ClInclude Include="..\mono\metadata\dynamic-image-internals.h" />
-    <ClInclude Include="..\mono\metadata\dynamic-stream-internals.h" />
-    <ClInclude Include="..\mono\metadata\environment.h" />
-    <ClInclude Include="..\mono\metadata\exception.h" />
-    <ClInclude Include="..\mono\metadata\w32file-internals.h" />
-    <ClInclude Include="..\mono\metadata\w32file-win32-internals.h" />
-    <ClInclude Include="..\mono\metadata\w32file.h" />
-    <ClInclude Include="..\mono\metadata\w32error.h" />
-    <ClInclude Include="..\mono\utils\w32api.h" />
-    <ClInclude Include="..\mono\metadata\filewatcher.h" />
-    <ClInclude Include="..\mono\metadata\gc-internals.h" />
-    <ClInclude Include="..\mono\metadata\handle.h" />
-    <ClInclude Include="..\mono\metadata\icall-windows-internals.h" />
-    <ClInclude Include="..\mono\metadata\icall-internals.h" />
-    <ClInclude Include="..\mono\metadata\marshal-internals.h" />
-    <ClInclude Include="..\mono\metadata\marshal-windows-internals.h" />
-    <ClInclude Include="..\mono\metadata\mono-security-windows-internals.h" />
-    <ClInclude Include="..\mono\metadata\number-ms.h" />
-    <ClInclude Include="..\mono\metadata\property-bag.h" />
-    <ClInclude Include="..\mono\metadata\w32process.h" />
-    <ClInclude Include="..\mono\metadata\w32process-internals.h" />
-    <ClInclude Include="..\mono\metadata\w32process-win32-internals.h" />
-    <ClInclude Include="..\mono\metadata\remoting.h" />
-    <ClInclude Include="..\mono\metadata\seq-points-data.h" />
-    <ClInclude Include="..\mono\metadata\sgen-bridge-internals.h" />
-    <ClInclude Include="..\mono\metadata\sgen-client-mono.h" />
-    <ClInclude Include="..\mono\metadata\w32socket-internals.h" />
-    <ClInclude Include="..\mono\metadata\threadpool-io.h" />
-    <ClInclude Include="..\mono\metadata\threadpool.h" />
-    <ClInclude Include="..\mono\metadata\threadpool-worker.h" />
-    <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h" />
-    <ClInclude Include="..\mono\metadata\icall-def.h" />
-    <ClInclude Include="..\mono\metadata\image.h" />
-    <ClInclude Include="..\mono\metadata\loader.h" />
-    <ClInclude Include="..\mono\metadata\locales.h" />
-    <ClInclude Include="..\mono\metadata\lock-tracer.h" />
-    <ClInclude Include="..\mono\metadata\marshal.h" />
-    <ClInclude Include="..\mono\metadata\mempool-internals.h" />
-    <ClInclude Include="..\mono\metadata\mempool.h" />
-    <ClInclude Include="..\mono\metadata\metadata-internals.h" />
-    <ClInclude Include="..\mono\metadata\metadata.h" />
-    <ClInclude Include="..\mono\metadata\method-builder.h" />
-    <ClInclude Include="..\mono\metadata\monitor.h" />
-    <ClInclude Include="..\mono\metadata\mono-basic-block.h" />
-    <ClInclude Include="..\mono\metadata\mono-config.h" />
-    <ClInclude Include="..\mono\metadata\mono-config-dirs.h" />
-    <ClInclude Include="..\mono\metadata\mono-debug-debugger.h" />
-    <ClInclude Include="..\mono\metadata\mono-debug.h" />
-    <ClInclude Include="..\mono\metadata\mono-endian.h" />
-    <ClInclude Include="..\mono\metadata\mono-hash.h" />
-    <ClInclude Include="..\mono\metadata\mono-conc-hash.h" />
-    <ClInclude Include="..\mono\metadata\mono-mlist.h" />
-    <ClInclude Include="..\mono\metadata\mono-perfcounters-def.h" />
-    <ClInclude Include="..\mono\metadata\mono-perfcounters.h" />
-    <ClInclude Include="..\mono\metadata\mono-ptr-array.h" />
-    <ClInclude Include="..\mono\metadata\normalization-tables.h" />
-    <ClInclude Include="..\mono\metadata\number-formatter.h" />
-    <ClInclude Include="..\mono\metadata\object-internals.h" />
-    <ClInclude Include="..\mono\metadata\object.h" />
-    <ClInclude Include="..\mono\metadata\opcodes.h" />
-    <ClInclude Include="..\mono\metadata\profiler-events.h" />
-    <ClInclude Include="..\mono\metadata\profiler-private.h" />
-    <ClInclude Include="..\mono\metadata\profiler.h" />
-    <ClInclude Include="..\mono\metadata\rand.h" />
-    <ClInclude Include="..\mono\metadata\reflection.h" />
-    <ClInclude Include="..\mono\metadata\reflection-cache.h" />
-    <ClInclude Include="..\mono\metadata\reflection-internals.h" />
-    <ClInclude Include="..\mono\metadata\runtime.h" />
-    <ClInclude Include="..\mono\metadata\security-core-clr.h" />
-    <ClInclude Include="..\mono\metadata\security-manager.h" />
-    <ClInclude Include="..\mono\metadata\security.h" />
-    <ClInclude Include="..\mono\metadata\sgen-bridge.h" />
-    <ClInclude Include="..\mono\metadata\sgen-toggleref.h" />
-    <ClInclude Include="..\mono\metadata\w32socket.h" />
-    <ClInclude Include="..\mono\metadata\sre-internals.h" />
-    <ClInclude Include="..\mono\metadata\string-icalls.h" />
-    <ClInclude Include="..\mono\metadata\sysmath.h" />
-    <ClInclude Include="..\mono\metadata\tabledefs.h" />
-    <ClInclude Include="..\mono\metadata\threads-types.h" />
-    <ClInclude Include="..\mono\metadata\verify-internals.h" />
-    <ClInclude Include="..\mono\metadata\verify.h" />
-    <ClInclude Include="..\mono\metadata\wrapper-types.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="eglib.vcxproj">
       <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\mono\metadata\Makefile.am" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}</ProjectGuid>
@@ -301,10 +100,10 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -318,10 +117,10 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);WIN64;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -334,12 +133,11 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -354,12 +152,11 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_LIB;$(GC_DEFINES);WIN64;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -369,6 +166,7 @@
     </Link>
     <Lib />
   </ItemDefinitionGroup>
+  <Import Project="libmonoruntime.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

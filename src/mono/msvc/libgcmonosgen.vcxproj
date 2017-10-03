@@ -18,62 +18,6 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\mono\sgen\sgen-alloc.c" />
-    <ClCompile Include="..\mono\sgen\sgen-array-list.c" />
-    <ClCompile Include="..\mono\sgen\sgen-cardtable.c" />
-    <ClCompile Include="..\mono\sgen\sgen-debug.c" />
-    <ClCompile Include="..\mono\sgen\sgen-descriptor.c" />
-    <ClCompile Include="..\mono\sgen\sgen-gc.c" />
-    <ClCompile Include="..\mono\sgen\sgen-gchandles.c" />
-    <ClCompile Include="..\mono\sgen\sgen-gray.c" />
-    <ClCompile Include="..\mono\sgen\sgen-hash-table.c" />
-    <ClCompile Include="..\mono\sgen\sgen-internal.c" />
-    <ClCompile Include="..\mono\sgen\sgen-los.c" />
-    <ClCompile Include="..\mono\sgen\sgen-marksweep.c" />
-    <ClCompile Include="..\mono\sgen\sgen-memory-governor.c" />
-    <ClCompile Include="..\mono\sgen\sgen-nursery-allocator.c" />
-    <ClCompile Include="..\mono\sgen\sgen-pinning-stats.c" />
-    <ClCompile Include="..\mono\sgen\sgen-pinning.c" />
-    <ClCompile Include="..\mono\sgen\sgen-pointer-queue.c" />
-    <ClCompile Include="..\mono\sgen\sgen-protocol.c" />
-    <ClCompile Include="..\mono\sgen\sgen-qsort.c" />
-    <ClCompile Include="..\mono\sgen\sgen-simple-nursery.c" />
-    <ClCompile Include="..\mono\sgen\sgen-split-nursery.c" />
-    <ClCompile Include="..\mono\sgen\sgen-thread-pool.c" />
-    <ClCompile Include="..\mono\sgen\sgen-workers.c" />
-    <ClCompile Include="..\mono\sgen\sgen-fin-weak-hash.c" />
-    <ClCompile Include="..\mono\sgen\sgen-layout-stats.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h" />
-    <ClInclude Include="..\mono\sgen\sgen-archdep.h" />
-    <ClInclude Include="..\mono\sgen\sgen-array-list.h" />
-    <ClInclude Include="..\mono\sgen\sgen-cardtable.h" />
-    <ClInclude Include="..\mono\sgen\sgen-client.h" />
-    <ClInclude Include="..\mono\sgen\sgen-conf.h" />
-    <ClInclude Include="..\mono\sgen\sgen-copy-object.h" />
-    <ClInclude Include="..\mono\sgen\sgen-descriptor.h" />
-    <ClInclude Include="..\mono\sgen\sgen-gc.h" />
-    <ClInclude Include="..\mono\sgen\sgen-gray.h" />
-    <ClInclude Include="..\mono\sgen\sgen-hash-table.h" />
-    <ClInclude Include="..\mono\sgen\sgen-layout-stats.h" />
-    <ClInclude Include="..\mono\sgen\sgen-major-copy-object.h" />
-    <ClInclude Include="..\mono\sgen\sgen-marksweep-drain-gray-stack.h" />
-    <ClInclude Include="..\mono\sgen\sgen-marksweep-scan-object-concurrent.h" />
-    <ClInclude Include="..\mono\sgen\sgen-memory-governor.h" />
-    <ClInclude Include="..\mono\sgen\sgen-minor-copy-object.h" />
-    <ClInclude Include="..\mono\sgen\sgen-minor-scan-object.h" />
-    <ClInclude Include="..\mono\sgen\sgen-pinning.h" />
-    <ClInclude Include="..\mono\sgen\sgen-pointer-queue.h" />
-    <ClInclude Include="..\mono\sgen\sgen-protocol-def.h" />
-    <ClInclude Include="..\mono\sgen\sgen-protocol.h" />
-    <ClInclude Include="..\mono\sgen\sgen-qsort.h" />
-    <ClInclude Include="..\mono\sgen\sgen-scan-object.h" />
-    <ClInclude Include="..\mono\sgen\sgen-tagged-pointer.h" />
-    <ClInclude Include="..\mono\sgen\sgen-thread-pool.h" />
-    <ClInclude Include="..\mono\sgen\sgen-workers.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C36612BD-22D3-4B95-85E2-7FDC4FC5D740}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -152,10 +96,10 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(SGEN_DEFINES);_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -168,11 +112,10 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OmitFramePointers>false</OmitFramePointers>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(SGEN_DEFINES);_LIB;_DEBUG;WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -184,12 +127,11 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(SGEN_DEFINES);_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -203,12 +145,11 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(SGEN_DEFINES);_LIB;NDEBUG;WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -217,6 +158,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
+  <Import Project="libgcmonosgen.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

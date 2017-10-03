@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
+  <ItemGroup Label="llvm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm-loaded.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvm-runtime.cpp">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm-cpp.cpp">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvm-jit.cpp">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+</Project>
