@@ -41,10 +41,16 @@ init_rid_plat()
     if [ "$(uname -s)" == "Darwin" ]; then
         __rid_plat=osx.10.12
     fi
+    if [ "$(uname -s)" == "FreeBSD" ]; then
+        major_ver=`uname -U | cut -b1-2`
+        __rid_plat=freebsd.$major_ver
+    fi
 
     if [ $__linkPortable == 1 ]; then
         if [ "$(uname -s)" == "Darwin" ]; then
             __rid_plat="osx"
+        elif [ "$(uname -s)" == "FreeBSD" ]; then
+            __rid_plat="freebsd"
         else
             __rid_plat="linux"
         fi

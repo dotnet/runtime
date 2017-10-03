@@ -208,7 +208,7 @@ pal::string_t trim_quotes(pal::string_t stringToCleanup)
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
-    
+
     char str[256];
 
     // There is no good way to get the visible version of OSX (i.e. something like 10.x.y) as
@@ -240,6 +240,29 @@ pal::string_t pal::get_current_os_rid_platform()
             ridOS.append(_X("osx.10."));
             ridOS.append(pal::to_string(minorVersion));
         }
+    }
+
+    return ridOS;
+}
+#elif defined(__FreeBSD__)
+// On FreeBSD get major verion. Minors should be compatible
+pal::string_t pal::get_current_os_rid_platform()
+{
+    pal::string_t ridOS;
+
+    char str[256];
+
+    size_t size = sizeof(str);
+    int ret = sysctlbyname("kern.osrelease", str, &size, NULL, 0);
+    if (ret == 0)
+    {
+        char *pos = strchr(str,'.');
+        if (pos)
+        {
+            *pos = '\0';
+        }
+        ridOS.append(_X("freebsd."));
+        ridOS.append(str);
     }
 
     return ridOS;
@@ -436,17 +459,17 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     if (error_code == ENOMEM)
     {
         size_t len = sysctl(mib, 4, NULL, NULL, NULL, 0);
-        std::unique_ptr<char[]> buffer = new (std::nothrow) char[len];
+        std::unique_ptr<char[]> buffer (new (std::nothrow) char[len]);
 
         if (buffer == NULL)
         {
             return false;
         }
 
-        error_code = sysctl(mib, 4, buffer, &len, NULL, 0);
+        error_code = sysctl(mib, 4, buffer.get(), &len, NULL, 0);
         if (error_code == 0)
         {
-            recv->assign(buffer);
+            recv->assign(buffer.get());
             return true;
         }
     }
