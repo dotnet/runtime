@@ -12,7 +12,7 @@
 #include <config.h>
 #include <glib.h>
 
-#if !defined (HAVE_COMPLEX_H)
+#if !defined (HAVE_COMPLEX_H) || (defined (ANDROID_UNIFIED_HEADERS) && __ANDROID_API__ < 23)
 #include <../../support/libm/complex.h>
 #else
 #include <complex.h>

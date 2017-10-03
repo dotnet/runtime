@@ -54,6 +54,7 @@
 #include "fdhandle.h"
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-poll.h"
+#include "utils/mono-compiler.h"
 
 typedef struct {
 	MonoFDHandle fdhandle;

@@ -18,6 +18,10 @@
 #include <errno.h>
 #include <signal.h>
 
+#ifdef HAVE_ANDROID_LEGACY_SIGNAL_INLINES_H
+#include <android/legacy_signal_inlines.h>
+#endif
+
 #include "mono-threads-debug.h"
 
 gint
