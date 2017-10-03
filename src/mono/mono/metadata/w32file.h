@@ -139,7 +139,7 @@ extern MonoString *
 ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
+ves_icall_System_IO_MonoIO_SetCurrentDirectory (const gunichar2 *path,
 						gint32 *error);
 
 extern MonoBoolean

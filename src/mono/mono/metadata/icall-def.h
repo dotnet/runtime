@@ -385,7 +385,7 @@ ICALL(MONOIO_18, "RemoveDirectory(char*,System.IO.MonoIOError&)", ves_icall_Syst
 ICALL(MONOIO_18M, "ReplaceFile(char*,char*,char*,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_ReplaceFile)
 #endif /* !PLATFORM_RO_FS */
 ICALL(MONOIO_19, "Seek(intptr,long,System.IO.SeekOrigin,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Seek)
-ICALL(MONOIO_20, "SetCurrentDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetCurrentDirectory)
+ICALL(MONOIO_20, "SetCurrentDirectory(char*,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetCurrentDirectory)
 ICALL(MONOIO_21, "SetFileAttributes(string,System.IO.FileAttributes,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetFileAttributes)
 ICALL(MONOIO_22, "SetFileTime(intptr,long,long,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetFileTime)
 ICALL(MONOIO_23, "SetLength(intptr,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetLength)

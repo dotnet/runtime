@@ -311,14 +311,14 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error)
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
+ves_icall_System_IO_MonoIO_SetCurrentDirectory (const gunichar2 *path,
 						gint32 *error)
 {
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
 	
-	ret=mono_w32file_set_cwd (mono_string_chars (path));
+	ret=mono_w32file_set_cwd (path);
 	if(ret==FALSE) {
 		*error=mono_w32error_get_last ();
 	}
