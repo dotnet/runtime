@@ -3365,7 +3365,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             retNode = impMathIntrinsic(method, sig, callType, intrinsicID, tailCall);
             break;
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
         // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
         case CORINFO_INTRINSIC_InterlockedAdd32:
             interlockedOperator = GT_LOCKADD;
@@ -3377,7 +3377,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             interlockedOperator = GT_XCHG;
             goto InterlockedBinOpCommon;
 
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_64BIT_
         case CORINFO_INTRINSIC_InterlockedAdd64:
             interlockedOperator = GT_LOCKADD;
             goto InterlockedBinOpCommon;
@@ -3421,10 +3421,10 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             retNode = op1;
             break;
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
         // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
         case CORINFO_INTRINSIC_InterlockedCmpXchg32:
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_64BIT_
         case CORINFO_INTRINSIC_InterlockedCmpXchg64:
 #endif
         {

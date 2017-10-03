@@ -15056,7 +15056,9 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
         if (oper == GT_XADD)
         {
             expr->SetOperRaw(GT_LOCKADD);
+#ifndef _TARGET_ARM64_
             expr->gtType = TYP_VOID;
+#endif
         }
 
         // These operations are kind of important to keep
