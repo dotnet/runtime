@@ -69,7 +69,6 @@ namespace System.SpanTests
             spanLong.Validate(-3, 7, -15);
         }
 
-        [ActiveIssue(23952, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static void ObjectArraySegmentAsSpan()
         {
