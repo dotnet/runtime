@@ -41,6 +41,8 @@ namespace System
         protected abstract bool IsPointerImpl();
         public virtual bool IsConstructedGenericType { get { throw NotImplemented.ByDesign; } }
         public virtual bool IsGenericParameter => false;
+        public virtual bool IsGenericTypeParameter => IsGenericParameter && DeclaringMethod == null;
+        public virtual bool IsGenericMethodParameter => IsGenericParameter && DeclaringMethod != null;
         public virtual bool IsGenericType => false;
         public virtual bool IsGenericTypeDefinition => false;
 
