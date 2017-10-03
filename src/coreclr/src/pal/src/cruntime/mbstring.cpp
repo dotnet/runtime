@@ -31,6 +31,7 @@ Implementation Notes:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 
+#include <algorithm>
 
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
@@ -125,7 +126,7 @@ _mbsninc(
         ret = (unsigned char *) string;
         if (GetCPInfo(CP_ACP, &cpinfo) && cpinfo.MaxCharSize == 1)
         {
-            ret += min(count, strlen((const char*)string));
+            ret += std::min(count, strlen((const char*)string));
         }
         else
         {

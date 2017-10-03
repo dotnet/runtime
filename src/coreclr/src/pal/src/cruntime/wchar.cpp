@@ -41,6 +41,7 @@ Abstract:
 #endif
 
 #include <errno.h>
+#include <algorithm>
 
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
@@ -1237,7 +1238,7 @@ PAL_wcsncpy( wchar_16 * strDest, const wchar_16 *strSource, size_t count )
           strDest, strSource, strSource, (unsigned long) count);
     
     memset( strDest, 0, length );
-    length = min( count, PAL_wcslen( strSource ) ) * sizeof( wchar_16 );
+    length = std::min( count, PAL_wcslen( strSource ) ) * sizeof( wchar_16 );
     memcpy( strDest, strSource, length );
     
     LOGEXIT("wcsncpy returning (wchar_16*): %p\n", strDest);
