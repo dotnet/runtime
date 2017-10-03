@@ -22,6 +22,8 @@
 #define MINT_TYPE_P  9
 #define MINT_TYPE_VT 10
 
+#define BOX_NOT_CLEAR_VT_SP 0x4000
+
 
 enum {
 	VAL_I32     = 0,
