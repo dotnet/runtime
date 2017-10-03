@@ -22,6 +22,23 @@ set __MSBuildBuildArch=x64
 :: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
 :: toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
+if defined VisualStudioVersion goto :Run
+
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+)
+if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
+if not exist "%_VSCOMNTOOLS%" (
+  echo Error: Visual Studio 2015 or 2017 required.
+  echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+  exit /b 1
+)
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+
+:Run
+
 set __VSVersion=vs2017
 
 if defined VS140COMNTOOLS set __VSVersion=vs2015
