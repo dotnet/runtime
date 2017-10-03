@@ -17,6 +17,7 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include "pal/palinternal.h"
 #include <sys/resource.h>
 #include "pal/virtual.h"
+#include <algorithm>
 
 #define PROC_MOUNTINFO_FILENAME "/proc/self/mountinfo"
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
@@ -362,7 +363,7 @@ PAL_GetRestrictedPhysicalMemoryLimit()
     {
         rlimit_soft_limit = curr_rlimit.rlim_cur;
     }
-    physical_memory_limit = min(physical_memory_limit, rlimit_soft_limit);
+    physical_memory_limit = std::min(physical_memory_limit, rlimit_soft_limit);
 
     // Ensure that limit is not greater than real memory size
     long pages = sysconf(_SC_PHYS_PAGES);
@@ -371,8 +372,8 @@ PAL_GetRestrictedPhysicalMemoryLimit()
         long pageSize = sysconf(_SC_PAGE_SIZE);
         if (pageSize != -1)
         {
-            physical_memory_limit = min(physical_memory_limit, 
-                                        (size_t)pages * pageSize);
+            physical_memory_limit = std::min(physical_memory_limit, 
+                                            (size_t)(pages * pageSize));
         }
     }
 
