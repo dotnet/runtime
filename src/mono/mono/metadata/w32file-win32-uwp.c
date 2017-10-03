@@ -14,7 +14,7 @@
 #include "mono/metadata/w32file-win32-internals.h"
 
 gboolean
-mono_w32file_move (gunichar2 *path, gunichar2 *dest, gint32 *error)
+mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 {
 	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;

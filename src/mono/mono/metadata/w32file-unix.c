@@ -2136,7 +2136,7 @@ gboolean mono_w32file_delete(const gunichar2 *name)
 }
 
 static gboolean
-MoveFile (gunichar2 *name, gunichar2 *dest_name)
+MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 {
 	gchar *utf8_name, *utf8_dest_name;
 	gint result, errno_copy;
@@ -4691,7 +4691,7 @@ mono_w32file_cleanup (void)
 }
 
 gboolean
-mono_w32file_move (gunichar2 *path, gunichar2 *dest, gint32 *error)
+mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 {
 	gboolean result;
 

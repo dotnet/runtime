@@ -327,10 +327,10 @@ ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest, gint32 *error)
+ves_icall_System_IO_MonoIO_MoveFile (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 {
 	*error=ERROR_SUCCESS;
-	return mono_w32file_move (mono_string_chars (path), mono_string_chars (dest), error);
+	return mono_w32file_move (path, dest, error);
 }
 
 MonoBoolean
