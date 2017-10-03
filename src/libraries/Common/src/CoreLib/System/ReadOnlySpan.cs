@@ -16,10 +16,8 @@ namespace System
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    [IsReadOnly]
-    [IsByRefLike]
     [NonVersionable]
-    public struct ReadOnlySpan<T>
+    public readonly ref struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
         private readonly ByReference<T> _pointer;
