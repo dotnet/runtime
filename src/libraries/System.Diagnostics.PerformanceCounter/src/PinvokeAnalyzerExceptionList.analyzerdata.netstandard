@@ -1,0 +1,4 @@
+kernel32.dll!CreateFileMappingW
+kernel32.dll!LoadLibrary
+kernel32.dll!MapViewOfFile
+kernel32.dll!OpenFileMappingW
