@@ -41,16 +41,16 @@ bool IsSSE4Instruction(instruction ins)
 
 bool IsSSEOrAVXInstruction(instruction ins)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     return (ins >= INS_FIRST_SSE2_INSTRUCTION && ins <= INS_LAST_AVX_INSTRUCTION);
-#else  // !FEATURE_AVX_SUPPORT
+#else  // !LEGACY_BACKEND
     return IsSSE2Instruction(ins);
-#endif // !FEATURE_AVX_SUPPORT
+#endif // LEGACY_BACKEND
 }
 
 bool IsAVXOnlyInstruction(instruction ins)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     return (ins >= INS_FIRST_AVX_INSTRUCTION && ins <= INS_LAST_AVX_INSTRUCTION);
 #else
     return false;
@@ -59,14 +59,14 @@ bool IsAVXOnlyInstruction(instruction ins)
 
 bool emitter::IsAVXInstruction(instruction ins)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     return (UseAVX() && IsSSEOrAVXInstruction(ins));
 #else
     return false;
 #endif
 }
 
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
 // When we emit an instruction with only two operands, we will duplicate the destination
 // as a source.
@@ -122,7 +122,7 @@ bool emitter::Is4ByteAVXInstruction(instruction ins)
 {
     return UseAVX() && (IsSSE4Instruction(ins) || IsAVXOnlyInstruction(ins)) && EncodedBySSE38orSSE3A(ins);
 }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !LEGACY_BACKEND
 
 // -------------------------------------------------------------------
 // Is4ByteSSE4Instruction: Returns true if the SSE4 instruction
@@ -143,7 +143,7 @@ bool emitter::Is4ByteSSE4Instruction(instruction ins)
 #endif
 }
 
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
 // Returns true if this instruction requires a VEX prefix
 // All AVX instructions require a VEX prefix
 bool emitter::TakesVexPrefix(instruction ins)
@@ -202,7 +202,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 
     return code;
 }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !LEGACY_BACKEND
 
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
 bool TakesRexWPrefix(instruction ins, emitAttr attr)
@@ -442,7 +442,7 @@ bool isPrefix(BYTE b)
 // Outputs VEX prefix (in case of AVX instructions) and REX.R/X/W/B otherwise.
 unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     if (hasVexPrefix(code))
     {
         // Only AVX instructions should have a VEX prefix
@@ -540,7 +540,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
         emitOutputByte(dst + 2, vexPrefix & 0xFF);
         return 3;
     }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !LEGACY_BACKEND
 
 #ifdef _TARGET_AMD64_
     if (code > 0x00FFFFFFFFLL)
@@ -670,7 +670,7 @@ unsigned emitter::emitGetVexPrefixSize(instruction ins, emitAttr attr)
 //=opcodeSize + vexPrefixAdjustedSize
 unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, code_t code)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     if (IsAVXInstruction(ins))
     {
         unsigned vexPrefixAdjustedSize = emitGetVexPrefixSize(ins, attr);
@@ -706,8 +706,7 @@ unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, c
 
         return vexPrefixAdjustedSize;
     }
-#endif // FEATURE_AVX_SUPPORT
-
+#endif // !LEGACY_BACKEND
     return 0;
 }
 
@@ -1246,7 +1245,7 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
  */
 inline emitter::code_t emitter::insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     assert(reg < REG_STK);
     assert(IsAVXInstruction(ins));
     assert(hasVexPrefix(code));
@@ -3840,7 +3839,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
     dispIns(id);
     emitCurIGsize += sz;
 }
-#ifdef FEATURE_AVX_SUPPORT
+
 /*****************************************************************************
 *
 *  Add an instruction with three register operands.
@@ -3901,7 +3900,6 @@ void emitter::emitIns_R_R_R_I(
     emitCurIGsize += sz;
 }
 
-#endif
 /*****************************************************************************
  *
  *  Add an instruction with a register + static member operands.
@@ -6718,13 +6716,12 @@ void emitter::emitDispIns(
     /* Display the instruction name */
 
     sstr = codeGen->genInsName(ins);
-#ifdef FEATURE_AVX_SUPPORT
+
     if (IsAVXInstruction(ins))
     {
         printf(" v%-8s", sstr);
     }
     else
-#endif // FEATURE_AVX_SUPPORT
     {
         printf(" %-9s", sstr);
     }
@@ -7091,7 +7088,6 @@ void emitter::emitDispIns(
             printf(" %s", emitRegName(id->idReg2(), attr));
             break;
 
-#ifdef FEATURE_AVX_SUPPORT
         case IF_RWR_RRD_RRD:
             assert(IsAVXInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
@@ -7108,7 +7104,6 @@ void emitter::emitDispIns(
             val = emitGetInsSC(id);
             goto PRINT_CONSTANT;
             break;
-#endif
         case IF_RRW_RRW_CNS:
             printf("%s,", emitRegName(id->idReg1(), attr));
             printf(" %s", emitRegName(id->idReg2(), attr));
@@ -9487,7 +9482,6 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     return dst;
 }
 
-#ifdef FEATURE_AVX_SUPPORT
 BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 {
     code_t code;
@@ -9563,7 +9557,6 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     return dst;
 }
-#endif
 
 /*****************************************************************************
  *
@@ -10756,7 +10749,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = emitSizeOfInsDsc(id);
             break;
 
-#ifdef FEATURE_AVX_SUPPORT
         case IF_RWR_RRD_RRD:
             dst = emitOutputRRR(dst, id);
             sz  = emitSizeOfInsDsc(id);
@@ -10766,7 +10758,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = emitSizeOfInsDsc(id);
             dst += emitOutputByte(dst, emitGetInsSC(id));
             break;
-#endif
 
         case IF_RRW_RRW_CNS:
             assert(id->idGCref() == GCT_NONE);
@@ -10796,7 +10787,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             assert(code & 0x00FF0000);
 
-#ifdef FEATURE_AVX_SUPPORT
             if (TakesRexWPrefix(ins, size))
             {
                 code = AddRexWPrefix(ins, code);
@@ -10821,7 +10811,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code = insEncodeReg3456(ins, id->idReg2(), size, code);
                 }
             }
-#endif // FEATURE_AVX_SUPPORT
 
             regcode = (insEncodeReg345(ins, rReg, size, &code) | insEncodeReg012(ins, mReg, size, &code)) << 8;
 
@@ -11174,7 +11163,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MWR_RRD:
         case IF_MRW_RRD:
             code = insCodeMR(ins);
-#ifdef FEATURE_AVX_SUPPORT
             code = AddVexPrefixIfNeeded(ins, code, size);
 
             // In case of AVX instructions that take 3 operands, encode reg1 as first source.
@@ -11188,7 +11176,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // encode source operand reg in 'vvvv' bits in 1's compliement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
             }
-#endif // FEATURE_AVX_SUPPORT
 
             regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
             dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
