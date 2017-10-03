@@ -255,6 +255,16 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 	return rtm;
 }
 
+gpointer
+mono_interp_get_remoting_invoke (gpointer imethod, MonoError *error)
+{
+	InterpMethod *imethod_cast = (InterpMethod*) imethod;
+
+	g_assert (mono_use_interpreter);
+
+	return mono_interp_get_imethod (mono_domain_get (), mono_marshal_get_remoting_invoke (imethod_cast->method), error);
+}
+
 InterpMethod*
 mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {

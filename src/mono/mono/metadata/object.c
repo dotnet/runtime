@@ -7871,12 +7871,13 @@ mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle targ
 
 #ifndef DISABLE_REMOTING
 	if (!MONO_HANDLE_IS_NULL (target) && mono_class_is_transparent_proxy (mono_handle_class (target))) {
+#ifdef ENABLE_INTERPRETER
+		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, callbacks.interp_get_remoting_invoke (addr, error));
+#else
 		g_assert (method);
 		method = mono_marshal_get_remoting_invoke (method);
-#ifdef ENABLE_INTERPRETER
-		//g_error ("need RuntimeMethod in method_ptr when using interpreter");
-#endif
 		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, mono_compile_method_checked (method, error));
+#endif
 		return_val_if_nok (error, FALSE);
 		MONO_HANDLE_SET (delegate, target, target);
 	} else
