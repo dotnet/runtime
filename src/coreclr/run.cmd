@@ -16,26 +16,20 @@ setlocal
 :: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
 :: toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
-if not defined VisualStudioVersion (
-  if defined VS150COMNTOOLS (
-	 if not exist "%VS150COMNTOOLS%\..\IDE\devenv.exe"      goto NoVS
-	 if not exist "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto NoVS
-	 if not exist "%VS150COMNTOOLS%\VsDevCmd.bat" 			  goto NoVS
-    call "%VS150COMNTOOLS%\VsDevCmd.bat"
-    goto :Run
-  ) else if defined VS140COMNTOOLS (
-	 if not exist "%VS140COMNTOOLS%\..\IDE\devenv.exe"      goto NoVS
-	 if not exist "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" goto NoVS
-	 if not exist "%VS140COMNTOOLS%\VsDevCmd.bat" 			  goto NoVS
-    call "%VS140COMNTOOLS%\VsDevCmd.bat"
-    goto :Run
-  )
+if defined VisualStudioVersion goto :Run
 
-  :NoVS
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+)
+if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
+if not exist "%_VSCOMNTOOLS%" (
   echo Error: Visual Studio 2015 or 2017 required.
-  echo        https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md for build instructions.
+  echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
   exit /b 1
 )
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 
 :Run
 :: Clear the 'Platform' env variable for this session, as it's a per-project setting within the build, and
