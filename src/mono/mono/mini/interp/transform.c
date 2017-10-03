@@ -4478,7 +4478,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context)
 
 	if (signature->hasthis) {
 		g_assert (!signature->pinvoke);
-		size = mono_type_stack_size (&method->klass->byval_arg, &align);
+		size = align = SIZEOF_VOID_P;
 		offset += align - 1;
 		offset &= ~(align - 1);
 		imethod->arg_offsets [0] = offset;
