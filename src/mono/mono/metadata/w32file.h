@@ -181,9 +181,10 @@ ves_icall_System_IO_MonoIO_Read (gpointer handle, MonoArray *dest,
 				 gint32 *error);
 
 extern gint32 
-ves_icall_System_IO_MonoIO_Write (gpointer handle, MonoArray *src,
+ves_icall_System_IO_MonoIO_Write (gpointer handle, MonoArrayHandle src,
 				  gint32 src_offset, gint32 count,
-				  gint32 *error);
+				  gint32 *io_error,
+				  MonoError *error);
 
 extern gint64 
 ves_icall_System_IO_MonoIO_Seek (gpointer handle, gint64 offset, gint32 origin,
