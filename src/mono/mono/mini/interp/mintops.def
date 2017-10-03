@@ -106,15 +106,15 @@ OPDEF(MINT_STFLD_R4, "stfld.r4", 2, MintOpUShortInt)
 OPDEF(MINT_STFLD_R8, "stfld.r8", 2, MintOpUShortInt)
 OPDEF(MINT_STFLD_O, "stfld.o", 2, MintOpUShortInt)
 OPDEF(MINT_STFLD_P, "stfld.p", 2, MintOpUShortInt)
-OPDEF(MINT_STFLD_VT, "stfld.vt", 4, MintOpShortAndInt)
+OPDEF(MINT_STFLD_VT, "stfld.vt", 3, MintOpTwoShorts)
 
 OPDEF(MINT_STRMFLD, "strmfld", 2, MintOpFieldToken)
-OPDEF(MINT_STRMFLD_VT, "strmfld.vt", 4, MintOpShortAndInt)
+OPDEF(MINT_STRMFLD_VT, "strmfld.vt", 2, MintOpUShortInt)
 
 OPDEF(MINT_LDSFLD, "ldsfld", 2, MintOpFieldToken)
 OPDEF(MINT_LDSFLD_VT, "ldsfld.vt", 4, MintOpShortAndInt)
 OPDEF(MINT_STSFLD, "stsfld", 2, MintOpUShortInt)
-OPDEF(MINT_STSFLD_VT, "stsfld.vt", 4, MintOpShortAndInt)
+OPDEF(MINT_STSFLD_VT, "stsfld.vt", 2, MintOpUShortInt)
 OPDEF(MINT_LDSFLDA, "ldsflda", 2, MintOpUShortInt)
 
 OPDEF(MINT_LDLOC_I1, "ldloc.i1", 2, MintOpUShortInt)

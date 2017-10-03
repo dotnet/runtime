@@ -3810,17 +3810,23 @@ array_constructed:
 			ip += 2;
 			MINT_IN_BREAK;
 
-		MINT_IN_CASE(MINT_STFLD_VT)
+		MINT_IN_CASE(MINT_STFLD_VT) {
 			o = sp [-2].data.p;
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
-			i32 = READ32(ip + 2);
 			sp -= 2;
-			memcpy((char *)o + * (guint16 *)(ip + 1), sp [1].data.p, i32);
-			vt_sp -= (i32 + 7) & ~7;
-			ip += 4;
-			MINT_IN_BREAK;
 
+			MonoClassField *field = rtm->data_items[* (guint16 *)(ip + 2)];
+			MonoClass *klass = mono_class_from_mono_type (field->type);
+			i32 = mono_class_value_size (klass, NULL);
+
+			guint16 offset = * (guint16 *)(ip + 1);
+			mono_value_copy ((char *) o + offset, sp [1].data.p, klass);
+
+			vt_sp -= (i32 + 7) & ~7;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_STRMFLD) {
 			MonoClassField *field;
 
@@ -3850,8 +3856,9 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			field = rtm->data_items[* (guint16 *)(ip + 1)];
-			i32 = READ32(ip + 2);
-			ip += 4;
+			MonoClass *klass = mono_class_from_mono_type (field->type);
+			i32 = mono_class_value_size (klass, NULL);
+			ip += 2;
 
 #ifndef DISABLE_REMOTING
 			if (mono_object_is_transparent_proxy (o)) {
@@ -3860,7 +3867,7 @@ array_constructed:
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else
 #endif
-				memcpy((char*)o + field->offset, sp [-1].data.p, i32);
+				mono_value_copy ((char *) o + field->offset, sp [-1].data.p, klass);
 
 			sp -= 2;
 			vt_sp -= (i32 + 7) & ~7;
@@ -3904,12 +3911,13 @@ array_constructed:
 		MINT_IN_CASE(MINT_STSFLD_VT) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
-			int size = READ32 (ip + 2);
-			ip += 4;
+			MonoClass *klass = mono_class_from_mono_type (field->type);
+			i32 = mono_class_value_size (klass, NULL);
+			ip += 2;
 
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
-			vt_sp -= (size + 7) & ~7;
+			vt_sp -= (i32 + 7) & ~7;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STOBJ_VT) {
