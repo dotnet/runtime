@@ -452,15 +452,13 @@ ves_icall_System_IO_MonoIO_GetFileStat (const gunichar2 *path, MonoIOStat *stat,
 }
 
 HANDLE 
-ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
+ves_icall_System_IO_MonoIO_Open (const gunichar2 *filename, gint32 mode,
 				 gint32 access_mode, gint32 share, gint32 options,
 				 gint32 *error)
 {
 	HANDLE ret;
 	int attributes, attrs;
-	gunichar2 *chars;
 
-	chars = mono_string_chars (filename);	
 	*error=ERROR_SUCCESS;
 
 	if (options != 0){
@@ -485,14 +483,14 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 
 	/* If we're opening a directory we need to set the extra flag
 	 */
-	attrs = mono_w32file_get_attributes (chars);
+	attrs = mono_w32file_get_attributes (filename);
 	if (attrs != INVALID_FILE_ATTRIBUTES) {
 		if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
 			attributes |= FILE_FLAG_BACKUP_SEMANTICS;
 		}
 	}
 	
-	ret=mono_w32file_create (chars, convert_access ((MonoFileAccess)access_mode), convert_share ((MonoFileShare)share), convert_mode ((MonoFileMode)mode), attributes);
+	ret=mono_w32file_create (filename, convert_access ((MonoFileAccess)access_mode), convert_share ((MonoFileShare)share), convert_mode ((MonoFileMode)mode), attributes);
 	if(ret==INVALID_HANDLE_VALUE) {
 		*error=mono_w32error_get_last ();
 	} 

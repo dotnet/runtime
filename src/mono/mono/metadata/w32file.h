@@ -168,7 +168,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (const gunichar2 *path, MonoIOStat *stat,
 					gint32 *error);
 
 extern gpointer 
-ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
+ves_icall_System_IO_MonoIO_Open (const gunichar2 *filename, gint32 mode,
 				 gint32 access_mode, gint32 share, gint32 options,
 				 gint32 *error);
 
