@@ -394,13 +394,13 @@ ves_icall_System_IO_MonoIO_GetFileAttributes (const gunichar2 *path, gint32 *err
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
+ves_icall_System_IO_MonoIO_SetFileAttributes (const gunichar2 *path, gint32 attrs,
 					      gint32 *error)
 {
 	gboolean ret;
 	*error=ERROR_SUCCESS;
 	
-	ret=mono_w32file_set_attributes (mono_string_chars (path),
+	ret=mono_w32file_set_attributes (path,
 		convert_attrs ((MonoFileAttributes)attrs));
 	if(ret==FALSE) {
 		*error=mono_w32error_get_last ();
