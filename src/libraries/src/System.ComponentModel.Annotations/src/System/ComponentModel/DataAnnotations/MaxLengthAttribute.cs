@@ -122,18 +122,7 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            PropertyInfo property = null;
-            try
-            {
-                // On CoreRT, this property may not be enabled for reflection.
-                // It may be possible to eliminate the exception by using direct reflection
-                // (i.e. not via the RuntimeReflectionExtensions or the new split TypeInfo format.
-                property = value.GetType().GetRuntimeProperty("Count");
-            }
-            catch (TypeAccessException)
-            {
-            }
-
+            PropertyInfo property = value.GetType().GetRuntimeProperty("Count");
             if (property != null && property.CanRead && property.PropertyType == typeof(int))
             {
                 count = (int)property.GetValue(value);
