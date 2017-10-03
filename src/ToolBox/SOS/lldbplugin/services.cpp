@@ -8,6 +8,8 @@
 #include <string.h>
 #include <string>
 
+#define CONVERT_FROM_SIGN_EXTENDED(offset) ((ULONG_PTR)(offset))
+
 ULONG g_currentThreadIndex = -1;
 ULONG g_currentThreadSystemId = -1;
 char *g_coreclrDirectory;
@@ -545,6 +547,9 @@ LLDBServices::Disassemble(
     uint8_t byte;
     int cch;
 
+    // lldb doesn't expect sign-extended address
+    offset = CONVERT_FROM_SIGN_EXTENDED(offset);
+
     if (buffer == NULL)
     {
         hr = E_INVALIDARG;
@@ -750,6 +755,9 @@ LLDBServices::ReadVirtual(
     lldb::SBError error;
     size_t read = 0;
 
+    // lldb doesn't expect sign-extended address
+    offset = CONVERT_FROM_SIGN_EXTENDED(offset);
+
     lldb::SBProcess process = GetCurrentProcess();
     if (!process.IsValid())
     {
@@ -775,6 +783,9 @@ LLDBServices::WriteVirtual(
 {
     lldb::SBError error;
     size_t written = 0;
+
+    // lldb doesn't expect sign-extended address
+    offset = CONVERT_FROM_SIGN_EXTENDED(offset);
 
     lldb::SBProcess process = GetCurrentProcess();
     if (!process.IsValid())
@@ -821,6 +832,9 @@ LLDBServices::GetNameByOffset(
     lldb::SBFileSpec file;
     lldb::SBSymbol symbol;
     std::string str;
+
+    // lldb doesn't expect sign-extended address
+    offset = CONVERT_FROM_SIGN_EXTENDED(offset);
 
     target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
@@ -1012,6 +1026,9 @@ LLDBServices::GetModuleByOffset(
     lldb::SBTarget target;
     int numModules;
 
+    // lldb doesn't expect sign-extended address
+    offset = CONVERT_FROM_SIGN_EXTENDED(offset);
+
     target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
     {
@@ -1075,6 +1092,9 @@ LLDBServices::GetModuleNames(
     lldb::SBTarget target;
     lldb::SBFileSpec fileSpec;
     HRESULT hr = S_OK;
+
+    // lldb doesn't expect sign-extended address
+    base = CONVERT_FROM_SIGN_EXTENDED(base);
 
     target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
@@ -1166,6 +1186,9 @@ LLDBServices::GetLineByOffset(
     lldb::SBFileSpec file;
     lldb::SBLineEntry lineEntry;
     std::string str;
+
+    // lldb doesn't expect sign-extended address
+    offset = CONVERT_FROM_SIGN_EXTENDED(offset);
 
     target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
