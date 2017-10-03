@@ -6,6 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NotFiniteNumberException : ArithmeticException
     {
         private double _offendingNumber;
@@ -53,12 +55,13 @@ namespace System
 
         protected NotFiniteNumberException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            _offendingNumber = info.GetInt32("OffendingNumber");
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("OffendingNumber", _offendingNumber, typeof(Int32));
         }
 
         public double OffendingNumber
