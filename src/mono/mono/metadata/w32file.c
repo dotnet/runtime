@@ -202,13 +202,13 @@ ves_icall_System_IO_MonoIO_CreateDirectory (const gunichar2 *path, gint32 *error
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
+ves_icall_System_IO_MonoIO_RemoveDirectory (const gunichar2 *path, gint32 *error)
 {
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
 	
-	ret=mono_w32file_remove_directory (mono_string_chars (path));
+	ret=mono_w32file_remove_directory (path);
 	if(ret==FALSE) {
 		*error=mono_w32error_get_last ();
 	}
