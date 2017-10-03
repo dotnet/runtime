@@ -4529,7 +4529,7 @@ array_constructed:
 			goto exit_frame;
 		MINT_IN_CASE(MINT_MONO_TLS) {
 			MonoTlsKey key = *(gint32 *)(ip + 1);
-			sp->data.p = ((gpointer (*)()) mono_tls_get_tls_getter (key, FALSE)) ();
+			sp->data.p = ((gpointer (*)(void)) mono_tls_get_tls_getter (key, FALSE)) ();
 			sp++;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -4543,8 +4543,8 @@ array_constructed:
 			++ip;
 
 			context->original_domain = NULL;
-			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
-			gpointer tls_jit = ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
+			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
+			gpointer tls_jit = ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
 
 			if (tls_domain != rtm->domain || !tls_jit)
 				context->original_domain = mono_jit_thread_attach (rtm->domain);
