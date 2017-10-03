@@ -3238,7 +3238,7 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 					ADD_CODE (td, get_data_item_index (td, klass));
 					WRITE32 (td, &size);
 					--td->sp;
-					SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_VT);
+					SET_TYPE (td->sp - 1, STACK_TYPE_VT, klass);
 					PUSH_VT (td, size);
 					break;
 				}
