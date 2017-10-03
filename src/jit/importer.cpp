@@ -3762,7 +3762,9 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
     {
         assert(retNode == nullptr);
         const NamedIntrinsic ni = lookupNamedIntrinsic(method);
-#ifdef _TARGET_XARCH_
+#ifdef _TARGET_AMD64_
+        // impX86HWIntrinsic :: Only supported for 64-bit
+        //
         if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
         {
             retNode = impX86HWIntrinsic(ni, method, sig);
@@ -3990,13 +3992,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 
-#ifdef _TARGET_XARCH_
+#ifdef _TARGET_AMD64_
+    // lookupHWIntrinsicISA :: Only supported for 64-bit
+    //
     if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
     {
         InstructionSet isa = lookupHWIntrinsicISA(className);
         result             = lookupHWIntrinsic(methodName, isa);
     }
 #endif
+
     return result;
 }
 
