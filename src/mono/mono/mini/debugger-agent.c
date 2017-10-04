@@ -7799,6 +7799,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_GET_TYPES: {
+		MonoError error;
 		GHashTableIter iter;
 		MonoDomain *domain;
 		int i;
@@ -7810,7 +7811,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		name = decode_string (p, &p, end);
 		ignore_case = decode_byte (p, &p, end);
 
-		if (!mono_reflection_parse_type (name, &info)) {
+		if (!mono_reflection_parse_type_checked (name, &info, &error)) {
+			mono_error_cleanup (&error);
 			g_free (name);
 			mono_reflection_free_type_info (&info);
 			return ERR_INVALID_ARGUMENT;
@@ -7832,11 +7834,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 				ass = (MonoAssembly *)tmp->data;
 
 				if (ass->image) {
-					MonoError error;
-					type_resolve = TRUE;
+					MonoError probe_type_error;
 					/* FIXME really okay to call while holding locks? */
-					t = mono_reflection_get_type_checked (ass->image, ass->image, &info, ignore_case, &type_resolve, &error);
-					mono_error_cleanup (&error); 
+					t = mono_reflection_get_type_checked (ass->image, ass->image, &info, ignore_case, &type_resolve, &probe_type_error);
+					mono_error_cleanup (&probe_type_error); 
 					if (t) {
 						g_ptr_array_add (res_classes, mono_type_get_class (t));
 						g_ptr_array_add (res_domains, domain);
@@ -8288,7 +8289,8 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		res = mono_domain_set (domain, FALSE);
 		g_assert (res);
 
-		if (!mono_reflection_parse_type (s, &info)) {
+		if (!mono_reflection_parse_type_checked (s, &info, &error)) {
+			mono_error_cleanup (&error);
 			t = NULL;
 		} else {
 			if (info.assembly.name)

@@ -14,6 +14,9 @@
 #include <mono/utils/mono-error.h>
 
 gboolean
+mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoError *error);
+
+gboolean
 mono_reflection_is_usertype (MonoReflectionTypeHandle ref);
 
 MonoReflectionType*

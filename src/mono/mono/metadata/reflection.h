@@ -46,6 +46,7 @@ typedef enum {
 	ResolveTokenError_Other
 } MonoResolveTokenError;
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve);

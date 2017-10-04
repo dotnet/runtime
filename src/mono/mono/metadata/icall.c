@@ -1443,7 +1443,7 @@ ves_icall_System_Type_internal_from_name (MonoStringHandle name,
 {
 	error_init (error);
 	MonoTypeNameParse info;
-	gboolean parsedOk;
+	gboolean free_info = FALSE;
 	MonoAssembly *caller_assembly;
 	MonoReflectionTypeHandle type = MONO_HANDLE_NEW (MonoReflectionType, NULL);
 
@@ -1451,22 +1451,16 @@ ves_icall_System_Type_internal_from_name (MonoStringHandle name,
 	if (!is_ok (error))
 		goto leave;
 
-	parsedOk = mono_reflection_parse_type (str, &info);
+	free_info = TRUE;
+	if (!mono_reflection_parse_type_checked (str, &info, error))
+		goto leave;
 
 	/* mono_reflection_parse_type() mangles the string */
-	if (!parsedOk) {
-		mono_reflection_free_type_info (&info);
-		if (throwOnError)
-			mono_error_set_argument (error, "typeName", "failed parse: %s", str);
-		goto leave;
-	}
 
 	MONO_HANDLE_ASSIGN (type, type_from_parsed_name (&info, ignoreCase, &caller_assembly, error));
 
-	if (!is_ok (error)) {
-		mono_reflection_free_type_info (&info);
+	if (!is_ok (error))
 		goto leave;
-	}
 
 	if (MONO_HANDLE_IS_NULL (type)) {
 		if (throwOnError) {
@@ -1480,19 +1474,21 @@ ves_icall_System_Type_internal_from_name (MonoStringHandle name,
 				aname = g_strdup ("");
 			mono_error_set_type_load_name (error, tname, aname, "");
 		}
-		mono_reflection_free_type_info (&info);
 		goto leave;
 	}
 	
 leave:
+	if (free_info)
+		mono_reflection_free_type_info (&info);
 	g_free (str);
 	if (!is_ok (error)) {
-		if (!throwOnError)
+		if (!throwOnError) {
 			mono_error_cleanup (error);
+			error_init (error);
+		}
 		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
-	}
-
-	return type;
+	} else
+		return type;
 }
 
 
@@ -4446,9 +4442,11 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 		goto fail;
 
 	/*g_print ("requested type %s in %s\n", str, assembly->assembly->aname.name);*/
-	if (!mono_reflection_parse_type (str, &info)) {
+	MonoError parse_error;
+	if (!mono_reflection_parse_type_checked (str, &info, &parse_error)) {
 		g_free (str);
 		mono_reflection_free_type_info (&info);
+		mono_error_cleanup (&parse_error);
 		if (throwOnError) {
 			mono_error_set_argument (error, "name", "failed to parse the type");
 			goto fail;
