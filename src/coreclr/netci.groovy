@@ -329,16 +329,19 @@ def static getR2RStressModeDisplayName(def scenario) {
 def static genStressModeScriptStep(def os, def stressModeName, def stressModeVars, def stepScriptLocation) {
     def stepScript = ''
     if (os == 'Windows_NT') {
-        stepScript += "echo Creating TestEnv Script for ${stressModeName}\r\n"
-        stepScript += "del ${stepScriptLocation}\r\n"
 
-        // Timeout in ms, default is 10 minutes. For stress
-        // modes up this to 30 minutes
+        // Timeout in ms, default is 10 minutes. For stress modes up this to 30 minutes.
+        // BUG?: it seems this is ignored, as this script will be run in an environment where
+        //       environment variables will be discarded before this is used.
         def timeout = 1800000
-
-        // Set the Timeout
         stepScript += "set __TestTimeout=${timeout}\r\n"
+
+        stepScript += "echo Creating TestEnv Script for ${stressModeName}\r\n"
+        stepScript += "if exist ${stepScriptLocation} del ${stepScriptLocation}\r\n"
+
+        // Create at least an empty script.
         stepScript += "echo. > ${stepScriptLocation}\r\n"
+
         stressModeVars.each{ k, v ->
             // Write out what we are writing to the script file
             stepScript += "echo Setting ${k}=${v}\r\n"
@@ -367,6 +370,11 @@ def static appendStressModeScriptStep(def os, def appendScript, def stepScriptLo
     def stepScript = ''
     stepScript += "echo Appending ${appendScript} to ${stepScriptLocation}\r\n"
     stepScript += "type ${appendScript} >> ${stepScriptLocation}\r\n"
+
+    // Display the resulting script. This is useful when looking at the output log file.
+    stepScript += "echo Display the total script ${stepScriptLocation}\r\n"
+    stepScript += "type ${stepScriptLocation}\r\n"
+
     return stepScript
 }
 
@@ -1512,7 +1520,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             switch (scenario) {
                 case 'default':
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test",
-                        "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
+                        "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+Build and Test.*")
                     break
                 default:
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} ${scenario}",
@@ -1682,17 +1690,23 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         def envScriptPath = ''
                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                            def buildCommandsStr = ''
                             envScriptPath = "%WORKSPACE%\\SetStressModes.bat"
-                            buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], envScriptPath)
+                            buildCommandsStr += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], envScriptPath)
                             if (architecture == 'x86lb') {
-                                buildCommands += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd", envScriptPath)
+                                buildCommandsStr += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd", envScriptPath)
                             }
                             else if (architecture == 'x86_arm_altjit') {
-                                buildCommands += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\x86_arm_altjit.cmd", envScriptPath)
+                                buildCommandsStr += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\x86_arm_altjit.cmd", envScriptPath)
                             }
                             else if (architecture == 'x64_arm64_altjit') {
-                                buildCommands += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\x64_arm64_altjit.cmd", envScriptPath)
+                                buildCommandsStr += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\x64_arm64_altjit.cmd", envScriptPath)
                             }
+
+                            // Note that buildCommands is an array of individually executed commands; we want all the commands used to 
+                            // create the SetStressModes.bat script to be executed together, hence we accumulate them as strings
+                            // into a single script.
+                            buildCommands += buildCommandsStr
                         }
                         else if (architecture == 'x86lb') {
                             envScriptPath = "%WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd"
