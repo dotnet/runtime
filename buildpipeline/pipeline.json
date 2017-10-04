@@ -30,7 +30,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Linux-Arm-BT",
+          "Name": "Core-Setup-Linux-BT",
           "Parameters": {
             "PB_DockerTag": "centos-6-376e1a3-20174311014331",
             "PB_TargetArchitecture": "x64",
@@ -40,6 +40,21 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "RedHat6",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Linux-BT",
+          "Parameters": {
+            "PB_DistroRid": "alpine.3.6-x64",
+            "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
+            "PB_TargetArchitecture": "x64",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -DistroRid=alpine.3.6-x64 -PortableBuild=false -strip-symbols",
+            "PB_PortableBuild": "false"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Alpine3.6",
             "Type": "build/product/",
             "Platform": "x64"
           }
