@@ -269,6 +269,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsNone(id->idInsOpt()) || insOptsIndexed(id->idInsOpt()));
             break;
 
+        case IF_LS_3D: // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
+            assert(isIntegerRegister(id->idReg1()));
+            assert(isIntegerRegister(id->idReg2()));
+            assert(isIntegerRegister(id->idReg3()));
+            assert(emitGetInsSC(id) == 0);
+            assert(!id->idIsLclVar());
+            assert(insOptsNone(id->idInsOpt()));
+            break;
+
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
@@ -841,6 +850,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_LS_3A: // LS_3A   .X.......X.mmmmm xxxS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
         case IF_LS_3B: // LS_3B   X............... .aaaaannnnnttttt      Rt Ra Rn
         case IF_LS_3C: // LS_3C   X.........iiiiii iaaaaannnnnttttt      Rt Ra Rn imm(im7,sh)
+        case IF_LS_3D: // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
 
             // For the Store instructions the "target" register is actually a "source" value
 
@@ -968,8 +978,12 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 
     switch (ins)
     {
+        case INS_ldxrb:
         case INS_ldarb:
+        case INS_ldaxrb:
+        case INS_stxrb:
         case INS_stlrb:
+        case INS_stlxrb:
         case INS_ldrb:
         case INS_strb:
         case INS_ldurb:
@@ -977,8 +991,12 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
             result = EA_4BYTE;
             break;
 
+        case INS_ldxrh:
         case INS_ldarh:
+        case INS_ldaxrh:
+        case INS_stxrh:
         case INS_stlrh:
+        case INS_stlxrh:
         case INS_ldrh:
         case INS_strh:
         case INS_ldurh:
@@ -1009,8 +1027,12 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
             result = id->idOpSize();
             break;
 
+        case INS_ldxr:
         case INS_ldar:
+        case INS_ldaxr:
+        case INS_stxr:
         case INS_stlr:
+        case INS_stlxr:
         case INS_ldr:
         case INS_str:
         case INS_ldur:
@@ -1860,6 +1882,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case IF_LS_3A:
         case IF_LS_3B:
         case IF_LS_3C:
+        case IF_LS_3D:
         case IF_DI_1A:
         case IF_DI_1B:
         case IF_DI_1C:
@@ -3891,13 +3914,19 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_ldar:
+        case INS_ldaxr:
+        case INS_ldxr:
         case INS_stlr:
             assert(isValidGeneralDatasize(size));
 
             __fallthrough;
 
         case INS_ldarb:
+        case INS_ldaxrb:
+        case INS_ldxrb:
         case INS_ldarh:
+        case INS_ldaxrh:
+        case INS_ldxrh:
         case INS_stlrb:
         case INS_stlrh:
             assert(isValidGeneralLSDatasize(size));
@@ -5090,6 +5119,18 @@ void emitter::emitIns_R_R_R(
         case INS_stnp:
             emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0);
             return;
+
+        case INS_stxr:
+        case INS_stxrb:
+        case INS_stxrh:
+        case INS_stlxr:
+        case INS_stlxrb:
+        case INS_stlxrh:
+            assert(isGeneralRegisterOrZR(reg1));
+            assert(isGeneralRegisterOrZR(reg2));
+            assert(isGeneralRegisterOrSP(reg3));
+            fmt = IF_LS_3D;
+            break;
 
         default:
             unreached();
@@ -8963,6 +9004,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_LS_3D: // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
+            code = emitInsCode(ins, fmt);
+            // Arm64 store exclusive unpredictable cases
+            assert(id->idReg1() != id->idReg2());
+            assert(id->idReg1() != id->idReg3());
+            code |= insEncodeDatasizeLS(code, id->idOpSize()); // X
+            code |= insEncodeReg_Rm(id->idReg1());             // mmmmm
+            code |= insEncodeReg_Rt(id->idReg2());             // ttttt
+            code |= insEncodeReg_Rn(id->idReg3());             // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
             assert(insOptsNone(id->idInsOpt()) || insOptsLSL12(id->idInsOpt()));
             imm = emitGetInsSC(id);
@@ -10638,6 +10691,13 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
             emitDispReg(id->idReg2(), emitInsTargetRegSize(id), true);
             emitDispAddrRI(id->idReg3(), id->idInsOpt(), imm);
+            break;
+
+        case IF_LS_3D: // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
+            assert(insOptsNone(id->idInsOpt()));
+            emitDispReg(id->idReg1(), EA_4BYTE, true);
+            emitDispReg(id->idReg2(), emitInsTargetRegSize(id), true);
+            emitDispAddrRI(id->idReg3(), id->idInsOpt(), 0);
             break;
 
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....      Rn       imm(i12,sh)
