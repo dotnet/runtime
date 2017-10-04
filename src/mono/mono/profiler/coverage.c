@@ -47,8 +47,7 @@
  *                 - token
  *   <statement> - Contains data about IL statements. Has no child elements
  *                 Attributes:
- *                    - offset: The offset of the statement in the IL code after the previous
- *                              statement's offset
+ *                    - offset: The offset of the statement in the IL code
  *                    - counter: 1 if the line was covered, 0 if it was not
  *                    - line: The line number in the parent method's file
  *                    - column: The column on the line
@@ -200,12 +199,11 @@ obtain_coverage_for_method (MonoProfiler *prof, const MonoProfilerCoverageData *
 {
 	g_assert (prof == &coverage_profiler);
 
-	int offset = entry->il_offset - coverage_profiler.previous_offset;
 	CoverageEntry *e = g_new (CoverageEntry, 1);
 
 	coverage_profiler.previous_offset = entry->il_offset;
 
-	e->offset = offset;
+	e->offset = entry->il_offset;
 	e->counter = entry->counter;
 	e->filename = g_strdup(entry->file_name ? entry->file_name : "");
 	e->line = entry->line;
