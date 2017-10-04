@@ -10,14 +10,19 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_PerfCounters</GeneratePlatformNotSupportedAssemblyMessage>
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
     <NoWarn>0649</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
     <Compile Include="System\Diagnostics\CounterCreationData.cs" />
     <Compile Include="System\Diagnostics\CounterCreationDataCollection.cs" />
@@ -140,7 +145,11 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalMemHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
