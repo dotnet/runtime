@@ -106,9 +106,6 @@ namespace System
 
         protected TypeLoadException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             ClassName = info.GetString("TypeLoadClassName");
             AssemblyName = info.GetString("TypeLoadAssemblyName");
             MessageArg = info.GetString("TypeLoadMessageArg");
