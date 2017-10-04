@@ -671,7 +671,6 @@ void CodeGen::genSIMDScalarMove(
     var_types targetType, var_types baseType, regNumber targetReg, regNumber srcReg, SIMDScalarMoveType moveType)
 {
     assert(varTypeIsFloating(baseType));
-#ifdef FEATURE_AVX_SUPPORT
     if (compiler->getSIMDInstructionSet() == InstructionSet_AVX)
     {
         switch (moveType)
@@ -719,7 +718,6 @@ void CodeGen::genSIMDScalarMove(
         }
     }
     else
-#endif // FEATURE_AVX_SUPPORT
     {
         // SSE
 
@@ -843,13 +841,11 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             ins = getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseOr, baseType);
             inst_RV_RV(ins, targetReg, tmpReg, targetType, emitActualTypeSize(targetType));
 
-#ifdef FEATURE_AVX_SUPPORT
             if (compiler->canUseAVX())
             {
                 inst_RV_RV(INS_vpbroadcastq, targetReg, targetReg, TYP_SIMD32, emitTypeSize(TYP_SIMD32));
             }
             else
-#endif // FEATURE_AVX_SUPPORT
             {
                 ins = getOpForSIMDIntrinsic(SIMDIntrinsicShuffleSSE2, baseType);
                 getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, targetReg, 0);
@@ -871,7 +867,6 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             ins = getOpForSIMDIntrinsic(SIMDIntrinsicEqual, TYP_INT);
             inst_RV_RV(ins, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
         }
-#ifdef FEATURE_AVX_SUPPORT
         else
         {
             assert(iset == InstructionSet_AVX);
@@ -891,7 +886,6 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
                 unreached();
             }
         }
-#endif // FEATURE_AVX_SUPPORT
     }
     else if (iset == InstructionSet_AVX && ((size == 32) || (size == 16)))
     {

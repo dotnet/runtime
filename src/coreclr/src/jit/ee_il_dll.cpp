@@ -397,7 +397,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 
 #ifdef FEATURE_SIMD
 #ifdef _TARGET_XARCH_
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
         jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
     {
@@ -410,7 +410,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
             return 32;
         }
     }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !LEGACY_BACKEND
     if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
     {
         JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");

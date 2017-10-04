@@ -277,20 +277,20 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #define REGDEF(name, rnum, mask, sname) "x" sname,
 #include "register.h"
     };
-#ifdef FEATURE_AVX_SUPPORT
+#ifdef FEATURE_SIMD
     static const char* regNamesYMM[] = {
 #define REGDEF(name, rnum, mask, sname) "y" sname,
 #include "register.h"
     };
-#endif // FEATURE_AVX_SUPPORT
+#endif // FEATURE_SIMD
     assert((unsigned)reg < ArrLen(regNamesFloat));
 
-#ifdef FEATURE_AVX_SUPPORT
+#ifdef FEATURE_SIMD
     if (type == TYP_SIMD32)
     {
         return regNamesYMM[reg];
     }
-#endif // FEATURE_AVX_SUPPORT
+#endif // FEATURE_SIMD
 
     return regNamesFloat[reg];
 #endif

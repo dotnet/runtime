@@ -428,11 +428,8 @@ public:
 
 #ifdef _TARGET_XARCH_
         SetUseSSE3_4(false);
-#endif // _TARGET_XARCH_
-
-#ifdef FEATURE_AVX_SUPPORT
         SetUseAVX(false);
-#endif // FEATURE_AVX_SUPPORT
+#endif // _TARGET_XARCH_
     }
 
 #include "emitpub.h"
@@ -938,12 +935,12 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#elif defined(_TARGET_XARCH_)
             struct
             {
                 regNumber _idReg3 : REGNUM_BITS;
             };
-#endif // defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#endif // defined(_TARGET_XARCH_)
 
         } _idAddrUnion;
 
@@ -1109,7 +1106,7 @@ protected:
             assert(reg == _idReg2);
         }
 
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_XARCH_)
         regNumber idReg3() const
         {
             assert(!idIsTiny());
@@ -1123,7 +1120,7 @@ protected:
             idAddr()->_idReg3 = reg;
             assert(reg == idAddr()->_idReg3);
         }
-#endif // defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#endif // defined(_TARGET_XARCH_)
 #ifdef _TARGET_ARMARCH_
         insOpts idInsOpt() const
         {

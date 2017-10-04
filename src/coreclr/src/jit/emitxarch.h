@@ -62,9 +62,7 @@ BYTE* emitOutputRI(BYTE* dst, instrDesc* id);
 BYTE* emitOutputRR(BYTE* dst, instrDesc* id);
 BYTE* emitOutputIV(BYTE* dst, instrDesc* id);
 
-#ifdef FEATURE_AVX_SUPPORT
 BYTE* emitOutputRRR(BYTE* dst, instrDesc* id);
-#endif
 
 BYTE* emitOutputLJ(BYTE* dst, instrDesc* id);
 
@@ -118,7 +116,7 @@ bool hasRexPrefix(code_t code)
 #endif // !_TARGET_AMD64_
 }
 
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
 
 // 3-byte VEX prefix starts with byte 0xC4
 #define VEX_PREFIX_MASK_3BYTE 0xFF000000000000ULL
@@ -186,18 +184,27 @@ bool IsThreeOperandAVXInstruction(instruction ins)
     return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
 }
 bool Is4ByteAVXInstruction(instruction ins);
-#else  // !FEATURE_AVX_SUPPORT
+#else  // LEGACY_BACKEND
 bool UseAVX()
 {
     return false;
+}
+void SetUseAVX(bool value)
+{
 }
 bool ContainsAVX()
 {
     return false;
 }
+void SetContainsAVX(bool value)
+{
+}
 bool Contains256bitAVX()
 {
     return false;
+}
+void SetContains256bitAVX(bool value)
+{
 }
 bool hasVexPrefix(code_t code)
 {
@@ -231,7 +238,7 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 {
     return code;
 }
-#endif // !FEATURE_AVX_SUPPORT
+#endif // LEGACY_BACKEND
 
 /************************************************************************/
 /*             Debug-only routines to display instructions              */
@@ -358,11 +365,9 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 
 void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival);
 
-#ifdef FEATURE_AVX_SUPPORT
 void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3);
 
 void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, int ival);
-#endif
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
