@@ -9,7 +9,7 @@ internal partial class Interop
     internal partial class PerfCounter
     {
 #pragma warning disable BCL0015 // Invalid Pinvoke call
-        [DllImport(Libraries.PerfCounter, CharSet = CharSet.Auto)]
+        [DllImport(Libraries.PerfCounter, CharSet = CharSet.Unicode)]
         public static unsafe extern int FormatFromRawValue(
             uint dwCounterType,
             uint dwFormat,

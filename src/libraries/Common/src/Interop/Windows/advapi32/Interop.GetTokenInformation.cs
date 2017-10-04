@@ -26,7 +26,7 @@ internal static partial class Interop
             uint TokenInformationLength,
             out uint ReturnLength);
 
-        [DllImport(Interop.Libraries.Advapi32, CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport(Interop.Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool GetTokenInformation(
             IntPtr TokenHandle,
             uint TokenInformationClass,
