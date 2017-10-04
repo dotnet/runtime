@@ -12,7 +12,6 @@ namespace System.Diagnostics
 {
     /// <summary>
     ///     Set of utility functions for interpreting the counter data
-    ///     NOTE: most of this code was taken and ported from counters.c (PerfMon source code)
     /// </summary>
     public static class CounterSampleCalculator
     {

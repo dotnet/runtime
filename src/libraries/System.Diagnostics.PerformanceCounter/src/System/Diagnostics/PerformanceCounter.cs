@@ -380,7 +380,6 @@ namespace System.Diagnostics
         protected override void Dispose(bool disposing)
         {
             // safe to call while finalizing or disposing
-            //
             if (disposing)
             {
                 //Dispose managed and unmanaged resources

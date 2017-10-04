@@ -125,7 +125,7 @@ namespace System.Diagnostics
                                 // on some machines MSMQ claims to have 4 categories, even though it only has 2.
                                 // This causes us to walk past the end of our data, potentially crashing or reading
                                 // data we shouldn't.  We use endPerfData to make sure we don't go past the end
-                                // of the perf data.  (ASURT 137097)
+                                // of the perf data.
                                 long endPerfData = (long)(new IntPtr((void*)perfDataPtr)) + dataBlock.TotalByteLength;
                                 Hashtable tempCategoryTable = new Hashtable(categoryNumber, StringComparer.OrdinalIgnoreCase);
                                 for (int index = 0; index < categoryNumber && ((long)dataRef < endPerfData); index++)
