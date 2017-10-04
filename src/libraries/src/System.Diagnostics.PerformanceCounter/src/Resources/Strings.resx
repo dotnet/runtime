@@ -270,9 +270,6 @@
   <data name="InstanceNameProhibited" xml:space="preserve">
     <value>Counter is single instance, instance name '{0}' is not valid for this counter category.</value>
   </data>
-  <data name="InstanceNameRequired" xml:space="preserve">
-    <value>Counter is not single instance, an instance name needs to be specified.</value>
-  </data>
   <data name="ReadOnlyRemoveInstance" xml:space="preserve">
     <value>Cannot remove Performance Counter Instance, this object as been initialized as ReadOnly.</value>
   </data>
