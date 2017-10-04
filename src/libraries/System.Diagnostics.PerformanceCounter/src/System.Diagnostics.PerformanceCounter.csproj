@@ -127,8 +127,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.VirtualQuery.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.VirtualQuery.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitForSingleObjectDontCallThis.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.WaitForSingleObjectDontCallThis.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitForSingleObject.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.WaitForSingleObject.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\perfcounter\Interop.FormatFromRawValue.cs">
       <Link>Common\Interop\Windows\perfcounter\Interop.FormatFromRawValue.cs</Link>
