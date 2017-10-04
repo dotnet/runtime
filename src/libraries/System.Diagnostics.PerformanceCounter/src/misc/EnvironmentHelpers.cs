@@ -18,13 +18,20 @@ namespace System
         {
             get
             {
-                if (!s_isAppContainerProcessInitalized)
-                {
-                    s_isAppContainerProcess = HasAppContainerToken();
-                    s_isAppContainerProcessInitalized = true;
+                if(!s_IsAppContainerProcessInitalized) {
+                   if(Environment.OSVersion.Platform != PlatformID.Win32NT) {
+                       s_IsAppContainerProcess = false;
+                   } else if(Environment.OSVersion.Version.Major < 6 || (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor <= 1)) {
+                       // Windows 7 or older.
+                       s_IsAppContainerProcess = false;
+                   } else {
+                       s_IsAppContainerProcess = HasAppContainerToken();
+                   }
+ 
+                    s_IsAppContainerProcessInitalized = true;
                 }
-
-                return s_isAppContainerProcess;
+ 
+                return s_IsAppContainerProcess;
             }
         }
 
