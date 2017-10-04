@@ -9,17 +9,17 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>c1b6d5d59c36a185131ae02166915bc6829b0791</CoreFxCurrentRef>
+    <CoreFxCurrentRef>903ac6c4c9f098c3e8c7ee100701e2a8df0126ca</CoreFxCurrentRef>
     <CoreClrCurrentRef>c1b6d5d59c36a185131ae02166915bc6829b0791</CoreClrCurrentRef>
     <StandardCurrentRef>c1b6d5d59c36a185131ae02166915bc6829b0791</StandardCurrentRef>
     <WCFCurrentRef>c1b6d5d59c36a185131ae02166915bc6829b0791</WCFCurrentRef>
-    <BuildToolsCurrentRef>365c02ffdcc40116ce89691a76aa714bfdcbc403</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>903ac6c4c9f098c3e8c7ee100701e2a8df0126ca</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25803-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25803-01</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview1-25803-01</PlatformPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25804-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25804-01</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25804-01</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25803-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
