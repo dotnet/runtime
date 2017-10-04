@@ -12,8 +12,8 @@
     <CoreFxCurrentRef>903ac6c4c9f098c3e8c7ee100701e2a8df0126ca</CoreFxCurrentRef>
     <CoreClrCurrentRef>c1b6d5d59c36a185131ae02166915bc6829b0791</CoreClrCurrentRef>
     <StandardCurrentRef>c1b6d5d59c36a185131ae02166915bc6829b0791</StandardCurrentRef>
-    <WCFCurrentRef>c1b6d5d59c36a185131ae02166915bc6829b0791</WCFCurrentRef>
-    <BuildToolsCurrentRef>903ac6c4c9f098c3e8c7ee100701e2a8df0126ca</BuildToolsCurrentRef>
+    <WCFCurrentRef>ae5872b187c4b570bbe7b2f3fc7fa9bcacbbcb8e</WCFCurrentRef>
+    <BuildToolsCurrentRef>ae5872b187c4b570bbe7b2f3fc7fa9bcacbbcb8e</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -25,7 +25,7 @@
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
     <NETStandardVersion>2.1.0-preview1-25802-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.5.0-preview2-25803-02</WcfVersion>
+    <WcfVersion>4.5.0-preview2-25804-01</WcfVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
