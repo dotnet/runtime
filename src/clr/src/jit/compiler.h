@@ -138,11 +138,7 @@ unsigned ReinterpretHexAsDecimal(unsigned);
 /*****************************************************************************/
 
 #ifdef FEATURE_SIMD
-#ifdef FEATURE_AVX_SUPPORT
 const unsigned TEMP_MAX_SIZE = YMM_REGSIZE_BYTES;
-#else  // !FEATURE_AVX_SUPPORT
-const unsigned TEMP_MAX_SIZE = XMM_REGSIZE_BYTES;
-#endif // !FEATURE_AVX_SUPPORT
 #else  // !FEATURE_SIMD
 const unsigned TEMP_MAX_SIZE = sizeof(double);
 #endif // !FEATURE_SIMD
@@ -7691,13 +7687,6 @@ private:
         return emitTypeSize(TYP_SIMD8);
     }
 
-#ifdef FEATURE_AVX_SUPPORT
-    // (maxPossibleSIMDStructBytes is for use in a context that requires a compile-time constant.)
-    static const unsigned maxPossibleSIMDStructBytes = 32;
-#else  // !FEATURE_AVX_SUPPORT
-    static const unsigned maxPossibleSIMDStructBytes = 16;
-#endif // !FEATURE_AVX_SUPPORT
-
     // Returns the codegen type for a given SIMD size.
     var_types getSIMDTypeForSize(unsigned size)
     {
@@ -7714,12 +7703,10 @@ private:
         {
             simdType = TYP_SIMD16;
         }
-#ifdef FEATURE_AVX_SUPPORT
         else if (size == 32)
         {
             simdType = TYP_SIMD32;
         }
-#endif // FEATURE_AVX_SUPPORT
         else
         {
             noway_assert(!"Unexpected size for SIMD type");
@@ -7830,7 +7817,7 @@ private:
 
     bool canUseAVX() const
     {
-#ifdef FEATURE_AVX_SUPPORT
+#ifdef _TARGET_XARCH_
         return opts.compCanUseAVX;
 #else
         return false;
@@ -7953,11 +7940,8 @@ public:
 #ifdef _TARGET_XARCH_
         bool compCanUseSSE2;   // Allow CodeGen to use "movq XMM" instructions
         bool compCanUseSSE3_4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
-
-#ifdef FEATURE_AVX_SUPPORT
-        bool compCanUseAVX; // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
-#endif                      // FEATURE_AVX_SUPPORT
-#endif                      // _TARGET_XARCH_
+        bool compCanUseAVX;    // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
+#endif                         // _TARGET_XARCH_
 
 #ifdef _TARGET_XARCH_
         uint64_t compSupportsISA;

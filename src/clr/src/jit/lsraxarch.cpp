@@ -2735,7 +2735,6 @@ void LinearScan::TreeNodeInfoInitMul(GenTreePtr tree)
 //
 void LinearScan::SetContainsAVXFlags(bool isFloatingPointType /* = true */, unsigned sizeOfSIMDVector /* = 0*/)
 {
-#ifdef FEATURE_AVX_SUPPORT
     if (isFloatingPointType)
     {
         if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
@@ -2747,7 +2746,6 @@ void LinearScan::SetContainsAVXFlags(bool isFloatingPointType /* = true */, unsi
             compiler->getEmitter()->SetContains256bitAVX(true);
         }
     }
-#endif
 }
 
 #ifdef _TARGET_X86_

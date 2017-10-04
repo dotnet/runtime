@@ -440,7 +440,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef _TARGET_ARM_
     getEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(_TARGET_XARCH_) && defined(FEATURE_AVX_SUPPORT)
+#elif defined(_TARGET_XARCH_)
     getEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
