@@ -108,7 +108,7 @@ namespace System
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
+
             ClassName = info.GetString("TypeLoadClassName");
             AssemblyName = info.GetString("TypeLoadAssemblyName");
             MessageArg = info.GetString("TypeLoadMessageArg");
@@ -121,10 +121,6 @@ namespace System
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
             base.GetObjectData(info, context);
             info.AddValue("TypeLoadClassName", ClassName, typeof(string));
             info.AddValue("TypeLoadAssemblyName", AssemblyName, typeof(string));
