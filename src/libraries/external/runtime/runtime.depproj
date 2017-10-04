@@ -73,6 +73,33 @@
     <Exec Command="chmod +x $(TestHostRootPath)dotnet" Condition="'$(RunningOnUnix)' == 'true'"/>
   </Target>
 
+  <PropertyGroup>
+    <_CoreCLRPackageId>runtime.$(NugetRuntimeIdentifier).Microsoft.NETCore.Runtime.CoreCLR</_CoreCLRPackageId>
+    <SymbolPackagesDir>$(PackagesDir)symbolpackages/</SymbolPackagesDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SymbolPackagesToDownload Include="$(_CoreCLRPackageId)">
+      <Url>https://dotnet.myget.org/F/dotnet-core/symbols/$(_CoreCLRPackageId)/$(CoreClrPackageVersion)/</Url>
+      <DestinationFile>$(_CoreCLRPackageId).$(CoreClrPackageVersion).symbols.nupkg.zip</DestinationFile>
+      <UnzipDestinationDir>$(SymbolPackagesDir)/$(_CoreCLRPackageId).$(CoreClrPackageVersion)</UnzipDestinationDir>
+    </SymbolPackagesToDownload>
+  </ItemGroup>
+
+  <Target Name="BinPlaceCoreCLRSymbols"
+          AfterTargets="ResolveNuGetPackages"
+          DependsOnTargets="DownloadAndUnzipSymbolPackage"
+          Condition="'$(CoreCLROverridePath)' == '' AND '$(DownloadCoreCLRSymbols)' != 'false'">
+
+      <Warning Text="Failed to download CoreCLR symbols" Condition="@(SymbolPackagesDownloaded) == ''" />
+
+      <ItemGroup>
+        <_CoreCLRSymbolFiles Condition="@(SymbolPackagesDownloaded) != ''" Include="%(SymbolPackagesDownloaded.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.pdb" />
+        <_CoreCLRSymbolFiles Condition="@(SymbolPackagesDownloaded) != ''" Include="%(SymbolPackagesDownloaded.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.dbg" />
+        <ReferenceCopyLocalPaths Condition="@(SymbolPackagesDownloaded) != ''" Include="@(_CoreCLRSymbolFiles)"/>
+      </ItemGroup>
+  </Target>
+
   <Target Name="OverrideRuntime"
           Condition="'$(CoreCLROverridePath)' != ''"
           AfterTargets="ResolveNuGetPackages;FilterNugetPackages">
