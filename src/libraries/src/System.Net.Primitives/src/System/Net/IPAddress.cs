@@ -44,7 +44,7 @@ namespace System.Net
         private string _toString;
 
         /// <summary>
-        /// This field is only used for IPv6 addresses. A lazily initialized cache of the <see cref="GetHashCode"/> value.
+        /// A lazily initialized cache of the <see cref="GetHashCode"/> value.
         /// </summary>
         private int _hashCode;
 
@@ -83,6 +83,8 @@ namespace System.Net
             set
             {
                 Debug.Assert(IsIPv4);
+                _toString = null;
+                _hashCode = 0;
                 _addressOrScopeId = value;
             }
         }
@@ -97,6 +99,8 @@ namespace System.Net
             set
             {
                 Debug.Assert(IsIPv6);
+                _toString = null;
+                _hashCode = 0;
                 _addressOrScopeId = value;
             }
         }
@@ -558,7 +562,6 @@ namespace System.Net
                 {
                     if (PrivateAddress != value)
                     {
-                        _toString = null;
                         PrivateAddress = unchecked((uint)value);
                     }
                 }
@@ -612,23 +615,40 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            // For IPv6 addresses, we cannot simply return the integer
-            // representation as the hashcode. Instead, we calculate
-            // the hashcode from the string representation of the address.
+            if (_hashCode != 0)
+            {
+                return _hashCode;
+            }
+
+            // For IPv6 addresses, we calculate the hashcode by using Marvin
+            // on a stack-allocated array containing the Address bytes and ScopeId.
+            int hashCode;
             if (IsIPv6)
             {
-                if (_hashCode == 0)
-                {
-                    _hashCode = StringComparer.OrdinalIgnoreCase.GetHashCode(ToString());
-                }
+                const int addressAndScopeIdLength = IPAddressParserStatics.IPv6AddressBytes + sizeof(uint);
+                Span<byte> addressAndScopeIdSpan = stackalloc byte[addressAndScopeIdLength];
 
-                return _hashCode;
+                new ReadOnlySpan<ushort>(_numbers).AsBytes().CopyTo(addressAndScopeIdSpan);
+                Span<byte> scopeIdSpan = addressAndScopeIdSpan.Slice(IPAddressParserStatics.IPv6AddressBytes);
+                bool scopeWritten = BitConverter.TryWriteBytes(scopeIdSpan, _addressOrScopeId);
+                Debug.Assert(scopeWritten);
+
+                hashCode = Marvin.ComputeHash32(
+                    ref addressAndScopeIdSpan[0],
+                    addressAndScopeIdLength,
+                    Marvin.DefaultSeed);
             }
             else
             {
-                // For IPv4 addresses, we can simply use the integer representation.
-                return unchecked((int)PrivateAddress);
+                // For IPv4 addresses, we use Marvin on the integer representation of the Address.
+                hashCode = Marvin.ComputeHash32(
+                    ref Unsafe.As<uint, byte>(ref _addressOrScopeId),
+                    sizeof(uint),
+                    Marvin.DefaultSeed);
             }
+
+            _hashCode = hashCode;
+            return _hashCode;
         }
 
         // For security, we need to be able to take an IPAddress and make a copy that's immutable and not derived.

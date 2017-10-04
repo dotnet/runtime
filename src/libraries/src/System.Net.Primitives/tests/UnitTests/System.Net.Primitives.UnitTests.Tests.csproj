@@ -95,6 +95,9 @@
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
       <Link>ProductionCode\Common\System\Net\UriScheme.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Marvin.cs">
+      <Link>Common\System\Marvin.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
