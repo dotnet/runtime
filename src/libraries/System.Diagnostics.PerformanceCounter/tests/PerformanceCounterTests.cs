@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, cannot write to perf counters
     public static class PerformanceCounterTests
     {
         [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
