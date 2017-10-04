@@ -11,7 +11,6 @@ endif(FEATURE_READYTORUN)
 
 if (CLR_CMAKE_PLATFORM_ARCH_I386)
     remove_definitions(-DFEATURE_SIMD)
-    remove_definitions(-DFEATURE_AVX_SUPPORT)
     add_definitions(-DUNIX_X86_ABI)
     set(JIT_ARCH_ALTJIT_SOURCES ${JIT_I386_SOURCES})
 elseif(CLR_CMAKE_PLATFORM_ARCH_AMD64)
