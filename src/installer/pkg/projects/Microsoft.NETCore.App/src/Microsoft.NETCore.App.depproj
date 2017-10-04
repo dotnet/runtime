@@ -163,7 +163,7 @@
       </FilesToPackage>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(IncludeSourceFilesInPackage)' == 'true'">
       <!-- pick up any src our sources directory from packages contributing files -->
       <_sourcePathCandidate Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\sources')" />
       <_sourcePathCandidate Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\src')" />
