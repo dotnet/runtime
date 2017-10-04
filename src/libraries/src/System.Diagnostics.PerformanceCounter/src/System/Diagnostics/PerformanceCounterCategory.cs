@@ -78,7 +78,7 @@ namespace System.Diagnostics
                 if (value.Length == 0)
                     throw new ArgumentException(SR.Format(SR.InvalidProperty, "CategoryName", value));
 
-                // there lock prevents a race between setting CategoryName and MachineName, since this permission 
+                // the lock prevents a race between setting CategoryName and MachineName, since this permission 
                 // checks depend on both pieces of info. 
                 lock (this)
                 {
@@ -143,7 +143,7 @@ namespace System.Diagnostics
                 if (!SyntaxCheck.CheckMachineName(value))
                     throw new ArgumentException(SR.Format(SR.InvalidProperty, "MachineName", value));
 
-                // there lock prevents a race between setting CategoryName and MachineName, since this permission 
+                // the lock prevents a race between setting CategoryName and MachineName, since this permission 
                 // checks depend on both pieces of info. 
                 lock (this)
                 {

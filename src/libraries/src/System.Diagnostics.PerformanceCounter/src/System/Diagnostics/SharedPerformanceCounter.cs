@@ -1258,7 +1258,6 @@ namespace System.Diagnostics
 
             if (currentCategoryPointer->FirstInstanceOffset != 0)
             {
-                // In V3, we started prepending the new instances rather than appending (as in V2) for performance.
                 // Check whether the recently added instance at the head of the list is committed. If not, rewire 
                 // the head of the list to point to the next instance 
                 if (currentCategoryPointer->FirstInstanceOffset > freeOffset)
@@ -1268,11 +1267,7 @@ namespace System.Diagnostics
                     if (currentCategoryPointer->FirstInstanceOffset > freeOffset)
                         currentCategoryPointer->FirstInstanceOffset = 0;
                 }
-                // REVIEW@ If we back port the perf fix to V2, then this is probably unnecessary.
-                // The consistency logic should work for both prepending and appending. I.e. we should first check
-                // the head of the list is a valid committed offset and if so we should traverse to the end of the 
-                // list and do the consistency check for the tail instance. In theory, the inconsistent instance 
-                // should either be the head node or the tail node but not the middle node. 
+
                 if (currentCategoryPointer->FirstInstanceOffset != 0)
                 {
                     Debug.Assert(currentCategoryPointer->FirstInstanceOffset <= freeOffset, "The head of the list is inconsistent - possible mismatch of V2 & V3 instances?");
@@ -1478,7 +1473,6 @@ namespace System.Diagnostics
                             {
                                 validatedCachedInstancePointer = true;
 
-                                // this is probably overkill
                                 CounterEntry* firstCounter = (CounterEntry*)ResolveOffset(instancePointer->FirstCounterOffset, s_counterEntrySize);
                                 ProcessLifetimeEntry* lifetimeEntry;
                                 if (_categoryData.UseUniqueSharedMemory)
@@ -1714,7 +1708,6 @@ namespace System.Diagnostics
                         throw new InvalidOperationException(SR.Format(SR.SetSecurityDescriptorFailed));
 
                     Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = new Interop.Kernel32.SECURITY_ATTRIBUTES();
-                    //securityAttributes.lpSecurityDescriptor = (IntPtr) securityDescriptorPointer;
                     securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
 
                     //
