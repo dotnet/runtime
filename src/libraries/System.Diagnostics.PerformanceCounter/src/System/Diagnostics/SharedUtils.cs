@@ -169,7 +169,7 @@ namespace System.Diagnostics
                 // Holding a mutex requires us to keep thread affinity and announce ourselves as a critical region.
                 Thread.BeginCriticalRegion();
                 Thread.BeginThreadAffinity();
-                int result = Interop.Kernel32.WaitForSingleObjectDontCallThis(mutexIn.SafeWaitHandle, 500);
+                int result = Interop.Kernel32.WaitForSingleObject(mutexIn.SafeWaitHandle, 500);
                 switch (result)
                 {
 
