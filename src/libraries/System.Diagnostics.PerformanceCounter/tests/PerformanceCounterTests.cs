@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
     public static class PerformanceCounterTests
     {
         [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
