@@ -319,7 +319,6 @@
     <Compile Include="$(BclSourcesRoot)\System\String.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.Comparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.Manipulation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\String.Searching.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
