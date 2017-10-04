@@ -41,7 +41,5 @@ namespace System.Diagnostics
 
         CounterDelta32 = Interop.Kernel32.PerformanceCounterOptions.PERF_COUNTER_DELTA,
         CounterDelta64 = Interop.Kernel32.PerformanceCounterOptions.PERF_COUNTER_LARGE_DELTA
-
     }
 }
-

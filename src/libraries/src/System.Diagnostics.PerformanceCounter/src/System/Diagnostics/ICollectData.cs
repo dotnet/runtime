@@ -10,7 +10,6 @@ namespace System.Diagnostics
     [ComImport, Guid("73386977-D6FD-11D2-BED5-00C04F79E3AE"), System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public interface ICollectData
     {
-
         [return: MarshalAs(UnmanagedType.I4)]
         void CollectData(
             [In, MarshalAs(UnmanagedType.I4 )]

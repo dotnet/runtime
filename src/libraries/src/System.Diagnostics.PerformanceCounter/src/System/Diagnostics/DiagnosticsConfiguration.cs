@@ -19,7 +19,6 @@ namespace System.Diagnostics
         private static volatile SystemDiagnosticsSection s_configSection;
         private static volatile InitState s_initState = InitState.NotInitialized;
 
-#if !FEATURE_PAL // perfcounter
         internal static int PerformanceCountersFileMappingSize
         {
             get
@@ -49,7 +48,6 @@ namespace System.Diagnostics
                     return SharedPerformanceCounter.DefaultCountersFileMappingSize;
             }
         }
-#endif // !FEATURE_PAL
 
         internal static string ConfigFilePath
         {
@@ -57,10 +55,7 @@ namespace System.Diagnostics
             {
                 Initialize();
                 SystemDiagnosticsSection configSectionSav = s_configSection;
-                if (configSectionSav != null)
-                    return configSectionSav.ElementInformation.Source;
-                else
-                    return string.Empty; // the default
+                return configSectionSav?.ElementInformation?.Source ?? string.Empty;
             }
         }
 
@@ -73,8 +68,7 @@ namespace System.Diagnostics
         internal static bool CanInitialize()
         {
             bool setConfigurationSystemInProgress = (bool)(typeof(ConfigurationManager).GetProperty("SetConfigurationSystemInProgress", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null));
-            return (s_initState != InitState.Initializing) &&
-                    !setConfigurationSystemInProgress;
+            return (s_initState != InitState.Initializing) && !setConfigurationSystemInProgress;
         }
 
         internal static void Initialize()
@@ -87,15 +81,12 @@ namespace System.Diagnostics
             // Sequential locks on TraceInternal.critSec by the same thread is a non issue for this critical section.
             lock (TraceInternal.critSec)
             {
-
                 // because some of the code used to load config also uses diagnostics
                 // we can't block them while we initialize from config. Therefore we just
                 // return immediately and they just use the default values.
                 bool setConfigurationSystemInProgress = (bool)(typeof(ConfigurationManager).GetProperty("SetConfigurationSystemInProgress", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null));
-                if (s_initState != InitState.NotInitialized ||
-                        setConfigurationSystemInProgress)
+                if (s_initState != InitState.NotInitialized || setConfigurationSystemInProgress)
                 {
-
                     return;
                 }
 
@@ -112,4 +103,3 @@ namespace System.Diagnostics
         }
     }
 }
-

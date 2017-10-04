@@ -15,23 +15,15 @@ namespace System.Diagnostics
     /// </summary>    
     public class InstanceDataCollection : DictionaryBase
     {
-        private readonly string _counterName;
-
         [Obsolete("This constructor has been deprecated.  Please use System.Diagnostics.InstanceDataCollectionCollection.get_Item to get an instance of this collection instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public InstanceDataCollection(string counterName)
         {
             if (counterName == null)
                 throw new ArgumentNullException(nameof(counterName));
-            _counterName = counterName;
+            CounterName = counterName;
         }
 
-        public string CounterName
-        {
-            get
-            {
-                return _counterName;
-            }
-        }
+        public string CounterName { get; }
 
         public ICollection Keys
         {
@@ -56,14 +48,14 @@ namespace System.Diagnostics
                 if (instanceName.Length == 0)
                     instanceName = PerformanceCounterLib.SingleInstanceName;
 
-                object objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
+                string objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
                 return (InstanceData)Dictionary[objectName];
             }
         }
 
         internal void Add(string instanceName, InstanceData value)
         {
-            object objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
+            string objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
             Dictionary.Add(objectName, value);
         }
 
@@ -72,13 +64,13 @@ namespace System.Diagnostics
             if (instanceName == null)
                 throw new ArgumentNullException(nameof(instanceName));
 
-            object objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
+            string objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
             return Dictionary.Contains(objectName);
         }
 
         public void CopyTo(InstanceData[] instances, int index)
         {
-            Dictionary.Values.CopyTo((Array)instances, index);
+            Dictionary.Values.CopyTo(instances, index);
         }
     }
 }
