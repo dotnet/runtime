@@ -130,6 +130,7 @@ IF_DEF(LS_2C, IS_NONE, NONE) // LS_2C   .X.......X.iiiii iiiiP.nnnnnttttt      R
 IF_DEF(LS_3A, IS_NONE, NONE) // LS_3A   .X.......X.mmmmm xxxS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
 IF_DEF(LS_3B, IS_NONE, NONE) // LS_3B   X............... .aaaaannnnnddddd      Rd Ra Rn
 IF_DEF(LS_3C, IS_NONE, NONE) // LS_3C   X.........iiiiii iaaaaannnnnddddd      Rd Ra Rn imm(im7,sh)
+IF_DEF(LS_3D, IS_NONE, NONE) // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
 
 IF_DEF(DI_1A, IS_NONE, NONE) // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
 IF_DEF(DI_1B, IS_NONE, NONE) // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
