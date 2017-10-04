@@ -479,10 +479,10 @@ namespace System.Net.Security
             }
         }
 
-        internal SecurityStatusPal EncryptData(byte[] buffer, int offset, int count, ref byte[] outBuffer, out int outSize)
+        internal SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
         {
             CheckThrow(true);
-            return Context.Encrypt(buffer, offset, count, ref outBuffer, out outSize);
+            return Context.Encrypt(buffer, ref outBuffer, out outSize);
         }
 
         internal SecurityStatusPal DecryptData(byte[] buffer, ref int offset, ref int count)

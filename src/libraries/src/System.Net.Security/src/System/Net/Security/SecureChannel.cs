@@ -897,41 +897,19 @@ namespace System.Net.Security
                 size   -
                 output - Encrypted bytes
         --*/
-        internal SecurityStatusPal Encrypt(byte[] buffer, int offset, int size, ref byte[] output, out int resultSize)
+        internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(this, buffer, offset, size);
-                NetEventSource.DumpBuffer(this, buffer, 0, Math.Min(buffer.Length, 128));
+                NetEventSource.Enter(this, buffer, buffer.Length);
+                NetEventSource.DumpBuffer(this, buffer);
             }
 
             byte[] writeBuffer = output;
-
-            try
-            {
-                if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-
-                if (size < 0 || size > (buffer == null ? 0 : buffer.Length - offset))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(size));
-                }
-
-                resultSize = 0;
-            }
-            catch (Exception e) when (!ExceptionCheck.IsFatal(e))
-            {
-                NetEventSource.Fail(this, "Arguments out of range.");
-                throw;
-            }
-
+                        
             SecurityStatusPal secStatus = SslStreamPal.EncryptMessage(
                 _securityContext,
                 buffer,
-                offset,
-                size,
                 _headerSize,
                 _trailerSize,
                 ref writeBuffer,

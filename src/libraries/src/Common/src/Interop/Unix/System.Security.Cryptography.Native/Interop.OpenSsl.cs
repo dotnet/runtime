@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -181,29 +182,22 @@ internal static partial class Interop
             return stateOk;
         }
 
-        internal static int Encrypt(SafeSslHandle context, byte[] input, int offset, int count, ref byte[] output, out Ssl.SslErrorCode errorCode)
+        internal static int Encrypt(SafeSslHandle context, ReadOnlyMemory<byte> input, ref byte[] output, out Ssl.SslErrorCode errorCode)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert(offset <= input.Length);
-            Debug.Assert(input.Length - offset >= count);
-
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
             int retVal;
             unsafe
             {
-                fixed (byte* fixedBuffer = input)
+                using (MemoryHandle handle = input.Retain(pin: true))
                 {
-                    retVal = Ssl.SslWrite(context, fixedBuffer + offset, count);
+                    retVal = Ssl.SslWrite(context, (byte*)handle.PinnedPointer, input.Length);
                 }
             }
 
-            if (retVal != count)
+            if (retVal != input.Length)
             {
-                Exception innerError;
-                errorCode = GetSslError(context, retVal, out innerError);
+                errorCode = GetSslError(context, retVal, out Exception innerError);
                 retVal = 0;
 
                 switch (errorCode)
