@@ -6,7 +6,6 @@ include_directories("../inc")
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_PLATFORM_UNIX))
   add_definitions(-DFEATURE_SIMD)
-  add_definitions(-DFEATURE_AVX_SUPPORT)
 endif ()
 
 # JIT_BUILD disables certain PAL_TRY debugging features

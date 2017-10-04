@@ -2473,7 +2473,6 @@ void Compiler::compSetProcessor()
         }
     }
 
-#ifdef FEATURE_AVX_SUPPORT
     // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
     opts.compCanUseAVX = false;
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
@@ -2483,11 +2482,9 @@ void Compiler::compSetProcessor()
             opts.compCanUseAVX = true;
         }
     }
-#endif // FEATURE_AVX_SUPPORT
 
     if (!compIsForInlining())
     {
-#ifdef FEATURE_AVX_SUPPORT
         if (opts.compCanUseAVX)
         {
             codeGen->getEmitter()->SetUseAVX(true);
@@ -2495,9 +2492,7 @@ void Compiler::compSetProcessor()
             codeGen->getEmitter()->SetContainsAVX(false);
             codeGen->getEmitter()->SetContains256bitAVX(false);
         }
-        else
-#endif // FEATURE_AVX_SUPPORT
-            if (opts.compCanUseSSE3_4)
+        else if (opts.compCanUseSSE3_4)
         {
             codeGen->getEmitter()->SetUseSSE3_4(true);
         }
