@@ -489,7 +489,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
         DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
 
-        cacheSize = logicalCPUs*std::min(1536, std::max(256, logicalCPUs*128))*1024;
+        cacheSize = logicalCPUs*std::min(1536, std::max(256, (int)logicalCPUs*128))*1024;
     }
 #endif
 
