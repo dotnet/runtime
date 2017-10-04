@@ -61,14 +61,14 @@ namespace Mono.Linker.Steps {
 							Annotations.SetAction (assembly, AssemblyAction.Save);
 				}
 
-				AssemblyAction currentAction = Annotations.GetAction(assembly);
+				AssemblyAction currentAction = Annotations.GetAction (assembly);
 
 				if ((currentAction == AssemblyAction.Link) || (currentAction == AssemblyAction.Save)) {
 					// if we save (only or by linking) then unmarked exports (e.g. forwarders) must be cleaned
 					// or they can point to nothing which will break later (e.g. when re-loading for stripping IL)
 					// reference: https://bugzilla.xamarin.com/show_bug.cgi?id=36577
 					if (assembly.MainModule.HasExportedTypes)
-						SweepCollection(assembly.MainModule.ExportedTypes);
+						SweepCollection (assembly.MainModule.ExportedTypes);
 				}
 			}
 		}
@@ -82,6 +82,14 @@ namespace Mono.Linker.Steps {
 					return;
 				}
 				break;
+
+			case AssemblyAction.AddBypassNGenUsed:
+				if (!IsMarkedAssembly (assembly)) {
+					RemoveAssembly (assembly);
+				} else {
+					Annotations.SetAction (assembly, AssemblyAction.AddBypassNGen);
+				}
+				return;
 
 			case AssemblyAction.CopyUsed:
 				if (!IsMarkedAssembly (assembly)) {
@@ -184,8 +192,17 @@ namespace Mono.Linker.Steps {
 					}
 					break;
 
+				case AssemblyAction.CopyUsed:
+					if (IsMarkedAssembly (assembly) && !Context.KeepTypeForwarderOnlyAssemblies) {
+						Annotations.SetAction (assembly, AssemblyAction.Save);
+						ResolveAllTypeReferences (assembly);
+					}
+					break;
+
 				case AssemblyAction.Save:
 				case AssemblyAction.Link:
+				case AssemblyAction.AddBypassNGen:
+				case AssemblyAction.AddBypassNGenUsed:
 					if (!Context.KeepTypeForwarderOnlyAssemblies) {
 						ResolveAllTypeReferences (assembly);
 					}

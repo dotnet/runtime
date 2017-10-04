@@ -116,6 +116,7 @@ namespace Mono.Linker.Steps {
 			switch (Annotations.GetAction (assembly)) {
 			case AssemblyAction.Save:
 			case AssemblyAction.Link:
+			case AssemblyAction.AddBypassNGen:
 				Context.Annotations.AddDependency (assembly);
 				WriteAssembly (assembly, directory);
 				break;

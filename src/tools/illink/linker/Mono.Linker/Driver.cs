@@ -63,6 +63,7 @@ namespace Mono.Linker {
 		}
 
 		Queue<string> _queue;
+		bool _needAddBypassNGenStep;
 
 		public Driver (string [] args)
 		{
@@ -191,6 +192,10 @@ namespace Mono.Linker {
 
 				p.AddStepAfter (typeof (LoadReferencesStep), new LoadI18nAssemblies (assemblies));
 
+				if (_needAddBypassNGenStep) {
+					p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
+				}
+
 				p.Process (context);
 			}
 		}
@@ -266,9 +271,13 @@ namespace Mono.Linker {
 			return assemblies;
 		}
 
-		static AssemblyAction ParseAssemblyAction (string s)
+		AssemblyAction ParseAssemblyAction (string s)
 		{
-			return (AssemblyAction) Enum.Parse (typeof (AssemblyAction), s, true);
+			var assemblyAction = (AssemblyAction)Enum.Parse(typeof(AssemblyAction), s, true);
+			if ((assemblyAction == AssemblyAction.AddBypassNGen) || (assemblyAction == AssemblyAction.AddBypassNGenUsed)) {
+				_needAddBypassNGenStep = true;
+			}
+			return assemblyAction;
 		}
 
 		string GetParam ()
@@ -303,8 +312,8 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --version           Print the version number of the {0}", _linker);
 			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types and methods (true or false)");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
-			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused or link, default to skip");
-			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused or link, default to link");
+			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
+			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to link");
 			Console.WriteLine ("   -p                  Action per assembly");
 			Console.WriteLine ("   -s                  Add a new step to the pipeline.");
 			Console.WriteLine ("   -t                  Keep assemblies in which only type forwarders are referenced.");
@@ -329,7 +338,7 @@ namespace Mono.Linker {
 		{
 			Console.WriteLine ("{0} Version {1}",
 				_linker,
-			    System.Reflection.Assembly.GetExecutingAssembly ().GetName ().Version);
+				System.Reflection.Assembly.GetExecutingAssembly ().GetName ().Version);
 
 			Environment.Exit(1);
 		}
