@@ -43,12 +43,36 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public static void PerformanceCounter_CreateCounter_Count0()
         {
-            PerformanceCounter averageCounter64Sample = new PerformanceCounter("AverageCounter64SampleCategory", 
-                "AverageCounter64Sample", false);
+            var name = Guid.NewGuid().ToString("N") + "_Counter";
+            var category = name + "_Category";
+            if ( !PerformanceCounterCategory.Exists(category) ) 
+            {
+                CounterCreationDataCollection counterDataCollection = new CounterCreationDataCollection();
 
-            averageCounter64Sample.RawValue = 0;
+                // Add the counter.
+                CounterCreationData counter = new CounterCreationData();
+                counter.CounterType = PerformanceCounterType.AverageCount64;
+                counter.CounterName = name;
+                counterDataCollection.Add(counter);
 
-            Assert.Equal(0, averageCounter64Sample.RawValue);
+                // Add the base counter.
+                CounterCreationData counterBase = new CounterCreationData();
+                counterBase.CounterType = PerformanceCounterType.AverageBase;
+                counterBase.CounterName = name + "Base";
+                counterDataCollection.Add(counterBase);
+
+                // Create the category.
+                PerformanceCounterCategory.Create(category,
+                    "description",
+                    PerformanceCounterCategoryType.SingleInstance, counterDataCollection);
+            }
+
+            PerformanceCounter counterSample = new PerformanceCounter(category, 
+                name, false);
+
+            counterSample.RawValue = 0;
+
+            Assert.Equal(0, counterSample.RawValue);
         }
     }
 }
