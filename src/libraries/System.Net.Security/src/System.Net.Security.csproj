@@ -21,6 +21,7 @@
     <Compile Include="System\Net\CertificateValidationPal.cs" />
     <Compile Include="System\Net\FixedSizeReader.cs" />
     <Compile Include="System\Net\HelperAsyncResults.cs" />
+    <Compile Include="System\Net\Logging\NetEventSource.cs" />
     <Compile Include="System\Net\Security\SslStreamInternal.Adapters.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
