@@ -833,7 +833,7 @@ fi
 AC_MSG_RESULT($csc_compiler)
 
 AC_ARG_WITH(jemalloc,             [  --with-jemalloc=yes,no               If jemalloc is enabled (defaults to no)],                                     [], [with_jemalloc=no])
-AC_ARG_WITH(jemalloc-always,      [  --with-jemalloc_always=yes,no        If jemalloc is enabled and always used (defaults to yes)],                    [], [with_jemalloc_always=no])
+AC_ARG_WITH(jemalloc-always,      [  --with-jemalloc_always=yes,no        If jemalloc is enabled and always used (defaults to yes)],                    [], [with_jemalloc_always=yes])
 AC_ARG_WITH(jemalloc-assert,      [  --with-jemalloc_assert=yes,no        If jemalloc performs runtime checks for memory correctness (defaults to no)], [], [with_jemalloc_assert=no])
 
 
