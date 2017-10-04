@@ -78,11 +78,6 @@ namespace System
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            Contract.EndContractBlock();
             base.GetObjectData(info, context);
             info.AddValue("MMClassName", ClassName, typeof(string));
             info.AddValue("MMSignature", Signature, typeof(byte[]));
