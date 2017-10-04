@@ -51,6 +51,9 @@
     <Compile Include="..\..\src\System\Net\EndPoint.cs">
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Marvin.cs">
+      <Link>ProductionCode\Common\System\Marvin.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>ProductionCode\Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
