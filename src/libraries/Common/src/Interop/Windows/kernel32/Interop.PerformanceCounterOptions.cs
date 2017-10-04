@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -13,11 +12,11 @@ internal partial class Interop
         {
             internal const int SDDL_REVISION_1 = 1;
 
-            public const int PERF_NO_INSTANCES     =      -1;  // no instances (see NumInstances above)
+            public const int PERF_NO_INSTANCES = -1;  // no instances (see NumInstances above)
 
-            public const int PERF_SIZE_DWORD        = 0x00000000;
-            public const int PERF_SIZE_LARGE        = 0x00000100;
-            public const int PERF_SIZE_ZERO         = 0x00000200;  // for Zero Length fields
+            public const int PERF_SIZE_DWORD = 0x00000000;
+            public const int PERF_SIZE_LARGE = 0x00000100;
+            public const int PERF_SIZE_ZERO = 0x00000200;  // for Zero Length fields
             public const int PERF_SIZE_VARIABLE_LEN = 0x00000300;  // length is In CounterLength field
 
             public const int PERF_NO_UNIQUE_ID = -1;
@@ -25,29 +24,29 @@ internal partial class Interop
             //
             //  select one of the following values to indicate the counter field usage
             //
-            public const int PERF_TYPE_NUMBER       = 0x00000000;  // a number (not a counter)
-            public const int PERF_TYPE_COUNTER      = 0x00000400;  // an increasing numeric value
-            public const int PERF_TYPE_TEXT         = 0x00000800;  // a text field
-            public const int PERF_TYPE_ZERO         = 0x00000C00;  // displays a zero
+            public const int PERF_TYPE_NUMBER = 0x00000000;  // a number (not a counter)
+            public const int PERF_TYPE_COUNTER = 0x00000400;  // an increasing numeric value
+            public const int PERF_TYPE_TEXT = 0x00000800;  // a text field
+            public const int PERF_TYPE_ZERO = 0x00000C00;  // displays a zero
 
             //
             //  If the PERF_TYPE_NUMBER field was selected, then select one of the
             //  following to describe the Number
             //
-            public const int PERF_NUMBER_HEX        = 0x00000000;  // display as HEX value
-            public const int PERF_NUMBER_DECIMAL    = 0x00010000;  // display as a decimal integer
-            public const int PERF_NUMBER_DEC_1000   = 0x00020000;  // display as a decimal/1000
+            public const int PERF_NUMBER_HEX = 0x00000000;  // display as HEX value
+            public const int PERF_NUMBER_DECIMAL = 0x00010000;  // display as a decimal integer
+            public const int PERF_NUMBER_DEC_1000 = 0x00020000;  // display as a decimal/1000
 
             //
             //  If the PERF_TYPE_COUNTER value was selected then select one of the
             //  following to indicate the type of counter
             //
-            public const int PERF_COUNTER_VALUE     = 0x00000000;  // display counter value
-            public const int PERF_COUNTER_RATE      = 0x00010000;  // divide ctr / delta time
-            public const int PERF_COUNTER_FRACTION  = 0x00020000;  // divide ctr / base
-            public const int PERF_COUNTER_BASE      = 0x00030000;  // base value used In fractions
-            public const int PERF_COUNTER_ELAPSED   = 0x00040000;  // subtract counter from current time
-            public const int PERF_COUNTER_QUEUELEN  = 0x00050000;  // Use Queuelen processing func.
+            public const int PERF_COUNTER_VALUE = 0x00000000;  // display counter value
+            public const int PERF_COUNTER_RATE = 0x00010000;  // divide ctr / delta time
+            public const int PERF_COUNTER_FRACTION = 0x00020000;  // divide ctr / base
+            public const int PERF_COUNTER_BASE = 0x00030000;  // base value used In fractions
+            public const int PERF_COUNTER_ELAPSED = 0x00040000;  // subtract counter from current time
+            public const int PERF_COUNTER_QUEUELEN = 0x00050000;  // Use Queuelen processing func.
             public const int PERF_COUNTER_HISTOGRAM = 0x00060000;  // Counter begins or ends a histogram
             public const int PERF_COUNTER_PRECISION = 0x00070000;  // divide ctr / private clock
 
@@ -55,40 +54,40 @@ internal partial class Interop
             //  If the PERF_TYPE_TEXT value was selected, then select one of the
             //  following to indicate the type of TEXT data.
             //
-            public const int PERF_TEXT_UNICODE      = 0x00000000;  // type of text In text field
-            public const int PERF_TEXT_ASCII        = 0x00010000;  // ASCII using the CodePage field
+            public const int PERF_TEXT_UNICODE = 0x00000000;  // type of text In text field
+            public const int PERF_TEXT_ASCII = 0x00010000;  // ASCII using the CodePage field
 
             //
             //  Timer SubTypes
             //
-            public const int PERF_TIMER_TICK        = 0x00000000;  // use system perf. freq for base
-            public const int PERF_TIMER_100NS       = 0x00100000;  // use 100 NS timer time base units
-            public const int PERF_OBJECT_TIMER      = 0x00200000;  // use the object timer freq
+            public const int PERF_TIMER_TICK = 0x00000000;  // use system perf. freq for base
+            public const int PERF_TIMER_100NS = 0x00100000;  // use 100 NS timer time base units
+            public const int PERF_OBJECT_TIMER = 0x00200000;  // use the object timer freq
 
             //
             //  Any types that have calculations performed can use one or more of
             //  the following calculation modification flags listed here
             //
-            public const int PERF_DELTA_COUNTER     = 0x00400000;  // compute difference first
-            public const int PERF_DELTA_BASE        = 0x00800000;  // compute base diff as well
-            public const int PERF_INVERSE_COUNTER   = 0x01000000;  // show as 1.00-value (assumes:
-            public const int PERF_MULTI_COUNTER     = 0x02000000;  // sum of multiple instances
+            public const int PERF_DELTA_COUNTER = 0x00400000;  // compute difference first
+            public const int PERF_DELTA_BASE = 0x00800000;  // compute base diff as well
+            public const int PERF_INVERSE_COUNTER = 0x01000000;  // show as 1.00-value (assumes:
+            public const int PERF_MULTI_COUNTER = 0x02000000;  // sum of multiple instances
 
             //
             //  Select one of the following values to indicate the display suffix (if any)
             //
             public const int PERF_DISPLAY_NO_SUFFIX = 0x00000000;  // no suffix
-            public const int PERF_DISPLAY_PER_SEC   = 0x10000000;  // "/sec"
-            public const int PERF_DISPLAY_PERCENT   = 0x20000000;  // "%"
-            public const int PERF_DISPLAY_SECONDS   = 0x30000000;  // "secs"
-            public const int PERF_DISPLAY_NOSHOW    = 0x40000000;  // value is not displayed
+            public const int PERF_DISPLAY_PER_SEC = 0x10000000;  // "/sec"
+            public const int PERF_DISPLAY_PERCENT = 0x20000000;  // "%"
+            public const int PERF_DISPLAY_SECONDS = 0x30000000;  // "secs"
+            public const int PERF_DISPLAY_NOSHOW = 0x40000000;  // value is not displayed
 
             //
             //  Predefined counter types
             //
 
             // 32-bit Counter.  Divide delta by delta time.  Display suffix: "/sec"
-            public const int PERF_COUNTER_COUNTER  =
+            public const int PERF_COUNTER_COUNTER =
                     (PERF_SIZE_DWORD | PERF_TYPE_COUNTER | PERF_COUNTER_RATE |
                      PERF_TIMER_TICK | PERF_DELTA_COUNTER | PERF_DISPLAY_PER_SEC);
 
@@ -208,20 +207,20 @@ internal partial class Interop
             // 64-bit Timer in object specific units. Display delta divided by
             // delta time as returned in the object type header structure.  Display suffix: "%"
             public const int PERF_OBJ_TIME_TIMER =
-                        (PERF_SIZE_LARGE   | PERF_TYPE_COUNTER  | PERF_COUNTER_RATE |
+                        (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_RATE |
                          PERF_OBJECT_TIMER | PERF_DELTA_COUNTER | PERF_DISPLAY_PERCENT);
 
             // A bulk count which, when divided (typically) by the number of
             // operations, gives (typically) the number of bytes per operation.
             // No Display Suffix.
             public const int PERF_AVERAGE_BULK =
-                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_FRACTION  |
+                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_FRACTION |
                     PERF_DISPLAY_NOSHOW);
 
             // 64-bit Timer in object specific units. Display delta divided by
             // delta time as returned in the object type header structure.  Display suffix: "%"
             public const int PERF_OBJ_TIME_TIME =
-                        (PERF_SIZE_LARGE   | PERF_TYPE_COUNTER  | PERF_COUNTER_RATE |
+                        (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_RATE |
                          PERF_OBJECT_TIMER | PERF_DELTA_COUNTER | PERF_DISPLAY_PERCENT);
 
             // 64-bit Timer In 100 nsec units. Display delta divided by
@@ -234,7 +233,7 @@ internal partial class Interop
             // Display 100 - delta divided by delta time.  Display suffix: "%"
             public const int PERF_100NSEC_TIMER_INV =
                     (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_RATE |
-                    PERF_TIMER_100NS | PERF_DELTA_COUNTER | PERF_INVERSE_COUNTER  |
+                    PERF_TIMER_100NS | PERF_DELTA_COUNTER | PERF_INVERSE_COUNTER |
                     PERF_DISPLAY_PERCENT);
 
             // 64-bit Timer.  Divide delta by delta time.  Display suffix: "%"
@@ -262,7 +261,7 @@ internal partial class Interop
             // 64-bit Timer In 100 nsec units. Display delta divided by delta time.
             // Display suffix: "%" Timer for multiple instances, so result can exceed 100%.
             public const int PERF_100NSEC_MULTI_TIMER =
-                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_DELTA_COUNTER  |
+                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_DELTA_COUNTER |
                     PERF_COUNTER_RATE | PERF_TIMER_100NS | PERF_MULTI_COUNTER |
                     PERF_DISPLAY_PERCENT);
 
@@ -271,7 +270,7 @@ internal partial class Interop
             // Display suffix: "%" Timer for multiple instances, so result
             // can exceed 100%.  Followed by a counter of type _MULTI_BASE.
             public const int PERF_100NSEC_MULTI_TIMER_INV =
-                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_DELTA_COUNTER  |
+                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_DELTA_COUNTER |
                     PERF_COUNTER_RATE | PERF_TIMER_100NS | PERF_MULTI_COUNTER |
                     PERF_INVERSE_COUNTER | PERF_DISPLAY_PERCENT);
 
@@ -285,7 +284,7 @@ internal partial class Interop
             public const int PERF_LARGE_RAW_FRACTION =
                         (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_FRACTION |
                         PERF_DISPLAY_PERCENT);
-            
+
             // Indicates the data is a base for the preceding counter which should
             // not be time averaged on display (such as free space over total space.)
             public const int PERF_RAW_BASE =
@@ -295,8 +294,8 @@ internal partial class Interop
 
             public const int PERF_LARGE_RAW_BASE =
                         (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_BASE |
-                        PERF_DISPLAY_NOSHOW );
-            
+                        PERF_DISPLAY_NOSHOW);
+
             // The data collected In this counter is actually the start time of the
             // item being measured. For display, this data is subtracted from the
             // sample time to yield the elapsed time as the difference between the two.
@@ -331,55 +330,57 @@ internal partial class Interop
 
             // The timer used has the same frequency as the System Performance Timer
             public const int PERF_PRECISION_SYSTEM_TIMER =
-                    (PERF_SIZE_LARGE    | PERF_TYPE_COUNTER     | PERF_COUNTER_PRECISION    | 
-                     PERF_TIMER_TICK    | PERF_DELTA_COUNTER    | PERF_DISPLAY_PERCENT   );
+                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_PRECISION |
+                     PERF_TIMER_TICK | PERF_DELTA_COUNTER | PERF_DISPLAY_PERCENT);
 
             //
             // The timer used has the same frequency as the 100 NanoSecond Timer
-            public const int PERF_PRECISION_100NS_TIMER  =
-                    (PERF_SIZE_LARGE    | PERF_TYPE_COUNTER     | PERF_COUNTER_PRECISION    | 
-                     PERF_TIMER_100NS   | PERF_DELTA_COUNTER    | PERF_DISPLAY_PERCENT   );
+            public const int PERF_PRECISION_100NS_TIMER =
+                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_PRECISION |
+                     PERF_TIMER_100NS | PERF_DELTA_COUNTER | PERF_DISPLAY_PERCENT);
             //
             // The timer used is of the frequency specified in the Object header's
             //  PerfFreq field (PerfTime is ignored)
             public const int PERF_PRECISION_OBJECT_TIMER =
-                    (PERF_SIZE_LARGE    | PERF_TYPE_COUNTER     | PERF_COUNTER_PRECISION    | 
-                     PERF_OBJECT_TIMER  | PERF_DELTA_COUNTER    | PERF_DISPLAY_PERCENT   );
+                    (PERF_SIZE_LARGE | PERF_TYPE_COUNTER | PERF_COUNTER_PRECISION |
+                     PERF_OBJECT_TIMER | PERF_DELTA_COUNTER | PERF_DISPLAY_PERCENT);
 
-            public const uint PDH_FMT_DOUBLE =  0x00000200;
-            public const uint PDH_FMT_NOSCALE   =   0x00001000;
-            public const uint PDH_FMT_NOCAP100  =   0x00008000;
+            public const uint PDH_FMT_DOUBLE = 0x00000200;
+            public const uint PDH_FMT_NOSCALE = 0x00001000;
+            public const uint PDH_FMT_NOCAP100 = 0x00008000;
 
-            
-            
+
+
             [StructLayout(LayoutKind.Sequential)]
-            public class PDH_RAW_COUNTER {
+            public class PDH_RAW_COUNTER
+            {
                 public int CStatus = 0;
                 public long TimeStamp = 0;
                 public long FirstValue = 0;
                 public long SecondValue = 0;
                 public int MultiCount = 0;
             }
-            
+
             [StructLayout(LayoutKind.Sequential)]
-            public class PDH_FMT_COUNTERVALUE {  
+            public class PDH_FMT_COUNTERVALUE
+            {
                 public int CStatus = 0;
                 public double data = 0;
             }
 
-            public const int PDH_NO_DATA = unchecked((int) 0x800007D5);
-            public const int PDH_CALC_NEGATIVE_DENOMINATOR = unchecked((int) 0x800007D6);
-            public const int PDH_CALC_NEGATIVE_VALUE = unchecked((int) 0x800007D8);
+            public const int PDH_NO_DATA = unchecked((int)0x800007D5);
+            public const int PDH_CALC_NEGATIVE_DENOMINATOR = unchecked((int)0x800007D6);
+            public const int PDH_CALC_NEGATIVE_VALUE = unchecked((int)0x800007D8);
 
             //
             //  The following are used to determine the level of detail associated
             //  with the counter.  The user will be setting the level of detail
             //  that should be displayed at any given time.
             //
-            public const int PERF_DETAIL_NOVICE      =    100; // The uninformed can understand it
-            public const int PERF_DETAIL_ADVANCED    =    200; // For the advanced user
-            public const int PERF_DETAIL_EXPERT      =    300; // For the expert user
-            public const int PERF_DETAIL_WIZARD      =    400; // For the system designer
+            public const int PERF_DETAIL_NOVICE = 100; // The uninformed can understand it
+            public const int PERF_DETAIL_ADVANCED = 200; // For the advanced user
+            public const int PERF_DETAIL_EXPERT = 300; // For the expert user
+            public const int PERF_DETAIL_WIZARD = 400; // For the system designer
         }
     }
 }

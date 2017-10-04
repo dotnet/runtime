@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System;
 using System.Text;
 
 internal partial class Interop
@@ -13,7 +12,7 @@ internal partial class Interop
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "GetComputerNameW")]
         private static extern unsafe int GetComputerName(char* lpBuffer, ref uint nSize);
 
-        [DllImport(Libraries.Kernel32, CharSet=CharSet.Auto, BestFitMapping=false)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, BestFitMapping = false)]
         public static extern bool GetComputerName(StringBuilder lpBuffer, int[] nSize);
 
         // maximum length of the NETBIOS name (not including NULL)

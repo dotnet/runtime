@@ -346,7 +346,6 @@ namespace System.Diagnostics
                         (currentSampleType == Interop.Kernel32.PerformanceCounterOptions.PERF_SAMPLE_FRACTION) ||
                         (currentSampleType == Interop.Kernel32.PerformanceCounterOptions.PERF_AVERAGE_TIMER))
                 {
-
                     if (counterData.Count <= (i + 1))
                         throw new InvalidOperationException(SR.Format(SR.CounterLayout));
                     else
@@ -377,7 +376,6 @@ namespace System.Diagnostics
                         (currentSampleType != Interop.Kernel32.PerformanceCounterOptions.PERF_AVERAGE_TIMER))
                             throw new InvalidOperationException(SR.Format(SR.CounterLayout));
                     }
-
                 }
 
                 if (h.ContainsKey(counterData[i].CounterName))
@@ -433,7 +431,6 @@ namespace System.Diagnostics
                     mutex.Close();
                 }
             }
-
         }
 
         /// <summary>
@@ -624,5 +621,3 @@ namespace System.Diagnostics
         UseUniqueSharedMemory = 0x2,
     }
 }
-
-

@@ -4,13 +4,12 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet=System.Runtime.InteropServices.CharSet.Unicode, SetLastError=true)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr LoadLibrary(string libFilename);
     }
 }

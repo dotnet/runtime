@@ -16,8 +16,6 @@ namespace System.Diagnostics
     /// </summary>    
     public class InstanceDataCollectionCollection : DictionaryBase
     {
-
-
         [Obsolete("This constructor has been deprecated.  Please use System.Diagnostics.PerformanceCounterCategory.ReadCategory() to get an instance of this collection instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public InstanceDataCollectionCollection() : base() { }
 

@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class PerfCounters
+    internal partial class PerfCounter
     {
 #pragma warning disable BCL0015 // Invalid Pinvoke call
-        [DllImport(Libraries.PerfCounter, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(Libraries.PerfCounter, CharSet = CharSet.Auto)]
         public static unsafe extern int FormatFromRawValue(
             uint dwCounterType,
             uint dwFormat,

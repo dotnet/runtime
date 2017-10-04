@@ -16,7 +16,7 @@ namespace System.Diagnostics
     /// </summary>
     public static class CounterSampleCalculator
     {
-        static volatile bool s_perfCounterDllLoaded = false;
+        private static volatile bool s_perfCounterDllLoaded = false;
 
         /// <summary>
         ///    Converts 100NS elapsed time to fractional seconds
@@ -96,7 +96,7 @@ namespace System.Diagnostics
 
             Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pdhFormattedValue = new Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE();
             long timeBase = newSample.SystemFrequency;
-            int result = Interop.PerfCounters.FormatFromRawValue((uint)newCounterType, Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_DOUBLE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOSCALE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOCAP100,
+            int result = Interop.PerfCounter.FormatFromRawValue((uint)newCounterType, Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_DOUBLE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOSCALE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOCAP100,
                                                           ref timeBase, newPdhValue, oldPdhValue, pdhFormattedValue);
 
             if (result != Interop.Errors.ERROR_SUCCESS)
@@ -111,7 +111,6 @@ namespace System.Diagnostics
             return (float)pdhFormattedValue.data;
 
         }
-
 
         // This method figures out which values are supposed to go into which structures so that PDH can do the 
         // calculation for us.  This was ported from Window's cutils.c
@@ -168,7 +167,6 @@ namespace System.Diagnostics
                         newPdhValue.MultiCount = (int)newSample.BaseValue;
                         oldPdhValue.MultiCount = (int)oldSample.BaseValue;
                     }
-
 
                     break;
                 //
@@ -251,4 +249,3 @@ namespace System.Diagnostics
         }
     }
 }
-
