@@ -139,12 +139,16 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 
 	switch (er->ExceptionCode) {
 	case EXCEPTION_STACK_OVERFLOW:
-		if (mono_arch_handle_exception (ctx, domain->stack_overflow_ex)) {
-			/* need to restore stack protection once stack is unwound
-			 * restore_stack will restore stack protection and then
-			 * resume control to the saved stack_restore_ctx */
-			mono_sigctx_to_monoctx (ctx, &jit_tls->stack_restore_ctx);
-			ctx->Rip = (guint64)restore_stack;
+		if (!mono_aot_only) {
+			if (mono_arch_handle_exception (ctx, domain->stack_overflow_ex)) {
+				/* need to restore stack protection once stack is unwound
+				 * restore_stack will restore stack protection and then
+				 * resume control to the saved stack_restore_ctx */
+				mono_sigctx_to_monoctx (ctx, &jit_tls->stack_restore_ctx);
+				ctx->Rip = (guint64)restore_stack;
+			}
+		} else {
+			jit_tls->mono_win_chained_exception_needs_run = TRUE;
 		}
 		break;
 	case EXCEPTION_ACCESS_VIOLATION:
@@ -181,7 +185,8 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 
 void win32_seh_init()
 {
-	restore_stack = get_win32_restore_stack ();
+	if (!mono_aot_only)
+		restore_stack = get_win32_restore_stack ();
 
 	mono_old_win_toplevel_exception_filter = SetUnhandledExceptionFilter(seh_unhandled_exception_filter);
 	mono_win_vectored_exception_handle = AddVectoredExceptionHandler (1, seh_vectored_exception_handler);
