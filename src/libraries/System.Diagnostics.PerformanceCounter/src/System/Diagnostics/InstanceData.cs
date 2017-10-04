@@ -9,36 +9,21 @@ namespace System.Diagnostics
     /// </summary>    
     public class InstanceData
     {
-        private readonly string _instanceName;
-        private readonly CounterSample _sample;
-
         public InstanceData(string instanceName, CounterSample sample)
         {
-            _instanceName = instanceName;
-            _sample = sample;
+            InstanceName = instanceName;
+            Sample = sample;
         }
 
-        public string InstanceName
-        {
-            get
-            {
-                return _instanceName;
-            }
-        }
+        public string InstanceName { get; }
 
-        public CounterSample Sample
-        {
-            get
-            {
-                return _sample;
-            }
-        }
+        public CounterSample Sample { get; }
 
         public long RawValue
         {
             get
             {
-                return _sample.RawValue;
+                return Sample.RawValue;
             }
         }
     }

@@ -347,7 +347,6 @@ namespace System.Diagnostics
             int freeMemoryOffset;
             int newOffset = 0;
 
-
             if (_categoryData.UseUniqueSharedMemory)
             {
                 instanceNameLength = InstanceNameSlotSize;
@@ -405,7 +404,6 @@ namespace System.Diagnostics
             SafeMarshalCopy(instanceName, (IntPtr)nextPtr);
 
             nextPtr += instanceNameLength;
-
 
             if (_categoryData.UseUniqueSharedMemory)
             {
@@ -502,7 +500,6 @@ namespace System.Diagnostics
             return freeMemoryOffset;
         }
 
-
         private unsafe static void PopulateLifetimeEntry(ProcessLifetimeEntry* lifetimeEntry, PerformanceCounterInstanceLifetime lifetime)
         {
 
@@ -519,7 +516,6 @@ namespace System.Diagnostics
                 lifetimeEntry->StartupTime = 0;
             }
         }
-
 
         private static unsafe void WaitAndEnterCriticalSection(int* spinLockPointer, out bool taken)
         {
@@ -625,7 +621,6 @@ namespace System.Diagnostics
 
             return (currentChar[i] == 0);
         }
-
 
         private unsafe CategoryData GetCategoryData()
         {
@@ -1130,9 +1125,7 @@ namespace System.Diagnostics
                                                PerformanceCounterInstanceLifetime lifetime,
                                                InstanceEntry* lockInstancePointer)
         {
-            //
             // 2nd pass find a free instance slot
-            // 
             InstanceEntry* currentInstancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
             InstanceEntry* previousInstancePointer = currentInstancePointer;
             for (; ; )
@@ -1674,7 +1667,6 @@ namespace System.Diagnostics
 
             return offset;
         }
-
 
         private class FileMapping
         {

@@ -288,7 +288,6 @@ namespace System.Diagnostics
             }
         }
 
-
         /// <summary>
         ///     Set/returns the machine name for this performance counter
         /// </summary>

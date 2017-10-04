@@ -11,12 +11,11 @@ namespace System.Diagnostics.Tests
 {
     public static class PerformanceCounterTests
     {
-        [Fact]
-        public static void SetupCategory()
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
+        public static void PerformanceCounterCategory_CreateCategory()
         {
             if ( !PerformanceCounterCategory.Exists("AverageCounter64SampleCategory") ) 
             {
-
                 CounterCreationDataCollection counterDataCollection = new CounterCreationDataCollection();
 
                 // Add the counter.
@@ -40,8 +39,8 @@ namespace System.Diagnostics.Tests
             Assert.True(PerformanceCounterCategory.Exists("AverageCounter64SampleCategory"));
         }
 
-        [Fact]
-        public static void CreateCounters()
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
+        public static void PerformanceCounter_CreateCounter_Count0()
         {
             PerformanceCounter averageCounter64Sample = new PerformanceCounter("AverageCounter64SampleCategory", 
                 "AverageCounter64Sample", false);

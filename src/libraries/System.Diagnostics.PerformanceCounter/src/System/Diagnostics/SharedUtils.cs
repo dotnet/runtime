@@ -15,7 +15,6 @@ namespace System.Diagnostics
 {
     internal static class SharedUtils
     {
-
         internal const int UnknownEnvironment = 0;
         internal const int W2kEnvironment = 1;
         internal const int NtEnvironment = 2;
