@@ -75,6 +75,7 @@
     <Compile Include="Mono.Linker.Steps\ResolveFromXmlStep.cs" />
     <Compile Include="Mono.Linker.Steps\ResolveStep.cs" />
     <Compile Include="Mono.Linker.Steps\SweepStep.cs" />
+    <Compile Include="Mono.Linker.Steps\AddBypassNGenStep.cs" />
     <Compile Include="Mono.Linker\Annotations.cs" />
     <Compile Include="Mono.Linker\AssemblyAction.cs" />
     <Compile Include="Mono.Linker\AssemblyInfo.cs" />
