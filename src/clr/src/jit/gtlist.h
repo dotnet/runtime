@@ -99,6 +99,8 @@ GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP)      // objec
 
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP)               // Initialization value for an initBlk
 
+GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP)    // Runtime handle lookup
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------

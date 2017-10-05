@@ -428,6 +428,14 @@ BOOL canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
 // TRUE if cls1 and cls2 are considered equivalent types.
 BOOL areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
+// See if a cast from fromClass to toClass will succeed, fail, or needs
+// to be resolved at runtime.
+TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
+
+// See if types represented by cls1 and cls2 compare equal, not
+// equal, or the comparison needs to be resolved at runtime.
+TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+
 // returns is the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
