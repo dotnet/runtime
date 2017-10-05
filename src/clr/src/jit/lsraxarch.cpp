@@ -116,12 +116,22 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     {
         info->dstCount = 0;
         assert(info->srcCount == 0);
-        TreeNodeInfoInitCheckByteable(tree);
         return;
     }
 
     // Set the default dstCount. This may be modified below.
-    info->dstCount = tree->IsValue() ? 1 : 0;
+    if (tree->IsValue())
+    {
+        info->dstCount = 1;
+        if (tree->IsUnusedValue())
+        {
+            info->isLocalDefUse = true;
+        }
+    }
+    else
+    {
+        info->dstCount = 0;
+    }
 
     // floating type generates AVX instruction (vmovss etc.), set the flag
     SetContainsAVXFlags(varTypeIsFloating(tree->TypeGet()));
@@ -150,6 +160,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
                     info->regOptional = false;
                     tree->SetContained();
                     info->dstCount = 0;
+                    return;
                 }
             }
             __fallthrough;
@@ -194,6 +205,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_LONG:
             assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
+            // An unused GT_LONG doesn't produce any registers.
+            tree->gtType = TYP_VOID;
+            tree->ClearUnusedValue();
+            info->isLocalDefUse = false;
 
             // An unused GT_LONG node needs to consume its sources.
             info->srcCount = 2;
@@ -439,7 +454,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             tree->gtCmpXchg.gtOpComparand->gtLsraInfo.setSrcCandidates(this, RBM_RAX);
             tree->gtCmpXchg.gtOpLocation->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~RBM_RAX);
             tree->gtCmpXchg.gtOpValue->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~RBM_RAX);
-            tree->gtLsraInfo.setDstCandidates(this, RBM_RAX);
+            info->setDstCandidates(this, RBM_RAX);
             break;
 
         case GT_LOCKADD:
@@ -632,16 +647,18 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             // Commutative opers like add/mul/and/or/xor could reverse the order of
             // operands if it is safe to do so.  In such a case we would like op2 to be
             // target preferenced instead of op1.
-            if (tree->OperIsCommutative() && op1->gtLsraInfo.dstCount == 0 && op2 != nullptr)
+            if (tree->OperIsCommutative() && op1->isContained() && op2 != nullptr)
             {
                 op1 = op2;
                 op2 = tree->gtOp.gtOp1;
             }
 
-            // If we have a read-modify-write operation, we want to preference op1 to the target.
-            // If op1 is contained, we don't want to preference it, but it won't
-            // show up as a source in that case, so it will be ignored.
-            op1->gtLsraInfo.isTgtPref = true;
+            // If we have a read-modify-write operation, we want to preference op1 to the target,
+            // if it is not contained.
+            if (!op1->isContained())
+            {
+                op1->gtLsraInfo.isTgtPref = true;
+            }
 
             // Is this a non-commutative operator, or is op2 a contained memory op?
             // In either case, we need to make op2 remain live until the op is complete, by marking
@@ -672,29 +689,28 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
                     // which allows its second operand to be a contained
                     // immediate wheres xadd instruction requires its
                     // second operand to be in a register.
-                    assert(tree->gtLsraInfo.dstCount == 0);
+                    assert(info->dstCount == 0);
 
-                    // Give it an artificial type and mark it isLocalDefUse = true.
-                    // This would result in a Def position created but not considered
-                    // consumed by its parent node.
-                    tree->gtType                   = TYP_INT;
-                    tree->gtLsraInfo.isLocalDefUse = true;
+                    // Give it an artificial type and mark it as an unused value.
+                    // This results in a Def position created but not considered consumed by its parent node.
+                    tree->gtType        = TYP_INT;
+                    info->dstCount      = 1;
+                    info->isLocalDefUse = true;
+                    tree->SetUnusedValue();
                 }
                 else
                 {
-                    assert(tree->gtLsraInfo.dstCount != 0);
+                    assert(info->dstCount != 0);
                 }
 
                 delayUseSrc = op1;
             }
-            else if ((op2 != nullptr) &&
-                     (!tree->OperIsCommutative() || (isContainableMemoryOp(op2) && (op2->gtLsraInfo.srcCount == 0))))
+            else if ((op2 != nullptr) && (!tree->OperIsCommutative() || (op2->isContained() && !op2->IsCnsIntOrI())))
             {
                 delayUseSrc = op2;
             }
-            if (delayUseSrc != nullptr)
+            if ((delayUseSrc != nullptr) && SetDelayFree(delayUseSrc))
             {
-                SetDelayFree(delayUseSrc);
                 info->hasDelayFreeSrc = true;
             }
         }
@@ -702,36 +718,43 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
     TreeNodeInfoInitCheckByteable(tree);
 
-    if (tree->IsUnusedValue() && (info->dstCount != 0))
-    {
-        info->isLocalDefUse = true;
-    }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || (tree->IsMultiRegCall() && info->dstCount == MAX_RET_REG_COUNT));
+    assert(info->isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
+    assert(!tree->IsUnusedValue() || (info->dstCount != 0));
 }
 
-void LinearScan::SetDelayFree(GenTree* delayUseSrc)
+bool LinearScan::SetDelayFree(GenTree* delayUseSrc)
 {
     // If delayUseSrc is an indirection and it doesn't produce a result, then we need to set "delayFree'
     // on the base & index, if any.
     // Otherwise, we set it on delayUseSrc itself.
-    if (delayUseSrc->isIndir() && (delayUseSrc->gtLsraInfo.dstCount == 0))
+    bool returnValue = false;
+    if (delayUseSrc->isContained())
     {
-        GenTree* base  = delayUseSrc->AsIndir()->Base();
-        GenTree* index = delayUseSrc->AsIndir()->Index();
-        if (base != nullptr)
+        // If delayUseSrc is a non-Indir contained node (e.g. a local) there's no register use to delay.
+        if (delayUseSrc->isIndir())
         {
-            base->gtLsraInfo.isDelayFree = true;
-        }
-        if (index != nullptr)
-        {
-            index->gtLsraInfo.isDelayFree = true;
+            GenTree* base  = delayUseSrc->AsIndir()->Base();
+            GenTree* index = delayUseSrc->AsIndir()->Index();
+            if (base != nullptr)
+            {
+                base->gtLsraInfo.isDelayFree = true;
+                returnValue                  = true;
+            }
+            if (index != nullptr)
+            {
+                index->gtLsraInfo.isDelayFree = true;
+                returnValue                   = true;
+            }
         }
     }
     else
     {
         delayUseSrc->gtLsraInfo.isDelayFree = true;
+        returnValue                         = true;
     }
+    return returnValue;
 }
 
 //------------------------------------------------------------------------
@@ -886,7 +909,8 @@ void LinearScan::TreeNodeInfoInitSimple(GenTree* tree)
 void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
 {
     TreeNodeInfo* info = &(tree->gtLsraInfo);
-    GenTree*      op1  = tree->gtGetOp1();
+    assert(info->dstCount == 0);
+    GenTree* op1 = tree->gtGetOp1();
 
 #if !defined(_TARGET_64BIT_)
     if (tree->TypeGet() == TYP_LONG)
@@ -897,15 +921,14 @@ void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
         info->srcCount = 2;
         loVal->gtLsraInfo.setSrcCandidates(this, RBM_LNGRET_LO);
         hiVal->gtLsraInfo.setSrcCandidates(this, RBM_LNGRET_HI);
-        assert(info->dstCount == 0);
     }
     else
 #endif // !defined(_TARGET_64BIT_)
+        if ((tree->TypeGet() != TYP_VOID) && !op1->isContained())
     {
         regMaskTP useCandidates = RBM_NONE;
 
-        info->srcCount = ((tree->TypeGet() == TYP_VOID) || op1->isContained()) ? 0 : 1;
-        assert(info->dstCount == 0);
+        info->srcCount = 1;
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         if (varTypeIsStruct(tree))
@@ -926,8 +949,7 @@ void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
             switch (tree->TypeGet())
             {
                 case TYP_VOID:
-                    useCandidates = RBM_NONE;
-                    break;
+                    unreached();
                 case TYP_FLOAT:
                     useCandidates = RBM_FLOATRET;
                     break;
@@ -975,56 +997,60 @@ void LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree)
     // We will allow whatever can be encoded - hope you know what you are doing.
     if (!shiftBy->isContained())
     {
-        source->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~RBM_RCX);
         shiftBy->gtLsraInfo.setSrcCandidates(this, RBM_RCX);
+        if (!source->isContained())
+        {
+            source->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~RBM_RCX);
+        }
         info->setDstCandidates(this, allRegs(TYP_INT) & ~RBM_RCX);
-        if (!tree->isContained())
-        {
-            info->srcCount = 2;
-        }
-    }
-    else
-    {
-        // Note that Rotate Left/Right instructions don't set ZF and SF flags.
-        //
-        // If the operand being shifted is 32-bits then upper three bits are masked
-        // by hardware to get actual shift count.  Similarly for 64-bit operands
-        // shift count is narrowed to [0..63].  If the resulting shift count is zero,
-        // then shift operation won't modify flags.
-        //
-        // TODO-CQ-XARCH: We can optimize generating 'test' instruction for GT_EQ/NE(shift, 0)
-        // if the shift count is known to be non-zero and in the range depending on the
-        // operand size.
-        if (!tree->isContained())
-        {
-            info->srcCount = 1;
-        }
     }
 
+    // Note that Rotate Left/Right instructions don't set ZF and SF flags.
+    //
+    // If the operand being shifted is 32-bits then upper three bits are masked
+    // by hardware to get actual shift count.  Similarly for 64-bit operands
+    // shift count is narrowed to [0..63].  If the resulting shift count is zero,
+    // then shift operation won't modify flags.
+    //
+    // TODO-CQ-XARCH: We can optimize generating 'test' instruction for GT_EQ/NE(shift, 0)
+    // if the shift count is known to be non-zero and in the range depending on the
+    // operand size.
+
+    if (!tree->isContained())
+    {
 #ifdef _TARGET_X86_
-    // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
-    // we can have a three operand form. Increment the srcCount.
-    if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
-    {
-        assert((source->OperGet() == GT_LONG) && source->isContained());
-
-        info->srcCount++;
-
-        if (tree->OperGet() == GT_LSH_HI)
+        // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
+        // we can have a three operand form. Increment the srcCount.
+        if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
         {
-            GenTreePtr sourceLo              = source->gtOp.gtOp1;
-            sourceLo->gtLsraInfo.isDelayFree = true;
+            assert((source->OperGet() == GT_LONG) && source->isContained());
+
+            if (tree->OperGet() == GT_LSH_HI)
+            {
+                GenTreePtr sourceLo              = source->gtOp.gtOp1;
+                sourceLo->gtLsraInfo.isDelayFree = true;
+            }
+            else
+            {
+                GenTreePtr sourceHi              = source->gtOp.gtOp2;
+                sourceHi->gtLsraInfo.isDelayFree = true;
+            }
+
+            source->gtLsraInfo.hasDelayFreeSrc = true;
+            info->hasDelayFreeSrc              = true;
+            info->srcCount += 2;
         }
         else
-        {
-            GenTreePtr sourceHi              = source->gtOp.gtOp2;
-            sourceHi->gtLsraInfo.isDelayFree = true;
-        }
-
-        source->gtLsraInfo.hasDelayFreeSrc = true;
-        info->hasDelayFreeSrc              = true;
-    }
 #endif
+            if (!source->isContained())
+        {
+            info->srcCount++;
+        }
+        if (!shiftBy->isContained())
+        {
+            info->srcCount++;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1649,9 +1675,12 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // _TARGET_X86_
     }
 
+    GenTreePtr src  = putArgStk->gtOp1;
+    var_types  type = src->TypeGet();
+
 #if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
     // For PutArgStk of a TYP_SIMD12, we need an extra register.
-    if (putArgStk->TypeGet() == TYP_SIMD12)
+    if (type == TYP_SIMD12)
     {
         info->srcCount           = putArgStk->gtOp1->gtLsraInfo.dstCount;
         info->internalFloatCount = 1;
@@ -1660,14 +1689,13 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
     }
 #endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
 
-    if (putArgStk->TypeGet() != TYP_STRUCT)
+    if (type != TYP_STRUCT)
     {
         TreeNodeInfoInitSimple(putArgStk);
         return;
     }
 
     GenTreePtr dst     = putArgStk;
-    GenTreePtr src     = putArgStk->gtOp1;
     GenTreePtr srcAddr = nullptr;
 
     info->srcCount = GetOperandSourceCount(src);
@@ -2607,14 +2635,7 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
 
     TreeNodeInfo* info = &(tree->gtLsraInfo);
     info->srcCount     = 0;
-    if (info->isNoRegCompare)
-    {
-        info->dstCount = 0;
-    }
-    else
-    {
-        assert((info->dstCount == 1) || tree->OperIs(GT_CMP));
-    }
+    assert((info->dstCount == 1) || (tree->TypeGet() == TYP_VOID));
 
 #ifdef _TARGET_X86_
     // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
@@ -2630,7 +2651,7 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
     var_types  op1Type = op1->TypeGet();
     var_types  op2Type = op2->TypeGet();
 
-    if (!op1->gtLsraInfo.isNoRegCompare)
+    if (op1->TypeGet() != TYP_VOID)
     {
         info->srcCount += GetOperandSourceCount(op1);
     }
@@ -2718,9 +2739,8 @@ void LinearScan::TreeNodeInfoInitMul(GenTreePtr tree)
     {
         containedMemOp = op2;
     }
-    if (containedMemOp != nullptr)
+    if ((containedMemOp != nullptr) && SetDelayFree(containedMemOp))
     {
-        SetDelayFree(containedMemOp);
         info->hasDelayFreeSrc = true;
     }
 }

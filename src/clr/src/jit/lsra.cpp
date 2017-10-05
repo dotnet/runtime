@@ -4839,7 +4839,7 @@ void LinearScan::buildIntervals()
             TreeNodeInfoInit(node);
 
             // If the node produces an unused value, mark it as a local def-use
-            if (node->IsValue() && node->IsUnusedValue() && !node->gtLsraInfo.isNoRegCompare)
+            if (node->IsValue() && node->IsUnusedValue())
             {
                 node->gtLsraInfo.isLocalDefUse = true;
                 node->gtLsraInfo.dstCount      = 0;

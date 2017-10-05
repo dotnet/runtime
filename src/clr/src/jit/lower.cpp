@@ -1072,11 +1072,27 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             // This provides the info to put this argument in in-coming arg area slot
             // instead of in out-going arg area slot.
 
-            PUT_STRUCT_ARG_STK_ONLY(assert(info->isStruct == varTypeIsStruct(type))); // Make sure state is correct
+            // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
+            // a result. So the type of its operand must be the correct type to push on the stack.
+            // For a FIELD_LIST, this will be the type of the field (not the type of the arg),
+            // but otherwise it is generally the type of the operand. However, in the case of
+            // TYP_SIMD12 the type of the operand may need to be modified.
+            PUT_STRUCT_ARG_STK_ONLY(assert(info->isStruct == varTypeIsStruct(type)));
+#if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+            if (type == TYP_SIMD12)
+            {
+                arg->gtType = type;
+            }
+            else
+#endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+            {
+                assert((genActualType(arg->TypeGet()) == type) || (arg->OperGet() == GT_FIELD_LIST));
+            }
 
-            putArg = new (comp, GT_PUTARG_STK)
-                GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
-                                 call->IsFastTailCall(), call);
+            putArg =
+                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
+                                                           info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
+                                                           call->IsFastTailCall(), call);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the ArgTabEntry indicates that this arg is a struct
@@ -1259,7 +1275,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
             // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
             (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-            putArg = NewPutArg(call, fieldList, info, TYP_VOID);
+            putArg = NewPutArg(call, fieldList, info, type);
 
             BlockRange().InsertBefore(arg, putArg);
             BlockRange().Remove(arg);
@@ -1268,17 +1284,17 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         }
         else
         {
+            assert(arg->OperGet() == GT_LONG);
             // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
             // Although the hi argument needs to be pushed first, that will be handled by the general case,
             // in which the fields will be reversed.
-            noway_assert(arg->OperGet() == GT_LONG);
             assert(info->numSlots == 2);
             GenTreePtr        argLo     = arg->gtGetOp1();
             GenTreePtr        argHi     = arg->gtGetOp2();
             GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
             // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
             (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-            putArg           = NewPutArg(call, fieldList, info, TYP_VOID);
+            putArg           = NewPutArg(call, fieldList, info, type);
             putArg->gtRegNum = info->regNum;
 
             // We can't call ReplaceArgWithPutArgOrCopy here because it presumes that we are keeping the original arg.
@@ -2742,7 +2758,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             relop->SetOper(GT_JCMP);
             relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
             relop->gtFlags |= flags;
-            relop->gtLsraInfo.isNoRegCompare = true;
+            relop->gtType = TYP_VOID;
 
             relopOp2->SetContained();
 
@@ -5721,8 +5737,9 @@ void Lowering::ContainCheckRet(GenTreeOp* ret)
 void Lowering::ContainCheckJTrue(GenTreeOp* node)
 {
     // The compare does not need to be generated into a register.
-    GenTree* cmp                   = node->gtGetOp1();
-    cmp->gtLsraInfo.isNoRegCompare = true;
+    GenTree* cmp = node->gtGetOp1();
+    cmp->gtType  = TYP_VOID;
+    cmp->gtFlags |= GTF_SET_FLAGS;
 }
 
 #endif // !LEGACY_BACKEND
