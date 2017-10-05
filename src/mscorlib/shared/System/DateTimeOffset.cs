@@ -771,6 +771,9 @@ namespace System
             return DateTimeFormat.Format(ClockDateTime, format, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider formatProvider = null) =>
+            DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
+
         public DateTimeOffset ToUniversalTime()
         {
             return new DateTimeOffset(UtcDateTime);
