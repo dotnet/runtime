@@ -180,7 +180,8 @@ monoutils_sources = \
 	os-event.h \
 	refcount.h	\
 	w32api.h	\
-	unlocked.h
+	unlocked.h	\
+	ward.h
 
 arch_sources = 
 

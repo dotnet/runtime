@@ -593,7 +593,7 @@ typedef struct {
 static EphemeronLinkNode *ephemeron_list;
 
 /* LOCKING: requires that the GC lock is held */
-static void
+static MONO_PERMIT (need (sgen_gc_locked)) void
 null_ephemerons_for_domain (MonoDomain *domain)
 {
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;

@@ -229,7 +229,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 }
 
 /* LOCKING: requires that the GC lock is held */
-static void
+static MONO_PERMIT (need (sgen_gc_locked)) void
 register_for_finalization (GCObject *obj, void *user_data, int generation)
 {
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
@@ -346,7 +346,7 @@ try_lock_stage_for_processing (int num_entries, volatile gint32 *next_entry)
 }
 
 /* LOCKING: requires that the GC lock is held */
-static void
+static MONO_PERMIT (need (sgen_gc_locked)) void
 process_stage_entries (int num_entries, volatile gint32 *next_entry, StageEntry *entries, void (*process_func) (GCObject*, void*, int))
 {
 	int i;
@@ -528,7 +528,7 @@ add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entri
 }
 
 /* LOCKING: requires that the GC lock is held */
-static void
+static MONO_PERMIT (need (sgen_gc_locked)) void
 process_fin_stage_entry (GCObject *obj, void *user_data, int index)
 {
 	if (ptr_in_nursery (obj))
@@ -558,7 +558,7 @@ sgen_object_register_for_finalization (GCObject *obj, void *user_data)
 }
 
 /* LOCKING: requires that the GC lock is held */
-static void
+static MONO_PERMIT (need (sgen_gc_locked)) void
 finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, SgenHashTable *hash_table)
 {
 	GCObject *object;

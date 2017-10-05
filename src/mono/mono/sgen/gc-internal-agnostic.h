@@ -14,6 +14,7 @@
 #include <glib.h>
 #include <stdio.h>
 
+#include "mono/utils/ward.h"
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/parse.h"
 #include "mono/utils/memfuncs.h"
@@ -82,17 +83,21 @@ typedef void* MonoGCDescriptor;
 
 gboolean mono_gc_parse_environment_string_extract_number (const char *str, size_t *out);
 
-MonoGCDescriptor mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size);
-MonoGCDescriptor mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size);
+MonoGCDescriptor mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
+    MONO_PERMIT (need (sgen_lock_gc));
+MonoGCDescriptor mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size)
+    MONO_PERMIT (need (sgen_lock_gc));
 
 /* simple interface for data structures needed in the runtime */
-MonoGCDescriptor mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits);
+MonoGCDescriptor mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
+    MONO_PERMIT (need (sgen_lock_gc));
 
 /* Return a root descriptor for a vector with repeating refs bitmap */
 MonoGCDescriptor mono_gc_make_vector_descr (void);
 
 /* Return a root descriptor for a root with all refs */
-MonoGCDescriptor mono_gc_make_root_descr_all_refs (int numbits);
+MonoGCDescriptor mono_gc_make_root_descr_all_refs (int numbits)
+    MONO_PERMIT (need (sgen_lock_gc));
 
 /* Return the bitmap encoded by a descriptor */
 gsize* mono_gc_get_bitmap_for_descr (MonoGCDescriptor descr, int *numbits);

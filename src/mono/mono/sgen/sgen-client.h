@@ -69,13 +69,15 @@ void sgen_client_finalize_notify (void);
  * Returns TRUE if no ephemerons have been marked.  Will be called again if it returned
  * FALSE.  If ephemerons are not supported, just return TRUE.
  */
-gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
+gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx)
+    MONO_PERMIT (need (sgen_gc_locked));
 
 /*
  * Clear ephemeron pairs with unreachable keys.
  * We pass the copy func so we can figure out if an array was promoted or not.
  */
-void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx);
+void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
+    MONO_PERMIT (need (sgen_gc_locked));
 
 /*
  * May return NULL.  Must be an aligned pointer.
@@ -174,8 +176,10 @@ void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gbool
  * Stop and restart the world, i.e., all threads that interact with the managed heap.  For
  * single-threaded programs this is a nop.
  */
-void sgen_client_stop_world (int generation);
-void sgen_client_restart_world (int generation, gint64 *stw_time);
+void sgen_client_stop_world (int generation)
+    MONO_PERMIT (need (sgen_gc_locked));
+void sgen_client_restart_world (int generation, gint64 *stw_time)
+    MONO_PERMIT (need (sgen_gc_locked));
 
 /*
  * Must return FALSE.  The bridge is not supported outside of Mono.
