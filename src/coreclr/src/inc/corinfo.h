@@ -213,12 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-// {CFEC7B89-D5FF-4A67-823A-EF99FE0286F4}
-SELECTANY const GUID JITEEVersionIdentifier = { 
-    0xcfec7b89, 
-    0xd5ff, 
-    0x4a67, 
-    { 0x82, 0x3a, 0xef, 0x99, 0xfe, 0x2, 0x86, 0xf4 } 
+SELECTANY const GUID JITEEVersionIdentifier = { /* 8f51c68e-d515-425c-9e04-97e4a8148b07 */
+    0x8f51c68e,
+    0xd515,
+    0x425c,
+    {0x9e, 0x04, 0x97, 0xe4, 0xa8, 0x14, 0x8b, 0x07}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1955,6 +1954,14 @@ typedef SIZE_T GSCookie;
 
 const int MAX_EnC_HANDLER_NESTING_LEVEL = 6;
 
+// Results from type comparison queries
+enum class TypeCompareState
+{
+    MustNot = -1, // types are not equal
+    May = 0,      // types may be equal (must test at runtime)
+    Must = 1,     // type are equal
+};
+
 //
 // This interface is logically split into sections for each class of information 
 // (ICorMethodInfo, ICorModuleInfo, etc.). This split used to exist physically as well
@@ -2488,6 +2495,20 @@ public:
 
     // TRUE if cls1 and cls2 are considered equivalent types.
     virtual BOOL areTypesEquivalent(
+            CORINFO_CLASS_HANDLE        cls1,
+            CORINFO_CLASS_HANDLE        cls2
+            ) = 0;
+
+    // See if a cast from fromClass to toClass will succeed, fail, or needs
+    // to be resolved at runtime.
+    virtual TypeCompareState compareTypesForCast(
+            CORINFO_CLASS_HANDLE        fromClass,
+            CORINFO_CLASS_HANDLE        toClass
+            ) = 0;
+
+    // See if types represented by cls1 and cls2 compare equal, not
+    // equal, or the comparison needs to be resolved at runtime.
+    virtual TypeCompareState compareTypesForEquality(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;

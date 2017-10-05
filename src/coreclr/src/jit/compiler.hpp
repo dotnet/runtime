@@ -1169,6 +1169,23 @@ inline GenTreePtr Compiler::gtNewAllocObjNode(unsigned int         helper,
     return node;
 }
 
+//------------------------------------------------------------------------
+// gtNewRuntimeLookup: Helper to create a runtime lookup node
+//
+// Arguments:
+//    hnd - generic handle being looked up
+//    hndTyp - type of the generic handle
+//    tree - tree for the lookup
+//
+// Return Value:
+//    New GenTreeRuntimeLookup node.
+inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* tree)
+{
+    assert(tree != nullptr);
+    GenTree* node = new (this, GT_RUNTIMELOOKUP) GenTreeRuntimeLookup(hnd, hndTyp, tree);
+    return node;
+}
+
 /*****************************************************************************/
 
 inline GenTreePtr Compiler::gtNewCodeRef(BasicBlock* block)
