@@ -4515,8 +4515,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context)
 
 	imethod->exvar_offsets = g_malloc (header->num_clauses * sizeof (guint32));
 	for (i = 0; i < header->num_clauses; i++) {
-		offset += sizeof (MonoObject*);
 		imethod->exvar_offsets [i] = offset;
+		offset += sizeof (MonoObject*);
 	}
 	offset = (offset + 7) & ~7;
 
