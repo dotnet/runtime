@@ -177,9 +177,6 @@
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>Impossibile utilizzare il tipo '{3}' come parametro di tipo '{2}' nel metodo o nel tipo generico '{0}'. Nessuna conversione boxing da '{3}' a '{1}'.</value>
   </data>
-  <data name="TypeVarCantBeNull" xml:space="preserve">
-    <value>Impossibile convertire il valore Null nel parametro di tipo '{0}' perché potrebbe essere un tipo di valore non nullable. Si consiglia di utilizzare 'default({0})'.</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>Impossibile dedurre gli argomenti di tipo per il metodo '{0}' dall'utilizzo. Provare a specificare gli argomenti di tipo in modo esplicito.</value>
   </data>

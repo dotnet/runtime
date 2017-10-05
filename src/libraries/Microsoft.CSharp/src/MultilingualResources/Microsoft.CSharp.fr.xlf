@@ -226,10 +226,6 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossible d'utiliser le type '{3}' comme paramètre de type '{2}' dans le type ou la méthode générique '{0}'. Il n'y a pas de conversion boxing de '{3}' en '{1}'.</target>
         </trans-unit>
-        <trans-unit id="TypeVarCantBeNull" translate="yes" xml:space="preserve">
-          <source>Cannot convert null to type parameter '{0}' because it could be a non-nullable value type. Consider using 'default({0})' instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossible de convertir null en paramètre de type '{0}' car il peut s'agir d'un type valeur qui n'autorise pas les valeurs null. Utilisez 'default({0})' à la place.</target>
-        </trans-unit>
         <trans-unit id="CantInferMethTypeArgs" translate="yes" xml:space="preserve">
           <source>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossible de déduire les arguments de type pour la méthode '{0}' à partir de l'utilisation. Essayez de spécifier les arguments de type de façon explicite.</target>

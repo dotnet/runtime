@@ -177,9 +177,6 @@
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>型別 '{3}' 不能做為泛型型別或方法 '{0}' 中的型別參數 '{2}'。沒有從 '{3}' 到 '{1}' 的 Boxing 轉換。</value>
   </data>
-  <data name="TypeVarCantBeNull" xml:space="preserve">
-    <value>無法將 null 轉換成型別參數 '{0}'，因為它是不可為 null 的實值型別。請考慮使用 'default({0})' 代替。</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>方法 '{0}' 的型別引數不能從使用方式推斷。請嘗試明確指定型別引數。</value>
   </data>
