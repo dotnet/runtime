@@ -123,7 +123,7 @@ namespace System.Net.Sockets.Tests
                 s.EndSendTo, null);
     }
 
-    public sealed class SocketHelperTask : SocketHelperBase
+    public class SocketHelperTask : SocketHelperBase
     {
         public override bool DisposeDuringOperationResultsInDisposedException =>
             PlatformDetection.IsFullFramework; // due to SocketTaskExtensions.netfx implementation wrapping APM rather than EAP
