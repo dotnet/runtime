@@ -2616,10 +2616,8 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
 #endif // _TARGET_XARCH_
     }
-    else
+    else if (cmp->OperIs(GT_EQ, GT_NE))
     {
-        assert(cmp->OperIs(GT_EQ, GT_NE, GT_LE, GT_LT, GT_GE, GT_GT));
-
         GenTree* op1 = cmp->gtGetOp1();
         GenTree* op2 = cmp->gtGetOp2();
 
