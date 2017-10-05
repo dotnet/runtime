@@ -1111,6 +1111,12 @@ namespace System
             return (DateTimeParse.Parse(s.AsReadOnlySpan(), DateTimeFormatInfo.GetInstance(provider), styles));
         }
 
+        public static DateTime Parse(ReadOnlySpan<char> s, IFormatProvider provider = null, DateTimeStyles styles = DateTimeStyles.None)
+        {
+            DateTimeFormatInfo.ValidateStyles(styles, nameof(styles));
+            return DateTimeParse.Parse(s, DateTimeFormatInfo.GetInstance(provider), styles);
+        }
+
         // Constructs a DateTime from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
@@ -1132,11 +1138,23 @@ namespace System
             return (DateTimeParse.ParseExact(s.AsReadOnlySpan(), format, DateTimeFormatInfo.GetInstance(provider), style));
         }
 
+        public static DateTime ParseExact(ReadOnlySpan<char> s, string format, IFormatProvider provider, DateTimeStyles style = DateTimeStyles.None)
+        {
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
+            return DateTimeParse.ParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style);
+        }
+
         public static DateTime ParseExact(String s, String[] formats, IFormatProvider provider, DateTimeStyles style)
         {
             DateTimeFormatInfo.ValidateStyles(style, nameof(style));
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return DateTimeParse.ParseExactMultiple(s.AsReadOnlySpan(), formats, DateTimeFormatInfo.GetInstance(provider), style);
+        }
+
+        public static DateTime ParseExact(ReadOnlySpan<char> s, string[] formats, IFormatProvider provider, DateTimeStyles style = DateTimeStyles.None)
+        {
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
+            return DateTimeParse.ParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style);
         }
 
         public TimeSpan Subtract(DateTime value)
@@ -1287,6 +1305,11 @@ namespace System
             return DateTimeParse.TryParse(s.AsReadOnlySpan(), DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None, out result);
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, out DateTime result)
+        {
+            return DateTimeParse.TryParse(s, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None, out result);
+        }
+
         public static Boolean TryParse(String s, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(styles, nameof(styles));
@@ -1298,6 +1321,12 @@ namespace System
             }
 
             return DateTimeParse.TryParse(s.AsReadOnlySpan(), DateTimeFormatInfo.GetInstance(provider), styles, out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
+        {
+            DateTimeFormatInfo.ValidateStyles(styles, nameof(styles));
+            return DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), styles, out result);
         }
 
         public static Boolean TryParseExact(String s, String format, IFormatProvider provider, DateTimeStyles style, out DateTime result)
@@ -1313,6 +1342,12 @@ namespace System
             return DateTimeParse.TryParseExact(s.AsReadOnlySpan(), format, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
 
+        public static bool TryParseExact(ReadOnlySpan<char> s, string format, IFormatProvider provider, DateTimeStyles style, out DateTime result)
+        {
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
+            return DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, out result);
+        }
+
         public static Boolean TryParseExact(String s, String[] formats, IFormatProvider provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style, nameof(style));
@@ -1324,6 +1359,12 @@ namespace System
             }
 
             return DateTimeParse.TryParseExactMultiple(s.AsReadOnlySpan(), formats, DateTimeFormatInfo.GetInstance(provider), style, out result);
+        }
+
+        public static bool TryParseExact(ReadOnlySpan<char> s, string[] formats, IFormatProvider provider, DateTimeStyles style, out DateTime result)
+        {
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
+            return DateTimeParse.TryParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
 
         public static DateTime operator +(DateTime d, TimeSpan t)
