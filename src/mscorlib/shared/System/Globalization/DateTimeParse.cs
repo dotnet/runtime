@@ -413,7 +413,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return false;
             }
 
-            if (str.CompareInfo.Compare(str.Value.Slice(str.Index, target.Length), target.AsReadOnlySpan(), CompareOptions.IgnoreCase) != 0)
+            if (str.CompareInfo.Compare(str.Value.Slice(str.Index, target.Length), target, CompareOptions.IgnoreCase) != 0)
             {
                 return (false);
             }
@@ -456,11 +456,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return (false);
         }
 
-        internal static bool IsDigit(char ch)
-        {
-            return (ch >= '0' && ch <= '9');
-        }
-
+        internal static bool IsDigit(char ch) => (uint)(ch - '0') <= 9;
 
         /*=================================ParseFraction==========================
         **Action: Starting at the str.Index, which should be a decimal symbol.
@@ -3150,7 +3146,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             Debug.Assert(minDigitLen > 0, "minDigitLen > 0");
             Debug.Assert(maxDigitLen < 9, "maxDigitLen < 9");
             Debug.Assert(minDigitLen <= maxDigitLen, "minDigitLen <= maxDigitLen");
-            result = 0;
+            int localResult = 0;
             int startingIndex = str.Index;
             int tokenLength = 0;
             while (tokenLength < maxDigitLen)
@@ -3160,9 +3156,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     str.Index--;
                     break;
                 }
-                result = result * 10 + str.GetDigit();
+                localResult = localResult * 10 + str.GetDigit();
                 tokenLength++;
             }
+            result = localResult;
             if (tokenLength < minDigitLen)
             {
                 str.Index = startingIndex;
@@ -3201,7 +3198,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 result = result * 10 + str.GetDigit();
             }
 
-            result = ((double)result / Math.Pow(10, digitLen));
+            result /= TimeSpanParse.Pow10(digitLen);
             return (digitLen == maxDigitLen);
         }
 
@@ -4801,8 +4798,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
     // It has a Index property which tracks
     // the current parsing pointer of the string.
     //
-    [IsByRefLike]
-    internal struct __DTString
+    internal ref struct __DTString
     {
         //
         // Value propery: stores the real string to be parsed.
@@ -5016,36 +5012,19 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return (tokenType);
         }
 
-        internal bool MatchSpecifiedWord(String target)
-        {
-            return MatchSpecifiedWord(target, target.Length + Index);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool MatchSpecifiedWord(String target) =>
+            Index + target.Length <= Length &&
+            m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
-        internal bool MatchSpecifiedWord(String target, int endIndex)
-        {
-            int count = endIndex - Index;
-
-            if (count != target.Length)
-            {
-                return false;
-            }
-
-            if (Index + count > Length)
-            {
-                return false;
-            }
-
-            return (m_info.Compare(Value.Slice(Index, count), target.AsReadOnlySpan().Slice(0, count), CompareOptions.IgnoreCase) == 0);
-        }
-
-        private static Char[] WhiteSpaceChecks = new Char[] { ' ', '\u00A0' };
+        private static readonly Char[] WhiteSpaceChecks = new Char[] { ' ', '\u00A0' };
 
         internal bool MatchSpecifiedWords(String target, bool checkWordBoundary, ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
             matchLength = target.Length;
 
-            if (matchLength > valueRemaining || m_info.Compare(Value.Slice(Index, matchLength), target.AsReadOnlySpan(), CompareOptions.IgnoreCase) != 0)
+            if (matchLength > valueRemaining || m_info.Compare(Value.Slice(Index, matchLength), target, CompareOptions.IgnoreCase) != 0)
             {
                 // Check word by word
                 int targetPosition = 0;                 // Where we are in the target string
@@ -5140,7 +5119,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return false;
             }
 
-            if (m_info.Compare(Value.Slice(Index, str.Length), str.AsReadOnlySpan(), CompareOptions.Ordinal) == 0)
+            if (m_info.Compare(Value.Slice(Index, str.Length), str, CompareOptions.Ordinal) == 0)
             {
                 // Update the Index to the end of the matching string.
                 // So the following GetNext()/Match() opeartion will get
@@ -5219,14 +5198,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         // Return false when end of string is encountered or a non-digit character is found.
-        internal bool GetNextDigit()
-        {
-            if (++Index >= Length)
-            {
-                return (false);
-            }
-            return (DateTimeParse.IsDigit(Value[Index]));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool GetNextDigit() =>
+            ++Index < Length &&
+            DateTimeParse.IsDigit(Value[Index]);
 
         //
         // Get the current character.
@@ -5437,8 +5412,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         Other = 4,
     }
 
-    [IsByRefLike]
-    internal struct DTSubString
+    internal ref struct DTSubString
     {
         internal ReadOnlySpan<char> s;
         internal Int32 index;
