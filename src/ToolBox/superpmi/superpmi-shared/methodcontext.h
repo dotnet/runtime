@@ -1176,6 +1176,14 @@ public:
     void dmpAreTypesEquivalent(DLDL key, DWORD value);
     BOOL repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
+    void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
+    void dmpCompareTypesForCast(DLDL key, DWORD value);
+    TypeCompareState repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
+
+    void recCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, TypeCompareState result);
+    void dmpCompareTypesForEquality(DLDL key, DWORD value);
+    TypeCompareState repCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+
     void recFindNameOfToken(
         CORINFO_MODULE_HANDLE module, mdToken metaTOK, char* szFQName, size_t FQNameCapacity, size_t result);
     void dmpFindNameOfToken(DLD key, DLD value);
@@ -1257,7 +1265,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 162
+// Highest packet number: 164
 // *************************************************************************************
 enum mcPackets
 {
@@ -1279,6 +1287,8 @@ enum mcPackets
     Packet_CheckMethodModifier                           = 142, // retired as 13 on 2013/07/04
     Retired3                                             = 14,
     Retired5                                             = 141, // retired as 14 on 2013/07/03
+    Packet_CompareTypesForCast                           = 163, // Added 10/4/17
+    Packet_CompareTypesForEquality                       = 164, // Added 10/4/17
     Packet_CompileMethod                                 = 143, // retired as 141 on 2013/07/09
     Packet_ConstructStringLiteral                        = 15,
     Packet_EmbedClassHandle                              = 16,

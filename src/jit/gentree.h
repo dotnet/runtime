@@ -5649,6 +5649,62 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
+// Represents GT_RUNTIMELOOKUP node
+
+struct GenTreeRuntimeLookup final : public GenTreeUnOp
+{
+    CORINFO_GENERIC_HANDLE   gtHnd;
+    CorInfoGenericHandleType gtHndType;
+
+    GenTreeRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* tree)
+        : GenTreeUnOp(GT_RUNTIMELOOKUP, tree->gtType, tree DEBUGARG(/*largeNode*/ FALSE)), gtHnd(hnd), gtHndType(hndTyp)
+    {
+        assert(hnd != nullptr);
+    }
+#if DEBUGGABLE_GENTREE
+    GenTreeRuntimeLookup() : GenTreeUnOp()
+    {
+    }
+#endif
+
+    // Return reference to the actual tree that does the lookup
+    GenTree*& Lookup()
+    {
+        return gtOp1;
+    }
+
+    bool IsClassHandle() const
+    {
+        return gtHndType == CORINFO_HANDLETYPE_CLASS;
+    }
+    bool IsMethodHandle() const
+    {
+        return gtHndType == CORINFO_HANDLETYPE_METHOD;
+    }
+    bool IsFieldHandle() const
+    {
+        return gtHndType == CORINFO_HANDLETYPE_FIELD;
+    }
+
+    // Note these operations describe the handle that is input to the
+    // lookup, not the handle produced by the lookup.
+    CORINFO_CLASS_HANDLE GetClassHandle() const
+    {
+        assert(IsClassHandle());
+        return (CORINFO_CLASS_HANDLE)gtHnd;
+    }
+    CORINFO_METHOD_HANDLE GetMethodHandle() const
+    {
+        assert(IsMethodHandle());
+        return (CORINFO_METHOD_HANDLE)gtHnd;
+    }
+    CORINFO_FIELD_HANDLE GetFieldHandle() const
+    {
+        assert(IsMethodHandle());
+        return (CORINFO_FIELD_HANDLE)gtHnd;
+    }
+};
+
 // Represents a GT_JCC or GT_SETCC node.
 
 struct GenTreeCC final : public GenTree
