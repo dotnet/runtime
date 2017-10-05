@@ -19,11 +19,14 @@ if [ -z "$__DOTNET_PKG" ]; then
     if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
         echo "Warning: build not supported on 32 bit Unix"
     fi
+
+    __PKG_ARCH=x64
+
     OSName=$(uname -s)
     case $OSName in
         Darwin)
             OS=OSX
-            __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-osx-x64
+            __PKG_RID=osx
             ulimit -n 2048
             # Format x.y.z as single integer with three digits for each part
             VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
@@ -34,7 +37,7 @@ if [ -z "$__DOTNET_PKG" ]; then
             ;;
 
         Linux)
-            __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-linux-x64
+            __PKG_RID=linux
             OS=Linux
 			
             if [ -e /etc/os-release ]; then
@@ -42,23 +45,25 @@ if [ -z "$__DOTNET_PKG" ]; then
                 if [[ $ID == "alpine" ]]; then
                     # remove the last version digit
                     VERSION_ID=${VERSION_ID%.*}
-                    __DOTNET_PKG=dotnet-dev-alpine.$VERSION_ID-x64
+                    __PKG_RID=alpine.$VERSION_ID
                 fi
             elif [ -e /etc/redhat-release ]; then
                 redhatRelease=$(</etc/redhat-release)
                 if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
-                    __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-rhel.6-x64
+                    __PKG_RID=rhel.6
                 fi
             fi			
-			
+
             ;;
 
         *)
-            echo "Unsupported OS '$OSName' detected. Downloading linux-x64 tools."
+            echo "Unsupported OS '$OSName' detected. Downloading linux-$__PKG_ARCH tools."
             OS=Linux
-            __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-linux-x64
+            __PKG_RID=linux
             ;;
   esac
+
+  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__PKG_ARCH
 fi
 
 display_error_message()
