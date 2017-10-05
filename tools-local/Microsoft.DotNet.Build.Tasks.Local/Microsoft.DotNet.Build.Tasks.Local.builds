@@ -6,7 +6,7 @@
       <AdditionalProperties>TargetGroup=netstandard1.5</AdditionalProperties>
     </Project>
     <Project Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).csproj"
-             Condition="'$(DotNetBuildFromSource)' != 'true'">
+             Condition="'$(BuildCustomTasksForDesktop)' == 'true'">
       <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </Project>
   </ItemGroup>
