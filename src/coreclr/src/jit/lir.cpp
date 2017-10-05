@@ -981,7 +981,11 @@ void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
     if (markOperandsUnused)
     {
         node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-            operand->SetUnusedValue();
+            // The operand of JTRUE does not produce a value (just sets the flags).
+            if (operand->IsValue())
+            {
+                operand->SetUnusedValue();
+            }
             return GenTree::VisitResult::Continue;
         });
     }
@@ -1608,8 +1612,11 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
                 // The GT_NOP case is because sometimes we eliminate stack argument stores as dead, but
                 // instead of removing them we replace with a NOP.
                 // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
-                assert((node->OperGet() == GT_CALL) &&
-                       (def->OperIsStore() || def->OperIs(GT_PUTARG_STK, GT_NOP, GT_ARGPLACE)));
+                // The argument of a JTRUE doesn't produce a value (just sets a flag).
+                assert(((node->OperGet() == GT_CALL) &&
+                        (def->OperIsStore() || def->OperIs(GT_PUTARG_STK, GT_NOP, GT_ARGPLACE))) ||
+                       ((node->OperGet() == GT_JTRUE) && (def->TypeGet() == TYP_VOID) &&
+                        ((def->gtFlags & GTF_SET_FLAGS) != 0)));
                 continue;
             }
 
