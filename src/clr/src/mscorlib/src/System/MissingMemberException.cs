@@ -12,12 +12,8 @@
 =============================================================================*/
 
 
-using System;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
-using System.Globalization;
-using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -45,8 +41,8 @@ namespace System
 
         protected MissingMemberException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            ClassName = (string)info.GetString("MMClassName");
-            MemberName = (string)info.GetString("MMMemberName");
+            ClassName = info.GetString("MMClassName");
+            MemberName = info.GetString("MMMemberName");
             Signature = (byte[])info.GetValue("MMSignature", typeof(byte[]));
         }
 
@@ -80,6 +76,7 @@ namespace System
         {
             base.GetObjectData(info, context);
             info.AddValue("MMClassName", ClassName, typeof(string));
+            info.AddValue("MMMemberName", MemberName, typeof(string));
             info.AddValue("MMSignature", Signature, typeof(byte[]));
         }
 
