@@ -1290,6 +1290,9 @@ namespace System
             return DateTimeFormat.Format(this, format, DateTimeFormatInfo.GetInstance(provider));
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null) =>
+            DateTimeFormat.TryFormat(this, destination, out charsWritten, format, DateTimeFormatInfo.GetInstance(provider));
+
         public DateTime ToUniversalTime()
         {
             return TimeZoneInfo.ConvertTimeToUtc(this, TimeZoneInfoOptions.NoThrowOnInvalidTime);
