@@ -1577,6 +1577,25 @@ LLDBServices::GetContextFromFrame(
     dtcontext->R10 = GetRegister(frame, "r10");
     dtcontext->R11 = GetRegister(frame, "r11");
     dtcontext->R12 = GetRegister(frame, "r12");
+#elif DBG_TARGET_X86
+    dtcontext->Eip = frame.GetPC();
+    dtcontext->Esp = frame.GetSP();
+    dtcontext->Ebp = frame.GetFP();
+    dtcontext->EFlags = GetRegister(frame, "eflags");
+
+    dtcontext->Edi = GetRegister(frame, "edi");
+    dtcontext->Esi = GetRegister(frame, "esi");
+    dtcontext->Ebx = GetRegister(frame, "ebx");
+    dtcontext->Edx = GetRegister(frame, "edx");
+    dtcontext->Ecx = GetRegister(frame, "ecx");
+    dtcontext->Eax = GetRegister(frame, "eax");
+
+    dtcontext->SegCs = GetRegister(frame, "cs");
+    dtcontext->SegSs = GetRegister(frame, "ss");
+    dtcontext->SegDs = GetRegister(frame, "ds");
+    dtcontext->SegEs = GetRegister(frame, "es");
+    dtcontext->SegFs = GetRegister(frame, "fs");
+    dtcontext->SegGs = GetRegister(frame, "gs");
 #endif
 }
 
