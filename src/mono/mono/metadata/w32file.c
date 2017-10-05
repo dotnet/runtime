@@ -504,29 +504,31 @@ ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error)
 }
 
 gint32 
-ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
+ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArrayHandle dest,
 				 gint32 dest_offset, gint32 count,
-				 gint32 *error)
+				 gint32 *io_error,
+				 MonoError *error)
 {
 	guchar *buffer;
 	gboolean result;
 	guint32 n;
 
-	*error=ERROR_SUCCESS;
+	*io_error=ERROR_SUCCESS;
 
 	MONO_CHECK_ARG_NULL (dest, 0);
 
-	if (dest_offset > mono_array_length (dest) - count) {
-		mono_set_pending_exception (mono_get_exception_argument ("array", "array too small. numBytes/offset wrong."));
+	if (dest_offset > mono_array_handle_length (dest) - count) {
+		mono_error_set_argument (error, "array", "array too small. numBytes/offset wrong.");
 		return 0;
 	}
 
-	buffer = mono_array_addr (dest, guchar, dest_offset);
-
+	guint32 buffer_handle = 0;
+	buffer = MONO_ARRAY_HANDLE_PIN (dest, guchar, dest_offset, &buffer_handle);
 	result = mono_w32file_read (handle, buffer, count, &n);
+	mono_gchandle_free (buffer_handle);
 
 	if (!result) {
-		*error=mono_w32error_get_last ();
+		*io_error=mono_w32error_get_last ();
 		return -1;
 	}
 

@@ -178,9 +178,10 @@ extern MonoBoolean
 ves_icall_System_IO_MonoIO_Close (gpointer handle, gint32 *error);
 
 extern gint32 
-ves_icall_System_IO_MonoIO_Read (gpointer handle, MonoArray *dest,
+ves_icall_System_IO_MonoIO_Read (gpointer handle, MonoArrayHandle dest,
 				 gint32 dest_offset, gint32 count,
-				 gint32 *error);
+				 gint32 *io_error,
+				 MonoError *error);
 
 extern gint32 
 ves_icall_System_IO_MonoIO_Write (gpointer handle, MonoArrayHandle src,
