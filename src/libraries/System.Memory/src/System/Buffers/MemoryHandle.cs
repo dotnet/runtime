@@ -35,6 +35,24 @@ namespace System.Buffers
         public void* PinnedPointer => _pointer;
 
         /// <summary>
+        /// Adds an offset to the pinned pointer.
+        /// </summary>
+        /// <exception cref="System.ArgumentNullException">
+        /// Throw when pinned pointer is null.
+        /// </exception>
+        internal void AddOffset(int offset)
+        {
+            if (_pointer == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pointer);
+            }
+            else
+            {
+                _pointer = (void*)((byte*)_pointer + offset);
+            }
+        }
+
+        /// <summary>
         /// Frees the pinned handle and releases IRetainable.
         /// </summary>
         public void Dispose()

@@ -36,8 +36,12 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void FindByTransportType_ForestNoDomainAssociatedWithName_ThrowsActiveDirectoryOperationException_NoUap()
         {
-            var context = new DirectoryContext(DirectoryContextType.Forest, "\0");
-            AssertExtensions.Throws<ArgumentException>("context", () => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
+            // Domain joined machines will not throw on the ActiveDirectoryInterSiteTransport.FindByTransportType call.
+            if (Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase))
+            {
+                var context = new DirectoryContext(DirectoryContextType.Forest, "\0");
+                AssertExtensions.Throws<ArgumentException>("context", () => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
+            }
         }
 
         [Fact]

@@ -4013,6 +4013,49 @@ public static partial class DataContractSerializerTests
         Assert.Equal(0, actual.AnIntList.Count);
     }
 
+    [Fact]
+#if !ReflectionOnly
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "dotnet-corefx #24265")]
+#endif
+    public static void DCS_TypeWithPrimitiveKnownTypes()
+    {
+        var list = new TypeWithPrimitiveKnownTypes();
+        list.Add(true);
+        list.Add('c');
+        list.Add(new DateTime(100));
+        list.Add(11.1m);
+        list.Add(22.2);
+        list.Add(33.3f);
+        list.Add(new Guid());
+        list.Add(11);
+        list.Add(1111111111111111111L);
+        list.Add(new XmlQualifiedName("NAME", "NS"));
+        list.Add((short)44);
+        list.Add((sbyte)-1);
+        list.Add("test string");
+        list.Add(new TimeSpan(100));
+        list.Add((byte)1);
+        list.Add(uint.MaxValue);
+        list.Add(ulong.MaxValue);
+        list.Add(ushort.MaxValue);
+        list.Add(new Uri("http://foo"));
+        var actual = SerializeAndDeserialize(list, "<TypeWithPrimitiveKnownTypes xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><anyType i:type=\"a:boolean\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">true</anyType><anyType i:type=\"a:char\" xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/\">99</anyType><anyType i:type=\"a:dateTime\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">0001-01-01T00:00:00.00001</anyType><anyType i:type=\"a:decimal\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">11.1</anyType><anyType i:type=\"a:double\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">22.2</anyType><anyType i:type=\"a:float\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">33.3</anyType><anyType i:type=\"a:guid\" xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/\">00000000-0000-0000-0000-000000000000</anyType><anyType i:type=\"a:int\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">11</anyType><anyType i:type=\"a:long\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">1111111111111111111</anyType><anyType i:type=\"a:QName\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\" xmlns:b=\"NS\">b:NAME</anyType><anyType i:type=\"a:short\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">44</anyType><anyType i:type=\"a:byte\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">-1</anyType><anyType i:type=\"a:string\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">test string</anyType><anyType i:type=\"a:duration\" xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/\">PT0.00001S</anyType><anyType i:type=\"a:unsignedByte\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">1</anyType><anyType i:type=\"a:unsignedInt\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">4294967295</anyType><anyType i:type=\"a:unsignedLong\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">18446744073709551615</anyType><anyType i:type=\"a:unsignedShort\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">65535</anyType><anyType i:type=\"a:anyURI\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">http://foo/</anyType></TypeWithPrimitiveKnownTypes>");
+        Assert.True(Enumerable.SequenceEqual(list, actual));
+
+        list.Clear();
+        list.Add(new byte[] { 1, 2 });
+        actual = SerializeAndDeserialize(list, "<TypeWithPrimitiveKnownTypes xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><anyType i:type=\"a:base64Binary\" xmlns:a=\"http://www.w3.org/2001/XMLSchema\">AQI=</anyType></TypeWithPrimitiveKnownTypes>");
+        Assert.NotNull(actual);
+        Assert.Single(actual);
+        Assert.True(actual[0] is byte[]);
+        Assert.True(((byte[])list[0]).SequenceEqual(((byte[])actual[0])));
+
+        list.Clear();
+        list.Add(new object());
+        actual = SerializeAndDeserialize(list, "<TypeWithPrimitiveKnownTypes xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><anyType/></TypeWithPrimitiveKnownTypes>");
+        Assert.NotNull(actual);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;

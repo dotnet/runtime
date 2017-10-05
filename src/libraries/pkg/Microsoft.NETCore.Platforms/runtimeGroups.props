@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <RuntimeGroup Include="unix">
+      <Parent>any</Parent>
+      <Architectures>x64;x86;arm;armel;arm64</Architectures>
+    </RuntimeGroup>
+    <RuntimeGroup Include="linux">
+      <Parent>unix</Parent>
+      <Architectures>x64;x86;arm;armel;arm64</Architectures>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="alpine">
+      <Parent>any</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>3.6</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="android">
+      <Parent>any</Parent>
+      <Architectures>arm;arm64</Architectures>
+      <Versions>21</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="centos">
+      <Parent>rhel</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>7</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="debian">
+      <Parent>linux</Parent>
+      <Architectures>x64;x86;arm;armel;arm64</Architectures>
+      <Versions>8</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="fedora">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>23;24;25;26</Versions>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="gentoo">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="linuxmint.17">
+      <Parent>ubuntu.14.04</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>1;2;3</Versions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="linuxmint.18">
+      <Parent>ubuntu.16.04</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>1</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="ol">
+      <Parent>rhel</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>7;7.0;7.1;7.2</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+    </RuntimeGroup>
+
+    <!-- all opensuse releases are independent -->
+    <RuntimeGroup Include="opensuse">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>13.2;42.1</Versions>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="osx">
+      <Parent>unix</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>10.10;10.11;10.12</Versions>
+    </RuntimeGroup>
+
+    <!-- rhel 6 is independent -->
+    <RuntimeGroup Include="rhel">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>6</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="rhel">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>7;7.0;7.1;7.2;7.3;7.4</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="tizen">
+      <Parent>linux</Parent>
+      <Architectures>armel</Architectures>
+      <Versions>4.0.0</Versions>
+    </RuntimeGroup>
+
+    <!-- ubuntu releases are compatible on major versions-->
+    <RuntimeGroup Include="ubuntu">
+      <Parent>debian</Parent>
+      <Architectures>x64;x86;arm</Architectures>
+      <Versions>14.04;14.10;15.04;15.10</Versions>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+    <RuntimeGroup Include="ubuntu">
+      <Parent>debian</Parent>
+      <Architectures>x64;x86;arm;arm64</Architectures>
+      <Versions>16.04;16.10</Versions>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="win">
+      <Parent>any</Parent>
+      <OmitVersionDelimiter>true</OmitVersionDelimiter>
+      <AdditionalQualifiers>aot</AdditionalQualifiers>
+      <Architectures>x64;x86;arm;arm64</Architectures>
+      <Versions>7;8;81;10</Versions>
+    </RuntimeGroup>
+
+    <!-- add corert to all RIDs -->
+    <RuntimeGroupWithQualifiers Include="@(RuntimeGroup)">
+      <AdditionalQualifiers>%(AdditionalQualifiers);corert</AdditionalQualifiers>
+    </RuntimeGroupWithQualifiers>
+
+    <!-- root RIDs -->
+    <RuntimeGroupWithQualifiers Include="base" />
+    <RuntimeGroupWithQualifiers Include="any">
+      <Parent>base</Parent>
+    </RuntimeGroupWithQualifiers>
+
+    <!-- qualifier RIDs -->
+    <RuntimeGroupWithQualifiers Include="aot">
+      <Parent>any</Parent>
+    </RuntimeGroupWithQualifiers>
+    <RuntimeGroupWithQualifiers Include="corert">
+      <Parent>any</Parent>
+    </RuntimeGroupWithQualifiers>
+  </ItemGroup>
+
+  <Target Name="GenerateRuntimeJson" BeforeTargets="CreatePackage">
+    <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
+         Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
+         The graph can be visualized using the generated dmgl -->
+    <MakeDir Directories="$(PackageReportDir)" />
+    <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
+                          RuntimeJson="runtime.json"
+                          CompatibilityMap="runtime.compatibility.json"
+                          RuntimeDirectedGraph="$(PackageReportDir)$(Id)$(NuspecSuffix)-runtime.json.dgml"
+                          UpdateRuntimeFiles="$(UpdateRuntimeFiles)" />
+  </Target>
+</Project>

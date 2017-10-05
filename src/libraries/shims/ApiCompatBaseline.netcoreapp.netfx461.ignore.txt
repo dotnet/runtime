@@ -615,7 +615,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Security.Authentication.Authentic
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Authentication.InvalidCredentialException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.StorePermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.TypeDescriptorPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Text.RegularExpressions.RegexMatchTimeoutException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.BarrierPostPhaseException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.SemaphoreFullException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Timers.TimersDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -779,7 +778,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationValida
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.IntegerValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.LongValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.PositiveTimeSpanValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.RegexStringValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.StringValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SubclassTypeValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.TimeSpanValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -1206,7 +1204,6 @@ TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configu
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElement' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElementCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Claims.DynamicRoleClaimProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.RegularExpressions.RegexCompilationInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.AspNetHostingPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.AspNetHostingPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.AspNetHostingPermissionLevel' does not exist in the implementation but it does exist in the contract.
@@ -3191,9 +3188,6 @@ MembersMustExist : Member 'System.Security.SecurityException.Zone.get()' does no
 MembersMustExist : Member 'System.Security.SecurityException.Zone.set(System.Security.SecurityZone)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Thread.CurrentContext.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String System.Resources.ResourceManager.BaseNameField' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[], System.Reflection.AssemblyName)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[], System.Reflection.AssemblyName, System.Reflection.Emit.CustomAttributeBuilder[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[], System.Reflection.AssemblyName, System.Reflection.Emit.CustomAttributeBuilder[], System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle..ctor(System.Boolean, System.Threading.EventResetMode, System.String, System.Boolean, System.Security.AccessControl.EventWaitHandleSecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle.GetAccessControl()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle.OpenExisting(System.String, System.Security.AccessControl.EventWaitHandleRights)' does not exist in the implementation but it does exist in the contract.

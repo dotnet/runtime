@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -30,6 +32,8 @@ namespace System.Net.Security
         public abstract bool IsEncrypted { get; }
         public abstract bool IsSigned { get; }
         public abstract bool IsServer { get; }
+
+        public abstract Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
     }
 }
 

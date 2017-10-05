@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 
-using PAL_TlsHandshakeState=Interop.AppleCrypto.PAL_TlsHandshakeState;
-using PAL_TlsIo=Interop.AppleCrypto.PAL_TlsIo;
+using PAL_TlsHandshakeState = Interop.AppleCrypto.PAL_TlsHandshakeState;
+using PAL_TlsIo = Interop.AppleCrypto.PAL_TlsIo;
 
 namespace System.Net.Security
 {
@@ -76,9 +77,7 @@ namespace System.Net.Security
 
         public static SecurityStatusPal EncryptMessage(
             SafeDeleteContext securityContext,
-            byte[] input,
-            int offset,
-            int size,
+            ReadOnlyMemory<byte> input,
             int headerSize,
             int trailerSize,
             ref byte[] output,
@@ -86,7 +85,7 @@ namespace System.Net.Security
         {
             resultSize = 0;
 
-            Debug.Assert(size > 0, $"{nameof(size)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
+            Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
 
             try
             {
@@ -95,10 +94,10 @@ namespace System.Net.Security
 
                 unsafe
                 {
-                    fixed (byte* offsetInput = &input[offset])
+                    MemoryHandle memHandle = input.Retain(pin: true);
+                    try
                     {
-                        int written;
-                        PAL_TlsIo status = Interop.AppleCrypto.SslWrite(sslHandle, offsetInput, size, out written);
+                        PAL_TlsIo status = Interop.AppleCrypto.SslWrite(sslHandle, (byte*)memHandle.PinnedPointer, input.Length, out int written);
 
                         if (status < 0)
                         {
@@ -127,6 +126,10 @@ namespace System.Net.Security
                                 Debug.Fail($"Unknown status value: {status}");
                                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
                         }
+                    }
+                    finally
+                    {
+                        memHandle.Dispose();
                     }
                 }
             }

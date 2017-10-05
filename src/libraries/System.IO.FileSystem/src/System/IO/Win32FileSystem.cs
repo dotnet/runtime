@@ -540,10 +540,13 @@ namespace System.IO
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
-            RemoveDirectoryInternal(fullPath, topLevel: topLevel);
+            // As we successfully removed all of the files we shouldn't care about the directory itself
+            // not being empty. As file deletion is just a marker to remove the file when all handles
+            // are closed we could still have contents hanging around.
+            RemoveDirectoryInternal(fullPath, topLevel: topLevel, allowDirectoryNotEmpty: true);
         }
 
-        private static void RemoveDirectoryInternal(string fullPath, bool topLevel)
+        private static void RemoveDirectoryInternal(string fullPath, bool topLevel, bool allowDirectoryNotEmpty = false)
         {
             if (!Interop.Kernel32.RemoveDirectory(fullPath))
             {
@@ -557,6 +560,10 @@ namespace System.IO
                     case Interop.Errors.ERROR_PATH_NOT_FOUND:
                         // We only throw for the top level directory not found, not for any contents.
                         if (!topLevel)
+                            return;
+                        break;
+                    case Interop.Errors.ERROR_DIR_NOT_EMPTY:
+                        if (allowDirectoryNotEmpty)
                             return;
                         break;
                     case Interop.Errors.ERROR_ACCESS_DENIED:

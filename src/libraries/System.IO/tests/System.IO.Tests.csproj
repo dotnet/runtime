@@ -51,9 +51,11 @@
     <Compile Include="Stream\Stream.Methods.cs" />
     <Compile Include="Stream\Stream.TestLeaveOpen.cs" />
     <Compile Include="Stream\Stream.TimeoutTests.cs" />
+    <Compile Include="StringReader\StringReaderTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="StringReader\StringReader.CtorTests.cs" />
+    <Compile Include="StringWriter\StringWriterTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs"  Condition="'$(TargetGroup)' == 'netcoreapp'" >
+    <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs" Condition="'$(TargetGroup)' == 'netcoreapp'">
       <Link>Common\System\Buffers\NativeOwnedMemory.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\CallTrackingStream.cs">

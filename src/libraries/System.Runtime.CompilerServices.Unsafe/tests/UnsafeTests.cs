@@ -587,7 +587,6 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(0x12, r3);
         }
 
-        [ActiveIssue(23953, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static void RefAreSame()
         {

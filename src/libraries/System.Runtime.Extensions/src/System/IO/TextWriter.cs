@@ -544,6 +544,15 @@ namespace System.IO
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
+        public virtual Task WriteAsync(ReadOnlyMemory<char> source, CancellationToken cancellationToken = default(CancellationToken)) =>
+            source.DangerousTryGetArray(out ArraySegment<char> array) ?
+                WriteAsync(array.Array, array.Offset, array.Count) :
+                Task.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
+                    t.Item1.Write(t.Item2.Span);
+                }, Tuple.Create(this, source), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+
         public virtual Task WriteLineAsync(char value)
         {
             var tuple = new Tuple<TextWriter, char>(this, value);
@@ -586,6 +595,15 @@ namespace System.IO
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
+
+        public virtual Task WriteLineAsync(ReadOnlyMemory<char> source, CancellationToken cancellationToken = default(CancellationToken)) =>
+            source.DangerousTryGetArray(out ArraySegment<char> array) ?
+                WriteLineAsync(array.Array, array.Offset, array.Count) :
+                Task.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
+                    t.Item1.WriteLine(t.Item2.Span);
+                }, Tuple.Create(this, source), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         public virtual Task WriteLineAsync()
         {

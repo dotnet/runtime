@@ -21,6 +21,13 @@ namespace System
             _length = collection.Length;
         }
 
+        public SpanDebugView(ReadOnlySpan<T> collection)
+        {
+            _pinnable = (T[])(object)collection.Pinnable;
+            _byteOffset = collection.ByteOffset;
+            _length = collection.Length;
+        }
+
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public unsafe T[] Items
         {
