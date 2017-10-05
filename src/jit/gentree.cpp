@@ -1089,6 +1089,13 @@ bool GenTreeCall::AreArgsComplete() const
     return false;
 }
 
+#if !defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(LEGACY_BACKEND)
+unsigned GenTreePutArgStk::getArgSize()
+{
+    return genTypeSize(genActualType(gtOp1->gtType));
+}
+#endif // !defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(LEGACY_BACKEND)
+
 /*****************************************************************************
  *
  *  Returns non-zero if the two trees are identical.
