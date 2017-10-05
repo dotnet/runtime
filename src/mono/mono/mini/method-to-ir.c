@@ -7219,7 +7219,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 {
 	MonoError error;
 	MonoInst *ins, **sp, **stack_start;
-	MonoBasicBlock *tblock = NULL, *init_localsbb = NULL;
+	MonoBasicBlock *tblock = NULL;
+	MonoBasicBlock *init_localsbb = NULL, *init_localsbb2 = NULL;
 	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;
 	MonoMethod *cmethod, *method_definition;
 	MonoInst **arg_array;
@@ -7556,7 +7557,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	init_localsbb->next_bb = cfg->cbb;
 	link_bblock (cfg, start_bblock, init_localsbb);
 	link_bblock (cfg, init_localsbb, cfg->cbb);
-		
+	init_localsbb2 = init_localsbb;
 	cfg->cbb = init_localsbb;
 
 	if (cfg->gsharedvt && cfg->method == method) {
@@ -11934,6 +11935,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (next_bb)
 					MONO_START_BB (cfg, next_bb);
 
+				/*
+				 * Parts of the initlocals code needs to come after this, since it might call methods like memset.
+				 */
+				init_localsbb2 = cfg->cbb;
+				NEW_BBLOCK (cfg, next_bb);
+				MONO_START_BB (cfg, next_bb);
+
 				ip += 2;
 				break;
 			}
@@ -12708,6 +12716,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->cbb = init_localsbb;
 		cfg->ip = NULL;
 		for (i = 0; i < header->num_locals; ++i) {
+			/*
+			 * Vtype initialization might need to be done after CEE_JIT_ATTACH, since it can make calls to memset (),
+			 * which need the trampoline code to work.
+			 */
+			if (MONO_TYPE_ISSTRUCT (header->locals [i]))
+				cfg->cbb = init_localsbb2;
+			else
+				cfg->cbb = init_localsbb;
 			emit_init_local (cfg, i, header->locals [i], init_locals);
 		}
 	}

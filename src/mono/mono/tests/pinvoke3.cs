@@ -1120,6 +1120,44 @@ public class Tests {
 		return res;
 	}
 
+	public struct LargeStruct {
+            public Int16 s;
+            public Int16 v;
+            public UInt32 p;
+            public UInt32 e;
+            public Int32 l;
+            public Int32 ll;
+            public UInt16 h;
+            public Int16 r;
+            public Int16 pp;
+            public Int32 hh;
+            public Int32 bn;
+            public Int32 dn;
+            public Int32 dr;
+            public Int32 sh;
+            public Int32 ra;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+            public Int32[] angle;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+            public Int32[] width;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+            public Int32[] edge;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3 * 1024)]
+            public byte[] echo;
+	}
+
+	public delegate int LargeStructDelegate (ref LargeStruct s);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_thread_attach_large_vt")]
+	public static extern int mono_test_marshal_thread_attach_large_vt (LargeStructDelegate d);
+
+	public static int test_43_thread_attach_large_vt () {
+		int res = mono_test_marshal_thread_attach_large_vt (delegate (ref LargeStruct s) {
+				return 43;
+			});
+		return res;
+	}
+
 	class Worker {
 		volatile bool stop = false;
 		public void Stop () {

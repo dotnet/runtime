@@ -5500,6 +5500,38 @@ mono_test_marshal_thread_attach (SimpleDelegate del)
 #endif
 }
 
+typedef struct {
+	char arr [4 * 1024];
+} LargeStruct;
+
+typedef int (STDCALL *LargeStructDelegate) (LargeStruct *s);
+
+static void
+call_managed_large_vt (gpointer arg)
+{
+	LargeStructDelegate del = (LargeStructDelegate)arg;
+	LargeStruct s;
+
+	call_managed_res = del (&s);
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_thread_attach_large_vt (SimpleDelegate del)
+{
+#ifdef WIN32
+	return 43;
+#else
+	int res;
+	pthread_t t;
+
+	res = pthread_create (&t, NULL, (gpointer (*)(gpointer))call_managed_large_vt, del);
+	g_assert (res == 0);
+	pthread_join (t, NULL);
+
+	return call_managed_res;
+#endif
+}
+
 typedef int (STDCALL *Callback) (void);
 
 static Callback callback;
