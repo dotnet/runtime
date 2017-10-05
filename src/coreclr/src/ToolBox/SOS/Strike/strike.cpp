@@ -776,7 +776,7 @@ BOOL GatherDynamicInfo(TADDR DynamicMethodObj, DacpObjectData *codeArray,
     if (objData.Request(g_sos, TO_CDADDR(DynamicMethodObj)) != S_OK)
         return bRet;
     
-    iOffset = GetObjFieldOffset(DynamicMethodObj, objData.MethodTable, W("m_resolver"));
+    iOffset = GetObjFieldOffset(TO_CDADDR(DynamicMethodObj), objData.MethodTable, W("m_resolver"));
     if (iOffset <= 0)
         return bRet;
     
@@ -787,7 +787,7 @@ BOOL GatherDynamicInfo(TADDR DynamicMethodObj, DacpObjectData *codeArray,
     if (objData.Request(g_sos, TO_CDADDR(resolverPtr)) != S_OK)
         return bRet;
     
-    iOffset = GetObjFieldOffset(resolverPtr, objData.MethodTable, W("m_code"));
+    iOffset = GetObjFieldOffset(TO_CDADDR(resolverPtr), objData.MethodTable, W("m_code"));
     if (iOffset <= 0)
         return bRet;
 
@@ -802,7 +802,7 @@ BOOL GatherDynamicInfo(TADDR DynamicMethodObj, DacpObjectData *codeArray,
         return bRet;
         
     // We also need the resolution table
-    iOffset = GetObjFieldOffset (resolverPtr, objData.MethodTable, W("m_scope"));
+    iOffset = GetObjFieldOffset (TO_CDADDR(resolverPtr), objData.MethodTable, W("m_scope"));
     if (iOffset <= 0)
         return bRet;
 
@@ -813,7 +813,7 @@ BOOL GatherDynamicInfo(TADDR DynamicMethodObj, DacpObjectData *codeArray,
     if (objData.Request(g_sos, TO_CDADDR(scopePtr)) != S_OK)
         return bRet;
     
-    iOffset = GetObjFieldOffset (scopePtr, objData.MethodTable, W("m_tokens"));
+    iOffset = GetObjFieldOffset (TO_CDADDR(scopePtr), objData.MethodTable, W("m_tokens"));
     if (iOffset <= 0)
         return bRet;
 
@@ -824,7 +824,7 @@ BOOL GatherDynamicInfo(TADDR DynamicMethodObj, DacpObjectData *codeArray,
     if (objData.Request(g_sos, TO_CDADDR(tokensPtr)) != S_OK)
         return bRet;
     
-    iOffset = GetObjFieldOffset(tokensPtr, objData.MethodTable, W("_items"));
+    iOffset = GetObjFieldOffset(TO_CDADDR(tokensPtr), objData.MethodTable, W("_items"));
     if (iOffset <= 0)
         return bRet;
 
@@ -1471,7 +1471,7 @@ HRESULT PrintVC(TADDR taMT, TADDR taObject, BOOL bPrintFields = TRUE)
 void PrintRuntimeTypeInfo(TADDR p_rtObject, const DacpObjectData & rtObjectData)
 {
     // Get the method table
-    int iOffset = GetObjFieldOffset(p_rtObject, rtObjectData.MethodTable, W("m_handle"));
+    int iOffset = GetObjFieldOffset(TO_CDADDR(p_rtObject), rtObjectData.MethodTable, W("m_handle"));
     if (iOffset > 0)
     {            
         TADDR mtPtr;
@@ -1543,7 +1543,7 @@ HRESULT PrintObj(TADDR taObj, BOOL bPrintFields = TRUE)
     if (_wcscmp(obj.GetTypeName(), W("System.RuntimeType+RuntimeTypeCache")) == 0)
     {
         // Get the method table
-        int iOffset = GetObjFieldOffset (taObj, objData.MethodTable, W("m_runtimeType"));
+        int iOffset = GetObjFieldOffset (TO_CDADDR(taObj), objData.MethodTable, W("m_runtimeType"));
         if (iOffset > 0)
         {            
             TADDR rtPtr;
@@ -1714,7 +1714,7 @@ HRESULT PrintPermissionSet (TADDR p_PermSet)
 
     // Walk the fields, printing some fields in a special way.
 
-    int iOffset = GetObjFieldOffset (p_PermSet, PermSetData.MethodTable, W("m_Unrestricted"));
+    int iOffset = GetObjFieldOffset (TO_CDADDR(p_PermSet), PermSetData.MethodTable, W("m_Unrestricted"));
     
     if (iOffset > 0)        
     {
@@ -1726,7 +1726,7 @@ HRESULT PrintPermissionSet (TADDR p_PermSet)
             ExtOut("Unrestricted: FALSE\n");
     }
 
-    iOffset = GetObjFieldOffset (p_PermSet, PermSetData.MethodTable, W("m_permSet"));
+    iOffset = GetObjFieldOffset (TO_CDADDR(p_PermSet), PermSetData.MethodTable, W("m_permSet"));
     if (iOffset > 0)
     {
         TADDR tbSetPtr;
@@ -1740,7 +1740,7 @@ HRESULT PrintPermissionSet (TADDR p_PermSet)
                 return Status;
             }
 
-            iOffset = GetObjFieldOffset (tbSetPtr, tbSetData.MethodTable, W("m_Set"));
+            iOffset = GetObjFieldOffset (TO_CDADDR(tbSetPtr), tbSetData.MethodTable, W("m_Set"));
             if (iOffset > 0)
             {
                 DWORD_PTR PermsArrayPtr;
@@ -1760,7 +1760,7 @@ HRESULT PrintPermissionSet (TADDR p_PermSet)
                 }
             }
 
-            iOffset = GetObjFieldOffset (tbSetPtr, tbSetData.MethodTable, W("m_Obj"));
+            iOffset = GetObjFieldOffset (TO_CDADDR(tbSetPtr), tbSetData.MethodTable, W("m_Obj"));
             if (iOffset > 0)
             {
                 DWORD_PTR PermObjPtr;
@@ -2190,7 +2190,7 @@ static const HRESULT AsyncHResultValues[] =
     COR_E_DATAMISALIGNED, // kDataMisalignedException
     
 };
-BOOL IsAsyncException(TADDR taObj, TADDR mtObj)
+BOOL IsAsyncException(CLRDATA_ADDRESS taObj, CLRDATA_ADDRESS mtObj)
 {
     // by default we'll treat exceptions as synchronous
     UINT32 xcode = EXCEPTION_COMPLUS;
@@ -2384,12 +2384,12 @@ void SosExtOutLargeString(__inout_z __inout_ecount_opt(len) WCHAR * pwszLargeStr
     ExtOut("%S", pwsz);
 }
 
-HRESULT FormatException(TADDR taObj, BOOL bLineNumbers = FALSE)
+HRESULT FormatException(CLRDATA_ADDRESS taObj, BOOL bLineNumbers = FALSE)
 {
     HRESULT Status = S_OK;
 
     DacpObjectData objData;
-    if ((Status=objData.Request(g_sos, TO_CDADDR(taObj))) != S_OK)
+    if ((Status=objData.Request(g_sos, taObj)) != S_OK)
     {        
         ExtOut("Invalid object\n");
         return Status;
@@ -2418,7 +2418,7 @@ HRESULT FormatException(TADDR taObj, BOOL bLineNumbers = FALSE)
 
     // First try to get exception object data using ISOSDacInterface2
     DacpExceptionObjectData excData;
-    BOOL bGotExcData = SUCCEEDED(excData.Request(g_sos, TO_CDADDR(taObj)));
+    BOOL bGotExcData = SUCCEEDED(excData.Request(g_sos, taObj));
 
     // Walk the fields, printing some fields in a special way.
     // HR, InnerException, Message, StackTrace, StackTraceString
@@ -2488,7 +2488,7 @@ HRESULT FormatException(TADDR taObj, BOOL bLineNumbers = FALSE)
     }
 
     BOOL bAsync = bGotExcData ? IsAsyncException(excData)
-                              : IsAsyncException(taObj, TO_TADDR(objData.MethodTable));
+                              : IsAsyncException(taObj, objData.MethodTable);
 
     {
         TADDR taStackTrace = 0;
@@ -2722,7 +2722,7 @@ DECLARE_API(PrintException)
 
     if (p_Object)
     {
-        FormatException(p_Object, bLineNumbers);
+        FormatException(TO_CDADDR(p_Object), bLineNumbers);
     }
 
     // Are there nested exceptions?
@@ -2762,7 +2762,7 @@ DECLARE_API(PrintException)
             }
 
             ExtOut("\nNested exception -------------------------------------------------------------\n");
-            Status = FormatException((DWORD_PTR) obj, bLineNumbers);
+            Status = FormatException(obj, bLineNumbers);
             if (Status != S_OK)
             {
                 return Status;
@@ -3175,7 +3175,7 @@ DECLARE_API(DumpPermissionSet)
 {
     INIT_API();
     MINIDUMP_NOT_SUPPORTED();    
-    
+
     DWORD_PTR p_Object = NULL;
 
     CMDValue arg[] = 
@@ -3524,7 +3524,7 @@ void PrintRuntimeTypes(DWORD_PTR objAddr,size_t Size,DWORD_PTR methodTable,LPVOI
         if (_wcscmp(g_mdName, W("System.RuntimeType")) == 0)
         {
             pArgs->mtOfRuntimeType = methodTable;
-            pArgs->handleFieldOffset = GetObjFieldOffset(objAddr, methodTable, W("m_handle"));
+            pArgs->handleFieldOffset = GetObjFieldOffset(TO_CDADDR(objAddr), TO_CDADDR(methodTable), W("m_handle"));
             if (pArgs->handleFieldOffset <= 0)
                 ExtOut("Error getting System.RuntimeType.m_handle offset\n");
 
@@ -13798,7 +13798,7 @@ HRESULT AppendExceptionInfo(CLRDATA_ADDRESS cdaObj,
     }
     
     BOOL bAsync = bGotExcData ? IsAsyncException(excData)
-                              : IsAsyncException(TO_TADDR(cdaObj), TO_TADDR(objData.MethodTable));
+                              : IsAsyncException(cdaObj, objData.MethodTable);
 
     DWORD_PTR arrayPtr;
     if (bGotExcData)
