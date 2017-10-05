@@ -345,6 +345,48 @@ namespace System.Globalization
             return CompareString(string1.AsReadOnlySpan(), string2.AsReadOnlySpan(), options);
         }
 
+        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // This method shouldn't be necessary, as we should be able to just use the overload
+        // that takes two spans.  But due to this issue, that's adding significant overhead.
+        internal unsafe int Compare(ReadOnlySpan<char> string1, string string2, CompareOptions options)
+        {
+            if (options == CompareOptions.OrdinalIgnoreCase)
+            {
+                return CompareOrdinalIgnoreCase(string1, string2.AsReadOnlySpan());
+            }
+
+            // Verify the options before we do any real comparison.
+            if ((options & CompareOptions.Ordinal) != 0)
+            {
+                if (options != CompareOptions.Ordinal)
+                {
+                    throw new ArgumentException(SR.Argument_CompareOptionOrdinal, nameof(options));
+                }
+
+                return string.CompareOrdinal(string1, string2.AsReadOnlySpan());
+            }
+
+            if ((options & ValidCompareMaskOffFlags) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
+            }
+
+            // null sorts less than any other string.
+            if (string2 == null)
+            {
+                return 1;
+            }
+
+            if (_invariantMode)
+            {
+                return (options & CompareOptions.IgnoreCase) != 0 ?
+                    CompareOrdinalIgnoreCase(string1, string2.AsReadOnlySpan()) :
+                    string.CompareOrdinal(string1, string2.AsReadOnlySpan());
+            }
+
+            return CompareString(string1, string2, options);
+        }
+
         // TODO https://github.com/dotnet/corefx/issues/21395: Expose this publicly?
         internal unsafe virtual int Compare(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
@@ -378,7 +420,6 @@ namespace System.Globalization
 
             return CompareString(string1, string2, options);
         }
-
 
         ////////////////////////////////////////////////////////////////////////
         //
