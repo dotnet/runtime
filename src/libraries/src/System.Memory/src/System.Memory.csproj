@@ -35,6 +35,7 @@
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\SpanHelpers.Clear.cs" />
     <Compile Include="System\Memory.cs" />
+    <Compile Include="System\MemoryDebugView.cs" />
     <Compile Include="System\ReadOnlyMemory.cs" />
     <Compile Include="System\Buffers\IRetainable.cs" />
     <Compile Include="System\Buffers\MemoryHandle.cs" />

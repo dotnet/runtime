@@ -123,7 +123,7 @@ namespace System
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
     }
 
-    public struct ReadOnlyMemory<T>
+    public readonly struct ReadOnlyMemory<T>
     {
         public static ReadOnlyMemory<T> Empty { get { throw null; } }
         public ReadOnlyMemory(T[] array) { throw null;}
@@ -147,7 +147,7 @@ namespace System
         public bool DangerousTryGetArray(out ArraySegment<T> arraySegment) { throw null; }
     }
 
-    public struct Memory<T>
+    public readonly struct Memory<T>
     {
         public static Memory<T> Empty { get { throw null; } }
         public Memory(T[] array) { throw null;}
@@ -178,7 +178,8 @@ namespace System.Buffers
     {
         public MemoryHandle(IRetainable owner, void* pinnedPointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
         public void* PinnedPointer { get { throw null; } }
-        public void Dispose()  { throw null; }
+        internal void AddOffset(int offset) { throw null; }
+        public void Dispose() { throw null; }
     }
 
     public interface IRetainable 

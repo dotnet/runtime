@@ -25,19 +25,18 @@
     <Compile Include="Regex.Split.Tests.cs" />
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
+    <Compile Include="RegexCompilationHelper.cs" />
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="CaptureCollectionTests2.cs" />
+    <Compile Include="GroupCollectionTests2.cs" />
+    <Compile Include="MatchCollectionTests2.cs" />
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
+    <Compile Include="RegexCompilationInfoTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
-    <Compile Include="CaptureCollectionTests.netcoreapp.cs" />
-    <Compile Include="GroupCollectionTests.netcoreapp.cs" />
-    <Compile Include="MatchCollectionTests.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>

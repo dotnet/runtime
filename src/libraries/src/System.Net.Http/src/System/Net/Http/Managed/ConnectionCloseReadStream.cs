@@ -12,8 +12,7 @@ namespace System.Net.Http
     {
         private sealed class ConnectionCloseReadStream : HttpContentReadStream
         {
-            public ConnectionCloseReadStream(HttpConnection connection)
-                : base(connection)
+            public ConnectionCloseReadStream(HttpConnection connection) : base(connection)
             {
             }
 
@@ -28,7 +27,6 @@ namespace System.Net.Http
                 }
 
                 int bytesRead = await _connection.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-
                 if (bytesRead == 0)
                 {
                     // We cannot reuse this connection, so close it.
@@ -47,17 +45,14 @@ namespace System.Net.Http
                     throw new ArgumentNullException(nameof(destination));
                 }
 
-                if (_connection == null)
+                if (_connection != null) // null if response body fully consumed
                 {
-                    // Response body fully consumed
-                    return;
+                    await _connection.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
+
+                    // We cannot reuse this connection, so close it.
+                    _connection.Dispose();
+                    _connection = null;
                 }
-
-                await _connection.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
-
-                // We cannot reuse this connection, so close it.
-                _connection.Dispose();
-                _connection = null;
             }
         }
     }

@@ -163,9 +163,15 @@ namespace System
             set { ConsolePal.CursorSize = value; }
         }
 
-        public static bool NumberLock { get { return ConsolePal.NumberLock; } }
+        public static bool NumberLock
+        {
+            get { return ConsolePal.NumberLock; }
+        }
 
-        public static bool CapsLock { get { return ConsolePal.CapsLock; } }
+        public static bool CapsLock
+        {
+            get { return ConsolePal.CapsLock; }
+        }
 
         internal const ConsoleColor UnknownColor = (ConsoleColor)(-1);
 
@@ -217,26 +223,14 @@ namespace System
 
         public static int WindowWidth
         {
-            get
-            {
-                return ConsolePal.WindowWidth;
-            }
-            set
-            {
-                ConsolePal.WindowWidth = value;
-            }
+            get { return ConsolePal.WindowWidth; }
+            set { ConsolePal.WindowWidth = value; }
         }
 
         public static int WindowHeight
         {
-            get
-            {
-                return ConsolePal.WindowHeight;
-            }
-            set
-            {
-                ConsolePal.WindowHeight = value;
-            }
+            get { return ConsolePal.WindowHeight; }
+            set { ConsolePal.WindowHeight = value; }
         }
 
         public static void SetWindowPosition(int left, int top)

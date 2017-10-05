@@ -31,7 +31,7 @@ usage()
     echo "                                      default: Debug"
     echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD or OSX)"
     echo "                                      default: detect current OS"
-    echo "    --arch <Architecture>             Architecture to run (x64, arm, x86, arm64)"
+    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
     echo
     echo "Execution options:"
@@ -303,6 +303,9 @@ do
         ;;
         --os)
         OS=$2
+        ;;
+        --arch)
+        __Arch=$2
         ;;
         --coreclr-coverage)
         CoreClrCoverage=ON

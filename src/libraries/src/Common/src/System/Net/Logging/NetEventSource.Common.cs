@@ -287,7 +287,7 @@ namespace System.Net
         {
             DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
         }
-
+                
         /// <summary>Logs the contents of a buffer.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
         /// <param name="buffer">The buffer to be logged.</param>

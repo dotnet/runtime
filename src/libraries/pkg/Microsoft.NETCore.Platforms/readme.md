@@ -86,6 +86,49 @@ If you're prototyping on a platform that is compatible with an existing platform
 
 `Microsoft.NETCore.Platforms` attempts to define all RIDs that packages may need, and as such will define RIDs for platforms that we don't actually cross compile for.  This is to support higher-level packages, 3rd party packages, that may need to cross-compile for that RID.
 
+### Adding a new OS
+Add a new `RuntimeGroup` item in `runtimeGroups.props`.
+
+For example:
+```xml
+    <RuntimeGroup Include="myLinuxDistro">
+      <Parent>linux</Parent>
+      <Architectures>x86;x64;arm</Architectures>
+      <Versions>42.0;43.0</Versions>
+    </RuntimeGroup>
+```
+
+This will create a new RID for `myLinuxDistro` where `myLinuxDistro` should be the string used for the `ID=` value in the `/etc/os-release` file.
+
+Whenever modifying the `runtimeGroups.props` you should rebuild the project with `/p:UpdateRuntimeFiles=true` so that your changes will be regenerated in the checked-in `runtime.json`.
+
+RuntimeGroup items have the following format:
+- `Identity`: the base string for the RID, without version architecture, or qualifiers.
+- `Parent`: the base string for the parent of this RID.  This RID will be imported by the baseRID, architecture-specific, and qualifier-specific RIDs (with the latter two appending appropriate architecture and qualifiers).
+- `Versions`: A list of strings delimited by semi-colons that represent the versions for this RID.
+- `TreatVersionsAsCompatible`: Default is true.  When true, version-specific RIDs will import the previous version-specific RID in the Versions list, with the first version importing the version-less RID.  When false all version-specific RIDs will import the version-less RID (bypassing previous version-specific RIDs)
+- `OmitVersionDelimiter`: Default is false.  When true no characters will separate the base RID and version (EG: win7). When false a '.' will separate the base RID and version (EG: osx.10.12).
+- `ApplyVersionsToParent`: Default is false.  When true, version-specific RIDs will import version-specific Parent RIDs similar to is done for architecture and qualifier (see Parent above).
+- `Architectures`: A list of strings delimited by semi-colons that represent the architectures for this RID.
+- `AdditionalQualifiers`: A list of strings delimited by semi-colons that represent the additional qualifiers for this RID.  Additional qualifers do not stack, each only applies to the qualifier-less RIDs (so as not to cause combinatorial exponential growth of RIDs).
+
+### Adding a new version to an existing OS
+Find the existing `RuntimeGroup` in `runtimeGroups.props` and add the version to the list of `Versions`, separated by a semi-colon.
+
+If the version you are adding needs to be treated as not-compatible with previous versions and the `RuntimeGroup` has not set `TreatVersionsAsCompatible`=`false` then you may create a new `RuntimeGroup` to represent the new compatibility band.
+
+### Checking your work
+After making a change to `runtimeGroups.props` you can examine the resulting changes in `runtime.json` and `runtime.compatibility.json`.
+
+`runtime.json` is the graph representation of the RIDs and is what ships in the package.
+
+`runtime.compatibility.json` is a flattened version of the graph that shows the RID precedence for each RID in the graph.
+
+### Version compatibility
+Version compatibility is represented through imports.  If a platform is considered compatible with another version of the same platform, or a specific version of another platform, then it can import that platform.  This permits packages to reuse assets that were built for the imported platform on the compatible platform.  Compatibility here is a bit nebulous because inevitably different platforms will have observable differences that can cause compatibility problems.  For the purposes of RIDs we'll try to represent compatibility as versions of a platform that are explicitly advertised as being compatible with a previous version and/or another platform and don't have any known broad breaking changes.  It is usually better to opt to treat platforms as compatible since that enables the scenario of building an asset for a particular version and using that in future versions, otherwise you force people to cross-compile for all future versions the moment they target a specific version.
+
+## Appendix : details of RID graph generation
+
 ### Naming convention
 We use the following convention in all newly-defined RIDs.  Some RIDs (win7-x64, win8-x64) predate this convention and don't follow it, but all new RIDs should follow it.
 `[os name].[version]-[architecture]-[additional qualifiers]`, for example `osx.10.10-x64` or `ubuntu.14.04-x64`
@@ -96,9 +139,6 @@ We use the following convention in all newly-defined RIDs.  Some RIDs (win7-x64,
 
 For all of these we strive to make them something that can be uniquely discoverable at runtime, so that a RID may be computed from an executing application.  As such these properties should be derivable from `/etc/os-release` or similar platform APIs / data.
 
-### Binary compatibility
-Binary compatibility is represented through imports.  If a platform is considered binary compatible with another version of the same platform, or a specific version of another platform, then it can import that platform.  This permits packages to reuse assets that were built for the imported platform on the compatible platform.  Binary compatibility here is a bit nebulous because inevietably different platforms will have observable differences that can cause compatibility problems.  For the purposes of RIDs we'll try to represent compatibility as versions of a platform that are explicitly advertised as being compatible with a previous version and/or another platform and don't have any known broad breaking changes.
-
 ### Import convention
 Imports should be used when the added RID is considered compatible with an existing RID.
 
@@ -107,4 +147,9 @@ Imports should be used when the added RID is considered compatible with an exist
 3. Architecture-less RIDs that are compatible with a previous version RID for the same OS should then import the previous version, architecture neutral RID.  EG: `osx.10.11` should import `osx.10.10`. If there is no earlier compatible/supported version, then a versionless RID should be imported.  EG: `osx.10.10` should import `osx`.
 4. Version-less RIDs should import an OS category.  EG: `osx-x64` should import `unix-x64`, `osx` should import `unix`.
 
+### Advanced RuntimeGroup metadata
+The following options can be used under special circumstances but break the normal precedence rules we try to establish by generating the RID graph from common logic. These options make it possible to create a RID fallback chain that doesn't  match the rest of the RIDs and therefore is hard for developers/package authors to reason about.  Only use these options for cases where you know what you are doing and have carefully reviewed the resulting RID fallbacks using the CompatibliltyMap.
 
+- `OmitRIDs`: A list of strings delimited by semi-colons that represent RIDs calculated from this RuntimeGroup that should be omitted from the RuntimeGraph.  These RIDs will not be referenced nor defined.
+- `OmitRIDDefinitions`: A list of strings delimited by semi-colons that represent RIDs calculated from this RuntimeGroup that should be omitted from the RuntimeGraph.  These RIDs will not be defined by this RuntimeGroup, but will be referenced: useful in case some other RuntimeGroup (or runtime.json template) defines them.
+- `OmitRIDReferences`: A list of strings delimited by semi-colons that represent RIDs calculated from this RuntimeGroup that should be omitted from the RuntimeGraph.  These RIDs will be defined but not referenced by this RuntimeGroup.

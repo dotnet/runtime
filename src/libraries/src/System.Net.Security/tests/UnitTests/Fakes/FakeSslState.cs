@@ -268,8 +268,8 @@ namespace System.Net.Security
         {
             throw new NotImplementedException();
         }
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                
+        public Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

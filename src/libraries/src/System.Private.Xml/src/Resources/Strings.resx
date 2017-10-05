@@ -3399,6 +3399,9 @@
   <data name="InfoNoSerializableTypes" xml:space="preserve">
     <value>Assembly '{0}' does not contain any types that can be serialized using XmlSerializer.</value>
   </data>
+  <data name="InfoIgnoreType" xml:space="preserve">
+    <value>Ignoring '{0}'.</value>
+  </data>
   <data name="FailLoadAssemblyUnderPregenMode" xml:space="preserve">
     <value>"Fail to load assembly {0} or {0} doesn't exist under PreGen Mode.</value>
   </data>

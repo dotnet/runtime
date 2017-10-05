@@ -26,7 +26,11 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal class XmlReflectionImporter
+#else
     public class XmlReflectionImporter
+#endif
     {
         private TypeScope _typeScope;
         private XmlAttributeOverrides _attributeOverrides;

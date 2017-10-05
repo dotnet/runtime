@@ -19,14 +19,14 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexBoyerMoore
     {
-        private readonly int[] _positive;
-        private readonly int[] _negativeASCII;
-        private readonly int[][] _negativeUnicode;
-        private readonly string _pattern;
-        private readonly int _lowASCII;
-        private readonly int _highASCII;
+        internal readonly int[] _positive;
+        internal readonly int[] _negativeASCII;
+        internal readonly int[][] _negativeUnicode;
+        internal readonly string _pattern;
+        internal readonly int _lowASCII;
+        internal readonly int _highASCII;
         private readonly bool _rightToLeft;
-        private readonly bool _caseInsensitive;
+        internal readonly bool _caseInsensitive;
         private readonly CultureInfo _culture;
 
         /// <summary>

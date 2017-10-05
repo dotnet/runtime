@@ -184,5 +184,50 @@ namespace System.Linq.Tests
             Func<DateTime, int> keySelector = null;
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderByDescending(keySelector));
         }
+
+        [Fact]
+        public void SortsLargeAscendingEnumerableCorrectly()
+        {
+            const int Items = 1_000_000;
+            IEnumerable<int> expected = NumberRangeGuaranteedNotCollectionType(0, Items);
+
+            IEnumerable<int> unordered = expected.Select(i => i);
+            IOrderedEnumerable<int> ordered = unordered.OrderByDescending(i => -i);
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Fact]
+        public void SortsLargeDescendingEnumerableCorrectly()
+        {
+            const int Items = 1_000_000;
+            IEnumerable<int> expected = NumberRangeGuaranteedNotCollectionType(0, Items);
+
+            IEnumerable<int> unordered = expected.Select(i => Items - i - 1);
+            IOrderedEnumerable<int> ordered = unordered.OrderByDescending(i => -i);
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(1024)]
+        [InlineData(4096)]
+        [InlineData(1_000_000)]
+        public void SortsRandomizedEnumerableCorrectly(int items)
+        {
+            var r = new Random(42);
+
+            int[] randomized = Enumerable.Range(0, items).Select(i => r.Next()).ToArray();
+            int[] ordered = ForceNotCollection(randomized).OrderByDescending(i => -i).ToArray();
+
+            Array.Sort(randomized, (a, b) => a - b);
+            Assert.Equal(randomized, ordered);
+        }
     }
 }

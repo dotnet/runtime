@@ -476,7 +476,6 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that a long chain of Unwraps can execute without overflowing the stack.
         /// </summary>
-        [ActiveIssue(23201)]
         [Fact]
         public void RunStackGuardTests()
         {

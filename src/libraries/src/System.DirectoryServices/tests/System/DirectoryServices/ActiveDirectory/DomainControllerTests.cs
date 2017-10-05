@@ -109,9 +109,13 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void FindAll_NoSuchName_ReturnsEmpty()
         {
-            var context = new DirectoryContext(DirectoryContextType.Domain, "\0");
-            Assert.Empty(DomainController.FindAll(context));
-            Assert.Empty(DomainController.FindAll(context, "siteName"));
+            // Domain joined machines can have entries in the DomainController.
+            if (Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase))
+            {
+                var context = new DirectoryContext(DirectoryContextType.Domain, "\0");
+                Assert.Empty(DomainController.FindAll(context));
+                Assert.Empty(DomainController.FindAll(context, "siteName"));
+            }
         }
 
         [Fact]
