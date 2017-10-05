@@ -143,6 +143,23 @@ namespace System.Globalization
             return Interop.GlobalizationInterop.CompareStringOrdinalIgnoreCase(string1, count1, string2, count2);
         }
 
+        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // This method shouldn't be necessary, as we should be able to just use the overload
+        // that takes two spans.  But due to this issue, that's adding significant overhead.
+        private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+
+            Debug.Assert(string2 != null);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString2 = &string2.GetRawStringData())
+            {
+                return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
+            }
+        }
+
         private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
