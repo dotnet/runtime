@@ -2119,6 +2119,8 @@ public:
 
     GenTreePtr gtNewAllocObjNode(unsigned int helper, CORINFO_CLASS_HANDLE clsHnd, var_types type, GenTreePtr op1);
 
+    GenTree* gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* lookupTree);
+
     //------------------------------------------------------------------------
     // Other GenTree functions
 
@@ -9769,6 +9771,7 @@ public:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_PHI:
+            case GT_RUNTIMELOOKUP:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

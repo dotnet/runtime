@@ -5288,6 +5288,72 @@ BOOL MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return value;
 }
 
+void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result)
+{
+    if (CompareTypesForCast == nullptr)
+        CompareTypesForCast = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)fromClass;
+    key.B = (DWORDLONG)toClass;
+
+    CompareTypesForCast->Add(key, (DWORD)result);
+}
+void MethodContext::dmpCompareTypesForCast(DLDL key, DWORD value)
+{
+    printf("CompareTypesForCast key fromClas=%016llX, toClass=%016llx, result=%d", key.A, key.B, value);
+}
+TypeCompareState MethodContext::repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)fromClass;
+    key.B = (DWORDLONG)toClass;
+
+    AssertCodeMsg(CompareTypesForCast->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX",
+                  (DWORDLONG)fromClass, (DWORDLONG)toClass);
+    TypeCompareState value = (TypeCompareState)CompareTypesForCast->Get(key);
+    return value;
+}
+
+void MethodContext::recCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, TypeCompareState result)
+{
+    if (CompareTypesForEquality == nullptr)
+        CompareTypesForEquality = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)cls1;
+    key.B = (DWORDLONG)cls2;
+
+    CompareTypesForEquality->Add(key, (DWORD)result);
+}
+void MethodContext::dmpCompareTypesForEquality(DLDL key, DWORD value)
+{
+    printf("CompareTypesForEquality key cls1=%016llX, cls2=%016llx, result=%d", key.A, key.B, value);
+}
+TypeCompareState MethodContext::repCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)cls1;
+    key.B = (DWORDLONG)cls2;
+
+    AssertCodeMsg(CompareTypesForEquality->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX",
+                  (DWORDLONG)cls1, (DWORDLONG)cls2);
+    TypeCompareState value = (TypeCompareState)CompareTypesForEquality->Get(key);
+    return value;
+}
+
 void MethodContext::recFindNameOfToken(
     CORINFO_MODULE_HANDLE module, mdToken metaTOK, char* szFQName, size_t FQNameCapacity, size_t result)
 {

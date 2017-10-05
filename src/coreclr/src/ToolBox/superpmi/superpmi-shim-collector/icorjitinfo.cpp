@@ -889,6 +889,26 @@ BOOL interceptor_ICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return temp;
 }
 
+// See if a cast from fromClass to toClass will succeed, fail, or needs
+// to be resolved at runtime.
+TypeCompareState interceptor_ICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+{
+    mc->cr->AddCall("compareTypesForCast");
+    TypeCompareState temp = original_ICorJitInfo->compareTypesForCast(fromClass, toClass);
+    mc->recCompareTypesForCast(fromClass, toClass, temp);
+    return temp;
+}
+
+// See if types represented by cls1 and cls2 compare equal, not
+// equal, or the comparison needs to be resolved at runtime.
+TypeCompareState interceptor_ICJI::compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    mc->cr->AddCall("compareTypesForEquality");
+    TypeCompareState temp = original_ICorJitInfo->compareTypesForEquality(cls1, cls2);
+    mc->recCompareTypesForEquality(cls1, cls2, temp);
+    return temp;
+}
+
 // returns is the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE interceptor_ICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {

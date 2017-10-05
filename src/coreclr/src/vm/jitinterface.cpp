@@ -4585,6 +4585,75 @@ BOOL CEEInfo::areTypesEquivalent(
 }
 
 /*********************************************************************/
+// See if a cast from fromClass to toClass will succeed, fail, or needs
+// to be resolved at runtime.
+TypeCompareState CEEInfo::compareTypesForCast(
+        CORINFO_CLASS_HANDLE        fromClass,
+        CORINFO_CLASS_HANDLE        toClass)
+{
+    // Stub for now
+    return TypeCompareState::May;
+}
+
+/*********************************************************************/
+// See if types represented by cls1 and cls2 compare equal, not
+// equal, or the comparison needs to be resolved at runtime.
+TypeCompareState CEEInfo::compareTypesForEquality(
+        CORINFO_CLASS_HANDLE        cls1,
+        CORINFO_CLASS_HANDLE        cls2)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle hnd1 = (TypeHandle) cls1;
+    TypeHandle hnd2 = (TypeHandle) cls2;
+
+    // If neither type is a canonical subtype, type handle comparison suffices
+    if (!hnd1.IsCanonicalSubtype() && !hnd2.IsCanonicalSubtype())
+    {
+        result = (hnd1 == hnd2 ? TypeCompareState::Must : TypeCompareState::MustNot);
+    }
+    // If either or both types are canonical subtypes, we can sometimes prove inequality.
+    else
+    {
+        // If either is a value type then the types cannot
+        // be equal unless the type defs are the same.
+        if (hnd1.IsValueType() || hnd2.IsValueType())
+        {
+            if (!hnd1.GetMethodTable()->HasSameTypeDefAs(hnd2.GetMethodTable()))
+            {
+                result = TypeCompareState::MustNot;
+            }
+        }
+        // If we have two ref types that are not __Canon, then the
+        // types cannot be equal unless the type defs are the same.
+        else
+        {
+            TypeHandle canonHnd = TypeHandle(g_pCanonMethodTableClass);
+            if ((hnd1 != canonHnd) && (hnd2 != canonHnd))
+            {
+                if (!hnd1.GetMethodTable()->HasSameTypeDefAs(hnd2.GetMethodTable()))
+                {
+                    result = TypeCompareState::MustNot;
+                }
+            }
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 // returns is the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE CEEInfo::mergeClasses(
         CORINFO_CLASS_HANDLE        cls1,
