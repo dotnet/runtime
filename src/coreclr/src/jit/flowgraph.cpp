@@ -21080,6 +21080,11 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
     unsigned   treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
     unsigned   chkFlags  = 0;
 
+    if (tree->OperMayThrow(this))
+    {
+        chkFlags |= GTF_EXCEPT;
+    }
+
     /* Is this a leaf node? */
 
     if (kind & GTK_LEAF)
@@ -21241,11 +21246,6 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
             chkFlags |= GTF_ASG;
         }
 
-        if (tree->OperMayThrow(this))
-        {
-            chkFlags |= GTF_EXCEPT;
-        }
-
         if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
                                 (op1->gtOper == GT_IND && op1->gtOp.gtOp1->gtOper == GT_CLS_VAR_ADDR)))
         {
@@ -21259,11 +21259,6 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
 
     else
     {
-        if (tree->OperMayThrow(this))
-        {
-            chkFlags |= GTF_EXCEPT;
-        }
-
         switch (tree->OperGet())
         {
             case GT_CALL:
