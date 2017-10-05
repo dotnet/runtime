@@ -377,8 +377,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             cmpXchgNode->gtOpLocation->gtLsraInfo.isDelayFree = true;
             cmpXchgNode->gtOpValue->gtLsraInfo.isDelayFree    = true;
             if (!cmpXchgNode->gtOpComparand->isContained())
+            {
                 cmpXchgNode->gtOpComparand->gtLsraInfo.isDelayFree = true;
-            info->hasDelayFreeSrc                                  = true;
+            }
+            info->hasDelayFreeSrc = true;
 
             // Internals may not collide with target
             info->isInternalRegDelayFree = true;
@@ -396,8 +398,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             // it may be used used multiple during retries
             tree->gtOp.gtOp1->gtLsraInfo.isDelayFree = true;
             if (!tree->gtOp.gtOp2->isContained())
+            {
                 tree->gtOp.gtOp2->gtLsraInfo.isDelayFree = true;
-            info->hasDelayFreeSrc                        = true;
+            }
+            info->hasDelayFreeSrc = true;
 
             // Internals may not collide with target
             info->isInternalRegDelayFree = true;
