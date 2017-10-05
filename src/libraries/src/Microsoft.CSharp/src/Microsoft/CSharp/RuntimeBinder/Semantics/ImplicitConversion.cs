@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -196,13 +195,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         // If not, try user defined implicit conversions.
                         break;
-                    case TypeKind.TK_TypeParameterType:
-                        if (bindImplicitConversionFromTypeVar(_typeSrc as TypeParameterType))
-                        {
-                            return true;
-                        }
-                        // If not, try user defined implicit conversions.
-                        break;
+
                     case TypeKind.TK_AggregateType:
                         if (bindImplicitConversionFromAgg(_typeSrc as AggregateType))
                         {
@@ -435,7 +428,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 FUNDTYPE ftDest = _typeDest.fundType();
                 if (ftDest != FUNDTYPE.FT_REF && ftDest != FUNDTYPE.FT_PTR &&
-                    (ftDest != FUNDTYPE.FT_VAR || !((TypeParameterType)_typeDest).IsReferenceType()) &&
                     // null is convertible to System.Nullable<T>.
                     !_typeDest.isPredefType(PredefinedType.PT_G_OPTIONAL))
                 {
@@ -773,84 +765,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
-            private bool bindImplicitConversionFromTypeVar(TypeParameterType tyVarSrc)
-            {
-                // 13.1.4
-                // 
-                // For a type-parameter T that is known to be a reference type (25.7), the following implicit
-                // reference conversions exist:
-                // 
-                // *   From T to its effective base class C, from T to any base class of C, and from T to any 
-                //     interface implemented by C.
-                // *   From T to an interface-type I in T's effective interface set and from T to any base 
-                //     interface of I.
-                // *   From T to a type parameter U provided that T depends on U (25.7). [Note: Since T is known
-                //     to be a reference type, within the scope of T, the run-time type of U will always be a 
-                //     reference type, even if U is not known to be a reference type at compile-time.]
-                // *   From the null type (11.2.7) to T.
-                //
-                // 13.1.5
-                //
-                // For a type-parameter T that is not known to be a reference type (25.7), the following conversions
-                // involving T are considered to be boxing conversions at compile-time. At run-time, if T is a value
-                // type, the conversion is executed as a boxing conversion. At run-time, if T is a reference type,
-                // the conversion is executed as an implicit reference conversion or identity conversion.
-                // 
-                // *   From T to its effective base class C, from T to any base class of C, and from T to any 
-                //     interface implemented by C. [Note: C will be one of the types System.Object, System.ValueType,
-                //     or System.Enum (otherwise T would be known to be a reference type and 13.1.4 would apply
-                //     instead of this clause).]
-                // *   From T to an interface-type I in T's effective interface set and from T to any base
-                //     interface of I.
-                //
-                // 13.1.6 Implicit type parameter conversions
-                // 
-                // This clause details implicit conversions involving type parameters that are not classified as 
-                // implicit reference conversions or implicit boxing conversions.
-                // 
-                // For a type-parameter T that is not known to be a reference type, there is an implicit conversion 
-                // from T to a type parameter U provided T depends on U. At run-time, if T is a value type and U is
-                // a reference type, the conversion is executed as a boxing conversion. At run-time, if both T and U
-                // are value types, then T and U are necessarily the same type and no conversion is performed. At 
-                // run-time, if T is a reference type, then U is necessarily also a reference type and the conversion
-                // is executed as an implicit reference conversion or identity conversion (25.7).
-
-                CType typeTmp = tyVarSrc.GetEffectiveBaseClass();
-                TypeArray bnds = tyVarSrc.GetBounds();
-                int itype = -1;
-                for (; ;)
-                {
-                    if (_binder.canConvert(typeTmp, _typeDest, _flags | CONVERTTYPE.NOUDC))
-                    {
-                        if (!_needsExprDest)
-                        {
-                            return true;
-                        }
-                        if (_typeDest is TypeParameterType)
-                        {
-                            // For a type var destination we need to cast to object then to the other type var.
-                            Expr exprT;
-                            ExprClass exprObj = GetExprFactory().CreateClass(_binder.GetPredefindType(PredefinedType.PT_OBJECT));
-                            _binder.bindSimpleCast(_exprSrc, exprObj, out exprT, EXPRFLAG.EXF_FORCE_BOX);
-                            _binder.bindSimpleCast(exprT, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_FORCE_UNBOX);
-                        }
-                        else
-                        {
-                            _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_FORCE_BOX);
-                        }
-                        return true;
-                    }
-                    do
-                    {
-                        if (++itype >= bnds.Count)
-                        {
-                            return false;
-                        }
-                        typeTmp = bnds[itype];
-                    }
-                    while (!typeTmp.isInterfaceType() && !(typeTmp is TypeParameterType));
-                }
-            }
             private SymbolLoader GetSymbolLoader()
             {
                 return _binder.GetSymbolLoader();

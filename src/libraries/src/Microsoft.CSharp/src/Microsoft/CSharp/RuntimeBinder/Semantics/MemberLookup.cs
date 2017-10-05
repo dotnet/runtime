@@ -25,10 +25,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // All EXF flags are < 0x01000000
         MustBeInvocable = 0x20000000,
-        TypeVarsAllowed = 0x40000000,
-        ExtensionCall = 0x80000000,
 
-        All = Ctor | NewObj | Operator | Indexer | UserCallable | BaseCall | MustBeInvocable | TypeVarsAllowed | ExtensionCall
+        All = Ctor | NewObj | Operator | Indexer | UserCallable | BaseCall | MustBeInvocable
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -157,17 +155,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     case SYMKIND.SK_AggregateSymbol:
                         // For types, always filter on arity.
                         if (((AggregateSymbol)symCur).GetTypeVars().Count != _arity)
-                        {
-                            if (!_swtBadArity)
-                                _swtBadArity.Set(symCur, typeCur);
-                            continue;
-                        }
-                        break;
-
-                    case SYMKIND.SK_TypeParameterSymbol:
-                        if ((_flags & MemLookFlags.TypeVarsAllowed) == 0)
-                            continue;
-                        if (_arity > 0)
                         {
                             if (!_swtBadArity)
                                 _swtBadArity.Set(symCur, typeCur);
@@ -431,7 +418,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bool fHideByName = false;
 
                 SearchSingleType(typeCur, out fHideByName);
-                _flags &= ~MemLookFlags.TypeVarsAllowed;
 
                 if (_swtFirst && !_fMulti)
                 {
@@ -520,7 +506,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (fHideByName)
                         fHideObject = true;
                 }
-                _flags &= ~MemLookFlags.TypeVarsAllowed;
 
                 if (itypeNext >= types.Count)
                     return !fHideObject;
@@ -593,7 +578,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert((flags & ~MemLookFlags.All) == 0);
             Debug.Assert(obj == null || obj.Type != null);
-            Debug.Assert(typeSrc is AggregateType || typeSrc is TypeParameterType);
+            Debug.Assert(typeSrc is AggregateType);
             Debug.Assert(checker != null);
 
             _prgtype = _rgtypeStart;
@@ -616,16 +601,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             TypeArray ifaces = BSYMMGR.EmptyTypeArray();
             AggregateType typeCls2 = null;
 
-            if (typeSrc is TypeParameterType typeParamSrc)
-            {
-                Debug.Assert((_flags & (MemLookFlags.Ctor | MemLookFlags.NewObj | MemLookFlags.Operator | MemLookFlags.BaseCall | MemLookFlags.TypeVarsAllowed)) == 0);
-                _flags &= ~MemLookFlags.TypeVarsAllowed;
-                ifaces = typeParamSrc.GetInterfaceBounds();
-                typeCls1 = typeParamSrc.GetEffectiveBaseClass();
-                if (ifaces.Count > 0 && typeCls1.isPredefType(PredefinedType.PT_OBJECT))
-                    typeCls1 = null;
-            }
-            else if (!typeSrc.isInterfaceType())
+            if (!typeSrc.isInterfaceType())
             {
                 typeCls1 = (AggregateType)typeSrc;
 
