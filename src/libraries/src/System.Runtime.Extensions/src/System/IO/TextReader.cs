@@ -247,6 +247,15 @@ namespace System.IO
             return ReadAsyncInternal(buffer, index, count);
         }
 
+        public virtual ValueTask<int> ReadAsync(Memory<char> destination, CancellationToken cancellationToken = default(CancellationToken)) =>
+            new ValueTask<int>(destination.TryGetArray(out ArraySegment<char> array) ?
+                ReadAsync(array.Array, array.Offset, array.Count) :
+                Task<int>.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextReader, Memory<char>>)state;
+                    return t.Item1.Read(t.Item2.Span);
+                }, Tuple.Create(this, destination), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+
         internal virtual Task<int> ReadAsyncInternal(char[] buffer, int index, int count)
         {
             Debug.Assert(buffer != null);
@@ -280,6 +289,15 @@ namespace System.IO
 
             return ReadBlockAsyncInternal(buffer, index, count);
         }
+
+        public virtual ValueTask<int> ReadBlockAsync(Memory<char> destination, CancellationToken cancellationToken = default(CancellationToken)) =>
+            new ValueTask<int>(destination.TryGetArray(out ArraySegment<char> array) ?
+                ReadBlockAsync(array.Array, array.Offset, array.Count) :
+                Task<int>.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextReader, Memory<char>>)state;
+                    return t.Item1.ReadBlock(t.Item2.Span);
+                }, Tuple.Create(this, destination), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
         private async Task<int> ReadBlockAsyncInternal(char[] buffer, int index, int count)
         {
