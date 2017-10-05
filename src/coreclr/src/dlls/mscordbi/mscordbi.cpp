@@ -11,7 +11,7 @@
 //*****************************************************************************
 #include "stdafx.h"
 
-extern BOOL STDMETHODCALLTYPE DbgDllMain(HINSTANCE hInstance, DWORD dwReason,
+extern BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason,
                                          LPVOID lpReserved);
 
 //*****************************************************************************

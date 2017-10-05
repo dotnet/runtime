@@ -324,7 +324,9 @@ DECLARE_API(IP2MD)
 #define DEBUG_STACK_CONTEXT AMD64_CONTEXT
 #elif defined(_TARGET_ARM_) // _TARGET_WIN64_
 #define DEBUG_STACK_CONTEXT ARM_CONTEXT
-#endif // _TARGET_ARM_
+#elif defined(_TARGET_X86_) // _TARGET_ARM_
+#define DEBUG_STACK_CONTEXT X86_CONTEXT
+#endif // _TARGET_X86_
 
 #ifdef DEBUG_STACK_CONTEXT
 // I use a global set of frames for stack walking on win64 because the debugger's

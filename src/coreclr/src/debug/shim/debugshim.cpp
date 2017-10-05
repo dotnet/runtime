@@ -38,7 +38,7 @@
 // CLRDebuggingImpl implementation (ICLRDebugging)
 //*****************************************************************************
 
-typedef HRESULT (__stdcall  *OpenVirtualProcessImplFnPtr)(ULONG64 clrInstanceId, 
+typedef HRESULT (STDAPICALLTYPE  *OpenVirtualProcessImplFnPtr)(ULONG64 clrInstanceId, 
     IUnknown * pDataTarget,
     HMODULE hDacDll,
     CLR_DEBUGGING_VERSION * pMaxDebuggerSupportedVersion,
@@ -46,7 +46,7 @@ typedef HRESULT (__stdcall  *OpenVirtualProcessImplFnPtr)(ULONG64 clrInstanceId,
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS * pdwFlags);
 
-typedef HRESULT (__stdcall  *OpenVirtualProcess2FnPtr)(ULONG64 clrInstanceId, 
+typedef HRESULT (STDAPICALLTYPE  *OpenVirtualProcess2FnPtr)(ULONG64 clrInstanceId, 
     IUnknown * pDataTarget,
     HMODULE hDacDll,
     REFIID riid,
