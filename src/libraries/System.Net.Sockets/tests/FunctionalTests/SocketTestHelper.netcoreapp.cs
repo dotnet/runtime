@@ -21,4 +21,12 @@ namespace System.Net.Sockets.Tests
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             Task.Run(() => { s.ForceNonBlocking(true); s.Connect(endPoint); });
     }
+
+    public sealed class SocketHelperMemoryArrayTask : SocketHelperTask
+    {
+        public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
+            s.ReceiveAsync((Memory<byte>)buffer, SocketFlags.None).AsTask();
+        public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
+            s.SendAsync((ReadOnlyMemory<byte>)buffer, SocketFlags.None).AsTask();
+    }
 }

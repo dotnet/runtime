@@ -749,6 +749,34 @@ namespace System.Net.Sockets
             }
         }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        {
+            bool canRead = CanRead; // Prevent race with Dispose.
+            if (_cleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+            if (!canRead)
+            {
+                throw new InvalidOperationException(SR.net_writeonlystream);
+            }
+
+            try
+            {
+                return _streamSocket.ReceiveAsync(
+                    destination,
+                    SocketFlags.None,
+                    fromNetworkStream: true,
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                // Some sort of error occurred on the socket call,
+                // set the SocketException as InnerException and throw.
+                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+            }
+        }
+
         // WriteAsync - provide async write functionality.
         // 
         // This method provides async write functionality. All we do is
@@ -801,6 +829,38 @@ namespace System.Net.Sockets
                     new ArraySegment<byte>(buffer, offset, size),
                     SocketFlags.None,
                     fromNetworkStream: true);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                // Some sort of error occurred on the socket call,
+                // set the SocketException as InnerException and throw.
+                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+            }
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        {
+            bool canWrite = CanWrite; // Prevent race with Dispose.
+            if (_cleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+            if (!canWrite)
+            {
+                throw new InvalidOperationException(SR.net_readonlystream);
+            }
+
+            try
+            {
+                ValueTask<int> t = _streamSocket.SendAsync(
+                    source,
+                    SocketFlags.None,
+                    fromNetworkStream: true,
+                    cancellationToken: cancellationToken);
+
+                return t.IsCompletedSuccessfully ?
+                    Task.CompletedTask :
+                    t.AsTask();
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
