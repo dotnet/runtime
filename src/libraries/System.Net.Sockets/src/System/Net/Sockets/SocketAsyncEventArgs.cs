@@ -104,6 +104,15 @@ namespace System.Net.Sockets
             get { return _buffer; }
         }
 
+        public Memory<byte> GetBuffer()
+        {
+            // TODO https://github.com/dotnet/corefx/issues/24429:
+            // Actually support Memory<byte> natively.
+            return _buffer != null ?
+                new Memory<byte>(_buffer, _offset, _count) :
+                Memory<byte>.Empty;
+        }
+
         public int Offset
         {
             get { return _offset; }
@@ -281,6 +290,18 @@ namespace System.Net.Sockets
         public void SetBuffer(int offset, int count)
         {
             SetBufferInternal(_buffer, offset, count);
+        }
+
+        public void SetBuffer(Memory<byte> buffer)
+        {
+            if (!buffer.TryGetArray(out ArraySegment<byte> array))
+            {
+                // TODO https://github.com/dotnet/corefx/issues/24429:
+                // Actually support Memory<byte> natively.
+                throw new ArgumentException();
+            }
+
+            SetBuffer(array.Array, array.Offset, array.Count);
         }
 
         internal bool HasMultipleBuffers
