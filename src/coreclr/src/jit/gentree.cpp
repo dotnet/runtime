@@ -5850,7 +5850,6 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
-        case GT_CATCH_ARG:
         case GT_LCLHEAP:
         case GT_CKFINITE:
 #ifdef FEATURE_SIMD
