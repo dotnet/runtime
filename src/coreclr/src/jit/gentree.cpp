@@ -10939,8 +10939,12 @@ void Compiler::gtDispTree(GenTreePtr   tree,
                 indentStack->Push(IIEmbedded);
                 lowerArc = IIEmbedded;
                 break;
+            case IINone:
+                indentStack->Push(IINone);
+                lowerArc = IINone;
+                break;
             default:
-                // Should never get here; just use IINone.
+                unreached();
                 break;
         }
     }
