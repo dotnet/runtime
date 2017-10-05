@@ -112,6 +112,8 @@ struct _MonoProfiler {
 
 	MonoConcurrentHashTable *image_to_methods;
 
+	GHashTable *uncovered_methods;
+
 	guint32 previous_offset;
 };
 
@@ -357,7 +359,30 @@ dump_classes_for_image (gpointer key, gpointer value, gpointer userdata)
 	class_name = mono_type_get_name (mono_class_get_type (klass));
 
 	number_of_methods = mono_class_num_methods (klass);
-	fully_covered = count_queue (class_methods);
+
+	GHashTable *covered_methods = g_hash_table_new (NULL, NULL);
+	int count = 0;
+	{
+		MonoLockFreeQueueNode *node;
+		guint count = 0;
+
+		while ((node = mono_lock_free_queue_dequeue (class_methods))) {
+			MethodNode *mnode = (MethodNode*)node;
+			g_hash_table_insert (covered_methods, mnode->method, mnode->method);
+			count++;
+			mono_thread_hazardous_try_free (node, g_free);
+		}
+	}
+	fully_covered = count;
+
+	gpointer iter = NULL;
+	MonoMethod *method;
+	while ((method = mono_class_get_methods (klass, &iter))) {
+		if (!g_hash_table_lookup (covered_methods, method))
+			g_hash_table_insert (coverage_profiler.uncovered_methods, method, method);
+	}
+	g_hash_table_destroy (covered_methods);
+
 	/* We don't handle partial covered yet */
 	partially_covered = 0;
 
@@ -428,6 +453,7 @@ dump_coverage (void)
 	mono_os_mutex_lock (&coverage_profiler.mutex);
 	mono_conc_hashtable_foreach (coverage_profiler.assemblies, dump_assembly, NULL);
 	mono_conc_hashtable_foreach (coverage_profiler.methods, dump_method, NULL);
+	g_hash_table_foreach (coverage_profiler.uncovered_methods, dump_method, NULL);
 	mono_os_mutex_unlock (&coverage_profiler.mutex);
 
 	fprintf (coverage_profiler.file, "</coverage>\n");
@@ -901,6 +927,7 @@ mono_profiler_init_coverage (const char *desc)
 	coverage_profiler.classes = mono_conc_hashtable_new (NULL, NULL);
 	coverage_profiler.filtered_classes = mono_conc_hashtable_new (NULL, NULL);
 	coverage_profiler.image_to_methods = mono_conc_hashtable_new (NULL, NULL);
+	coverage_profiler.uncovered_methods = g_hash_table_new (NULL, NULL);
 	init_suppressed_assemblies ();
 
 	coverage_profiler.filters = filters;
