@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
 
 namespace System.Diagnostics.Tests
 {
@@ -15,15 +14,17 @@ namespace System.Diagnostics.Tests
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
-            string source = Guid.NewGuid().ToString("N");
+            string source = "Source";
+            string log = "MyLog";
             try
             {
-                EventLog.CreateEventSource(source, "MyNewLog");
+                EventLog.CreateEventSource(source, log);
                 Assert.True(EventLog.SourceExists(source));
             }
             finally
             {
                 EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
             }
 
             Assert.False(EventLog.SourceExists(source));
