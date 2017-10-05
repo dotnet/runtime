@@ -710,6 +710,39 @@ namespace System.Tests
             }, options).Dispose();
         }
 
+        [Theory]
+        [OuterLoop]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior, full framework doesn't throw, fixed in .NET Core")]
+        public static void TryStartNoGCRegion_TotalSizeOutOfRange(long size)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(sizeString =>
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("totalSize", () => GC.TryStartNoGCRegion(long.Parse(sizeString)));
+                return SuccessExitCode;
+            }, size.ToString(), options).Dispose();
+        }
+
+        [Theory]
+        [OuterLoop]
+        [InlineData(0)]                   // invalid because lohSize ==
+        [InlineData(-1)]                  // invalid because lohSize < 0
+        [InlineData(1152921504606846976)] // invalid because lohSize > totalSize
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior, full framework doesn't throw, fixed in .NET Core")]
+        public static void TryStartNoGCRegion_LOHSizeInvalid(long size)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(sizeString =>
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("lohSize", () => GC.TryStartNoGCRegion(1024, long.Parse(sizeString)));
+                return SuccessExitCode;
+            }, size.ToString(), options).Dispose();
+        }
+
         public static void TestWait(bool approach, int timeout)
         {
             GCNotificationStatus result = GCNotificationStatus.Failed;

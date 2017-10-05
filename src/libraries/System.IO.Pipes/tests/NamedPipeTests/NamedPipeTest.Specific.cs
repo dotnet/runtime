@@ -80,7 +80,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeOptions.None)]
         [InlineData(PipeOptions.Asynchronous)]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix currently doesn't support message mode
-        public async Task Windows_MessagePipeTransissionMode(PipeOptions serverOptions)
+        public void Windows_MessagePipeTransmissionMode(PipeOptions serverOptions)
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
             byte[] msg2 = new byte[] { 2, 4 };
@@ -99,10 +99,10 @@ namespace System.IO.Pipes.Tests
                     server.ReadMode = PipeTransmissionMode.Message;
                     Assert.Equal(PipeTransmissionMode.Message, server.ReadMode);
 
+                    client.Connect();
+
                     Task clientTask = Task.Run(() =>
                     {
-                        client.Connect();
-
                         client.Write(msg1, 0, msg1.Length);
                         client.Write(msg2, 0, msg2.Length);
                         client.Write(msg1, 0, msg1.Length);
@@ -115,54 +115,57 @@ namespace System.IO.Pipes.Tests
                         Assert.Equal(1, serverCount);
                     });
 
-                    server.WaitForConnection();
-
-                    int len1 = server.Read(received1, 0, msg1.Length);
-                    Assert.True(server.IsMessageComplete);
-                    Assert.Equal(msg1.Length, len1);
-                    Assert.Equal(msg1, received1);
-
-                    int len2 = server.Read(received2, 0, msg2.Length);
-                    Assert.True(server.IsMessageComplete);
-                    Assert.Equal(msg2.Length, len2);
-                    Assert.Equal(msg2, received2);
-
-                    int expectedRead = msg1.Length - 1;
-                    int len3 = server.Read(received3, 0, expectedRead);  // read one less than message
-                    Assert.False(server.IsMessageComplete);
-                    Assert.Equal(expectedRead, len3);
-                    for (int i = 0; i < expectedRead; ++i)
+                    Task serverTask = Task.Run(async () =>
                     {
-                        Assert.Equal(msg1[i], received3[i]);
-                    }
+                        server.WaitForConnection();
 
-                    expectedRead = msg1.Length - expectedRead;
-                    Assert.Equal(expectedRead, server.Read(received3, len3, expectedRead));
-                    Assert.True(server.IsMessageComplete);
-                    Assert.Equal(msg1, received3);
+                        int len1 = server.Read(received1, 0, msg1.Length);
+                        Assert.True(server.IsMessageComplete);
+                        Assert.Equal(msg1.Length, len1);
+                        Assert.Equal(msg1, received1);
 
-                    Assert.Equal(msg1.Length, await server.ReadAsync(received4, 0, msg1.Length));
-                    Assert.True(server.IsMessageComplete);
-                    Assert.Equal(msg1, received4);
+                        int len2 = server.Read(received2, 0, msg2.Length);
+                        Assert.True(server.IsMessageComplete);
+                        Assert.Equal(msg2.Length, len2);
+                        Assert.Equal(msg2, received2);
 
-                    Assert.Equal(msg2.Length, await server.ReadAsync(received5, 0, msg2.Length));
-                    Assert.True(server.IsMessageComplete);
-                    Assert.Equal(msg2, received5);
+                        int expectedRead = msg1.Length - 1;
+                        int len3 = server.Read(received3, 0, expectedRead);  // read one less than message
+                        Assert.False(server.IsMessageComplete);
+                        Assert.Equal(expectedRead, len3);
+                        for (int i = 0; i < expectedRead; ++i)
+                        {
+                            Assert.Equal(msg1[i], received3[i]);
+                        }
 
-                    expectedRead = msg1.Length - 1;
-                    Assert.Equal(expectedRead, await server.ReadAsync(received6, 0, expectedRead));  // read one less than message
-                    Assert.False(server.IsMessageComplete);
-                    for (int i = 0; i < expectedRead; ++i)
-                    {
-                        Assert.Equal(msg1[i], received6[i]);
-                    }
+                        expectedRead = msg1.Length - expectedRead;
+                        Assert.Equal(expectedRead, server.Read(received3, len3, expectedRead));
+                        Assert.True(server.IsMessageComplete);
+                        Assert.Equal(msg1, received3);
 
-                    expectedRead = msg1.Length - expectedRead;
-                    Assert.Equal(expectedRead, await server.ReadAsync(received6, msg1.Length - expectedRead, expectedRead));
-                    Assert.True(server.IsMessageComplete);
-                    Assert.Equal(msg1, received6);
+                        Assert.Equal(msg1.Length, await server.ReadAsync(received4, 0, msg1.Length));
+                        Assert.True(server.IsMessageComplete);
+                        Assert.Equal(msg1, received4);
 
-                    await clientTask;
+                        Assert.Equal(msg2.Length, await server.ReadAsync(received5, 0, msg2.Length));
+                        Assert.True(server.IsMessageComplete);
+                        Assert.Equal(msg2, received5);
+
+                        expectedRead = msg1.Length - 1;
+                        Assert.Equal(expectedRead, await server.ReadAsync(received6, 0, expectedRead));  // read one less than message
+                        Assert.False(server.IsMessageComplete);
+                        for (int i = 0; i < expectedRead; ++i)
+                        {
+                            Assert.Equal(msg1[i], received6[i]);
+                        }
+
+                        expectedRead = msg1.Length - expectedRead;
+                        Assert.Equal(expectedRead, await server.ReadAsync(received6, msg1.Length - expectedRead, expectedRead));
+                        Assert.True(server.IsMessageComplete);
+                        Assert.Equal(msg1, received6);
+                    });
+
+                    Assert.True(Task.WaitAll(new[] { clientTask, serverTask }, TimeSpan.FromSeconds(15)));
                 }
             }
         }
@@ -233,7 +236,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix currently doesn't support message mode
-        public void Unix_MessagePipeTransissionMode()
+        public void Unix_MessagePipeTransmissionMode()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message));
         }

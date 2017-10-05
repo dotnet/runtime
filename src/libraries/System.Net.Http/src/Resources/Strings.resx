@@ -381,6 +381,9 @@
   <data name="net_http_ssl_connection_failed" xml:space="preserve">
     <value>The SSL connection could not be established, see inner exception.</value>
   </data>
+  <data name="net_http_unsupported_chunking" xml:space="preserve">
+    <value>HTTP 1.0 does not support chunking.</value>
+  </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>

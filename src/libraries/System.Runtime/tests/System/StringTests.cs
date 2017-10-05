@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -397,6 +398,17 @@ namespace System.Tests
             }
             Assert.Equal(expected, string.Concat(values));
             Assert.Equal(expected, string.Concat((IEnumerable<object>)values));
+        }
+
+        [Theory]
+        [InlineData(new char[0], "")]
+        [InlineData(new char[] { 'a' }, "a")]
+        [InlineData(new char[] { 'a', 'b' }, "ab")]
+        [InlineData(new char[] { 'a', '\0', 'b' }, "a\0b")]
+        [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g' }, "abcdefg")]
+        public static void Concat_CharEnumerable(char[] values, string expected)
+        {
+            Assert.Equal(expected, string.Concat(values.Select(c => c)));
         }
 
         [Fact]

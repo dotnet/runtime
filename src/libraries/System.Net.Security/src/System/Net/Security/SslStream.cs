@@ -281,7 +281,7 @@ namespace System.Net.Security
         public virtual Task ShutdownAsync() =>
             Task.Factory.FromAsync(
                 (callback, state) => ((SslStream)state).BeginShutdown(callback, state),
-                iar => ((SslStream)iar.AsyncState).EndShutdown(iar), 
+                iar => ((SslStream)iar.AsyncState).EndShutdown(iar),
                 this);
         #endregion
 
@@ -564,6 +564,16 @@ namespace System.Net.Security
         public override void EndWrite(IAsyncResult asyncResult)
         {
             _sslState.SecureStream.EndWrite(asyncResult);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return _sslState.SecureStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        {
+            return _sslState.SecureStream.WriteAsync(source, cancellationToken);
         }
     }
 }

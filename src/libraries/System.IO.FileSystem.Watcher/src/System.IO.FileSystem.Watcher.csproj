@@ -41,9 +41,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.CreateFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
@@ -57,6 +54,30 @@
       <Link>Common\Interop\Windows\kernel32\Interop.ReadDirectoryChangesW.cs</Link>
     </Compile>
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
+  </ItemGroup>
+  <!-- Windows : Win32 only -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Windows : UAP - Win32 + WinRT -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile2.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.uap.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.uap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs">
+      <Link>Common\Interop\Windows\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs">
+      <Link>Common\Interop\Windows\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">

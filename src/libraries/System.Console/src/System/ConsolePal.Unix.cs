@@ -1074,14 +1074,14 @@ namespace System
                 ValidateRead(buffer, offset, count);
 
                 return ConsolePal.Read(_handle, buffer, offset, count);
-                }
+            }
 
             public override void Write(byte[] buffer, int offset, int count)
             {
                 ValidateWrite(buffer, offset, count);
 
                 ConsolePal.Write(_handle, buffer, offset, count);
-                }
+            }
 
             public override void Flush()
             {

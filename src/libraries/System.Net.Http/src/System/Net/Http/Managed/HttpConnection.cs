@@ -27,6 +27,7 @@ namespace System.Net.Http
         private const int Expect100TimeoutMilliseconds = 1000;
 
         private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
+        private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.0\r\n");
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
         private static readonly byte[] s_hostKeyAndSeparator = Encoding.ASCII.GetBytes(HttpKnownHeaderNames.Host + ": ");
 
@@ -190,15 +191,10 @@ namespace System.Net.Http
             _currentRequest = request;
             try
             {
+                bool isHttp10 = request.Version.Major == 1 && request.Version.Minor == 0;
+
                 // Send the request.
                 if (NetEventSource.IsEnabled) Trace($"Sending request: {request}");
-
-                if (request.Version.Major != 1 || request.Version.Minor != 1)
-                {
-                    // TODO #23132: Support 1.0
-                    // TODO #23134: Support 2.0
-                    throw new PlatformNotSupportedException($"Only HTTP 1.1 supported -- request.Version was {request.Version}");
-                }
 
                 // Add headers to define content transfer, if not present
                 if (request.Content != null &&
@@ -209,13 +205,22 @@ namespace System.Net.Http
                     request.Headers.TransferEncodingChunked = true;
                 }
 
+                if (isHttp10 && request.HasHeaders && request.Headers.TransferEncodingChunked == true)
+                {
+                    // HTTP 1.0 does not support chunking
+                    throw new NotSupportedException(SR.net_http_unsupported_chunking);
+                }
+
                 // Write request line
                 await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
                 await WriteStringAsync(
                     _usingProxy ? request.RequestUri.AbsoluteUri : request.RequestUri.PathAndQuery,
                     cancellationToken).ConfigureAwait(false);
-                await WriteBytesAsync(s_spaceHttp11NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
+
+                // fall-back to 1.1 for all versions other than 1.0
+                await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes,
+                                      cancellationToken).ConfigureAwait(false);
 
                 // Write request headers
                 if (request.HasHeaders)
@@ -225,7 +230,7 @@ namespace System.Net.Http
 
                 if (request.Content == null)
                 {
-                    // Write out Content-Length: 0 header to indicate no body, 
+                    // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
                     if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
                     {
@@ -347,7 +352,7 @@ namespace System.Net.Http
                 }
 
                 // Create the response stream.
-                HttpContentReadStream responseStream;
+                HttpContentStream responseStream;
                 if (request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304)
                 {
                     responseStream = EmptyReadStream.Instance;
@@ -369,6 +374,10 @@ namespace System.Net.Http
                 else if (response.Headers.TransferEncodingChunked == true)
                 {
                     responseStream = new ChunkedEncodingReadStream(this);
+                }
+                else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
+                {
+                    responseStream = new RawConnectionStream(this);
                 }
                 else
                 {

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -109,6 +110,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Replace_String_TestData))]
+        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Replace_String_TestData), 3, MemberType = typeof(RegexCompilationHelper))]
         public void Replace(string pattern, string input, string replacement, RegexOptions options, int count, int start, string expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
@@ -178,6 +180,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Replace_MatchEvaluator_TestData))]
+        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Replace_MatchEvaluator_TestData), 3, MemberType = typeof(RegexCompilationHelper))]
         public void Replace(string pattern, string input, MatchEvaluator evaluator, RegexOptions options, int count, int start, string expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);

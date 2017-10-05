@@ -142,6 +142,7 @@ namespace System.Diagnostics.Tests
             Assert.Null(stackTrace.GetFrame(0));
         }
 
+        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -191,6 +192,7 @@ namespace System.Diagnostics.Tests
             Assert.Null(stackTrace.GetFrame(0));
         }
 
+        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]

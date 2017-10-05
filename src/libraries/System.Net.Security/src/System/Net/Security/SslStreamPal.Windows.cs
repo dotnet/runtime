@@ -131,13 +131,13 @@ namespace System.Net.Security
             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] input, int offset, int size, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
+        public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             // Ensure that there is sufficient space for the message output.
             int bufferSizeNeeded;
             try
             {
-                bufferSizeNeeded = checked(size + headerSize + trailerSize);
+                bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
             }
             catch
             {
@@ -150,8 +150,8 @@ namespace System.Net.Security
             }
 
             // Copy the input into the output buffer to prepare for SCHANNEL's expectations
-            Buffer.BlockCopy(input, offset, output, headerSize, size);
-
+            input.Span.CopyTo(new Span<byte>(output, headerSize, input.Length));
+            
             const int NumSecBuffers = 4; // header + data + trailer + empty
             var unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
             var sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers);
@@ -166,11 +166,11 @@ namespace System.Net.Security
                 Interop.SspiCli.SecBuffer* dataSecBuffer = &unmanagedBuffer[1];
                 dataSecBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                 dataSecBuffer->pvBuffer = (IntPtr)(outputPtr + headerSize);
-                dataSecBuffer->cbBuffer = size;
+                dataSecBuffer->cbBuffer = input.Length;
 
                 Interop.SspiCli.SecBuffer* trailerSecBuffer = &unmanagedBuffer[2];
                 trailerSecBuffer->BufferType = SecurityBufferType.SECBUFFER_STREAM_TRAILER;
-                trailerSecBuffer->pvBuffer = (IntPtr)(outputPtr + headerSize + size);
+                trailerSecBuffer->pvBuffer = (IntPtr)(outputPtr + headerSize + input.Length);
                 trailerSecBuffer->cbBuffer = trailerSize;
 
                 Interop.SspiCli.SecBuffer* emptySecBuffer = &unmanagedBuffer[3];

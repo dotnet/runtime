@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Tests
 {
-    public class StringWriterTests
+    public partial class StringWriterTests
     {
         static int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue, short.MinValue };
         static int[] iArrLargeValues = new int[] { int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };

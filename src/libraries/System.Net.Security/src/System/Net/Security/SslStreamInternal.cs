@@ -111,7 +111,7 @@ namespace System.Net.Security
             ValidateParameters(buffer, offset, count);
 
             SslWriteSync writeAdapter = new SslWriteSync(_sslState);
-            WriteAsyncInternal(writeAdapter, buffer, offset, count).GetAwaiter().GetResult();
+            WriteAsyncInternal(writeAdapter, new ReadOnlyMemory<byte>(buffer, offset, count)).GetAwaiter().GetResult();
         }
 
         internal IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
@@ -162,12 +162,16 @@ namespace System.Net.Security
 
         internal void EndWrite(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
+        internal Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            SslWriteAsync writeAdapter = new SslWriteAsync(_sslState, cancellationToken);
+            return WriteAsyncInternal(writeAdapter, buffer);
+        }
+
         internal Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateParameters(buffer, offset, count);
-
-            SslWriteAsync writeAdapter = new SslWriteAsync(_sslState, cancellationToken);
-            return WriteAsyncInternal(writeAdapter, buffer, offset, count);
+            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
         }
 
         private void ResetReadBuffer()
@@ -236,12 +240,12 @@ namespace System.Net.Security
             return request;
         }
 
-        private Task WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, byte[] buffer, int offset, int count)
+        private Task WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TWriteAdapter : struct, ISslWriteAdapter
         {
             _sslState.CheckThrow(authSuccessCheck: true, shutdownCheck: true);
 
-            if (count == 0 && !SslStreamPal.CanEncryptEmptyMessage)
+            if (buffer.Length == 0 && !SslStreamPal.CanEncryptEmptyMessage)
             {
                 // If it's an empty message and the PAL doesn't support that, we're done.
                 return Task.CompletedTask;
@@ -252,9 +256,9 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
             }
 
-            Task t = count < _sslState.MaxDataSize ?
-                    WriteSingleChunk(writeAdapter, buffer, offset, count) :
-                    WriteAsyncChunked(writeAdapter, buffer, offset, count);
+            Task t = buffer.Length < _sslState.MaxDataSize ?
+                    WriteSingleChunk(writeAdapter, buffer) :
+                    WriteAsyncChunked(writeAdapter, buffer);
 
             if (t.IsCompletedSuccessfully)
             {
@@ -287,7 +291,7 @@ namespace System.Net.Security
             }
         }
 
-        private Task WriteSingleChunk<TWriteAdapter>(TWriteAdapter writeAdapter, byte[] buffer, int offset, int count)
+        private Task WriteSingleChunk<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TWriteAdapter : struct, ISslWriteAdapter
         {
             // Request a write IO slot.
@@ -295,13 +299,13 @@ namespace System.Net.Security
             if (!ioSlot.IsCompletedSuccessfully)
             {
                 // Operation is async and has been queued, return.
-                return WaitForWriteIOSlot(writeAdapter, ioSlot, buffer, offset, count);
+                return WaitForWriteIOSlot(writeAdapter, ioSlot, buffer);
             }
 
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(count + FrameOverhead);
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
             byte[] outBuffer = rentedBuffer;
 
-            SecurityStatusPal status = _sslState.EncryptData(buffer, offset, count, ref outBuffer, out int encryptedBytes);
+            SecurityStatusPal status = _sslState.EncryptData(buffer, ref outBuffer, out int encryptedBytes);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
@@ -323,10 +327,10 @@ namespace System.Net.Security
                 return CompleteAsync(t, rentedBuffer);
             }
 
-            async Task WaitForWriteIOSlot(TWriteAdapter wAdapter, Task lockTask, byte[] buff, int off, int c)
+            async Task WaitForWriteIOSlot(TWriteAdapter wAdapter, Task lockTask, ReadOnlyMemory<byte> buff)
             {
                 await lockTask.ConfigureAwait(false);
-                await WriteSingleChunk(wAdapter, buff, off, c).ConfigureAwait(false);
+                await WriteSingleChunk(wAdapter, buff).ConfigureAwait(false);
             }
 
             async Task CompleteAsync(Task writeTask, byte[] bufferToReturn)
@@ -343,17 +347,16 @@ namespace System.Net.Security
             }
         }
 
-        private async Task WriteAsyncChunked<TWriteAdapter>(TWriteAdapter writeAdapter, byte[] buffer, int offset, int count)
+        private async Task WriteAsyncChunked<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TWriteAdapter : struct, ISslWriteAdapter
         {
             do
             {
-                int chunkBytes = Math.Min(count, _sslState.MaxDataSize);
-                await WriteSingleChunk(writeAdapter, buffer, offset, chunkBytes).ConfigureAwait(false);
-                offset += chunkBytes;
-                count -= chunkBytes;
+                int chunkBytes = Math.Min(buffer.Length, _sslState.MaxDataSize);
+                await WriteSingleChunk(writeAdapter, buffer.Slice(0, chunkBytes)).ConfigureAwait(false);
+                buffer = buffer.Slice(chunkBytes);
 
-            } while (count != 0);
+            } while (buffer.Length != 0);
         }
 
         // Fill the buffer up to the minimum specified size (or more, if possible).

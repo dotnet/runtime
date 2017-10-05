@@ -13,23 +13,20 @@ namespace System.Net.WebSockets
     public sealed class ClientWebSocketOptions
     {
         private bool _isReadOnly; // After ConnectAsync is called the options cannot be modified.
-        private readonly List<string> _requestedSubProtocols;
-        private readonly WebHeaderCollection _requestHeaders;
         private TimeSpan _keepAliveInterval = WebSocket.DefaultKeepAliveInterval;
         private bool _useDefaultCredentials;
         private ICredentials _credentials;
         private IWebProxy _proxy;
-        private X509CertificateCollection _clientCertificates;
         private CookieContainer _cookies;
         private int _receiveBufferSize = 0x1000;
         private int _sendBufferSize = 0x1000;
         private ArraySegment<byte>? _buffer;
 
-        internal ClientWebSocketOptions()
-        {
-            _requestedSubProtocols = new List<string>();
-            _requestHeaders = new WebHeaderCollection();
-        }
+        internal X509CertificateCollection _clientCertificates;
+        internal WebHeaderCollection _requestHeaders;
+        internal List<string> _requestedSubProtocols;
+
+        internal ClientWebSocketOptions() { } // prevent external instantiation
 
         #region HTTP Settings
 
@@ -39,12 +36,14 @@ namespace System.Net.WebSockets
             ThrowIfReadOnly();
 
             // WebHeaderCollection performs validation of headerName/headerValue.
-            _requestHeaders.Set(headerName, headerValue);
+            RequestHeaders.Set(headerName, headerValue);
         }
 
-        internal WebHeaderCollection RequestHeaders { get { return _requestHeaders; } }
+        internal WebHeaderCollection RequestHeaders =>
+            _requestHeaders ?? (_requestHeaders = new WebHeaderCollection());
 
-        internal List<string> RequestedSubProtocols {  get { return _requestedSubProtocols;} }
+        internal List<string> RequestedSubProtocols =>
+            _requestedSubProtocols ?? (_requestedSubProtocols = new List<string>());
 
         public bool UseDefaultCredentials
         {
@@ -131,14 +130,15 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateSubprotocol(subProtocol);
 
             // Duplicates not allowed.
-            foreach (string item in _requestedSubProtocols)
+            List<string> subprotocols = RequestedSubProtocols; // force initialization of the list
+            foreach (string item in subprotocols)
             {
                 if (string.Equals(item, subProtocol, StringComparison.OrdinalIgnoreCase))
                 {
                     throw new ArgumentException(SR.Format(SR.net_WebSockets_NoDuplicateProtocol, subProtocol), nameof(subProtocol));
                 }
             }
-            _requestedSubProtocols.Add(subProtocol);
+            subprotocols.Add(subProtocol);
         }
 
         public TimeSpan KeepAliveInterval

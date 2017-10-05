@@ -151,7 +151,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-#if DEBUG
         internal static int OpcodeSize(int opcode)
         {
             opcode &= Mask;
@@ -212,6 +211,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
+#if DEBUG
         private static readonly string[] CodeStr = new string[]
         {
             "Onerep", "Notonerep", "Setrep",
