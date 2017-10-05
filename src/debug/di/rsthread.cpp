@@ -1471,7 +1471,15 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
 
     FLOATING_SAVE_AREA currentFPUState;
 
+#ifdef _MSC_VER
     __asm fnsave currentFPUState // save the current FPU state.
+#else
+    __asm__ __volatile__
+    (
+        "  fnsave %0\n" \
+        : "=m"(currentFPUState)
+    );
+#endif
 
     floatarea.StatusWord &= 0xFF00; // remove any error codes.
     floatarea.ControlWord |= 0x3F; // mask all exceptions.
@@ -1482,12 +1490,22 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     // @dbgtodo Microsoft crossplat: the conversion from a series of bytes to a floating 
     // point value will need to be done with an explicit conversion routine to unpack
     // the IEEE format and compute the real number value represented. 
-    
+
+#ifdef _MSC_VER
     __asm
     {
         fninit
         frstor floatarea          ;; reload the threads FPU state.
     }
+#else
+    __asm__
+    (
+        "  fninit\n" \
+        "  frstor %0\n" \
+        : /* no outputs */
+        : "m"(floatarea)
+    );
+#endif
 
     unsigned int i;
 
@@ -1498,11 +1516,21 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
         m_floatValues[i] = td;
     }
 
+#ifdef _MSC_VER
     __asm
     {
         fninit
         frstor currentFPUState    ;; restore our saved FPU state.
     }
+#else
+    __asm__
+    (
+        "  fninit\n" \
+        "  frstor %0\n" \
+        : /* no outputs */
+        : "m"(currentFPUState)
+    );
+#endif
 
     m_fFloatStateValid = true;
     m_floatStackTop = floatStackTop;
