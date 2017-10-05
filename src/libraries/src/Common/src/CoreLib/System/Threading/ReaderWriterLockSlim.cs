@@ -55,7 +55,7 @@ namespace System.Threading
     {
         private static readonly int ProcessorCount = Environment.ProcessorCount;
 
-        //Specifying if locked can be reacquired recursively.
+        //Specifying if the lock can be reacquired recursively.
         private readonly bool _fIsReentrant;
 
         // Lock specification for _spinLock:  This lock protects exactly the local fields associated with this
@@ -967,7 +967,51 @@ namespace System.Threading
             Debug.Assert(_spinLock.IsHeld);
 #endif
 
+            WaiterStates waiterSignaledState = WaiterStates.None;
+            EnterSpinLockReason enterMyLockReason;
+            switch (enterLockType)
+            {
+                case EnterLockType.UpgradeableRead:
+                    waiterSignaledState = WaiterStates.UpgradeableReadWaiterSignaled;
+                    goto case EnterLockType.Read;
+
+                case EnterLockType.Read:
+                    enterMyLockReason = EnterSpinLockReason.EnterAnyRead;
+                    break;
+
+                case EnterLockType.Write:
+                    waiterSignaledState = WaiterStates.WriteWaiterSignaled;
+                    enterMyLockReason = EnterSpinLockReason.EnterWrite;
+                    break;
+
+                default:
+                    Debug.Assert(enterLockType == EnterLockType.UpgradeToWrite);
+                    enterMyLockReason = EnterSpinLockReason.UpgradeToWrite;
+                    break;
+            }
+
+            // It was not possible to acquire the RW lock because some other thread was holding some type of lock. The other
+            // thread, when it releases its lock, will wake appropriate waiters. Along with resetting the wait event, clear the
+            // waiter signaled bit for this type of waiter if applicable, to indicate that a waiter of this type is no longer
+            // signaled.
+            //
+            // If the waiter signaled bit is not updated upon event reset, the following scenario would lead to deadlock:
+            //   - Thread T0 signals the write waiter event or the upgradeable read waiter event to wake a waiter
+            //   - There are no threads waiting on the event, but T1 is in WaitOnEvent() after exiting the spin lock and before
+            //     actually waiting on the event (that is, it's recorded that there is one waiter for the event). It remains in
+            //     this region for a while, in the repro case it typically gets context-switched out.
+            //   - T2 acquires the RW lock in some fashion that blocks T0 or T3 from acquiring the RW lock
+            //   - T0 or T3 fails to acquire the RW lock enough times for it to enter WaitOnEvent for the same event as T1
+            //   - T0 or T3 resets the event
+            //   - T2 releases the RW lock and does not wake a waiter because the reset at the previous step lost a signal but
+            //     _waiterStates was not updated to reflect that
+            //   - T1 and other threads begin waiting on the event, but there's no longer any thread that would wake them
+            if (waiterSignaledState != WaiterStates.None && (_waiterStates & waiterSignaledState) != WaiterStates.None)
+            {
+                _waiterStates &= ~waiterSignaledState;
+            }
             waitEvent.Reset();
+
             numWaiters++;
             HasNoWaiters = false;
 
@@ -986,40 +1030,19 @@ namespace System.Threading
             }
             finally
             {
-                WaiterStates waiterSignaledState = WaiterStates.None;
-                EnterSpinLockReason enterMyLockReason;
-                switch (enterLockType)
-                {
-                    case EnterLockType.UpgradeableRead:
-                        waiterSignaledState = WaiterStates.UpgradeableReadWaiterSignaled;
-                        goto case EnterLockType.Read;
-
-                    case EnterLockType.Read:
-                        enterMyLockReason = EnterSpinLockReason.EnterAnyRead;
-                        break;
-
-                    case EnterLockType.Write:
-                        waiterSignaledState = WaiterStates.WriteWaiterSignaled;
-                        enterMyLockReason = EnterSpinLockReason.EnterWrite;
-                        break;
-
-                    default:
-                        Debug.Assert(enterLockType == EnterLockType.UpgradeToWrite);
-                        enterMyLockReason = EnterSpinLockReason.UpgradeToWrite;
-                        break;
-                }
                 _spinLock.Enter(enterMyLockReason);
 
                 --numWaiters;
 
-                if (waitSuccessful && waiterSignaledState != WaiterStates.None)
+                if (waitSuccessful &&
+                    waiterSignaledState != WaiterStates.None &&
+                    (_waiterStates & waiterSignaledState) != WaiterStates.None)
                 {
                     // Indicate that a signaled waiter of this type has woken. Since non-read waiters are signaled to wake one
                     // at a time, we avoid waking up more than one waiter of that type upon successive enter/exit loops until
                     // the signaled thread actually wakes up. For example, if there are multiple write waiters and one thread is
                     // repeatedly entering and exiting a write lock, every exit would otherwise signal a different write waiter
                     // to wake up unnecessarily when only one woken waiter may actually succeed in entering the write lock.
-                    Debug.Assert((_waiterStates & waiterSignaledState) != WaiterStates.None);
                     _waiterStates &= ~waiterSignaledState;
                 }
 
