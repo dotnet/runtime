@@ -2677,22 +2677,22 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     // The register allocator should have extended the lifetime of the address
     // so that it is not used as the target.
-    assert(addrReg != targetReg);
+    noway_assert(addrReg != targetReg);
 
-    assert(addrReg != loadReg);
-    assert(dataReg != loadReg);
+    noway_assert(addrReg != loadReg);
+    noway_assert(dataReg != loadReg);
 
-    assert(addrReg != storeDataReg);
-    assert((treeNode->OperGet() == GT_XCHG) || (addrReg != dataReg));
+    noway_assert(addrReg != storeDataReg);
+    noway_assert((treeNode->OperGet() == GT_XCHG) || (addrReg != dataReg));
 
     assert(addr->isUsedFromReg());
-    assert(exResultReg != REG_NA);
-    assert(exResultReg != targetReg);
-    assert((targetReg != REG_NA) || (treeNode->OperGet() != GT_XCHG));
+    noway_assert(exResultReg != REG_NA);
+    noway_assert(exResultReg != targetReg);
+    noway_assert((targetReg != REG_NA) || (treeNode->OperGet() != GT_XCHG));
 
     // Store exclusive unpredictable cases must be avoided
-    assert(exResultReg != storeDataReg);
-    assert(exResultReg != addrReg);
+    noway_assert(exResultReg != storeDataReg);
+    noway_assert(exResultReg != addrReg);
 
     genConsumeAddress(addr);
     genConsumeRegs(data);
@@ -2718,6 +2718,9 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     BasicBlock* labelRetry = genCreateTempLabel();
     genDefineTempLabel(labelRetry);
 
+    // The following instruction includes a acquire half barrier
+    // TODO-ARM64-CQ Evaluate whether this is necessary
+    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R(INS_ldaxr, emitTypeSize(treeNode), loadReg, addrReg);
 
     switch (treeNode->OperGet())
@@ -2744,6 +2747,9 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
             unreached();
     }
 
+    // The following instruction includes a release half barrier
+    // TODO-ARM64-CQ Evaluate whether this is necessary
+    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R_R(INS_stlxr, emitTypeSize(treeNode), exResultReg, storeDataReg, addrReg);
 
     getEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
@@ -2777,21 +2783,21 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     regNumber exResultReg  = treeNode->ExtractTempReg(RBM_ALLINT);
 
     // Check allocator assumptions
-    assert(addrReg != targetReg);
-    assert(dataReg != targetReg);
-    assert(comparandReg != targetReg);
-    assert(addrReg != dataReg);
-    assert(targetReg != REG_NA);
-    assert(exResultReg != REG_NA);
-    assert(exResultReg != targetReg);
+    noway_assert(addrReg != targetReg);
+    noway_assert(dataReg != targetReg);
+    noway_assert(comparandReg != targetReg);
+    noway_assert(addrReg != dataReg);
+    noway_assert(targetReg != REG_NA);
+    noway_assert(exResultReg != REG_NA);
+    noway_assert(exResultReg != targetReg);
 
     assert(addr->isUsedFromReg());
     assert(data->isUsedFromReg());
     assert(!comparand->isUsedFromMemory());
 
     // Store exclusive unpredictable cases must be avoided
-    assert(exResultReg != dataReg);
-    assert(exResultReg != addrReg);
+    noway_assert(exResultReg != dataReg);
+    noway_assert(exResultReg != addrReg);
 
     genConsumeAddress(addr);
     genConsumeRegs(data);
@@ -2820,6 +2826,9 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     BasicBlock* labelCompareFail = genCreateTempLabel();
     genDefineTempLabel(labelRetry);
 
+    // The following instruction includes a acquire half barrier
+    // TODO-ARM64-CQ Evaluate whether this is necessary
+    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R(INS_ldaxr, emitTypeSize(treeNode), targetReg, addrReg);
 
     if (comparand->isContainedIntOrIImmed())
@@ -2841,6 +2850,9 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         getEmitter()->emitIns_J(INS_bne, labelCompareFail);
     }
 
+    // The following instruction includes a release half barrier
+    // TODO-ARM64-CQ Evaluate whether this is necessary
+    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R_R(INS_stlxr, emitTypeSize(treeNode), exResultReg, dataReg, addrReg);
 
     getEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
