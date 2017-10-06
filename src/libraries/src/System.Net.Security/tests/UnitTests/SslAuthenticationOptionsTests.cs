@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -10,8 +11,8 @@ namespace System.Net.Security.Tests
 {
     public class SslAuthenticationOptionsTests
     {
-        private SslClientAuthenticationOptions _clientOptions = new SslClientAuthenticationOptions();
-        private SslServerAuthenticationOptions _serverOptions = new SslServerAuthenticationOptions();
+        private readonly SslClientAuthenticationOptions _clientOptions = new SslClientAuthenticationOptions();
+        private readonly SslServerAuthenticationOptions _serverOptions = new SslServerAuthenticationOptions();
 
         [Fact]
         public void AllowRenegotiation_Get_Set_Succeeds()
@@ -41,7 +42,7 @@ namespace System.Net.Security.Tests
             Assert.Null(_clientOptions.ApplicationProtocols);
             Assert.Null(_serverOptions.ApplicationProtocols);
 
-            SslApplicationProtocol[] applnProtos = new SslApplicationProtocol[] { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+            List<SslApplicationProtocol> applnProtos = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
             _clientOptions.ApplicationProtocols = applnProtos;
             _serverOptions.ApplicationProtocols = applnProtos;
 
@@ -79,11 +80,10 @@ namespace System.Net.Security.Tests
         [InlineData("\u0bee")]
         [InlineData("hello")]
         [InlineData(" \t")]
+        [InlineData(null)]
         public void TargetHost_Get_Set_Succeeds(string expected)
         {
             Assert.Null(_clientOptions.TargetHost);
-            Assert.Throws<ArgumentNullException>(() => _clientOptions.TargetHost = null);
-
             _clientOptions.TargetHost = expected;
             Assert.Equal(expected, _clientOptions.TargetHost);
         }
@@ -106,8 +106,9 @@ namespace System.Net.Security.Tests
         public void ServerCertificate_Get_Set_Succeeds()
         {
             Assert.Null(_serverOptions.ServerCertificate);
-            Assert.Throws<ArgumentNullException>(() => _serverOptions.ServerCertificate = null);
+            _serverOptions.ServerCertificate = null;
 
+            Assert.Null(_serverOptions.ServerCertificate);
             X509Certificate cert = new X509Certificate();
             _serverOptions.ServerCertificate = cert;
 
@@ -130,17 +131,17 @@ namespace System.Net.Security.Tests
         [Fact]
         public void CheckCertificateRevocation_Get_Set_Succeeds()
         {
-            Assert.Equal(X509RevocationMode.NoCheck, _clientOptions.CheckCertificateRevocation);
-            Assert.Equal(X509RevocationMode.NoCheck, _serverOptions.CheckCertificateRevocation);
+            Assert.Equal(X509RevocationMode.NoCheck, _clientOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.NoCheck, _serverOptions.CertificateRevocationCheckMode);
 
-            _clientOptions.CheckCertificateRevocation = X509RevocationMode.Online;
-            _serverOptions.CheckCertificateRevocation = X509RevocationMode.Offline;
+            _clientOptions.CertificateRevocationCheckMode = X509RevocationMode.Online;
+            _serverOptions.CertificateRevocationCheckMode = X509RevocationMode.Offline;
 
-            Assert.Equal(X509RevocationMode.Online, _clientOptions.CheckCertificateRevocation);
-            Assert.Equal(X509RevocationMode.Offline, _serverOptions.CheckCertificateRevocation);
+            Assert.Equal(X509RevocationMode.Online, _clientOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.Offline, _serverOptions.CertificateRevocationCheckMode);
 
-            Assert.Throws<ArgumentException>(() => _clientOptions.CheckCertificateRevocation = (X509RevocationMode)3);
-            Assert.Throws<ArgumentException>(() => _serverOptions.CheckCertificateRevocation = (X509RevocationMode)3);
+            Assert.Throws<ArgumentException>(() => _clientOptions.CertificateRevocationCheckMode = (X509RevocationMode)3);
+            Assert.Throws<ArgumentException>(() => _serverOptions.CertificateRevocationCheckMode = (X509RevocationMode)3);
         }
 
         [Fact]

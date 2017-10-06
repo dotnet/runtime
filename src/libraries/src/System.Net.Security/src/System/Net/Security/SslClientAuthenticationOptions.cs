@@ -26,21 +26,21 @@ namespace System.Net.Security
 
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
 
-        public IList<SslApplicationProtocol> ApplicationProtocols { get; set; }
+        public List<SslApplicationProtocol> ApplicationProtocols { get; set; }
 
         public string TargetHost
         {
             get => _targetHost;
-            set => _targetHost = value ?? throw new ArgumentNullException(nameof(value));
+            set => _targetHost = value;
         }
 
         public X509CertificateCollection ClientCertificates
         {
             get => _clientCertificates;
-            set => _clientCertificates = value ?? new X509CertificateCollection();
+            set => _clientCertificates = value;
         }
 
-        public X509RevocationMode CheckCertificateRevocation
+        public X509RevocationMode CertificateRevocationCheckMode
         {
             get => _checkCertificateRevocation;
             set

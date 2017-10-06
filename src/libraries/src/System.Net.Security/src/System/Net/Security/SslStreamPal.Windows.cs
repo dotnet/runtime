@@ -41,7 +41,7 @@ namespace System.Net.Security
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
         }
 
-        public static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> protocols)
+        public static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> protocols)
         {
             return Interop.Sec_Application_Protocols.ToByteArray(protocols);
         }
@@ -182,12 +182,14 @@ namespace System.Net.Security
                 context,
                 Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL) as Interop.SecPkgContext_ApplicationProtocol;
 
-            if (alpnContext == null || alpnContext.NegotiationExtension != Interop.ApplicationProtocolNegotiationExt.ALPN || alpnContext.NegotiationStatus != Interop.ApplicationProtocolNegotiationStatus.Success)
+            if (alpnContext == null ||
+                alpnContext.ProtoNegoExt != Interop.ApplicationProtocolNegotiationExt.ALPN ||
+                alpnContext.ProtoNegoStatus != Interop.ApplicationProtocolNegotiationStatus.Success)
             {
                 return null;
             }
 
-            return alpnContext.GetProtocolId();
+            return alpnContext.Protocol;
         }
 
         public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)

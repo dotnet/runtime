@@ -394,6 +394,21 @@ namespace System.Net.Security.Tests
             }
         }
 
+        private bool DoHandshakeWithOptions(SslStream clientSslStream, SslStream serverSslStream, SslClientAuthenticationOptions clientOptions, SslServerAuthenticationOptions serverOptions)
+        {
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
+                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
+                serverOptions.ServerCertificate = certificate;
+
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+                return Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds);
+            }
+        }
+
         [Fact]
         public void SslStream_StreamToStream_DuplicateOptions_Throws()
         {
@@ -420,60 +435,27 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]
-        public void SslStream_StreamToStream_Alpn_InvalidProtocolList()
-        {
-            VirtualNetwork network = new VirtualNetwork();
-            using (var clientStream = new VirtualNetworkStream(network, false))
-            using (var serverStream = new VirtualNetworkStream(network, true))
-            using (var client = new SslStream(clientStream, false))
-            using (var server = new SslStream(serverStream, false))
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
-            {
-                SslApplicationProtocol LongLength = new SslApplicationProtocol(
-                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
-                clientOptions.ApplicationProtocols = new[] { LongLength };
-                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
-                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
-
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ApplicationProtocols = new[] { LongLength };
-                serverOptions.ServerCertificate = certificate;
-
-                Assert.ThrowsAsync<ArgumentException>(() => { return client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None); });
-                Assert.ThrowsAsync<ArgumentException>(() => { return server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None); });
-            }
-        }
-
         [Theory]
         [MemberData(nameof(Alpn_TestData))]
-        public void SslStream_StreamToStream_Alpn_Success(IList<SslApplicationProtocol> clientProtocols, IList<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
+        public void SslStream_StreamToStream_Alpn_Success(List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
             VirtualNetwork network = new VirtualNetwork();
             using (var clientStream = new VirtualNetworkStream(network, false))
             using (var serverStream = new VirtualNetworkStream(network, true))
             using (var client = new SslStream(clientStream, false))
             using (var server = new SslStream(serverStream, false))
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
-                clientOptions.ApplicationProtocols = clientProtocols;
-                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
-                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    ApplicationProtocols = clientProtocols,
+                };
 
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ApplicationProtocols = serverProtocols;
-                serverOptions.ServerCertificate = certificate;
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ApplicationProtocols = serverProtocols,
+                };
 
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-
-                Assert.True(Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds));
+                Assert.True(DoHandshakeWithOptions(client, server, clientOptions, serverOptions));
 
                 Assert.Equal(expected, client.NegotiatedApplicationProtocol);
                 Assert.Equal(expected, server.NegotiatedApplicationProtocol);
@@ -482,7 +464,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(~TestPlatforms.OSX)]
-        public void SslStream_StreamToStream_Alpn_Fail()
+        public void SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail()
         {
             VirtualNetwork network = new VirtualNetwork();
             using (var clientStream = new VirtualNetworkStream(network, false))
@@ -491,39 +473,43 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(serverStream, false))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
-                clientOptions.ApplicationProtocols = new[] { SslApplicationProtocol.Http11 };
-                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
-                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 },
+                    RemoteCertificateValidationCallback = AllowAnyServerCertificate,
+                    TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                };
 
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ApplicationProtocols = new[] { SslApplicationProtocol.Http2 };
-                serverOptions.ServerCertificate = certificate;
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
+                    ServerCertificate = certificate,
+                };
 
                 Assert.ThrowsAsync<AuthenticationException>(() => { return client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None); });
                 Assert.ThrowsAsync<AuthenticationException>(() => { return server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None); });
             }
         }
-        
+
         internal static IEnumerable<object[]> Alpn_TestData()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                yield return new object[] { new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new[] { SslApplicationProtocol.Http2 }, null };
-                yield return new object[] { new[] { SslApplicationProtocol.Http11 }, new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
-                yield return new object[] { new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
-                yield return new object[] { null, new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
-                yield return new object[] { new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, null };
-                yield return new object[] { new[] { SslApplicationProtocol.Http11 }, new[] { SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { null, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, null };
                 yield return new object[] { null, null, null };
             }
             else
             {
-                yield return new object[] { new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new[] { SslApplicationProtocol.Http2 }, SslApplicationProtocol.Http2 };
-                yield return new object[] { new[] { SslApplicationProtocol.Http11 }, new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, SslApplicationProtocol.Http11 };
-                yield return new object[] { new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, SslApplicationProtocol.Http11 };
-                yield return new object[] { null, new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
-                yield return new object[] { new[] { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, SslApplicationProtocol.Http2 };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, SslApplicationProtocol.Http11 };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, SslApplicationProtocol.Http11 };
+                yield return new object[] { null, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, null };
                 yield return new object[] { null, null, null };
             }
         }

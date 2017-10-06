@@ -49,7 +49,7 @@ internal static partial class Interop
         UnsupportedPreauth = unchecked((int)0x80090343),
         BadBinding = unchecked((int)0x80090346),
         DowngradeDetected = unchecked((int)0x80090350),
-        ApplicationProtocolMismatch = unchecked((int)0x80090367)
+        ApplicationProtocolMismatch = unchecked((int)0x80090367),
     }
 
 #if TRACE_VERBOSE

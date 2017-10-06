@@ -20,8 +20,8 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
-        private static Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
-        private static Ssl.SslCtxSetAplnCallback s_alpnServerCallback = AplnServerSelectCallback;
+        private static readonly Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
+        private static readonly Ssl.SslCtxSetAlpnCallback s_alpnServerCallback = AlpnServerSelectCallback;
 
         #region internal methods
 
@@ -103,13 +103,13 @@ internal static partial class Interop
                     {
                         byte[] protos = Interop.Ssl.ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
                         sslAuthenticationOptions.AlpnProtocolsHandle = GCHandle.Alloc(protos);
-                        Interop.Ssl.SslCtxSetAplnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(sslAuthenticationOptions.AlpnProtocolsHandle));
+                        Interop.Ssl.SslCtxSetAlpnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(sslAuthenticationOptions.AlpnProtocolsHandle));
                     }
                     else
                     {
                         if (Interop.Ssl.SslCtxSetAlpnProtos(innerContext, sslAuthenticationOptions.ApplicationProtocols) != 0)
                         {
-                            throw CreateSslException(SR.net_alpn_notsupported);
+                            throw CreateSslException(SR.net_alpn_config_failed);
                         }
                     }
                 }
@@ -330,7 +330,7 @@ internal static partial class Interop
             return OpenSslSuccess;
         }
 
-        private static unsafe int AplnServerSelectCallback(IntPtr ssl, out IntPtr outp, out byte outlen, IntPtr inp, uint inlen, IntPtr arg)
+        private static unsafe int AlpnServerSelectCallback(IntPtr ssl, out IntPtr outp, out byte outlen, IntPtr inp, uint inlen, IntPtr arg)
         {
             GCHandle protocols = GCHandle.FromIntPtr(arg);
             byte[] server = (byte[])protocols.Target;
