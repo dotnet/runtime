@@ -1292,15 +1292,18 @@ namespace System.Globalization
 
                     case '\'':
                     case '\"':
-                        StringBuilder enquotedString = new StringBuilder();
-                        if (!DateTimeParse.TryParseQuoteString(format, i, enquotedString, out tokenLen))
+                        StringBuilder enquotedString = StringBuilderCache.Acquire();
+                        if (!DateTimeParse.TryParseQuoteString(format.AsReadOnlySpan(), i, enquotedString, out tokenLen))
                         {
+                            StringBuilderCache.Release(enquotedString);
                             return result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadQuote), ch);
                         }
                         if (!ParseExactLiteral(ref tokenizer, enquotedString))
                         {
+                            StringBuilderCache.Release(enquotedString);
                             return result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_InvalidString));
                         }
+                        StringBuilderCache.Release(enquotedString);
                         break;
 
                     case '%':
