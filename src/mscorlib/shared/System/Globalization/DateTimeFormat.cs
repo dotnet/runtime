@@ -446,7 +446,7 @@ namespace System
         //
         //  Actions: Format the DateTime instance using the specified format.
         // 
-        private static String FormatCustomized(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        private static StringBuilder FormatCustomized(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset)
         {
             Calendar cal = dtfi.Calendar;
             StringBuilder result = StringBuilderCache.Acquire();
@@ -532,6 +532,7 @@ namespace System
                         }
                         else
                         {
+                            StringBuilderCache.Release(result);
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -700,6 +701,7 @@ namespace System
                             // This means that '%' is at the end of the format string or
                             // "%%" appears in the format string.
                             //
+                            StringBuilderCache.Release(result);
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -723,6 +725,7 @@ namespace System
                             //
                             // This means that '\' is at the end of the formatting string.
                             //
+                            StringBuilderCache.Release(result);
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -737,7 +740,7 @@ namespace System
                 }
                 i += tokenLen;
             }
-            return StringBuilderCache.GetStringAndRelease(result);
+            return result;
         }
 
 
@@ -966,8 +969,32 @@ namespace System
             return Format(dateTime, format, dtfi, NullOffset);
         }
 
+        internal static string Format(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset) =>
+            StringBuilderCache.GetStringAndRelease(FormatStringBuilder(dateTime, format, dtfi, offset));
 
-        internal static String Format(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, string format, DateTimeFormatInfo dtfi) =>
+            TryFormat(dateTime, destination, out charsWritten, format, dtfi, NullOffset);
+
+        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, string format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        {
+            StringBuilder sb = FormatStringBuilder(dateTime, format, dtfi, offset);
+
+            bool success = sb.Length <= destination.Length;
+            if (success)
+            {
+                sb.CopyTo(0, destination, sb.Length);
+                charsWritten = sb.Length;
+            }
+            else
+            {
+                charsWritten = 0;
+            }
+
+            StringBuilderCache.Release(sb);
+            return success;
+        }
+
+        internal static StringBuilder FormatStringBuilder(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset)
         {
             Debug.Assert(dtfi != null);
             if (format == null || format.Length == 0)
@@ -1043,10 +1070,10 @@ namespace System
                 format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, ref offset);
             }
 
-            return (FormatCustomized(dateTime, format, dtfi, offset));
+            return FormatCustomized(dateTime, format, dtfi, offset);
         }
 
-        internal static string FastFormatRfc1123(DateTime dateTime, TimeSpan offset, DateTimeFormatInfo dtfi)
+        internal static StringBuilder FastFormatRfc1123(DateTime dateTime, TimeSpan offset, DateTimeFormatInfo dtfi)
         {
             // ddd, dd MMM yyyy HH:mm:ss GMT
             const int Rfc1123FormatLength = 29;
@@ -1072,10 +1099,10 @@ namespace System
             result.Append(' ');
             result.Append(Gmt);
 
-            return StringBuilderCache.GetStringAndRelease(result);
+            return result;
         }
 
-        internal static string FastFormatRoundtrip(DateTime dateTime, TimeSpan offset)
+        internal static StringBuilder FastFormatRoundtrip(DateTime dateTime, TimeSpan offset)
         {
             // yyyy-MM-ddTHH:mm:ss.fffffffK
             const int roundTripFormatLength = 28;
@@ -1096,7 +1123,7 @@ namespace System
 
             FormatCustomizedRoundripTimeZone(dateTime, offset, result);
 
-            return StringBuilderCache.GetStringAndRelease(result);
+            return result;
         }
 
         private static void AppendHHmmssTimeOfDay(StringBuilder result, DateTime dateTime)
