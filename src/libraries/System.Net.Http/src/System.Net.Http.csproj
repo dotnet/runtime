@@ -148,8 +148,8 @@
     <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
     <Compile Include="System\Net\Http\Managed\RawConnectionStream.cs" />
   </ItemGroup>
-  <!-- Common, except for Windows net46 build -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx'">
+  <!-- Common -->
+  <ItemGroup>
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
     <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
@@ -178,7 +178,7 @@
     </Compile>
   </ItemGroup>
   <!-- WinHTTP implementation -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'netfx'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
@@ -189,29 +189,12 @@
          HttpMessageHandler.cs. We also use the HTTP_DLL define to change public classes into
          internal ones to remove confusion if someone looks at the implementation dlls. They are
          public in the separate WinHttpHandler.dll binary.  -->
-  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net46'" />
+  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'" />
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
          included directly in the project file. We have the *.msbuild define the Compile items in a made
          up item called CompileItem and then just include it here. -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
     <Compile Include="@(CompileItem)" />
-  </ItemGroup>
-  <!-- .Net Framework on Windows -->
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
-    <DefineConstants>$(DefineConstants);NET46</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
-    <Compile Include="AssemblyInfo.Net46.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.Net46.cs" />
-    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
   </ItemGroup>
   <!-- Unix -->
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
