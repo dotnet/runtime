@@ -153,5 +153,7 @@ mono_error_box (const MonoError *error, MonoImage *image);
 gboolean
 mono_error_set_from_boxed (MonoError *error, const MonoErrorBoxed *from);
 
+const char*
+mono_error_get_exception_name (MonoError *oerror);
 
 #endif

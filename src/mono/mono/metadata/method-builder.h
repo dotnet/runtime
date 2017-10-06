@@ -112,6 +112,9 @@ void
 mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg);
 
 void
+mono_mb_emit_exception_for_error (MonoMethodBuilder *mb, MonoError *error);
+
+void
 mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value);
 
 void

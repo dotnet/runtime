@@ -654,6 +654,20 @@ mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char 
 }
 
 /**
+ * mono_mb_emit_exception_for_error:
+ */
+void
+mono_mb_emit_exception_for_error (MonoMethodBuilder *mb, MonoError *error)
+{
+	/*
+	 * If at some point there is need to support other types of errors,
+	 * the behaviour should conform with mono_error_prepare_exception().
+	 */
+	g_assert (mono_error_get_error_code (error) == MONO_ERROR_GENERIC && "Unsupported error code.");
+	mono_mb_emit_exception_full (mb, "System", mono_error_get_exception_name (error), mono_error_get_message (error));
+}
+
+/**
  * mono_mb_emit_add_to_local:
  */
 void
