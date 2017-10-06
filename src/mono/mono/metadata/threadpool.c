@@ -48,6 +48,9 @@
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-os-wait.h>
 
+// consistency with coreclr https://github.com/dotnet/coreclr/blob/master/src/vm/win32threadpool.h#L111
+#define MAX_POSSIBLE_THREADS 0x7fff
+
 typedef struct {
 	MonoDomain *domain;
 	/* Number of outstanding jobs */
@@ -685,6 +688,9 @@ ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
 {
+	worker_threads = min(worker_threads, MAX_POSSIBLE_THREADS);
+	completion_port_threads = min(completion_port_threads, MAX_POSSIBLE_THREADS);
+
 	gint cpu_count = mono_cpu_count ();
 
 	if (completion_port_threads < threadpool.limit_io_min || completion_port_threads < cpu_count)
