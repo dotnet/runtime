@@ -89,5 +89,28 @@ namespace System
 
             return -1;
         }
+
+        public static ReadOnlySpan<char> Remove(this ReadOnlySpan<char> source, int startIndex, int count)
+        {
+            if (startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+            if (count > source.Length - startIndex) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexCount);
+
+            if (count == 0)
+            {
+                return source;
+            }
+
+            int newLength = source.Length - count;
+            if (newLength == 0)
+            {
+                return ReadOnlySpan<char>.Empty;
+            }
+
+            Span<char> result = new char[newLength];
+            source.Slice(0, startIndex).CopyTo(result);
+            source.Slice(startIndex + count).CopyTo(result.Slice(startIndex));
+            return result;
+        }
     }
 }

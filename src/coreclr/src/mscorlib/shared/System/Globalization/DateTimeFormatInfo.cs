@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
@@ -214,17 +215,15 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private String[] internalGetAbbreviatedDayOfWeekNames()
+        private string[] internalGetAbbreviatedDayOfWeekNames() => this.abbreviatedDayNames ?? internalGetAbbreviatedDayOfWeekNamesCore();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private string[] internalGetAbbreviatedDayOfWeekNamesCore()
         {
-            if (this.abbreviatedDayNames == null)
-            {
-                // Get the abbreviated day names for our current calendar
-                this.abbreviatedDayNames = _cultureData.AbbreviatedDayNames(Calendar.ID);
-                Debug.Assert(this.abbreviatedDayNames.Length == 7, "[DateTimeFormatInfo.GetAbbreviatedDayOfWeekNames] Expected 7 day names in a week");
-            }
-            return (this.abbreviatedDayNames);
+            // Get the abbreviated day names for our current calendar
+            this.abbreviatedDayNames = _cultureData.AbbreviatedDayNames(Calendar.ID);
+            Debug.Assert(this.abbreviatedDayNames.Length == 7, "[DateTimeFormatInfo.GetAbbreviatedDayOfWeekNames] Expected 7 day names in a week");
+            return this.abbreviatedDayNames;
         }
-
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -238,15 +237,14 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        private String[] internalGetSuperShortDayNames()
+        private string[] internalGetSuperShortDayNames() => this.m_superShortDayNames ?? internalGetSuperShortDayNamesCore();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private string[] internalGetSuperShortDayNamesCore()
         {
-            if (this.m_superShortDayNames == null)
-            {
-                // Get the super short day names for our current calendar
-                this.m_superShortDayNames = _cultureData.SuperShortDayNames(Calendar.ID);
-                Debug.Assert(this.m_superShortDayNames.Length == 7, "[DateTimeFormatInfo.internalGetSuperShortDayNames] Expected 7 day names in a week");
-            }
-            return (this.m_superShortDayNames);
+            // Get the super short day names for our current calendar
+            this.m_superShortDayNames = _cultureData.SuperShortDayNames(Calendar.ID);
+            Debug.Assert(this.m_superShortDayNames.Length == 7, "[DateTimeFormatInfo.internalGetSuperShortDayNames] Expected 7 day names in a week");
+            return this.m_superShortDayNames;
         }
 
         ////////////////////////////////////////////////////////////////////////////
@@ -255,15 +253,14 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private String[] internalGetDayOfWeekNames()
+        private string[] internalGetDayOfWeekNames() => this.dayNames ?? internalGetDayOfWeekNamesCore();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private string[] internalGetDayOfWeekNamesCore()
         {
-            if (this.dayNames == null)
-            {
-                // Get the day names for our current calendar
-                this.dayNames = _cultureData.DayNames(Calendar.ID);
-                Debug.Assert(this.dayNames.Length == 7, "[DateTimeFormatInfo.GetDayOfWeekNames] Expected 7 day names in a week");
-            }
-            return (this.dayNames);
+            // Get the day names for our current calendar
+            this.dayNames = _cultureData.DayNames(Calendar.ID);
+            Debug.Assert(this.dayNames.Length == 7, "[DateTimeFormatInfo.GetDayOfWeekNames] Expected 7 day names in a week");
+            return this.dayNames;
         }
 
         ////////////////////////////////////////////////////////////////////////////
@@ -272,16 +269,15 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private String[] internalGetAbbreviatedMonthNames()
+        private String[] internalGetAbbreviatedMonthNames() => this.abbreviatedMonthNames ?? internalGetAbbreviatedMonthNamesCore();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private String[] internalGetAbbreviatedMonthNamesCore()
         {
-            if (this.abbreviatedMonthNames == null)
-            {
-                // Get the month names for our current calendar
-                this.abbreviatedMonthNames = _cultureData.AbbreviatedMonthNames(Calendar.ID);
-                Debug.Assert(this.abbreviatedMonthNames.Length == 12 || this.abbreviatedMonthNames.Length == 13,
-                    "[DateTimeFormatInfo.GetAbbreviatedMonthNames] Expected 12 or 13 month names in a year");
-            }
-            return (this.abbreviatedMonthNames);
+            // Get the month names for our current calendar
+            this.abbreviatedMonthNames = _cultureData.AbbreviatedMonthNames(Calendar.ID);
+            Debug.Assert(this.abbreviatedMonthNames.Length == 12 || this.abbreviatedMonthNames.Length == 13,
+                "[DateTimeFormatInfo.GetAbbreviatedMonthNames] Expected 12 or 13 month names in a year");
+            return this.abbreviatedMonthNames;
         }
 
 
@@ -291,17 +287,15 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private String[] internalGetMonthNames()
+        private string[] internalGetMonthNames() => this.monthNames ?? internalGetMonthNamesCore();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private string[] internalGetMonthNamesCore()
         {
-            if (this.monthNames == null)
-            {
-                // Get the month names for our current calendar
-                this.monthNames = _cultureData.MonthNames(Calendar.ID);
-                Debug.Assert(this.monthNames.Length == 12 || this.monthNames.Length == 13,
-                    "[DateTimeFormatInfo.GetMonthNames] Expected 12 or 13 month names in a year");
-            }
-
-            return (this.monthNames);
+            // Get the month names for our current calendar
+            this.monthNames = _cultureData.MonthNames(Calendar.ID);
+            Debug.Assert(this.monthNames.Length == 12 || this.monthNames.Length == 13,
+                "[DateTimeFormatInfo.GetMonthNames] Expected 12 or 13 month names in a year");
+            return this.monthNames;
         }
 
 
@@ -460,35 +454,12 @@ namespace System.Globalization
             }
         }
 
-
-        public static DateTimeFormatInfo GetInstance(IFormatProvider provider)
-        {
-            // Fast case for a regular CultureInfo
-            DateTimeFormatInfo info;
-            CultureInfo cultureProvider = provider as CultureInfo;
-            if (cultureProvider != null && !cultureProvider._isInherited)
-            {
-                return cultureProvider.DateTimeFormat;
-            }
-            // Fast case for a DTFI;
-            info = provider as DateTimeFormatInfo;
-            if (info != null)
-            {
-                return info;
-            }
-            // Wasn't cultureInfo or DTFI, do it the slower way
-            if (provider != null)
-            {
-                info = provider.GetFormat(typeof(DateTimeFormatInfo)) as DateTimeFormatInfo;
-                if (info != null)
-                {
-                    return info;
-                }
-            }
-            // Couldn't get anything, just use currentInfo as fallback
-            return CurrentInfo;
-        }
-
+        public static DateTimeFormatInfo GetInstance(IFormatProvider provider) =>
+            provider == null ? CurrentInfo :
+            provider is CultureInfo cultureProvider && !cultureProvider._isInherited ? cultureProvider.DateTimeFormat :
+            provider is DateTimeFormatInfo info ? info :
+            provider.GetFormat(typeof(DateTimeFormatInfo)) is DateTimeFormatInfo info2 ? info2 :
+            CurrentInfo; // Couldn't get anything, just use currentInfo as fallback
 
         public Object GetFormat(Type formatType)
         {
@@ -1732,8 +1703,6 @@ namespace System.Globalization
             return (internalGetDayOfWeekNames()[(int)dayofweek]);
         }
 
-
-
         public String GetAbbreviatedMonthName(int month)
         {
             if (month < 1 || month > 13)
@@ -1745,7 +1714,6 @@ namespace System.Globalization
             // Use the internal one so we don't clone the array unnecessarily
             return (internalGetAbbreviatedMonthNames()[month - 1]);
         }
-
 
         public String GetMonthName(int month)
         {
@@ -2207,23 +2175,19 @@ namespace System.Globalization
         // Actions: Return the internal flag used in formatting and parsing.
         //  The flag can be used to indicate things like if genitive forms is used in this DTFi, or if leap year gets different month names.
         //
-        internal DateTimeFormatFlags FormatFlags
+        internal DateTimeFormatFlags FormatFlags => formatFlags != DateTimeFormatFlags.NotInitialized ? formatFlags : InitializeFormatFlags();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private DateTimeFormatFlags InitializeFormatFlags()
         {
-            get
-            {
-                if (formatFlags == DateTimeFormatFlags.NotInitialized)
-                {
-                    // Build the format flags from the data in this DTFI
-                    formatFlags = DateTimeFormatFlags.None;
-                    formatFlags |= (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagGenitiveMonth(
-                        MonthNames, internalGetGenitiveMonthNames(false), AbbreviatedMonthNames, internalGetGenitiveMonthNames(true));
-                    formatFlags |= (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseSpaceInMonthNames(
-                        MonthNames, internalGetGenitiveMonthNames(false), AbbreviatedMonthNames, internalGetGenitiveMonthNames(true));
-                    formatFlags |= (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseSpaceInDayNames(DayNames, AbbreviatedDayNames);
-                    formatFlags |= (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseHebrewCalendar((int)Calendar.ID);
-                }
-                return (formatFlags);
-            }
+            // Build the format flags from the data in this DTFI
+            formatFlags = 
+                (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagGenitiveMonth(
+                    MonthNames, internalGetGenitiveMonthNames(false), AbbreviatedMonthNames, internalGetGenitiveMonthNames(true)) |
+                (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseSpaceInMonthNames(
+                    MonthNames, internalGetGenitiveMonthNames(false), AbbreviatedMonthNames, internalGetGenitiveMonthNames(true)) |
+                (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseSpaceInDayNames(DayNames, AbbreviatedDayNames) |
+                (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseHebrewCalendar((int)Calendar.ID);
+            return formatFlags;
         }
 
         internal Boolean HasForceTwoDigitYears
@@ -2777,7 +2741,7 @@ namespace System.Globalization
 
             int hashcode = ch % TOKEN_HASH_SIZE;
             int hashProbe = 1 + ch % SECOND_PRIME;
-            int remaining = str.len - str.Index;
+            int remaining = str.Length - str.Index;
             int i = 0;
 
             TokenHashValue[] hashTable = _dtfiTokenHash;
@@ -2802,18 +2766,21 @@ namespace System.Globalization
                         // If this token starts with a letter, make sure that we won't allow partial match.  So you can't tokenize "MarchWed" separately.
                         // Also an optimization to avoid string comparison
                         int nextCharIndex = str.Index + value.tokenString.Length;
-                        if (nextCharIndex > str.len)
+                        if (nextCharIndex > str.Length)
                         {
                             compareStrings = false;
                         }
-                        else if (nextCharIndex < str.len)
+                        else if (nextCharIndex < str.Length)
                         {
                             // Check word boundary.  The next character should NOT be a letter.
                             char nextCh = str.Value[nextCharIndex];
                             compareStrings = !(Char.IsLetter(nextCh));
                         }
                     }
-                    if (compareStrings && CompareStringIgnoreCaseOptimized(str.Value, str.Index, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length))
+                    
+                    if (compareStrings &&
+                        ((value.tokenString.Length == 1 && str.Value[str.Index] == value.tokenString[0]) ||
+                         Culture.CompareInfo.Compare(str.Value.Slice(str.Index, value.tokenString.Length), value.tokenString, CompareOptions.IgnoreCase) == 0))
                     {
                         tokenType = value.tokenType & TokenMask;
                         tokenValue = value.tokenValue;
