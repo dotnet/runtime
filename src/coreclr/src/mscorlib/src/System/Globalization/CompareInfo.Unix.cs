@@ -149,7 +149,6 @@ namespace System.Globalization
         private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
-
             Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -163,9 +162,6 @@ namespace System.Globalization
         private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
-
-            Debug.Assert(string1 != null);
-            Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             fixed (char* pString1 = &string1.DangerousGetPinnableReference())
