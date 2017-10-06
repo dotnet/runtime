@@ -6787,6 +6787,9 @@ bool Compiler::impIsImplicitTailCallCandidate(
 //
 // Returns:
 //    Type of the call's return value.
+//    If we're importing an inlinee and have realized the inline must fail, the call return type should be TYP_UNDEF.
+//    However we can't assert for this here yet because there are cases we miss. See issue #13272.
+//
 //
 // Notes:
 //    opcode can be CEE_CALL, CEE_CALLI, CEE_CALLVIRT, or CEE_NEWOBJ.
@@ -6952,7 +6955,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             /* Does the inlinee need a security check token on the frame */
@@ -6960,7 +6963,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (mflags & CORINFO_FLG_SECURITYCHECK)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             /* Does the inlinee use StackCrawlMark */
@@ -6968,7 +6971,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (mflags & CORINFO_FLG_DONT_INLINE_CALLER)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_STACK_CRAWL_MARK);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             /* For now ignore delegate invoke */
@@ -6976,26 +6979,26 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (mflags & CORINFO_FLG_DELEGATE_INVOKE)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_DELEGATE_INVOKE);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             /* For now ignore varargs */
             if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NATIVE_VARARGS);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             if ((mflags & CORINFO_FLG_VIRTUAL) && (sig->sigInst.methInstCount != 0) && (opcode == CEE_CALLVIRT))
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_GENERIC_VIRTUAL);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
         }
 
@@ -7028,9 +7031,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall,
                                 (canTailCall && (tailCall != 0)), isJitIntrinsic, &intrinsicID, &isSpecialIntrinsic);
 
-            if (compIsForInlining() && compInlineResult->IsFailure())
+            if (compDonotInline())
             {
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             if (call != nullptr)
@@ -7129,7 +7132,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                          * failing here.
                          */
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
-                        return callRetTyp;
+                        return TYP_UNDEF;
                     }
 
                     GenTreePtr stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
@@ -7205,7 +7208,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (compIsForInlining())
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_CALL_VIA_LDVIRTFTN);
-                    return callRetTyp;
+                    return TYP_UNDEF;
                 }
 
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
@@ -7217,10 +7220,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 GenTreePtr thisPtr = impPopStack().val;
                 thisPtr            = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
-                if (compDonotInline())
-                {
-                    return callRetTyp;
-                }
+                assert(thisPtr != nullptr);
 
                 // Clone the (possibly transformed) "this" pointer
                 GenTreePtr thisPtrCopy;
@@ -7228,11 +7228,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                        nullptr DEBUGARG("LDVIRTFTN this pointer"));
 
                 GenTreePtr fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
-
-                if (compDonotInline())
-                {
-                    return callRetTyp;
-                }
+                assert(fptr != nullptr);
 
                 thisPtr = nullptr; // can't reuse it
 
@@ -7307,7 +7303,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (compDonotInline())
                 {
-                    return callRetTyp;
+                    return TYP_UNDEF;
                 }
 
                 // Now make an indirect call through the function pointer
@@ -7497,7 +7493,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // Because inlinee method does not have its own frame.
 
             compInlineResult->NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
-            return callRetTyp;
+            return TYP_UNDEF;
         }
         else
         {
@@ -7560,7 +7556,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 IMPL_LIMITATION("Can't get PInvoke cookie (cross module generics)");
             }
 
-            return callRetTyp;
+            return TYP_UNDEF;
         }
 
         GenTreePtr cookie = eeGetPInvokeCookie(sig);
@@ -7605,7 +7601,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         if (!info.compCompHnd->canGetVarArgsHandle(sig))
         {
             compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_VARARGS_COOKIE);
-            return callRetTyp;
+            return TYP_UNDEF;
         }
 
         varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
@@ -7661,7 +7657,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
                     if (instParam == nullptr)
                     {
-                        return callRetTyp;
+                        assert(compDonotInline());
+                        return TYP_UNDEF;
                     }
                 }
                 else
@@ -7676,7 +7673,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/);
                 if (instParam == nullptr)
                 {
-                    return callRetTyp;
+                    assert(compDonotInline());
+                    return TYP_UNDEF;
                 }
             }
         }
@@ -7692,7 +7690,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
-                return callRetTyp;
+                return TYP_UNDEF;
             }
 
             if ((clsFlags & CORINFO_FLG_ARRAY) && readonlyCall)
@@ -7710,7 +7708,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
                     if (instParam == nullptr)
                     {
-                        return callRetTyp;
+                        assert(compDonotInline());
+                        return TYP_UNDEF;
                     }
                 }
                 else
@@ -7737,7 +7736,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (instParam == nullptr)
                 {
-                    return callRetTyp;
+                    assert(compDonotInline());
+                    return TYP_UNDEF;
                 }
             }
         }
@@ -7799,7 +7799,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             obj = impTransformThis(obj, pConstrainedResolvedToken, constraintCallThisTransform);
             if (compDonotInline())
             {
-                return callRetTyp;
+                return TYP_UNDEF;
             }
         }
 
@@ -10844,8 +10844,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Incompatible target for CEE_JMPs");
                 }
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARMARCH_)
-
                 op1 = new (this, GT_JMP) GenTreeVal(GT_JMP, TYP_VOID, (size_t)resolvedToken.hMethod);
 
                 /* Mark the basic block as being a JUMP instead of RETURN */
@@ -10860,44 +10858,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 fgNoStructPromotion = true;
 
                 goto APPEND;
-
-#else // !_TARGET_XARCH_ && !_TARGET_ARMARCH_
-
-                // Import this just like a series of LDARGs + tail. + call + ret
-
-                if (info.compIsVarArgs)
-                {
-                    // For now we don't implement true tail calls, so this breaks varargs.
-                    // So warn the user instead of generating bad code.
-                    // This is a semi-temporary workaround for DevDiv 173860, until we can properly
-                    // implement true tail calls.
-                    IMPL_LIMITATION("varags + CEE_JMP doesn't work yet");
-                }
-
-                // First load up the arguments (0 - N)
-                for (unsigned argNum = 0; argNum < info.compILargsCount; argNum++)
-                {
-                    impLoadArg(argNum, opcodeOffs + sz + 1);
-                }
-
-                // Now generate the tail call
-                noway_assert(prefixFlags == 0);
-                prefixFlags = PREFIX_TAILCALL_EXPLICIT;
-                opcode      = CEE_CALL;
-
-                eeGetCallInfo(&resolvedToken, NULL,
-                              combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS), &callInfo);
-
-                // All calls and delegates need a security callout.
-                impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
-
-                callTyp = impImportCall(CEE_CALL, &resolvedToken, NULL, NULL, PREFIX_TAILCALL_EXPLICIT, &callInfo,
-                                        opcodeOffs);
-
-                // And finish with the ret
-                goto RET;
-
-#endif // _TARGET_XARCH_ || _TARGET_ARMARCH_
 
             case CEE_LDELEMA:
                 assertImp(sz == sizeof(unsigned));
@@ -13311,6 +13271,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         newObjThisPtr, prefixFlags, &callInfo, opcodeOffs);
                 if (compDonotInline())
                 {
+                    // We do not check fails after lvaGrabTemp. It is covered with CoreCLR_13272 issue.
+                    assert((callTyp == TYP_UNDEF) ||
+                           (compInlineResult->GetObservation() == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
                     return;
                 }
 
