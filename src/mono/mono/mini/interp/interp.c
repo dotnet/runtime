@@ -2752,9 +2752,21 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 				g_warning ("ret.vt: more values on stack: %d", sp-frame->stack);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_BR_S)
+			/* Checkpoint to be able to handle aborts */
+			if (*mono_thread_interruption_request_flag ()) {
+				MonoException *exc = mono_thread_interruption_checkpoint ();
+				if (exc)
+					THROW_EX (exc, ip);
+			}
 			ip += (short) *(ip + 1);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BR)
+			/* Checkpoint to be able to handle aborts */
+			if (*mono_thread_interruption_request_flag ()) {
+				MonoException *exc = mono_thread_interruption_checkpoint ();
+				if (exc)
+					THROW_EX (exc, ip);
+			}
 			ip += (gint32) READ32(ip + 1);
 			MINT_IN_BREAK;
 #define ZEROP_S(datamem, op) \
