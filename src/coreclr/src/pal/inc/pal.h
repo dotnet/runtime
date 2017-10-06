@@ -277,16 +277,12 @@ PAL_IsDebuggerPresent(VOID);
 #define _UI32_MAX UINT_MAX
 #define _UI32_MIN UINT_MIN
 
-#ifdef PAL_STDCPP_COMPAT
 #undef NULL
-#endif
 
-#ifndef NULL
 #if defined(__cplusplus)
 #define NULL    0
 #else
 #define NULL    ((void *)0)
-#endif
 #endif
 
 #if defined(PAL_STDCPP_COMPAT) && !defined(__cplusplus)
