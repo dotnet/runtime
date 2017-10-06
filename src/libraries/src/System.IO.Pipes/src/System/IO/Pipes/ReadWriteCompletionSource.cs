@@ -14,8 +14,8 @@ namespace System.IO.Pipes
         private bool _isMessageComplete;
         private int _numBytes; // number of buffer read OR written
 
-        internal ReadWriteCompletionSource(PipeStream stream, ReadOnlyMemory<byte> bufferToPin, CancellationToken cancellationToken, bool isWrite)
-            : base(stream._threadPoolBinding, cancellationToken, bufferToPin)
+        internal ReadWriteCompletionSource(PipeStream stream, ReadOnlyMemory<byte> bufferToPin, bool isWrite)
+            : base(stream._threadPoolBinding, bufferToPin)
         {
             _pipeStream = stream;
             _isWrite = isWrite;
