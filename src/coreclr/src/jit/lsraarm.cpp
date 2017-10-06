@@ -690,7 +690,18 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_COPY:
             info->srcCount = 1;
-            assert(info->dstCount == 1);
+#ifdef ARM_SOFTFP
+            // This case currently only occurs for double types that are passed as TYP_LONG;
+            // actual long types would have been decomposed by now.
+            if (tree->TypeGet() == TYP_LONG)
+            {
+                info->dstCount = 2;
+            }
+            else
+#endif
+            {
+                assert(info->dstCount == 1);
+            }
             break;
 
         case GT_PUTARG_SPLIT:

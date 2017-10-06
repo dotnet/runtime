@@ -7124,7 +7124,7 @@ GenTreePtr Compiler::gtNewBitCastNode(var_types type, GenTreePtr arg)
     assert(arg != nullptr);
 
     GenTreePtr node = nullptr;
-#if !defined(LEGACY_BACKEND) && defined(ARM_SOFTFP)
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
     // A BITCAST could be a MultiRegOp on armel since we could move a double register to two int registers.
     node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
 #else
