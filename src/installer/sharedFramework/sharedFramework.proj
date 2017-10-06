@@ -19,7 +19,8 @@
   <PropertyGroup>
     <CommonProjectArgs>$(MSBuildPassThroughPropertyList) /p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid)</CommonProjectArgs>
 
-    <SharedFrameworkIntermediatePackagesDir>$(IntermediateOutputRootPath)sharedFrameworkPublish.packages\</SharedFrameworkIntermediatePackagesDir>
+    <!-- SFP is short for SharedFrameworkPublish. Using an abreviation to prevent long path issues. -->
+    <SharedFrameworkIntermediatePackagesDir>$(IntermediateOutputRootPath)SFP.packages\</SharedFrameworkIntermediatePackagesDir>
     <SharedFrameworkNameAndVersionRoot>$(SharedFrameworkPublishDir)shared\$(SharedFrameworkName)\$(SharedFrameworkNugetVersion)</SharedFrameworkNameAndVersionRoot>
   </PropertyGroup>
 
