@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-    public static class CancellationTokenTests
+    public static partial class CancellationTokenTests
     {
         [Fact]
         public static void CancellationTokenRegister_Exceptions()
