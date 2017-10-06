@@ -1,0 +1,50 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.EventLog.Tests", "tests\System.Diagnostics.EventLog.Tests.csproj", "{5B218883-369E-4C3D-8BD0-74843474DCBD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD} = {432779B9-3CBD-4871-A7DC-D8A192319DBD}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.EventLog", "src\System.Diagnostics.EventLog.csproj", "{432779B9-3CBD-4871-A7DC-D8A192319DBD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F405C42E-EF6F-4404-80FD-3B87E216707C} = {F405C42E-EF6F-4404-80FD-3B87E216707C}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.EventLog", "ref\System.Diagnostics.EventLog.csproj", "{F405C42E-EF6F-4404-80FD-3B87E216707C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5B218883-369E-4C3D-8BD0-74843474DCBD} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{F405C42E-EF6F-4404-80FD-3B87E216707C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+EndGlobal
