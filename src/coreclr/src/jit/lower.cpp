@@ -765,7 +765,7 @@ void Lowering::ReplaceArgWithPutArgOrCopy(GenTree** argSlot, GenTree* putArgOrCo
 {
     assert(argSlot != nullptr);
     assert(*argSlot != nullptr);
-    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_BITCAST));
+    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_BITCAST) || putArgOrCopy->OperIs(GT_COPY));
 
     GenTree* arg = *argSlot;
 
@@ -1298,18 +1298,27 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         {
             var_types intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
 
-            GenTreePtr intArg = comp->gtNewBitCastNode(intType, arg);
-            intArg->gtRegNum  = info->regNum;
-#ifdef ARM_SOFTFP
-            if (intType == TYP_LONG)
+            GenTreePtr intArg;
+            if (isReg)
             {
-                assert(info->numRegs == 2);
-                regNumber regNext = REG_NEXT(info->regNum);
-                // double type arg regs can only be either r0:r1 or r2:r3.
-                assert((info->regNum == REG_R0 && regNext == REG_R1) || (info->regNum == REG_R2 && regNext == REG_R3));
-                intArg->AsMultiRegOp()->gtOtherReg = regNext;
-            }
+                intArg           = comp->gtNewBitCastNode(intType, arg);
+                intArg->gtRegNum = info->regNum;
+#ifdef ARM_SOFTFP
+                if (intType == TYP_LONG)
+                {
+                    assert(info->numRegs == 2);
+                    regNumber regNext = REG_NEXT(info->regNum);
+                    // double type arg regs can only be either r0:r1 or r2:r3.
+                    assert((info->regNum == REG_R0 && regNext == REG_R1) ||
+                           (info->regNum == REG_R2 && regNext == REG_R3));
+                    intArg->AsMultiRegOp()->gtOtherReg = regNext;
+                }
 #endif // ARM_SOFTFP
+            }
+            else
+            {
+                intArg = new (comp, GT_COPY) GenTreeCopyOrReload(GT_COPY, intType, arg);
+            }
 
             info->node = intArg;
             ReplaceArgWithPutArgOrCopy(ppArg, intArg);
