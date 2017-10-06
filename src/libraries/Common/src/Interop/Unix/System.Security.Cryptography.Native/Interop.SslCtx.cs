@@ -15,7 +15,7 @@ internal static partial class Interop
     {
         internal delegate int AppVerifyCallback(IntPtr storeCtx, IntPtr arg);
         internal delegate int ClientCertCallback(IntPtr ssl, out IntPtr x509, out IntPtr pkey);
-        internal delegate int SslCtxSetAplnCallback(IntPtr ssl, out IntPtr outp, out byte outlen, IntPtr inp, uint inlen, IntPtr arg);
+        internal delegate int SslCtxSetAlpnCallback(IntPtr ssl, out IntPtr outp, out byte outlen, IntPtr inp, uint inlen, IntPtr arg);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCreate")]
         internal static extern SafeSslContextHandle SslCtxCreate(IntPtr method);
@@ -32,10 +32,10 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnProtos")]
         internal static extern int SslCtxSetAlpnProtos(SafeSslContextHandle ctx, IntPtr protos, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAplnSelectCb")]
-        internal static unsafe extern void SslCtxSetAplnSelectCb(SafeSslContextHandle ctx, SslCtxSetAplnCallback callback, IntPtr arg);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
+        internal static unsafe extern void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, SslCtxSetAlpnCallback callback, IntPtr arg);
 
-        internal static unsafe int SslCtxSetAlpnProtos(SafeSslContextHandle ctx, IList<SslApplicationProtocol> protocols)
+        internal static unsafe int SslCtxSetAlpnProtos(SafeSslContextHandle ctx, List<SslApplicationProtocol> protocols)
         {
             byte[] buffer = ConvertAlpnProtocolListToByteArray(protocols);
             fixed (byte* b = buffer)
@@ -44,7 +44,7 @@ internal static partial class Interop
             }
         }
 
-        internal static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> applicationProtocols)
+        internal static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> applicationProtocols)
         {
             int protocolSize = 0;
             foreach (SslApplicationProtocol protocol in applicationProtocols)
@@ -62,7 +62,7 @@ internal static partial class Interop
             foreach (SslApplicationProtocol protocol in applicationProtocols)
             {
                 buffer[offset++] = (byte)(protocol.Protocol.Length);
-                Array.Copy(protocol.Protocol.ToArray(), 0, buffer, offset, protocol.Protocol.Length);
+                protocol.Protocol.Span.CopyTo(new Span<byte>(buffer).Slice(offset));
                 offset += protocol.Protocol.Length;
             }
 

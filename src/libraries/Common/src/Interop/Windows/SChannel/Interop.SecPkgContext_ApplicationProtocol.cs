@@ -21,22 +21,25 @@ internal static partial class Interop
         ALPN
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class SecPkgContext_ApplicationProtocol
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe class SecPkgContext_ApplicationProtocol
     {
-        private const int MAX_PROTOCOL_ID_SIZE = 0xFF;
-        public ApplicationProtocolNegotiationStatus NegotiationStatus;
-        public ApplicationProtocolNegotiationExt NegotiationExtension;
+        private const int MaxProtocolIdSize = 0xFF;
+
+        public ApplicationProtocolNegotiationStatus ProtoNegoStatus;
+        public ApplicationProtocolNegotiationExt ProtoNegoExt;
         public byte ProtocolIdSize;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = MAX_PROTOCOL_ID_SIZE)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = MaxProtocolIdSize)]
         public byte[] ProtocolId;
-
-        public byte[] GetProtocolId()
+        public byte[] Protocol
         {
-            byte[] result = new byte[ProtocolIdSize];
-            Array.Copy(ProtocolId, result, ProtocolIdSize);
-
-            return result;
+            get
+            {
+                fixed (byte* p = ProtocolId)
+                {
+                    return new Span<byte>(p, ProtocolIdSize).ToArray();
+                }
+            }
         }
     }
 }

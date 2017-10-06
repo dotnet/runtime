@@ -12,8 +12,8 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
-        internal const int OPENSSL_NPN_NEGOTIATED = 1;
         internal const int SSL_TLSEXT_ERR_OK = 0;
+        internal const int OPENSSL_NPN_NEGOTIATED = 1;
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
 
         internal delegate int SslCtxSetVerifyCallback(int preverify_ok, IntPtr x509_ctx);
@@ -180,12 +180,12 @@ internal static partial class Interop
             SSL_ERROR_WANT_WRITE = 3,
             SSL_ERROR_SYSCALL = 5,
             SSL_ERROR_ZERO_RETURN = 6,
-            
+
             // NOTE: this SslErrorCode value doesn't exist in OpenSSL, but
             // we use it to distinguish when a renegotiation is pending.
             // Choosing an arbitrarily large value that shouldn't conflict
             // with any actual OpenSSL error codes
-            SSL_ERROR_RENEGOTIATE = 29304 
+            SSL_ERROR_RENEGOTIATE = 29304
         }
     }
 }

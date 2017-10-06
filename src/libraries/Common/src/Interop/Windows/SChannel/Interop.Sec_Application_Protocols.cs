@@ -18,17 +18,17 @@ internal static partial class Interop
         public ApplicationProtocolNegotiationExt ProtocolExtenstionType;
         public short ProtocolListSize;
 
-        public static unsafe byte[] ToByteArray(IList<SslApplicationProtocol> applicationProtocols)
+        public static unsafe byte[] ToByteArray(List<SslApplicationProtocol> applicationProtocols)
         {
             long protocolListSize = 0;
-            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            for (int i = 0; i < applicationProtocols.Count; i++)
             {
-                if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
+                if (applicationProtocols[i].Protocol.Length == 0 || applicationProtocols[i].Protocol.Length > byte.MaxValue)
                 {
                     throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
                 }
 
-                protocolListSize += protocol.Protocol.Length + 1;
+                protocolListSize += applicationProtocols[i].Protocol.Length + 1;
 
                 if (protocolListSize > short.MaxValue)
                 {
@@ -41,21 +41,21 @@ internal static partial class Interop
             protocols.ProtocolExtenstionType = ApplicationProtocolNegotiationExt.ALPN;
             protocols.ProtocolListSize = (short)protocolListSize;
 
+            Span<byte> pBuffer = new byte[protocolListSize];
+            int index = 0;
+            for (int i = 0; i < applicationProtocols.Count; i++)
+            {
+                pBuffer[index++] = (byte)applicationProtocols[i].Protocol.Length;
+                applicationProtocols[i].Protocol.Span.CopyTo(pBuffer.Slice(index));
+                index += applicationProtocols[i].Protocol.Length;
+            }
+
             byte[] buffer = new byte[ProtocolListOffset + protocolListSize];
             fixed (byte* bufferPtr = buffer)
             {
                 Marshal.StructureToPtr(protocols, new IntPtr(bufferPtr), false);
-                byte* protocolList = bufferPtr + ProtocolListOffset;
-                foreach (SslApplicationProtocol applicationProtocol in applicationProtocols)
-                {
-                    *(protocolList++) = (byte)applicationProtocol.Protocol.Length;
-                    fixed (byte* p = applicationProtocol.Protocol.ToArray())
-                    {
-                        Buffer.MemoryCopy(p, protocolList, buffer.Length, applicationProtocol.Protocol.Length);
-                    }
-
-                    protocolList += applicationProtocol.Protocol.Length;
-                }
+                byte* pList = bufferPtr + ProtocolListOffset;
+                pBuffer.CopyTo(new Span<byte>(pList, index));
             }
 
             return buffer;
