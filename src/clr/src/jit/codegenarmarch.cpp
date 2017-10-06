@@ -343,7 +343,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_CMPXCHG:
-            NYI("GT_CMPXCHG");
+            NYI_ARM("GT_CMPXCHG");
+#ifdef _TARGET_ARM64_
+            genCodeForCmpXchg(treeNode->AsCmpXchg());
+#endif
             break;
 
         case GT_RELOAD:

@@ -298,6 +298,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerStoreLoc(node->AsLclVarCommon());
             break;
 
+#ifdef _TARGET_ARM64_
+        case GT_CMPXCHG:
+            CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
+            break;
+
+        case GT_XADD:
+#endif
         case GT_LOCKADD:
             CheckImmedAndMakeContained(node, node->gtOp.gtOp2);
             break;
