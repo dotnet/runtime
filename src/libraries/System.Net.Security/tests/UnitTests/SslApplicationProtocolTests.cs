@@ -33,6 +33,8 @@ namespace System.Net.Security.Tests
             Assert.Throws<ArgumentNullException>(() => { new SslApplicationProtocol((string)null); });
             Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(new byte[] { }); });
             Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(string.Empty); });
+            Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(Encoding.UTF8.GetBytes(new string('a', 256))); });
+            Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(new string('a', 256)); });
             Assert.Throws<EncoderFallbackException>(() => { new SslApplicationProtocol("\uDC00"); });
         }
 
@@ -43,9 +45,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(left, right);
             Assert.True(left == right);
             Assert.False(left != right);
-
-            if (!left.Protocol.IsEmpty && !right.Protocol.IsEmpty)
-                Assert.Equal(left.GetHashCode(), right.GetHashCode());
+            Assert.Equal(left.GetHashCode(), right.GetHashCode());
         }
 
         [Theory]
@@ -55,9 +55,7 @@ namespace System.Net.Security.Tests
             Assert.NotEqual(left, right);
             Assert.True(left != right);
             Assert.False(left == right);
-
-            if (!left.Protocol.IsEmpty && !right.Protocol.IsEmpty)
-                Assert.NotEqual(left.GetHashCode(), right.GetHashCode());
+            Assert.NotEqual(left.GetHashCode(), right.GetHashCode());
         }
 
         [Fact]

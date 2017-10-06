@@ -130,7 +130,7 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(((SafeDeleteSslContext)securityContext).SslContext);
         }
 
-        public static byte[] ConvertAlpnProtocolListToByteArray(IList<SslApplicationProtocol> applicationProtocols)
+        public static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> applicationProtocols)
         {
             return Interop.Ssl.ConvertAlpnProtocolListToByteArray(applicationProtocols);
         }

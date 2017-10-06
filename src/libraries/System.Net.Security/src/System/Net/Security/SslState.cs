@@ -599,13 +599,13 @@ namespace System.Net.Security
                 {
                     if (NetEventSource.IsEnabled)
                         NetEventSource.Log.SspiSelectedCipherSuite(nameof(ProcessAuthentication),
-SslProtocol,
-CipherAlgorithm,
-CipherStrength,
-HashAlgorithm,
-HashStrength,
-KeyExchangeAlgorithm,
-KeyExchangeStrength);
+                                                                    SslProtocol,
+                                                                    CipherAlgorithm,
+                                                                    CipherStrength,
+                                                                    HashAlgorithm,
+                                                                    HashStrength,
+                                                                    KeyExchangeAlgorithm,
+                                                                    KeyExchangeStrength);
                 }
             }
             catch (Exception)
@@ -734,13 +734,13 @@ KeyExchangeStrength);
             {
                 if (NetEventSource.IsEnabled)
                     NetEventSource.Log.SspiSelectedCipherSuite(nameof(EndProcessAuthentication),
-SslProtocol,
-CipherAlgorithm,
-CipherStrength,
-HashAlgorithm,
-HashStrength,
-KeyExchangeAlgorithm,
-KeyExchangeStrength);
+                                                                SslProtocol,
+                                                                CipherAlgorithm,
+                                                                CipherStrength,
+                                                                HashAlgorithm,
+                                                                HashStrength,
+                                                                KeyExchangeAlgorithm,
+                                                                KeyExchangeStrength);
             }
         }
 

@@ -118,7 +118,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _sslAuthenticationOptions.CheckCertificateRevocation;
+                return _sslAuthenticationOptions.CertificateRevocationCheckMode;
             }
         }
 
@@ -1017,7 +1017,7 @@ namespace System.Net.Security
                 else
                 {
                     chain = new X509Chain();
-                    chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CheckCertificateRevocation;
+                    chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
                     // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).

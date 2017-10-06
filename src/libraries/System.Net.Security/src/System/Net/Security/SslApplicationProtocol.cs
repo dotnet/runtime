@@ -8,10 +8,10 @@ namespace System.Net.Security
 {
     public struct SslApplicationProtocol : IEquatable<SslApplicationProtocol>
     {
-        private readonly byte[] _protocol;
         private readonly ReadOnlyMemory<byte> _readOnlyProtocol;
         private static readonly Encoding s_utf8 = Encoding.GetEncoding(Encoding.UTF8.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
 
+        // Refer IANA on ApplicationProtocols: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
         // h2
         public static readonly SslApplicationProtocol Http2 = new SslApplicationProtocol(new byte[] { 0x68, 0x32 }, false);
         // http/1.1
@@ -24,27 +24,27 @@ namespace System.Net.Security
                 throw new ArgumentNullException(nameof(protocol));
             }
 
-            if (protocol.Length == 0)
+            // RFC 7301 states protocol size <= 255 bytes.
+            if (protocol.Length == 0 || protocol.Length > 255)
             {
-                throw new ArgumentException(SR.net_ssl_app_protocol_empty, nameof(protocol));
+                throw new ArgumentException(SR.net_ssl_app_protocol_invalid, nameof(protocol));
             }
 
             if (copy)
             {
-                _protocol = new byte[protocol.Length];
-                Array.Copy(protocol, _protocol, protocol.Length);
+                byte[] temp = new byte[protocol.Length];
+                Array.Copy(protocol, temp, protocol.Length);
+                _readOnlyProtocol = new ReadOnlyMemory<byte>(protocol);
             }
             else
             {
-                _protocol = protocol;
+                _readOnlyProtocol = new ReadOnlyMemory<byte>(protocol);
             }
-
-            _readOnlyProtocol = new ReadOnlyMemory<byte>(_protocol);
         }
 
         public SslApplicationProtocol(byte[] protocol) : this(protocol, true) { }
 
-        public SslApplicationProtocol(string protocol) : this(s_utf8.GetBytes(protocol), false) { }
+        public SslApplicationProtocol(string protocol) : this(s_utf8.GetBytes(protocol), copy: false) { }
 
         public ReadOnlyMemory<byte> Protocol
         {
@@ -53,22 +53,11 @@ namespace System.Net.Security
 
         public bool Equals(SslApplicationProtocol other)
         {
-            if (_protocol == null && other._protocol == null)
-                return true;
-
-            if (_protocol == null || other._protocol == null)
+            if (_readOnlyProtocol.Length != other._readOnlyProtocol.Length)
                 return false;
 
-            if (_protocol.Length != other._protocol.Length)
-                return false;
-
-            for (int i = 0; i < _protocol.Length; i++)
-            {
-                if (_protocol[i] != other._protocol[i])
-                    return false;
-            }
-
-            return true;
+            return (_readOnlyProtocol.IsEmpty && other._readOnlyProtocol.IsEmpty) ||
+                _readOnlyProtocol.Span.SequenceEqual(other._readOnlyProtocol.Span);
         }
 
         public override bool Equals(object obj)
@@ -83,40 +72,40 @@ namespace System.Net.Security
 
         public override int GetHashCode()
         {
-            int hash = 0;
-            for (int i = 0; i < _protocol.Length; i++)
+            int hash1 = 0;
+            for (int i = 0; i < _readOnlyProtocol.Length; i++)
             {
-                hash = ((hash << 5) + hash) ^ _protocol[i];
+                hash1 = ((hash1 << 5) + hash1) ^ _readOnlyProtocol.Span[i];
             }
 
-            return hash;
+            return hash1;
         }
 
         public override string ToString()
         {
             try
             {
-                if (_protocol == null)
+                if (_readOnlyProtocol.Length == 0)
                 {
                     return null;
                 }
 
-                return s_utf8.GetString(_protocol);
+                return s_utf8.GetString(_readOnlyProtocol.Span);
             }
             catch
             {
                 // In case of decoding errors, return the byte values as hex string.
-                int byteCharsLength = _protocol.Length * 5;
+                int byteCharsLength = _readOnlyProtocol.Length * 5;
                 char[] byteChars = new char[byteCharsLength];
                 int index = 0;
 
                 for (int i = 0; i < byteCharsLength; i += 5)
                 {
-                    byte b = _protocol[index++];
+                    byte b = _readOnlyProtocol.Span[index++];
                     byteChars[i] = '0';
                     byteChars[i + 1] = 'x';
-                    byteChars[i + 2] = GetHexValue(b / 16);
-                    byteChars[i + 3] = GetHexValue(b % 16);
+                    byteChars[i + 2] = GetHexValue(Math.DivRem(b, 16, out int rem));
+                    byteChars[i + 3] = GetHexValue(rem);
                     byteChars[i + 4] = ' ';
                 }
 

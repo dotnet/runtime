@@ -13,48 +13,54 @@ namespace System.Net.Security
     {
         internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
+            // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
-            CheckCertificateRevocation = sslClientAuthenticationOptions.CheckCertificateRevocation;
-            ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
+            CertValidationDelegate = sslClientAuthenticationOptions._certValidationDelegate;
+            CheckCertName = true;
             EnabledSslProtocols = sslClientAuthenticationOptions.EnabledSslProtocols;
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
-            LocalCertificateSelectionCallback = sslClientAuthenticationOptions.LocalCertificateSelectionCallback;
-            RemoteCertificateValidationCallback = sslClientAuthenticationOptions.RemoteCertificateValidationCallback;
-            CertValidationDelegate = sslClientAuthenticationOptions._certValidationDelegate;
-            CertSelectionDelegate = sslClientAuthenticationOptions._certSelectionDelegate;
-            TargetHost = sslClientAuthenticationOptions.TargetHost;
             IsServer = false;
-            CheckCertName = true;
             RemoteCertRequired = true;
+            RemoteCertificateValidationCallback = sslClientAuthenticationOptions.RemoteCertificateValidationCallback;
+            TargetHost = sslClientAuthenticationOptions.TargetHost;
+
+            // Client specific options.
+            CertSelectionDelegate = sslClientAuthenticationOptions._certSelectionDelegate;
+            CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
+            ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
+            LocalCertificateSelectionCallback = sslClientAuthenticationOptions.LocalCertificateSelectionCallback;
         }
 
         internal SslAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            TargetHost = string.Empty;
+            // Common options.
             AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
-            RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
-            RemoteCertificateValidationCallback = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
             CertValidationDelegate = sslServerAuthenticationOptions._certValidationDelegate;
-            ServerCertificate = sslServerAuthenticationOptions.ServerCertificate;
-            EnabledSslProtocols = sslServerAuthenticationOptions.EnabledSslProtocols;
-            CheckCertificateRevocation = sslServerAuthenticationOptions.CheckCertificateRevocation;
-            EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
             CheckCertName = false;
+            EnabledSslProtocols = sslServerAuthenticationOptions.EnabledSslProtocols;
+            EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
             IsServer = true;
+            RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
+            RemoteCertificateValidationCallback = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
+            TargetHost = string.Empty;
+
+            // Server specific options.
+            CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+            ServerCertificate = sslServerAuthenticationOptions.ServerCertificate;
         }
 
         internal bool AllowRenegotiation { get; set; }
         internal string TargetHost { get; set; }
         internal X509CertificateCollection ClientCertificates { get; set; }
-        internal IList<SslApplicationProtocol> ApplicationProtocols { get; }
+        internal List<SslApplicationProtocol> ApplicationProtocols { get; }
         internal bool IsServer { get; set; }
         internal RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
         internal LocalCertificateSelectionCallback LocalCertificateSelectionCallback { get; set; }
         internal X509Certificate ServerCertificate { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
-        internal X509RevocationMode CheckCertificateRevocation { get; set; }
+        internal X509RevocationMode CertificateRevocationCheckMode { get; set; }
         internal EncryptionPolicy EncryptionPolicy { get; set; }
         internal bool RemoteCertRequired { get; set; }
         internal bool CheckCertName { get; set; }

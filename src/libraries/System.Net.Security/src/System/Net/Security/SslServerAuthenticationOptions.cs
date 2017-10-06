@@ -22,14 +22,14 @@ namespace System.Net.Security
 
         public bool ClientCertificateRequired { get; set; }
 
-        public IList<SslApplicationProtocol> ApplicationProtocols { get; set; }
+        public List<SslApplicationProtocol> ApplicationProtocols { get; set; }
 
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
 
         public X509Certificate ServerCertificate
         {
             get => _serverCertificate;
-            set => _serverCertificate = value ?? throw new ArgumentNullException(nameof(value));
+            set => _serverCertificate = value;
         }
 
         public SslProtocols EnabledSslProtocols
@@ -38,7 +38,7 @@ namespace System.Net.Security
             set => _enabledSslProtocols = value;
         }
 
-        public X509RevocationMode CheckCertificateRevocation
+        public X509RevocationMode CertificateRevocationCheckMode
         {
             get => _checkCertificateRevocation;
             set
