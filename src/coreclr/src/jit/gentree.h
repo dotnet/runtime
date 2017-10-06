@@ -940,7 +940,7 @@ public:
 #define GTF_FLD_INITCLASS           0x20000000 // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
 #define GTF_INX_RNGCHK              0x80000000 // GT_INDEX -- the array reference should be range-checked.
-#define GTF_INX_REFARR_LAYOUT       0x20000000 // GT_INDEX -- same as GTF_IND_REFARR_LAYOUT
+#define GTF_INX_REFARR_LAYOUT       0x20000000 // GT_INDEX
 #define GTF_INX_STRING_LAYOUT       0x40000000 // GT_INDEX -- this uses the special string array layout
 
 #define GTF_IND_ARR_LEN             0x80000000 // GT_IND   -- the indirection represents an array length (of the REF
@@ -1339,11 +1339,7 @@ public:
     bool OperIsMultiRegOp() const
     {
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-#ifdef ARM_SOFTFP
-        if (gtOper == GT_MUL_LONG || gtOper == GT_PUTARG_REG)
-#else
-        if (gtOper == GT_MUL_LONG)
-#endif
+        if ((gtOper == GT_MUL_LONG) || (gtOper == GT_PUTARG_REG) || (gtOper == GT_BITCAST))
         {
             return true;
         }
@@ -1696,9 +1692,9 @@ public:
 #ifdef FEATURE_SIMD
             case GT_SIMD:
 #endif // !FEATURE_SIMD
-#if !defined(LEGACY_BACKEND) && _TARGET_ARM_
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
             case GT_PUTARG_REG:
-#endif // !defined(LEGACY_BACKEND) && _TARGET_ARM_
+#endif // !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
                 return true;
             default:
                 return false;
@@ -6116,8 +6112,7 @@ inline bool GenTree::IsMultiRegNode() const
     }
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    if (gtOper == GT_MUL_LONG || gtOper == GT_PUTARG_REG || gtOper == GT_BITCAST || gtOper == GT_COPY ||
-        OperIsPutArgSplit())
+    if (OperIsMultiRegOp() || OperIsPutArgSplit() || (gtOper == GT_COPY))
     {
         return true;
     }
