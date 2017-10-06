@@ -109,7 +109,7 @@
   <UsingTask TaskName="CompareAssemblySizes" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_CompareLinkedAssemblySizes"
           AfterTargets="ComputeLinkedFilesToPublish"
-          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies;_FindNativeDeps"
+          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies"
           Condition=" '$(LinkDuringPublish)' == 'true' And '$(ShowLinkerSizeComparison)' == 'true' ">
     <CompareAssemblySizes UnlinkedAssemblies="@(_ManagedAssembliesToLink)"
                           LinkedAssemblies="@(_LinkedIntermediateAssembly);@(_LinkedResolvedAssemblies)" />
@@ -192,8 +192,8 @@
     </ItemGroup>
 
     <FindNativeDeps ManagedAssemblyPaths="@(_ManagedLinkedAssemblies)"
-                      NativeDepsPaths="@(_NativeResolvedDepsToPublish)"
-                      NativeDepsToKeep="@(_NativeDepsToAlwaysKeep)">
+                    NativeDepsPaths="@(_NativeResolvedDepsToPublish)"
+                    NativeDepsToKeep="@(_NativeDepsToAlwaysKeep)">
       <Output TaskParameter="KeptNativeDepsPaths" ItemName="_NativeKeptDepsToPublish" />
     </FindNativeDeps>
 
