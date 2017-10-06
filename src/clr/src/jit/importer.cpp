@@ -3410,7 +3410,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
             retNode = op1;
             break;
-#endif // _TARGET_XARCH_
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 
         case CORINFO_INTRINSIC_MemoryBarrier:
 
@@ -3442,7 +3442,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
             retNode = node;
             break;
         }
-#endif
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 
         case CORINFO_INTRINSIC_StringLength:
             op1 = impPopStack().val;
