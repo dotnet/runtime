@@ -2267,7 +2267,14 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
-    if (pMT->IsByRefLike())
+    if (VMClsHnd.IsNativeValueType())
+    {
+        // native value types have no GC pointers
+        result = 0;
+        memset(gcPtrs, TYPE_GC_NONE,
+               (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
+    }
+    else if (pMT->IsByRefLike())
     {
         // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in
         // which case the check for g_TypedReferenceMT below would not be necessary
@@ -2286,13 +2293,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             // types (TypedReference can not be.)
             result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
         }
-    }
-    else if (VMClsHnd.IsNativeValueType())
-    {
-        // native value types have no GC pointers
-        result = 0;
-        memset(gcPtrs, TYPE_GC_NONE,
-               (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
     }
     else
     {
