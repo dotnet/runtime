@@ -390,9 +390,6 @@
   <data name="ConvertInvalidPrimitive" xml:space="preserve">
     <value>{0} is not a valid value for {1}.</value>
   </data>
-  <data name="LibgdiplusNotFound" xml:space="preserve">
-    <value>The native library "libgdiplus" is not installed on the system, or was otherwise unable to be loaded.</value>
-  </data>
   <data name="BlendObjectMustHaveTwoElements" xml:space="preserve">
     <value>Invalid Blend object. It should have at least 2 elements in each of the factors and positions arrays.</value>
   </data>
