@@ -13,7 +13,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
-            "DockerTag": "centos-7-34f1db9-20171620021620",
+            "DockerTag": "centos-7-d485f41-20173404063424",
             "Rid": "linux"
           },
           "ReportingParameters": {
@@ -26,7 +26,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
-            "DockerTag": "centos-6-c8c9b08-20174310104313",
+            "DockerTag": "centos-6-d485f41-20173404063424",
             "Rid": "rhel.6",
 			"PB_AdditionalBuildArgs": "-portablebuild=false"
           },
