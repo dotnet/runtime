@@ -168,11 +168,11 @@ namespace System.Diagnostics.Tests
             {
                 if (isFolder)
                 {
-                    Assert.Null(px); // Not sure why px returned is null. but the call does not throw and opens folder successfully.
+                    Assert.Null(px);
                 }
                 else
                 {
-                    if (px != null) // sometimes process is null: tracked by #24048
+                    if (px != null) // sometimes process is null
                     {
                         Assert.Equal("notepad", px.ProcessName);
 
