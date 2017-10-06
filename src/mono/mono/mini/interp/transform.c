@@ -3378,7 +3378,7 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			break;
 		case CEE_MKREFANY:
 			CHECK_STACK (td, 1);
-			ENSURE_I4 (td, 2);
+
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 
@@ -3391,7 +3391,6 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			break;
 		case CEE_REFANYVAL: {
 			CHECK_STACK (td, 1);
-			ENSURE_I4 (td, 2);
 			token = read32 (td->ip + 1);
 
 			ADD_CODE (td, MINT_REFANYVAL);
