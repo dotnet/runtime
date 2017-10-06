@@ -2386,7 +2386,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(inArray));
             }
-            return ToBase64String(inArray, 0, inArray.Length, Base64FormattingOptions.None);
+            return ToBase64String(new ReadOnlySpan<byte>(inArray), Base64FormattingOptions.None);
         }
 
         public static String ToBase64String(byte[] inArray, Base64FormattingOptions options)
@@ -2395,7 +2395,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(inArray));
             }
-            return ToBase64String(inArray, 0, inArray.Length, options);
+            return ToBase64String(new ReadOnlySpan<byte>(inArray), options);
         }
 
         public static String ToBase64String(byte[] inArray, int offset, int length)
@@ -2403,42 +2403,46 @@ namespace System
             return ToBase64String(inArray, offset, length, Base64FormattingOptions.None);
         }
 
-        public static unsafe String ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options)
+        public static String ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options)
         {
-            //Do data verfication
             if (inArray == null)
                 throw new ArgumentNullException(nameof(inArray));
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
-            if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
-                throw new ArgumentException(string.Format(SR.Arg_EnumIllegalVal, (int)options));
-
-            int inArrayLength;
-            int stringLength;
-
-            inArrayLength = inArray.Length;
-            if (offset > (inArrayLength - length))
+            if (offset > (inArray.Length - length))
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
-            if (inArrayLength == 0)
-                return String.Empty;
+            return ToBase64String(new ReadOnlySpan<byte>(inArray, offset, length), options);
+        }
+
+        public static string ToBase64String(ReadOnlySpan<byte> bytes, Base64FormattingOptions options = Base64FormattingOptions.None)
+        {
+            if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
+            {
+                throw new ArgumentException(string.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
+            }
+
+            if (bytes.Length == 0)
+            {
+                return string.Empty;
+            }
 
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
-            //Create the new string.  This is the maximally required length.
-            stringLength = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
+            string result = string.FastAllocateString(ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks));
 
-            string returnString = string.FastAllocateString(stringLength);
-            fixed (char* outChars = returnString)
+            unsafe
             {
-                fixed (byte* inData = &inArray[0])
+                fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+                fixed (char* charsPtr = result)
                 {
-                    int j = ConvertToBase64Array(outChars, inData, offset, length, insertLineBreaks);
-                    Debug.Assert(returnString.Length == j, "returnString.Length == j");
-                    return returnString;
+                    int charsWritten = ConvertToBase64Array(charsPtr, bytesPtr, 0, bytes.Length, insertLineBreaks);
+                    Debug.Assert(result.Length == charsWritten, $"Expected {result.Length} == {charsWritten}");
                 }
             }
+
+            return result;
         }
 
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut)
@@ -2462,7 +2466,7 @@ namespace System
 
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
             {
-                throw new ArgumentException(string.Format(SR.Arg_EnumIllegalVal, (int)options));
+                throw new ArgumentException(string.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
 
 
@@ -2499,6 +2503,36 @@ namespace System
             }
 
             return retVal;
+        }
+
+        public static unsafe bool TryToBase64Chars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten, Base64FormattingOptions options = Base64FormattingOptions.None)
+        {
+            if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
+            {
+                throw new ArgumentException(string.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
+            }
+
+            if (bytes.Length == 0)
+            {
+                charsWritten = 0;
+                return true;
+            }
+
+            bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
+
+            int charLengthRequired = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
+            if (charLengthRequired > chars.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            fixed (char* outChars = &chars.DangerousGetPinnableReference())
+            fixed (byte* inData = &bytes.DangerousGetPinnableReference())
+            {
+                charsWritten = ConvertToBase64Array(outChars, inData, 0, bytes.Length, insertLineBreaks);
+                return true;
+            }
         }
 
         private static unsafe int ConvertToBase64Array(char* outChars, byte* inData, int offset, int length, bool insertLineBreaks)
@@ -2612,6 +2646,53 @@ namespace System
             }
         }
 
+        public static bool TryFromBase64String(string s, Span<byte> bytes, out int bytesWritten)
+        {
+            if (s == null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+
+            return TryFromBase64Chars(s.AsReadOnlySpan(), bytes, out bytesWritten);
+        }
+
+        public static unsafe bool TryFromBase64Chars(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        {
+            if (chars.Length == 0)
+            {
+                bytesWritten = 0;
+                return true;
+            }
+
+            // We need to get rid of any trailing white spaces.
+            // Otherwise we would be rejecting input such as "abc= ":
+            while (chars.Length > 0)
+            {
+                char lastChar = chars[chars.Length - 1];
+                if (lastChar != ' ' && lastChar != '\n' && lastChar != '\r' && lastChar != '\t')
+                {
+                    break;
+                }
+                chars = chars.Slice(0, chars.Length - 1);
+            }
+
+            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            {
+                int resultLength = FromBase64_ComputeResultLength(charsPtr, chars.Length);
+                Debug.Assert(resultLength >= 0);
+                if (resultLength > bytes.Length)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+                {
+                    bytesWritten = FromBase64_Decode(charsPtr, chars.Length, bytesPtr, bytes.Length);
+                    return true;
+                }
+            }
+        }
 
         /// <summary>
         /// Converts the specified range of a Char array, which encodes binary data as Base64 digits, to the equivalent byte array.     
