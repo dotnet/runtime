@@ -93,7 +93,6 @@ namespace ILLink.Tasks
 				}
 			}
 
-			var nativeWhitelist = new HashSet<string> (NativeDepsToKeep.Select(i => i.ItemSpec));
 			foreach (var n in NativeDepsToKeep)
 			{
 				ITaskItem nativeFile = null;
