@@ -1411,16 +1411,6 @@
     ]
   },
   {
-    "Name": "System.Runtime.Intrinsics.X86",
-    "Description": "Provides classes which expose low-level processor intrinsics for the x86 family of instruction set architectures.",
-    "CommonTypes": [
-      "System.Runtime.Intrinsics.X86.Sse",
-      "System.Runtime.Intrinsics.X86.Avx",
-      "System.Runtime.Intrinsics.X86.Popcnt",
-      "System.Runtime.Intrinsics.X86.Fma",
-    ]
-  },
-  {
     "Name": "System.Runtime.Loader",
     "Description": "Provides the System.Runtime.Loader.AssemblyLoadContext class, which provides members for loading assemblies.",
     "CommonTypes": [
