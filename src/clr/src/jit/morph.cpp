@@ -5311,7 +5311,33 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
         gtDispTree(argValue);
         assert(!"Missing case in fgMorphMultiregStructArg");
     }
+#endif
 
+    noway_assert(newArg != nullptr);
+    noway_assert(newArg->OperIsFieldList());
+
+    // We need to propagate any GTF_ALL_EFFECT flags from the end of the list back to the beginning.
+    // This is verified in fgDebugCheckFlags().
+
+    ArrayStack<GenTree*> stack(this);
+    GenTree*             tree;
+    for (tree = newArg; (tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->OperIsFieldList(); tree = tree->gtGetOp2())
+    {
+        stack.Push(tree);
+    }
+
+    unsigned propFlags = (tree->gtOp.gtOp1->gtFlags & GTF_ALL_EFFECT);
+    tree->gtFlags |= propFlags;
+
+    while (stack.Height() > 0)
+    {
+        tree = stack.Pop();
+        propFlags |= (tree->gtOp.gtOp1->gtFlags & GTF_ALL_EFFECT);
+        propFlags |= (tree->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
+        tree->gtFlags |= propFlags;
+    }
+
+#ifdef DEBUG
     if (verbose)
     {
         printf("fgMorphMultiregStructArg created tree:\n");
