@@ -193,6 +193,8 @@ namespace System.Reflection.Tests
         {
             Type t = Type.MakeGenericMethodParameter(position);
             Assert.True(t.IsGenericParameter);
+            Assert.False(t.IsGenericTypeParameter);
+            Assert.True(t.IsGenericMethodParameter);
             Assert.Equal(position, t.GenericParameterPosition);
             TestSignatureTypeInvariants(t);
         }
@@ -218,6 +220,8 @@ namespace System.Reflection.Tests
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
             Assert.True(et.IsGenericParameter);
+            Assert.False(et.IsGenericTypeParameter);
+            Assert.True(et.IsGenericMethodParameter);
             Assert.Equal(5, et.GenericParameterPosition);
 
             TestSignatureTypeInvariants(t);
@@ -248,6 +252,8 @@ namespace System.Reflection.Tests
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
             Assert.True(et.IsGenericParameter);
+            Assert.False(et.IsGenericTypeParameter);
+            Assert.True(et.IsGenericMethodParameter);
             Assert.Equal(5, et.GenericParameterPosition);
 
             TestSignatureTypeInvariants(t);
@@ -263,6 +269,8 @@ namespace System.Reflection.Tests
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
             Assert.True(et.IsGenericParameter);
+            Assert.False(et.IsGenericTypeParameter);
+            Assert.True(et.IsGenericMethodParameter);
             Assert.Equal(5, et.GenericParameterPosition);
 
             TestSignatureTypeInvariants(t);
@@ -283,6 +291,8 @@ namespace System.Reflection.Tests
             Type et = t.GenericTypeArguments[0];
             Assert.True(et.IsSignatureType);
             Assert.True(et.IsGenericParameter);
+            Assert.False(et.IsGenericTypeParameter);
+            Assert.True(et.IsGenericMethodParameter);
             Assert.Equal(5, et.GenericParameterPosition);
 
             TestSignatureTypeInvariants(t);
@@ -305,12 +315,11 @@ namespace System.Reflection.Tests
                 Type[] genericTypeArguments = type.GenericTypeArguments.Select(t => t.ToSignatureType()).ToArray();
                 return type.GetGenericTypeDefinition().MakeGenericType(genericTypeArguments);
             }
-            if (type.IsGenericParameter)
-            {
-                if (type.DeclaringMethod == null)
-                    return type;
+            if (type.IsGenericTypeParameter)
+                return type;
+            if (type.IsGenericMethodParameter)
                 return Type.MakeGenericMethodParameter(type.GenericParameterPosition);
-            }
+
             throw new Exception("Unknown type flavor.");
         }
 
@@ -491,7 +500,16 @@ namespace System.Reflection.Tests
 
                 int position = type.GenericParameterPosition;
                 Assert.True(position >= 0);
-                Assert.Equal("!!" + position, type.Name);
+
+                if (type.IsGenericTypeParameter)
+                {
+                    throw new Exception("Unexpected: There is no mechanism at this time to create Signature Types of generic parameters on types.");    
+                }
+                else
+                {
+                    Assert.True(type.IsGenericMethodParameter);
+                    Assert.Equal("!!" + position, type.Name);
+                }
             }
 
             Assert.True(categorized);
@@ -522,6 +540,8 @@ namespace System.Reflection.Tests
 
             if (!type.IsGenericParameter)
             {
+                Assert.False(type.IsGenericTypeParameter);
+                Assert.False(type.IsGenericMethodParameter);
                 Assert.Throws<InvalidOperationException>(() => type.GenericParameterPosition);
             }
         }
