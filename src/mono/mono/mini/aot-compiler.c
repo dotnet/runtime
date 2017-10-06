@@ -931,6 +931,31 @@ static void
 emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops);
 #endif
 
+static void
+arch_free_unwind_info_section_cache (MonoAotCompile *acfg)
+{
+#ifdef EMIT_WIN32_UNWIND_INFO
+	free_unwind_info_section_cache_win32 (acfg);
+#endif
+}
+
+static void
+arch_emit_unwind_info_sections (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops)
+{
+#ifdef EMIT_WIN32_UNWIND_INFO
+	gboolean own_unwind_ops = FALSE;
+	if (!unwind_ops) {
+		unwind_ops = mono_unwind_get_cie_program ();
+		own_unwind_ops = TRUE;
+	}
+
+	emit_unwind_info_sections_win32 (acfg, function_start, function_end, unwind_ops);
+
+	if (own_unwind_ops)
+		mono_free_unwind_info (unwind_ops);
+#endif
+}
+
 #if defined(TARGET_ARM)
 #define AOT_FUNC_ALIGNMENT 4
 #else
@@ -5733,9 +5758,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	emit_label (acfg, symbol);
 
-#ifdef EMIT_WIN32_UNWIND_INFO
-	emit_unwind_info_sections_win32 (acfg, cfg->asm_symbol, symbol, cfg->unwind_ops);
-#endif
+	arch_emit_unwind_info_sections (acfg, cfg->asm_symbol, symbol, cfg->unwind_ops);
 
 	g_free (symbol);
 }
@@ -6627,11 +6650,7 @@ emit_plt (MonoAotCompile *acfg)
 
 	emit_info_symbol (acfg, "plt_end");
 
-#ifdef EMIT_WIN32_UNWIND_INFO
-	GSList *unwind_ops = mono_unwind_get_cie_program ();
-	emit_unwind_info_sections_win32 (acfg, "plt", "plt_end", unwind_ops);
-	mono_free_unwind_info (unwind_ops);
-#endif
+	arch_emit_unwind_info_sections (acfg, "plt", "plt_end", NULL);
 }
 
 /*
@@ -6739,9 +6758,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 		sprintf (symbol, "%s", name);
 		sprintf (symbol2, "%snamed_%s", acfg->temp_prefix, name);
 
-#ifdef EMIT_WIN32_UNWIND_INFO
-		emit_unwind_info_sections_win32 (acfg, start_symbol, end_symbol, unwind_ops);
-#endif
+		arch_emit_unwind_info_sections (acfg, start_symbol, end_symbol, unwind_ops);
 
 		if (acfg->dwarf)
 			mono_dwarf_writer_emit_trampoline (acfg->dwarf, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
@@ -10494,6 +10511,11 @@ emit_codeview_info (MonoAotCompile *acfg)
 			emit_codeview_function_info (acfg, cfg->method, &section_id, cfg->asm_debug_symbol, cfg->asm_symbol, symbol_buffer);
 	}
 }
+#else
+static void
+emit_codeview_info (MonoAotCompile *acfg)
+{
+}
 #endif /* EMIT_WIN32_CODEVIEW_INFO */
 
 #ifdef EMIT_WIN32_UNWIND_INFO
@@ -11604,9 +11626,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_blob_hash);
 	got_info_free (&acfg->got_info);
 	got_info_free (&acfg->llvm_got_info);
-#ifdef EMIT_WIN32_UNWIND_INFO
-	free_unwind_info_section_cache_win32 (acfg);
-#endif
+	arch_free_unwind_info_section_cache (acfg);
 	mono_mempool_destroy (acfg->mempool);
 	g_free (acfg);
 }
@@ -12262,12 +12282,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->dwarf) {
 		emit_dwarf_info (acfg);
 		mono_dwarf_writer_close (acfg->dwarf);
+	} else {
+		if (!acfg->aot_opts.nodebug)
+			emit_codeview_info (acfg);
 	}
-
-#ifdef EMIT_WIN32_CODEVIEW_INFO
-	if (!acfg->aot_opts.nodebug)
-		emit_codeview_info (acfg);
-#endif
 
 	emit_mem_end (acfg);
 
