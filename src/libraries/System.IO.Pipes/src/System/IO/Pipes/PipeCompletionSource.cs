@@ -19,7 +19,6 @@ namespace System.IO.Pipes
         private const int RegisteringCancellation = 4;
         private const int CompletedCallback = 8;
 
-        private readonly CancellationToken _cancellationToken;
         private readonly ThreadPoolBoundHandle _threadPoolBinding;
 
         private CancellationTokenRegistration _cancellationRegistration;
@@ -33,13 +32,12 @@ namespace System.IO.Pipes
 #endif
 
         // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
-        protected PipeCompletionSource(ThreadPoolBoundHandle handle, CancellationToken cancellationToken, ReadOnlyMemory<byte> bufferToPin)
+        protected PipeCompletionSource(ThreadPoolBoundHandle handle, ReadOnlyMemory<byte> bufferToPin)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
             Debug.Assert(handle != null, "handle is null");
 
             _threadPoolBinding = handle;
-            _cancellationToken = cancellationToken;
             _state = NoResult;
 
             _pinnedMemory = bufferToPin.Retain(pin: true);
@@ -57,7 +55,7 @@ namespace System.IO.Pipes
             [SecurityCritical]get { return _overlapped; }
         }
 
-        internal void RegisterForCancellation()
+        internal void RegisterForCancellation(CancellationToken cancellationToken)
         {
 #if DEBUG
             Debug.Assert(!_cancellationHasBeenRegistered, "Cannot register for cancellation twice");
@@ -65,14 +63,14 @@ namespace System.IO.Pipes
 #endif
 
             // Quick check to make sure that the cancellation token supports cancellation, and that the IO hasn't completed
-            if (_cancellationToken.CanBeCanceled && Overlapped != null)
+            if (cancellationToken.CanBeCanceled && Overlapped != null)
             {
                 // Register the cancellation only if the IO hasn't completed
                 int state = Interlocked.CompareExchange(ref _state, RegisteringCancellation, NoResult);
                 if (state == NoResult)
                 {
                     // Register the cancellation
-                    _cancellationRegistration = _cancellationToken.Register(thisRef => ((PipeCompletionSource<TResult>)thisRef).Cancel(), this);
+                    _cancellationRegistration = cancellationToken.Register(thisRef => ((PipeCompletionSource<TResult>)thisRef).Cancel(), this);
 
                     // Grab the state for case if IO completed while we were setting the registration.
                     state = Interlocked.Exchange(ref _state, NoResult);
@@ -160,6 +158,7 @@ namespace System.IO.Pipes
         private void CompleteCallback(int resultState)
         {
             Debug.Assert(resultState == ResultSuccess || resultState == ResultError, "Unexpected result state " + resultState);
+            CancellationToken cancellationToken = _cancellationRegistration.Token;
 
             ReleaseResources();
 
@@ -167,14 +166,14 @@ namespace System.IO.Pipes
             {
                 if (_errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                 {
-                    if (_cancellationToken.CanBeCanceled && !_cancellationToken.IsCancellationRequested)
+                    if (cancellationToken.CanBeCanceled && !cancellationToken.IsCancellationRequested)
                     {
                         HandleUnexpectedCancellation();
                     }
                     else
                     {
                         // otherwise set canceled
-                        TrySetCanceled(_cancellationToken);
+                        TrySetCanceled(cancellationToken);
                     }
                 }
                 else

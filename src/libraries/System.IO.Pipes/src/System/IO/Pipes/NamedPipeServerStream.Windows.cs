@@ -248,7 +248,7 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
             }
 
-            var completionSource = new ConnectionCompletionSource(this, cancellationToken);
+            var completionSource = new ConnectionCompletionSource(this);
 
             if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle, completionSource.Overlapped))
             {
@@ -280,7 +280,7 @@ namespace System.IO.Pipes
             }
 
             // If we are here then connection is pending.
-            completionSource.RegisterForCancellation();
+            completionSource.RegisterForCancellation(cancellationToken);
 
             return completionSource.Task;
         }
