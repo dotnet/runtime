@@ -2675,8 +2675,10 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     regNumber storeDataReg = (treeNode->OperGet() == GT_XCHG) ? dataReg : treeNode->ExtractTempReg(RBM_ALLINT);
     regNumber loadReg      = (targetReg != REG_NA) ? targetReg : storeDataReg;
 
-    // The register allocator should have extended the lifetime of the address
-    // so that it is not used as the target.
+    // Check allocator assumptions
+    //
+    // The register allocator should have extended the lifetimes of all input and internal registers so that
+    // none interfere with the target.
     noway_assert(addrReg != targetReg);
 
     noway_assert(addrReg != loadReg);
@@ -2783,6 +2785,9 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     regNumber exResultReg  = treeNode->ExtractTempReg(RBM_ALLINT);
 
     // Check allocator assumptions
+    //
+    // The register allocator should have extended the lifetimes of all input and internal registers so that
+    // none interfere with the target.
     noway_assert(addrReg != targetReg);
     noway_assert(dataReg != targetReg);
     noway_assert(comparandReg != targetReg);
