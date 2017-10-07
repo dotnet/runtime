@@ -31,16 +31,6 @@
 #include "array.h"
 #include "eepolicy.h"
 
-
-#ifdef FEATURE_WINDOWSPHONE
-Volatile<BOOL> g_fGetPhoneVersionInitialized;
-
-// This is the API to query the phone version information
-typedef BOOL (*pfnGetPhoneVersion)(LPOSVERSIONINFO lpVersionInformation);
-
-pfnGetPhoneVersion g_pfnGetPhoneVersion = NULL;
-#endif
-
 typedef void(WINAPI *pfnGetSystemTimeAsFileTime)(LPFILETIME lpSystemTimeAsFileTime);
 extern pfnGetSystemTimeAsFileTime g_pfnGetSystemTimeAsFileTime;
 

@@ -1156,10 +1156,6 @@ BEGIN
     IDS_EE_INTEROP_STUB_CA_NO_ACCESS_TO_STUB_METHOD "The interop method '%1' cannot access the stub method '%2' specified in ManagedToNativeComInteropStubAttribute. Please make sure they have compatible access modifiers and security accessibility."
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_WINDOWSPHONE
-    IDS_EE_INTEROP_DLL_IMPORT_ON_USER_METHOD "DllImport cannot be used by application code.  Use the Windows Runtime to call native code."
-#endif
-
 #ifdef FEATURE_COMINTEROP
     IDS_EE_STRUCTLAYOUT_WINRT                   "Windows Runtime value types must have sequential layout."
     IDS_EE_PRESERVESIG_WINRT                    "The PreserveSigAttribute may not be used on Windows Runtime methods."
@@ -1177,8 +1173,6 @@ BEGIN
     IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
     IDS_EE_WINRT_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP
-
-    IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"
     
     IDS_EE_ADUNLOAD_IN_FINALIZER            "AppDomain cannot be unloaded during object finalization."
     IDS_EE_ADUNLOAD_DEFAULT                 "The default domain cannot be unloaded."
@@ -1275,13 +1269,9 @@ BEGIN
     IDS_CLASSLOAD_EQUIVALENTSTRUCTFIELDS    "Could not load the structure '%1' from assembly '%2'. The structure is marked as eligible for type equivalence, but it has a static or non-public field."
     IDS_CLASSLOAD_EQUIVALENTBADTYPE         "Could not load type '%1' from assembly '%2'. The type is marked as eligible for type equivalence, but either it has generic parameters, or it is not a structure, COM imported interface, enumeration, or delegate."
     IDS_CLASSLOAD_EQUIVALENTNOTTRUSTED      "Could not load type '%1' from assembly '%2'. The type is marked as eligible for type equivalence, but the containing assembly is not loaded as fully trusted."
-    IDS_CLASSLOAD_EQUIVALENTTRANSPARENCY    "Could not load type '%1' from assembly '%2'. The type is marked as eligible for type equivalence, but either it is not marked as safe-critical or transparent, or it has a field or method that is not marked as safe-critical or transparent."
     IDS_CLASSLOAD_EQUIVALENTNOTPUBLIC       "Could not load type '%1' from assembly '%2'. The type is marked as eligible for type equivalence, but it is not marked as public."
     IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR "Could not execute the method because either the method itself or the containing type is not fully instantiated."
     IDS_CLASSLOAD_WRONGCPU                  "Could not load file or assembly '%1'. This assembly was compiled for a different processor."
-
-
-    IDS_SECURITY_DEMAND_DENIED              "Request for permission of type '%1' failed."
 
     IDS_CANNOT_MARSHAL                      "Type '%1' cannot be marshaled as an unmanaged structure; no meaningful size or offset can be computed."
     IDS_PINVOKE_STRINGBUILDEROVERFLOW       "Warning: A StringBuilder buffer has been overflowed by unmanaged code.  The process may become unstable.  Insufficient capacity allocated to the StringBuilder before marshaling it."
@@ -1536,42 +1526,13 @@ BEGIN
     IDS_UNMARSHALABLE_DEMAND_OBJECT         "The security object (Permission or PermissionSet) used for performing a Demand caused an error relating to serialization/deserialization."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
     IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED      "Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported)."
-    IDS_TYPE_INHERITANCE_RULES_VIOLATED     "Inheritance security rules violated by type: '%1'. Derived types must either match the security accessibility of the base type or be less accessible.  If the base class has a non-transparent default constructor, the derived class must also have a default constructor, and the method inheritance rules apply across those two methods."
-    IDS_METHOD_INHERITANCE_RULES_VIOLATED   "Inheritance security rules violated while overriding member: '%1'. Security accessibility of the overriding method must match the security accessibility of the method being overriden."
-    IDS_CRITICAL_METHOD_ACCESS_DENIED       "Attempt to access method %1 in violation of security transparency rules failed."
-    IDS_CRITICAL_TYPE_ACCESS_DENIED         "Attempt to access type %1 in violation of security transparency rules failed."
-    IDS_APPLICATION_ASSEMBLY_EXEC_DENIED    "Application assemblies cannot be directly executed: %1"
-    IDS_REFLECTION_METHOD_ACCESS_DENIED     "Application code cannot access %1 using Reflection."
-
-    IDS_E_LOAD_CRITICAL_IN_PARTIAL_TRUST    "Assembly '%1' is partially trusted, however it is not entirely security transparent.  If this assembly is meant to be used in partial trust, you will need to apply the SecurityTransparentAttribute to it."
-    IDS_E_TRANSPARENT_CALL_LINKDEMAND       "Attempt by security transparent method '%1' to access LinkDemand protected method '%2' failed.  Methods must be security critical or security safe-critical to satisfy a LinkDemand."
-    IDS_E_TRANSPARENT_CALL_NATIVE           "Attempt by security transparent method '%1' to call native code through method '%2' failed.  Methods must be security critical or security safe-critical to call native code."
-    IDS_E_TRANSPARENT_REFLECTION            "Security transparent method %1 cannot access %2 using reflection."
-    IDS_E_TRANSPARENT_METHOD_CRITICAL_TYPE  "Method '%1' is security transparent, but is a member of a security critical type."
-    IDS_E_UNKNOWN_SECURITY_RULESET          "Assembly '%1' specified an unknown security rule set."
-    IDS_E_UNTRUSTED_APPDOMAIN_MANAGER       "Partial trust applications may not specify an AppDomainManager for the default domain."
 
     IDS_E_FIELDACCESS                       "Attempt by method '%1' to access field '%2' failed.%3"
     IDS_E_METHODACCESS                      "Attempt by method '%1' to access method '%2' failed.%3"
     IDS_E_TYPEACCESS                        "Attempt by method '%1' to access type '%2' failed.%3"
-    IDS_E_CRITICAL_FIELD_ACCESS_DENIED      "Attempt by security transparent method '%1' to access security critical field '%2' failed.%3"
-    IDS_E_CRITICAL_METHOD_ACCESS_DENIED     "Attempt by security transparent method '%1' to access security critical method '%2' failed.%3"
-    IDS_E_CRITICAL_TYPE_ACCESS_DENIED       "Attempt by security transparent method '%1' to access security critical type '%2' failed.%3"
-    IDS_E_DELEGATE_BINDING_TRANSPARENCY     "A delegate of type '%1' cannot be bound to the method '%2' due to security transparency rules. Ensure the delegate type and the method being bound have compatible security transparency."
-    IDS_E_DELEGATE_FULLTRUST_ARPIC_1        "Delegate '%1' must be bound to a method in a fully-trusted assembly and the method must have the AllowReversePinvokeCallsAttribute."
-    IDS_E_DELEGATE_FULLTRUST_ARPIC_2        "Cannot create a Delegate for marshalling out unless it is bound to a method in a fully-trusted assembly and the method has the AllowReversePinvokeCallsAttribute."
-    IDS_E_ACCESSING_PRIVATE_FRAMEWORK_CODE  "Reflection invocation to internal or private types or members in the framework is not allowed."
 
     IDS_EE_TORNSTATE                        "Unexpected change made to file '%1'."
 
-END
-
-// These strings are attached to various access exceptions to provide additional context as to what may have
-// caused them, and how they might be fixed.
-STRINGTABLE DISCARDABLE
-BEGIN
-    IDS_ACCESS_EXCEPTION_CONTEXT_LEVEL2_APTCA           "Assembly '%1' is marked with the AllowPartiallyTrustedCallersAttribute, and uses the level 2 security transparency model.  Level 2 transparency causes all methods in AllowPartiallyTrustedCallers assemblies to become security transparent by default, which may be the cause of this exception."
-    IDS_ACCESS_EXCEPTION_CONTEXT_PT_TRANSPARENT         "Assembly '%1' is partially trusted, which causes the CLR to make it entirely security transparent regardless of any transparency annotations in the assembly itself.  In order to access security critical code, this assembly must be fully trusted."
 END
 
 // These strings are generated from within the EE for streams
