@@ -293,7 +293,8 @@ void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
 
     // Set the register requirements for the node.
     regMaskTP argMask = genRegMask(argReg);
-#ifdef ARM_SOFTFP
+
+#ifdef _TARGET_ARM_
     // If type of node is `long` then it is actually `double`.
     // The actual `long` types must have been transformed as a field list with two fields.
     if (node->TypeGet() == TYP_LONG)
@@ -303,7 +304,8 @@ void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
         assert(genRegArgNext(argReg) == REG_NEXT(argReg));
         argMask |= genRegMask(REG_NEXT(argReg));
     }
-#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
+
     node->gtLsraInfo.setDstCandidates(this, argMask);
     node->gtLsraInfo.setSrcCandidates(this, argMask);
 
@@ -474,31 +476,22 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             GenTree* putArgChild = argNode->gtGetOp1();
             if (!varTypeIsStruct(putArgChild) && !putArgChild->OperIs(GT_FIELD_LIST))
             {
-#ifdef ARM_SOFTFP
-                // The `double` types have been transformed to `long` on armel, while the actual longs
+#ifdef _TARGET_ARM_
+                // The `double` types have been transformed to `long` on arm, while the actual longs
                 // have been decomposed.
                 const bool isDouble = putArgChild->TypeGet() == TYP_LONG;
                 if (isDouble)
                 {
                     argNode->gtLsraInfo.srcCount = 2;
                 }
-#endif // ARM_SOFT_FP
-
-#ifdef DEBUG
-// Validate the slot count for this arg.
-#ifdef _TARGET_ARM_
-#ifndef ARM_SOFTFP
-                const bool isDouble = (curArgTabEntry->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE);
-#endif // !ARM_SOFTFP
 
                 // We must not have a multi-reg struct; double uses 2 slots and isn't a multi-reg struct
                 assert((curArgTabEntry->numSlots == 1) || isDouble);
-
 #else  // !_TARGET_ARM_
+                // Validate the slot count for this arg.
                 // We must not have a multi-reg struct
                 assert(curArgTabEntry->numSlots == 1);
 #endif // !_TARGET_ARM_
-#endif
             }
             continue;
         }
@@ -541,14 +534,15 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             assert(argNode->gtRegNum == argReg);
             HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
             info->srcCount++;
-#ifdef ARM_SOFTFP
-            // The `double` types have been transformed to `long` on armel,
+
+#ifdef _TARGET_ARM_
+            // The `double` types have been transformed to `long` on arm,
             // while the actual long types have been decomposed.
             if (argNode->TypeGet() == TYP_LONG)
             {
                 info->srcCount++;
             }
-#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
         }
     }
 
@@ -679,7 +673,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
     }
     else
     {
-#if defined(_TARGET_ARM_) && defined(ARM_SOFTFP)
+#if defined(_TARGET_ARM_)
         // The `double` types have been transformed to `long` on armel,
         // while the actual long types have been decomposed.
         const bool isDouble = (putArgChild->TypeGet() == TYP_LONG);
@@ -688,7 +682,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
             argNode->gtLsraInfo.srcCount = 2;
         }
         else
-#endif // defined(_TARGET_ARM_) && defined(ARM_SOFTFP)
+#endif // defined(_TARGET_ARM_)
         {
             argNode->gtLsraInfo.srcCount = 1;
         }
