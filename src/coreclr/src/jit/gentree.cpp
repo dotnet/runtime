@@ -7094,8 +7094,8 @@ GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber ar
     assert(arg != nullptr);
 
     GenTreePtr node = nullptr;
-#if !defined(LEGACY_BACKEND) && defined(ARM_SOFTFP)
-    // A PUTARG_REG could be a MultiRegOp on armel since we could move a double register to two int registers.
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    // A PUTARG_REG could be a MultiRegOp on arm since we could move a double register to two int registers.
     node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
 #else
     node            = gtNewOperNode(GT_PUTARG_REG, type, arg);
@@ -7125,8 +7125,8 @@ GenTreePtr Compiler::gtNewBitCastNode(var_types type, GenTreePtr arg)
 
     GenTreePtr node = nullptr;
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    // A BITCAST could be a MultiRegOp on armel since we could move a double register to two int registers.
-    node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
+    // A BITCAST could be a MultiRegOp on arm since we could move a double register to two int registers.
+    node = new (this, GT_BITCAST) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
 #else
     node            = gtNewOperNode(GT_BITCAST, type, arg);
 #endif
@@ -9392,6 +9392,8 @@ bool GenTree::Precedes(GenTree* other)
 
 /* static */ int GenTree::gtDispFlags(unsigned flags, unsigned debugFlags)
 {
+    int charsDisplayed = 11; // 11 is the "baseline" number of flag characters displayed
+
 #ifdef LEGACY_BACKEND
     printf("%c", (flags & GTF_ASG) ? 'A' : '-');
 #else  // !LEGACY_BACKEND
@@ -9409,10 +9411,12 @@ bool GenTree::Precedes(GenTree* other)
     printf("%c", (flags & GTF_UNSIGNED) ? 'U' : (flags & GTF_BOOLEAN) ? 'B' : '-');
 #if FEATURE_SET_FLAGS
     printf("%c", (flags & GTF_SET_FLAGS) ? 'S' : '-');
+    ++charsDisplayed;
 #endif
     printf("%c", (flags & GTF_LATE_ARG) ? 'L' : '-');
     printf("%c", (flags & GTF_SPILLED) ? 'z' : (flags & GTF_SPILL) ? 'Z' : '-');
-    return 12; // displayed 12 flag characters
+
+    return charsDisplayed;
 }
 
 /*****************************************************************************/
@@ -9769,6 +9773,12 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
                         --msgLength;
                         break;
                     }
+                    if (tree->gtFlags & GTF_IND_NONFAULTING)
+                    {
+                        printf("x");
+                        --msgLength;
+                        break;
+                    }
                 }
                 __fallthrough;
 
@@ -9920,6 +9930,15 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
             case GT_JCMP:
                 printf((tree->gtFlags & GTF_JCMP_TST) ? "T" : "C");
                 printf((tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+                goto DASH;
+
+            case GT_FIELD_LIST:
+                if (tree->gtFlags & GTF_FIELD_LIST_HEAD)
+                {
+                    printf("H");
+                    --msgLength;
+                    break;
+                }
                 goto DASH;
 
             default:
@@ -10195,7 +10214,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
 #endif
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    if (tree->OperIsMultiRegOp() && tree->AsMultiRegOp()->gtOtherReg != REG_NA)
+    if (tree->OperIsMultiRegOp() && (tree->AsMultiRegOp()->gtOtherReg != REG_NA))
     {
         printf(",%s", compRegVarName(tree->AsMultiRegOp()->gtOtherReg));
     }
