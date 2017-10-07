@@ -134,7 +134,7 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
         tree->gtRegNum = reg;
     }
 #if defined(_TARGET_ARM_)
-    else if (tree->OperGet() == GT_MUL_LONG || tree->OperGet() == GT_PUTARG_REG || tree->OperGet() == GT_BITCAST)
+    else if (tree->OperIsMultiRegOp())
     {
         assert(regIdx == 1);
         GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
@@ -146,7 +146,7 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
         GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
         copy->gtOtherRegs[0]      = (regNumberSmall)reg;
     }
-    else if (tree->OperGet() == GT_PUTARG_SPLIT)
+    else if (tree->OperIsPutArgSplit())
     {
         GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
         putArg->SetRegNumByIdx(reg, regIdx);
@@ -4080,8 +4080,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
             regMaskTP candidates = getUseCandidates(useNode);
 #ifdef _TARGET_ARM_
-            if (useNode->OperIsPutArgSplit() ||
-                (compiler->opts.compUseSoftFP && (useNode->OperIsPutArgReg() || useNode->OperGet() == GT_BITCAST)))
+            if (useNode->OperIsPutArgSplit() || useNode->OperIsMultiRegOp())
             {
                 // get i-th candidate, set bits in useCandidates must be in sequential order.
                 candidates = genFindLowestReg(candidates & ~currCandidates);
@@ -4174,12 +4173,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
 
 #ifdef _TARGET_ARM_
-        if (tree->OperIsPutArgSplit()
-#ifdef ARM_SOFTFP
-            // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
-            || tree->OperIsMultiRegOp() || tree->OperGet() == GT_BITCAST
-#endif // ARM_SOFTFP
-            )
+        // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
+        if (tree->OperIsPutArgSplit() || tree->OperIsMultiRegOp())
         {
             // get i-th candidate
             currCandidates = genFindLowestReg(candidates);
@@ -9180,8 +9175,6 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 {
                     typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
                 }
-#endif
-#ifdef ARM_SOFTFP
                 else if (treeNode->OperIsPutArgReg())
                 {
                     // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
@@ -9189,7 +9182,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     var_types typNode = treeNode->TypeGet();
                     typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
                 }
-#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
                 else
                 {
                     typ = treeNode->TypeGet();
