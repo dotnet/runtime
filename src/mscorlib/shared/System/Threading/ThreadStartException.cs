@@ -22,7 +22,7 @@ namespace System.Threading
             HResult = HResults.COR_E_THREADSTART;
         }
 
-        internal ThreadStartException(SerializationInfo info, StreamingContext context)
+        private ThreadStartException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
