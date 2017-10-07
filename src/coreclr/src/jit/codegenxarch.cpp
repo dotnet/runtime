@@ -808,8 +808,7 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     assert(oper == GT_OR || oper == GT_XOR || oper == GT_AND || oper == GT_ADD || oper == GT_SUB);
 #else  // !defined(_TARGET_64BIT_)
     assert(oper == GT_OR || oper == GT_XOR || oper == GT_AND || oper == GT_ADD_LO || oper == GT_ADD_HI ||
-           oper == GT_SUB_LO || oper == GT_SUB_HI || oper == GT_MUL_LONG || oper == GT_DIV_HI || oper == GT_MOD_HI ||
-           oper == GT_ADD || oper == GT_SUB);
+           oper == GT_SUB_LO || oper == GT_SUB_HI || oper == GT_ADD || oper == GT_SUB);
 #endif // !defined(_TARGET_64BIT_)
 
     GenTreePtr op1 = treeNode->gtGetOp1();
