@@ -4,17 +4,41 @@
         <type fullname="System.Linq.Queryable" required="true" />
     </assembly>
 
-    <!--- Called by System.Linq.Expressions.Expression:CreateLambda -->
     <assembly fullname="System.Linq.Expressions">
-        <type fullname="System.Linq.Expressions.Expression`1" required="true" />
+         <!--- Called by System.Linq.Expressions.Expression:CreateLambda -->
+         <type fullname="System.Linq.Expressions.Expression`1" required="true" />
+         <!--- Called by System.Runtime.CompilerServices.CallSite`1.CreateCustomNoMatchDelegate and System.Runtime.CompilerServices.CallSite`1.CreateCustomUpdateDelegate-->
+         <type fullname="System.Runtime.CompilerServices.CallSiteOps" required="true" />
+         <type fullname="System.Dynamic.DynamicObject" >
+            <!--- Called by System.Dynamic.DynamicObject.MetaDynamic.BindBinaryOperation -->
+            <method name="TryBinaryOperation" required="true" />
+        </type> 
+    </assembly>
+
+    <assembly fullname="System.ComponentModel.TypeConverter">
+        <!-- Called by System.RuntimeTypeHandle.CreateInstance -->
+        <type fullname="System.ComponentModel.StringConverter" required="true" >
+            <method name=".ctor" required="true" />
+        </type>
+        <type fullname="System.ComponentModel.BooleanConverter" required="true" >
+            <method name=".ctor" required="true" />
+        </type>
+        <type fullname="System.ComponentModel.CollectionConverter" >
+            <method name=".ctor" required="true" />
+        </type>
+    </assembly>
+
+    <assembly fullname="Microsoft.CSharp">
+        <type fullname="Microsoft.CSharp.RuntimeBinder.Binder" >
+            <!-- Called by AspNetCore._Views_Home_Index_cshtml.<ExecuteAsync>d__11.MoveNext() -->
+            <method name="Convert" required="true" />
+        </type>
     </assembly>
 
     <assembly fullname="System.Dynamic.Runtime">
-        <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSite<>.CreateCustomNoMatchDelegate and [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSite<>.CreateCustomUpdateDelegate-->
-        <type fullname="System.Runtime.CompilerServices.CallSiteOps" required="true" />
-        <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
-        <type fullname="System.Runtime.CompilerServices.CallSite" required="true" />
-        <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
-        <type fullname="System.Runtime.CompilerServices.CallSite`1" required="true" />
-    </assembly>
+        <type fullname="System.Runtime.CompilerServices.CallSite`1" required="true">
+            <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
+            <method name="get_Update" required="true" />
+        </type>
+    </assembly> 
 </linker>
