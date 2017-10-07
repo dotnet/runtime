@@ -26,27 +26,27 @@ namespace System
             HResult = HResults.COR_E_NOTFINITENUMBER;
         }
 
-        public NotFiniteNumberException(String message)
+        public NotFiniteNumberException(string message)
             : base(message)
         {
             _offendingNumber = 0;
             HResult = HResults.COR_E_NOTFINITENUMBER;
         }
 
-        public NotFiniteNumberException(String message, double offendingNumber)
+        public NotFiniteNumberException(string message, double offendingNumber)
             : base(message)
         {
             _offendingNumber = offendingNumber;
             HResult = HResults.COR_E_NOTFINITENUMBER;
         }
 
-        public NotFiniteNumberException(String message, Exception innerException)
+        public NotFiniteNumberException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_NOTFINITENUMBER;
         }
 
-        public NotFiniteNumberException(String message, double offendingNumber, Exception innerException)
+        public NotFiniteNumberException(string message, double offendingNumber, Exception innerException)
             : base(message, innerException)
         {
             _offendingNumber = offendingNumber;
@@ -61,7 +61,7 @@ namespace System
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("OffendingNumber", _offendingNumber, typeof(Int32));
+            info.AddValue("OffendingNumber", _offendingNumber, typeof(int));
         }
 
         public double OffendingNumber
