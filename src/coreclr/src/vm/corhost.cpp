@@ -869,10 +869,6 @@ HRESULT CorHost2::_CreateDelegate(
     if (pMD==NULL || !pMD->IsStatic() || pMD->ContainsGenericVariables()) 
         ThrowHR(COR_E_MISSINGMETHOD);
 
-    // the target method must be decorated with AllowReversePInvokeCallsAttribute
-    if (!COMDelegate::IsMethodAllowedToSinkReversePInvoke(pMD))
-        ThrowHR(COR_E_SECURITY);
-
     UMEntryThunk *pUMEntryThunk = GetAppDomain()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
     *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
 
