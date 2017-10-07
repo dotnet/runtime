@@ -1980,12 +1980,6 @@ genTreeOps DecomposeLongs::GetHiOper(genTreeOps oper)
         case GT_SUB:
             return GT_SUB_HI;
             break;
-        case GT_DIV:
-            return GT_DIV_HI;
-            break;
-        case GT_MOD:
-            return GT_MOD_HI;
-            break;
         case GT_OR:
             return GT_OR;
             break;
