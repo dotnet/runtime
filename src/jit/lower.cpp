@@ -1310,7 +1310,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             {
                 intArg           = comp->gtNewBitCastNode(intType, arg);
                 intArg->gtRegNum = info->regNum;
-#ifdef ARM_SOFTFP
+
+#ifdef _TARGET_ARM_
                 if (intType == TYP_LONG)
                 {
                     assert(info->numRegs == 2);
@@ -1320,7 +1321,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
                            (info->regNum == REG_R2 && regNext == REG_R3));
                     intArg->AsMultiRegOp()->gtOtherReg = regNext;
                 }
-#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
             }
             else
             {
@@ -1334,7 +1335,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             arg  = intArg;
             type = intType;
         }
-#endif
+#endif // _TARGET_ARMARCH_
 
         putArg = NewPutArg(call, arg, info, type);
 
