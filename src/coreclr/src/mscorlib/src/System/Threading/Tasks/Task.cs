@@ -2644,10 +2644,10 @@ namespace System.Threading.Tasks
                 SynchronizationContext syncCtx = SynchronizationContext.CurrentNoFlow;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    Action moveNextAction = stateMachineBox.MoveNextAction;
-                    if (!AddTaskContinuation(new SynchronizationContextAwaitTaskContinuation(syncCtx, moveNextAction, flowExecutionContext: false), addBeforeOthers: false))
+                    var tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, stateMachineBox.MoveNextAction, flowExecutionContext: false);
+                    if (!AddTaskContinuation(tc, addBeforeOthers: false))
                     {
-                        AwaitTaskContinuation.UnsafeScheduleAction(moveNextAction, this);
+                        tc.Run(this, canInlineContinuationTask: false);
                     }
                     return;
                 }
@@ -2656,10 +2656,10 @@ namespace System.Threading.Tasks
                     TaskScheduler scheduler = TaskScheduler.InternalCurrent;
                     if (scheduler != null && scheduler != TaskScheduler.Default)
                     {
-                        Action moveNextAction = stateMachineBox.MoveNextAction;
-                        if (!AddTaskContinuation(new TaskSchedulerAwaitTaskContinuation(scheduler, moveNextAction, flowExecutionContext: false), addBeforeOthers: false))
+                        var tc = new TaskSchedulerAwaitTaskContinuation(scheduler, stateMachineBox.MoveNextAction, flowExecutionContext: false);
+                        if (!AddTaskContinuation(tc, addBeforeOthers: false))
                         {
-                            AwaitTaskContinuation.UnsafeScheduleAction(moveNextAction, this);
+                            tc.Run(this, canInlineContinuationTask: false);
                         }
                         return;
                     }
