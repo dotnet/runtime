@@ -125,10 +125,7 @@ public:
 
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
 
-    static BOOL IsMethodAllowedToSinkReversePInvoke(MethodDesc *pMD);
-
 private:
-    static BOOL IsFullTrustDelegate(DELEGATEREF pDelegate);
     static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);
 
 public:
