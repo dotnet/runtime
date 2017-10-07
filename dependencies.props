@@ -9,23 +9,23 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</CoreFxCurrentRef>
+    <CoreFxCurrentRef>fe49198c3da4ab3091ce6e3d898fe7026cf1c362</CoreFxCurrentRef>
     <CoreClrCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</CoreClrCurrentRef>
     <StandardCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</StandardCurrentRef>
-    <WCFCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</WCFCurrentRef>
+    <WCFCurrentRef>fe49198c3da4ab3091ce6e3d898fe7026cf1c362</WCFCurrentRef>
     <BuildToolsCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25806-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25806-02</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview1-25806-02</PlatformPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25807-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25807-02</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25807-02</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25806-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
     <NETStandardVersion>2.1.0-preview1-25806-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.5.0-preview2-25806-01</WcfVersion>
+    <WcfVersion>4.5.0-preview2-25807-01</WcfVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
