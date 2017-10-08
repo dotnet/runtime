@@ -381,7 +381,7 @@ The “@ 15” is the location number of the node.  The “0=1” indicates that
 
 The RyuJIT register allocator uses a Linear Scan algorithm, with an approach similar to [[2]](#[2]). In brief, it operates on two main data structures:
 
-* `Intervals` (representing live ranges of variables or tree expressions) and `RegRecords` (representing physical registers), both of which derive from `Referent`.
+* `Intervals` (representing live ranges of variables or tree expressions) and `RegRecords` (representing physical registers), both of which derive from `Referenceable`.
 * `RefPositions`, which represent uses or defs (or variants thereof, such as ExposedUses) of either `Intervals` or physical registers.
 
 Pre-conditions:
