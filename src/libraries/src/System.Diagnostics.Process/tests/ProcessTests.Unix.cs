@@ -72,6 +72,35 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop("Opens program")]
+        public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
+        {
+            string fileToOpen = "dotnet";
+            string curDir = Environment.CurrentDirectory;
+            string dotnetFolder = Path.Combine(Path.GetTempPath(),"dotnet");
+            bool shouldDelete = !Directory.Exists(dotnetFolder);
+            try
+            {
+                Directory.SetCurrentDirectory(Path.GetTempPath());
+                Directory.CreateDirectory(dotnetFolder);
+
+                using (var px = Process.Start(fileToOpen))
+                {
+                    Assert.NotNull(px);
+                }
+            }
+            finally
+            {
+                if (shouldDelete)
+                {
+                    Directory.Delete(dotnetFolder);
+                }
+
+                Directory.SetCurrentDirectory(curDir);
+            }
+        }
+
         [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled(bool isFolder)
