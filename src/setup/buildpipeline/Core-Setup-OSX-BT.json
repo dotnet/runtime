@@ -85,7 +85,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/Tools/msbuild.sh",
-        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
+        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -193,12 +193,18 @@
     "PB_AzureAccountName": {
       "value": "sourcebuild"
     },
+    "PB_ContainerName": {
+      "value": "dotnet"
+    },
     "PB_AzureAccessToken": {
       "value": null,
       "isSecret": true
     },
     "PB_ChecksumAzureAccountName": {
       "value": "dotnetclichecksums"
+    },
+    "PB_ChecksumContainerName": {
+      "value": "dotnet"
     },
     "PB_ChecksumAzureAccessToken": {
       "value": null,

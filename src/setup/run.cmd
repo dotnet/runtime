@@ -17,8 +17,5 @@ if not exist "%_VSCOMNTOOLS%" (
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 
 :Run
-:: We do not want to run the first-time experience.
-set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
-pushd %~dp0
 powershell -NoProfile -ExecutionPolicy unrestricted -Command "%~dp0run.ps1 -- %*"
 exit /b %ERRORLEVEL%

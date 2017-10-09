@@ -37,18 +37,10 @@
 
     <Reference Include="$(BuildToolsTaskCoreDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
     
-    <PackageReference Include="Microsoft.Build">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Framework">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Tasks.Core">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Utilities.Core">
-      <Version>0.1.0-preview-00022</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildPackageVersion)" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkPackageVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCorePackageVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCorePackageVersion)" />
     <PackageReference Include="Microsoft.Tpl.Dataflow">
       <Version>4.5.24</Version>
       <IncludeAssets>None</IncludeAssets>
