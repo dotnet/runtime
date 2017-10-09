@@ -201,7 +201,7 @@ namespace System.ServiceModel.Syndication
         {
             return LoadAsync<SyndicationItem>(reader);
         }
-        
+
         public static async Task<TSyndicationItem> LoadAsync<TSyndicationItem>(XmlReader reader)
             where TSyndicationItem : SyndicationItem, new()
         {

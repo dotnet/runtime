@@ -42,7 +42,7 @@ namespace System.ServiceModel.Syndication
         public Func<string, string, string, string> stringParser = DefaultStringParser;
         public Func<string, string, string, DateTimeOffset> dateParser = DefaultDateFromString;
         public Func<string, UriKind, string, string, Uri> uriParser = DefaultUriParser;
-            
+
         private static string DefaultStringParser(string value, string localName, string ns)
         {
             return value;
@@ -50,9 +50,9 @@ namespace System.ServiceModel.Syndication
 
         private static Uri DefaultUriParser(string value, UriKind kind, string localName, string ns)
         {
-            return new Uri(value,kind);
+            return new Uri(value, kind);
         }
-       
+
         public Atom10FeedFormatter()
             : this(typeof(SyndicationFeed))
         {
@@ -117,7 +117,7 @@ namespace System.ServiceModel.Syndication
 
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
         }
-        
+
         public override async Task ReadFromAsync(XmlReader reader, CancellationToken ct)
         {
             if (!CanRead(reader))
@@ -154,7 +154,7 @@ namespace System.ServiceModel.Syndication
                     string value = await reader.GetValueAsync();
                     bool notHandled = false;
 
-                    if(reader.NamespaceURI == string.Empty)
+                    if (reader.NamespaceURI == string.Empty)
                     {
                         switch (reader.LocalName)
                         {
@@ -290,7 +290,7 @@ namespace System.ServiceModel.Syndication
             string name = reader.LocalName;
             string ns = reader.NamespaceURI;
 
-            if(ns == Atom10Constants.Atom10Namespace)
+            if (ns == Atom10Constants.Atom10Namespace)
             {
                 switch (name)
                 {
@@ -304,10 +304,10 @@ namespace System.ServiceModel.Syndication
                         result.Contributors.Add(await ReadPersonFromAsync(reader, result));
                         break;
                     case Atom10Constants.GeneratorTag:
-                        result.Generator = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.GeneratorTag,ns);
+                        result.Generator = stringParser(await reader.ReadElementStringAsync(), Atom10Constants.GeneratorTag, ns);
                         break;
                     case Atom10Constants.IdTag:
-                        result.Id = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.IdTag,ns);
+                        result.Id = stringParser(await reader.ReadElementStringAsync(), Atom10Constants.IdTag, ns);
                         break;
                     case Atom10Constants.LinkTag:
                         result.Links.Add(await ReadLinkFromAsync(reader, result));
@@ -352,7 +352,7 @@ namespace System.ServiceModel.Syndication
             string name = reader.LocalName;
             string ns = reader.NamespaceURI;
 
-            if(ns == Atom10Constants.Atom10Namespace)
+            if (ns == Atom10Constants.Atom10Namespace)
             {
                 switch (name)
                 {
@@ -369,7 +369,7 @@ namespace System.ServiceModel.Syndication
                         result.Contributors.Add(await ReadPersonFromAsync(reader, result));
                         break;
                     case Atom10Constants.IdTag:
-                        result.Id = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.IdTag,ns);
+                        result.Id = stringParser(await reader.ReadElementStringAsync(), Atom10Constants.IdTag, ns);
                         break;
                     case Atom10Constants.LinkTag:
                         result.Links.Add(await ReadLinkFromAsync(reader, result));
@@ -486,7 +486,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal  Task WriteItemLastUpdatedTimeToAsync(XmlWriter writer, DateTimeOffset lastUpdatedTime)
+        internal Task WriteItemLastUpdatedTimeToAsync(XmlWriter writer, DateTimeOffset lastUpdatedTime)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue)
             {
@@ -604,7 +604,7 @@ namespace System.ServiceModel.Syndication
                 await this.WriteItemAsync(writer, item, feedBaseUri);
             }
         }
-        
+
         private async Task<TextSyndicationContent> ReadTextContentFromHelperAsync(XmlReaderWrapper reader, string type, string context, bool preserveAttributeExtensions)
         {
             if (string.IsNullOrEmpty(type))
@@ -657,7 +657,7 @@ namespace System.ServiceModel.Syndication
             reader.MoveToElement();
             string localName = reader.LocalName;
             string nameSpace = reader.NamespaceURI;
-            string val = (kind == TextSyndicationContentKind.XHtml) ? await reader.ReadInnerXmlAsync() : stringParser(await reader.ReadElementStringAsync(),localName,nameSpace); // cant custom parse because its static
+            string val = (kind == TextSyndicationContentKind.XHtml) ? await reader.ReadInnerXmlAsync() : stringParser(await reader.ReadElementStringAsync(), localName, nameSpace); // cant custom parse because its static
             TextSyndicationContent result = new TextSyndicationContent(val, kind);
             if (attrs != null)
             {
@@ -683,7 +683,7 @@ namespace System.ServiceModel.Syndication
                 return dateTime.ToString(Rfc3339LocalDateTimeFormat, CultureInfo.InvariantCulture);
             }
         }
-        
+
         private static DateTimeOffset DefaultDateFromString(string dateTimeString, string localName, string ns)
         {
             dateTimeString = dateTimeString.Trim();
@@ -721,10 +721,10 @@ namespace System.ServiceModel.Syndication
             //if imposible to parse, return default date
             return new DateTimeOffset();
         }
-        
+
         private Task<SyndicationCategory> ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category)
         {
-             return ReadCategoryAsync(reader, category, this.Version, this.PreserveAttributeExtensions, this.PreserveElementExtensions, _maxExtensionSize);
+            return ReadCategoryAsync(reader, category, this.Version, this.PreserveAttributeExtensions, this.PreserveElementExtensions, _maxExtensionSize);
         }
 
         private Task<SyndicationCategory> ReadCategoryFromAsync(XmlReaderWrapper reader, SyndicationFeed feed)
@@ -733,14 +733,14 @@ namespace System.ServiceModel.Syndication
             SyndicationCategory result = CreateCategory(feed);
             return ReadCategoryAsync(reader, result);
         }
-        
+
         private async Task<SyndicationCategory> ReadCategoryFromAsync(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationCategory result = CreateCategory(item);
             await ReadCategoryAsync(reader, result);
             return result;
         }
-        
+
         private async Task<SyndicationContent> ReadContentFromAsync(XmlReaderWrapper reader, SyndicationItem item)
         {
             await MoveToStartElementAsync(reader);
@@ -856,7 +856,7 @@ namespace System.ServiceModel.Syndication
 
             XmlBuffer buffer = null;
             XmlDictionaryWriter extWriter = null;
-            
+
             if (!elementIsEmpty)
             {
                 try
@@ -923,8 +923,7 @@ namespace System.ServiceModel.Syndication
 
             return result;
         }
-        
-        
+
         private async Task ReadItemFromAsync(XmlReaderWrapper reader, SyndicationItem result, Uri feedBaseUri)
         {
             try
@@ -1005,14 +1004,13 @@ namespace System.ServiceModel.Syndication
             catch (FormatException e)
             {
                 throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e);
-               
             }
             catch (ArgumentException e)
             {
                 throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e);
             }
         }
-        
+
         private async Task ReadLinkAsync(XmlReaderWrapper reader, SyndicationLink link, Uri baseUri)
         {
             bool isEmpty = reader.IsEmptyElement;
@@ -1032,7 +1030,7 @@ namespace System.ServiceModel.Syndication
                     {
                         link.BaseUri = FeedUtils.CombineXmlBase(link.BaseUri, await reader.GetValueAsync());
                     }
-                    else if(reader.NamespaceURI == string.Empty)
+                    else if (reader.NamespaceURI == string.Empty)
                     {
                         switch (reader.LocalName)
                         {
@@ -1125,30 +1123,30 @@ namespace System.ServiceModel.Syndication
             link.MediaType = mediaType;
             link.RelationshipType = relationship;
             link.Title = title;
-            link.Uri = (val != null) ? uriParser(val,UriKind.RelativeOrAbsolute,Atom10Constants.LinkTag,ns) /*new Uri(val, UriKind.RelativeOrAbsolute)*/ : null;
+            link.Uri = (val != null) ? uriParser(val, UriKind.RelativeOrAbsolute, Atom10Constants.LinkTag, ns) /*new Uri(val, UriKind.RelativeOrAbsolute)*/ : null;
         }
-        
+
         private async Task<SyndicationLink> ReadLinkFromAsync(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationLink result = CreateLink(feed);
             await ReadLinkAsync(reader, result, feed.BaseUri);
             return result;
         }
-        
+
         private async Task<SyndicationLink> ReadLinkFromAsync(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationLink result = CreateLink(item);
             await ReadLinkAsync(reader, result, item.BaseUri);
             return result;
         }
-       
+
         private async Task<SyndicationPerson> ReadPersonFromAsync(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationPerson result = CreatePerson(feed);
             await ReadPersonFromAsync(reader, result);
             return result;
         }
-        
+
         private async Task<SyndicationPerson> ReadPersonFromAsync(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationPerson result = CreatePerson(item);
@@ -1196,20 +1194,20 @@ namespace System.ServiceModel.Syndication
                         switch (name)
                         {
                             case Atom10Constants.NameTag:
-                                result.Name = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.NameTag,ns);
+                                result.Name = stringParser(await reader.ReadElementStringAsync(), Atom10Constants.NameTag, ns);
                                 break;
                             case Atom10Constants.UriTag:
-                                result.Uri = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.UriTag,ns);
+                                result.Uri = stringParser(await reader.ReadElementStringAsync(), Atom10Constants.UriTag, ns);
                                 break;
                             case Atom10Constants.EmailTag:
-                                result.Email = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.EmailTag,ns);
+                                result.Email = stringParser(await reader.ReadElementStringAsync(), Atom10Constants.EmailTag, ns);
                                 break;
                             default:
                                 notHandled = true;
                                 break;
                         }
 
-                        if(notHandled && !TryParseElement(reader, result, this.Version))
+                        if (notHandled && !TryParseElement(reader, result, this.Version))
                         {
                             if (_preserveElementExtensions)
                             {
@@ -1226,7 +1224,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 await reader.SkipAsync();
                             }
-                        }                        
+                        }
                     }
 
                     LoadElementExtensions(buffer, extWriter, result);
@@ -1242,12 +1240,12 @@ namespace System.ServiceModel.Syndication
                 await reader.ReadEndElementAsync();
             }
         }
-        
+
         private Task<TextSyndicationContent> ReadTextContentFromAsync(XmlReaderWrapper reader, string context)
         {
-            return  ReadTextContentFromAsync(reader, context, this.PreserveAttributeExtensions);
+            return ReadTextContentFromAsync(reader, context, this.PreserveAttributeExtensions);
         }
-        
+
         private async Task WriteCategoriesToAsync(XmlWriter writer, Collection<SyndicationCategory> categories)
         {
             writer = XmlWriterWrapper.CreateFromWriter(writer);
@@ -1256,7 +1254,7 @@ namespace System.ServiceModel.Syndication
                 await WriteCategoryAsync(writer, categories[i], this.Version);
             }
         }
-        
+
         private Task WriteFeedAsync(XmlWriter writer)
         {
             if (this.Feed == null)
@@ -1265,7 +1263,7 @@ namespace System.ServiceModel.Syndication
             }
             return WriteFeedToAsync(writer, this.Feed, false); //  isSourceFeed 
         }
-        
+
         private async Task WriteFeedToAsync(XmlWriter writer, SyndicationFeed feed, bool isSourceFeed)
         {
             if (!isSourceFeed)
@@ -1305,7 +1303,7 @@ namespace System.ServiceModel.Syndication
             await WriteFeedContributorsToAsync(writer, feed.Contributors);
             await WriteElementAsync(writer, Atom10Constants.GeneratorTag, feed.Generator);
 
-            if(feed.IconImage != null)
+            if (feed.IconImage != null)
             {
                 await WriteElementAsync(writer, Atom10Constants.IconTag, feed.IconImage.AbsoluteUri);
             }
@@ -1322,7 +1320,7 @@ namespace System.ServiceModel.Syndication
                 await WriteItemsAsync(writer, feed.Items, feed.BaseUri);
             }
         }
-        
+
         private async Task WriteItemContentsAsync(XmlWriter dictWriter, SyndicationItem item, Uri feedBaseUri)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(feedBaseUri, item.BaseUri);
@@ -1362,7 +1360,7 @@ namespace System.ServiceModel.Syndication
             }
             await WriteElementExtensionsAsync(dictWriter, item, this.Version);
         }
-        
+
         private async Task WritePersonToAsync(XmlWriter writer, SyndicationPerson p, string elementName)
         {
             await writer.WriteStartElementAsync(elementName, Atom10Constants.Atom10Namespace);

@@ -12,7 +12,7 @@ namespace System.ServiceModel.Syndication
     using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Serialization;
-    
+
     public class SyndicationElementExtension
     {
         private XmlBuffer _buffer;

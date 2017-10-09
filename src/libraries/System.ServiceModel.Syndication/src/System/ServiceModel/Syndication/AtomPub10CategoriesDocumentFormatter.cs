@@ -5,7 +5,6 @@
 
 namespace System.ServiceModel.Syndication
 {
-
     using System;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
@@ -81,7 +80,7 @@ namespace System.ServiceModel.Syndication
         }
 
         public override Task<bool> CanReadAsync(XmlReader reader)
-        {            
+        {
             if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
@@ -91,9 +90,9 @@ namespace System.ServiceModel.Syndication
             return wrappedReader.IsStartElementAsync(App10Constants.Categories, App10Constants.Namespace);
         }
 
-        
 
-        Task ReadXmlAsync(XmlReaderWrapper reader)
+
+        private Task ReadXmlAsync(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -103,7 +102,7 @@ namespace System.ServiceModel.Syndication
             return ReadDocumentAsync(reader);
         }
 
-        Task WriteXmlAsync(XmlWriter writer)
+        private Task WriteXmlAsync(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -173,7 +172,7 @@ namespace System.ServiceModel.Syndication
                 return (ReferencedCategoriesDocument)Activator.CreateInstance(_referencedDocumentType);
             }
         }
-        
+
         private async Task ReadDocumentAsync(XmlReaderWrapper reader)
         {
             try
@@ -204,7 +203,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private  Task WriteDocumentAsync(XmlWriter writer)
+        private Task WriteDocumentAsync(XmlWriter writer)
         {
             // declare the atom10 namespace upfront for compactness
             writer.WriteAttributeString(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);
