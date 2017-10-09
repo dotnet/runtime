@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Xml;
@@ -7,13 +11,13 @@ namespace System.ServiceModel.Syndication
 {
     internal class XmlReaderWrapper : XmlReader
     {
-        private XmlReader reader;
+        private XmlReader _reader;
 
-        private Func<XmlReaderWrapper, Task<string>> getValueFunc;
-        private Func<XmlReaderWrapper, Task<XmlNodeType>> moveToContentFunc;
-        private Func<XmlReaderWrapper, Task> skipFunc;
-        private Func<XmlReaderWrapper, Task<bool>> readFunc;
-        private Func<XmlReaderWrapper, Task<string>> readInnerXmlFunc;
+        private Func<XmlReaderWrapper, Task<string>> _getValueFunc;
+        private Func<XmlReaderWrapper, Task<XmlNodeType>> _moveToContentFunc;
+        private Func<XmlReaderWrapper, Task> _skipFunc;
+        private Func<XmlReaderWrapper, Task<bool>> _readFunc;
+        private Func<XmlReaderWrapper, Task<string>> _readInnerXmlFunc;
 
         private XmlReaderWrapper(XmlReader reader)
         {
@@ -22,9 +26,9 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            this.reader = reader;
+            _reader = reader;
 
-            if (this.reader.Settings.Async)
+            if (_reader.Settings.Async)
             {
                 InitAsync();
             }
@@ -42,27 +46,27 @@ namespace System.ServiceModel.Syndication
 
         private void InitAsync()
         {
-            this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.reader.GetValueAsync(); });
-            this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return thisPtr.reader.MoveToContentAsync(); });
-            this.skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { return thisPtr.reader.SkipAsync(); });
-            this.readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return thisPtr.reader.ReadAsync(); });
-            this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.reader.ReadInnerXmlAsync(); });
+            _getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr._reader.GetValueAsync(); });
+            _moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return thisPtr._reader.MoveToContentAsync(); });
+            _skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { return thisPtr._reader.SkipAsync(); });
+            _readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return thisPtr._reader.ReadAsync(); });
+            _readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr._reader.ReadInnerXmlAsync(); });
         }
 
         private void Init()
         {
-            this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(thisPtr.reader.Value); });
-            this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return Task.FromResult<XmlNodeType>(this.reader.MoveToContent()); });
-            this.skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.Skip(); return Task.CompletedTask; });
-            this.readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return Task.FromResult<bool>(this.reader.Read()); });
-            this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadInnerXml()); });
+            _getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(thisPtr._reader.Value); });
+            _moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return Task.FromResult<XmlNodeType>(_reader.MoveToContent()); });
+            _skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { _reader.Skip(); return Task.CompletedTask; });
+            _readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return Task.FromResult<bool>(_reader.Read()); });
+            _readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(_reader.ReadInnerXml()); });
         }
 
         public override XmlNodeType NodeType
         {
             get
             {
-                return this.reader.NodeType;
+                return _reader.NodeType;
             }
         }
 
@@ -70,7 +74,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.LocalName;
+                return _reader.LocalName;
             }
         }
 
@@ -78,7 +82,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.NamespaceURI;
+                return _reader.NamespaceURI;
             }
         }
 
@@ -86,7 +90,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.Prefix;
+                return _reader.Prefix;
             }
         }
 
@@ -94,7 +98,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.Value;
+                return _reader.Value;
             }
         }
 
@@ -102,7 +106,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.Depth;
+                return _reader.Depth;
             }
         }
 
@@ -110,7 +114,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.BaseURI;
+                return _reader.BaseURI;
             }
         }
 
@@ -118,7 +122,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.IsEmptyElement;
+                return _reader.IsEmptyElement;
             }
         }
 
@@ -126,7 +130,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.AttributeCount;
+                return _reader.AttributeCount;
             }
         }
 
@@ -134,7 +138,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.EOF;
+                return _reader.EOF;
             }
         }
 
@@ -142,7 +146,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.ReadState;
+                return _reader.ReadState;
             }
         }
 
@@ -150,93 +154,93 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.reader.NameTable;
+                return _reader.NameTable;
             }
         }
 
         public override string GetAttribute(string name)
         {
-            return this.reader.GetAttribute(name);
+            return _reader.GetAttribute(name);
         }
 
         public override string GetAttribute(string name, string namespaceURI)
         {
-            return this.reader.GetAttribute(name, namespaceURI);
+            return _reader.GetAttribute(name, namespaceURI);
         }
 
         public override string GetAttribute(int i)
         {
-            return this.reader.GetAttribute(i);
+            return _reader.GetAttribute(i);
         }
 
         public override string LookupNamespace(string prefix)
         {
-            return this.reader.LookupNamespace(prefix);
+            return _reader.LookupNamespace(prefix);
         }
 
         public override bool MoveToAttribute(string name)
         {
-            return this.reader.MoveToAttribute(name);
+            return _reader.MoveToAttribute(name);
         }
 
         public override bool MoveToAttribute(string name, string ns)
         {
-            return this.reader.MoveToAttribute(name, ns);
+            return _reader.MoveToAttribute(name, ns);
         }
 
         public override bool MoveToElement()
         {
-            return this.reader.MoveToElement();
+            return _reader.MoveToElement();
         }
 
         public override bool MoveToFirstAttribute()
         {
-            return this.reader.MoveToFirstAttribute();
+            return _reader.MoveToFirstAttribute();
         }
 
         public override bool MoveToNextAttribute()
         {
-            return this.reader.MoveToNextAttribute();
+            return _reader.MoveToNextAttribute();
         }
 
         public override bool Read()
         {
-            return this.reader.Read();
+            return _reader.Read();
         }
 
         public override bool ReadAttributeValue()
         {
-            return this.reader.ReadAttributeValue();
+            return _reader.ReadAttributeValue();
         }
 
         public override void ResolveEntity()
         {
-            this.reader.ResolveEntity();
+            _reader.ResolveEntity();
         }
 
         public override Task<string> GetValueAsync()
         {
-            return this.getValueFunc(this);
+            return _getValueFunc(this);
         }
 
         public override Task<XmlNodeType> MoveToContentAsync()
         {
-            return this.moveToContentFunc(this);
+            return _moveToContentFunc(this);
         }
 
         public override Task SkipAsync()
         {
-            return this.skipFunc(this);
+            return _skipFunc(this);
         }
 
         public override Task<bool> ReadAsync()
         {
-            return this.readFunc(this);
+            return _readFunc(this);
         }
 
         public override Task<string> ReadInnerXmlAsync()
         {
-            return readInnerXmlFunc(this);
+            return _readInnerXmlFunc(this);
         }
 
         public static async Task WriteNodeAsync(XmlDictionaryWriter writer, XmlReader reader, bool defattr)
@@ -319,7 +323,7 @@ namespace System.ServiceModel.Syndication
 
     internal static class XmlReaderExtensions
     {
-        static private uint IsTextualNodeBitmap = 0x6018; // 00 0110 0000 0001 1000
+        private const uint IsTextualNodeBitmap = 0x6018; // 00 0110 0000 0001 1000
 
         public static async Task ReadStartElementAsync(this XmlReader reader)
         {
@@ -346,7 +350,7 @@ namespace System.ServiceModel.Syndication
                 result = reader.ReadString();
                 if (reader.NodeType != XmlNodeType.EndElement)
                 {
-                throw new XmlException();
+                    throw new XmlException();
                     throw new XmlException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
                     //throw new XmlException(Res.Xml_UnexpectedNodeInSimpleContent, new string[] { this.NodeType.ToString(), "ReadElementString" }, this as IXmlLineInfo);
                 }
@@ -357,7 +361,6 @@ namespace System.ServiceModel.Syndication
                 await reader.ReadAsync();
             }
             return result;
-
         }
 
         public static async Task<string> ReadStringAsync(this XmlReader reader)
@@ -393,7 +396,6 @@ namespace System.ServiceModel.Syndication
                 }
             }
             return result;
-
         }
 
         static internal bool IsTextualNode(XmlNodeType nodeType)
@@ -449,7 +451,6 @@ namespace System.ServiceModel.Syndication
                 throw new XmlException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
                 //throw new XmlException(Res.Xml_ElementNotFoundNs, new string[2] { localname, ns }, this as IXmlLineInfo);
             }
-
         }
 
         public static async Task<bool> IsStartElementAsync(this XmlReader reader)
@@ -474,7 +475,7 @@ namespace System.ServiceModel.Syndication
             }
             else
             {
-                throw new InvalidOperationException("name doesn’t match");
+                throw new InvalidOperationException("name doesn\u2019t match");
             }
         }
 
@@ -543,7 +544,5 @@ namespace System.ServiceModel.Syndication
             }
             return result;
         }
-
     }
-
 }

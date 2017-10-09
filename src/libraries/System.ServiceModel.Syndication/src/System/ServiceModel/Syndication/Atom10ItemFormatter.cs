@@ -128,7 +128,7 @@ namespace System.ServiceModel.Syndication
         {
             return SyndicationItemFormatter.CreateItemInstance(_itemType);
         }
-        
+
         private Task ReadItemAsync(XmlReader reader)
         {
             SetItem(CreateItemInstance());
