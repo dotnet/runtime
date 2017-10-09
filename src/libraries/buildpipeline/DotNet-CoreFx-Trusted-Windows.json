@@ -248,7 +248,7 @@
       "inputs": {
         "SourceFolder": "$(Build.SourcesDirectory)\\corefx",
         "Contents": "*.log",
-        "TargetFolder": "$(Build.StagingDirectory\\BuildLogs",
+        "TargetFolder": "$(Build.StagingDirectory)\\BuildLogs",
         "CleanTargetFolder": "false",
         "OverWrite": "false",
         "flattenFolders": "false"
