@@ -68,8 +68,8 @@ exit /b 1
 
 :VS2017
 :: Setup vars for VS2017
-set __VSVersion=vs2017
 set __PlatformToolset=v141
+set __VSVersion=15 2017
 if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
     call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
@@ -78,8 +78,8 @@ goto :SetupDirs
 
 :VS2015
 :: Setup vars for VS2015build
-set __VSVersion=vs2015
 set __PlatformToolset=v140
+set __VSVersion=14 2015
 if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
     call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" %__VCBuildArch%
@@ -125,9 +125,9 @@ if /i "%__BuildArch%" == "arm64" (
     call :PrivateToolSet
 )
 
-echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 %__VSVersion% %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion%"
+echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion%"
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 %__VSVersion% %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion% %__PortableBuild%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion% %__PortableBuild%
 popd
 
 :CheckForProj

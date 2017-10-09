@@ -59,24 +59,11 @@ exit /b 1
 
 :VS2017
 :: Setup vars for VS2017
-set __VSVersion=vs2017
 set __PlatformToolset=v141
 if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
     call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 )
-goto :SetupDirs
-
-:VS2015
-:: Setup vars for VS2015build
-set __VSVersion=vs2015
-set __PlatformToolset=v140
-if NOT "%__BuildArch%" == "arm64" (
-    :: Set the environment for the native build
-    call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" %__VCBuildArch%
-)
-
-:SetupDirs
 :: Setup to cmake the native components
 echo Commencing build of native UWP components
 echo.
@@ -137,7 +124,7 @@ exit /b 0
     IF ERRORLEVEL 1 (
         exit /b 1
     )
-    
+
     goto :eof
 
 :Failure
