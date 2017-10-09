@@ -42,7 +42,7 @@ namespace System.ServiceModel.Syndication
         { get; }
 
         public abstract bool CanRead(XmlReader reader);
-        
+
         public abstract Task ReadFromAsync(XmlReader reader);
 
         public override string ToString()

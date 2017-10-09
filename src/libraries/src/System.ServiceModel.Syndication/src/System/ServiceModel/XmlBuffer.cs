@@ -59,8 +59,8 @@ namespace System.ServiceModel
         {
             if (maxBufferSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize, SR.ValueMustBeNonNegative);
-            
-            int initialBufferSize = Math.Min(512, maxBufferSize); 
+
+            int initialBufferSize = Math.Min(512, maxBufferSize);
             _stream = new BufferedStream(new MemoryStream(), initialBufferSize);
             _sections = new List<Section>(1);
         }

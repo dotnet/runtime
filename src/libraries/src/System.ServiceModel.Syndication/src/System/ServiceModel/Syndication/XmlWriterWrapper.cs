@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -6,38 +10,37 @@ namespace System.ServiceModel.Syndication
 {
     internal class XmlWriterWrapper : XmlWriter
     {
+        private XmlWriter _writer;
 
-        private XmlWriter writer;
-
-        private Func<XmlWriterWrapper, string, Task> writeStringFunc;
-        private Func<XmlWriterWrapper, string, string, Task> writeStartElementFunc2;
-        private Func<XmlWriterWrapper, Task> writeEndElementFunc;
-        private Func<XmlWriterWrapper, string, string, Task> writeAttributeStringFunc2;
-        private Func<XmlWriterWrapper, string, string, string, Task> writeAttributeStringFunc3;
-        private Func<XmlWriterWrapper, string, string, string, string, Task> writeAttributeStringFunc4;
-        private Func<XmlWriterWrapper, XmlReader, bool, Task> WriteNodeFunc;
+        private Func<XmlWriterWrapper, string, Task> _writeStringFunc;
+        private Func<XmlWriterWrapper, string, string, Task> _writeStartElementFunc2;
+        private Func<XmlWriterWrapper, Task> _writeEndElementFunc;
+        private Func<XmlWriterWrapper, string, string, Task> _writeAttributeStringFunc2;
+        private Func<XmlWriterWrapper, string, string, string, Task> _writeAttributeStringFunc3;
+        private Func<XmlWriterWrapper, string, string, string, string, Task> _writeAttributeStringFunc4;
+        private Func<XmlWriterWrapper, XmlReader, bool, Task> _writeNodeFunc;
 
 
         private void InitAsync()
         {
-            this.writeStringFunc = new Func<XmlWriterWrapper, string, Task>((thisPtr, text) => { return thisPtr.writer.WriteStringAsync(text); });
-            this.writeStartElementFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, ns) => { return this.writer.WriteStartElementAsync("", localName, ns); });
-            this.writeEndElementFunc = new Func<XmlWriterWrapper, Task>((thisPtr) => { return thisPtr.writer.WriteEndElementAsync(); });
-            this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localname, "", value); });
-            this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localName, ns, value); });
-            this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync(prefix, localName, ns, value); });
-            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { return thisPtr.writer.WriteNodeAsync(reader, defattr); });
+            _writeStringFunc = new Func<XmlWriterWrapper, string, Task>((thisPtr, text) => { return thisPtr._writer.WriteStringAsync(text); });
+            _writeStartElementFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, ns) => { return _writer.WriteStartElementAsync("", localName, ns); });
+            _writeEndElementFunc = new Func<XmlWriterWrapper, Task>((thisPtr) => { return thisPtr._writer.WriteEndElementAsync(); });
+            _writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { return thisPtr._writer.WriteAttributeStringAsync("", localname, "", value); });
+            _writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { return thisPtr._writer.WriteAttributeStringAsync("", localName, ns, value); });
+            _writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { return thisPtr._writer.WriteAttributeStringAsync(prefix, localName, ns, value); });
+            _writeNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { return thisPtr._writer.WriteNodeAsync(reader, defattr); });
         }
 
         private void Init()
         {
-            this.writeStringFunc = new Func<XmlWriterWrapper, string, Task>((thisPtr, text) => { thisPtr.writer.WriteString(text); return Task.CompletedTask; });
-            this.writeStartElementFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, ns) => { this.writer.WriteStartElement(localName, ns); return Task.CompletedTask; });
-            this.writeEndElementFunc = new Func<XmlWriterWrapper, Task>((thisPtr) => { thisPtr.writer.WriteEndElement(); return Task.CompletedTask; });
-            this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { thisPtr.writer.WriteAttributeString("", localname, "", value); return Task.CompletedTask; });
-            this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { thisPtr.writer.WriteAttributeString(localName, ns, value); return Task.CompletedTask; });
-            this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { thisPtr.writer.WriteAttributeString(prefix, localName, ns, value); return Task.CompletedTask; });
-            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { thisPtr.writer.WriteNode(reader, defattr); return Task.CompletedTask; });
+            _writeStringFunc = new Func<XmlWriterWrapper, string, Task>((thisPtr, text) => { thisPtr._writer.WriteString(text); return Task.CompletedTask; });
+            _writeStartElementFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, ns) => { _writer.WriteStartElement(localName, ns); return Task.CompletedTask; });
+            _writeEndElementFunc = new Func<XmlWriterWrapper, Task>((thisPtr) => { thisPtr._writer.WriteEndElement(); return Task.CompletedTask; });
+            _writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { thisPtr._writer.WriteAttributeString("", localname, "", value); return Task.CompletedTask; });
+            _writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { thisPtr._writer.WriteAttributeString(localName, ns, value); return Task.CompletedTask; });
+            _writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { thisPtr._writer.WriteAttributeString(prefix, localName, ns, value); return Task.CompletedTask; });
+            _writeNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { thisPtr._writer.WriteNode(reader, defattr); return Task.CompletedTask; });
         }
 
         public static XmlWriter CreateFromWriter(XmlWriter writer)
@@ -56,9 +59,9 @@ namespace System.ServiceModel.Syndication
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
 
-            this.writer = writer;
+            _writer = writer;
 
-            if (this.writer.Settings.Async)
+            if (_writer.Settings.Async)
             {
                 InitAsync();
             }
@@ -72,28 +75,28 @@ namespace System.ServiceModel.Syndication
 
         public override Task WriteNodeAsync(XmlReader reader, bool defattr)
         {
-            return WriteNodeFunc(this, reader, defattr);
+            return _writeNodeFunc(this, reader, defattr);
         }
 
         public override Task WriteStringAsync(string text)
         {
-            return writeStringFunc(this, text);
+            return _writeStringFunc(this, text);
         }
 
         public override Task WriteStartElementAsync(string prefix, string localName, string ns)
         {
-            writer.WriteStartElement(prefix, localName, ns);
+            _writer.WriteStartElement(prefix, localName, ns);
             return Task.CompletedTask;
         }
 
         public override Task WriteEndElementAsync()
         {
-            return writeEndElementFunc(this);
+            return _writeEndElementFunc(this);
         }
 
         public override Task WriteAttributesAsync(XmlReader reader, bool defattr)
         {
-            writer.WriteAttributes(reader, defattr);
+            _writer.WriteAttributes(reader, defattr);
             return Task.CompletedTask;
         }
 
@@ -102,123 +105,123 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                return this.writer.WriteState;
+                return _writer.WriteState;
             }
         }
 
         public override void Flush()
         {
-            this.writer.Flush();
+            _writer.Flush();
         }
 
         public override string LookupPrefix(string ns)
         {
-            return this.writer.LookupPrefix(ns);
+            return _writer.LookupPrefix(ns);
         }
 
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
-            this.writer.WriteBase64(buffer, index, count);
+            _writer.WriteBase64(buffer, index, count);
         }
 
         public override void WriteCData(string text)
         {
-            this.writer.WriteCData(text);
+            _writer.WriteCData(text);
         }
 
         public override void WriteCharEntity(char ch)
         {
-            this.writer.WriteCharEntity(ch);
+            _writer.WriteCharEntity(ch);
         }
 
         public override void WriteChars(char[] buffer, int index, int count)
         {
-            this.writer.WriteChars(buffer, index, count);
+            _writer.WriteChars(buffer, index, count);
         }
 
         public override void WriteComment(string text)
         {
-            this.writer.WriteComment(text);
+            _writer.WriteComment(text);
         }
 
         public override void WriteDocType(string name, string pubid, string sysid, string subset)
         {
-            this.writer.WriteDocType(name, pubid, sysid, subset);
+            _writer.WriteDocType(name, pubid, sysid, subset);
         }
 
         public override void WriteEndAttribute()
         {
-            this.writer.WriteEndAttribute();
+            _writer.WriteEndAttribute();
         }
 
         public override void WriteEndDocument()
         {
-            this.writer.WriteEndDocument();
+            _writer.WriteEndDocument();
         }
 
         public override void WriteEndElement()
         {
-            this.writer.WriteEndElement();
+            _writer.WriteEndElement();
         }
 
         public override void WriteEntityRef(string name)
         {
-            this.writer.WriteEntityRef(name);
+            _writer.WriteEntityRef(name);
         }
 
         public override void WriteFullEndElement()
         {
-            this.writer.WriteFullEndElement();
+            _writer.WriteFullEndElement();
         }
 
         public override void WriteProcessingInstruction(string name, string text)
         {
-            this.writer.WriteProcessingInstruction(name, text);
+            _writer.WriteProcessingInstruction(name, text);
         }
 
         public override void WriteRaw(char[] buffer, int index, int count)
         {
-            this.writer.WriteRaw(buffer, index, count);
+            _writer.WriteRaw(buffer, index, count);
         }
 
         public override void WriteRaw(string data)
         {
-            this.writer.WriteRaw(data);
+            _writer.WriteRaw(data);
         }
 
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
-            this.writer.WriteStartAttribute(prefix, localName, ns);
+            _writer.WriteStartAttribute(prefix, localName, ns);
         }
 
         public override void WriteStartDocument()
         {
-            this.writer.WriteStartDocument();
+            _writer.WriteStartDocument();
         }
 
         public override void WriteStartDocument(bool standalone)
         {
-            this.writer.WriteStartDocument(standalone);
+            _writer.WriteStartDocument(standalone);
         }
 
         public override void WriteStartElement(string prefix, string localName, string ns)
         {
-            this.writer.WriteStartElement(prefix, localName, ns);
+            _writer.WriteStartElement(prefix, localName, ns);
         }
 
         public override void WriteString(string text)
         {
-            this.writer.WriteString(text);
+            _writer.WriteString(text);
         }
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            this.writer.WriteSurrogateCharEntity(lowChar, highChar);
+            _writer.WriteSurrogateCharEntity(lowChar, highChar);
         }
 
         public override void WriteWhitespace(string ws)
         {
-            this.writer.WriteWhitespace(ws);
+            _writer.WriteWhitespace(ws);
         }
     }
 
