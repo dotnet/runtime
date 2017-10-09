@@ -27,16 +27,19 @@ REM      We use this specific version instead of the latest available from
 REM      the master branch, because the latest CLI generates R2R images for 
 REM      system binaries, while ILLink cannot yet. We need pure MSIL images
 REM      in the unlinked version in order to be able to do a fair dir-size comparison.
-REM .Net1 => This is .Net CLI v 1.1.0
-REM      Since Roslyn targets netcoreapp v1, it cannot use the IlLink.Tasks package.
-REM      We use the ILLink package to get the linker and run it manually.
-REM      Since IlLink.exe from this package only runs on .Net v1
+REM .Net2 => .Net 2.0.0-preview3-006923
+REM      Roslyn needs to build using the dotnet SDK 2.0, because it needs the 
+REM      latest C#7 compiler. However, this means that the directory size comparison 
+REM      is off, because the system-binaries are R2R in the unlinked directory, 
+REM      but MSIL in the linked directory. 
+REM      TODO: Get the correct version of Crossgen, and manually R2R the system
+REM      binaries in the linked directory.
 
 powershell -noprofile -executionPolicy RemoteSigned wget  https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1 -OutFile dotnet-install.ps1
-if not exist %__dotnet%  mkdir .Net  && powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -Channel master -InstallDir .Net -version 2.0.0-preview2-005905
-if not exist %__dotnet1% mkdir .Net1 && powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -InstallDir .Net1
+if not exist %__dotnet%  mkdir .Net && powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -Channel master -InstallDir .Net -version 2.0.0-preview2-005905
+if not exist %__dotnet2% mkdir .Net2 && powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -Channel master -InstallDir .Net2 -version 2.0.0-preview3-006923
 if not exist %__dotnet% set EXITCODE=1&& echo DotNet not installed
-if not exist %__dotnet1% set EXITCODE=1&& echo DotNet.1 not installed
+if not exist %__dotnet2% set EXITCODE=1&& echo DotNet2 not installed
 exit /b 
 
 :HelloWorld
