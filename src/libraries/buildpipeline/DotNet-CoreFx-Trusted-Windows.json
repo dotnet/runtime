@@ -237,7 +237,7 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Copy Files to: $(BUILD_STAGINGDIRECTORY)\\BuildLogs",
+      "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
       "refName": "CopyFiles1",
       "task": {
@@ -246,9 +246,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "SourceFolder": "$(BUILD_SOURCESDIRECTORY)\\corefx",
+        "SourceFolder": "$(Build.SourcesDirectory)\\corefx",
         "Contents": "*.log",
-        "TargetFolder": "$(BUILD_STAGINGDIRECTORY)\\BuildLogs",
+        "TargetFolder": "$(Build.StagingDirectory\\BuildLogs",
         "CleanTargetFolder": "false",
         "OverWrite": "false",
         "flattenFolders": "false"
@@ -268,7 +268,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "PathtoPublish": "$(BUILD_STAGINGDIRECTORY)\\BuildLogs",
+        "PathtoPublish": "$(Build.StagingDirectory)\\BuildLogs",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
