@@ -275,6 +275,8 @@
 
     <!-- Constructed shared fx path for testing -->
     <UseDotNetNativeToolchain Condition="'$(BuildingUAPAOTVertical)' == 'true'">true</UseDotNetNativeToolchain>
+    <!-- System.Private.* comes from test ilc, so the symbol packages for those versions will no exist, this is to avoid warnings -->
+    <DownloadCoreCLRSymbols Condition="'$(BuildingUAPAOTVertical)' == 'true'">false</DownloadCoreCLRSymbols>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>

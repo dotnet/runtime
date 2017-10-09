@@ -2772,6 +2772,8 @@ namespace System
         public virtual bool IsEnum { get { throw null; } }
         public bool IsExplicitLayout { get { throw null; } }
         public virtual bool IsGenericParameter { get { throw null; } }
+        public virtual bool IsGenericTypeParameter { get { throw null; } }
+        public virtual bool IsGenericMethodParameter { get { throw null; } }
         public virtual bool IsGenericType { get { throw null; } }
         public virtual bool IsGenericTypeDefinition { get { throw null; } }
         public bool IsImport { get { throw null; } }
@@ -6365,6 +6367,8 @@ namespace System.Reflection
         protected override bool IsArrayImpl() { throw null; }
         protected override bool IsPrimitiveImpl() { throw null; }
         protected override bool IsByRefImpl() { throw null; }
+        public override bool IsGenericTypeParameter { get { throw null; } }
+        public override bool IsGenericMethodParameter { get { throw null; } }
         protected override bool IsPointerImpl() { throw null; }
         protected override bool IsValueTypeImpl() { throw null; }
         protected override bool IsCOMObjectImpl() { throw null; }
@@ -7592,6 +7596,7 @@ namespace System.Threading
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Threading.CancellationTokenRegistration other) { throw null; }
         public override int GetHashCode() { throw null; }
+        public CancellationToken Token { get { throw null; } }
         public static bool operator ==(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { throw null; }
         public static bool operator !=(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { throw null; }
     }

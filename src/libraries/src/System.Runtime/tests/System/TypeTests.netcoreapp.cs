@@ -246,5 +246,42 @@ namespace System.Tests
         private struct RegularStruct
         {
         }
+
+        [Theory]
+        [MemberData(nameof(IsGenericParameterTestData))]
+        public static void TestIsGenericParameter(Type type, bool isGenericParameter, bool isGenericTypeParameter, bool isGenericMethodParameter)
+        {
+            Assert.Equal(isGenericParameter, type.IsGenericParameter);
+            Assert.Equal(isGenericTypeParameter, type.IsGenericTypeParameter);
+            Assert.Equal(isGenericMethodParameter, type.IsGenericMethodParameter);
+        }
+
+        public static IEnumerable<object[]> IsGenericParameterTestData
+        {
+            get
+            {
+                yield return new object[] { typeof(void), false, false, false };
+                yield return new object[] { typeof(int), false, false, false };
+                yield return new object[] { typeof(int[]), false, false, false };
+                yield return new object[] { typeof(int).MakeArrayType(1), false, false, false };
+                yield return new object[] { typeof(int[,]), false, false, false };
+                yield return new object[] { typeof(int).MakeByRefType(), false, false, false };
+                yield return new object[] { typeof(int).MakePointerType(), false, false, false };
+                yield return new object[] { typeof(G<>), false, false, false };
+                yield return new object[] { typeof(G<int>), false, false, false };
+                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                {
+                    yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false, false, false };
+                }
+
+                Type theT = typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0];
+                yield return new object[] { theT, true, true, false };
+
+                Type theM = typeof(TypeTestsNetcore).GetMethod(nameof(GenericMethod), BindingFlags.NonPublic | BindingFlags.Static).GetGenericArguments()[0];
+                yield return new object[] { theM, true, false, true };
+            }
+        }
+
+        private static void GenericMethod<M>() { }
     }
 }

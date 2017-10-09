@@ -177,9 +177,6 @@
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine Boxing-Konvertierung von {3} in {1} vorhanden.</value>
   </data>
-  <data name="TypeVarCantBeNull" xml:space="preserve">
-    <value>NULL kann nicht in den {0}-Typparameter konvertiert werden, da dieser Werttyp möglicherweise nicht auf NULL festgelegt werden kann. Verwenden Sie stattdessen ggf. default({0}).</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>Die Typargumente der {0}-Methode können nicht per Rückschluss aus der Syntax abgeleitet werden. Geben Sie die Typargumente explizit an.</value>
   </data>

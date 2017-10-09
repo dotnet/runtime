@@ -154,8 +154,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 context,
                 GetName(name),
                 arity,
-                MemLookFlags.TypeVarsAllowed |
-                    (allowSpecialNames ? 0 : MemLookFlags.UserCallable) |
+                (allowSpecialNames ? 0 : MemLookFlags.UserCallable) |
                     (name == SpecialNames.Indexer ? MemLookFlags.Indexer : 0) |
                     (name == SpecialNames.Constructor ? MemLookFlags.Ctor : 0) |
                     (requireInvocable ? MemLookFlags.MustBeInvocable : 0)))

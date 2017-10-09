@@ -10,21 +10,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal static class UtilityTypeExtensions
     {
-        private static IEnumerable<AggregateType> InterfaceAndBases(this AggregateType type)
-        {
-            Debug.Assert(type != null);
-            yield return type;
-            foreach (AggregateType t in type.GetIfacesAll().Items)
-                yield return t;
-        }
-
-        private static IEnumerable<AggregateType> AllConstraintInterfaces(this TypeArray constraints)
-        {
-            Debug.Assert(constraints != null);
-            foreach (AggregateType c in constraints.Items)
-                foreach (AggregateType t in c.InterfaceAndBases())
-                    yield return t;
-        }
 
         private static IEnumerable<AggregateType> TypeAndBaseClasses(this AggregateType type)
         {
@@ -53,25 +38,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return ats.TypeAndBaseClassInterfaces();
             }
 
-            if (type is TypeParameterType typeParameter)
-            {
-                return AllPossibleInterfaces(typeParameter);
-            }
-
+            Debug.Assert(type is NullableType); // Is even this case possible?
             return Array.Empty<AggregateType>();
-        }
-
-        private static IEnumerable<AggregateType> AllPossibleInterfaces(TypeParameterType type)
-        {
-            foreach (AggregateType t in type.GetEffectiveBaseClass().TypeAndBaseClassInterfaces())
-            {
-                yield return t;
-            }
-
-            foreach (AggregateType t in type.GetInterfaceBounds().AllConstraintInterfaces())
-            {
-                yield return t;
-            }
         }
     }
 }
