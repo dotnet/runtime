@@ -17,7 +17,7 @@
              Properties="GenerateNativeVersionInfo=true;AssemblyName=%(HostFiles.Identity);NativeVersionFileDir=$(IntermediateOutputRootPath)uwphostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)uwphostResourceFiles\%(HostFiles.Identity)\version_info.h"
              Targets="GenerateVersionHeader" />
     <PropertyGroup>
-      <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) rid $(TargetRid)</BuildArgs>
+      <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) rid $(OutputRid)</BuildArgs>
     </PropertyGroup>
 
     <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
