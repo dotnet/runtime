@@ -19,8 +19,11 @@ namespace System.Net.Http
 
         public override void Flush() => FlushAsync().GetAwaiter().GetResult();
 
-        public override int Read(byte[] buffer, int offset, int count) =>
-            ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArgs(buffer, offset, count);
+            return ReadAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+        }
 
         public override void Write(byte[] buffer, int offset, int count) =>
             WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
