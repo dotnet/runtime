@@ -134,7 +134,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 /* Used when building with Android NDK's unified headers */
-#if defined(HOST_ANDROID)
+#if defined(HOST_ANDROID) && defined (ANDROID_UNIFIED_HEADERS)
 #if __ANDROID_API__ < 21
 
 typedef int32_t __mono_off32_t;
@@ -163,7 +163,7 @@ ssize_t sendfile (int out_fd, int in_fd, __mono_off32_t* offset, size_t count);
 #endif /* !sendfile */
 
 #endif /* __ANDROID_API__ < 21 */
-#endif /* HOST_ANDROID */
+#endif /* HOST_ANDROID && ANDROID_UNIFIED_HEADERS */
 
 #endif /* __UTILS_MONO_COMPILER_H__*/
 
