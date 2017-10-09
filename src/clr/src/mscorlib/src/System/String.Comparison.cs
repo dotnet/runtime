@@ -219,12 +219,20 @@ namespace System
             }
         }
 
-        private unsafe static int CompareOrdinalHelper(string strA, string strB)
+        private static unsafe int CompareOrdinalHelper(String strA, String strB)
         {
+            Debug.Assert(strA != null);
+            Debug.Assert(strB != null);
+
+            // NOTE: This may be subject to change if eliminating the check
+            // in the callers makes them small enough to be inlined
+            Debug.Assert(strA._firstChar == strB._firstChar,
+                "For performance reasons, callers of this method should " +
+                "check/short-circuit beforehand if the first char is the same.");
+
             int length = Math.Min(strA.Length, strB.Length);
 
-            fixed (char* ap = strA)
-            fixed (char* bp = strB)
+            fixed (char* ap = &strA._firstChar) fixed (char* bp = &strB._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
