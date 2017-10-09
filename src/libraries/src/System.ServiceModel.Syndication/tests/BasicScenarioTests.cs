@@ -11,16 +11,14 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
-    
+
 namespace System.ServiceModel.Syndication.Tests
 {
     public static class BasicScenarioTests
     {
-
         [Fact]
         public static void SyndicationFeed_CreateNewFeed()
         {
-
             string filePath = Path.GetTempFileName();
 
             try
@@ -87,9 +85,9 @@ namespace System.ServiceModel.Syndication.Tests
                 // *** SETUP *** \\\
                 XmlReaderSettings settingsReader = new XmlReaderSettings();
                 settingsReader.Async = true;
-                XmlReader xmlr = XmlReader.Create(@"rssSpecExample.xml",settingsReader);
+                XmlReader xmlr = XmlReader.Create(@"rssSpecExample.xml", settingsReader);
                 SyndicationFeed sf;
-                Task < SyndicationFeed > rss = null;
+                Task<SyndicationFeed> rss = null;
                 CancellationToken ct = new CancellationToken();
                 rss = SyndicationFeed.LoadAsync(xmlr, ct);
 
@@ -101,7 +99,7 @@ namespace System.ServiceModel.Syndication.Tests
                 //Write the same feed that was read.
                 XmlWriterSettings settingsWriter = new XmlWriterSettings();
                 settingsWriter.Async = true;
-                XmlWriter xmlw = XmlWriter.Create(path,settingsWriter);
+                XmlWriter xmlw = XmlWriter.Create(path, settingsWriter);
                 Rss20FeedFormatter atomFeed = new Rss20FeedFormatter(sf);
                 Task write = atomFeed.WriteToAsync(xmlw, ct);
 
@@ -118,7 +116,7 @@ namespace System.ServiceModel.Syndication.Tests
                 File.Delete(path);
             }
         }
-        
+
         [Fact]
         public static void SyndicationFeed_Load_Write_Atom_Feed()
         {
@@ -129,7 +127,7 @@ namespace System.ServiceModel.Syndication.Tests
                 // *** SETUP *** \\\
                 XmlReaderSettings setting = new XmlReaderSettings();
                 setting.Async = true;
-                XmlReader xmlr = XmlReader.Create(@"SimpleAtomFeed.xml",setting);
+                XmlReader xmlr = XmlReader.Create(@"SimpleAtomFeed.xml", setting);
                 SyndicationFeed sf = SyndicationFeed.Load(xmlr);
                 Assert.True(sf != null);
                 CancellationToken ct = new CancellationToken();
@@ -138,7 +136,7 @@ namespace System.ServiceModel.Syndication.Tests
                 //Write the same feed that was read.
                 XmlWriter xmlw = XmlWriter.Create(path);
                 Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
-                atomFeed.WriteToAsync(xmlw,ct).GetAwaiter().GetResult();
+                atomFeed.WriteToAsync(xmlw, ct).GetAwaiter().GetResult();
                 xmlw.Close();
 
                 // *** VALIDATE *** \\
@@ -163,7 +161,7 @@ namespace System.ServiceModel.Syndication.Tests
                 readerSettings.Async = true;
                 XmlReader xmlr = XmlReader.Create(@"atom_spec_example.xml", readerSettings);
                 CancellationToken ct = new CancellationToken();
-                Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(xmlr,ct);
+                Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(xmlr, ct);
                 SyndicationFeed sf = rss.Result;
                 Assert.True(sf != null);
 
@@ -172,9 +170,9 @@ namespace System.ServiceModel.Syndication.Tests
                 XmlWriterSettings writerSettings = new XmlWriterSettings();
                 writerSettings.Async = true;
 
-                XmlWriter xmlw = XmlWriter.Create(path,writerSettings);
+                XmlWriter xmlw = XmlWriter.Create(path, writerSettings);
                 Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
-                Task write = atomFeed.WriteToAsync(xmlw,ct);
+                Task write = atomFeed.WriteToAsync(xmlw, ct);
 
                 Task.WhenAll(write);
                 xmlw.Close();
@@ -224,7 +222,7 @@ namespace System.ServiceModel.Syndication.Tests
                 XmlWriterSettings settings = new XmlWriterSettings();
                 settings.Async = true;
 
-                XmlWriter xmlwRss = XmlWriter.Create(RssPath,settings);
+                XmlWriter xmlwRss = XmlWriter.Create(RssPath, settings);
                 Rss20FeedFormatter rssff = new Rss20FeedFormatter(feed);
 
                 // Write to XML > atom
@@ -234,12 +232,12 @@ namespace System.ServiceModel.Syndication.Tests
 
 
                 // *** EXECUTE *** \\
-                Task rss = rssff.WriteToAsync(xmlwRss,ct);
+                Task rss = rssff.WriteToAsync(xmlwRss, ct);
                 Task.WaitAll(rss);
 
                 xmlwRss.Close();
 
-                atomf.WriteToAsync(xmlwAtom,ct).GetAwaiter().GetResult(); ;
+                atomf.WriteToAsync(xmlwAtom, ct).GetAwaiter().GetResult(); ;
                 xmlwAtom.Close();
 
                 // *** ASSERT *** \\
@@ -287,16 +285,15 @@ namespace System.ServiceModel.Syndication.Tests
             XmlWriter writer = XmlWriter.Create(resultPath);
             Rss20FeedFormatter rssff = sf.GetRss20Formatter();
             CancellationToken ct = new CancellationToken();
-            
+
             try
             {
                 // *** EXECUTE *** \\
-                rssff.WriteToAsync(writer,ct).GetAwaiter().GetResult(); ;
+                rssff.WriteToAsync(writer, ct).GetAwaiter().GetResult(); ;
                 writer.Close();
 
                 // *** ASSERT *** \\
                 Assert.True(File.Exists(resultPath));
-
             }
             finally
             {
@@ -306,8 +303,8 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static async Task SyndicationFeed_LoadAsync_Rss() {
-
+        public static async Task SyndicationFeed_LoadAsync_Rss()
+        {
             // *** SETUP *** \\
             XmlReaderSettings setting = new XmlReaderSettings();
             setting.Async = true;
@@ -319,7 +316,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 // *** EXECUTE *** \\
                 reader = XmlReader.Create(@"rssSpecExample.xml", setting);
-                rss = SyndicationFeed.LoadAsync(reader,ct);
+                rss = SyndicationFeed.LoadAsync(reader, ct);
                 await Task.WhenAll(rss);
 
                 // *** ASSERT *** \\
@@ -335,7 +332,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static async Task SyndicationFeed_LoadAsync_Atom()
         {
-
             // *** SETUP *** \\
             XmlReaderSettings setting = new XmlReaderSettings();
             setting.Async = true;
@@ -346,7 +342,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 reader = XmlReader.Create(@"atom_spec_example.xml", setting);
                 // *** EXECUTE *** \\
-                Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader,ct);
+                Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader, ct);
                 await Task.WhenAll(atom);
                 // *** ASSERT *** \\
                 Assert.True(atom.Result.Items != null);
@@ -427,7 +423,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 // *** EXECUTE *** \\
                 reader = XmlReader.Create(@"rssSpecExample.xml", setting);
-                rss = SyndicationFeed.LoadAsync(reader,ct);
+                rss = SyndicationFeed.LoadAsync(reader, ct);
                 await Task.WhenAll(rss);
 
                 // *** ASSERT *** \\
@@ -561,7 +557,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static async Task SyndicationFeed__Atom_Optional_Icon()
         {
-
             // *** SETUP *** \\
             XmlReaderSettings setting = new XmlReaderSettings();
             setting.Async = true;
@@ -613,13 +608,13 @@ namespace System.ServiceModel.Syndication.Tests
             CancellationToken ct = new CancellationToken();
 
             // *** EXECUTE *** \\
-            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader,rssformatter,ct);
+            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader, rssformatter, ct);
             Task.WhenAll(task);
             SyndicationFeed res = task.Result;
 
             // *** ASSERT *** \\
             Assert.True(res.Title.Text == "new title");
-            foreach(int hour in res.SkipHours)
+            foreach (int hour in res.SkipHours)
             {
                 Assert.True(hour == 5);
             }
@@ -670,7 +665,7 @@ namespace System.ServiceModel.Syndication.Tests
             CancellationToken ct = new CancellationToken();
 
             // *** EXECUTE *** \\
-            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader,ct);
+            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader, ct);
             Task.WhenAll(task);
             SyndicationFeed res = task.Result;
 
@@ -697,6 +692,5 @@ namespace System.ServiceModel.Syndication.Tests
             // *** ASSERT *** \\
             Assert.True(!res.LastUpdatedTime.Equals(new DateTimeOffset()));
         }
-
     }
 }

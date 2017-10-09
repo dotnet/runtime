@@ -10,7 +10,7 @@ namespace System.ServiceModel.Syndication
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
-    
+
     public class ServiceDocument : IExtensibleSyndicationObject
     {
         private Uri _baseUri;
