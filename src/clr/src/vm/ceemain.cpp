@@ -234,6 +234,10 @@
 #include "process.h"
 #endif // !FEATURE_PAL
 
+#ifdef FEATURE_GDBJIT
+#include "gdbjit.h"
+#endif // FEATURE_GDBJIT
+
 #ifdef FEATURE_IPCMAN
 static HRESULT InitializeIPCManager(void);
 static void PublishIPCManager(void);
@@ -684,6 +688,11 @@ void EEStartupHelper(COINITIEE fFlags)
         // Initialize the event pipe.
         EventPipe::Initialize();
 #endif // FEATURE_PERFTRACING
+
+#ifdef FEATURE_GDBJIT
+        // Initialize gdbjit
+        NotifyGdb::Initialize();
+#endif // FEATURE_GDBJIT
 
 #ifdef FEATURE_EVENT_TRACE        
         // Initialize event tracing early so we can trace CLR startup time events.
