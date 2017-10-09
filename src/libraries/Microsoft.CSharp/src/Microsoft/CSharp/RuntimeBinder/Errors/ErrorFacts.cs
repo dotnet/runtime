@@ -140,9 +140,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_GenericConstraintNotSatisfiedValType:
                     codeStr = SR.GenericConstraintNotSatisfiedValType;
                     break;
-                case ErrorCode.ERR_TypeVarCantBeNull:
-                    codeStr = SR.TypeVarCantBeNull;
-                    break;
                 case ErrorCode.ERR_CantInferMethTypeArgs:
                     codeStr = SR.CantInferMethTypeArgs;
                     break;

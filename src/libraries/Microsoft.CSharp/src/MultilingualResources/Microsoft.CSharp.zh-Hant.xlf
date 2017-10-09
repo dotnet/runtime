@@ -226,10 +226,6 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">型別 '{3}' 不能做為泛型型別或方法 '{0}' 中的型別參數 '{2}'。沒有從 '{3}' 到 '{1}' 的 Boxing 轉換。</target>
         </trans-unit>
-        <trans-unit id="TypeVarCantBeNull" translate="yes" xml:space="preserve">
-          <source>Cannot convert null to type parameter '{0}' because it could be a non-nullable value type. Consider using 'default({0})' instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">無法將 null 轉換成型別參數 '{0}'，因為它是不可為 null 的實值型別。請考慮使用 'default({0})' 代替。</target>
-        </trans-unit>
         <trans-unit id="CantInferMethTypeArgs" translate="yes" xml:space="preserve">
           <source>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">方法 '{0}' 的型別引數不能從使用方式推斷。請嘗試明確指定型別引數。</target>
