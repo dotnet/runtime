@@ -688,8 +688,8 @@ ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
 {
-	worker_threads = min (worker_threads, MAX_POSSIBLE_THREADS);
-	completion_port_threads = min (completion_port_threads, MAX_POSSIBLE_THREADS);
+	worker_threads = MIN (worker_threads, MAX_POSSIBLE_THREADS);
+	completion_port_threads = MIN (completion_port_threads, MAX_POSSIBLE_THREADS);
 
 	gint cpu_count = mono_cpu_count ();
 
