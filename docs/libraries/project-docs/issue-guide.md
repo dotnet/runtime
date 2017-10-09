@@ -74,7 +74,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Net.Http](https://github.com/dotnet/corefx/labels/area-System.Net.Http)               | [@davidsh](https://github.com/davidsh), [@Priya91](https://github.com/Priya91), [@wfurt](https://github.com/wfurt) | |
 | [System.Net.Security](https://github.com/dotnet/corefx/labels/area-System.Net.Security)       | [@davidsh](https://github.com/davidsh), [@Priya91](https://github.com/Priya91), [@wfurt](https://github.com/wfurt) | |
 | [System.Net.Sockets](https://github.com/dotnet/corefx/labels/area-System.Net.Sockets)         | [@davidsh](https://github.com/davidsh), [@Priya91](https://github.com/Priya91), [@wfurt](https://github.com/wfurt) | |
-| [System.Numerics](https://github.com/dotnet/corefx/labels/area-System.Numerics)               | [@ViktorHofer](https://github.com/ViktorHofer) |  |
+| [System.Numerics](https://github.com/dotnet/corefx/labels/area-System.Numerics)               | [@eerhardt](https://github.com/eerhardt), [@ViktorHofer](https://github.com/ViktorHofer) |  |
 | [System.Reflection](https://github.com/dotnet/corefx/labels/area-System.Reflection)           | [@dnlharvey](https://github.com/dnlharvey), [@AtsushiKan](https://github.com/AtsushiKan) |  |
 | [System.Reflection.Emit](https://github.com/dotnet/corefx/labels/area-System.Reflection.Emit) | [@dnlharvey](https://github.com/dnlharvey), [@AtsushiKan](https://github.com/AtsushiKan) |  |
 | [System.Reflection.Metadata](https://github.com/dotnet/corefx/labels/area-System.Reflection.Metadata) | [@tmat](https://github.com/tmat), [@nguerrera](https://github.com/nguerrera) |  |
@@ -89,7 +89,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.ServiceProcess](https://github.com/dotnet/corefx/labels/area-System.ServiceProcess)   | [@maryamariyan](https://github.com/maryamariyan) |  |
 | [System.Text.Encoding](https://github.com/dotnet/corefx/labels/area-System.Text.Encoding)     | **[@krwq](https://github.com/krwq)**, [@tarekgh](https://github.com/tarekgh) | Included:<ul><li>System.Text.Encoding**s**.Web</li></ul> |
 | [System.Text.RegularExpressions](https://github.com/dotnet/corefx/labels/area-System.Text.RegularExpressions) | **[@ViktorHofer](https://github.com/ViktorHofer)**, [@Priya91](https://github.com/Priya91) |  |
-| [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | **[@kouvel](https://github.com/kouvel)**, [@tarekgh](https://github.com/tarekgh) |  |
+| [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | **[@kouvel](https://github.com/kouvel)**, [@AntonLapounov](https://github.com/AntonLapounov) |  |
 | [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       | [@jimcarley](https://github.com/jimcarley), [@qizhanMS](https://github.com/qizhanMS), [@dmetzgar](https://github.com/dmetzgar) |  |
 | [System.Xml](https://github.com/dotnet/corefx/labels/area-System.Xml)                         | **[@krwq](https://github.com/krwq)**, [@pjanotti](https://github.com/pjanotti)  |  |
 | **Microsoft contract assemblies** | | |
