@@ -83,7 +83,7 @@ namespace System.IO.Pipes
         [SecuritySafeCritical]
         private Task<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: false);
+            var completionSource = new ReadWriteCompletionSource(this, buffer, isWrite: false);
 
             // Queue an async ReadFile operation and pass in a packed overlapped
             int errorCode = 0;
@@ -131,7 +131,7 @@ namespace System.IO.Pipes
                 }
             }
 
-            completionSource.RegisterForCancellation();
+            completionSource.RegisterForCancellation(cancellationToken);
             return completionSource.Task;
         }
 
@@ -151,7 +151,7 @@ namespace System.IO.Pipes
         [SecuritySafeCritical]
         private Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: true);
+            var completionSource = new ReadWriteCompletionSource(this, buffer, isWrite: true);
             int errorCode = 0;
 
             // Queue an async WriteFile operation and pass in a packed overlapped
@@ -177,7 +177,7 @@ namespace System.IO.Pipes
                 throw WinIOError(errorCode);
             }
 
-            completionSource.RegisterForCancellation();
+            completionSource.RegisterForCancellation(cancellationToken);
             return completionSource.Task;
         }
 
