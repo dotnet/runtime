@@ -1,11 +1,13 @@
 {
   "build": [
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Change permissions to agent folder for cleanup steps",
       "timeoutInMinutes": 0,
+      "refName": "Task1",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -19,11 +21,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Delete files from $(PB_GitDirectory)",
       "timeoutInMinutes": 0,
+      "refName": "Task2",
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
         "versionSpec": "1.*",
@@ -35,11 +39,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "git clone",
       "timeoutInMinutes": 0,
+      "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -53,11 +59,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "git checkout",
       "timeoutInMinutes": 0,
+      "refName": "Task4",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -71,11 +79,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize tools",
       "timeoutInMinutes": 0,
+      "refName": "Task5",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -89,11 +99,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize Docker",
       "timeoutInMinutes": 0,
+      "refName": "Task6",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -107,11 +119,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Generate Version Assets",
       "timeoutInMinutes": 0,
+      "refName": "Task7",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -125,11 +139,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run sync.sh",
       "timeoutInMinutes": 0,
+      "refName": "Task8",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -143,11 +159,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build.sh",
       "timeoutInMinutes": 0,
+      "refName": "Task9",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -161,11 +179,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run publish-packages.sh",
       "timeoutInMinutes": 0,
+      "refName": "Task10",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -179,30 +199,57 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Copy Publish Artifact: BuildLogs",
+      "displayName": "Copy Files to: $(BUILD_STAGINGDIRECTORY)\\BuildLogs",
       "timeoutInMinutes": 0,
+      "refName": "CopyFiles1",
       "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(PB_GitDirectory)",
+        "Contents": "*.log",
+        "TargetFolder": "$(BUILD_STAGINGDIRECTORY)\\BuildLogs",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "refName": "PublishBuildArtifacts2",
+      "task": {
+        "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "$(PB_GitDirectory)",
-        "Contents": "*.log",
+        "PathtoPublish": "$(BUILD_STAGINGDIRECTORY)\\BuildLogs",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
+        "Parallel": "false",
+        "ParallelCount": "8"
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
+      "refName": "Task12",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -216,11 +263,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
+      "refName": "Task13",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -242,27 +291,6 @@
       },
       "inputs": {
         "branchFilters": "[\"+refs/heads/*\"]",
-        "additionalFields": "{}"
-      }
-    },
-    {
-      "enabled": false,
-      "definition": {
-        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
-      },
-      "inputs": {
-        "additionalFields": "{}"
-      }
-    },
-    {
-      "enabled": false,
-      "definition": {
-        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
-      },
-      "inputs": {
-        "multipliers": "[]",
-        "parallel": "false",
-        "continueOnError": "true",
         "additionalFields": "{}"
       }
     },
@@ -426,13 +454,14 @@
   "name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
   "path": "\\",
   "type": "build",
+  "queueStatus": "enabled",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097767,
-    "visibility": "private"
+    "revision": 418098167,
+    "visibility": "organization"
   }
 }
