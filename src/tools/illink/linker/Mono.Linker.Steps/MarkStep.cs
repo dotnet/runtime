@@ -275,7 +275,7 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkCustomAttribute (CustomAttribute ca)
 		{
-			Annotations.Push (ca);
+			Annotations.Push ((object)ca.AttributeType ?? (object)ca);
 			try {
 				MarkMethod (ca.Constructor);
 
@@ -986,11 +986,8 @@ namespace Mono.Linker.Steps {
 		protected void MarkMethodsIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate)
 		{
 			foreach (MethodDefinition method in methods)
-				if (predicate (method)) {
-					Annotations.Push (predicate);
+				if (predicate (method))
 					MarkMethod (method);
-					Annotations.Pop ();
-				}
 		}
 
 		static bool IsDefaultConstructor (MethodDefinition method)
