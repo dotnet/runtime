@@ -783,3 +783,6 @@ End
 Crst EventPipe
     AcquiredBefore ThreadIdDispenser ThreadStore DomainLocalBlock InstMethodHashTable
 End
+
+Crst NotifyGdb
+End
