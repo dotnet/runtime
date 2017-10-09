@@ -3579,7 +3579,9 @@
       }
     },
     "System.Runtime.Intrinsics.X86": {
-      "InboxOn": {},
+      "InboxOn": {
+        "netcoreapp2.1": "4.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0"
       }
