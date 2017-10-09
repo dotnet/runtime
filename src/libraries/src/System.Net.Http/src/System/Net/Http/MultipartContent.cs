@@ -417,7 +417,6 @@ namespace System.Net.Http
                 }
             }
 
-#if !NET46
             public override int Read(Span<byte> destination)
             {
                 if (destination.Length == 0)
@@ -447,13 +446,15 @@ namespace System.Net.Http
                     _current = _streams[_next++];
                 }
             }
-#endif
 
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateReadArgs(buffer, offset, count);
-                return ReadAsyncPrivate(buffer, offset, count, cancellationToken);
+                return ReadAsyncPrivate(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default) =>
+                ReadAsyncPrivate(destination, cancellationToken);
 
             public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
                 TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
@@ -461,20 +462,18 @@ namespace System.Net.Http
             public override int EndRead(IAsyncResult asyncResult) =>
                 TaskToApm.End<int>(asyncResult);
 
-            public async Task<int> ReadAsyncPrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public async ValueTask<int> ReadAsyncPrivate(Memory<byte> destination, CancellationToken cancellationToken)
             {
-                if (count == 0)
+                if (destination.Length == 0)
                 {
                     return 0;
                 }
 
                 while (true)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     if (_current != null)
                     {
-                        int bytesRead = await _current.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+                        int bytesRead = await _current.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
                         if (bytesRead != 0)
                         {
                             _position += bytesRead;
@@ -582,10 +581,9 @@ namespace System.Net.Http
             public override void Flush() { }
             public override void SetLength(long value) { throw new NotSupportedException(); }
             public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
-#if !NET46
             public override void Write(ReadOnlySpan<byte> source) { throw new NotSupportedException(); }
-#endif
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { throw new NotSupportedException(); }
+            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default) { throw new NotSupportedException(); }
         }
         #endregion Serialization
     }

@@ -16,17 +16,21 @@ namespace System.Net.Http
             {
             }
 
-            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateBufferArgs(buffer, offset, count);
+                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
 
-                if (_connection == null || count == 0)
+            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            {
+                if (_connection == null || destination.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
-                int bytesRead = await _connection.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                int bytesRead = await _connection.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     // We cannot reuse this connection, so close it.
@@ -58,11 +62,13 @@ namespace System.Net.Http
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateBufferArgs(buffer, offset, count);
-                return
-                    _connection == null ? Task.FromException(new IOException(SR.net_http_io_write)) :
-                    count > 0 ? _connection.WriteWithoutBufferingAsync(buffer, offset, count, cancellationToken) :
-                    Task.CompletedTask;
+                return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
             }
+
+            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default) =>
+                _connection == null ? Task.FromException(new IOException(SR.net_http_io_write)) :
+                source.Length > 0 ? _connection.WriteWithoutBufferingAsync(source, cancellationToken) :
+                Task.CompletedTask;
 
             public override Task FlushAsync(CancellationToken cancellationToken) =>
                 _connection != null ? _connection.FlushAsync(cancellationToken) :

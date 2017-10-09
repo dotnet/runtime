@@ -143,12 +143,10 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
 
-#if !NET46
             public override void Write(ReadOnlySpan<byte> source)
             {
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
-#endif
 
             public override void WriteByte(byte value)
             {
@@ -156,6 +154,11 @@ namespace System.Net.Http
             }
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, Threading.CancellationToken cancellationToken)
+            {
+                throw new NotSupportedException(SR.net_http_content_readonly_stream);
+            }
+
+            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
