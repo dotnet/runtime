@@ -370,13 +370,13 @@ namespace System.ServiceModel.Syndication
             return person.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal protected virtual void SetFeed(SyndicationFeed feed) { 
+        internal protected virtual void SetFeed(SyndicationFeed feed)
+        {
             _feed = feed ?? throw new ArgumentNullException(nameof(feed));
         }
 
         internal static void CloseBuffer(XmlBuffer buffer, XmlDictionaryWriter extWriter)
         {
-            
             if (buffer == null)
             {
                 return;
@@ -386,7 +386,7 @@ namespace System.ServiceModel.Syndication
             buffer.Close();
         }
 
-        internal static async Task<Tuple<XmlBuffer,XmlDictionaryWriter>> CreateBufferIfRequiredAndWriteNodeAsync(XmlBuffer buffer, XmlDictionaryWriter extWriter, XmlReader reader, int maxExtensionSize)
+        internal static async Task<Tuple<XmlBuffer, XmlDictionaryWriter>> CreateBufferIfRequiredAndWriteNodeAsync(XmlBuffer buffer, XmlDictionaryWriter extWriter, XmlReader reader, int maxExtensionSize)
         {
             if (buffer == null)
             {
@@ -436,7 +436,6 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationItem item)
         {
-
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
