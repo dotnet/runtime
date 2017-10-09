@@ -13,7 +13,7 @@
     <CoreClrCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</CoreClrCurrentRef>
     <StandardCurrentRef>54335e60fab0f62b868ec68e357dd21e6fe36a07</StandardCurrentRef>
     <WCFCurrentRef>54335e60fab0f62b868ec68e357dd21e6fe36a07</WCFCurrentRef>
-    <BuildToolsCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>87ea4a40af202840bb1e71d7d62555b48a7e7f76</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
