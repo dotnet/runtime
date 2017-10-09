@@ -440,13 +440,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 
 	return res;
 fail:
-	/* This icall will be called from managed code, and more over
-	 * from a protected wrapper so interruptions such as pending
-	 * exceptions will not be honored.  (See
-	 * is_running_protected_wrapper () in threads.c and
-	 * mono_marshal_get_remoting_invoke () in remoting.c)
-	 */
-	mono_error_raise_exception (&error); /* OK to throw, see note */
+	mono_error_set_pending_exception (&error);
 	return NULL;
 } 
 
