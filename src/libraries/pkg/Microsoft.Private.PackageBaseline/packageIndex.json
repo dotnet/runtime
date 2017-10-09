@@ -1103,12 +1103,12 @@
       }
     },
     "System.Data.DataSetExtensions": {
-        "InboxOn": {
-            "net45":  "4.0.0.0"
-        },
-        "AssemblyVersionInPackageVersion": {
-            "4.0.0.0": "4.5.0"
-        }
+      "InboxOn": {
+        "net45": "4.0.0.0"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
     },
     "System.Data.Entity": {
       "InboxOn": {
@@ -1124,6 +1124,12 @@
       "InboxOn": {
         "net45": "4.0.0.0",
         "wp8": "8.0.0.0"
+      }
+    },
+    "System.Data.Odbc": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
       }
     },
     "System.Data.OracleClient": {
@@ -1548,6 +1554,12 @@
         "uap10.0.15138": "4.0.0.0"
       }
     },
+    "System.Drawing.Common": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "System.Drawing.Design": {
       "InboxOn": {
         "net45": "4.0.0.0"
@@ -1575,18 +1587,6 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
         "4.2.0.0": "4.5.0"
-      }
-    },
-    "System.Data.Odbc": {
-      "InboxOn": {},
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.5.0"
-      }
-    },
-    "System.Drawing.Common": {
-      "InboxOn": {},
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.5.0"
       }
     },
     "System.Dynamic": {
@@ -3371,7 +3371,7 @@
         "4.4.0"
       ],
       "BaselineVersion": "4.4.0",
-      "InboxOn":  {
+      "InboxOn": {
         "netcoreapp2.1": "4.0.4.0",
         "uap10.0.15138": "4.0.4.0"
       },
@@ -3949,7 +3949,7 @@
       ],
       "BaselineVersion": "4.4.0",
       "InboxOn": {
-        "uap10.0.15138": "4.3.1.0",
+        "uap10.0.15138": "4.3.1.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.2.0",
@@ -4340,6 +4340,12 @@
         "xamarinmac20": "Any",
         "xamarintvos10": "Any",
         "xamarinwatchos10": "Any"
+      }
+    },
+    "System.ServiceModel.Syndication": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
       }
     },
     "System.ServiceModel.Web": {

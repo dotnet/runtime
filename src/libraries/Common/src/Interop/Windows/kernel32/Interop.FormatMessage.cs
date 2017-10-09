@@ -14,9 +14,11 @@ internal partial class Interop
         private const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
-
-
+        
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
+        private const int InitialBufferSize = 256;
+        private const int BufferSizeIncreaseFactor = 4;
+        private const int MaxAllowedBufferSize = 65 * 1024;
 
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
         private static extern int FormatMessage(
@@ -105,8 +107,5 @@ internal partial class Interop
         // 
         // As a result we use the following approach.
         // We initially call the API with a buffer size of 256 and then gradually increase the size in case of failure until we reach the maximum allowed limit of 65K.
-        private const int InitialBufferSize = 256;
-        private const int BufferSizeIncreaseFactor = 4;
-        private const int MaxAllowedBufferSize = 65 * 1024;
     }
 }

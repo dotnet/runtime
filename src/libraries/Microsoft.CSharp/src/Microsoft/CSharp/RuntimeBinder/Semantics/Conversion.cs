@@ -398,7 +398,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)
                 {
-                    throw ErrorContext.Error(dest is TypeParameterType ? ErrorCode.ERR_TypeVarCantBeNull : ErrorCode.ERR_ValueCantBeNull, dest);
+                    throw ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
                 }
 
                 // canCast => can't convert, but explicit exists and can be specified by the user (no anonymous types).
@@ -680,40 +680,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fIntPtrOverride2 = false;
 
             // Get the list of operators from the source.
-            if (typeSrcBase is TypeParameterType typeParamSrc)
-            {
-                AggregateType atsBase = typeParamSrc.GetEffectiveBaseClass();
-                if (atsBase != null && atsBase.getAggregate().HasConversion(GetSymbolLoader()))
-                {
-                    rgats[cats++] = atsBase;
-                }
-
-                // If an implicit conversion exists from the class bound to typeDst, then
-                // an implicit conversion exists from typeSrc to typeDst. An explicit from
-                // the class bound to typeDst doesn't buy us anything.
-                // We can still use an explicit conversion that has this type variable (or
-                // nullable of it) as its from-type.
-                fImplicitOrExactSrc = true;
-            }
-            else if (typeSrcBase is AggregateType atSrcBase && atSrcBase.getAggregate().HasConversion(GetSymbolLoader()))
+            if (typeSrcBase is AggregateType atSrcBase && atSrcBase.getAggregate().HasConversion(GetSymbolLoader()))
             {
                 rgats[cats++] = atSrcBase;
                 fIntPtrOverride2 = atSrcBase.isPredefType(PredefinedType.PT_INTPTR) || atSrcBase.isPredefType(PredefinedType.PT_UINTPTR);
             }
 
             // Get the list of operators from the destination.
-            if (typeDstBase is TypeParameterType typeParamDst)
-            {
-                // If an explicit conversion exists from typeSrc to the class bound, then
-                // an explicit conversion exists from typeSrc to typeDst. An implicit is no better
-                // than an explicit.
-                AggregateType atsBase;
-                if (!fImplicitOnly && (atsBase = typeParamDst.GetEffectiveBaseClass()).getAggregate().HasConversion(GetSymbolLoader()))
-                {
-                    rgats[cats++] = atsBase;
-                }
-            }
-            else if (typeDstBase is AggregateType atDstBase)
+            if (typeDstBase is AggregateType atDstBase)
             {
                 if (typeDstBase.getAggregate().HasConversion(GetSymbolLoader()))
                 {
