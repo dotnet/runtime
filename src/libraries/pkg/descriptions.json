@@ -154,6 +154,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "System.ServiceModel.Syndication",
+    "Description": "Provides classes related to service model syndication.",
+    "CommonTypes": []
+  },
+  {
     "Name": "NETStandard.Library.NETFramework",
     "Description": "Adds NETStandard2.0 support to .NET Framework.",
     "CommonTypes": [
