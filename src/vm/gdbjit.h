@@ -336,11 +336,13 @@ public:
 
 struct Elf_Symbol;
 class Elf_Builder;
+class DebugStringsCU;
 
 class NotifyGdb
 {
 public:
     class FileTableBuilder;
+    static void Initialize();
     static void MethodPrepared(MethodDesc* methodDescPtr);
     static void MethodPitched(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
@@ -429,9 +431,11 @@ private:
                                         NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
                                         unsigned int thunkIndexBase);
     static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
-    static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
+    static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method,
+                                  DebugStringsCU &debugStringsCU);
     static bool BuildDebugAbbrev(MemBuf& buf);
-    static bool BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
+    static bool BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method,
+                               DebugStringsCU &debugStringsCU);
     static bool BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint32_t dieOffset);
     static bool BuildLineTable(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines,
                                const char * &cuPath);
