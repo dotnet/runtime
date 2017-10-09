@@ -4406,16 +4406,25 @@ array_constructed:
 				--sp;
 			}
 			frame->ip = ip;
+
+			if (frame->ex_handler != NULL && MONO_OFFSET_IN_HANDLER(frame->ex_handler, frame->ip - rtm->code)) {
+				MonoException *exc = frame->ex;
+				frame->ex_handler = NULL;
+				frame->ex = NULL;
+				if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+					MonoException *abort_exc = mono_thread_get_undeniable_exception ();
+					if (abort_exc)
+						THROW_EX (abort_exc, frame->ip);
+				}
+
+			}
+
 			if (*ip == MINT_LEAVE_S) {
 				ip += (short) *(ip + 1);
 			} else {
 				ip += (gint32) READ32 (ip + 1);
 			}
 			endfinally_ip = ip;
-			if (frame->ex_handler != NULL && MONO_OFFSET_IN_HANDLER(frame->ex_handler, frame->ip - rtm->code)) {
-				frame->ex_handler = NULL;
-				frame->ex = NULL;
-			}
 			goto handle_finally;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_V_V) 
