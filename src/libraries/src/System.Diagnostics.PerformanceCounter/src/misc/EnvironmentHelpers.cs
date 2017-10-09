@@ -43,7 +43,7 @@ namespace System
 
             using (WindowsIdentity wi = WindowsIdentity.GetCurrent(TokenAccessLevels.Query))
             {
-                if (!Interop.Advapi32.GetTokenInformation(wi.Token, Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenIsAppContainer, new IntPtr(dwIsAppContainerPtr), sizeof(int), out dwLength))
+                if (!Interop.Advapi32.GetTokenInformation(wi.Token, (uint)Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenIsAppContainer, new IntPtr(dwIsAppContainerPtr), sizeof(int), out dwLength))
                 {
                     throw new Win32Exception();
                 }
