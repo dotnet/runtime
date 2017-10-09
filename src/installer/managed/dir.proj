@@ -13,7 +13,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <BuildArgs>$(MSBuildPassThroughPropertyList) /p:BaseOutputPath=$(IntermediateOutputForPackaging)</BuildArgs>
+      <BuildArgs>$(NoRestoreArg) $(MSBuildPassThroughPropertyList) /p:BaseOutputPath=$(IntermediateOutputForPackaging)</BuildArgs>
     </PropertyGroup>
 
     <Exec Command="$(DotnetToolCommand) build $(BuildArgs) %(PackageProjects.Identity)" />
