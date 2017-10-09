@@ -117,13 +117,22 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #if defined(__has_feature)
+
 #if __has_feature(thread_sanitizer)
 #define MONO_HAS_CLANG_THREAD_SANITIZER 1
 #else
 #define MONO_HAS_CLANG_THREAD_SANITIZER 0
 #endif
+
+#if __has_feature(address_sanitizer)
+#define MONO_HAS_CLANG_ADDRESS_SANITIZER 1
+#else
+#define MONO_HAS_CLANG_ADDRESS_SANITIZER 0
+#endif
+
 #else
 #define MONO_HAS_CLANG_THREAD_SANITIZER 0
+#define MONO_HAS_CLANG_ADDRESS_SANITIZER 0
 #endif
 
 /* Used to tell Clang's ThreadSanitizer to not report data races that occur within a certain function */
@@ -131,6 +140,13 @@ typedef SSIZE_T ssize_t;
 #define MONO_NO_SANITIZE_THREAD __attribute__ ((no_sanitize("thread")))
 #else
 #define MONO_NO_SANITIZE_THREAD
+#endif
+
+/* Used to tell Clang's AddressSanitizer to turn off instrumentation for a certain function */
+#if MONO_HAS_CLANG_ADDRESS_SANITIZER
+#define MONO_NO_SANITIZE_ADDRESS __attribute__ ((no_sanitize("address")))
+#else
+#define MONO_NO_SANITIZE_ADDRESS
 #endif
 
 /* Used when building with Android NDK's unified headers */

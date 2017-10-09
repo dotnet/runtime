@@ -792,6 +792,7 @@ sgen_sort_addresses (void **array, size_t size)
  * to the area between start_nursery and end_nursery for later consideration.
  * Typically used for thread stacks.
  */
+MONO_NO_SANITIZE_ADDRESS
 void
 sgen_conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type)
 {
