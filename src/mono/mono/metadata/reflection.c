@@ -1546,12 +1546,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 
 	start = p = w = name;
 
-	//FIXME could we just zero the whole struct? memset (&info, 0, sizeof (MonoTypeNameParse))
-	memset (&info->assembly, 0, sizeof (MonoAssemblyName));
-	info->name = info->name_space = NULL;
-	info->nested = NULL;
-	info->modifiers = NULL;
-	info->type_arguments = NULL;
+	memset (info, 0, sizeof (MonoTypeNameParse));
 
 	/* last_point separates the namespace from the name */
 	last_point = NULL;
