@@ -30,7 +30,7 @@ namespace System.ServiceModel.Syndication
         private Uri _imageUrl;
         private TextSyndicationContent _imageTitle;
         private Uri _imageLink;
-        
+
         private IEnumerable<SyndicationItem> _items;
         private string _language;
         private DateTimeOffset _lastUpdatedTime;
@@ -57,7 +57,7 @@ namespace System.ServiceModel.Syndication
                     throw new ArgumentNullException(nameof(value));
                 _iconImage = value;
             }
-        } 
+        }
 
         public SyndicationTextInput TextInput
         {
@@ -87,7 +87,8 @@ namespace System.ServiceModel.Syndication
 
         public int TimeToLive
         {
-            get {
+            get
+            {
                 return _timeToLive;
             }
             set
@@ -114,7 +115,7 @@ namespace System.ServiceModel.Syndication
                     _skipDays = new Collection<string>();
                 return _skipDays;
             }
-        } 
+        }
 
         //======================================
 
@@ -285,12 +286,14 @@ namespace System.ServiceModel.Syndication
             set { _imageUrl = value; }
         }
 
-        public TextSyndicationContent ImageTitle {
+        public TextSyndicationContent ImageTitle
+        {
             get { return _imageTitle; }
             set { _imageTitle = value; }
         }
 
-        public Uri ImageLink {
+        public Uri ImageLink
+        {
             get { return _imageLink; }
             set { _imageLink = value; }
         }
@@ -391,7 +394,7 @@ namespace System.ServiceModel.Syndication
             where TSyndicationFeed : SyndicationFeed, new()
         {
             CancellationToken ct = new CancellationToken();
-            return LoadAsync<TSyndicationFeed>(reader,ct).GetAwaiter().GetResult();
+            return LoadAsync<TSyndicationFeed>(reader, ct).GetAwaiter().GetResult();
         }
 
         public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, CancellationToken ct)

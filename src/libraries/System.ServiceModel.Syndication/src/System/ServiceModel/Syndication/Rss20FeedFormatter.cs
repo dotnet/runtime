@@ -24,7 +24,7 @@ namespace System.ServiceModel.Syndication
         private static readonly XmlQualifiedName s_rss20Length = new XmlQualifiedName(Rss20Constants.LengthTag, string.Empty);
         private static readonly XmlQualifiedName s_rss20Type = new XmlQualifiedName(Rss20Constants.TypeTag, string.Empty);
         private static readonly XmlQualifiedName s_rss20Url = new XmlQualifiedName(Rss20Constants.UrlTag, string.Empty);
-        private static List<string> acceptedDays = new List<string> { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" };
+        private static List<string> s_acceptedDays = new List<string> { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" };
         private const string Rfc822OutputLocalDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss zzz";
         private const string Rfc822OutputUtcDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss Z";
 
@@ -62,7 +62,7 @@ namespace System.ServiceModel.Syndication
                 {
                     result.ImageUrl = UriParser(await reader.ReadElementStringAsync(), Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace);
                 }
-                else if(await reader.IsStartElementAsync(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace))
+                else if (await reader.IsStartElementAsync(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace))
                 {
                     result.ImageLink = UriParser(await reader.ReadElementStringAsync(), Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
                 }
@@ -277,7 +277,7 @@ namespace System.ServiceModel.Syndication
                                     {
                                         bool isPermalink = true;
                                         string permalinkString = reader.GetAttribute(Rss20Constants.IsPermaLinkTag, Rss20Constants.Rss20Namespace);
-                                        if (permalinkString != null && permalinkString.Equals("false",StringComparison.OrdinalIgnoreCase))
+                                        if (permalinkString != null && permalinkString.Equals("false", StringComparison.OrdinalIgnoreCase))
                                         {
                                             isPermalink = false;
                                         }
@@ -326,7 +326,7 @@ namespace System.ServiceModel.Syndication
                                                 string val = await reader.GetValueAsync();
                                                 if (name == Rss20Constants.UrlTag && ns == Rss20Constants.Rss20Namespace)
                                                 {
-                                                    feed.Links.Add(SyndicationLink.CreateSelfLink(UriParser(val, Rss20Constants.UrlTag,ns)));
+                                                    feed.Links.Add(SyndicationLink.CreateSelfLink(UriParser(val, Rss20Constants.UrlTag, ns)));
                                                 }
                                                 else if (!FeedUtils.IsXmlns(name, ns))
                                                 {
@@ -551,22 +551,21 @@ namespace System.ServiceModel.Syndication
                     return "";
             }
         }
-        
+
         private async Task ReadSkipHoursAsync(XmlReaderWrapper reader, SyndicationFeed result)
         {
             await reader.ReadStartElementAsync();
 
             while (await reader.IsStartElementAsync())
             {
-
-                if(reader.LocalName == Rss20Constants.HourTag)
+                if (reader.LocalName == Rss20Constants.HourTag)
                 {
                     string val = StringParser(await reader.ReadElementStringAsync(), Rss20Constants.HourTag, Rss20Constants.Rss20Namespace);
                     int hour = int.Parse(val);
                     bool parsed = false;
-                    parsed = int.TryParse(val,NumberStyles.Integer,NumberFormatInfo.InvariantInfo,out hour);
+                    parsed = int.TryParse(val, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out hour);
 
-                    if(parsed == false)
+                    if (parsed == false)
                     {
                         throw new ArgumentException("The number on skip hours must be an integer betwen 0 and 23.");
                     }
@@ -582,7 +581,6 @@ namespace System.ServiceModel.Syndication
                 {
                     await reader.SkipAsync();
                 }
-
             }
 
             await reader.ReadEndElementAsync();
@@ -591,7 +589,7 @@ namespace System.ServiceModel.Syndication
 
         private bool checkDay(string day)
         {
-            if (acceptedDays.Contains(day.ToLower()))
+            if (s_acceptedDays.Contains(day.ToLower()))
             {
                 return true;
             }
@@ -640,7 +638,7 @@ namespace System.ServiceModel.Syndication
                 stringBuilder.Remove(0, i);
             }
         }
-       
+
         private static void ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(StringBuilder builder)
         {
             int index = 0;
@@ -686,7 +684,7 @@ namespace System.ServiceModel.Syndication
                 return sb.ToString();
             }
         }
-        
+
         private async Task<SyndicationLink> ReadAlternateLinkAsync(XmlReaderWrapper reader, Uri baseUri)
         {
             SyndicationLink link = new SyndicationLink();
@@ -714,14 +712,14 @@ namespace System.ServiceModel.Syndication
             link.Uri = UriParser(await reader.ReadElementStringAsync(), localName, namespaceUri);//new Uri(uri, UriKind.RelativeOrAbsolute);
             return link;
         }
-        
+
         private async Task<SyndicationCategory> ReadCategoryAsync(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationCategory result = CreateCategory(feed);
             await ReadCategoryAsync(reader, result);
             return result;
         }
-        
+
         private async Task ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category)
         {
             bool isEmpty = reader.IsEmptyElement;
@@ -758,7 +756,7 @@ namespace System.ServiceModel.Syndication
                 await reader.ReadEndElementAsync();
             }
         }
-        
+
         private async Task<SyndicationCategory> ReadCategoryAsync(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationCategory result = CreateCategory(item);
@@ -855,7 +853,7 @@ namespace System.ServiceModel.Syndication
             await reader.ReadStartElementAsync();
             if (!isEmpty)
             {
-                string email = StringParser(await reader.ReadStringAsync(),reader.LocalName,reader.NamespaceURI);
+                string email = StringParser(await reader.ReadStringAsync(), reader.LocalName, reader.NamespaceURI);
                 await reader.ReadEndElementAsync();
                 person.Email = email;
             }
@@ -911,7 +909,7 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
-            if(checkTextInput(textInput) == true)
+            if (checkTextInput(textInput) == true)
             {
                 result.TextInput = textInput;
             }
@@ -1169,7 +1167,7 @@ namespace System.ServiceModel.Syndication
             await writer.WriteStringAsync(FeedUtils.GetUriString(link.Uri));
             await writer.WriteEndElementAsync();
         }
-        
+
         private async Task WriteCategoryAsync(XmlWriter writer, SyndicationCategory category)
         {
             if (category == null)
@@ -1185,7 +1183,7 @@ namespace System.ServiceModel.Syndication
             await writer.WriteStringAsync(category.Name);
             await writer.WriteEndElementAsync();
         }
-        
+
         private async Task WriteFeedAsync(XmlWriter writer)
         {
             if (this.Feed == null)
@@ -1286,39 +1284,39 @@ namespace System.ServiceModel.Syndication
 
             //Optional spec items
             //time to live
-            if(this.Feed.TimeToLive != 0)
+            if (this.Feed.TimeToLive != 0)
             {
                 await writer.WriteElementStringAsync(Rss20Constants.TimeToLiveTag, this.Feed.TimeToLive.ToString());
             }
 
             //skiphours
-            if(this.Feed.SkipHours.Count > 0)
+            if (this.Feed.SkipHours.Count > 0)
             {
                 await writer.WriteStartElementAsync(Rss20Constants.SkipHoursTag);
 
-                foreach(int hour in this.Feed.SkipHours)
+                foreach (int hour in this.Feed.SkipHours)
                 {
-                    writer.WriteElementString(Rss20Constants.HourTag,hour.ToString());
+                    writer.WriteElementString(Rss20Constants.HourTag, hour.ToString());
                 }
 
                 await writer.WriteEndElementAsync();
             }
 
             //skipDays
-            if(this.Feed.SkipDays.Count > 0)
+            if (this.Feed.SkipDays.Count > 0)
             {
                 await writer.WriteStartElementAsync(Rss20Constants.SkipDaysTag);
 
-                foreach(string day in this.Feed.SkipDays)
+                foreach (string day in this.Feed.SkipDays)
                 {
-                    await writer.WriteElementStringAsync(Rss20Constants.DayTag,day);
+                    await writer.WriteElementStringAsync(Rss20Constants.DayTag, day);
                 }
 
                 await writer.WriteEndElementAsync();
             }
 
             //textinput
-            if(this.Feed.TextInput != null)
+            if (this.Feed.TextInput != null)
             {
                 await writer.WriteStartElementAsync(Rss20Constants.TextInputTag);
 
@@ -1329,7 +1327,7 @@ namespace System.ServiceModel.Syndication
 
                 await writer.WriteEndElementAsync();
             }
-            
+
             if (_serializeExtensionsAsAtom)
             {
                 await _atomSerializer.WriteElementAsync(writer, Atom10Constants.IdTag, this.Feed.Id);
@@ -1351,7 +1349,7 @@ namespace System.ServiceModel.Syndication
             await WriteItemsAsync(writer, this.Feed.Items, this.Feed.BaseUri);
             await writer.WriteEndElementAsync(); // channel
         }
-        
+
         private async Task WriteItemContentsAsync(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(feedBaseUri, item.BaseUri);
@@ -1526,7 +1524,7 @@ namespace System.ServiceModel.Syndication
 
             await WriteElementExtensionsAsync(writer, item, this.Version);
         }
-        
+
         private async Task WriteMediaEnclosureAsync(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             await writer.WriteStartElementAsync(Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace);
@@ -1550,7 +1548,7 @@ namespace System.ServiceModel.Syndication
             }
             await writer.WriteEndElementAsync();
         }
-        
+
         private async Task WritePersonAsync(XmlWriter writer, string elementTag, SyndicationPerson person)
         {
             await writer.WriteStartElementAsync(elementTag, Rss20Constants.Rss20Namespace);
@@ -1566,9 +1564,9 @@ namespace System.ServiceModel.Syndication
             {
                 return false;
             }
-            
+
             int timeZoneStartIndex;
-            for (timeZoneStartIndex = dateTimeStringBuilder.Length-1; dateTimeStringBuilder[timeZoneStartIndex] != ' '; timeZoneStartIndex--);
+            for (timeZoneStartIndex = dateTimeStringBuilder.Length - 1; dateTimeStringBuilder[timeZoneStartIndex] != ' '; timeZoneStartIndex--) ;
             timeZoneStartIndex++;
 
             string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
@@ -1578,13 +1576,13 @@ namespace System.ServiceModel.Syndication
             string wellFormattedString = dateTimeStringBuilder.ToString();
 
             DateTimeOffset theTime;
-            string[] parseFormat = 
+            string[] parseFormat =
             {
                 "ddd, dd MMMM yyyy HH:mm:ss zzz",
                 "dd MMMM yyyy HH:mm:ss zzz",
                 "ddd, dd MMM yyyy HH:mm:ss zzz",
                 "dd MMM yyyy HH:mm:ss zzz",
-                
+
                 "ddd, dd MMMM yyyy HH:mm zzz",
                 "dd MMMM yyyy HH:mm zzz",
                 "ddd, dd MMM yyyy HH:mm zzz",
@@ -1613,7 +1611,7 @@ namespace System.ServiceModel.Syndication
 
 
             //original parser here
-            parsed = OriginalDateParser(dateTimeString,out dto);
+            parsed = OriginalDateParser(dateTimeString, out dto);
             if (parsed)
                 return dto;
 

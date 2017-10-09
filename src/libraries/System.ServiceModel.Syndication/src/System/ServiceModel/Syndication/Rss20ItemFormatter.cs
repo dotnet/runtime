@@ -114,8 +114,8 @@ namespace System.ServiceModel.Syndication
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
 
-        
-        async Task WriteXml(XmlWriter writer)
+
+        private async Task WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -152,7 +152,7 @@ namespace System.ServiceModel.Syndication
         {
             return SyndicationItemFormatter.CreateItemInstance(_itemType);
         }
-        
+
         private Task ReadItemAsync(XmlReaderWrapper reader)
         {
             SetItem(CreateItemInstance());
