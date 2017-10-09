@@ -456,6 +456,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
     PEFile * pFile = pModule->GetFile();
 
+    if (!IsReadyToRunEnabled())
+    {
+        // Log message is ignored in this case.
+        DoLog(NULL);
+        return NULL;
+    }
+
     // Ignore ReadyToRun for introspection-only loads
     if (pFile->IsIntrospectionOnly())
     {
@@ -473,13 +480,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     if (!pLayout->HasReadyToRunHeader())
     {
         DoLog("Ready to Run header not found");
-        return NULL;
-    }
-
-    if (!IsReadyToRunEnabled())
-    {
-        // Log message is ignored in this case.
-        DoLog(NULL);
         return NULL;
     }
 
