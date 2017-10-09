@@ -18,7 +18,7 @@
         {
           "Name": "Core-Setup-Linux-BT",
           "Parameters": {
-            "PB_DockerTag": "rhel7_prereqs_2",
+            "PB_DockerTag": "centos-7-d485f41-20173404063424",
             "PB_AdditionalBuildArguments":"-PortableBuild=true -strip-symbols",
             "PB_PortableBuild": "true"
           },
@@ -32,7 +32,7 @@
         {
           "Name": "Core-Setup-Linux-Arm-BT",
           "Parameters": {
-            "PB_DockerTag": "centos-6-c8c9b08-20174310104313",
+            "PB_DockerTag": "centos-6-d485f41-20173404063424",
             "PB_TargetArchitecture": "x64",
             "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols",
             "PB_AdditionalMSBuildArguments":"/p:OutputRid=rhel.6-x64",
@@ -47,7 +47,7 @@
         {
           "Name": "Core-Setup-Linux-Arm-BT",
           "Parameters": {
-            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20170319080304",
             "PB_TargetArchitecture": "arm",
             "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
             "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
