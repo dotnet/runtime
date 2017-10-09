@@ -132,6 +132,7 @@ namespace System.Text
         }
 
         private DecoderFallbackException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
         {
         }
 
