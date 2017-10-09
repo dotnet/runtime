@@ -12,7 +12,6 @@ namespace System
     {
         private static volatile bool s_isAppContainerProcess;
         private static volatile bool s_isAppContainerProcessInitalized;
-        internal const int TokenIsAppContainer = 29;
 
         public static bool IsAppContainerProcess
         {
@@ -20,11 +19,7 @@ namespace System
             {
                 if(!s_isAppContainerProcessInitalized)
                 {
-                   if(Environment.OSVersion.Platform != PlatformID.Win32NT)
-                   {
-                       s_isAppContainerProcess = false;
-                   }
-                   else if(Environment.OSVersion.Version.Major < 6 || (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor <= 1))
+                   if(Environment.OSVersion.Version.Major < 6 || (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor <= 1))
                    {
                        // Windows 7 or older.
                        s_isAppContainerProcess = false;
@@ -41,7 +36,6 @@ namespace System
             }
         }
 
-        [SecuritySafeCritical]
         private static unsafe bool HasAppContainerToken()
         {
             int* dwIsAppContainerPtr = stackalloc int[1];
@@ -49,7 +43,7 @@ namespace System
 
             using (WindowsIdentity wi = WindowsIdentity.GetCurrent(TokenAccessLevels.Query))
             {
-                if (!Interop.Advapi32.GetTokenInformation(wi.Token, TokenIsAppContainer, new IntPtr(dwIsAppContainerPtr), sizeof(int), out dwLength))
+                if (!Interop.Advapi32.GetTokenInformation(wi.Token, Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenIsAppContainer, new IntPtr(dwIsAppContainerPtr), sizeof(int), out dwLength))
                 {
                     throw new Win32Exception();
                 }
