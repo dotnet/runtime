@@ -2212,8 +2212,16 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	gboolean destroy = TRUE;
 	GHashTableIter iter;
 	MonoJumpList *jlist;
+	MonoJitDomainInfo *info = domain_jit_info (domain);
 
 	g_assert (method->dynamic);
+
+	if (mono_use_interpreter) {
+		mono_domain_jit_code_hash_lock (domain);
+		/* InterpMethod is allocated in the domain mempool */
+		mono_internal_hash_table_remove (&info->interp_code_hash, method);
+		mono_domain_jit_code_hash_unlock (domain);
+	}
 
 	mono_domain_lock (domain);
 	ji = mono_dynamic_code_hash_lookup (domain, method);
@@ -2226,17 +2234,17 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_lldb_remove_method (domain, method, ji);
 
 	mono_domain_lock (domain);
-	g_hash_table_remove (domain_jit_info (domain)->dynamic_code_hash, method);
+	g_hash_table_remove (info->dynamic_code_hash, method);
 	mono_domain_jit_code_hash_lock (domain);
 	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	mono_domain_jit_code_hash_unlock (domain);
-	g_hash_table_remove (domain_jit_info (domain)->jump_trampoline_hash, method);
+	g_hash_table_remove (info->jump_trampoline_hash, method);
 
 	/* requires the domain lock - took above */
-	mono_conc_hashtable_remove (domain_jit_info (domain)->runtime_invoke_hash, method);
+	mono_conc_hashtable_remove (info->runtime_invoke_hash, method);
 
 	/* Remove jump targets in this method */
-	g_hash_table_iter_init (&iter, domain_jit_info (domain)->jump_target_hash);
+	g_hash_table_iter_init (&iter, info->jump_target_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&jlist)) {
 		GSList *tmp, *remove;
 
