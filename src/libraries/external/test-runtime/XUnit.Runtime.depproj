@@ -63,7 +63,7 @@
       <Version>4.6.519</Version>
     </PackageReference>
     <PackageReference Include="ReportGenerator">
-      <Version>2.5.0</Version>
+      <Version>3.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Compression.TestData">
       <Version>1.0.5-prerelease</Version>

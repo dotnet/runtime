@@ -251,7 +251,7 @@ namespace System.Diagnostics
             {
                 filename = ResolvePath(startInfo.FileName);
                 argv = ParseArgv(startInfo);
-                if (Directory.Exists(startInfo.FileName))
+                if (Directory.Exists(filename))
                 {
                     throw new Win32Exception(SR.DirectoryNotValidAsInput);
                 }
