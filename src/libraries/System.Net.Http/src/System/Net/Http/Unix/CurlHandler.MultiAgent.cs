@@ -1198,26 +1198,26 @@ namespace System.Net.Http
                 // Make sure we actually have a stream to read from.  This will be null if either
                 // this is the first time we're reading it, or if the stream was reset as part
                 // of curl trying to rewind.  Then do the read.
-                Task<int> asyncRead;
+                ValueTask<int> asyncRead;
                 if (easy._requestContentStream == null)
                 {
                     multi.EventSourceTrace("Calling ReadAsStreamAsync to get new request stream", easy: easy);
                     Task<Stream> readAsStreamTask = easy._requestMessage.Content.ReadAsStreamAsync();
                     asyncRead = readAsStreamTask.IsCompleted ?
                         StoreRetrievedContentStreamAndReadAsync(readAsStreamTask, easy, sts, length) :
-                        easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((t, s) =>
+                        new ValueTask<int>(easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((t, s) =>
                         {
                             var stateAndRequest = (Tuple<int, EasyRequest.SendTransferState, EasyRequest>)s;
                             return StoreRetrievedContentStreamAndReadAsync(t,
-                                stateAndRequest.Item3, stateAndRequest.Item2, stateAndRequest.Item1);
+                                stateAndRequest.Item3, stateAndRequest.Item2, stateAndRequest.Item1).AsTask();
                         }, Tuple.Create(length, sts, easy), CancellationToken.None,
-                        TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
+                        TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap());
                 }
                 else
                 {
                     multi.EventSourceTrace("Starting async read", easy: easy);
                     asyncRead = easy._requestContentStream.ReadAsync(
-                       sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
+                       new Memory<byte>(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length)), easy._cancellationToken);
                 }
                 Debug.Assert(asyncRead != null, "Badly implemented stream returned a null task from ReadAsync");
 
@@ -1225,7 +1225,7 @@ namespace System.Net.Http
                 // Check to see if it did, in which case we can also satisfy the libcurl request synchronously in this callback.
                 if (asyncRead.IsCompleted)
                 {
-                    multi.EventSourceTrace("Async read completed immediately: {0}", asyncRead.Status, easy: easy);
+                    multi.EventSourceTrace("Async read completed immediately", easy: easy);
 
                     // Get the amount of data read.
                     int bytesRead = asyncRead.GetAwaiter().GetResult(); // will throw if read failed
@@ -1245,7 +1245,7 @@ namespace System.Net.Http
                     if (bytesToCopy < bytesRead)
                     {
                         multi.EventSourceTrace("Storing {0} bytes for later", bytesRead - bytesToCopy, easy: easy);
-                        sts.SetTaskOffsetCount(asyncRead, bytesToCopy, bytesRead);
+                        sts.SetTaskOffsetCount(asyncRead.AsTask(), bytesToCopy, bytesRead);
                     }
 
                     // Return the number of bytes read.
@@ -1254,8 +1254,8 @@ namespace System.Net.Http
 
                 // Otherwise, the read completed asynchronously.  Store the task, and hook up a continuation 
                 // such that the connection will be unpaused once the task completes.
-                sts.SetTaskOffsetCount(asyncRead, 0, 0);
-                asyncRead.ContinueWith((t, s) =>
+                sts.SetTaskOffsetCount(asyncRead.AsTask(), 0, 0);
+                sts.Task.ContinueWith((t, s) =>
                 {
                     EasyRequest easyRef = (EasyRequest)s;
                     easyRef._associatedMultiAgent.RequestUnpause(easyRef);
@@ -1270,7 +1270,7 @@ namespace System.Net.Http
             /// Given a completed task used to retrieve the content stream asynchronously, extracts the stream,
             /// stores it into <see cref="EasyRequest._requestContentStream"/>, and does an initial read on it.
             /// </summary>
-            private static Task<int> StoreRetrievedContentStreamAndReadAsync(
+            private static ValueTask<int> StoreRetrievedContentStreamAndReadAsync(
                 Task<Stream> readAsStreamTask, EasyRequest easy, EasyRequest.SendTransferState sts, int length)
             {
                 Debug.Assert(readAsStreamTask.IsCompleted, $"Expected {nameof(readAsStreamTask)} to be completed, got {readAsStreamTask.Status}");
@@ -1294,17 +1294,17 @@ namespace System.Net.Http
 
                     // Now that we have a stream, do the desired read
                     multi.EventSourceTrace("Starting async read", easy: easy);
-                    return easy._requestContentStream.ReadAsync(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
+                    return easy._requestContentStream.ReadAsync(new Memory<byte>(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length)), easy._cancellationToken);
                 }
                 catch (OperationCanceledException oce)
                 {
-                    return oce.CancellationToken.IsCancellationRequested ?
+                    return new ValueTask<int>(oce.CancellationToken.IsCancellationRequested ?
                         Task.FromCanceled<int>(oce.CancellationToken) :
-                        Task.FromCanceled<int>(new CancellationToken(true));
+                        Task.FromCanceled<int>(new CancellationToken(true)));
                 }
                 catch (Exception exc)
                 {
-                    return Task.FromException<int>(exc);
+                    return new ValueTask<int>(Task.FromException<int>(exc));
                 }
             }
 
