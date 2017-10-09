@@ -192,8 +192,6 @@ GTNODE(ADD_LO           , GenTreeOp          ,1,GTK_BINOP)
 GTNODE(ADD_HI           , GenTreeOp          ,1,GTK_BINOP)
 GTNODE(SUB_LO           , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(DIV_HI           , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(MOD_HI           , GenTreeOp          ,0,GTK_BINOP)
 
 // A mul that returns the 2N bit result of an NxN multiply. This op is used for
 // multiplies that take two ints and return a long result. All other multiplies
