@@ -9,11 +9,6 @@
     <ChecksumsRelativePath>Runtime/$(ProductVersion)</ChecksumsRelativePath>
     <ChecksumExtension>.sha512</ChecksumExtension>
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <ProductMoniker>$(DistroRid).$(SharedFrameworkNugetVersion)</ProductMoniker>
-    <HostResolverVersionMoniker>$(DistroRid).$(HostResolverVersion)</HostResolverVersionMoniker>
-  </PropertyGroup>
 
   <ItemGroup>
     <!-- IgnorableErrorMessages applies to the "ExectWithRetriesForNuGetPush" task.

@@ -18,6 +18,9 @@
 
   <PropertyGroup>
     <CommonProjectArgs>$(MSBuildPassThroughPropertyList) /p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid)</CommonProjectArgs>
+
+    <SharedFrameworkIntermediatePackagesDir>$(IntermediateOutputRootPath)sharedFrameworkPublish.packages\</SharedFrameworkIntermediatePackagesDir>
+    <SharedFrameworkNameAndVersionRoot>$(SharedFrameworkPublishDir)shared\$(SharedFrameworkName)\$(SharedFrameworkNugetVersion)</SharedFrameworkNameAndVersionRoot>
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(BuildTargets)" />
@@ -32,13 +35,15 @@
 
     <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
 
-    <Exec Command="$(DotnetRestoreCommand) --source $(PackagesOutDir) $(CommonSharedFrameworkArgs)"
+    <!-- Specify a separate 'packages' directory in case we are building an already built version of Microsoft.NETCore.App and the $(PackagesDir)
+         already contains the same version as we are building.  (ex. building source-build for `2.0.0` when `2.0.0` has already shipped.
+    -->
+    <Exec Command="$(DotnetRestoreCommandNoPackages) --source $(PackagesOutDir) --packages $(SharedFrameworkIntermediatePackagesDir) $(CommonSharedFrameworkArgs)"
           WorkingDirectory="$(SharedFrameworkSourceRoot)" />
 
     <!-- We publish to a sub folder of the PublishRoot so tools like heat and zip can generate folder structures easier. -->
-    <Exec Command="$(DotnetToolCommand) publish --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
-          WorkingDirectory="$(SharedFrameworkSourceRoot)"
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+    <Exec Command="$(DotnetToolCommand) publish $(NoRestoreArg) --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
+          WorkingDirectory="$(SharedFrameworkSourceRoot)" />
 
     <!-- Clean deps.json -->
     <ChangeEntryPointLibraryName DepsFile="$(SharedFrameworkNameAndVersionRoot)/framework.deps.json" />
@@ -142,13 +147,14 @@
 
     <RemoveDir Directories="$(CoreHostLockedDir)" />
 
-    <Exec Command="$(DotnetRestoreCommand) --source $(PackagesOutDir) $(CommonLockedHostArgs)"
+    <!-- Specify a separate 'packages' directory in case we are building an already built version of Microsoft.NETCore.DotNetHost and the $(PackagesDir)
+         already contains the same version as we are building.  (ex. building source-build for `2.0.0` when `2.0.0` has already shipped.
+    -->
+    <Exec Command="$(DotnetRestoreCommandNoPackages) --source $(PackagesOutDir) --packages $(SharedFrameworkIntermediatePackagesDir) $(CommonLockedHostArgs)"
           WorkingDirectory="$(LockedHostSourceRoot)" />
 
-
-    <Exec Command="$(DotnetToolCommand) publish --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
-          WorkingDirectory="$(LockedHostSourceRoot)"
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+    <Exec Command="$(DotnetToolCommand) publish $(NoRestoreArg) --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
+          WorkingDirectory="$(LockedHostSourceRoot)" />
   </Target>
 
 </Project>

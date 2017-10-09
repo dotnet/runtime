@@ -98,7 +98,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             _userSelectedMessage = $"Using dotnet SDK dll=[{_userSdkBaseDir}";
             _exeSelectedMessage = $"Using dotnet SDK dll=[{_exeSdkBaseDir}";
         }
-
+        
         [Fact]
         public void SdkLookup_Global_Json_Patch_Rollup()
         {
@@ -349,7 +349,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0-dummy", _dotnetSdkDllMessageTerminator));
 
-            // Add a dummy version in the exe dir
+            // Add a dummy version in the user dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0");
 
             // Specified CLI version: none

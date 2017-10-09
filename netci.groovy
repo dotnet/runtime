@@ -48,7 +48,7 @@ platformList.each { platform ->
         dockerContainer = "ubuntu1404_cross_prereqs_v4-tizen_rootfs"
 
         dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture}.tizen.build --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildArgs += " -DistroRid=tizen.4.0.0-${architecture} -SkipTests=true -DisableCrossgen=true -PortableBuild=false -CrossBuild=true -- /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json"
+        buildArgs += " -SkipTests=true -DisableCrossgen=true -PortableBuild=false -CrossBuild=true -- /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json /p:OutputRid=tizen.4.0.0-${architecture}"
         buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
     }
     else if (os == "Linux") {
@@ -57,7 +57,7 @@ platformList.each { platform ->
         if (architecture == 'arm' || architecture == 'armel') {
             dockerContainer = "ubuntu-14.04-cross-0cd4667-20172211042239"
             dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture} --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-            buildArgs += " -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true -CrossBuild=true"
+            buildArgs += " -SkipTests=true -DisableCrossgen=true -CrossBuild=true"
             buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
 
             osForGHTrigger = "Linux"

@@ -11,7 +11,7 @@
   <Import Project="$(ToolsDir)MicroBuild.Core.targets" />
 
   <Target Name="SetSigningProperties">
-    <Error Condition="'$(TargetRid)' == ''" Text="Missing required property 'TargetRid'." />
+    <Error Condition="'$(OutputRid)' == ''" Text="Missing required property 'OutputRid'." />
     <Error Condition="'$(CertificateId)' == ''" Text="Missing required property 'CertificateId'." />
     <PropertyGroup>
       <!-- The OutDir and IntermediateOutputPath properties are required by MicroBuild. MicroBuild only
