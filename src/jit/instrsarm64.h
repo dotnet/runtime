@@ -244,7 +244,7 @@ INST3(orn,     "orn",    0, 0, IF_EN3C,   0x2A200000,  0x2A200000,  0x0EE01C00)
                                    //  orn     Vd,Vn,Vm             DV_3C  0Q001110111mmmmm 000111nnnnnddddd   0EE0 1C00   Vd,Vn,Vm 
 
 //    enum     name     FP LD/ST            DV_2C        DV_2D       DV_2E
-INST3(dup,     "dup",    0, 0, IF_EN3D,   0x0E000C00,  0x0E004000,  0x5E000400)
+INST3(dup,     "dup",    0, 0, IF_EN3D,   0x0E000C00,  0x0E000400,  0x5E000400)
                                    //  dup     Vd,Rn                DV_2C  0Q001110000iiiii 000011nnnnnddddd   0E00 0C00   Vd,Rn   (vector from general)
                                    //  dup     Vd,Vn[]              DV_2D  0Q001110000iiiii 000001nnnnnddddd   0E00 0400   Vd,Vn[] (vector by elem)
                                    //  dup     Vd,Vn[]              DV_2E  01011110000iiiii 000001nnnnnddddd   5E00 0400   Vd,Vn[] (scalar by elem)
