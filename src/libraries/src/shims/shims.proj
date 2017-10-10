@@ -88,8 +88,9 @@
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
       <BinPlaceItem Include="$(GenFacadesOutputPath)*.dll" />
-      <ExcludeRuntimeItems Include="@(GenFacadesContracts -> '$(GenFacadesOutputPath)%(Filename)%(Extension)')" Condition="'%(GenFacadesContracts.ExcludeFromRuntime)' == 'true'" />
-      <RuntimeBinplaceItem Include="@(BinPlaceItem)" Exclude="@(ExcludeRuntimeItems)" />
+      <ExcludeItemNames Include="@(GenFacadesContracts->'%(Filename)')" Condition="'%(GenFacadesContracts.ExcludeFromRuntime)' == 'true'" />
+      <BinPlaceItemNames Include="@(BinPlaceItem->'%(Filename)')" Exclude="@(ExcludeItemNames)" />
+      <RuntimeBinplaceItem Include="@(BinPlaceItemNames->'$(GenFacadesOutputPath)%(Identity).dll')" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>
