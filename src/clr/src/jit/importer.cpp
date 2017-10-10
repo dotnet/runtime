@@ -2596,9 +2596,9 @@ inline IL_OFFSETX Compiler::impCurILOffset(IL_OFFSET offs, bool callInstruction)
 //    true if it is legal, false if it could be a sequence that we do not want to divide.
 bool Compiler::impCanSpillNow(OPCODE prevOpcode)
 {
-    // Don't spill after ldtoken, because it could be a part of the InitializeArray sequence.
+    // Don't spill after ldtoken, newarr and newobj, because it could be a part of the InitializeArray sequence.
     // Avoid breaking up to guarantee that impInitializeArrayIntrinsic can succeed.
-    return prevOpcode != CEE_LDTOKEN;
+    return (prevOpcode != CEE_LDTOKEN) && (prevOpcode != CEE_NEWARR) && (prevOpcode != CEE_NEWOBJ);
 }
 
 /*****************************************************************************
