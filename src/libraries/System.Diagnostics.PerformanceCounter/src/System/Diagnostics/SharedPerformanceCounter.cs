@@ -1354,7 +1354,7 @@ namespace System.Diagnostics
                             {
                                 if (!procHandle.IsInvalid)
                                 {
-                                    using (ProcessWaitHandle wh = new ProcessWaitHandle(procHandle))
+                                    using (Interop.Kernel32.ProcessWaitHandle wh = new Interop.Kernel32.ProcessWaitHandle(procHandle))
                                     {
                                         if (wh.WaitOne(0, false))
                                         {
