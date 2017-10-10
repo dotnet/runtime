@@ -677,7 +677,7 @@ parallel(
                         TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
                         builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} Performance Scenarios Tests")
                         builder.triggerOnlyOnComment()
-                        builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}{$opts}${jitt}\\W+perf\\W+scenarios.*")
+                        builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}${opts}${jitt}\\W+perf\\W+scenarios.*")
                         builder.triggerForBranch(branch)
                         builder.emitTrigger(newJob)
                     }
