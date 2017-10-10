@@ -152,7 +152,7 @@ namespace System.Net.Mail
                             _channelBindingToken.Close();
                         }
 
-                        _networkStream.Close();
+                        _networkStream?.Close();
                         _tcpClient.Dispose();
                     }
 
