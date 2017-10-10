@@ -1474,7 +1474,8 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 		if (alerted) {
 			MonoException* exc = mono_thread_execute_interruption ();
 			if (exc) {
-				mono_raise_exception (exc);
+				mono_set_pending_exception (exc);
+				return;
 			} else {
 				// FIXME: !MONO_INFINITE_WAIT
 				if (ms != MONO_INFINITE_WAIT)
