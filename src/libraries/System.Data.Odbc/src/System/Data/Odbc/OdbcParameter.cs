@@ -747,26 +747,31 @@ namespace System.Data.Odbc
                 }
             };
 
-            int cbParameterSize = GetParameterSize(value, offset, ordinal);      // count of bytes for the data, for SQLBindParameter
+            int cbParameterSize = GetParameterSize(value, offset, ordinal); // count of bytes for the data, for SQLBindParameter
 
-            // here we upgrade the datatypes if the given values size is bigger than the types columnsize
-            //
+            // Upgrade input value type if the size of input value is bigger than the max size of the input value type.
             switch (_bindtype._sql_type)
             {
-                case ODBC32.SQL_TYPE.VARBINARY: // MDAC 74372
-                    // Note: per definition DbType.Binary does not support more than 8000 bytes so we change the type for binding
-                    if ((cbParameterSize > 8000))
-                    { _bindtype = TypeMap._Image; } // will change to LONGVARBINARY
+                case ODBC32.SQL_TYPE.VARBINARY:
+                    // Max length of VARBINARY is 8,000 of byte array.
+                    if (size > 8000)
+                    {
+                        _bindtype = TypeMap._Image; // will change to LONGVARBINARY
+                    }
                     break;
-                case ODBC32.SQL_TYPE.VARCHAR: // MDAC 74372
-                    // Note: per definition DbType.Binary does not support more than 8000 bytes so we change the type for binding
-                    if ((cbParameterSize > 8000))
-                    { _bindtype = TypeMap._Text; }  // will change to LONGVARCHAR
+                case ODBC32.SQL_TYPE.VARCHAR:
+                    // Max length of VARCHAR is 8,000 of non-unicode characters.
+                    if (size > 8000)
+                    {
+                        _bindtype = TypeMap._Text; // will change to LONGVARCHAR
+                    }
                     break;
-                case ODBC32.SQL_TYPE.WVARCHAR: // MDAC 75099
-                    // Note: per definition DbType.Binary does not support more than 8000 bytes so we change the type for binding
-                    if ((cbParameterSize > 4000))
-                    { _bindtype = TypeMap._NText; }  // will change to WLONGVARCHAR
+                case ODBC32.SQL_TYPE.WVARCHAR:
+                    // Max length of WVARCHAR (NVARCHAR) is 4,000 of unicode characters. 
+                    if (size > 4000)
+                    {
+                        _bindtype = TypeMap._NText; // will change to WLONGVARCHAR
+                    }
                     break;
             }
 
