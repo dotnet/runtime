@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 8f51c68e-d515-425c-9e04-97e4a8148b07 */
-    0x8f51c68e,
-    0xd515,
-    0x425c,
-    {0x9e, 0x04, 0x97, 0xe4, 0xa8, 0x14, 0x8b, 0x07}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 860df660-2919-440a-ad6d-865f014e5360 */
+    0x860df660,
+    0x2919,
+    0x440a,
+    { 0xad, 0x6d, 0x86, 0x5f, 0x01, 0x4e, 0x53, 0x60 }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -642,6 +642,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
     CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
+    CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument

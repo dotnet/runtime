@@ -27,6 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "simplerhash.h"
 #include "nodeinfo.h"
 #include "simd.h"
+#include "namedintrinsiclist.h"
 
 // Debugging GenTree is much easier if we add a magic virtual function to make the debugger able to figure out what type
 // it's got. This is enabled by default in DEBUG. To enable it in RET builds (temporarily!), you need to change the
@@ -1713,6 +1714,11 @@ public:
 #ifdef FEATURE_SIMD
             case GT_SIMD:
 #endif // !FEATURE_SIMD
+
+#if FEATURE_HW_INTRINSICS
+            case GT_HWIntrinsic:
+#endif // FEATURE_HW_INTRINSICS
+
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
             case GT_PUTARG_REG:
 #endif // !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
@@ -4196,20 +4202,38 @@ struct GenTreeIntrinsic : public GenTreeOp
 #endif
 };
 
+struct GenTreeJitIntrinsic : public GenTreeOp
+{
+    var_types gtSIMDBaseType; // SIMD vector base type
+    unsigned  gtSIMDSize;     // SIMD vector size in bytes, use 0 for scalar intrinsics
+
+    GenTreeJitIntrinsic(
+        genTreeOps oper, var_types type, GenTreePtr op1, GenTreePtr op2, var_types baseType, unsigned size)
+        : GenTreeOp(oper, type, op1, op2), gtSIMDBaseType(baseType), gtSIMDSize(size)
+    {
+    }
+
+    bool isSIMD()
+    {
+        return gtSIMDSize != 0;
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeJitIntrinsic() : GenTreeOp()
+    {
+    }
+#endif
+};
+
 #ifdef FEATURE_SIMD
 
 /* gtSIMD   -- SIMD intrinsic   (possibly-binary op [NULL op2 is allowed] with additional fields) */
-struct GenTreeSIMD : public GenTreeOp
+struct GenTreeSIMD : public GenTreeJitIntrinsic
 {
     SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
-    var_types       gtSIMDBaseType;    // SIMD vector base type
-    unsigned        gtSIMDSize;        // SIMD vector size in bytes
 
     GenTreeSIMD(var_types type, GenTreePtr op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeOp(GT_SIMD, type, op1, nullptr)
-        , gtSIMDIntrinsicID(simdIntrinsicID)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize(size)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, baseType, size), gtSIMDIntrinsicID(simdIntrinsicID)
     {
     }
 
@@ -4219,20 +4243,41 @@ struct GenTreeSIMD : public GenTreeOp
                 SIMDIntrinsicID simdIntrinsicID,
                 var_types       baseType,
                 unsigned        size)
-        : GenTreeOp(GT_SIMD, type, op1, op2)
-        , gtSIMDIntrinsicID(simdIntrinsicID)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize(size)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, baseType, size), gtSIMDIntrinsicID(simdIntrinsicID)
     {
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeSIMD() : GenTreeOp()
+    GenTreeSIMD() : GenTreeJitIntrinsic()
     {
     }
 #endif
 };
 #endif // FEATURE_SIMD
+
+#if FEATURE_HW_INTRINSICS
+struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
+{
+    NamedIntrinsic gtHWIntrinsicId;
+
+    GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, nullptr, baseType, size), gtHWIntrinsicId(hwIntrinsicID)
+    {
+    }
+
+    GenTreeHWIntrinsic(
+        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, op2, baseType, size), gtHWIntrinsicId(hwIntrinsicID)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeHWIntrinsic() : GenTreeJitIntrinsic()
+    {
+    }
+#endif
+};
+#endif // FEATURE_HW_INTRINSICS
 
 /* gtIndex -- array access */
 

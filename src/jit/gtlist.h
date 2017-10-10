@@ -224,6 +224,10 @@ GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(SIMD             , GenTreeSIMD        ,0,GTK_BINOP|GTK_EXOP)     // SIMD functions/operators/intrinsics
 #endif // FEATURE_SIMD
 
+#if FEATURE_HW_INTRINSICS
+GTNODE(HWIntrinsic      , GenTreeHWIntrinsic ,0,GTK_BINOP|GTK_EXOP)               // hardware intrinsics
+#endif // FEATURE_HW_INTRINSICS
+
 //-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------
