@@ -463,7 +463,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
