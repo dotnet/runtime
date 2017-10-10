@@ -113,6 +113,7 @@ ikvm_native=yes
 host_win32=no
 target_win32=no
 platform_android=no
+platform_ios=no
 host_darwin=no
 
 
@@ -344,8 +345,12 @@ case "$host" in
 				with_sgen_default_concurrent=yes
 				;;
 			arm*-darwin*)
+				platform_ios=yes
 				has_dtrace=no
-				;;			
+				;;
+			aarch64*-darwin*)
+				platform_ios=yes
+				;;
 		esac
 		;;
 	*-*-haiku*)
@@ -400,6 +405,7 @@ AM_CONDITIONAL(HOST_LINUX, echo x$target_os | grep -q linux)
 AM_CONDITIONAL(HOST_DARWIN, test x$host_darwin = xyes)
 AM_CONDITIONAL(HOST_SIGPOSIX, test x$use_sigposix = xyes)
 AM_CONDITIONAL(HOST_ANDROID, test x$platform_android = xyes)
+AM_CONDITIONAL(HOST_IOS, test x$platform_ios = xyes)
 
 if test -z "$HOST_DARWIN_TRUE"; then :
 PLATFORM_AOT_SUFFIX=.dylib

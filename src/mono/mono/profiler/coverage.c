@@ -68,9 +68,6 @@
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
-#if defined (HAVE_SYS_ZLIB)
-#include <zlib.h>
-#endif
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/debug-helpers.h>
