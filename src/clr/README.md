@@ -102,7 +102,7 @@ make a complete application.  More on this in the [Using Your Build](Documentati
 The first step in making a build of the CoreCLR Repository is to clone it locally.   If you already know
 how to do this, just skip this section.  Otherwise if you are developing on windows you can see
 [Setting Up A Git Repository In Visual Studio 2017](https://github.com/Microsoft/perfview/blob/master/documentation/SettingUpRepoInVS.md)
-for for instructions on setting up.  This link uses a different repository as an example, but the issues (do you fork or not) and
+for instructions on setting up.  This link uses a different repository as an example, but the issues (do you fork or not) and
 the procedure are equally applicable to this repository.  
 
 --------------------------
