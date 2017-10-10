@@ -9,21 +9,21 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>5807b5e445a6757d525bf46e7de515a04f4a5221</CoreFxCurrentRef>
+    <CoreFxCurrentRef>ebf6220f4a0c5c78fdc6ee3b3fd35e31c2efbbc7</CoreFxCurrentRef>
     <CoreClrCurrentRef>a8304eb23d45ca270d5ce94d81f1eef6ab4173b0</CoreClrCurrentRef>
-    <StandardCurrentRef>54335e60fab0f62b868ec68e357dd21e6fe36a07</StandardCurrentRef>
+    <StandardCurrentRef>ebf6220f4a0c5c78fdc6ee3b3fd35e31c2efbbc7</StandardCurrentRef>
     <WCFCurrentRef>54335e60fab0f62b868ec68e357dd21e6fe36a07</WCFCurrentRef>
-    <BuildToolsCurrentRef>87ea4a40af202840bb1e71d7d62555b48a7e7f76</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>ebf6220f4a0c5c78fdc6ee3b3fd35e31c2efbbc7</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25809-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25809-01</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview1-25809-01</PlatformPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25810-03</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25810-03</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25810-03</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25806-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
-    <NETStandardVersion>2.1.0-preview1-25809-01</NETStandardVersion>
+    <NETStandardVersion>2.1.0-preview1-25810-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
     <WcfVersion>4.5.0-preview2-25809-01</WcfVersion>
   </PropertyGroup>
