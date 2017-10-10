@@ -113,6 +113,25 @@ void genPutArgStkSIMD12(GenTree* treeNode);
 #endif // _TARGET_X86_
 #endif // FEATURE_SIMD
 
+#if FEATURE_HW_INTRINSICS
+void genHWIntrinsic(GenTreeHWIntrinsic* node);
+void genSSEIntrinsic(GenTreeHWIntrinsic* node);
+void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
+void genSSE3Intrinsic(GenTreeHWIntrinsic* node);
+void genSSSE3Intrinsic(GenTreeHWIntrinsic* node);
+void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
+void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
+void genAVXIntrinsic(GenTreeHWIntrinsic* node);
+void genAVX2Intrinsic(GenTreeHWIntrinsic* node);
+void genAESIntrinsic(GenTreeHWIntrinsic* node);
+void genBMI1Intrinsic(GenTreeHWIntrinsic* node);
+void genBMI2Intrinsic(GenTreeHWIntrinsic* node);
+void genFMAIntrinsic(GenTreeHWIntrinsic* node);
+void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
+void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
+void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_HW_INTRINSICS
+
 #if !defined(_TARGET_64BIT_)
 
 // CodeGen for Long Ints
