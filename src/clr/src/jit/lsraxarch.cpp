@@ -373,6 +373,12 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
 #endif // FEATURE_SIMD
 
+#if FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            TreeNodeInfoInitHWIntrinsic(tree->AsHWIntrinsic());
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
         case GT_CAST:
             TreeNodeInfoInitCast(tree);
             break;
@@ -2415,6 +2421,27 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
     }
 }
 #endif // FEATURE_SIMD
+
+#if FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// TreeNodeInfoInitHWIntrinsic: Set the NodeInfo for a GT_HWIntrinsic tree.
+//
+// Arguments:
+//    tree       - The GT_HWIntrinsic node of interest
+//
+// Return Value:
+//    None.
+
+void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
+{
+    TreeNodeInfo* info = &(intrinsicTree->gtLsraInfo);
+    if (intrinsicTree->gtGetOp2IfPresent() != nullptr)
+    {
+        info->srcCount += GetOperandSourceCount(intrinsicTree->gtOp.gtOp2);
+    }
+    info->srcCount += GetOperandSourceCount(intrinsicTree->gtOp.gtOp1);
+}
+#endif
 
 //------------------------------------------------------------------------
 // TreeNodeInfoInitCast: Set the NodeInfo for a GT_CAST.

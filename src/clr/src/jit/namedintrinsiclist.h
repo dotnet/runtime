@@ -14,7 +14,7 @@ enum NamedIntrinsic : unsigned int
     NI_MathF_Round                                             = 2,
     NI_Math_Round                                              = 3,
     NI_System_Collections_Generic_EqualityComparer_get_Default = 4,
-#ifdef _TARGET_XARCH_
+#if FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #define HARDWARE_INTRINSIC(id, name, isa) NI_##id,
 #include "hwintrinsiclistxarch.h"
