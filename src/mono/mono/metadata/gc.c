@@ -326,19 +326,6 @@ unhandled_error:
 	mono_domain_set_internal (caller_domain);
 }
 
-gpointer
-mono_gc_out_of_memory (size_t size)
-{
-	/* 
-	 * we could allocate at program startup some memory that we could release 
-	 * back to the system at this point if we're really low on memory (ie, size is
-	 * lower than the memory we set apart)
-	 */
-	mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
-
-	return NULL;
-}
-
 /*
  * Some of our objects may point to a different address than the address returned by GC_malloc()
  * (because of the GetHashCode hack), but we need to pass the real address to register_finalizer.
