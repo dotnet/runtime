@@ -49,7 +49,7 @@
 	#define UCONTEXT_REG_ESI(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__esi)
 	#define UCONTEXT_REG_EDI(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__edi)
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__eip)
-	#define UCONTEXT_REG_XMM
+	#define UCONTEXT_HAS_XMM(_ctx) (TRUE)
 	#define UCONTEXT_REG_XMM0(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm0)
 	#define UCONTEXT_REG_XMM1(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm1)
 	#define UCONTEXT_REG_XMM2(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm2)
@@ -186,7 +186,7 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R13(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r13)
 	#define UCONTEXT_REG_R14(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r14)
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r15)
-	#define UCONTEXT_REG_XMM
+	#define UCONTEXT_HAS_XMM(_ctx) (TRUE)
 	#define UCONTEXT_REG_XMM0(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm0)
 	#define UCONTEXT_REG_XMM1(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm1)
 	#define UCONTEXT_REG_XMM2(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm2)
@@ -260,7 +260,21 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->sc_r15)
 #elif !defined(HOST_WIN32)
 	#define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext.gregs))
-	#define UCONTEXT_FREGS(ctx)	(((ucontext_t*)(ctx))->uc_mcontext.fpregs->_xmm)
+	/*
+	 * Ordinarily, ctx->uc_mcontext.fpregs is a pointer to somewhere in
+	 * ctx->__fpregs_mem and is the preferred way to access the fpstate.
+	 * However, some versions of Windows Subsystem for Linux have a bug where
+	 * the fpregs field is a NULL pointer instead. Since accessing __fpregs_mem
+	 * directly is quite complicated because its exact layout depends on CPU
+	 * features and/or kernel configuration, we sinply won't make the fpstate
+	 * available if the fpregs pointer is NULL.
+	 *
+	 * This is of course not correct (as we won't scan XMM registers on those
+	 * broken WSL versions), but it'll at least prevent a crash when accessing
+	 * the fpregs pointer.
+	 */
+	#define UCONTEXT_HAS_FREGS(ctx) (!!((ucontext_t *) (ctx))->uc_mcontext.fpregs)
+	#define UCONTEXT_FREGS(ctx)	(((ucontext_t *) (ctx))->uc_mcontext.fpregs->_xmm)
 #endif
 
 #ifdef UCONTEXT_GREGS
@@ -284,7 +298,7 @@ typedef struct ucontext {
 #endif
 
 #ifdef UCONTEXT_FREGS
-#define UCONTEXT_REG_XMM
+#define UCONTEXT_HAS_XMM(ctx)   (UCONTEXT_HAS_FREGS (ctx))
 #define UCONTEXT_REG_XMM0(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM0])
 #define UCONTEXT_REG_XMM1(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM1])
 #define UCONTEXT_REG_XMM2(ctx)  (UCONTEXT_FREGS ((ctx)) [AMD64_XMM2])
