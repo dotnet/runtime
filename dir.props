@@ -111,6 +111,11 @@
     <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)</InstallersRelativePath>
   </PropertyGroup>
 
+  <!-- temporary workaround until https://github.com/dotnet/buildtools/pull/1707 is merged to master -->
+  <ItemGroup>
+    <DotnetSourceList Include="$(RestoreSources)" />
+  </ItemGroup>
+  
   <!-- list of projects to perform batch restore -->
   <ItemGroup>
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\pkg\deps\deps.csproj" />
@@ -412,7 +417,7 @@
     <!-- These properties should be passed through to new msbuild instances (like 'dotnet build') 
          in order to get the correct output directories in the child project.
     -->
-    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:DistroRid=$(DistroRid) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
+    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
   </PropertyGroup>
 
   <PropertyGroup>
