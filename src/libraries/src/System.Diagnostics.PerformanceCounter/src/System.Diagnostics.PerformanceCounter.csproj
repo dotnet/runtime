@@ -38,7 +38,6 @@
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterManager.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterType.cs" />
-    <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
     <Compile Include="System\Diagnostics\SharedPerformanceCounter.cs" />
     <Compile Include="System\Diagnostics\SharedUtils.cs" />
     <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
@@ -121,6 +120,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.PerformanceCounterOptions.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.PerformanceCounterOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ProcessWaitHandle.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ProcessWaitHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
