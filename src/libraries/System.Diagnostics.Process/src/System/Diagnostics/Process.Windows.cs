@@ -107,6 +107,37 @@ namespace System.Diagnostics
             // Nop
         }
 
+        /// <devdoc>
+        ///     Make sure we are watching for a process exit.
+        /// </devdoc>
+        /// <internalonly/>
+        private void EnsureWatchingForExit()
+        {
+            if (!_watchingForExit)
+            {
+                lock (this)
+                {
+                    if (!_watchingForExit)
+                    {
+                        Debug.Assert(_haveProcessHandle, "Process.EnsureWatchingForExit called with no process handle");
+                        Debug.Assert(Associated, "Process.EnsureWatchingForExit called with no associated process");
+                        _watchingForExit = true;
+                        try
+                        {
+                            _waitHandle = new Interop.Kernel32.ProcessWaitHandle(_processHandle);
+                            _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(_waitHandle,
+                                new WaitOrTimerCallback(CompletionCallback), null, -1, true);
+                        }
+                        catch
+                        {
+                            _watchingForExit = false;
+                            throw;
+                        }
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instructs the Process component to wait the specified number of milliseconds for the associated process to exit.
         /// </summary>
@@ -119,7 +150,7 @@ namespace System.Diagnostics
                 if (handle.IsInvalid)
                     return true;
 
-                using (ProcessWaitHandle processWaitHandle = new ProcessWaitHandle(handle))
+                using (Interop.Kernel32.ProcessWaitHandle processWaitHandle = new Interop.Kernel32.ProcessWaitHandle(handle))
                 {
                     return _signaled = processWaitHandle.WaitOne(milliseconds);
                 }
@@ -184,7 +215,7 @@ namespace System.Diagnostics
                         // since some process could return an actual STILL_ACTIVE exit code (259).
                         if (!_signaled) // if we just came from WaitForExit, don't repeat
                         {
-                            using (var wh = new ProcessWaitHandle(handle))
+                            using (var wh = new Interop.Kernel32.ProcessWaitHandle(handle))
                             {
                                 _signaled = wh.WaitOne(0);
                             }
@@ -765,7 +796,7 @@ namespace System.Diagnostics
                     // Since haveProcessHandle is true, we know we have the process handle
                     // open with at least SYNCHRONIZE access, so we can wait on it with 
                     // zero timeout to see if the process has exited.
-                    using (ProcessWaitHandle waitHandle = new ProcessWaitHandle(_processHandle))
+                    using (Interop.Kernel32.ProcessWaitHandle waitHandle = new Interop.Kernel32.ProcessWaitHandle(_processHandle))
                     {
                         if (waitHandle.WaitOne(0))
                         {

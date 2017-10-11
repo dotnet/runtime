@@ -1,0 +1,294 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
+  </data>
+  <data name="CategoryHelpCorrupt" xml:space="preserve">
+    <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry.</value>
+  </data>
+  <data name="CounterNameCorrupt" xml:space="preserve">
+    <value>Cannot load Counter Name data because an invalid index '{0}' was read from the registry.</value>
+  </data>
+  <data name="CounterDataCorrupt" xml:space="preserve">
+    <value>Cannot load Performance Counter data because an unexpected registry key value type was read from '{0}'.</value>
+  </data>
+  <data name="InstanceNameTooLong" xml:space="preserve">
+    <value>Instance names used for writing to custom counters must be 127 characters or less.</value>
+  </data>
+  <data name="ProcessLifetimeNotValidInGlobal" xml:space="preserve">
+    <value>PerformanceCounterInstanceLifetime.Process is not valid in the global shared memory.  If your performance counter category was created with an older version of the Framework, it uses the global shared memory.  Either use PerformanceCounterInstanceLifetime.Global, or if applications running on older versions of the Framework do not need to write to your category, delete and recreate it.</value>
+  </data>
+  <data name="CountersOOM" xml:space="preserve">
+    <value>Custom counters file view is out of memory.</value>
+  </data>
+  <data name="MappingCorrupted" xml:space="preserve">
+    <value>Cannot continue the current operation, the performance counters memory mapping has been corrupted.</value>
+  </data>
+  <data name="SingleInstanceOnly" xml:space="preserve">
+    <value>Category '{0}' is marked as single-instance.  Performance counters in this category can only be created without instance names.</value>
+  </data>
+  <data name="MultiInstanceOnly" xml:space="preserve">
+    <value>Category '{0}' is marked as multi-instance.  Performance counters in this category can only be created with instance names.</value>
+  </data>
+  <data name="CantConvertProcessToGlobal" xml:space="preserve">
+    <value>An instance with a lifetime of Process can only be accessed from a PerformanceCounter with the InstanceLifetime set to PerformanceCounterInstanceLifetime.Process.</value>
+  </data>
+  <data name="CantConvertGlobalToProcess" xml:space="preserve">
+    <value>An instance with a lifetime of Global can only be accessed from a PerformanceCounter with the InstanceLifetime set to PerformanceCounterInstanceLifetime.Global.</value>
+  </data>
+  <data name="InstanceAlreadyExists" xml:space="preserve">
+    <value>Instance '{0}' already exists with a lifetime of Process.  It cannot be recreated or reused until it has been removed or until the process using it has exited.</value>
+  </data>
+  <data name="SharedMemoryGhosted" xml:space="preserve">
+    <value>Cannot access shared memory, AppDomain has been unloaded.</value>
+  </data>
+  <data name="SetSecurityDescriptionFailed" xml:space="preserve">
+    <value>Cannot initialize security descriptor initialized.</value>
+  </data>
+  <data name="CantCreateFileMapping" xml:space="preserve">
+    <value>Cannot create file mapping.</value>
+  </data>
+  <data name="CantMapFileView" xml:space="preserve">
+    <value>Cannot map view of file.</value>
+  </data>
+  <data name="MismatchedCounterTypes" xml:space="preserve">
+    <value>MismatchedCounterTypes=Mismatched counter types.</value>
+  </data>
+  <data name="PerfCounterPdhError" xml:space="preserve">
+    <value>There was an error calculating the PerformanceCounter value (0x{0}).</value>
+  </data>
+  <data name="MustAddCounterCreationData" xml:space="preserve">
+    <value>Only objects of type CounterCreationData can be added to a CounterCreationDataCollection.</value>
+  </data>
+  <data name="CantReadInstance" xml:space="preserve">
+    <value>Instance '{0}' does not exist in the specified Category.</value>
+  </data>
+  <data name="CantReadCategoryIndex" xml:space="preserve">
+    <value>Could not Read Category Index: {0}.</value>
+  </data>
+  <data name="MissingCategory" xml:space="preserve">
+    <value>Category does not exist.</value>
+  </data>
+  <data name="CounterLayout" xml:space="preserve">
+    <value>The Counter layout for the Category specified is invalid, a counter of the type:  AverageCount64, AverageTimer32, CounterMultiTimer, CounterMultiTimerInverse, CounterMultiTimer100Ns, CounterMultiTimer100NsInverse, RawFraction, or SampleFraction has to be immediately followed by any of the base counter types: AverageBase, CounterMultiBase, RawBase or SampleBase.</value>
+  </data>
+  <data name="CantReadCounter" xml:space="preserve">
+    <value>Counter '{0}' does not exist in the specified Category.</value>
+  </data>
+  <data name="HelpNotAvailable" xml:space="preserve">
+    <value>Help Not Available</value>
+  </data>
+  <data name="MissingCategoryDetail" xml:space="preserve">
+    <value>Category {0} does not exist.</value>
+  </data>
+  <data name="MissingCounter" xml:space="preserve">
+    <value>Counter {0} does not exist.</value>
+  </data>
+  <data name="CantChangeCategoryRegistration" xml:space="preserve">
+    <value>Cannot create or delete the Performance Category '{0}' because access is denied.</value>
+  </data>
+  <data name="InvalidProperty" xml:space="preserve">
+    <value>Invalid value {1} for property {0}.</value>
+  </data>
+  <data name="CategoryNameNotSet" xml:space="preserve">
+    <value>Category name property has not been set.</value>
+  </data>
+  <data name="PerformanceCategoryExists" xml:space="preserve">
+    <value>Cannot create Performance Category '{0}' because it already exists.</value>
+  </data>
+  <data name="PerfInvalidCategoryName" xml:space="preserve">
+    <value>Invalid category name. Its length must be in the range between '{0}' and '{1}'. Double quotes, control characters and leading or trailing spaces are not allowed.</value>
+  </data>
+  <data name="CategoryNameTooLong" xml:space="preserve">
+    <value>Category names must be 1024 characters or less.</value>
+  </data>
+  <data name="PerfInvalidCounterName" xml:space="preserve">
+    <value>Invalid counter name. Its length must be in the range between '{0}' and '{1}'. Double quotes, control characters and leading or trailing spaces are not allowed.</value>
+  </data>
+  <data name="PerfInvalidHelp" xml:space="preserve">
+    <value>Invalid help string. Its length must be in the range between '{0}' and '{1}'.</value>
+  </data>
+  <data name="InvalidCounterName" xml:space="preserve">
+    <value>Invalid empty or null string for counter name.</value>
+  </data>
+  <data name="DuplicateCounterName" xml:space="preserve">
+    <value>Cannot create Performance Category with counter name {0} because the name is a duplicate.</value>
+  </data>
+  <data name="CantDeleteCategory" xml:space="preserve">
+    <value>Cannot delete Performance Category because this category is not registered or is a system category.</value>
+  </data>
+  <data name="InstanceNameRequired" xml:space="preserve">
+    <value>Counter is not single instance, an instance name needs to be specified.</value>
+  </data>
+  <data name="MissingInstance" xml:space="preserve">
+    <value>Instance {0} does not exist in category {1}.</value>
+  </data>
+  <data name="CantSetLifetimeAfterInitialized" xml:space="preserve">
+    <value>The InstanceLifetime cannot be set after the instance has been initialized.  You must use the default constructor and set the CategoryName, InstanceName, CounterName, InstanceLifetime and ReadOnly properties manually before setting the RawValue.</value>
+  </data>
+  <data name="ReadOnlyCounter" xml:space="preserve">
+    <value>Cannot update Performance Counter, this object has been initialized as ReadOnly.</value>
+  </data>
+  <data name="PCNotSupportedUnderAppContainer" xml:space="preserve">
+    <value>Writeable performance counters are not allowed when running in AppContainer.</value>
+  </data>
+  <data name="CategoryNameMissing" xml:space="preserve">
+    <value>Failed to initialize because CategoryName is missing.</value>
+  </data>
+  <data name="CounterNameMissing" xml:space="preserve">
+    <value>Failed to initialize because CounterName is missing.</value>
+  </data>
+  <data name="InstanceLifetimeProcessonReadOnly" xml:space="preserve">
+    <value>InstanceLifetime is unused by ReadOnly counters.</value>
+  </data>
+  <data name="RemoteWriting" xml:space="preserve">
+    <value>Cannot write to a Performance Counter in a remote machine.</value>
+  </data>
+  <data name="NotCustomCounter" xml:space="preserve">
+    <value>The requested Performance Counter is not a custom counter, it has to be initialized as ReadOnly.</value>
+  </data>
+  <data name="InstanceLifetimeProcessforSingleInstance" xml:space="preserve">
+    <value>Single instance categories are only valid with the Global lifetime.</value>
+  </data>
+  <data name="InstanceNameProhibited" xml:space="preserve">
+    <value>Counter is single instance, instance name '{0}' is not valid for this counter category.</value>
+  </data>
+  <data name="ReadOnlyRemoveInstance" xml:space="preserve">
+    <value>Cannot remove Performance Counter Instance, this object as been initialized as ReadOnly.</value>
+  </data>
+  <data name="CounterExists" xml:space="preserve">
+    <value>Could not locate Performance Counter with specified category name '{0}', counter name '{1}'.</value>
+  </data>
+  <data name="SetSecurityDescriptorFailed" xml:space="preserve">
+    <value>Cannot initialize security descriptor initialized.</value>
+  </data>
+  <data name="RegKeyMissingShort" xml:space="preserve">
+    <value>Cannot open registry key {0} on computer {1}.</value>
+  </data>
+  <data name="CantGetMappingSize" xml:space="preserve">
+    <value>Cannot calculate the size of the file view.</value>
+  </data>
+  <data name="CantReadCategory" xml:space="preserve">
+    <value>Cannot read Category {0}.</value>
+  </data>
+  <data name="PlatformNotSupported_PerfCounters" xml:space="preserve">
+    <value>Performance Counters are not supported on this platform.</value>
+  </data>
+</root>
