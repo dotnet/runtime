@@ -2670,6 +2670,10 @@ void Debugger::JITComplete(MethodDesc* fd, TADDR newAddress)
     }
     CONTRACTL_END;
 
+    LOG((LF_CORDB, LL_INFO100000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x.\n",
+        fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
+        newAddress));
+
 #ifdef _TARGET_ARM_
     newAddress = newAddress|THUMB_CODE;
 #endif
@@ -2690,7 +2694,24 @@ void Debugger::JITComplete(MethodDesc* fd, TADDR newAddress)
         {
             goto Exit;
         }
-        DebuggerJitInfo * ji = dmi->CreateInitAndAddJitInfo(fd, newAddress);
+        BOOL jiWasCreated = FALSE;
+        DebuggerJitInfo * ji = dmi->CreateInitAndAddJitInfo(fd, newAddress, &jiWasCreated);
+        if (!jiWasCreated)
+        {
+            // we've already been notified about this code, no work remains.
+            // The JIT is occasionally asked to generate code for the same
+            // method on two threads. When this occurs both threads will
+            // return the same code pointer and this callback is invoked
+            // multiple times.
+            LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Already created\n",
+                fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
+                newAddress));
+            goto Exit;
+        }
+
+        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Created ji:0x%x\n",
+            fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
+            newAddress, ji));
 
         // Bind any IL patches to the newly jitted native code.
         HRESULT hr;
