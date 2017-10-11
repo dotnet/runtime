@@ -81,11 +81,16 @@
           BeforeTargets="DownloadAndUnzipSymbolPackage">
 
     <ItemGroup>
-      <SymbolPackagesToDownload Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" Condition="$([System.String]::Copy('%(Identity)').EndsWith('System.Private.CoreLib.dll'))">
+      <_CoreCLRSymbolPackagesToDownload Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" Condition="$([System.String]::Copy('%(Identity)').EndsWith('System.Private.CoreLib.dll'))">
         <Url>https://dotnet.myget.org/F/dotnet-core/symbols/%(NuGetPackageId)/%(NuGetPackageVersion)/</Url>
         <DestinationFile>%(NuGetPackageId).%(NuGetPackageVersion).symbols.nupkg.zip</DestinationFile>
         <UnzipDestinationDir>$(SymbolPackagesDir)/%(NuGetPackageId).%(NuGetPackageVersion)</UnzipDestinationDir>
-      </SymbolPackagesToDownload>
+      </_CoreCLRSymbolPackagesToDownload>
+    </ItemGroup>
+
+    <!-- Calculate the packages to download incrementally if we haven't downloaded them -->
+    <ItemGroup>
+      <SymbolPackagesToDownload Include="@(_CoreCLRSymbolPackagesToDownload)" Condition="!Exists('%(UnzipDestinationDir)')" />
     </ItemGroup>
   </Target>
 
@@ -94,12 +99,12 @@
           DependsOnTargets="CalculateCoreCLRSymbolPackageProperties;DownloadAndUnzipSymbolPackage"
           Condition="'$(CoreCLROverridePath)' == '' AND '$(DownloadCoreCLRSymbols)' != 'false'">
 
-      <Warning Text="Failed to download CoreCLR symbols" Condition="@(SymbolPackagesDownloaded) == ''" />
+      <Warning Text="Failed to download CoreCLR symbols" Condition="'@(SymbolPackagesDownloaded)' == '' AND '@(SymbolPackagesToDownload)' != ''" />
 
       <ItemGroup>
-        <_CoreCLRSymbolFiles Condition="@(SymbolPackagesDownloaded) != ''" Include="%(SymbolPackagesDownloaded.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.pdb" />
-        <_CoreCLRSymbolFiles Condition="@(SymbolPackagesDownloaded) != ''" Include="%(SymbolPackagesDownloaded.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.dbg" />
-        <ReferenceCopyLocalPaths Condition="@(SymbolPackagesDownloaded) != ''" Include="@(_CoreCLRSymbolFiles)"/>
+        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.pdb" />
+        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.dbg" />
+        <ReferenceCopyLocalPaths Include="@(_CoreCLRSymbolFiles)"/>
       </ItemGroup>
   </Target>
 
