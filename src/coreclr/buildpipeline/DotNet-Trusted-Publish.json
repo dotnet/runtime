@@ -92,7 +92,7 @@
       "inputs": {
         "filename": "sync.cmd",
         "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -BlobNamePrefix=$(PB_BlobNamePrefix)",
-        "workingFolder": "",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
     },
@@ -219,6 +219,7 @@
       "alwaysRun": false,
       "displayName": "Packages -> Azure",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), ne(variables['ConfigurationGroup'], 'Release'))",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -237,6 +238,7 @@
       "alwaysRun": false,
       "displayName": "Symbol Packages -> Azure",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), ne(variables['ConfigurationGroup'], 'Release'))",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
