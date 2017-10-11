@@ -277,7 +277,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 
 	fflush (stdout);
 
-#ifdef __arm__
+#if defined(__arm__) || defined(__aarch64__)
 	/* 
 	 * The arm assembler inserts ELF directives instructing objdump to display 
 	 * everything as data.
