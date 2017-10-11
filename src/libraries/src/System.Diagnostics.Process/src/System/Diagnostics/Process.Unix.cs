@@ -83,37 +83,6 @@ namespace System.Diagnostics
             GetWaitState(); // lazily initializes the wait state
         }
 
-        /// <devdoc>
-        ///     Make sure we are watching for a process exit.
-        /// </devdoc>
-        /// <internalonly/>
-        private void EnsureWatchingForExit()
-        {
-            if (!_watchingForExit)
-            {
-                lock (this)
-                {
-                    if (!_watchingForExit)
-                    {
-                        Debug.Assert(_haveProcessHandle, "Process.EnsureWatchingForExit called with no process handle");
-                        Debug.Assert(Associated, "Process.EnsureWatchingForExit called with no associated process");
-                        _watchingForExit = true;
-                        try
-                        {
-                            _waitHandle = new ProcessWaitHandle(_processHandle);
-                            _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(_waitHandle,
-                                new WaitOrTimerCallback(CompletionCallback), null, -1, true);
-                        }
-                        catch
-                        {
-                            _watchingForExit = false;
-                            throw;
-                        }
-                    }
-                }
-            }
-        }
-
         /// <summary>
         /// Instructs the Process component to wait the specified number of milliseconds for the associated process to exit.
         /// </summary>
