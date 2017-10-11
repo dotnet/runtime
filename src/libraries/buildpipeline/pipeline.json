@@ -34,7 +34,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "centos-6-d485f41-20173404063424",
+            "PB_DockerTag": "centos-6-376e1a3-20174311014331",
             "PB_BuildArguments": "-buildArch=x64 -Release -stripSymbols -RuntimeOS=rhel.6 -- /p:PortableBuild=false",
             "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -Outerloop -RuntimeOS=rhel.6 -- /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false",
             "PB_SyncArguments": "-p -RuntimeOS=rhel.6 -- /p:ArchGroup=x64 /p:PortableBuild=false",
