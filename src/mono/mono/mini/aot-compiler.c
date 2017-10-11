@@ -78,6 +78,13 @@
 #define TARGET_WIN32_MSVC
 #endif
 
+// Emit native unwind info on Windows platforms (different from DWARF). Emitted unwind info
+// works when using the MSVC toolchain using Clang for MSVC codegen and linker. Only supported when
+// compiling for AMD64 (Windows x64 platforms).
+#if defined(TARGET_WIN32_MSVC) && defined(MONO_ARCH_HAVE_UNWIND_TABLE)
+#define EMIT_WIN32_UNWIND_INFO
+#endif
+
 #if defined(__linux__)
 #define RODATA_SECT ".rodata"
 #elif defined(TARGET_MACH)
@@ -220,6 +227,14 @@ typedef struct GotInfo {
 	GPtrArray *got_patches;
 } GotInfo;
 
+#ifdef EMIT_WIN32_UNWIND_INFO
+typedef struct _UnwindInfoSectionCacheItem {
+	char *xdata_section_label;
+	PUNWIND_INFO unwind_info;
+	gboolean xdata_section_emitted;
+} UnwindInfoSectionCacheItem;
+#endif
+
 typedef struct MonoAotCompile {
 	MonoImage *image;
 	GPtrArray *methods;
@@ -316,6 +331,9 @@ typedef struct MonoAotCompile {
 	GHashTable *objc_selector_to_index;
 	GList *profile_data;
 	GHashTable *profile_methods;
+#ifdef EMIT_WIN32_UNWIND_INFO
+	GList *unwind_info_section_cache;
+#endif
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
@@ -896,7 +914,47 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 
 #ifdef TARGET_WIN32_MSVC
 #undef EMIT_DWARF_INFO
+#define EMIT_WIN32_CODEVIEW_INFO
 #endif
+
+#ifdef EMIT_WIN32_UNWIND_INFO
+static UnwindInfoSectionCacheItem *
+get_cached_unwind_info_section_item_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops);
+
+static void
+free_unwind_info_section_cache_win32 (MonoAotCompile *acfg);
+
+static void
+emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info);
+
+static void
+emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops);
+#endif
+
+static void
+arch_free_unwind_info_section_cache (MonoAotCompile *acfg)
+{
+#ifdef EMIT_WIN32_UNWIND_INFO
+	free_unwind_info_section_cache_win32 (acfg);
+#endif
+}
+
+static void
+arch_emit_unwind_info_sections (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops)
+{
+#ifdef EMIT_WIN32_UNWIND_INFO
+	gboolean own_unwind_ops = FALSE;
+	if (!unwind_ops) {
+		unwind_ops = mono_unwind_get_cie_program ();
+		own_unwind_ops = TRUE;
+	}
+
+	emit_unwind_info_sections_win32 (acfg, function_start, function_end, unwind_ops);
+
+	if (own_unwind_ops)
+		mono_free_unwind_info (unwind_ops);
+#endif
+}
 
 #if defined(TARGET_ARM)
 #define AOT_FUNC_ALIGNMENT 4
@@ -5699,6 +5757,9 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	emit_label (acfg, symbol);
+
+	arch_emit_unwind_info_sections (acfg, cfg->asm_symbol, symbol, cfg->unwind_ops);
+
 	g_free (symbol);
 }
 
@@ -6588,6 +6649,8 @@ emit_plt (MonoAotCompile *acfg)
 	emit_symbol_size (acfg, acfg->plt_symbol, ".");
 
 	emit_info_symbol (acfg, "plt_end");
+
+	arch_emit_unwind_info_sections (acfg, "plt", "plt_end", NULL);
 }
 
 /*
@@ -6695,6 +6758,8 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 		sprintf (symbol, "%s", name);
 		sprintf (symbol2, "%snamed_%s", acfg->temp_prefix, name);
 
+		arch_emit_unwind_info_sections (acfg, start_symbol, end_symbol, unwind_ops);
+
 		if (acfg->dwarf)
 			mono_dwarf_writer_emit_trampoline (acfg->dwarf, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
 	}
@@ -6744,25 +6809,38 @@ emit_trampolines (MonoAotCompile *acfg)
 #endif
 			mono_arch_create_generic_trampoline ((MonoTrampolineType)tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
+			mono_tramp_info_free (info);
 		}
 
 		/* Emit the exception related code pieces */
 		mono_arch_get_restore_context (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_call_filter (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_throw_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_rethrow_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_throw_corlib_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
 
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
 		mono_arch_create_sdb_trampoline (TRUE, &info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_create_sdb_trampoline (FALSE, &info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
 #endif
 
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
@@ -6773,6 +6851,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			/* Create a separate out trampoline for more information in stack traces */
 			info->name = g_strdup ("gsharedvt_out_trampoline");
 			emit_trampoline_full (acfg, acfg->got_offset, info, TRUE);
+			mono_tramp_info_free (info);
 		}
 #endif
 
@@ -6795,17 +6874,18 @@ emit_trampolines (MonoAotCompile *acfg)
 			offset = MONO_RGCTX_SLOT_MAKE_RGCTX (i);
 			mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
-			g_free (info);
+			mono_tramp_info_free (info);
 
 			offset = MONO_RGCTX_SLOT_MAKE_MRGCTX (i);
 			mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
-			g_free (info);
+			mono_tramp_info_free (info);
 		}
 
 #ifdef MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE
 		mono_arch_create_general_rgctx_lazy_fetch_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
 #endif
 
 		{
@@ -10203,6 +10283,408 @@ emit_dwarf_info (MonoAotCompile *acfg)
 #endif
 }
 
+#ifdef EMIT_WIN32_CODEVIEW_INFO
+typedef struct _CodeViewSubSectionData
+{
+	gchar *start_section;
+	gchar *end_section;
+	gchar *start_section_record;
+	gchar *end_section_record;
+	int section_type;
+	int section_record_type;
+	int section_id;
+} CodeViewSubsectionData;
+
+typedef struct _CodeViewCompilerVersion
+{
+	gint major;
+	gint minor;
+	gint revision;
+	gint patch;
+} CodeViewCompilerVersion;
+
+#define CODEVIEW_SUBSECTION_SYMBOL_TYPE 0xF1
+#define CODEVIEW_SUBSECTION_RECORD_COMPILER_TYPE 0x113c
+#define CODEVIEW_SUBSECTION_RECORD_FUNCTION_START_TYPE 0x1147
+#define CODEVIEW_SUBSECTION_RECORD_FUNCTION_END_TYPE 0x114F
+#define CODEVIEW_CSHARP_LANGUAGE_TYPE 0x0A
+#define CODEVIEW_CPU_TYPE 0x0
+#define CODEVIEW_MAGIC_HEADER 0x4
+
+static void
+codeview_clear_subsection_data (CodeViewSubsectionData *section_data)
+{
+	g_free (section_data->start_section);
+	g_free (section_data->end_section);
+	g_free (section_data->start_section_record);
+	g_free (section_data->end_section_record);
+
+	memset (section_data, 0, sizeof (CodeViewSubsectionData));
+}
+
+static void
+codeview_parse_compiler_version (gchar *version, CodeViewCompilerVersion *data)
+{
+	gint values[4] = { 0 };
+	gint *value = values;
+
+	while (*version && (value < values + G_N_ELEMENTS (values))) {
+		if (isdigit (*version)) {
+			*value *= 10;
+			*value += *version - '0';
+		}
+		else if (*version == '.') {
+			value++;
+		}
+
+		version++;
+	}
+
+	data->major = values[0];
+	data->minor = values[1];
+	data->revision = values[2];
+	data->patch = values[3];
+}
+
+static void
+emit_codeview_start_subsection (MonoAotCompile *acfg, int section_id, int section_type, int section_record_type, CodeViewSubsectionData *section_data)
+{
+	// Starting a new subsection, clear old data.
+	codeview_clear_subsection_data (section_data);
+
+	// Keep subsection data.
+	section_data->section_id = section_id;
+	section_data->section_type = section_type;
+	section_data->section_record_type = section_record_type;
+
+	// Allocate all labels used in subsection.
+	section_data->start_section = g_strdup_printf ("%scvs_%d", acfg->temp_prefix, section_data->section_id);
+	section_data->end_section = g_strdup_printf ("%scvse_%d", acfg->temp_prefix, section_data->section_id);
+	section_data->start_section_record = g_strdup_printf ("%scvsr_%d", acfg->temp_prefix, section_data->section_id);
+	section_data->end_section_record = g_strdup_printf ("%scvsre_%d", acfg->temp_prefix, section_data->section_id);
+
+	// Subsection type, function symbol.
+	emit_int32 (acfg, section_data->section_type);
+
+	// Subsection size.
+	emit_symbol_diff (acfg, section_data->end_section, section_data->start_section, 0);
+	emit_label (acfg, section_data->start_section);
+
+	// Subsection record size.
+	fprintf (acfg->fp, "\t.word %s - %s\n", section_data->end_section_record, section_data->start_section_record);
+	emit_label (acfg, section_data->start_section_record);
+
+	// Subsection record type.
+	emit_int16 (acfg, section_record_type);
+}
+
+static void
+emit_codeview_end_subsection (MonoAotCompile *acfg, CodeViewSubsectionData *section_data, int *section_id)
+{
+	g_assert (section_data->start_section);
+	g_assert (section_data->end_section);
+	g_assert (section_data->start_section_record);
+	g_assert (section_data->end_section_record);
+
+	emit_label (acfg, section_data->end_section_record);
+
+	if (section_data->section_record_type == CODEVIEW_SUBSECTION_RECORD_FUNCTION_START_TYPE) {
+		// Emit record length.
+		emit_int16 (acfg, 2);
+
+		// Emit specific record type end.
+		emit_int16 (acfg, CODEVIEW_SUBSECTION_RECORD_FUNCTION_END_TYPE);
+	}
+
+	emit_label (acfg, section_data->end_section);
+
+	// Next subsection needs to be 4 byte aligned.
+	emit_alignment (acfg, 4);
+
+	*section_id = section_data->section_id + 1;
+	codeview_clear_subsection_data (section_data);
+}
+
+inline static void
+emit_codeview_start_symbol_subsection (MonoAotCompile *acfg, int section_id, int section_record_type, CodeViewSubsectionData *section_data)
+{
+	emit_codeview_start_subsection (acfg, section_id, CODEVIEW_SUBSECTION_SYMBOL_TYPE, section_record_type, section_data);
+}
+
+inline static void
+emit_codeview_end_symbol_subsection (MonoAotCompile *acfg, CodeViewSubsectionData *section_data, int *section_id)
+{
+	emit_codeview_end_subsection (acfg, section_data, section_id);
+}
+
+static void
+emit_codeview_compiler_info (MonoAotCompile *acfg, int *section_id)
+{
+	CodeViewSubsectionData section_data = { 0 };
+	CodeViewCompilerVersion compiler_version = { 0 };
+
+	// Start new compiler record subsection.
+	emit_codeview_start_symbol_subsection (acfg, *section_id, CODEVIEW_SUBSECTION_RECORD_COMPILER_TYPE, &section_data);
+
+	emit_int32 (acfg, CODEVIEW_CSHARP_LANGUAGE_TYPE);
+	emit_int16 (acfg, CODEVIEW_CPU_TYPE);
+
+	// Get compiler version information.
+	codeview_parse_compiler_version (VERSION, &compiler_version);
+
+	// Compiler frontend version, 4 digits.
+	emit_int16 (acfg, compiler_version.major);
+	emit_int16 (acfg, compiler_version.minor);
+	emit_int16 (acfg, compiler_version.revision);
+	emit_int16 (acfg, compiler_version.patch);
+
+	// Compiler backend version, 4 digits (currently same as frontend).
+	emit_int16 (acfg, compiler_version.major);
+	emit_int16 (acfg, compiler_version.minor);
+	emit_int16 (acfg, compiler_version.revision);
+	emit_int16 (acfg, compiler_version.patch);
+
+	// Compiler string.
+	emit_string (acfg, "Mono AOT compiler");
+
+	// Done with section.
+	emit_codeview_end_symbol_subsection (acfg, &section_data, section_id);
+}
+
+static void
+emit_codeview_function_info (MonoAotCompile *acfg, MonoMethod *method, int *section_id, gchar *symbol, gchar *symbol_start, gchar *symbol_end)
+{
+	CodeViewSubsectionData section_data = { 0 };
+	gchar *full_method_name = NULL;
+
+	// Start new function record subsection.
+	emit_codeview_start_symbol_subsection (acfg, *section_id, CODEVIEW_SUBSECTION_RECORD_FUNCTION_START_TYPE, &section_data);
+
+	// Emit 3 int 0 byte padding, currently not used.
+	emit_zero_bytes (acfg, sizeof (int) * 3);
+
+	// Emit size of function.
+	emit_symbol_diff (acfg, symbol_end, symbol_start, 0);
+
+	// Emit 3 int 0 byte padding, currently not used.
+	emit_zero_bytes (acfg, sizeof (int) * 3);
+
+	// Emit reallocation info.
+	fprintf (acfg->fp, "\t.secrel32 %s\n", symbol);
+	fprintf (acfg->fp, "\t.secidx %s\n", symbol);
+
+	// Emit flag, currently not used.
+	emit_zero_bytes (acfg, 1);
+
+	// Emit function name, exclude signature since it should be described by own metadata.
+	full_method_name = mono_method_full_name (method, FALSE);
+	emit_string (acfg, full_method_name ? full_method_name : "");
+	g_free (full_method_name);
+
+	// Done with section.
+	emit_codeview_end_symbol_subsection (acfg, &section_data, section_id);
+}
+
+static void
+emit_codeview_info (MonoAotCompile *acfg)
+{
+	int i;
+	int section_id = 0;
+	gchar symbol_buffer[MAX_SYMBOL_SIZE];
+
+	// Emit codeview debug info section
+	emit_section_change (acfg, ".debug$S", 0);
+
+	// Emit magic header.
+	emit_int32 (acfg, CODEVIEW_MAGIC_HEADER);
+
+	emit_codeview_compiler_info (acfg, &section_id);
+
+	for (i = 0; i < acfg->nmethods; ++i) {
+		MonoCompile *cfg = acfg->cfgs[i];
+
+		if (!cfg)
+			continue;
+
+		int ret = g_snprintf (symbol_buffer, G_N_ELEMENTS (symbol_buffer), "%sme_%x", acfg->temp_prefix, i);
+		if (ret > 0 && ret < G_N_ELEMENTS (symbol_buffer))
+			emit_codeview_function_info (acfg, cfg->method, &section_id, cfg->asm_debug_symbol, cfg->asm_symbol, symbol_buffer);
+	}
+}
+#else
+static void
+emit_codeview_info (MonoAotCompile *acfg)
+{
+}
+#endif /* EMIT_WIN32_CODEVIEW_INFO */
+
+#ifdef EMIT_WIN32_UNWIND_INFO
+static UnwindInfoSectionCacheItem *
+get_cached_unwind_info_section_item_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops)
+{
+	UnwindInfoSectionCacheItem *item = NULL;
+
+	if (!acfg->unwind_info_section_cache)
+		acfg->unwind_info_section_cache = g_list_alloc ();
+
+	PUNWIND_INFO unwind_info = mono_arch_unwindinfo_alloc_unwind_info (unwind_ops);
+
+	// Search for unwind info in cache.
+	GList *list = acfg->unwind_info_section_cache;
+	int list_size = 0;
+	while (list && list->data) {
+		item = (UnwindInfoSectionCacheItem*)list->data;
+		if (!memcmp (unwind_info, item->unwind_info, sizeof (UNWIND_INFO))) {
+			// Cache hit, return cached item.
+			return item;
+		}
+		list = list->next;
+		list_size++;
+	}
+
+	// Add to cache.
+	if (acfg->unwind_info_section_cache) {
+		item = g_new0 (UnwindInfoSectionCacheItem, 1);
+		if (item) {
+			// Format .xdata section label for function, used to get unwind info address RVA.
+			// Since the unwind info is similar for most functions, the symbol will be reused.
+			item->xdata_section_label = g_strdup_printf ("%sunwind_%d", acfg->temp_prefix, list_size);
+
+			// Cache unwind info data, used when checking cache for matching unwind info. NOTE, cache takes
+			//over ownership of unwind info.
+			item->unwind_info = unwind_info;
+
+			// Needs to be emitted once.
+			item->xdata_section_emitted = FALSE;
+
+			// Prepend to beginning of list to speed up inserts.
+			acfg->unwind_info_section_cache = g_list_prepend (acfg->unwind_info_section_cache, (gpointer)item);
+		}
+	}
+
+	return item;
+}
+
+static void
+free_unwind_info_section_cache_win32 (MonoAotCompile *acfg)
+{
+	GList *list = acfg->unwind_info_section_cache;
+
+	while (list) {
+		UnwindInfoSectionCacheItem *item = (UnwindInfoSectionCacheItem *)list->data;
+		if (item) {
+			g_free (item->xdata_section_label);
+			mono_arch_unwindinfo_free_unwind_info (item->unwind_info);
+
+			g_free (item);
+			list->data = NULL;
+		}
+
+		list = list->next;
+	}
+
+	g_list_free (acfg->unwind_info_section_cache);
+	acfg->unwind_info_section_cache = NULL;
+}
+
+static void
+emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info)
+{
+	// Emit the unwind info struct.
+	emit_bytes (acfg, (guint8*)unwind_info, sizeof (UNWIND_INFO) - (sizeof (UNWIND_CODE) * MONO_MAX_UNWIND_CODES));
+
+	// Emit all unwind codes encoded in unwind info struct.
+	PUNWIND_CODE current_unwind_node = &unwind_info->UnwindCode[MONO_MAX_UNWIND_CODES - unwind_info->CountOfCodes];
+	PUNWIND_CODE last_unwind_node = &unwind_info->UnwindCode[MONO_MAX_UNWIND_CODES];
+
+	while (current_unwind_node < last_unwind_node) {
+		guint8 node_count = 0;
+		switch (current_unwind_node->UnwindOp) {
+		case UWOP_PUSH_NONVOL:
+		case UWOP_ALLOC_SMALL:
+		case UWOP_SET_FPREG:
+		case UWOP_PUSH_MACHFRAME:
+			node_count = 1;
+			break;
+		case UWOP_SAVE_NONVOL:
+		case UWOP_SAVE_XMM128:
+			node_count = 2;
+			break;
+		case UWOP_SAVE_NONVOL_FAR:
+		case UWOP_SAVE_XMM128_FAR:
+			node_count = 3;
+			break;
+		case UWOP_ALLOC_LARGE:
+			if (current_unwind_node->OpInfo == 0)
+				node_count = 2;
+			else
+				node_count = 3;
+			break;
+		default:
+			g_assert (!"Unknown unwind opcode.");
+		}
+
+		while (node_count > 0) {
+			g_assert (current_unwind_node < last_unwind_node);
+
+			//Emit current node.
+			emit_bytes (acfg, (guint8*)current_unwind_node, sizeof (UNWIND_CODE));
+
+			node_count--;
+			current_unwind_node++;
+		}
+	}
+}
+
+// Emit unwind info sections for each function. Unwind info on Windows x64 is emitted into two different sections.
+// .pdata includes the serialized DWORD aligned RVA's of function start, end and address of serialized
+// UNWIND_INFO struct emitted into .xdata, see https://msdn.microsoft.com/en-us/library/ft9x1kdx.aspx.
+// .xdata section includes DWORD aligned serialized version of UNWIND_INFO struct, https://msdn.microsoft.com/en-us/library/ddssxxy8.aspx.
+static void
+emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_start, const char *function_end, GSList *unwind_ops)
+{
+	char *pdata_section_label = NULL;
+
+	int temp_prefix_len = (acfg->temp_prefix != NULL) ? strlen (acfg->temp_prefix) : 0;
+	if (strncmp (function_start, acfg->temp_prefix, temp_prefix_len)) {
+		temp_prefix_len = 0;
+	}
+
+	// Format .pdata section label for function.
+	pdata_section_label = g_strdup_printf ("%spdata_%s", acfg->temp_prefix, function_start + temp_prefix_len);
+
+	UnwindInfoSectionCacheItem *cache_item = get_cached_unwind_info_section_item_win32 (acfg, function_start, function_end, unwind_ops);
+	g_assert (cache_item && cache_item->xdata_section_label && cache_item->unwind_info);
+
+	// Emit .pdata section.
+	emit_section_change (acfg, ".pdata", 0);
+	emit_alignment (acfg, sizeof (DWORD));
+	emit_label (acfg, pdata_section_label);
+
+	// Emit function start address RVA.
+	fprintf (acfg->fp, "\t.long %s@IMGREL\n", function_start);
+
+	// Emit function end address RVA.
+	fprintf (acfg->fp, "\t.long %s@IMGREL\n", function_end);
+
+	// Emit unwind info address RVA.
+	fprintf (acfg->fp, "\t.long %s@IMGREL\n", cache_item->xdata_section_label);
+
+	if (!cache_item->xdata_section_emitted) {
+		// Emit .xdata section.
+		emit_section_change (acfg, ".xdata", 0);
+		emit_alignment (acfg, sizeof (DWORD));
+		emit_label (acfg, cache_item->xdata_section_label);
+
+		// Emit unwind info into .xdata section.
+		emit_unwind_info_data_win32 (acfg, cache_item->unwind_info);
+		cache_item->xdata_section_emitted = TRUE;
+	}
+
+	g_free (pdata_section_label);
+}
+#endif
+
 static gboolean
 collect_methods (MonoAotCompile *acfg)
 {
@@ -10400,7 +10882,8 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_WIN32_MSVC)
 #define LD_NAME "link.exe"
-#define LD_OPTIONS "/DLL /MACHINE:X64 /NOLOGO"
+#define LD_OPTIONS "/DLL /MACHINE:X64 /NOLOGO /INCREMENTAL:NO"
+#define LD_DEBUG_OPTIONS LD_OPTIONS " /DEBUG"
 #elif defined(TARGET_WIN32) && !defined(TARGET_ANDROID)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-shared"
@@ -10493,8 +10976,8 @@ compile_asm (MonoAotCompile *acfg)
 #ifdef TARGET_WIN32_MSVC
 	g_assert (tmp_outfile_name != NULL);
 	g_assert (objfile != NULL);
-	command = g_strdup_printf ("\"%s%s\" %s %s /OUT:\"%s\" \"%s\"", tool_prefix, LD_NAME, LD_OPTIONS,
-		ld_flags, tmp_outfile_name, objfile);
+	command = g_strdup_printf ("\"%s%s\" %s %s /OUT:\"%s\" \"%s\"", tool_prefix, LD_NAME,
+			acfg->aot_opts.nodebug ? LD_OPTIONS : LD_DEBUG_OPTIONS, ld_flags, tmp_outfile_name, objfile);
 #elif defined(LD_NAME)
 	command = g_strdup_printf ("%s%s %s -o %s %s %s %s", tool_prefix, LD_NAME, LD_OPTIONS,
 		wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
@@ -11143,6 +11626,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_blob_hash);
 	got_info_free (&acfg->got_info);
 	got_info_free (&acfg->llvm_got_info);
+	arch_free_unwind_info_section_cache (acfg);
 	mono_mempool_destroy (acfg->mempool);
 	g_free (acfg);
 }
@@ -11798,6 +12282,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->dwarf) {
 		emit_dwarf_info (acfg);
 		mono_dwarf_writer_close (acfg->dwarf);
+	} else {
+		if (!acfg->aot_opts.nodebug)
+			emit_codeview_info (acfg);
 	}
 
 	emit_mem_end (acfg);
