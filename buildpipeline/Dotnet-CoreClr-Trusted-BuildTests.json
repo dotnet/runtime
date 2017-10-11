@@ -50,7 +50,7 @@
       },
       "inputs": {
         "filename": "sync.cmd",
-        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -RuntimeId=$(Rid) -BlobNamePrefix=$(PB_BlobNamePrefix)/$(PB_BuildType)/TestNativeBins/$(Rid) -- /p:DownloadDirectory=$(Build.SourcesDirectory)/packages/TestNativeBins/$(Rid)",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -RuntimeId=$(Rid) -BlobNamePrefix=$(PB_BlobNamePrefix)$(PB_BuildType)/TestNativeBins/$(Rid) -- /p:DownloadDirectory=$(Build.SourcesDirectory)/packages/TestNativeBins/$(Rid)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
