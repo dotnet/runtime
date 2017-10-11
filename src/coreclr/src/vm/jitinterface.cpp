@@ -12093,24 +12093,11 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             //
             // Notify the debugger that we have successfully jitted the function
             //
-            if (ftn->HasNativeCode())
+            if (g_pDebugInterface)
             {
-                //
-                // Nothing to do here (don't need to notify the debugger
-                // because the function has already been successfully jitted)
-                //
-                // This is the case where we aborted the jit because of a deadlock cycle
-                // in initClass.  
-                //
-            }
-            else
-            {
-                if (g_pDebugInterface)
+                if (param.res == CORJIT_OK && !((CEEJitInfo*)param.comp)->JitAgain())
                 {
-                    if (param.res == CORJIT_OK && !((CEEJitInfo*)param.comp)->JitAgain())
-                    {
-                        g_pDebugInterface->JITComplete(ftn, (TADDR) *nativeEntry);
-                    }
+                    g_pDebugInterface->JITComplete(ftn, (TADDR)*nativeEntry);
                 }
             }
         }
