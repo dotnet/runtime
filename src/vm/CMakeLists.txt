@@ -351,7 +351,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/InstantiatingStub.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
@@ -359,7 +358,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
         ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
-        ${ARCH_SOURCES_DIR}/TlsGetters.asm # Condition="'$(FeatureImplicitTls)' != 'true'
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
         ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
     )

@@ -5778,7 +5778,6 @@ HRESULT PrintSpecialThreads()
 
         TADDR CLRTLSDataAddr = 0;
 
-#ifdef FEATURE_IMPLICIT_TLS
         TADDR tlsArrayAddr = NULL;
         if (!SafeReadMemory (TO_TADDR(cdaTeb) + WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer , &tlsArrayAddr, sizeof (void**), NULL))
         {
@@ -5788,36 +5787,13 @@ HRESULT PrintSpecialThreads()
 
         TADDR moduleTlsDataAddr = 0;
 
-        if (!SafeReadMemory (tlsArrayAddr + sizeof (void*) * dwCLRTLSDataIndex, &moduleTlsDataAddr, sizeof (void**), NULL))
+        if (!SafeReadMemory (tlsArrayAddr + sizeof (void*) * (dwCLRTLSDataIndex & 0xFFFF), &moduleTlsDataAddr, sizeof (void**), NULL))
         {
             PrintLn("Failed to get Tls expansion slots for thread ", ThreadID(SysId));        
             continue;
         }
 
-        CLRTLSDataAddr = moduleTlsDataAddr + OFFSETOF__TLS__tls_EETlsData;
-#else
-        if (dwCLRTLSDataIndex < TLS_MINIMUM_AVAILABLE)
-        {
-            CLRTLSDataAddr = TO_TADDR(cdaTeb) + offsetof(TEB, TlsSlots) + sizeof (void*) * dwCLRTLSDataIndex;
-        }
-        else
-        {
-            //if TLS index is bigger than TLS_MINIMUM_AVAILABLE, the TLS slot lives in ExpansionSlots
-            TADDR TebExpsionAddr = NULL;
-            if (!SafeReadMemory (TO_TADDR(cdaTeb) + offsetof(TEB, TlsExpansionSlots) , &TebExpsionAddr, sizeof (void**), NULL))
-            {
-                PrintLn("Failed to get Tls expansion slots for thread ", ThreadID(SysId));        
-                continue;
-            }
-
-            if (TebExpsionAddr == NULL)
-            {
-                continue;
-            }
-            
-            CLRTLSDataAddr = TebExpsionAddr + sizeof (void*) * (dwCLRTLSDataIndex - TLS_MINIMUM_AVAILABLE);
-        }
-#endif // FEATURE_IMPLICIT_TLS
+        CLRTLSDataAddr = moduleTlsDataAddr + ((dwCLRTLSDataIndex & 0x7FFF0000) >> 16) + OFFSETOF__TLS__tls_EETlsData;
 
         TADDR CLRTLSData = NULL;
         if (!SafeReadMemory (CLRTLSDataAddr, &CLRTLSData, sizeof (TADDR), NULL))

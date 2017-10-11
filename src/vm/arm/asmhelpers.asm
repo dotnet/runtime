@@ -1481,7 +1481,6 @@ stackProbe_loop
     NESTED_END
 
 
-#ifdef FEATURE_CORECLR
 ;
 ; JIT Static access helpers for single appdomain case
 ;
@@ -1543,7 +1542,6 @@ CallCppHelper3
     bx lr
     LEAF_END
 
-#endif
 
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)

@@ -10844,11 +10844,7 @@ void Module::LoadTokenTables()
         pEEInfo->emptyString = (CORINFO_Object **)StringObject::GetEmptyStringRefPtr();
     }
 
-#ifdef FEATURE_IMPLICIT_TLS
     pEEInfo->threadTlsIndex = TLS_OUT_OF_INDEXES;
-#else
-    pEEInfo->threadTlsIndex = GetThreadTLSIndex();
-#endif
     pEEInfo->rvaStaticTlsIndex = NULL;
 #endif // CROSSGEN_COMPILE
 }
