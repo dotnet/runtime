@@ -397,16 +397,11 @@ check_handle_stack_monotonic (HandleStack *stack)
 			HandleChunkElem *elem = chunk_element (cur, i);
 			if (prev && elem->alloc_sp > prev->alloc_sp) {
 				monotonic = FALSE;
-				g_warning ("Handle %p (object %p) (allocated from \"%s\") is was allocated deeper in the call stack than its successor (allocated from \"%s\").", prev, prev->o,
 #ifdef MONO_HANDLE_TRACK_OWNER
-					   prev->owner,
-					   elem->owner
+				g_warning ("Handle %p (object %p) (allocated from \"%s\") was allocated deeper in the call stack than its successor Handle %p (object %p) (allocated from \"%s\").", prev, prev->o, prev->owner, elem, elem->o, elem->owner);
 #else
-					   "unknown owner",
-					   "unknown owner"
+				g_warning ("Handle %p (object %p) was allocated deeper in the call stack than its successor Handle %p (object %p).", prev, prev->o, elem, elem->o);
 #endif
-					);
-				
 			}
 			prev = elem;
 		}
