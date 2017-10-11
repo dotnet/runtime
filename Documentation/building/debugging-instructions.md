@@ -138,7 +138,13 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
   - Download the matching Jenkins archive onto your repro machine.
   - Check out the coreclr and corefx repositories at the appropriate commit and re-build the necessary portions.
   - You can also download the matching "symbols" nuget package from myget.org. There is a "Download Symbols" button in the myget UI for this purpose.
-- lldb version 3.9. The SOS plugin (i.e. libsosplugin.so) provided is now built for lldb 3.9.
+- lldb version 3.9. The SOS plugin (i.e. libsosplugin.so) provided is now built for lldb 3.9. In order to install lldb 3.9 just run the following commands:
+```
+~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+~$ wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+~$ sudo apt-get update
+~$ sudo apt-get install lldb-3.9
+```
 
 Once you have everything listed above, you are ready to start debugging. You need to specify an extra parameter to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
 
