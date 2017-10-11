@@ -248,12 +248,12 @@ retry:
 		 * between 1 and 2, the object is still live)
 		 */
 		*objslot = NULL;
+		SET_OWNER (top,idx);
+		SET_SP (handles, top, idx);
 		mono_memory_write_barrier ();
 		top->size++;
 		mono_memory_write_barrier ();
 		*objslot = obj;
-		SET_OWNER (top,idx);
-		SET_SP (handles, top, idx);
 		return objslot;
 	}
 	if (G_LIKELY (top->next)) {
