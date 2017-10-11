@@ -1231,11 +1231,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // This policy will need to change some more before tiered compilation feature
-        // can be properly supported across a broad range of scenarios. For instance it 
-        // wouldn't interact correctly with debugging at the moment because we enable
-        // it too aggresively and it conflicts with the operations of those features.
-
         // Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
         // to ensure native slots are available where needed.
         return g_pConfig->TieredCompilation() &&
@@ -1244,10 +1239,8 @@ public:
             HasNativeCodeSlot() &&
             !IsUnboxingStub() &&
             !IsInstantiatingStub() &&
-            !IsDynamicMethod();
-
-        // We should add an exclusion for modules with debuggable code gen flags
-
+            !IsDynamicMethod() &&
+            !CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
     }
 #endif
 
