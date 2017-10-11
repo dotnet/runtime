@@ -395,7 +395,7 @@ check_handle_stack_monotonic (HandleStack *stack)
 	while (cur) {
 		for (int i = 0;i < cur->size; ++i) {
 			HandleChunkElem *elem = chunk_element (cur, i);
-			if (prev && elem->alloc_sp < prev->alloc_sp) {
+			if (prev && elem->alloc_sp > prev->alloc_sp) {
 				monotonic = FALSE;
 				g_warning ("Handle %p (object %p) (allocated from \"%s\") is was allocated deeper in the call stack than its successor (allocated from \"%s\").", prev, prev->o,
 #ifdef MONO_HANDLE_TRACK_OWNER
