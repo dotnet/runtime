@@ -1026,8 +1026,6 @@ namespace System.Diagnostics
 
         internal static PerformanceCounterLib GetPerformanceCounterLib(string machineName, CultureInfo culture)
         {
-            SharedUtils.CheckEnvironment();
-
             string lcidString = culture.LCID.ToString("X3", CultureInfo.InvariantCulture);
             if (machineName.CompareTo(".") == 0)
                 machineName = ComputerName.ToLower(CultureInfo.InvariantCulture);

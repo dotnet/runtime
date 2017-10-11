@@ -515,8 +515,6 @@ namespace System.Diagnostics
                         if (currentMachineName != "." && string.Compare(currentMachineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase) != 0)
                             throw new InvalidOperationException(SR.Format(SR.RemoteWriting));
 
-                        SharedUtils.CheckNtEnvironment();
-
                         if (!PerformanceCounterLib.IsCustomCategory(currentMachineName, currentCategoryName))
                             throw new InvalidOperationException(SR.Format(SR.NotCustomCounter));
 

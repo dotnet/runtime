@@ -273,12 +273,6 @@
   <data name="ReadOnlyRemoveInstance" xml:space="preserve">
     <value>Cannot remove Performance Counter Instance, this object as been initialized as ReadOnly.</value>
   </data>
-  <data name="WinNTRequired" xml:space="preserve">
-    <value>Feature Requires Windows NT</value>
-  </data>
-  <data name="Win2000Required" xml:space="preserve">
-    <value>Feature Requires Windows 2000 or later</value>
-  </data>
   <data name="CounterExists" xml:space="preserve">
     <value>Could not locate Performance Counter with specified category name '{0}', counter name '{1}'.</value>
   </data>
