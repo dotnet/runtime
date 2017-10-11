@@ -133,6 +133,7 @@
       },
       "BuildParameters": {
         "PB_BuildType": "Release",
+        "PublishFlat": "false",
         "PB_EnforcePGO": "enforcepgo"
       },
       "ReportingParameters": {
@@ -148,7 +149,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Debug"
+        "PB_BuildType": "Debug",
+        "PublishFlat": "true"
       },
       "ReportingParameters": {
         "PB_BuildType": "Debug"
@@ -163,7 +165,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Checked"
+        "PB_BuildType": "Checked",
+        "PublishFlat": "true"
       },
       "ReportingParameters": {
         "PB_BuildType": "Checked"
