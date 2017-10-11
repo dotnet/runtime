@@ -520,7 +520,9 @@ TESTS_CS_SRC=		\
 	bug-58782-plain-throw.cs \
 	bug-58782-capture-and-throw.cs \
 	recursive-struct-arrays.cs \
-	bug-59281.cs
+	bug-59281.cs	\
+	init_array_with_lazy_type.cs
+
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
