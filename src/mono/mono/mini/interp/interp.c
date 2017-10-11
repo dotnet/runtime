@@ -229,13 +229,12 @@ ves_real_abort (int line, MonoMethod *mh,
 		const unsigned short *ip, stackval *stack, stackval *sp)
 {
 	MonoError error;
-	fprintf (stderr, "Execution aborted in method: %s::%s\n", mh->klass->name, mh->name);
-	fprintf (stderr, "Line=%d IP=0x%04lx, Aborted execution\n", line,
-		 ip-(const unsigned short *)mono_method_get_header_checked (mh, &error)->code);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	g_print ("0x%04x %02x\n",
-		 ip-(const unsigned short *)mono_method_get_header_checked (mh, &error)->code, *ip);
+	MonoMethodHeader *header = mono_method_get_header_checked (mh, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	g_printerr ("Execution aborted in method: %s::%s\n", mh->klass->name, mh->name);
+	g_printerr ("Line=%d IP=0x%04lx, Aborted execution\n", line, ip-(const unsigned short *) header->code);
+	g_print ("0x%04x %02x\n", ip-(const unsigned short *) header->code, *ip);
+	mono_metadata_free_mh (header);
 	if (sp > stack)
 		printf ("\t[%ld] 0x%08x %0.5f\n", sp-stack, sp[-1].data.i, sp[-1].data.f);
 }
@@ -776,6 +775,7 @@ interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUn
 			fi.il_offset = frame->ip - (const unsigned short *) hd->code;
 			if (!fi.method->wrapper_type)
 				fi.managed = TRUE;
+			mono_metadata_free_mh (hd);
 		}
 
 		if (func (&fi, ctx, user_data))
@@ -1240,6 +1240,7 @@ dump_frame (InterpFrame *inv)
 					MonoDebugSourceLocation *minfo = mono_debug_lookup_method (method);
 					source = mono_debug_method_lookup_location (minfo, codep);
 #endif
+					mono_metadata_free_mh (hd);
 				}
 			}
 			args = dump_args (inv);
@@ -4929,9 +4930,8 @@ array_constructed:
 
 			int len = sp [-1].data.i;
 			sp [-1].data.p = alloca (len);
-			MonoMethodHeader *header = mono_method_get_header_checked (frame->imethod->method, &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			if (header && header->init_locals)
+
+			if (frame->imethod->init_locals)
 				memset (sp [-1].data.p, 0, len);
 			++ip;
 			MINT_IN_BREAK;
@@ -5103,8 +5103,6 @@ die_on_ex:
 		MonoExceptionClause *clause;
 		GSList *old_list = finally_ips;
 		MonoMethod *method = frame->imethod->method;
-		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		
 #if DEBUG_INTERP
 		if (tracing)
@@ -5118,9 +5116,10 @@ die_on_ex:
 
 		if (endfinally_ip != NULL)
 			finally_ips = g_slist_prepend(finally_ips, (void *)endfinally_ip);
-		for (i = 0; i < header->num_clauses; ++i)
+		for (i = 0; i < rtm->num_clauses; ++i)
 			if (frame->ex_handler == &rtm->clauses [i])
 				break;
+
 		while (i > 0) {
 			--i;
 			clause = &rtm->clauses [i];
@@ -5159,16 +5158,14 @@ die_on_ex:
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
 		GSList *old_list = finally_ips;
-		MonoMethod *method = frame->imethod->method;
-		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		
 #if DEBUG_INTERP
 		if (tracing)
 			g_print ("* Handle fault\n");
 #endif
 		ip_offset = frame->ip - rtm->code;
-		for (i = 0; i < header->num_clauses; ++i) {
+
+		for (i = 0; i < rtm->num_clauses; ++i) {
 			clause = &rtm->clauses [i];
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 				ip = rtm->code + clause->handler_offset;
