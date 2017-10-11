@@ -120,12 +120,9 @@ GPTR_IMPL_INIT(StressLog, g_pStressLog, &StressLog::theLog);
 GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
 
+GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 
 #ifndef DACCESS_COMPILE
-
-// <TODO> @TODO Remove eventually - </TODO> determines whether the verifier throws an exception when something fails
-bool                g_fVerifierOff;
-
 
 // <TODO> @TODO - PROMOTE. </TODO>
 OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;

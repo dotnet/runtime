@@ -586,8 +586,6 @@ enum ThreadpoolThreadType
 //
 // Public functions for ASM code generators
 //
-//      int GetThreadTLSIndex()         - returns TLS index used to point to Thread
-//      int GetAppDomainTLSIndex()      - returns TLS index used to point to AppDomain
 //      Thread* __stdcall CreateThreadBlockThrow() - creates new Thread on reverse p-invoke
 //
 // Public functions for one-time init/cleanup
@@ -628,14 +626,6 @@ Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
 // WARNING : only GC calls this with bRequiresTSL set to FALSE.
 Thread* SetupUnstartedThread(BOOL bRequiresTSL=TRUE);
 void    DestroyThread(Thread *th);
-
-
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#ifndef FEATURE_IMPLICIT_TLS
-DWORD GetThreadTLSIndex();
-DWORD GetAppDomainTLSIndex();
-#endif
 
 DWORD GetRuntimeId();
 
@@ -3890,23 +3880,6 @@ private:
 
     ULONG  m_ulEnablePreemptiveGCCount;
 #endif  // _DEBUG
-
-#ifdef ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-
-private:
-    // Set once on initialization, single-threaded, inside friend code:InitThreadManager,
-    // based on whether the user has set COMPlus_EnforceEEThreadNotRequiredContracts.
-    // This is then later accessed via public
-    // code:Thread::ShouldEnforceEEThreadNotRequiredContracts. See
-    // code:GetThreadGenericFullCheck for details.
-    static BOOL s_fEnforceEEThreadNotRequiredContracts;
-
-public:
-    static BOOL ShouldEnforceEEThreadNotRequiredContracts();
-
-#endif  // ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-
-
 
 private:
     // For suspends:
@@ -7386,7 +7359,6 @@ inline void SetTypeHandleOnThreadForAlloc(TypeHandle th)
 
 #endif // CROSSGEN_COMPILE
 
-#ifdef FEATURE_IMPLICIT_TLS
 class Compiler;
 // users of OFFSETOF__TLS__tls_CurrentThread macro expect the offset of these variables wrt to _tls_start to be stable. 
 // Defining each of the following thread local variable separately without the struct causes the offsets to change in 
@@ -7398,11 +7370,7 @@ struct ThreadLocalInfo
     Thread* m_pThread;
     AppDomain* m_pAppDomain;
     void** m_EETlsData; // ClrTlsInfo::data
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-    void* m_pJitTls;
-#endif
 };
-#endif // FEATURE_IMPLICIT_TLS
 
 class ThreadStateHolder
 {
