@@ -20,8 +20,11 @@ namespace System.Net.Http
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        public override int Read(byte[] buffer, int offset, int count) =>
-            ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArgs(buffer, offset, count);
+            return ReadAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+        }
 
         public override void CopyTo(Stream destination, int bufferSize) =>
             CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
