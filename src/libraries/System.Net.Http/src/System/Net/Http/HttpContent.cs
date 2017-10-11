@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !NET46
 using System.Buffers;
-#endif
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
@@ -145,9 +143,6 @@ namespace System.Net.Http
 
         internal bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
-#if NET46
-            buffer = default(ArraySegment<byte>);
-#endif
             return _bufferedContent != null && _bufferedContent.TryGetBuffer(out buffer);
         }
 
@@ -350,15 +345,6 @@ namespace System.Net.Http
         {
             return CopyToAsync(stream, null);
         }
-
-#if NET46
-        // Workaround for HttpWebRequest synchronous resubmit. This code is required because the underlying
-        // .NET Framework HttpWebRequest implementation cannot use CopyToAsync and only uses sync based CopyTo.
-        internal void CopyTo(Stream stream)
-        {
-            CopyToAsync(stream).Wait();
-        }
-#endif
 
         public Task LoadIntoBufferAsync()
         {
@@ -773,7 +759,6 @@ namespace System.Net.Http
             }
         }
 
-#if !NET46
         internal sealed class LimitArrayPoolWriteStream : Stream
         {
             private const int MaxByteArrayLength = 0x7FFFFFC7;
@@ -868,9 +853,22 @@ namespace System.Net.Http
                 _length += count;
             }
 
+            public override void Write(ReadOnlySpan<byte> source)
+            {
+                EnsureCapacity(_length + source.Length);
+                source.CopyTo(new Span<byte>(_buffer, _length, source.Length));
+                _length += source.Length;
+            }
+
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 Write(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+
+            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            {
+                Write(source.Span);
                 return Task.CompletedTask;
             }
 
@@ -901,6 +899,5 @@ namespace System.Net.Http
             public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException(); }
             public override void SetLength(long value) { throw new NotSupportedException(); }
         }
-#endif        
     }
 }

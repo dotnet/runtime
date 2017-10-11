@@ -25,6 +25,9 @@ namespace System.Net.Http
                 ValidateBufferArgs(buffer, offset, count);
                 return s_zeroTask;
             }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default) =>
+                new ValueTask<int>(0);
         }
     }
 }
