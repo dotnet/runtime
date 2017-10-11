@@ -1577,11 +1577,15 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 
 	gshared_lock ();
 	cached = g_hash_table_lookup (cache, sig);
-	if (cached)
+	if (cached) {
+		mono_free_method (res);
 		res = cached;
-	else
+	} else {
 		g_hash_table_insert (cache, sig, res);
+	}
 	gshared_unlock ();
+	mono_mb_free (mb);
+
 	return res;
 }
 
