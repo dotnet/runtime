@@ -71,10 +71,6 @@ static CrstStatic s_initializeYieldProcessorNormalizedCrst;
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
 
-#ifdef ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-BOOL Thread::s_fEnforceEEThreadNotRequiredContracts = FALSE;
-#endif
-
 Volatile<LONG> Thread::s_threadPoolCompletionCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
@@ -290,9 +286,6 @@ bool Thread::DetectHandleILStubsForDebugger()
     return false;
 }
 
-
-#ifdef FEATURE_IMPLICIT_TLS
-
 extern "C" {
 #ifndef __llvm__
 __declspec(thread)
@@ -304,26 +297,15 @@ ThreadLocalInfo gCurrentThreadInfo =
                                                   NULL,    // m_pThread
                                                   NULL,    // m_pAppDomain
                                                   NULL,    // m_EETlsData
-#if defined(FEATURE_MERGE_JIT_AND_ENGINE)
-                                                  NULL,    // m_pCompiler
-#endif
                                               };
 } // extern "C"
 // index into TLS Array. Definition added by compiler
 EXTERN_C UINT32 _tls_index;
 
-#else // FEATURE_IMPLICIT_TLS
-extern "C" {
-GVAL_IMPL_INIT(DWORD, gThreadTLSIndex, TLS_OUT_OF_INDEXES);      // index ( (-1) == uninitialized )
-GVAL_IMPL_INIT(DWORD, gAppDomainTLSIndex, TLS_OUT_OF_INDEXES);   // index ( (-1) == uninitialized )
-}
-#endif // FEATURE_IMPLICIT_TLS
-
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_IMPLICIT_TLS
 BOOL SetThread(Thread* t)
 {
-	LIMITED_METHOD_CONTRACT
+    LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
     return TRUE;
@@ -331,51 +313,11 @@ BOOL SetThread(Thread* t)
 
 BOOL SetAppDomain(AppDomain* ad)
 {
-	LIMITED_METHOD_CONTRACT
+    LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pAppDomain = ad;
     return TRUE;
 }
-
-#if defined(FEATURE_MERGE_JIT_AND_ENGINE)
-extern "C"
-{
-
-void* GetJitTls()
-{
-    LIMITED_METHOD_CONTRACT
-
-    return gCurrentThreadInfo.m_pJitTls;
-}
-
-void SetJitTls(void* v)
-{
-    LIMITED_METHOD_CONTRACT
-    gCurrentThreadInfo.m_pJitTls = v;
-}
-
-}
-#endif // defined(FEATURE_MERGE_JIT_AND_ENGINE)
-
-#define ThreadInited()          (TRUE)
-
-#else // FEATURE_IMPLICIT_TLS
-BOOL SetThread(Thread* t)
-{
-    WRAPPER_NO_CONTRACT
-    return UnsafeTlsSetValue(GetThreadTLSIndex(), t);
-}
-
-BOOL SetAppDomain(AppDomain* ad)
-{
-    WRAPPER_NO_CONTRACT
-    return UnsafeTlsSetValue(GetAppDomainTLSIndex(), ad);
-}
-
-#define ThreadInited()          (gThreadTLSIndex != TLS_OUT_OF_INDEXES)
-
-#endif // FEATURE_IMPLICIT_TLS
-
 
 BOOL Thread::Alert ()
 {
@@ -681,7 +623,6 @@ Thread* SetupThread(BOOL fInternal)
     }
     CONTRACTL_END;
 
-    _ASSERTE(ThreadInited());
     Thread* pThread;
     if ((pThread = GetThread()) != NULL)
         return pThread;
@@ -781,18 +722,6 @@ Thread* SetupThread(BOOL fInternal)
     if (!pThread->InitThread(fInternal) ||
         !pThread->PrepareApartmentAndContext())
         ThrowOutOfMemory();
-
-#ifndef FEATURE_IMPLICIT_TLS
-    // make sure we will not fail when we store in TLS in the future.
-    if (!UnsafeTlsSetValue(gThreadTLSIndex, NULL))
-    {
-        ThrowOutOfMemory();
-    }
-    if (!UnsafeTlsSetValue(GetAppDomainTLSIndex(), NULL))
-    {
-        ThrowOutOfMemory();
-    }
-#endif
 
     // reset any unstarted bits on the thread object
     FastInterlockAnd((ULONG *) &pThread->m_State, ~Thread::TS_Unstarted);
@@ -915,7 +844,6 @@ Thread* SetupUnstartedThread(BOOL bRequiresTSL)
     }
     CONTRACTL_END;
 
-    _ASSERTE(ThreadInited());
     Thread* pThread = new Thread();
 
     FastInterlockOr((ULONG *) &pThread->m_State,
@@ -1112,42 +1040,11 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     return S_OK;
 }
 
-#ifndef FEATURE_IMPLICIT_TLS
-//---------------------------------------------------------------------------
-// Returns the TLS index for the Thread. This is strictly for the use of
-// our ASM stub generators that generate inline code to access the Thread.
-// Normally, you should use GetThread().
-//---------------------------------------------------------------------------
-DWORD GetThreadTLSIndex()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return gThreadTLSIndex;
-}
-
-//---------------------------------------------------------------------------
-// Returns the TLS index for the AppDomain. This is strictly for the use of
-// our ASM stub generators that generate inline code to access the AppDomain.
-// Normally, you should use GetAppDomain().
-//---------------------------------------------------------------------------
-DWORD GetAppDomainTLSIndex()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return gAppDomainTLSIndex;
-}
-#endif
-
 DWORD GetRuntimeId()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_IMPLICIT_TLS
-    _ASSERTE(GetThreadTLSIndex() != TLS_OUT_OF_INDEXES);
-    return GetThreadTLSIndex() + 3;
-#else
     return _tls_index;
-#endif
 }
 
 //---------------------------------------------------------------------------
@@ -1191,165 +1088,6 @@ Thread* WINAPI CreateThreadBlockThrow()
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
 
-#ifndef FEATURE_IMPLICIT_TLS
-
-#ifdef ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-
-// ----------------------------------------------------------------------------
-// GetThreadGenericFullCheck
-// 
-// Description:
-//     The non-PAL, x86 / x64 assembly versions of GetThreadGeneric call into this C
-//     function to optionally do some verification before returning the EE Thread object
-//     for the current thread. Currently the primary enforcement this function does is
-//     around the EE_THREAD_(NOT)_REQUIRED contracts. For a definition of these
-//     contracts, how they're used, and how temporary "safe" scopes may be created
-//     using BEGIN_GETTHREAD_ALLOWED / END_GETTHREAD_ALLOWED, see the comments at the top
-//     of contract.h.
-//     
-//     The EE_THREAD_(NOT)_REQUIRED contracts are enforced as follows:
-//         * code:EEContract::DoChecks enforces the following:
-//             * On entry to an EE_THREAD_REQUIRED function, GetThread() != NULL
-//             * An EE_THREAD_REQUIRED function may not be called from an
-//                 EE_THREAD_NOT_REQUIRED function, unless there is an intervening
-//                 BEGIN/END_GETTHREAD_ALLOWED scope
-//         * This function (GetThreadGenericFullCheck) enforces that an
-//             EE_THREAD_NOT_REQUIRED function may not call GetThread(), unless there is
-//             an intervening BEGIN/END_GETTHREAD_ALLOWED scope. While this enforcement
-//             is straightforward below, the tricky part is getting
-//             GetThreadGenericFullCheck() to actually be called when GetThread() is
-//             called, given the optimizations around GetThread():
-//             * code:InitThreadManager ensures that non-PAL, debug, x86/x64 builds that
-//                 run with COMPlus_EnforceEEThreadNotRequiredContracts set are forced to
-//                 use GetThreadGeneric instead of the dynamically generated optimized
-//                 TLS getter.
-//             * The non-PAL, debug, x86/x64 GetThreadGeneric() (implemented in the
-//                 processor-specific assembly files) knows to call
-//                 GetThreadGenericFullCheck() to do the enforcement.
-//    
-Thread * GetThreadGenericFullCheck()
-{
-    // Can not have a dynamic contract here.  Contract depends on GetThreadGeneric.
-    // Contract here causes stack overflow.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    if (!ThreadInited())
-    {
-        // #GTInfiniteRecursion
-        // 
-        // Normally, we'd want to assert here, but that could lead to infinite recursion.
-        // Bringing up the assert dialog requires a string lookup, which requires getting
-        // the Thread's UI culture ID, which, or course, requires getting the Thread. So
-        // we'll just break instead.
-        DebugBreak();
-    }
-
-    if (g_fEEStarted && 
-
-        // Using ShouldEnforceEEThreadNotRequiredContracts() instead
-        // of directly checking CLRConfig::GetConfigValue, as the latter contains a dynamic
-        // contract and therefore calls GetThread(), which would cause infinite recursion.
-        Thread::ShouldEnforceEEThreadNotRequiredContracts() &&
-
-        // The following verifies that it's safe to call GetClrDebugState() below without
-        // risk of its callees invoking extra error checking or fiber code that could
-        // recursively call GetThread() and overflow the stack
-        (CExecutionEngine::GetTlsData() != NULL))
-    {
-        // It's safe to peek into the debug state, so let's do so, to see if
-        // our caller is really allowed to be calling GetThread(). This enforces
-        // the EE_THREAD_NOT_REQUIRED contract.
-        ClrDebugState * pDbg = GetClrDebugState(FALSE);      // FALSE=don't allocate
-        if ((pDbg != NULL) && (!pDbg->IsGetThreadAllowed()))
-        {
-            // We need to bracket the ASSERTE with BEGIN/END_GETTHREAD_ALLOWED to avoid
-            // infinite recursion (see
-            // code:GetThreadGenericFullCheck#GTInfiniteRecursion). The ASSERTE here will
-            // cause us to reenter this function to get the thread (again). However,
-            // BEGIN/END_GETTHREAD_ALLOWED at least stops the recursion right then and
-            // there, as it prevents us from reentering this block yet again (since
-            // BEGIN/END_GETTHREAD_ALLOWED causes pDbg->IsGetThreadAllowed() to be TRUE).
-            // All such reentries to this function will quickly return the thread without
-            // executing the code below, so the original ASSERTE can proceed.
-            BEGIN_GETTHREAD_ALLOWED;
-            _ASSERTE(!"GetThread() called in a EE_THREAD_NOT_REQUIRED scope.  If the GetThread() call site has a clear code path for a return of NULL, then consider using GetThreadNULLOk() or BEGIN/END_GETTHREAD_ALLOWED");
-            END_GETTHREAD_ALLOWED;
-        }
-    }
-
-    Thread * pThread = (Thread *) UnsafeTlsGetValue(gThreadTLSIndex);
-
-    // set bogus last error to help find places that fail to save it across GetThread calls
-    ::SetLastError(LAST_ERROR_TRASH_VALUE);
-
-    return pThread;
-}
-
-#endif // ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-//
-// Some platforms have this implemented in assembly
-//
-EXTERN_C Thread* STDCALL GetThreadGeneric(VOID);
-EXTERN_C AppDomain* STDCALL GetAppDomainGeneric(VOID);
-#else
-Thread* STDCALL GetThreadGeneric()
-{
-    // Can not have contract here.  Contract depends on GetThreadGeneric.
-    // Contract here causes stack overflow.
-    //CONTRACTL {
-    //    NOTHROW;
-    //    GC_NOTRIGGER;
-    //}
-    //CONTRACTL_END;
-
-    // see code:GetThreadGenericFullCheck#GTInfiniteRecursion
-    _ASSERTE(ThreadInited());
-
-    Thread* pThread = (Thread*)UnsafeTlsGetValue(gThreadTLSIndex);
-
-    TRASH_LASTERROR;
-
-    return pThread;
-}
-
-AppDomain* STDCALL GetAppDomainGeneric()
-{
-    // No contract.  This function is called during ExitTask.
-    //CONTRACTL {
-    //    NOTHROW;
-    //    GC_NOTRIGGER;
-    //}
-    //CONTRACTL_END;
-
-    _ASSERTE(ThreadInited());
-
-    AppDomain* pAppDomain = (AppDomain*)UnsafeTlsGetValue(GetAppDomainTLSIndex());
-
-    TRASH_LASTERROR;
-
-    return pAppDomain;
-}
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-
-//
-// FLS getter to avoid unnecessary indirection via execution engine. It will be used if we get high TLS slot
-// from the OS where we cannot use the fast optimized assembly helpers. (It happens pretty often in hosted scenarios).
-//
-LPVOID* ClrFlsGetBlockDirect()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (LPVOID*)UnsafeTlsGetValue(CExecutionEngine::GetTlsIndex());
-}
-
-extern "C" void * ClrFlsGetBlock();
-
-#endif // FEATURE_IMPLICIT_TLS
-
-
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
@@ -1387,98 +1125,24 @@ void InitThreadManager()
 
 #ifndef FEATURE_PAL
 
-#ifdef FEATURE_IMPLICIT_TLS
     _ASSERTE(GetThread() == NULL);
 
-    // Mscordbi calculates the address of currentThread pointer using OFFSETOF__TLS__tls_CurrentThread. Ensure that
-    // value is correct.
+    PTEB Teb = NtCurrentTeb();
+    BYTE** tlsArray = (BYTE**)Teb->ThreadLocalStoragePointer;
+    BYTE* tlsData = (BYTE*)tlsArray[_tls_index];
 
-    PTEB Teb;
-    BYTE* tlsData;
-    BYTE** tlsArray;
+    size_t offsetOfCurrentThreadInfo = (BYTE*)&gCurrentThreadInfo - tlsData;
 
-    Teb = NtCurrentTeb();
-    tlsArray = (BYTE**)Teb->ThreadLocalStoragePointer;
-    tlsData = (BYTE*)tlsArray[_tls_index];
+    _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
+    _ASSERTE(_tls_index < 0x10000);
 
-    Thread **ppThread = (Thread**) (tlsData + OFFSETOF__TLS__tls_CurrentThread);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/Threads.cpp",
-                        (&(gCurrentThreadInfo.m_pThread) == ppThread) &&
-                        "Offset of m_pThread as specified by OFFSETOF__TLS__tls_CurrentThread is not correct. "
-                        "This can change due to addition/removal of declspec(Thread) thread local variables.");
+    // Save gCurrentThreadInfo location for debugger
+    g_TlsIndex = (DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000);
 
-   _ASSERTE_ALL_BUILDS("clr/src/VM/Threads.cpp",
-                       ((BYTE*)&(gCurrentThreadInfo.m_EETlsData) == tlsData + OFFSETOF__TLS__tls_EETlsData) &&
-                       "Offset of m_EETlsData as specified by OFFSETOF__TLS__tls_EETlsData is not correct. "
-                       "This can change due to addition/removal of declspec(Thread) thread local variables.");
-#else
-    _ASSERTE(gThreadTLSIndex == TLS_OUT_OF_INDEXES);
-#endif
     _ASSERTE(g_TrapReturningThreads == 0);
 #endif // !FEATURE_PAL
 
-    // Consult run-time switches that choose whether to use generic or optimized
-    // versions of GetThread and GetAppDomain
-
-    BOOL fUseGenericTlsGetters = FALSE;
-
-#ifdef ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-    // Debug builds allow user to throw a switch to force use of the generic GetThread
-    // for the sole purpose of enforcing EE_THREAD_NOT_REQUIRED contracts
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnforceEEThreadNotRequiredContracts) != 0)
-    {
-        // Set this static on Thread so this value can be safely read later on by
-        // code:GetThreadGenericFullCheck
-        Thread::s_fEnforceEEThreadNotRequiredContracts = TRUE;
-
-        fUseGenericTlsGetters = TRUE;
-    }
-#endif
-
-#ifndef FEATURE_IMPLICIT_TLS
-    // Now, we setup GetThread and GetAppDomain to point to their optimized or generic versions. Irrespective
-    // of the version they call into, we write opcode sequence into the dummy GetThread/GetAppDomain
-    // implementations (living in jithelp.s/.asm) via the MakeOptimizedTlsGetter calls below.
-    //
-    // For this to work, we must ensure that the dummy versions lie between the JIT_PatchedCodeStart
-    // and JIT_PatchedCodeLast code range (which lies in the .text section) so that when we change the protection
-    // above, we do so for GetThread and GetAppDomain as well.
-     
-    //---------------------------------------------------------------------------
-    // INITIALIZE GetThread
-    //---------------------------------------------------------------------------
-
-    // No backout necessary - part of the one time global initialization
-    gThreadTLSIndex = UnsafeTlsAlloc();
-    if (gThreadTLSIndex == TLS_OUT_OF_INDEXES)
-        COMPlusThrowWin32();
-
-    MakeOptimizedTlsGetter(gThreadTLSIndex, (PVOID)GetThread, TLS_GETTER_MAX_SIZE, (POPTIMIZEDTLSGETTER)GetThreadGeneric, fUseGenericTlsGetters);
-
-    //---------------------------------------------------------------------------
-    // INITIALIZE GetAppDomain
-    //---------------------------------------------------------------------------
-
-    // No backout necessary - part of the one time global initialization
-    gAppDomainTLSIndex = UnsafeTlsAlloc();
-    if (gAppDomainTLSIndex == TLS_OUT_OF_INDEXES)
-        COMPlusThrowWin32();
-
-    MakeOptimizedTlsGetter(gAppDomainTLSIndex, (PVOID)GetAppDomain, TLS_GETTER_MAX_SIZE, (POPTIMIZEDTLSGETTER)GetAppDomainGeneric, fUseGenericTlsGetters);
-
-    //---------------------------------------------------------------------------
-    // Switch general purpose TLS getter to more efficient one if possible
-    //---------------------------------------------------------------------------
-
-    // Make sure that the TLS index is allocated
-    CExecutionEngine::CheckThreadState(0, FALSE);
-
-    DWORD masterSlotIndex = CExecutionEngine::GetTlsIndex();
-    CLRFLSGETBLOCK pGetter = (CLRFLSGETBLOCK)MakeOptimizedTlsGetter(masterSlotIndex, (PVOID)ClrFlsGetBlock, TLS_GETTER_MAX_SIZE);
-    __ClrFlsGetBlock = pGetter ? pGetter : ClrFlsGetBlockDirect;
-#else
     __ClrFlsGetBlock = CExecutionEngine::GetTlsData;
-#endif // FEATURE_IMPLICIT_TLS
 
     IfFailThrow(Thread::CLRSetThreadStackGuarantee(Thread::STSGuarantee_Force));
 
