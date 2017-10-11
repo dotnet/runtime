@@ -1774,7 +1774,8 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 		m = mono_marshal_get_synchronized_wrapper (m);
 
 	addr = compiled_method = mono_compile_method_checked (m, &error);
-	mono_error_raise_exception (&error);
+	if (!is_ok (&error))
+		mono_llvm_raise_exception (mono_error_convert_to_exception (&error));
 	g_assert (addr);
 
 	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
