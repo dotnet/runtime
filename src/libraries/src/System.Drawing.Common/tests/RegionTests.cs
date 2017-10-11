@@ -540,6 +540,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(24525, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Complement_GraphicsPathWithMultipleRectangles_Success()
         {
