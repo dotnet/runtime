@@ -1580,14 +1580,15 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
 
     // CreateInitAndAddJitInfo takes a lock and checks the list again, which
     // makes this  thread-safe.
-    return CreateInitAndAddJitInfo(fd, addr);
+    BOOL unused;
+    return CreateInitAndAddJitInfo(fd, addr, &unused);
 }
 
 // Create a DJI around a method-desc. The EE already has all the information we need for a DJI,
 // the DJI just serves as a cache of the information for the debugger.
 // Caller makes no guarantees about whether the DJI is already in the table. (Caller should avoid this if
 // it knows it's in the table, but b/c we can't expect caller to synchronize w/ the other threads).
-DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr)
+DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr, BOOL* jitInfoWasCreated)
 {
     CONTRACTL
     {
@@ -1603,6 +1604,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(MethodDesc* fd, TAD
     // May or may-not be jitted, that's why we passed in the start addr & size explicitly.
     _ASSERTE(startAddr != NULL);
 
+    *jitInfoWasCreated = FALSE;
 
     // No support for light-weight codegen methods.
     if (fd->IsDynamicMethod())
@@ -1641,6 +1643,10 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(MethodDesc* fd, TAD
                 _ASSERTE(pResult->m_sizeOfCode == dji->m_sizeOfCode);
                 DeleteInteropSafe(dji);
                 return pResult;
+            }
+            else
+            {
+                *jitInfoWasCreated = TRUE;
             }
         }
 
