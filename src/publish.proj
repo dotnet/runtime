@@ -1,41 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <Import Project="$(ToolsDir)PublishContent.targets" />
-  <Import Project="$(ToolsDir)versioning.targets" />
-
-  <!-- gathers the items to be published -->
-  <Target Name="GatherItemsForPattern">
-    <Error Condition="'$(PublishPattern)' == ''" Text="Please specify a value for PublishPattern using standard msbuild 'include' syntax." />
-    <ItemGroup>
-      <ForPublishing Include="$(PublishPattern)" />
-    </ItemGroup>
-    <!-- add relative blob path metadata -->
-    <ItemGroup>
-      <ForPublishing>
-        <RelativeBlobPath Condition="'$(PublishTestNativeBins)' != 'true'">$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>
-        <RelativeBlobPath Condition="'$(PublishTestNativeBins)' == 'true'">$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>    
-      </ForPublishing>
-    </ItemGroup>
-    <Error Condition="'@(ForPublishing)' == ''" Text="No items were found matching pattern '$(PublishPattern)'." />
-  </Target>
 
   <PropertyGroup>
-    <PublishPattern Condition="'$(PublishPattern)' == '' and '$(PublishTestNativeBins)' != 'true'">$(PackagesBinDir)**\*.nupkg</PublishPattern>
-    <PublishPattern Condition="'$(PublishPattern)' == '' and '$(PublishTestNativeBins)' == 'true'">$(OutputPath)\bin\**</PublishPattern>
+    <FeedsDir Condition="'$(RunningOnCore)' != 'true'">$(ToolsDir)Microsoft.Dotnet.Build.Tasks.Feed/net46/</FeedsDir>
+    <FeedsDir Condition="'$(RunningOnCore)' == 'true'">$(ToolsDir)microsoft.dotnet.build.tasks.feed/netstandard1.5/</FeedsDir>
   </PropertyGroup>
 
-  <Target Name="CreateContainerName"
-          DependsOnTargets="CreateVersionFileDuringBuild"
-          Condition="'$(ContainerName)' == '' or '$(PublishTestNativeBins)' == 'true'">
+  <UsingTask TaskName="PushToBlobFeed" AssemblyFile="$(FeedsDir)Microsoft.DotNet.Build.Tasks.Feed.dll"/>
+
+  <PropertyGroup>
+    <PackagesPattern Condition="'$(PackagesPattern)' == ''">$(PackagesBinDir)pkg\*.nupkg</PackagesPattern>
+    <TestNativeBinariesPattern Condition="'$(TestNativeBinariesPattern)' == ''">$(OutputPath)\bin\**</TestNativeBinariesPattern>
+    <SymbolsPackagesPattern Condition="'$(SymbolPackagesPattern)' == ''">$(PackagesBinDir)symbolpkg\*.nupkg</SymbolsPackagesPattern>
+    <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">true</PublishFlatContainer>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
+    <AccountName>$(CloudDropAccountName)</AccountName>
+    <AccountKey>$(CloudDropAccessToken)</AccountKey>
+  </PropertyGroup>
+
+  <Target Name="PublishPackages" Condition="'$(__PublishPackages)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' != 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
-      <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' == 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(__DistroRid)-$(__BuildArch)</ContainerName>
-      <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' != 'true'">$(__Container)</ContainerName>
-      <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' == 'true'">$(__Container)-$(__DistroRid)-$(__BuildArch)</ContainerName>
-      <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
+      <RelativePath Condition="'$(RelativePath)' == ''">$(__BuildType)/pkg</RelativePath>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)/index.json</ExpectedFeedUrl>
     </PropertyGroup>
+    <ItemGroup>
+      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Include="$(PackagesPattern)" Exclude="$(SymbolsPackagesPattern)"/>
+    </ItemGroup>
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(ItemsToPush)"
+                    PublishFlatContainer="$(PublishFlatContainer)"
+                    Overwrite="$(OverwriteOnPublish)" 
+                    IndexDirectory="$(__IntermediatesDir)"/>
   </Target>
 
-  <Target Name="Build" DependsOnTargets="CreateContainerName;UploadToAzure" />
+  <Target Name="PublishSymbolPackages" Condition="'$(__PublishSymbols)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
+    <PropertyGroup>
+      <RelativePath Condition="'$(RelativePath)' == ''">$(__BuildType)/symbolpkg</RelativePath>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)/index.json</ExpectedFeedUrl>
+    </PropertyGroup>
+    <ItemGroup>
+      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Include="$(SymbolsPackagesPattern)"/>
+    </ItemGroup>
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(ItemsToPush)"
+                    PublishFlatContainer="$(PublishFlatContainer)"
+                    Overwrite="$(OverwriteOnPublish)" />
+  </Target>
+
+  <Target Name="PublishTestNativeBinaries" Condition="'$(PublishTestNativeBins)' == 'true' and '$(OfficialPublish)' != 'true'">
+    <PropertyGroup>
+      <RelativePath Condition="'$(RelativePath)' == ''">$(__BuildType)/TestNativeBins</RelativePath>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)/index.json</ExpectedFeedUrl>
+    </PropertyGroup>
+    <ItemGroup>
+      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Include="$(TestNativeBinariesPattern)"/>
+    </ItemGroup>
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(ItemsToPush)"
+                    PublishFlatContainer="$(PublishFlatContainer)"
+                    Overwrite="$(OverwriteOnPublish)" />
+  </Target>
+
+
+  <Target Name="Build" DependsOnTargets="PublishPackages;PublishSymbolPackages;PublishTestNativeBinaries"/>
 </Project>
