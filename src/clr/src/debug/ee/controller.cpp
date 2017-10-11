@@ -5582,7 +5582,9 @@ bool DebuggerStepper::TrapStepInHelper(
             _ASSERTE( g_pEEInterface->IsManagedNativeCode((const BYTE *)td.GetAddress()) );
             md = g_pEEInterface->GetNativeCodeMethodDesc(td.GetAddress());
 
-            if ( g_pEEInterface->GetFunctionAddress(md) == td.GetAddress())
+            DebuggerJitInfo* pDJI = g_pDebugger->GetJitInfoFromAddr(td.GetAddress());
+            CodeRegionInfo code = CodeRegionInfo::GetCodeRegionInfo(pDJI, md);
+            if (code.AddressToOffset((const BYTE *)td.GetAddress()) == 0)
             {
 
                 LOG((LF_CORDB,LL_INFO1000,"\tDS::TS 0x%x m_reason = STEP_CALL"
