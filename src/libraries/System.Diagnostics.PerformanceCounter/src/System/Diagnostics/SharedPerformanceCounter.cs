@@ -708,13 +708,8 @@ namespace System.Diagnostics
                                 data.CounterNames = new ArrayList(counterNames);
                             }
 
-                            // figure out the shared memory name
-                            if (SharedUtils.CurrentEnvironment == SharedUtils.W2kEnvironment)
-                            {
-                                data.FileMappingName = "Global\\" + data.FileMappingName;
-                                data.MutexName = "Global\\" + _categoryName;
-                            }
-
+                            data.FileMappingName = "Global\\" + data.FileMappingName;
+                            data.MutexName = "Global\\" + _categoryName;
                             data.FileMapping = new FileMapping(data.FileMappingName, fileMappingSize, _initialOffset);
                             s_categoryDataTable[_categoryName] = data;
                         }
@@ -1689,7 +1684,6 @@ namespace System.Diagnostics
             private unsafe void Initialize(string fileMappingName, int fileMappingSize, int initialOffset)
             {
                 string mappingName = fileMappingName;
-                SharedUtils.CheckEnvironment();
 
                 SafeLocalMemHandle securityDescriptorPointer = null;
                 try
