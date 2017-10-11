@@ -246,8 +246,6 @@ namespace System.Diagnostics
             PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Administer, machineName, categoryName);
             permission.Demand();
 
-            SharedUtils.CheckNtEnvironment();
-
             Mutex mutex = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -405,8 +403,6 @@ namespace System.Diagnostics
 
             PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Administer, machineName, categoryName);
             permission.Demand();
-
-            SharedUtils.CheckNtEnvironment();
 
             categoryName = categoryName.ToLower(CultureInfo.InvariantCulture);
 

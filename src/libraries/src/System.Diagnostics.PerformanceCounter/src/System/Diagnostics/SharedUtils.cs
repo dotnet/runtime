@@ -19,7 +19,6 @@ namespace System.Diagnostics
         internal const int W2kEnvironment = 1;
         internal const int NtEnvironment = 2;
         internal const int NonNtEnvironment = 3;
-        private static volatile int s_environment = UnknownEnvironment;
         public const int WAIT_OBJECT_0 = 0x00000000;
         public const int WAIT_ABANDONED = 0x00000080;
 
@@ -59,54 +58,9 @@ namespace System.Diagnostics
             return newException;
         }
 
-        internal static int CurrentEnvironment
-        {
-            get
-            {
-                if (s_environment == UnknownEnvironment)
-                {
-                    lock (InternalSyncObject)
-                    {
-                        if (s_environment == UnknownEnvironment)
-                        {
-                            // Need to assert Environment permissions here
-                            // the environment check is not exposed as a public method                        
-                            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                            {
-                                if (Environment.OSVersion.Version.Major >= 5)
-                                    s_environment = W2kEnvironment;
-                                else
-                                    s_environment = NtEnvironment;
-                            }
-                            else
-                                s_environment = NonNtEnvironment;
-                        }
-                    }
-                }
-
-                return s_environment;
-            }
-        }
-
-        internal static void CheckEnvironment()
-        {
-            if (CurrentEnvironment == NonNtEnvironment)
-                throw new PlatformNotSupportedException(SR.Format(SR.WinNTRequired));
-        }
-
-        internal static void CheckNtEnvironment()
-        {
-            if (CurrentEnvironment == NtEnvironment)
-                throw new PlatformNotSupportedException(SR.Format(SR.Win2000Required));
-        }
-
         internal static void EnterMutex(string name, ref Mutex mutex)
         {
-            string mutexName = null;
-            if (CurrentEnvironment == W2kEnvironment)
-                mutexName = "Global\\" + name;
-            else
-                mutexName = name;
+            string mutexName = "Global\\" + name;
 
             EnterMutexWithoutGlobal(mutexName, ref mutex);
         }
