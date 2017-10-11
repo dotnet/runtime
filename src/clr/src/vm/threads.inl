@@ -22,7 +22,6 @@
 #include "frames.h"
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_IMPLICIT_TLS
 
 #ifndef __llvm__
 EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
@@ -40,17 +39,7 @@ EXTERN_C inline AppDomain* STDCALL GetAppDomain()
     return gCurrentThreadInfo.m_pAppDomain;
 }
 
-#endif // FEATURE_IMPLICIT_TLS
 #endif // !DACCESS_COMPILE
-
-#ifdef ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-// See code:GetThreadGenericFullCheck
-inline /* static */ BOOL Thread::ShouldEnforceEEThreadNotRequiredContracts()
-{
-    LIMITED_METHOD_CONTRACT;
-    return s_fEnforceEEThreadNotRequiredContracts;
-}
-#endif // ENABLE_GET_THREAD_GENERIC_FULL_CHECK
 
 inline void Thread::IncLockCount()
 {

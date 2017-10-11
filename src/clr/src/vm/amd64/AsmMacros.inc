@@ -188,28 +188,24 @@ Section ends
 
 
 ;
-; Macro to Call GetThread() correctly whether it is indirect or direct
-;
-CALL_GETTHREAD macro
-ifndef GetThread
-extern GetThread:proc
-endif
-        call    GetThread
+; Inlined version of GetThread
+; Trashes rax and r11
+; 
+INLINE_GETTHREAD macro Reg
+
+        EXTERN _tls_index : DWORD
+        EXTERN gCurrentThreadInfo:DWORD
+
+        mov     r11d, [_tls_index]
+        mov     rax, gs:[OFFSET__TEB__ThreadLocalStoragePointer]
+        mov     rax, [rax + r11 * 8]
+        mov     r11d, SECTIONREL gCurrentThreadInfo
+        mov     Reg, [rax + r11]
+
         endm
 
-CALL_GETAPPDOMAIN macro
-ifndef GetAppDomain
-extern GetAppDomain:proc
-endif
-        call    GetAppDomain
-        endm
-
-;
 ; if you change this code there will be corresponding code in JITInterfaceGen.cpp which will need to be changed
 ;
-
-; DEFAULT_TARGET needs to always be futher away than the fixed up target will be
-
 
 JIT_HELPER_MONITOR_THUNK macro THUNK_NAME, Section
 Section segment para 'CODE'

@@ -406,9 +406,7 @@ GPTR_DECL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
 GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 
-//<TODO> @TODO Remove eventually - determines whether the verifier throws an exception when something fails</TODO>
-EXTERN bool                 g_fVerifierOff;
-
+GVAL_DECL(DWORD,            g_TlsIndex);
 
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;

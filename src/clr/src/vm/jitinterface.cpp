@@ -9932,19 +9932,6 @@ DWORD CEEInfo::getThreadTLSIndex(void **ppIndirection)
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
 
-    JIT_TO_EE_TRANSITION();
-
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_IMPLICIT_TLS)
-    result = GetThreadTLSIndex();
-
-    // The JIT can use the optimized TLS access only if the runtime is using it as well.
-    //  (This is necessaryto make managed code work well under appverifier.)
-    if (GetTLSAccessMode(result) == TLSACCESS_GENERIC)
-        result = (DWORD)-1;
-#endif
-
-    EE_TO_JIT_TRANSITION();
-
     return result;
 }
 
