@@ -1207,7 +1207,8 @@ namespace System
                     {
                         int numBytesWritten;
                         writeSuccess = (0 != Interop.Kernel32.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero));
-                        Debug.Assert(!writeSuccess || count == numBytesWritten);
+                        // In some cases we have seen numBytesWritten returned that is twice count;
+                        // so we aren't asserting the value of it. See corefx #24508
                     }
                     else
                     {
@@ -1227,7 +1228,7 @@ namespace System
 
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
-                // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is mot an error, but EOF.)
+                // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                     return Interop.Errors.ERROR_SUCCESS;
