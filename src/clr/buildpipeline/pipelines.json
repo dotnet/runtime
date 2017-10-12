@@ -26,7 +26,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
-            "DockerTag": "centos-6-d485f41-20173404063424",
+            "DockerTag": "centos-6-376e1a3-20174311014331",
             "Rid": "rhel.6",
 			"PB_AdditionalBuildArgs": "-portablebuild=false"
           },
@@ -133,6 +133,7 @@
       },
       "BuildParameters": {
         "PB_BuildType": "Release",
+        "PublishFlat": "false",
         "PB_EnforcePGO": "enforcepgo"
       },
       "ReportingParameters": {
@@ -148,7 +149,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Debug"
+        "PB_BuildType": "Debug",
+        "PublishFlat": "true"
       },
       "ReportingParameters": {
         "PB_BuildType": "Debug"
@@ -163,7 +165,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Checked"
+        "PB_BuildType": "Checked",
+        "PublishFlat": "true"
       },
       "ReportingParameters": {
         "PB_BuildType": "Checked"
@@ -178,7 +181,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Release"
+        "PB_BuildType": "Release",
+        "PublishFlat": "false"
       },
       "ReportingParameters": {
         "PB_BuildType": "Release"
@@ -193,7 +197,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Debug"
+        "PB_BuildType": "Debug",
+        "PublishFlat": "true"
       },
       "ReportingParameters": {
         "PB_BuildType": "Debug"
@@ -208,7 +213,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Checked"
+        "PB_BuildType": "Checked",
+        "PublishFlat": "true"
       },
       "ReportingParameters": {
         "PB_BuildType": "Checked"

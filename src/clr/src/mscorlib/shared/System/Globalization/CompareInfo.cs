@@ -51,8 +51,8 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType);
 
-            // Mask used to check if we have the right flags.
-        private const CompareOptions ValidSortkeyCtorMaskOffFlags = 
+        // Mask used to check if we have the right flags.
+        private const CompareOptions ValidSortkeyCtorMaskOffFlags =
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
@@ -61,12 +61,11 @@ namespace System.Globalization
         // ie: en-US would have an en-US sort.  For haw-US (custom), then we serialize it as haw-US.
         // The interesting part is that since haw-US doesn't have its own sort, it has to point at another
         // locale, which is what SCOMPAREINFO does.
-
         [OptionalField(VersionAdded = 2)]
         private string m_name;  // The name used to construct this CompareInfo. Do not rename (binary serialization)
 
         [NonSerialized]
-        private string _sortName; // The name that defines our behavior.
+        private string _sortName; // The name that defines our behavior
 
         [OptionalField(VersionAdded = 3)]
         private SortVersion m_SortVersion; // Do not rename (binary serialization)
@@ -74,7 +73,7 @@ namespace System.Globalization
         // _invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
         [NonSerialized]
         private readonly bool _invariantMode = GlobalizationMode.Invariant;
-        
+
         private int culture; // Do not rename (binary serialization). The fields sole purpose is to support Desktop serialization.
 
         internal CompareInfo(CultureInfo culture)
@@ -102,7 +101,7 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
-            if (assembly != typeof(Object).Module.Assembly) 
+            if (assembly != typeof(Object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib);
             }
@@ -189,7 +188,7 @@ namespace System.Globalization
 
         public static unsafe bool IsSortable(string text)
         {
-            if (text == null) 
+            if (text == null)
             {
                 // A null param is invalid here.
                 throw new ArgumentNullException(nameof(text));
@@ -205,13 +204,12 @@ namespace System.Globalization
             {
                 return true;
             }
-            
+
             fixed (char *pChar = text)
             {
                 return IsSortable(pChar, text.Length);
             }
         }
-
 
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
@@ -219,7 +217,7 @@ namespace System.Globalization
             m_name = null;
         }
 
-        void IDeserializationCallback.OnDeserialization(Object sender)
+        void IDeserializationCallback.OnDeserialization(object sender)
         {
             OnDeserialized();
         }
@@ -522,7 +520,7 @@ namespace System.Globalization
 
                 return CompareOrdinal(string1, offset1, length1, string2, offset2, length2);
             }
-            
+
             return CompareString(
                 string1.AsReadOnlySpan().Slice(offset1, length1),
                 string2.AsReadOnlySpan().Slice(offset2, length2),

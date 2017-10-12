@@ -2714,17 +2714,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                                                                                          , TRUE
 #endif
                                                                                          );
-#ifdef FEATURE_IMPLICIT_TLS
                 Thread* thread = GetThread();
-#else
-                // Don't use GetThread because perhaps we didn't initialize yet, or we
-                // have already shutdown the EE.  Note that there is a race here.  We
-                // might ask for TLS from a slot we just released.  We are assuming that
-                // nobody re-allocates that same slot while we are doing this.  It just
-                // isn't worth locking for such an obscure case.
-                DWORD   tlsVal = GetThreadTLSIndex();
-                Thread  *thread = (tlsVal != (DWORD)-1)?(Thread *) UnsafeTlsGetValue(tlsVal):NULL;
-#endif
                 if (thread)
                 {
 #ifdef FEATURE_COMINTEROP

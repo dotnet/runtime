@@ -22,16 +22,20 @@ namespace JitBench
         {
             var options = JitBenchHarnessOptions.Parse(args);
 
-            s_temporaryDirectory = Path.Combine(options.IntermediateOutputDirectory, "JitBench");
+            s_temporaryDirectory = options.IntermediateOutputDirectory;
             s_targetArchitecture = options.TargetArchitecture;
             if (string.IsNullOrWhiteSpace(s_targetArchitecture))
                 throw new ArgumentNullException("Unspecified target architecture.");
 
-            if (Directory.Exists(s_temporaryDirectory))
-                Directory.Delete(s_temporaryDirectory, true);
-            Directory.CreateDirectory(s_temporaryDirectory);
-
-            s_jitBenchDevDirectory = Path.Combine(s_temporaryDirectory, "JitBench-dev");
+            // J == JitBench folder. By reducing the length of the directory
+            // name we attempt to reduce the chances of hitting PATH length
+            // problems we have been hitting in the lab.
+            // The changes we have done have reduced it in this way:
+            // C:\Jenkins\workspace\perf_scenario---5b001a46\bin\sandbox\JitBench\JitBench-dev
+            // C:\j\workspace\perf_scenario---5b001a46\bin\sandbox\JitBench\JitBench-dev
+            // C:\j\w\perf_scenario---5b001a46\bin\sandbox\JitBench\JitBench-dev
+            // C:\j\w\perf_scenario---5b001a46\bin\sandbox\J
+            s_jitBenchDevDirectory = Path.Combine(s_temporaryDirectory, "J");
 
             using (var h = new XunitPerformanceHarness(args))
             {
@@ -42,7 +46,7 @@ namespace JitBench
 
         static Program()
         {
-            s_ScenarioConfiguration = new ScenarioConfiguration(TimeSpan.FromMilliseconds(20000)) {
+            s_ScenarioConfiguration = new ScenarioConfiguration(TimeSpan.FromMilliseconds(60000)) {
                 Iterations = 11
             };
 
@@ -238,7 +242,7 @@ namespace JitBench
             var psi = new ProcessStartInfo() {
                 FileName = "cmd.exe",
                 Arguments = $"/C \"{dotnetProcessFileName} MusicStore.dll 1>{MusicStoreRedirectedStandardOutputFileName}\"",
-                WorkingDirectory = Path.Combine(musicStoreDirectory, "bin", "Release", "netcoreapp2.0", "publish")
+                WorkingDirectory = Path.Combine(musicStoreDirectory, "bin", "Release", JitBenchTargetFramework, "publish")
             };
 
             foreach (KeyValuePair<string, string> pair in environment)
@@ -249,12 +253,12 @@ namespace JitBench
 
         private const string MusicStoreRedirectedStandardOutputFileName = "measures.txt";
         private const string JitBenchRepoUrl = "https://github.com/aspnet/JitBench";
-        private const string JitBenchCommitSha1Id = "f4a56adc31e08368ef927c4273eded38e158646b";
-        private const string JitBenchTargetFramework = "netcoreapp2.0";
+        private const string JitBenchCommitSha1Id = "b7e7b786c60daa255aacaea85006afe4d4ec8306";
+        private const string JitBenchTargetFramework = "netcoreapp2.1";
 
         private static void PostIteration()
         {
-            var path = Path.Combine(s_jitBenchDevDirectory, "src", "MusicStore", "bin", "Release", "netcoreapp2.0", "publish");
+            var path = Path.Combine(s_jitBenchDevDirectory, "src", "MusicStore", "bin", "Release", JitBenchTargetFramework, "publish");
             path = Path.Combine(path, MusicStoreRedirectedStandardOutputFileName);
 
             double? startupTime = null;
@@ -279,7 +283,7 @@ namespace JitBench
             if (!startupTime.HasValue)
                 throw new Exception("Startup time was not found.");
             if (!requestTime.HasValue)
-                throw new Exception("Request time was not found.");
+                throw new Exception("First Request time was not found.");
 
             s_startupTimes[s_iteration] = startupTime.Value;
             s_requestTimes[s_iteration] = requestTime.Value;
@@ -300,10 +304,10 @@ namespace JitBench
             };
 
             // Create (measured) test entries for this scenario.
-            var startup = new ScenarioTestModel("Startup time");
+            var startup = new ScenarioTestModel("Startup");
             scenarioBenchmark.Tests.Add(startup);
 
-            var request = new ScenarioTestModel("Request time");
+            var request = new ScenarioTestModel("First Request");
             scenarioBenchmark.Tests.Add(request);
 
             // Add measured metrics to each test.

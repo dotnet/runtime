@@ -2406,10 +2406,6 @@ void SystemDomain::Init()
     _ASSERTE(curCtx->GetDomain() != NULL);
 #endif
 
-#ifdef _DEBUG
-    g_fVerifierOff = g_pConfig->IsVerifierOff();
-#endif
-
 #ifdef FEATURE_PREJIT
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
         g_fAllowNativeImages = false;

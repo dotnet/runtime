@@ -205,9 +205,6 @@ ICorJitCompiler* __stdcall getJit()
 // Information kept in thread-local storage. This is used in the noway_assert exceptional path.
 // If you are using it more broadly in retail code, you would need to understand the
 // performance implications of accessing TLS.
-//
-// If the JIT is being statically linked, these methods must be implemented by the consumer.
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
 
 __declspec(thread) void* gJitTls = nullptr;
 
@@ -220,15 +217,6 @@ void SetJitTls(void* value)
 {
     gJitTls = value;
 }
-
-#else // !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
-
-extern "C" {
-void* GetJitTls();
-void SetJitTls(void* value);
-}
-
-#endif // // defined(FEATURE_MERGE_JIT_AND_ENGINE) && defined(FEATURE_IMPLICIT_TLS)
 
 #if defined(DEBUG)
 

@@ -256,11 +256,6 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
         // see synblk.cpp, the pointer is pointed to a static byte[]
         SyncBlockCache::s_pSyncBlockCache.EnumMem();
 
-#ifndef FEATURE_IMPLICIT_TLS
-        ReportMem(m_globalBase + g_dacGlobals.dac__gThreadTLSIndex, sizeof(DWORD));
-        ReportMem(m_globalBase + g_dacGlobals.dac__gAppDomainTLSIndex, sizeof(DWORD));
-#endif
-
         ReportMem(m_globalBase + g_dacGlobals.dac__g_FCDynamicallyAssignedImplementations,
                   sizeof(TADDR)*ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS);
 
