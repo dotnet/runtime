@@ -692,7 +692,7 @@ endif
 
 if POWERPC64
 # FIXME: These tests hang/fail for unknown reasons
-PLATFORM_DISABLED_TESTS += monitor.exe threadpool-exceptions5.exe appdomain-thread-abort.exe appdomain-unload.exe \
+PLATFORM_DISABLED_TESTS += monitor.exe threadpool-exceptions5.exe appdomain-unload.exe \
 	pinvoke2.exe pinvoke3.exe pinvoke11.exe threadpool-exceptions7.exe winx64structs.exe bug-10127.exe pinvoke_ppcc.exe \
 	pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe abort-cctor.exe load-exceptions.exe \
 	sgen-domain-unload-2.exe sgen-weakref-stress.exe sgen-cementing-stress.exe sgen-new-threads-dont-join-stw.exe \
@@ -908,8 +908,7 @@ CI_DISABLED_TESTS = \
 # failing tests which we temporarily disable for PRs
 # so they don't interfere with other people's work
 CI_PR_DISABLED_TESTS = \
-	appdomain-threadpool-unload.exe	\
-	appdomain-thread-abort.exe
+	appdomain-threadpool-unload.exe
 
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
 LLVM_DISABLED_TESTS = \
@@ -930,8 +929,7 @@ KNOWN_FAILING_TESTS = \
 	bug-348522.2.exe	\
 	bug-459094.exe \
 	delegate-invoke.exe \
-	bug-Xamarin-5278.exe \
-	appdomain-thread-abort.exe
+	bug-Xamarin-5278.exe
 
 DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
@@ -1067,7 +1065,8 @@ INTERP_DISABLED_TESTS = \
 	vararg2.exe \
 	vt-sync-method.exe \
 	winx64structs.exe \
-	xdomain-threads.exe
+	xdomain-threads.exe \
+	appdomain-thread-abort.exe
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))
