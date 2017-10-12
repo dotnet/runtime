@@ -957,7 +957,9 @@ namespace System.Collections.Immutable
         [ExcludeFromCodeCoverage]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return this.IsEmpty ?
+                Enumerable.Empty<T>().GetEnumerator() :
+                this.GetEnumerator();
         }
 
         #endregion
