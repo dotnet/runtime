@@ -56,7 +56,7 @@ The profiling API is used by a profiler DLL, loaded into the same process as the
 
 Note that only the data-gathering part of the profiler solution should be running in-process with the profiled application—UI and data analysis should be done in a separate process.
 
-![Profiling Process Overview]: images/profiling-overview.png
+![Profiling Process Overview](../images/profiling-overview.png)
 
 The _ICorProfilerCallback_ and _ICorProfilerCallback2_ interfaces consists of methods with names like ClassLoadStarted, ClassLoadFinished, JITCompilationStarted. Each time the CLR loads/unloads a class, compiles a function, etc., it calls the corresponding method in the profiler's _ICorProfilerCallback/ICorProfilerCallback2_ interface.  (And similarly for all of the other notifications; see later for details)
 
@@ -292,7 +292,7 @@ All of these callbacks are made while the Runtime is suspended, so none of the _
 
 **Example:** The diagram below shows 10 objects, before garbage collection.  They lie at start addresses (equivalent to _ObjectIDs_) of 08, 09, 10, 12, 13, 15, 16, 17, 18 and 19.  _ObjectIDs_ 09, 13 and 19 are dead (shown shaded); their space will be reclaimed during garbage collection.
 
-![Garbage Collection]: profiling-gc.png
+![Garbage Collection](../images/profiling-gc.png)
 
 The "After" picture shows how the space occupied by dead objects has been reclaimed to hold live objects.  The live objects have been moved in the heap to the new locations shown.  As a result, their _ObjectIDs_ all change.  The simplistic way to describe these changes is with a table of before-and-after _ObjectIDs_, like this:
 
@@ -396,7 +396,7 @@ Exceptions
 
 Notifications of exceptions are the most difficult of all notifications to describe and to understand.  This is because of the inherent complexity in exception processing.  The set of exception notifications described below was designed to provide all the information required for a sophisticated profiler – so that, at every instant, it can keep track of which pass (first or second), which frame, which filter and which finally block is being executed, for every thread in the profilee process. Note that the Exception notifications do not provide any _threadID's_ but a profiler can always call _ICorProfilerInfo::GetCurrentThreadID_ to discover which managed thread throws the exception.
 
-![Exception callback sequence]: profiling-exception-callback-sequence.png
+![Exception callback sequence](../images/profiling-exception-callback-sequence.png)
 
 The figure above displays how the code profiler receives the various callbacks, when monitoring exception events. Each thread starts out in "Normal Execution." When the thread is in a state within the big gray box, the exception system has control of the thread—any non-exception-related callbacks (e.g. ObjectAllocated) that occur while the thread is in one of these states may be attributed to the exception system itself. When the thread is in a state outside of the big gray box, it is running arbitrary managed code.
 
