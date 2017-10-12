@@ -76,15 +76,19 @@ The picture so far describes what happens once the application and profiler are 
 
 When both checks above pass, the CLR creates an instance of the profiler in a similar fashion to _CoCreateInstance_.  The profiler is not loaded through a direct call to _CoCreateInstance_ so that a call to _CoInitialize_ may be avoided, which requires setting the threading model.  It then calls the _ICorProfilerCallback::Initialize_ method in the profiler.  The signature of this method is:
 
-	HRESULT Initialize(IUnknown \*pICorProfilerInfoUnk)
+```cpp
+HRESULT Initialize(IUnknown *pICorProfilerInfoUnk)
+```
 
 The profiler must QueryInterface pICorProfilerInfoUnk for an _ICorProfilerInfo_ interface pointer and save it so that it can call for more info during later profiling.  It then calls ICorProfilerInfo::SetEventMask to say which categories of notifications it is interested in.  For example:
 
-	ICorProfilerInfo\* pInfo;
+```cpp
+ICorProfilerInfo* pInfo;
 
-	pICorProfilerInfoUnk->QueryInterface(IID\_ICorProfilerInfo, (void\*\*)&pInfo);
+pICorProfilerInfoUnk->QueryInterface(IID_ICorProfilerInfo, (void**)&pInfo);
 
-	pInfo->SetEventMask(COR\_PRF\_MONITOR\_ENTERLEAVE | COR\_PRF\_MONITOR\_GC)
+pInfo->SetEventMask(COR_PRF_MONITOR_ENTERLEAVE | COR_PRF_MONITOR_GC)
+```
 
 This mask would be used for a profiler interested only in function enter/leave notifications and garbage collection notifications.  The profiler then simply returns, and is off and running!
 
