@@ -966,6 +966,8 @@ public:
 
     // Ensure the DJI cache is completely up to date. (This is heavy weight).
     void CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module * pModuleFilter = NULL);
+    // Ensure the DJI cache is up to date for a particular closed method desc
+    void CreateDJIsForMethodDesc(MethodDesc * pMethodDesc);
 
     // Get an iterator for all native blobs (accounts for Generics, Enc, + Prejiiting).
     // Must be stopped when we do this. This could be heavy weight.
