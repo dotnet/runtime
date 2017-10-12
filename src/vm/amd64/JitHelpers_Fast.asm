@@ -583,58 +583,6 @@ endif
         nop
 LEAF_END_MARKED JIT_WriteBarrier, _TEXT
 
-ifndef FEATURE_IMPLICIT_TLS
-LEAF_ENTRY GetThread, _TEXT
-        ; the default implementation will just jump to one that returns null until 
-        ; MakeOptimizedTlsGetter is run which will overwrite this with the actual 
-        ; implementation.
-        jmp short GetTLSDummy
-
-        ;
-        ; insert enough NOPS to be able to insert the largest optimized TLS getter 
-        ; that we might need, it is important that the TLS getter doesn't overwrite
-        ; into the dummy getter.
-        ;
-        db (TLS_GETTER_MAX_SIZE_ASM - 2) DUP (0CCh)
-
-LEAF_END GetThread, _TEXT
-
-LEAF_ENTRY GetAppDomain, _TEXT
-        ; the default implementation will just jump to one that returns null until 
-        ; MakeOptimizedTlsGetter is run which will overwrite this with the actual 
-        ; implementation.
-        jmp short GetTLSDummy
-
-        ;
-        ; insert enough NOPS to be able to insert the largest optimized TLS getter 
-        ; that we might need, it is important that the TLS getter doesn't overwrite
-        ; into the dummy getter.
-        ;
-        db (TLS_GETTER_MAX_SIZE_ASM - 2) DUP (0CCh)
-
-LEAF_END GetAppDomain, _TEXT
-
-LEAF_ENTRY GetTLSDummy, _TEXT
-        xor    rax, rax
-        ret
-LEAF_END GetTLSDummy, _TEXT
-
-LEAF_ENTRY ClrFlsGetBlock, _TEXT
-        ; the default implementation will just jump to one that returns null until 
-        ; MakeOptimizedTlsGetter is run which will overwrite this with the actual 
-        ; implementation.
-        jmp short GetTLSDummy
-
-        ;
-        ; insert enough NOPS to be able to insert the largest optimized TLS getter 
-        ; that we might need, it is important that the TLS getter doesn't overwrite
-        ; into the dummy getter.
-        ;
-        db (TLS_GETTER_MAX_SIZE_ASM - 2) DUP (0CCh)
-
-LEAF_END ClrFlsGetBlock, _TEXT
-endif
-
 ; Mark start of the code region that we patch at runtime
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
@@ -986,12 +934,11 @@ if 0 ne 0
         ;
         ; link the TailCallFrame
         ;
-        CALL_GETTHREAD
-        mov     r14, rax
-        mov     r15, [rax + OFFSETOF__Thread__m_pFrame]        
+        INLINE_GETTHREAD r14
+        mov     r15, [r14 + OFFSETOF__Thread__m_pFrame]        
         mov     [r13 + OFFSETOF_FRAME + OFFSETOF__Frame__m_Next], r15
         lea     r10, [r13 + OFFSETOF_FRAME]
-        mov     [rax + OFFSETOF__Thread__m_pFrame], r10
+        mov     [r14 + OFFSETOF__Thread__m_pFrame], r10
 endif
 
         ; the pretend call would be here

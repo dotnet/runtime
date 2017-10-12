@@ -1003,7 +1003,7 @@ public:
 
     // Creating the Jit-infos.
     DebuggerJitInfo *FindOrCreateInitAndAddJitInfo(MethodDesc* fd);
-    DebuggerJitInfo *CreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr);
+    DebuggerJitInfo *CreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr, BOOL* jitInfoWasCreated);
 
 
     void DeleteJitInfo(DebuggerJitInfo *dji);

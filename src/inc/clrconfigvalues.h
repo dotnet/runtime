@@ -284,7 +284,6 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ConditionalContracts, W("ConditionalCon
 CONFIG_DWORD_INFO(INTERNAL_ConsistencyCheck, W("ConsistencyCheck"), 0, "")
 CONFIG_DWORD_INFO_EX(INTERNAL_ContinueOnAssert, W("ContinueOnAssert"), 0, "If set, doesn't break on asserts.", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_disableStackOverflowProbing, W("disableStackOverflowProbing"), 0, "", CLRConfig::FavorConfigFile)
-CONFIG_DWORD_INFO(INTERNAL_EnforceEEThreadNotRequiredContracts, W("EnforceEEThreadNotRequiredContracts"), 0, "Indicates whether to enforce EE_THREAD_NOT_REQUIRED contracts (not enforced by default for perf reasons).  Only applicable in dbg/chk builds--EE_THREAD_NOT_REQUIRED contracts never enforced in ret builds.")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_InjectFatalError, W("InjectFatalError"), "")
 CONFIG_DWORD_INFO_EX(INTERNAL_InjectFault, W("InjectFault"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SuppressChecks, W("SuppressChecks"), "")

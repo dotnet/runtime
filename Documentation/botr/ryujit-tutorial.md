@@ -105,7 +105,7 @@ The initial phases of RyuJIT set up the IR in preparation for the optimization p
   - Eliminate array index range checks based on value numbers and assertions
 
 #### Notes
-The optimization phases of RyuJIT are based on liveness analysis, SSA and value numbering. These are used to perform loop invariant code hosting, copy propagation, common subexpression elimination, assertion propagation, and range check elimination. SSA is used to uniquely identify the values of lclVars, while value numbering is used to identify trees that compute the same value for a given execution.
+The optimization phases of RyuJIT are based on liveness analysis, SSA and value numbering. These are used to perform loop invariant code hoisting, copy propagation, common subexpression elimination, assertion propagation, and range check elimination. SSA is used to uniquely identify the values of lclVars, while value numbering is used to identify trees that compute the same value for a given execution.
 
 ### Back-end Phases of RyuJIT
 ![RyuJIT Backend Phases](../images/ryujit-backend-phases.png)

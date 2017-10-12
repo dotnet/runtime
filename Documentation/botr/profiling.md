@@ -56,9 +56,9 @@ The profiling API is used by a profiler DLL, loaded into the same process as the
 
 Note that only the data-gathering part of the profiler solution should be running in-process with the profiled application—UI and data analysis should be done in a separate process.
 
-![Profiling Process Overview]: images/profiling-overview.png
+![Profiling Process Overview](../images/profiling-overview.png)
 
-The _ICorProfilerCallback_ and _ICorProfilerCallback2 _interfaces consists of methods with names like ClassLoadStarted, ClassLoadFinished, JITCompilationStarted. Each time the CLR loads/unloads a class, compiles a function, etc., it calls the corresponding method in the profiler's _ICorProfilerCallback/ICorProfilerCallback2_ interface.  (And similarly for all of the other notifications; see later for details)
+The _ICorProfilerCallback_ and _ICorProfilerCallback2_ interfaces consists of methods with names like ClassLoadStarted, ClassLoadFinished, JITCompilationStarted. Each time the CLR loads/unloads a class, compiles a function, etc., it calls the corresponding method in the profiler's _ICorProfilerCallback/ICorProfilerCallback2_ interface.  (And similarly for all of the other notifications; see later for details)
 
 So, for example, a profiler could measure code performance via the two notifications FunctionEnter and FunctionLeave.  It simply timestamps each notification, accumulates results, then outputs a list indicating which functions consumed the most cpu time, or most wall-clock time, during execution of the application.
 
@@ -71,20 +71,24 @@ The picture so far describes what happens once the application and profiler are 
 - Cor\_Enable\_Profiling - only connect with a profiler if this environment variable exists and is set to a non-zero value.
 - Cor\_Profiler - connect with the profiler with this CLSID or ProgID (which must have been stored previously in the Registry). The Cor\_Profiler environment variable is defined as a string:
 	- set Cor\_Profiler={32E2F4DA-1BEA-47ea-88F9-C5DAF691C94A}, or
-	- set Cor\_Proflier="MyProfiler"
+	- set Cor\_Profiler="MyProfiler"
 - The profiler class is the one that implements _ICorProfilerCallback/ICorProfilerCallback2_. It is required that a profiler implement ICorProfilerCallback2; if it does not, it will not be loaded.
 
 When both checks above pass, the CLR creates an instance of the profiler in a similar fashion to _CoCreateInstance_.  The profiler is not loaded through a direct call to _CoCreateInstance_ so that a call to _CoInitialize_ may be avoided, which requires setting the threading model.  It then calls the _ICorProfilerCallback::Initialize_ method in the profiler.  The signature of this method is:
 
-	HRESULT Initialize(IUnknown \*pICorProfilerInfoUnk)
+```cpp
+HRESULT Initialize(IUnknown *pICorProfilerInfoUnk)
+```
 
 The profiler must QueryInterface pICorProfilerInfoUnk for an _ICorProfilerInfo_ interface pointer and save it so that it can call for more info during later profiling.  It then calls ICorProfilerInfo::SetEventMask to say which categories of notifications it is interested in.  For example:
 
-	ICorProfilerInfo\* pInfo;
+```cpp
+ICorProfilerInfo* pInfo;
 
-	pICorProfilerInfoUnk->QueryInterface(IID\_ICorProfilerInfo, (void\*\*)&pInfo);
+pICorProfilerInfoUnk->QueryInterface(IID_ICorProfilerInfo, (void**)&pInfo);
 
-	pInfo->SetEventMask(COR\_PRF\_MONITOR\_ENTERLEAVE | COR\_PRF\_MONITOR\_GC)
+pInfo->SetEventMask(COR_PRF_MONITOR_ENTERLEAVE | COR_PRF_MONITOR_GC)
+```
 
 This mask would be used for a profiler interested only in function enter/leave notifications and garbage collection notifications.  The profiler then simply returns, and is off and running!
 
@@ -212,7 +216,7 @@ In addition, the following callbacks may or may not allow the Profiler to block.
 
 - JITCompilationStarted, JITCompilationFinished
 
-Note that if the Profiler _does _block, it will delay garbage collection.  This is harmless, as long as the Profiler code itself does not attempt to allocate space in the managed heap, which could induce deadlock.
+Note that if the Profiler _does_ block, it will delay garbage collection.  This is harmless, as long as the Profiler code itself does not attempt to allocate space in the managed heap, which could induce deadlock.
 
 Using COM
 ---------
@@ -288,7 +292,7 @@ All of these callbacks are made while the Runtime is suspended, so none of the _
 
 **Example:** The diagram below shows 10 objects, before garbage collection.  They lie at start addresses (equivalent to _ObjectIDs_) of 08, 09, 10, 12, 13, 15, 16, 17, 18 and 19.  _ObjectIDs_ 09, 13 and 19 are dead (shown shaded); their space will be reclaimed during garbage collection.
 
-![Garbage Collection]: profiling-gc.png
+![Garbage Collection](../images/profiling-gc.png)
 
 The "After" picture shows how the space occupied by dead objects has been reclaimed to hold live objects.  The live objects have been moved in the heap to the new locations shown.  As a result, their _ObjectIDs_ all change.  The simplistic way to describe these changes is with a table of before-and-after _ObjectIDs_, like this:
 
@@ -392,7 +396,7 @@ Exceptions
 
 Notifications of exceptions are the most difficult of all notifications to describe and to understand.  This is because of the inherent complexity in exception processing.  The set of exception notifications described below was designed to provide all the information required for a sophisticated profiler – so that, at every instant, it can keep track of which pass (first or second), which frame, which filter and which finally block is being executed, for every thread in the profilee process. Note that the Exception notifications do not provide any _threadID's_ but a profiler can always call _ICorProfilerInfo::GetCurrentThreadID_ to discover which managed thread throws the exception.
 
-![Exception callback sequence]: profiling-exception-callback-sequence.png
+![Exception callback sequence](../images/profiling-exception-callback-sequence.png)
 
 The figure above displays how the code profiler receives the various callbacks, when monitoring exception events. Each thread starts out in "Normal Execution." When the thread is in a state within the big gray box, the exception system has control of the thread—any non-exception-related callbacks (e.g. ObjectAllocated) that occur while the thread is in one of these states may be attributed to the exception system itself. When the thread is in a state outside of the big gray box, it is running arbitrary managed code.
 
