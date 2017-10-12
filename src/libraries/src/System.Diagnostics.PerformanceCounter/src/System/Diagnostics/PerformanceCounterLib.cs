@@ -91,9 +91,7 @@ namespace System.Diagnostics
                     {
                         if (s_computerName == null)
                         {
-                            StringBuilder sb = new StringBuilder(256);
-                            Interop.Kernel32.GetComputerName(sb, new int[] { sb.Capacity });
-                            s_computerName = sb.ToString();
+                            s_computerName = Interop.Kernel32.GetComputerName() ?? string.Empty;
                         }
                     }
                 }
