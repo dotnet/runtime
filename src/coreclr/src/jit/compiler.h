@@ -8089,7 +8089,7 @@ public:
         // which gets reported as a GC root to stackwalker.
         // (See also ICodeManager::GetAddrOfSecurityObject.)
 
-        bool compReloc;
+        bool compReloc; // Generate relocs for pointers in code, true for all ngen/prejit codegen
 
 #ifdef DEBUG
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
