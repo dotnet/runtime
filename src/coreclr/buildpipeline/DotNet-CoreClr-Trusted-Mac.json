@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/publish-packages.sh",
-        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -BuildType=$(PB_BuildType) -BuildArch=$(Architecture) -Container=$(PB_ContainerName) -distroRid=$(Rid) -PublishSymbols -PublishTestNativeBins -- /p:RelativePath=$(PB_BlobNamePrefix)$(PB_BuildType)/TestNativeBins/$(Rid) /p:OverwriteOnPublish=true",
+        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -BuildType=$(PB_BuildType) -BuildArch=$(Architecture) -Container=$(PB_ContainerName) -distroRid=$(Rid) -PublishSymbols -PublishTestNativeBins -- /p:RelativePath=$(PB_BlobNamePrefix)$(PB_BuildType)/TestNativeBins/$(Rid)-$(Architecture) /p:OverwriteOnPublish=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
