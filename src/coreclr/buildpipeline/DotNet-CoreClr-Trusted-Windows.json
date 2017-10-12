@@ -141,7 +141,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run publish-packages.cmd",
+      "displayName": "Publish packages",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -150,7 +150,25 @@
       },
       "inputs": {
         "filename": "publish-packages.cmd",
-        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -BuildArch=$(Architecture) -BuildType=$(PB_BuildType) -- /p:ContainerName=$(Label) /p:OverwriteOnPublish=true",
+        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -BuildArch=$(Architecture) -BuildType=$(PB_BuildType) -Container=$(PB_ContainerName) -PublishPackages -- /p:RelativePath=$(PB_BlobNamePrefix)$(PB_BuildType)/pkg /p:PublishFlatContainer=$(PublishFlat) /p:OverwriteOnPublish=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish symbol packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "publish-packages.cmd",
+        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -BuildArch=$(Architecture) -BuildType=$(PB_BuildType) -Container=$(PB_ContainerName) -PublishSymbols -- /p:RelativePath=$(PB_BlobNamePrefix)$(PB_BuildType)/symbolpkg /p:OverwriteOnPublish=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

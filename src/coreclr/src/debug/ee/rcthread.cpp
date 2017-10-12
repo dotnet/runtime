@@ -763,7 +763,6 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     g_pEEInterface->GetRuntimeOffsets(&pDebuggerRuntimeOffsets->m_TLSIndex,
                                       &pDebuggerRuntimeOffsets->m_TLSIsSpecialIndex,
                                       &pDebuggerRuntimeOffsets->m_TLSCantStopIndex,
-                                      &pDebuggerRuntimeOffsets->m_TLSIndexOfPredefs,
                                       &pDebuggerRuntimeOffsets->m_EEThreadStateOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadStateNCOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadPGCDisabledOffset,
@@ -777,10 +776,6 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
                                       &pDebuggerRuntimeOffsets->m_EEThreadCantStopOffset,
                                       &pDebuggerRuntimeOffsets->m_EEFrameNextOffset,
                                       &pDebuggerRuntimeOffsets->m_EEIsManagedExceptionStateMask);
-
-#ifndef FEATURE_IMPLICIT_TLS
-    _ASSERTE((pDebuggerRuntimeOffsets->m_TLSIndexOfPredefs != 0) || !"CExecutionEngine::TlsIndex is not initialized yet");
-#endif
 
     // Remember the struct in the control block.
     pDebuggerIPCControlBlock->m_pRuntimeOffsets = pDebuggerRuntimeOffsets;

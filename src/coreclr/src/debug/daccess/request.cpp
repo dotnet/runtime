@@ -4041,14 +4041,14 @@ HRESULT ClrDataAccess::GetTLSIndex(ULONG *pIndex)
         return E_INVALIDARG;
 
     SOSDacEnter();
-    if (CExecutionEngine::GetTlsIndex() == TLS_OUT_OF_INDEXES)
+    if (g_TlsIndex == TLS_OUT_OF_INDEXES)
     {
         *pIndex = 0;
         hr = S_FALSE;
     }
     else
     {
-        *pIndex = CExecutionEngine::GetTlsIndex();
+        *pIndex = g_TlsIndex;
     }
 
     SOSDacLeave();

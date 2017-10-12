@@ -90,13 +90,11 @@ NESTED_ENTRY InstantiatingMethodStubWorker, _TEXT
         ;
         ; link the StubHelperFrame
         ;
-        CALL_GETTHREAD
-        mov     rdx, [rax + OFFSETOF__Thread__m_pFrame]
+        INLINE_GETTHREAD r12
+        mov     rdx, [r12 + OFFSETOF__Thread__m_pFrame]
         mov     [rbp + OFFSETOF_FRAME + OFFSETOF__Frame__m_Next], rdx
         lea     rcx, [rbp + OFFSETOF_FRAME]
-        mov     [rax + OFFSETOF__Thread__m_pFrame], rcx
-
-        mov     r12, rax                ; store the Thread pointer 
+        mov     [r12 + OFFSETOF__Thread__m_pFrame], rcx
 
         add     rsp, SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES
 
