@@ -3045,7 +3045,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     {
         switch (oper)
         {
-            bool iconNeedsReloc;
+            GenTreeIntConCommon* con;
+            bool                 iconNeedsReloc;
 
 #ifdef _TARGET_ARM_
             case GT_CNS_LNG:
@@ -3065,7 +3066,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //  applied to it.
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                iconNeedsReloc = opts.compReloc && tree->IsIconHandle() && !tree->IsIconHandle(GTF_ICON_FIELD_HDL);
+                con            = tree->AsIntConCommon();
+                iconNeedsReloc = con->ImmedValNeedsReloc(this);
 
                 if (iconNeedsReloc || !codeGen->validImmForInstr(INS_mov, tree->gtIntCon.gtIconVal))
                 {
@@ -3103,9 +3105,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 // If the constant is a handle then it will need to have a relocation
                 //  applied to it.
-                // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                iconNeedsReloc = opts.compReloc && tree->IsIconHandle() && !tree->IsIconHandle(GTF_ICON_FIELD_HDL);
+                con            = tree->AsIntConCommon();
+                iconNeedsReloc = con->ImmedValNeedsReloc(this);
 
                 if (!iconNeedsReloc && (((signed char)tree->gtIntCon.gtIconVal) == tree->gtIntCon.gtIconVal))
                 {
@@ -16290,7 +16292,7 @@ ssize_t GenTreeIndir::Offset()
 //    comp - Compiler instance
 //
 // Return Value:
-//    True if this immediate value needs recording a relocation with the VM; false otherwise.
+//    True if this immediate value requires us to record a relocation for it; false otherwise.
 
 bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
 {
