@@ -17847,6 +17847,8 @@ void Compiler::fgMorph()
 #ifdef DEBUG
     /* Inliner could add basic blocks. Check that the flowgraph data is up-to-date */
     fgDebugCheckBBlist(false, false);
+    /* Inliner could clone some trees. */
+    fgDebugCheckNodesUniqueness();
 #endif // DEBUG
 
     fgRemoveEmptyTry();
