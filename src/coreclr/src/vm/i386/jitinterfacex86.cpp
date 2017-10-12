@@ -539,7 +539,7 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
                  && "EAX should contain size for allocation and it doesnt!!!");
 
         // Fetch current thread into EDX, preserving EAX and ECX
-        psl->X86EmitCurrentThreadFetch(kEDX);
+        psl->X86EmitCurrentThreadFetch(kEDX, (1 << kEAX) | (1 << kECX));
 
         // Try the allocation.
 
