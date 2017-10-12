@@ -2450,7 +2450,7 @@ void Compiler::compSetProcessor()
 #if defined(_TARGET_ARM_)
     info.genCPU = CPU_ARM;
 #elif defined(_TARGET_AMD64_)
-    info.genCPU       = CPU_X64;
+    info.genCPU         = CPU_X64;
 #elif defined(_TARGET_X86_)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
@@ -2504,22 +2504,16 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV    = true;
     opts.compCanUseSSE2 = true;
 #elif defined(_TARGET_X86_)
-    opts.compUseFCOMI = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
-    opts.compUseCMOV  = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
-    opts.compCanUseSSE2 = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE2);
+    opts.compUseFCOMI   = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
+    opts.compUseCMOV    = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 
-#if !defined(LEGACY_BACKEND) && !defined(FEATURE_CORECLR)
+#ifdef LEGACY_BACKEND
+    opts.compCanUseSSE2 = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE2);
+#else
     // RyuJIT/x86 requires SSE2 to be available: there is no support for generating floating-point
-    // code with x87 instructions. On .NET Core, the VM always tells us that SSE2 is available.
-    // However, on desktop, under ngen, (and presumably in the unlikely case you're actually
-    // running on a machine without SSE2), the VM does not set the SSE2 flag. We ignore this and
-    // go ahead and generate SSE2 code anyway.
-    if (!opts.compCanUseSSE2)
-    {
-        JITDUMP("VM didn't set CORJIT_FLG_USE_SSE2! Ignoring, and generating SSE2 code anyway.\n");
-        opts.compCanUseSSE2 = true;
-    }
-#endif // !defined(LEGACY_BACKEND) && !defined(FEATURE_CORECLR)
+    // code with x87 instructions.
+    opts.compCanUseSSE2 = true;
+#endif
 
 #ifdef DEBUG
     if (opts.compUseFCOMI)
