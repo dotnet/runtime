@@ -7221,7 +7221,16 @@ HRESULT DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vm
         return E_INVALIDARG;
 #ifdef FEATURE_REJIT
     NativeCodeVersionNode* pNativeCodeVersionNode = vmNativeCodeVersionNode.GetDacPtr();
-    pVmILCodeVersionNode->SetDacTargetPtr(PTR_TO_TADDR(pNativeCodeVersionNode->GetILCodeVersion().AsNode()));
+    ILCodeVersion ilCodeVersion = pNativeCodeVersionNode->GetILCodeVersion();
+    if (ilCodeVersion.IsDefaultVersion())
+    {
+        pVmILCodeVersionNode->SetDacTargetPtr(0);
+    }
+    else
+    {
+        pVmILCodeVersionNode->SetDacTargetPtr(PTR_TO_TADDR(ilCodeVersion.AsNode()));
+    }
+    
 #else
     _ASSERTE(!"You shouldn't be calling this - rejit is not supported in this build");
     pVmILCodeVersionNode->SetDacTargetPtr(0);
