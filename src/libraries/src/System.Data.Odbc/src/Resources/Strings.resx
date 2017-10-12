@@ -432,4 +432,7 @@
   <data name="Odbc_PlatformNotSupported" xml:space="preserve">
     <value>System.Data.ODBC is not supported on this platform.</value>
   </data>
+  <data name="Odbc_UnixOdbcNotFound" xml:space="preserve">
+    <value>Dependency unixODBC with minimum version 2.3.1 is required.</value>
+  </data>
 </root>
