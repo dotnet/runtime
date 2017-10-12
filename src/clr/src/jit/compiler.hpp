@@ -1456,20 +1456,31 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
-inline void GenTree::CopyFrom(const GenTree* src, Compiler* comp)
+//------------------------------------------------------------------------
+// ReplaceWith: replace this with the src node. The source must be an isolated node
+//              and cannot be used after the replacement.
+//
+// Arguments:
+//    src  - source tree, that replaces this.
+//    comp - the compiler instance to transfer annotations for arrays.
+//
+inline void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
 {
-    /* The source may be big only if the target is also a big node */
-
+    // The source may be big only if the target is also a big node
     assert((gtDebugFlags & GTF_DEBUG_NODE_LARGE) || GenTree::s_gtNodeSizes[src->gtOper] == TREE_NODE_SZ_SMALL);
-    GenTreePtr prev = gtPrev;
-    GenTreePtr next = gtNext;
+
+    // The check is effective only if nodes have been already threaded.
+    assert((src->gtPrev == nullptr) && (src->gtNext == nullptr));
 
     RecordOperBashing(OperGet(), src->OperGet()); // nop unless NODEBASH_STATS is enabled
 
+    GenTreePtr prev = gtPrev;
+    GenTreePtr next = gtNext;
     // The VTable pointer is copied intentionally here
     memcpy((void*)this, (void*)src, src->GetNodeSize());
     this->gtPrev = prev;
     this->gtNext = next;
+
 #ifdef DEBUG
     gtSeqNum = 0;
 #endif
@@ -1481,6 +1492,7 @@ inline void GenTree::CopyFrom(const GenTree* src, Compiler* comp)
         assert(b);
         comp->GetArrayInfoMap()->Set(this, arrInfo);
     }
+    DEBUG_DESTROY_NODE(src);
 }
 
 inline GenTreePtr Compiler::gtNewCastNode(var_types typ, GenTreePtr op1, var_types castType)
@@ -1521,7 +1533,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
-inline void GenTree::CopyFrom(GenTreePtr src)
+inline void GenTree::ReplaceWith(GenTreePtr src)
 {
     RecordOperBashing(OperGet(), src->OperGet()); // nop unless NODEBASH_STATS is enabled
     *this    = *src;
