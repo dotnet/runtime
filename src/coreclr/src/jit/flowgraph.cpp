@@ -22214,7 +22214,7 @@ void Compiler::fgAttachStructInlineeToAsg(GenTreePtr tree, GenTreePtr child, COR
             ? fgAssignStructInlineeToVar(child, retClsHnd) // Assign to a variable if it is a call.
             : child);                                      // Just get the address, if not a call.
 
-    tree->CopyFrom(gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false), this);
+    tree->ReplaceWith(gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false), this);
 }
 
 #endif // FEATURE_MULTIREG_RET
@@ -22288,12 +22288,12 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                 printf(" with ");
                 printTreeID(inlineCandidate);
                 printf("\n");
-                // Dump out the old return expression placeholder it will be overwritten by the CopyFrom below
+                // Dump out the old return expression placeholder it will be overwritten by the ReplaceWith below
                 comp->gtDispTree(tree);
             }
 #endif // DEBUG
 
-            tree->CopyFrom(inlineCandidate, comp);
+            tree->ReplaceWith(inlineCandidate, comp);
 
 #ifdef DEBUG
             if (comp->verbose)
@@ -22364,7 +22364,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
             else
             {
                 // Just assign the inlinee to a variable to keep it simple.
-                tree->CopyFrom(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
+                tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
             }
         }
     }
@@ -22994,7 +22994,7 @@ _Done:
         }
 #endif // DEBUG
         // Replace the call with the return expression
-        iciCall->CopyFrom(pInlineInfo->retExpr, this);
+        iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }
 
     //
@@ -23114,7 +23114,7 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
                     assert(argNode->gtOper != GT_OBJ);
-                    argSingleUseNode->CopyFrom(argNode, this);
+                    argSingleUseNode->ReplaceWith(argNode, this);
                     continue;
                 }
                 else
