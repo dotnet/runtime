@@ -3046,7 +3046,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         switch (oper)
         {
             GenTreeIntConCommon* con;
-            bool iconNeedsReloc;
+            bool                 iconNeedsReloc;
 
 #ifdef _TARGET_ARM_
             case GT_CNS_LNG:
@@ -3066,7 +3066,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //  applied to it.
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                con = tree->AsIntConCommon();
+                con            = tree->AsIntConCommon();
                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
 
                 if (iconNeedsReloc || !codeGen->validImmForInstr(INS_mov, tree->gtIntCon.gtIconVal))
@@ -3106,7 +3106,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // If the constant is a handle then it will need to have a relocation
                 //  applied to it.
                 //
-                con = tree->AsIntConCommon();
+                con            = tree->AsIntConCommon();
                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
 
                 if (!iconNeedsReloc && (((signed char)tree->gtIntCon.gtIconVal) == tree->gtIntCon.gtIconVal))

@@ -16663,9 +16663,10 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
                     else
 #endif
                     {
-                        GenTreeIntConCommon* con = curr->AsIntConCommon();
-                        bool     needReloc = con->ImmedValNeedsReloc(compiler);
-                        emitAttr attr      = needReloc ? EA_HANDLE_CNS_RELOC : emitTypeSize(type);
+                        GenTreeIntConCommon* con       = curr->AsIntConCommon();
+                        bool                 needReloc = con->ImmedValNeedsReloc(compiler);
+                        emitAttr             attr      = needReloc ? EA_HANDLE_CNS_RELOC : emitTypeSize(type);
+
                         instGen_Store_Imm_Into_Lcl(type, attr, curr->gtIntCon.gtIconVal,
                                                    compiler->lvaOutgoingArgSpaceVar, argOffset);
                     }
