@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Linq;
 
 namespace System.Collections.Immutable
 {
@@ -920,7 +921,12 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => this.GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return this.IsEmpty ?
+                Enumerable.Empty<T>().GetEnumerator() :
+                this.GetEnumerator();
+        }
 
         #endregion
 
