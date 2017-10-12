@@ -1447,8 +1447,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeIntConCommon* con    = tree->AsIntConCommon();
             ssize_t              cnsVal = con->IconValue();
 
-            bool needReloc = compiler->opts.compReloc && tree->IsIconHandle();
-            if (needReloc)
+            if (con->ImmedValNeedsReloc(compiler))
             {
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
                 regTracker.rsTrackRegTrash(targetReg);
