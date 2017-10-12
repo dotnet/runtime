@@ -2006,16 +2006,65 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module
         if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
             continue;
 
-        // We just ask for the DJI to ensure that it's lazily created.
-        // This should only fail in an oom scenario.
-        DebuggerJitInfo * djiTest = g_pDebugger->GetLatestJitInfoFromMethodDesc(pDesc);
-        if (djiTest == NULL)
+        CreateDJIsForMethodDesc(pDesc);
+    }
+}
+
+
+//---------------------------------------------------------------------------------------
+//
+// Bring the DJI cache up to date for jitted code instances of a particular MethodDesc.
+//
+//
+void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
+{
+    CONTRACTL
+    {
+        SO_NOT_MAINLINE;
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+
+    // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
+    if (pMethodDesc->IsDynamicMethod())
+    {
+        return;
+    }
+
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
+    // grab the code version lock to iterate available versions of the code
+    {
+        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(pMethodDesc);
+
+        for (NativeCodeVersionIterator itr = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); itr != end; itr++)
         {
-            // We're oom. Give up.
-            ThrowOutOfMemory();
-            return;
+            // Some versions may not be compiled yet - skip those for now
+            // if they compile later the JitCompiled callback will add a DJI to our cache at that time
+            PCODE codeAddr = itr->GetNativeCode();
+            if (codeAddr)
+            {
+                // The DJI may already be populated in the cache, if so CreateInitAndAdd is
+                // a no-op and that is fine.
+                BOOL unusedDjiWasCreated;
+                CreateInitAndAddJitInfo(pMethodDesc, codeAddr, &unusedDjiWasCreated);
+            }
         }
     }
+#else
+    // We just ask for the DJI to ensure that it's lazily created.
+    // This should only fail in an oom scenario.
+    DebuggerJitInfo * djiTest = g_pDebugger->GetLatestJitInfoFromMethodDesc(pDesc);
+    if (djiTest == NULL)
+    {
+        // We're oom. Give up.
+        ThrowOutOfMemory();
+        return;
+    }
+#endif
 }
 
 /*
