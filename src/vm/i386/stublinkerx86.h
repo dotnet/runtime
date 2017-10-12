@@ -219,7 +219,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitLeaRIP(CodeLabel *target, X86Reg reg);
 #endif
 
-        VOID X86EmitCurrentThreadFetch(X86Reg dstreg);
+        VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
         
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, __int32 ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, __int32 ofs, X86Reg srcreg);

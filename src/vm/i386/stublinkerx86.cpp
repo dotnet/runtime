@@ -2360,16 +2360,42 @@ void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFun
 }
 #endif // _DEBUG && !FEATURE_PAL
 
-#if !defined(FEATURE_STUBS_AS_IL)
-VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg)
+VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
 
+        // It doesn't make sense to have the destination register be preserved
+        PRECONDITION((preservedRegSet & (1 << dstreg)) == 0);
         AMD64_ONLY(PRECONDITION(dstreg < 8)); // code below doesn't support high registers
     }
     CONTRACTL_END;
+
+#ifdef FEATURE_PAL
+
+    X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
+
+    // call GetThread
+    X86EmitCall(NewExternalCodeLabel((LPVOID)GetThread), sizeof(void*));
+
+    // mov dstreg, eax
+    X86EmitMovRegReg(dstreg, kEAX);
+
+    X86EmitPopRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
+
+#ifdef _DEBUG
+    // Trash caller saved regs that we were not told to preserve, and that aren't the dstreg.
+    preservedRegSet |= 1 << dstreg;
+    if (!(preservedRegSet & (1 << kEAX)))
+        X86EmitDebugTrashReg(kEAX);
+    if (!(preservedRegSet & (1 << kEDX)))
+        X86EmitDebugTrashReg(kEDX);
+    if (!(preservedRegSet & (1 << kECX)))
+        X86EmitDebugTrashReg(kECX);
+#endif // _DEBUG
+
+#else // FEATURE_PAL
 
 #ifdef _TARGET_AMD64_
     BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
@@ -2386,8 +2412,9 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg)
     X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * (g_TlsIndex & 0xFFFF));
 
     X86EmitIndexRegLoad(dstreg, dstreg, (g_TlsIndex & 0x7FFF0000) >> 16);
+
+#endif // FEATURE_PAL
 }
-#endif // !FEATURE_STUBS_AS_IL
 
 #if defined(_TARGET_X86_)
 
@@ -2716,7 +2743,7 @@ VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
 {
     STANDARD_VM_CONTRACT;
 
-    X86EmitCurrentThreadFetch(kEBX);
+    X86EmitCurrentThreadFetch(kEBX, 0);
 
     // cmp ebx, 0
     static const BYTE b[] = { 0x83, 0xFB, 0x0};
@@ -2956,7 +2983,7 @@ VOID StubLinkerCPU::EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOf
 #endif // _TARGET_X86_
 
     // ebx <-- GetThread()
-    X86EmitCurrentThreadFetch(kEBX);
+    X86EmitCurrentThreadFetch(kEBX, 0);
 
 #if _DEBUG
 
