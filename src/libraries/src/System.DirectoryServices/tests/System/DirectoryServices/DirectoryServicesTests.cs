@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.DirectoryServices.Tests
 {
-    public class DirectoryServicesTests
+    public partial class DirectoryServicesTests
     {
         internal static bool IsLdapConfigurationExist => LdapConfiguration.Configuration != null;
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;

@@ -29,5 +29,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
+    <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectoryComInterop.cs" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
