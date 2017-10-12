@@ -54,19 +54,22 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            if (Vector<byte>.Count == 32 && !Avx2.IsSupported)
+            if (Sse.IsSupported)
             {
-                result = false;
-            }
+                // X86 platforms
+                if (Vector<byte>.Count == 32 && !Avx2.IsSupported)
+                {
+                    result = false;
+                }
 
-            if (Vector<byte>.Count == 16 && Vector.IsHardwareAccelerated && !Sse2.IsSupported)
-            {
-                result = false;
+                if (Vector<byte>.Count == 16 && Vector.IsHardwareAccelerated && !Sse2.IsSupported)
+                {
+                    result = false;
+                }
             }
-
-            // Non-X86 platforms
-            if (!(Sse.IsSupported))
+            else
             {
+                // Non-X86 platforms
                 if (Sse2.IsSupported  ||
                     Sse3.IsSupported  ||
                     Ssse3.IsSupported ||
