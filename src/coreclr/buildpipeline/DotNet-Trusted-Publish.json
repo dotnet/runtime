@@ -594,11 +594,11 @@
       "allowOverride": true
     },
     "AzureContainerPackageGlob": {
-      "value": "pkg\\*.nupkg",
+      "value": "pkg\\*\\*\\*.nupkg",
       "allowOverride": true
     },
     "AzureContainerSymbolPackageGlob": {
-      "value": "symbolpkg\\*.nupkg",
+      "value": "symbolpkg\\*\\*\\*.nupkg",
       "allowOverride": true
     },
     "GitHubRepositoryName": {
