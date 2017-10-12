@@ -256,9 +256,6 @@ ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDir
 #define CONTEXT_Pc 0x040
 ASMCONSTANTS_C_ASSERT(CONTEXT_Pc == offsetof(T_CONTEXT,Pc))
 
-#define TLS_GETTER_MAX_SIZE_ASM 0x10
-ASMCONSTANTS_C_ASSERT(TLS_GETTER_MAX_SIZE_ASM == TLS_GETTER_MAX_SIZE)
-
 #define CallDescrData__pSrc                0x00
 #define CallDescrData__numStackSlots       0x04
 #define CallDescrData__pArgumentRegisters  0x08

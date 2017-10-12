@@ -539,7 +539,7 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
                  && "EAX should contain size for allocation and it doesnt!!!");
 
         // Fetch current thread into EDX, preserving EAX and ECX
-        psl->X86EmitCurrentThreadFetch(kEDX, (1<<kEAX)|(1<<kECX));
+        psl->X86EmitCurrentThreadFetch(kEDX);
 
         // Try the allocation.
 
@@ -1253,7 +1253,7 @@ FastPrimitiveArrayAllocatorFuncPtr fastPrimitiveArrayAllocator = UnframedAllocat
 
 // "init" should be the address of a routine which takes an argument of
 // the module domain ID, the class domain ID, and returns the static base pointer
-void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck, bool bGCStatic, bool bSingleAppDomain)
+void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck, bool bGCStatic)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1266,35 +1266,6 @@ void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCto
     // mov eax, ecx
     psl->Emit8(0x89);
     psl->Emit8(0xc8);
-
-    if(!bSingleAppDomain)
-    {
-        // Check tag
-        CodeLabel *cctorCheck = psl->NewCodeLabel();
-
-
-        // test eax, 1
-        psl->Emit8(0xa9);
-        psl->Emit32(1);
-
-        // jz cctorCheck
-        psl->X86EmitCondJump(cctorCheck, X86CondCode::kJZ);
-
-        // mov eax GetAppDomain()
-        psl->X86EmitCurrentAppDomainFetch(kEAX, (1<<kECX)|(1<<kEDX));
-
-        // mov eax [eax->m_sDomainLocalBlock.m_pModuleSlots]
-        psl->X86EmitIndexRegLoad(kEAX, kEAX, (__int32) AppDomain::GetOffsetOfModuleSlotsPointer());
-
-        // Note: weird address arithmetic effectively does:
-        // shift over 1 to remove tag bit (which is always 1), then multiply by 4.
-        // mov eax [eax + ecx*2 - 2]
-        psl->X86EmitOp(0x8b, kEAX, kEAX, -2, kECX, 2);
-
-        // cctorCheck:
-        psl->EmitLabel(cctorCheck);
-
-    }
 
     if (bCCtorCheck)
     {
@@ -1356,7 +1327,7 @@ void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCto
 
 }
 
-void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic, bool bSingleAppDomain)
+void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1372,7 +1343,7 @@ void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic, bool bSingleA
         init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedNonGCStaticBase);
     }
 
-    EmitFastGetSharedStaticBase(&sl, init, bCheckCCtor, bGCStatic, bSingleAppDomain);
+    EmitFastGetSharedStaticBase(&sl, init, bCheckCCtor, bGCStatic);
 
     Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 
@@ -1521,16 +1492,14 @@ void InitJITHelpers1()
         //UnframedAllocateString;
     }
 
-    bool bSingleAppDomain = IsSingleAppDomain();
-
     // Replace static helpers with faster assembly versions
-    pMethodAddresses[6] = GenFastGetSharedStaticBase(true, true, bSingleAppDomain);
+    pMethodAddresses[6] = GenFastGetSharedStaticBase(true, true);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE, pMethodAddresses[6]);
-    pMethodAddresses[7] = GenFastGetSharedStaticBase(true, false, bSingleAppDomain);
+    pMethodAddresses[7] = GenFastGetSharedStaticBase(true, false);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE, pMethodAddresses[7]);
-    pMethodAddresses[8] = GenFastGetSharedStaticBase(false, true, bSingleAppDomain);
+    pMethodAddresses[8] = GenFastGetSharedStaticBase(false, true);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR, pMethodAddresses[8]);
-    pMethodAddresses[9] = GenFastGetSharedStaticBase(false, false, bSingleAppDomain);
+    pMethodAddresses[9] = GenFastGetSharedStaticBase(false, false);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR, pMethodAddresses[9]);
 
     ETW::MethodLog::StubsInitialized(pMethodAddresses, (PVOID *)pHelperNames, ETW_NUM_JIT_HELPERS);

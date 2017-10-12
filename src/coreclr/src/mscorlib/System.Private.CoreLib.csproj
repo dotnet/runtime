@@ -73,14 +73,14 @@
     <DebugSymbols>true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
-    <DebugType>full</DebugType>
+    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>DBG;_DEBUG;_LOGGING;DEBUG;TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'amd64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugSymbols>true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-    <DebugType>pdbOnly</DebugType>
+    <DebugType Condition="'$(DebugType)' == ''">pdbOnly</DebugType>
     <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- Make portable PDBs on Unix -->
@@ -463,8 +463,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />

@@ -51,7 +51,6 @@
 
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
-#ifdef FEATURE_IMPLICIT_TLS
 #ifndef __llvm__
 EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 #else // !__llvm__
@@ -62,11 +61,6 @@ EXTERN_C UINT32 _tls_index;
 #else // FEATURE_PAL
 UINT32 _tls_index = 0;
 #endif // FEATURE_PAL
-SVAL_IMPL_INIT(DWORD, CExecutionEngine, TlsIndex, _tls_index);
-#else
-SVAL_IMPL_INIT(DWORD, CExecutionEngine, TlsIndex, TLS_OUT_OF_INDEXES);
-#endif
-
 
 #if defined(FEATURE_WINDOWSPHONE)
 SVAL_IMPL_INIT(ECustomDumpFlavor, CCLRErrorReportingManager, g_ECustomDumpFlavor, DUMP_FLAVOR_Default);
@@ -3168,7 +3162,6 @@ VOID WINAPI FlsCallback(
 #endif // HAS_FLS_SUPPORT
 
 
-#ifdef FEATURE_IMPLICIT_TLS
 void** CExecutionEngine::GetTlsData()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3183,28 +3176,6 @@ BOOL CExecutionEngine::SetTlsData (void** ppTlsInfo)
     gCurrentThreadInfo.m_EETlsData = ppTlsInfo;
     return TRUE;
 }
-#else 
-void** CExecutionEngine::GetTlsData()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
-        return NULL;
-
-    void **ppTlsData = (void **)UnsafeTlsGetValue(TlsIndex);
-    return ppTlsData;
-}
-BOOL CExecutionEngine::SetTlsData (void** ppTlsInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
-        return FALSE;
-
-    return UnsafeTlsSetValue(TlsIndex, ppTlsInfo);
-}
-
-#endif // FEATURE_IMPLICIT_TLS
 
 //---------------------------------------------------------------------------------------
 //
@@ -3294,25 +3265,6 @@ void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
         }
     }
 #endif // HAS_FLS_SUPPORT
-
-#ifndef FEATURE_IMPLICIT_TLS
-    // Ensure we have a TLS Index
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
-    {
-        DWORD tryTlsIndex = UnsafeTlsAlloc();
-        if (tryTlsIndex != TLS_OUT_OF_INDEXES)
-        {
-            if (FastInterlockCompareExchange((LONG*)&TlsIndex, tryTlsIndex, TLS_OUT_OF_INDEXES) != (LONG)TLS_OUT_OF_INDEXES)
-            {
-                UnsafeTlsFree(tryTlsIndex);
-            }
-        }
-        if (TlsIndex == TLS_OUT_OF_INDEXES)
-        {
-            COMPlusThrowOM();
-        }
-    }
-#endif // FEATURE_IMPLICIT_TLS
 
     void** pTlsData = CExecutionEngine::GetTlsData();
     BOOL fInTls = (pTlsData != NULL);

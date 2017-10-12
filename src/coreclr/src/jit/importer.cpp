@@ -2596,9 +2596,9 @@ inline IL_OFFSETX Compiler::impCurILOffset(IL_OFFSET offs, bool callInstruction)
 //    true if it is legal, false if it could be a sequence that we do not want to divide.
 bool Compiler::impCanSpillNow(OPCODE prevOpcode)
 {
-    // Don't spill after ldtoken, because it could be a part of the InitializeArray sequence.
+    // Don't spill after ldtoken, newarr and newobj, because it could be a part of the InitializeArray sequence.
     // Avoid breaking up to guarantee that impInitializeArrayIntrinsic can succeed.
-    return prevOpcode != CEE_LDTOKEN;
+    return (prevOpcode != CEE_LDTOKEN) && (prevOpcode != CEE_NEWARR) && (prevOpcode != CEE_NEWOBJ);
 }
 
 /*****************************************************************************
@@ -3281,32 +3281,84 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
                           true);   // copyBlock
 }
 
-/*****************************************************************************/
-// Returns the GenTree that should be used to do the intrinsic instead of the call.
-// Returns NULL if an intrinsic cannot be used
+//------------------------------------------------------------------------
+// impIntrinsic: possibly expand intrinsic call into alternate IR sequence
+//
+// Arguments:
+//    newobjThis - for constructor calls, the tree for the newly allocated object
+//    clsHnd - handle for the intrinsic method's class
+//    method - handle for the intrinsic method
+//    sig    - signature of the intrinsic method
+//    memberRef - the token for the intrinsic method
+//    readonlyCall - true if call has a readonly prefix
+//    tailCall - true if call is in tail position
+//    pConstrainedResolvedToken -- resolved token for constrained call, or nullptr
+//       if call is not constrained
+//    constraintCallThisTransform -- this transform to apply for a constrained call
+//    isJitIntrinsic - true if method is a "new" jit intrinsic that the jit
+//       must identify by name
+//    pIntrinsicID [OUT] -- intrinsic ID (see enumeration in corinfo.h)
+//       for "traditional" jit intrinsics
+//    isSpecialIntrinsic [OUT] -- set true if intrinsic expansion is a call
+//       that is amenable to special downstream optimization opportunities
+//
+// Returns:
+//    IR tree to use in place of the call, or nullptr if the jit should treat
+//    the intrinsic call like a normal call.
+//
+//    pIntrinsicID set to non-illegal value if the call is recognized as a
+//    traditional jit intrinsic, even if the intrinsic is not expaned.
+//
+//    isSpecial set true if the expansion is subject to special
+//    optimizations later in the jit processing
+//
+// Notes:
+//    On success the IR tree may be a call to a different method or an inline
+//    sequence. If it is a call, then the intrinsic processing here is responsible
+//    for handling all the special cases, as upon return to impImportCall
+//    expanded intrinsics bypass most of the normal call processing.
+//
+//    Intrinsics are generally not recognized in minopts and debug codegen.
+//
+//    However, certain traditional intrinsics are identifed as "must expand"
+//    if there is no fallback implmentation to invoke; these must be handled
+//    in all codegen modes.
+//
+//    New style intrinsics (where the fallback implementation is in IL) are
+//    identified as "must expand" if they are invoked from within their
+//    own method bodies.
+//
 
-GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
-                                  CORINFO_CLASS_HANDLE  clsHnd,
-                                  CORINFO_METHOD_HANDLE method,
-                                  CORINFO_SIG_INFO*     sig,
-                                  int                   memberRef,
-                                  bool                  readonlyCall,
-                                  bool                  tailCall,
-                                  bool                  isJitIntrinsic,
-                                  CorInfoIntrinsics*    pIntrinsicID,
-                                  bool*                 isSpecialIntrinsic)
+GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
+                                CORINFO_CLASS_HANDLE    clsHnd,
+                                CORINFO_METHOD_HANDLE   method,
+                                CORINFO_SIG_INFO*       sig,
+                                int                     memberRef,
+                                bool                    readonlyCall,
+                                bool                    tailCall,
+                                CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
+                                bool                    isJitIntrinsic,
+                                CorInfoIntrinsics*      pIntrinsicID,
+                                bool*                   isSpecialIntrinsic)
 {
     bool              mustExpand  = false;
     bool              isSpecial   = false;
     CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
     *pIntrinsicID                 = intrinsicID;
 
-    // Jit intrinsics are always optional to expand, and won't have an
-    // Intrinsic ID.
+    // Jit intrinsics won't have an IntrinsicID, and won't be identifed
+    // by the VM as must-expand.
     if (isJitIntrinsic)
     {
         assert(!mustExpand);
         assert(intrinsicID == CORINFO_INTRINSIC_Illegal);
+
+        // They however may still be must-expand. The convention we
+        // have adopted is that if we are compiling the intrinsic and
+        // it calls itself recursively, the recursive call is
+        // must-expand.
+        mustExpand = gtIsRecursiveCall(method);
     }
 
 #ifndef _TARGET_ARM_
@@ -3330,20 +3382,12 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
 
     GenTreePtr retNode = nullptr;
 
-    //
-    // We disable the inlining of intrinsic for MinOpts,
-    // but we should always expand hardware intrinsics whose managed method body
-    // is a directly recursive call site. This design makes hardware intrinsic
-    // be able to work with debugger and reflection.
-    if (!mustExpand && (opts.compDbgCode || opts.MinOpts()) && !gtIsRecursiveCall(method))
+    // Under debug and minopts, only expand what is required.
+    if (!mustExpand && (opts.compDbgCode || opts.MinOpts()))
     {
         *pIntrinsicID = CORINFO_INTRINSIC_Illegal;
         return retNode;
     }
-
-    // Currently we don't have CORINFO_INTRINSIC_Exp because it does not
-    // seem to work properly for Infinity values, we don't do
-    // CORINFO_INTRINSIC_Pow because it needs a Helper which we currently don't have
 
     var_types callType = JITtype2varType(sig->retType);
 
@@ -3534,43 +3578,74 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
 #ifndef LEGACY_BACKEND
         case CORINFO_INTRINSIC_Object_GetType:
         {
-            op1 = impPopStack().val;
+            JITDUMP("\n impIntrinsic: call to Object.GetType\n");
+            op1 = impStackTop(0).val;
 
             // If we're calling GetType on a boxed value, just get the type directly.
-            if (!opts.MinOpts() && !opts.compDbgCode)
+            if (op1->IsBoxedValue())
             {
-                if (op1->IsBoxedValue())
+                JITDUMP("Attempting to optimize box(...).getType() to direct type construction\n");
+
+                // Try and clean up the box. Obtain the handle we
+                // were going to pass to the newobj.
+                GenTree* boxTypeHandle = gtTryRemoveBoxUpstreamEffects(op1, BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE);
+
+                if (boxTypeHandle != nullptr)
                 {
-                    JITDUMP("Attempting to optimize box(...).getType() to direct type construction\n");
-
-                    // Try and clean up the box. Obtain the handle we
-                    // were going to pass to the newobj.
-                    GenTree* boxTypeHandle = gtTryRemoveBoxUpstreamEffects(op1, BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE);
-
-                    if (boxTypeHandle != nullptr)
-                    {
-                        // Note we don't need to play the TYP_STRUCT games here like
-                        // do for  LDTOKEN since the return value of this operator is Type,
-                        // not RuntimeTypeHandle.
-                        GenTreeArgList* helperArgs = gtNewArgList(boxTypeHandle);
-                        GenTree*        runtimeType =
-                            gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
-                        retNode = runtimeType;
-
-#ifdef DEBUG
-                        JITDUMP("Optimized; result is\n");
-                        if (verbose)
-                        {
-                            gtDispTree(retNode);
-                        }
-#endif
-                    }
+                    // Note we don't need to play the TYP_STRUCT games here like
+                    // do for LDTOKEN since the return value of this operator is Type,
+                    // not RuntimeTypeHandle.
+                    impPopStack();
+                    GenTreeArgList* helperArgs = gtNewArgList(boxTypeHandle);
+                    GenTree*        runtimeType =
+                        gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
+                    retNode = runtimeType;
                 }
             }
 
-            // Else expand as an intrinsic
-            if (retNode == nullptr)
+            // If we have a constrained callvirt with a "box this" transform
+            // we know we have a value class and hence an exact type.
+            //
+            // If so, instead of boxing and then extracting the type, just
+            // construct the type directly.
+            if ((retNode == nullptr) && (pConstrainedResolvedToken != nullptr) &&
+                (constraintCallThisTransform == CORINFO_BOX_THIS))
             {
+                // Ensure this is one of the is simple box cases (in particular, rule out nullables).
+                const CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pConstrainedResolvedToken->hClass);
+                const bool            isSafeToOptimize = (boxHelper == CORINFO_HELP_BOX);
+
+                if (isSafeToOptimize)
+                {
+                    JITDUMP("Optimizing constrained box-this obj.getType() to direct type construction\n");
+                    impPopStack();
+                    GenTree* typeHandleOp =
+                        impTokenToHandle(pConstrainedResolvedToken, nullptr, TRUE /* mustRestoreHandle */);
+                    GenTreeArgList* helperArgs = gtNewArgList(typeHandleOp);
+                    GenTree*        runtimeType =
+                        gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
+                    retNode = runtimeType;
+                }
+            }
+
+#ifdef DEBUG
+            if (retNode != nullptr)
+            {
+                JITDUMP("Optimized result for call to GetType is\n");
+                if (verbose)
+                {
+                    gtDispTree(retNode);
+                }
+            }
+#endif
+
+            // Else expand as an intrinsic, unless the call is constrained,
+            // in which case we defer expansion to allow impImportCall do the
+            // special constraint processing.
+            if ((retNode == nullptr) && (pConstrainedResolvedToken == nullptr))
+            {
+                JITDUMP("Expanding as special intrinsic\n");
+                impPopStack();
                 op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
 
                 // Set the CALL flag to indicate that the operator is implemented by a call.
@@ -3578,11 +3653,20 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
                 // CORINFO_INTRINSIC_Object_GetType intrinsic can throw NullReferenceException.
                 op1->gtFlags |= (GTF_CALL | GTF_EXCEPT);
                 retNode = op1;
-                // Might be further optimizable during morph
+                // Might be further optimizable, so arrange to leave a mark behind
                 isSpecial = true;
             }
+
+            if (retNode == nullptr)
+            {
+                JITDUMP("Leaving as normal call\n");
+                // Might be further optimizable, so arrange to leave a mark behind
+                isSpecial = true;
+            }
+
             break;
         }
+
 #endif
         // Implement ByReference Ctor.  This wraps the assignment of the ref into a byref-like field
         // in a value type.  The canonical example of this is Span<T>. In effect this is just a
@@ -7025,11 +7109,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // <NICE> Factor this into getCallInfo </NICE>
         const bool isIntrinsic        = (mflags & CORINFO_FLG_INTRINSIC) != 0;
         const bool isJitIntrinsic     = (mflags & CORINFO_FLG_JIT_INTRINSIC) != 0;
+        const bool isTail             = canTailCall && (tailCall != 0);
         bool       isSpecialIntrinsic = false;
-        if ((isIntrinsic || isJitIntrinsic) && !pConstrainedResolvedToken)
+        if (isIntrinsic || isJitIntrinsic)
         {
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall,
-                                (canTailCall && (tailCall != 0)), isJitIntrinsic, &intrinsicID, &isSpecialIntrinsic);
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall, isTail,
+                                pConstrainedResolvedToken, callInfo->thisTransform, isJitIntrinsic, &intrinsicID,
+                                &isSpecialIntrinsic);
 
             if (compDonotInline())
             {

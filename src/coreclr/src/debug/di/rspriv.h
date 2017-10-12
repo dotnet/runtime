@@ -10609,11 +10609,10 @@ private:
 
     void CacheEEDebuggerWord();
     HRESULT SetEEThreadValue(REMOTE_PTR EETlsValue);
-#ifdef FEATURE_IMPLICIT_TLS
+
     DWORD_PTR GetEEThreadValue();
     REMOTE_PTR GetClrModuleTlsDataAddress();
     REMOTE_PTR GetEETlsDataBlock();
-#endif
 
 public:
     HRESULT GetEEDebuggerWord(REMOTE_PTR *pValue);

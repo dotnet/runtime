@@ -47,22 +47,9 @@ endif ; FEATURE_COMINTEROP
 EXTERN __alloca_probe:PROC
 EXTERN _NDirectImportWorker@4:PROC
 EXTERN _UMThunkStubRareDisableWorker@8:PROC
-ifndef FEATURE_IMPLICIT_TLS
-ifdef ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-; This is defined in C (threads.cpp) and enforces EE_THREAD_NOT_REQUIRED contracts
-GetThreadGenericFullCheck EQU ?GetThreadGenericFullCheck@@YGPAVThread@@XZ
-EXTERN  GetThreadGenericFullCheck:PROC
-endif ; ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-
-EXTERN _gThreadTLSIndex:DWORD
-EXTERN _gAppDomainTLSIndex:DWORD
-endif ; FEATURE_IMPLICIT_TLS
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
-
-EXTERN _GetThread@0:PROC
-EXTERN _GetAppDomain@0:PROC
 
 ifdef MDA_SUPPORTED
 EXTERN _PInvokeStackImbalanceWorker@8:PROC
@@ -714,56 +701,6 @@ doRet:
     xor         eax, eax
     retn
 FASTCALL_ENDFUNC HelperMethodFrameRestoreState
-
-
-ifndef FEATURE_IMPLICIT_TLS
-;---------------------------------------------------------------------------
-; Portable GetThread() function: used if no platform-specific optimizations apply.
-; This is in assembly code because we count on edx not getting trashed on calls
-; to this function.
-;---------------------------------------------------------------------------
-; Thread* __stdcall GetThreadGeneric(void);
-GetThreadGeneric PROC stdcall public USES ecx edx
-
-ifdef _DEBUG
-    cmp         dword ptr [_gThreadTLSIndex], -1
-    jnz         @F
-    int         3
-@@:
-endif
-ifdef ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-    ; non-PAL, debug-only GetThreadGeneric should defer to GetThreadGenericFullCheck
-    ; to do extra contract enforcement.  (See GetThreadGenericFullCheck for details.)
-    ; This code is intentionally not added to asmhelper.s, as this enforcement is only
-    ; implemented for non-PAL builds.
-    call        GetThreadGenericFullCheck
-else
-    push        dword ptr [_gThreadTLSIndex]
-    call        dword ptr [__imp__TlsGetValue@4]
-endif
-    ret
-GetThreadGeneric ENDP
-
-;---------------------------------------------------------------------------
-; Portable GetAppdomain() function: used if no platform-specific optimizations apply.
-; This is in assembly code because we count on edx not getting trashed on calls
-; to this function.
-;---------------------------------------------------------------------------
-; Appdomain* __stdcall GetAppDomainGeneric(void);
-GetAppDomainGeneric PROC stdcall public USES ecx edx
-
-ifdef _DEBUG
-    cmp         dword ptr [_gAppDomainTLSIndex], -1
-    jnz         @F
-    int         3
-@@:
-endif
-
-    push        dword ptr [_gAppDomainTLSIndex]
-    call        dword ptr [__imp__TlsGetValue@4]
-    ret
-GetAppDomainGeneric ENDP
-endif
 
 
 ifdef FEATURE_HIJACK
