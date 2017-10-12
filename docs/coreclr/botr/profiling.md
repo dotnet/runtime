@@ -216,7 +216,7 @@ In addition, the following callbacks may or may not allow the Profiler to block.
 
 - JITCompilationStarted, JITCompilationFinished
 
-Note that if the Profiler _does _block, it will delay garbage collection.  This is harmless, as long as the Profiler code itself does not attempt to allocate space in the managed heap, which could induce deadlock.
+Note that if the Profiler _does_ block, it will delay garbage collection.  This is harmless, as long as the Profiler code itself does not attempt to allocate space in the managed heap, which could induce deadlock.
 
 Using COM
 ---------
