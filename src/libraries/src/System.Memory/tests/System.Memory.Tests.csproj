@@ -86,7 +86,7 @@
     <Compile Include="Memory\ToArray.cs" />
     <Compile Include="Memory\TryGetArray.cs" />
   </ItemGroup>
-    <ItemGroup>
+  <ItemGroup>
     <Compile Include="ReadOnlyMemory\CtorArray.cs" />
     <Compile Include="ReadOnlyMemory\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlyMemory\DangerousTryGetArray.cs" />
@@ -98,6 +98,10 @@
     <Compile Include="ReadOnlyMemory\Slice.cs" />
     <Compile Include="ReadOnlyMemory\Span.cs" />
     <Compile Include="ReadOnlyMemory\ToArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Binary\BinaryReaderUnitTests.cs" />
+    <Compile Include="Binary\BinaryWriterUnitTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
