@@ -21610,6 +21610,8 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
             fgDebugCheckStmtsList(block, morphTrees);
         }
     }
+
+    fgDebugCheckNodesUniqueness();
 }
 
 //------------------------------------------------------------------------------
@@ -21739,6 +21741,76 @@ void Compiler::fgDebugCheckBlockLinks()
                 {
                     assert(BitVecOps::IsMember(&bitVecTraits, succBlocks, uniqueSuccSet.nonDuplicates[i]->bbNum));
                 }
+            }
+        }
+    }
+}
+
+// UniquenessCheckWalker keeps data that is neccesary to check
+// that each tree has it is own unique id and they do not repeat.
+class UniquenessCheckWalker
+{
+public:
+    UniquenessCheckWalker(Compiler* comp)
+        : comp(comp), nodesVecTraits(comp->compGenTreeID, comp), uniqueNodes(BitVecOps::MakeEmpty(&nodesVecTraits))
+    {
+    }
+
+    //------------------------------------------------------------------------
+    // fgMarkTreeId: Visit all subtrees in the tree and check gtTreeIDs.
+    //
+    // Arguments:
+    //    pTree     - Pointer to the tree to walk
+    //    fgWalkPre - the UniquenessCheckWalker instance
+    //
+    static Compiler::fgWalkResult MarkTreeId(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    {
+        UniquenessCheckWalker* walker   = static_cast<UniquenessCheckWalker*>(fgWalkPre->pCallbackData);
+        unsigned               gtTreeID = (*pTree)->gtTreeID;
+        walker->CheckTreeId(gtTreeID);
+        return Compiler::WALK_CONTINUE;
+    }
+
+    //------------------------------------------------------------------------
+    // CheckTreeId: Check that this tree was not visit before and memorize it as visited.
+    //
+    // Arguments:
+    //    gtTreeID - identificator of GenTree.
+    //
+    void CheckTreeId(unsigned gtTreeID)
+    {
+        assert(!BitVecOps::IsMember(&nodesVecTraits, uniqueNodes, gtTreeID));
+        BitVecOps::AddElemD(&nodesVecTraits, uniqueNodes, gtTreeID);
+    }
+
+private:
+    Compiler*    comp;
+    BitVecTraits nodesVecTraits;
+    BitVec       uniqueNodes;
+};
+
+//------------------------------------------------------------------------------
+// fgDebugCheckNodesUniqueness: Check that each tree in the method has its own unique gtTreeId.
+//
+void Compiler::fgDebugCheckNodesUniqueness()
+{
+    UniquenessCheckWalker walker(this);
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (block->IsLIR())
+        {
+            for (GenTreePtr i : LIR::AsRange(block))
+            {
+                walker.CheckTreeId(i->gtTreeID);
+            }
+        }
+        else
+        {
+            for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
+            {
+                GenTreePtr root = stmt->gtStmtExpr;
+                fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
             }
         }
     }

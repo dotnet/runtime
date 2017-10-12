@@ -4543,6 +4543,8 @@ public:
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, GenTreePtr stmt);
+    void fgDebugCheckNodesUniqueness();
+
     void fgDebugCheckFlags(GenTreePtr tree);
     void fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsigned chkFlags);
     void fgDebugCheckTryFinallyExits();
