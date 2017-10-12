@@ -6,7 +6,7 @@ namespace System.Data.Common
 {
     internal static class ExternDll
     {
-        public const string Odbc32 = "odbc.so.2";
+        public const string Odbc32 = "libodbc.so.2";
     }
 }
 
