@@ -147,7 +147,7 @@ namespace System.Diagnostics
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                if (_categoryName == null || string.Compare(_categoryName, value, StringComparison.OrdinalIgnoreCase) != 0)
+                if (_categoryName == null || !string.Equals(_categoryName, value, StringComparison.OrdinalIgnoreCase))
                 {
                     _categoryName = value;
                     Close();
@@ -190,7 +190,7 @@ namespace System.Diagnostics
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                if (_counterName == null || string.Compare(_counterName, value, StringComparison.OrdinalIgnoreCase) != 0)
+                if (_counterName == null || !string.Equals(_counterName, value, StringComparison.OrdinalIgnoreCase))
                 {
                     _counterName = value;
                     Close();
@@ -256,7 +256,7 @@ namespace System.Diagnostics
 
                 if ((value == null && _instanceName != null) ||
                       (value != null && _instanceName == null) ||
-                      string.Compare(_instanceName, value, StringComparison.OrdinalIgnoreCase) != 0)
+                      !string.Equals(_instanceName, value, StringComparison.OrdinalIgnoreCase))
                 {
                     _instanceName = value;
                     Close();
@@ -512,7 +512,7 @@ namespace System.Diagnostics
                         PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Write, currentMachineName, currentCategoryName);
                         permission.Demand();
 
-                        if (currentMachineName != "." && string.Compare(currentMachineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase) != 0)
+                        if (currentMachineName != "." && !string.Equals(currentMachineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase))
                             throw new InvalidOperationException(SR.Format(SR.RemoteWriting));
 
                         if (!PerformanceCounterLib.IsCustomCategory(currentMachineName, currentCategoryName))
