@@ -133,7 +133,7 @@
       "value": "Release",
       "allowOverride": true
     },
-    "PB_CloudDropAccountName": {
+    "CloudDropAccountName": {
       "value": "dotnetbuildoutput",
       "allowOverride": true
     },
