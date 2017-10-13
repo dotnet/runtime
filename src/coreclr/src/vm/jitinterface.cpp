@@ -4591,8 +4591,89 @@ TypeCompareState CEEInfo::compareTypesForCast(
         CORINFO_CLASS_HANDLE        fromClass,
         CORINFO_CLASS_HANDLE        toClass)
 {
-    // Stub for now
-    return TypeCompareState::May;
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle fromHnd = (TypeHandle) fromClass;
+    TypeHandle toHnd = (TypeHandle) toClass;
+
+#ifdef FEATURE_COMINTEROP
+    // If casting from a com object class, don't try to optimize.
+    if (fromHnd.IsComObjectType())
+    {
+        result = TypeCompareState::May;
+    }
+    else
+#endif // FEATURE_COMINTEROP
+
+    // If casting from ICastable, don't try to optimize
+    if (fromHnd.GetMethodTable()->IsICastable())
+    {
+        result = TypeCompareState::May;
+    }
+    // If casting to Nullable<T>, don't try to optimize
+    else if (Nullable::IsNullableType(toHnd))
+    {
+        result = TypeCompareState::May;
+    }
+    // If the types are not shared, we can check directly.
+    else if (!fromHnd.IsCanonicalSubtype() && !toHnd.IsCanonicalSubtype())
+    {
+        result = fromHnd.CanCastTo(toHnd) ? TypeCompareState::Must : TypeCompareState::MustNot;
+    }
+    // Casting from a shared type to an unshared type.
+    else if (fromHnd.IsCanonicalSubtype() && !toHnd.IsCanonicalSubtype())
+    {
+        // Only handle casts to interface types for now
+        if (toHnd.IsInterface())
+        {
+            // Do a preliminary check.
+            BOOL canCast = fromHnd.CanCastTo(toHnd);
+
+            // Pass back positive results unfiltered. The unknown type
+            // parameters in fromClass did not come into play.
+            if (canCast)
+            {
+                result = TypeCompareState::Must;
+            }
+            // For negative results, the unknown type parameter in
+            // fromClass might match some instantiated interface,
+            // either directly or via variance.
+            //
+            // However, CanCastTo will report failure in such cases since
+            // __Canon won't match the instantiated type on the
+            // interface (which can't be __Canon since we screened out
+            // canonical subtypes for toClass above). So only report
+            // failure if the interface is not instantiated.
+            else if (!toHnd.HasInstantiation())
+            {
+                result = TypeCompareState::MustNot;
+            }
+        }
+    }
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    // In R2R it is a breaking change for a previously positive
+    // cast to become negative, but not for a previously negative
+    // cast to become positive. So in R2R a negative result is
+    // always reported back as May.
+    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot))
+    {
+        result = TypeCompareState::May;
+    }
+#endif // FEATURE_READYTORUN_COMPILER
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 /*********************************************************************/
