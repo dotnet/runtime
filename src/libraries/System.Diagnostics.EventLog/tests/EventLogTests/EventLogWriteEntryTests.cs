@@ -9,30 +9,15 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogWriteEntryTests
     {
-
-        private string source = Guid.NewGuid().ToString("N");
         private string message = "EventLogWriteEntryTestsMessage";
-        private string log = Guid.NewGuid().ToString("N");
 
         private byte[] myRawData = new byte[4] { 0, 1, 2, 3 };
         private EventInstance myEvent = new EventInstance(0, 1);
         private string[] insertStrings = { "ExtraText", "MoreText" };
         private string[] insertStringsSingleton = { "ExtraText" };
 
-        public EventLogWriteEntryTests()
+        private EventLogEntry WriteLogEntry(string source, bool type = false, bool instance = false, bool category = false, bool data = false)
         {
-            SourceCreate();
-        }
-
-        private void SourceCreate()
-        {
-            EventLog.CreateEventSource(source, log);
-        }
-
-        private EventLogEntry GetLogEntry(bool type = false, bool instance = false, bool cat = false, bool data = false)
-        {
-            if (!EventLog.SourceExists(source))
-                SourceCreate();
             using (EventLog myLog = new EventLog())
             {
                 myLog.Source = source;
@@ -44,18 +29,16 @@ namespace System.Diagnostics.Tests
                         myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId, myRawData);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
+                    else if (category)
+                    {
+
+                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId);
+                        return myLog.Entries[myLog.Entries.Count - 1];
+                    }
                     else
                     {
-                        if (cat)
-                        {
-                            myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId);
-                            return myLog.Entries[myLog.Entries.Count - 1];
-                        }
-                        else
-                        {
-                            myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId);
-                            return myLog.Entries[myLog.Entries.Count - 1];
-                        }
+                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId);
+                        return myLog.Entries[myLog.Entries.Count - 1];
                     }
                 }
                 else if (type)
@@ -71,10 +54,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private EventLogEntry GetLogEntrywithSource(bool type = false, bool instance = false, bool cat = false, bool data = false)
+        private EventLogEntry WriteLogEntryWithSource(string source, bool type = false, bool instance = false, bool category = false, bool data = false)
         {
-            if (!EventLog.SourceExists(source))
-                SourceCreate();
             using (EventLog myLog = new EventLog())
             {
                 myLog.Source = source;
@@ -87,19 +68,17 @@ namespace System.Diagnostics.Tests
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId, myRawData);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
+                    else if (category)
+                    {
+                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId);
+                        return myLog.Entries[myLog.Entries.Count - 1];
+                    }
                     else
                     {
-                        if (cat)
-                        {
-                            EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId);
-                            return myLog.Entries[myLog.Entries.Count - 1];
-                        }
-                        else
-                        {
-                            EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId);
-                            return myLog.Entries[myLog.Entries.Count - 1];
-                        }
+                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId);
+                        return myLog.Entries[myLog.Entries.Count - 1];
                     }
+
 
                 }
                 else if (type)
@@ -115,7 +94,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private EventLogEntry GetLogEntryEventSource(bool data = false)
+        private EventLogEntry WriteLogEntryEventSource(string source, bool data = false)
         {
             if (data)
                 EventLog.WriteEvent(source, myEvent, myRawData, insertStrings);
@@ -124,22 +103,16 @@ namespace System.Diagnostics.Tests
 
             using (EventLog myLog = new EventLog())
             {
-                if (!EventLog.SourceExists(source))
-                    SourceCreate();
-
                 myLog.Source = source;
                 return myLog.Entries[myLog.Entries.Count - 1];
             }
 
         }
 
-        private EventLogEntry GetLogEntryEvent(bool data = false)
+        private EventLogEntry WriteLogEntryEvent(string source, bool data = false)
         {
             using (EventLog myLog = new EventLog())
             {
-                if (!EventLog.SourceExists(source))
-                    SourceCreate();
-
                 myLog.Source = source;
                 if (data)
                     myLog.WriteEvent(myEvent, myRawData, insertStringsSingleton);
@@ -150,7 +123,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntry(bool sourceFlag)
@@ -158,19 +131,23 @@ namespace System.Diagnostics.Tests
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
+            string log = "Entry";
+            string source = "Source" + nameof(WriteEntry);
+            EventLog.CreateEventSource(source, log);
             EventLogEntry eventLogEntry;
             if (sourceFlag)
-                eventLogEntry = GetLogEntry();
+                eventLogEntry = WriteLogEntry(source);
             else
-                eventLogEntry = GetLogEntrywithSource();
+                eventLogEntry = WriteLogEntryWithSource(source);
 
             Assert.Contains(message, eventLogEntry.Message);
             Assert.Equal(source, eventLogEntry.Source);
             Assert.StartsWith(Environment.MachineName, eventLogEntry.MachineName);
-
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithType(bool sourceFlag)
@@ -178,18 +155,23 @@ namespace System.Diagnostics.Tests
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
+            string source = "Source" + nameof(WriteEntryWithType);
+            string log = "TypeEntry";
+            EventLog.CreateEventSource(source, log);
             EventLogEntry eventLogEntry;
             if (sourceFlag)
-                eventLogEntry = GetLogEntry(true);
+                eventLogEntry = WriteLogEntry(source, true);
             else
-                eventLogEntry = GetLogEntrywithSource(true);
+                eventLogEntry = WriteLogEntryWithSource(source, true);
 
             Assert.Contains(message, eventLogEntry.Message);
             Assert.Equal(EventLogEntryType.Warning, eventLogEntry.EntryType);
 
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeAndId(bool sourceFlag)
@@ -197,18 +179,23 @@ namespace System.Diagnostics.Tests
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
+            string source = "Source" + nameof(WriteEntryWithTypeAndId);
+            string log = "InstanceEntry";
+            EventLog.CreateEventSource(source, log);
             EventLogEntry eventLogEntry;
             if (sourceFlag)
-                eventLogEntry = GetLogEntry(true, true);
+                eventLogEntry = WriteLogEntry(source, true, true);
             else
-                eventLogEntry = GetLogEntrywithSource(true, true);
+                eventLogEntry = WriteLogEntryWithSource(source, true, true);
 
             Assert.Contains(message, eventLogEntry.Message);
             Assert.Equal((int)myEvent.InstanceId, eventLogEntry.InstanceId);
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
 
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeIdAndCategory(bool sourceFlag)
@@ -216,32 +203,42 @@ namespace System.Diagnostics.Tests
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
+            string source = "Source" + nameof(WriteEntryWithTypeIdAndCategory);
+            string log = "CategoryEntry";
+            EventLog.CreateEventSource(source, log);
             EventLogEntry eventLogEntry;
             if (sourceFlag)
-                eventLogEntry = GetLogEntry(true, true, true);
+                eventLogEntry = WriteLogEntry(source, true, true, true);
             else
-                eventLogEntry = GetLogEntrywithSource(true, true, true);
+                eventLogEntry = WriteLogEntryWithSource(source, true, true, true);
 
             Assert.Contains(message, eventLogEntry.Message);
             // check on category number
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(false)]
         [InlineData(true)]
-        public void WriteEntryWithTypeIdCategoryAndBinData(bool sourceFlag)
+        public void WriteEntryWithTypeIdCategoryAndData(bool sourceFlag)
         {
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
+            string source = "Source" + nameof(WriteEntryWithTypeIdCategoryAndData);
+            string log = "EntryData";
+            EventLog.CreateEventSource(source, log);
             EventLogEntry eventLogEntry;
             if (sourceFlag)
-                eventLogEntry = GetLogEntry(true, true, true, true);
+                eventLogEntry = WriteLogEntry(source, true, true, true, true);
             else
-                eventLogEntry = GetLogEntrywithSource(true, true, true, true);
+                eventLogEntry = WriteLogEntryWithSource(source, true, true, true, true);
 
             Assert.Contains(message, eventLogEntry.Message);
             Assert.Equal(myRawData, eventLogEntry.Data);
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
 
         }
 
@@ -266,9 +263,7 @@ namespace System.Diagnostics.Tests
 
             using (EventLog myLog = new EventLog())
             {
-                if (!EventLog.SourceExists(source))
-                    SourceCreate();
-
+                string source = "Source_" + nameof(WriteEntryWithInvalidType);
                 myLog.Source = source;
                 Assert.Throws<InvalidEnumArgumentException>(() => myLog.WriteEntry(message, (EventLogEntryType)7));
             }
@@ -284,24 +279,28 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => EventLog.WriteEntry("", message));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEvent(bool SourceFlag)
         {
             if (!AdminHelpers.IsProcessElevated())
                 return;
-
+            string source = "Source_" + nameof(WriteEvent);
+            string log = "Event";
+            EventLog.CreateEventSource(source, log);
             EventLogEntry eventLogEntry;
             if (SourceFlag)
-                eventLogEntry = GetLogEntryEventSource();
+                eventLogEntry = WriteLogEntryEventSource(source);
             else
-                eventLogEntry = GetLogEntryEvent();
+                eventLogEntry = WriteLogEntryEvent(source);
 
             Assert.All(insertStrings, message => eventLogEntry.Message.Contains(message));
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEventWithData(bool SourceFlag)
@@ -309,40 +308,38 @@ namespace System.Diagnostics.Tests
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
+            string log = "EventData";
+            string source = "Source_" + nameof(WriteEventWithData);
+            EventLog.CreateEventSource(source, log);
             EventLogEntry eventLogEntry;
             if (SourceFlag)
-                eventLogEntry = GetLogEntryEventSource(true);
+                eventLogEntry = WriteLogEntryEventSource(source, true);
             else
-                eventLogEntry = GetLogEntryEvent(true);
+                eventLogEntry = WriteLogEntryEvent(source, true);
 
             Assert.Equal(myRawData, eventLogEntry.Data);
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void WriteEventInstanceNull()
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
+            string source = "Source_" + nameof(WriteEventInstanceNull);
             Assert.Throws<ArgumentNullException>(() => EventLog.WriteEvent(source, null, insertStrings));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void WriteEventMessageValues()
+        public void WriteEventMessageValues_OutOfRange()
         {
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
+            string source = "Source_" + nameof(WriteEventMessageValues_OutOfRange);
             string[] empty = new string[1];
             empty[0] = new string('c', 32767);
             Assert.Throws<ArgumentException>(() => EventLog.WriteEvent(source, myEvent, empty));
         }
 
-        ~EventLogWriteEntryTests()
-        {
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
-        }
     }
 }
-
