@@ -397,7 +397,7 @@ namespace System.Diagnostics
                 if (counterName == null)
                     counterName = string.Empty;
 
-                if (string.Compare(counterName, counter, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(counterName, counter, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 
@@ -695,7 +695,7 @@ namespace System.Diagnostics
                 try
                 {
                     string keyPath = ServicePath + "\\" + category + "\\Performance";
-                    if (_machineName == "." || string.Compare(_machineName, ComputerName, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (_machineName == "." || string.Equals(_machineName, ComputerName, StringComparison.OrdinalIgnoreCase))
                     {
                         key = Registry.LocalMachine.OpenSubKey(keyPath);
                     }
@@ -726,7 +726,7 @@ namespace System.Diagnostics
                     {
                         object systemDllName = key.GetValue("Library", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                         if (systemDllName != null && systemDllName is string
-                            && (string.Compare((string)systemDllName, PerformanceCounterLib.PerfShimName, StringComparison.OrdinalIgnoreCase) == 0
+                            && (string.Equals((string)systemDllName, PerformanceCounterLib.PerfShimName, StringComparison.OrdinalIgnoreCase)
                               || ((string)systemDllName).EndsWith(PerformanceCounterLib.PerfShimFullNameSuffix, StringComparison.OrdinalIgnoreCase)))
                         {
 
@@ -974,7 +974,7 @@ namespace System.Diagnostics
                 if (counterName == null)
                     counterName = string.Empty;
 
-                if (string.Compare(counterName, counter, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(counterName, counter, StringComparison.OrdinalIgnoreCase))
                 {
                     helpIndex = entry.HelpIndexes[index];
                     break;
@@ -1025,10 +1025,8 @@ namespace System.Diagnostics
         internal static PerformanceCounterLib GetPerformanceCounterLib(string machineName, CultureInfo culture)
         {
             string lcidString = culture.LCID.ToString("X3", CultureInfo.InvariantCulture);
-            if (machineName.CompareTo(".") == 0)
-                machineName = ComputerName.ToLower(CultureInfo.InvariantCulture);
-            else
-                machineName = machineName.ToLower(CultureInfo.InvariantCulture);
+
+            machineName = (machineName == "." ? ComputerName : machineName).ToLowerInvariant();
 
             if (PerformanceCounterLib.s_libraryTable == null)
             {
@@ -1069,7 +1067,7 @@ namespace System.Diagnostics
             Hashtable stringTable;
             RegistryKey libraryKey;
 
-            if (string.Compare(_machineName, ComputerName, StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(_machineName, ComputerName, StringComparison.OrdinalIgnoreCase))
                 libraryKey = Registry.PerformanceData;
             else
             {
@@ -1313,7 +1311,7 @@ namespace System.Diagnostics
         {
             try
             {
-                if (machineName != "." && string.Compare(machineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase) != 0)
+                if (machineName != "." && !string.Equals(machineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase))
                 {
                     perfDataKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.PerformanceData, machineName);
                 }
@@ -1643,7 +1641,7 @@ namespace System.Diagnostics
                 string counterName = (string)_library.NameTable[counterIndex];
                 if (counterName != null)
                 {
-                    if (string.Compare(counterName, counter, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(counterName, counter, StringComparison.OrdinalIgnoreCase))
                     {
                         CounterDefinitionSample sample = (CounterDefinitionSample)_counterTable[counterIndex];
                         if (sample == null)
