@@ -96,6 +96,11 @@
         "wp8": "8.0.0.0"
       }
     },
+    "Microsoft.Diagnostics.Tracing.EventSource.Redist": {
+      "AssemblyVersionInPackageVersion": {
+        "2.0.0.0": "2.0.0",
+      }
+    },
     "Microsoft.JScript": {
       "InboxOn": {
         "net45": "10.0.0.0"
