@@ -282,6 +282,12 @@
       "values": [ true, false ],
       "defaultValue": true
     },
+    "SkipSOS": {
+      "description": "",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": false
+    },
     "SignType": {
       "description": "Sets the SignType.",
       "valueType": "property",
