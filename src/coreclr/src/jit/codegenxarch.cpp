@@ -8113,7 +8113,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
     var_types targetType = source->TypeGet();
 
 #if defined(_TARGET_X86_) && defined(FEATURE_SIMD)
-    if (targetType == TYP_SIMD12)
+    if (varTypeIsSIMD(targetType) && (putArgStk->gtNumSlots == 3))
     {
         genPutArgStkSIMD12(putArgStk);
         return;

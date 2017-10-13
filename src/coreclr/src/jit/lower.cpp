@@ -1075,18 +1075,20 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
             // a result. So the type of its operand must be the correct type to push on the stack.
             // For a FIELD_LIST, this will be the type of the field (not the type of the arg),
-            // but otherwise it is generally the type of the operand. However, in the case of
-            // TYP_SIMD12 the type of the operand may need to be modified.
+            // but otherwise it is generally the type of the operand.
             PUT_STRUCT_ARG_STK_ONLY(assert(info->isStruct == varTypeIsStruct(type)));
+            if ((arg->OperGet() != GT_FIELD_LIST))
+            {
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-            if (type == TYP_SIMD12)
-            {
-                arg->gtType = type;
-            }
-            else
+                if (type == TYP_SIMD12)
+                {
+                    assert(info->numSlots == 3);
+                }
+                else
 #endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-            {
-                assert((genActualType(arg->TypeGet()) == type) || (arg->OperGet() == GT_FIELD_LIST));
+                {
+                    assert(genActualType(arg->TypeGet()) == type);
+                }
             }
 
             putArg =
