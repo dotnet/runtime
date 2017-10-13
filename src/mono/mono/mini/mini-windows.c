@@ -369,12 +369,11 @@ mono_setup_thread_context(DWORD thread_id, MonoContext *mono_context)
 	CloseHandle (handle);
 	return TRUE;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 gboolean
-mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info)
+mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, void *sigctx)
 {
-	DWORD id = mono_thread_info_get_tid (info);
 	MonoJitTlsData *jit_tls;
 	void *domain;
 	MonoLMF *lmf = NULL;
@@ -385,7 +384,14 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = NULL;
 	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = NULL;
 
-	mono_setup_thread_context(id, &tctx->ctx);
+	if (sigctx == NULL) {
+		DWORD id = mono_thread_info_get_tid (info);
+		mono_setup_thread_context (id, &tctx->ctx);
+	} else {
+		g_assert (((CONTEXT *)sigctx)->ContextFlags & CONTEXT_INTEGER);
+		g_assert (((CONTEXT *)sigctx)->ContextFlags & CONTEXT_CONTROL);
+		mono_sigctx_to_monoctx (sigctx, &tctx->ctx);
+	}
 
 	/* mono_set_jit_tls () sets this */
 	jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);

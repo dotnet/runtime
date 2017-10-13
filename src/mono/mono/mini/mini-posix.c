@@ -887,7 +887,7 @@ exec:
 #if !defined (__MACH__)
 
 gboolean
-mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info)
+mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, void *sigctx)
 {
 	g_error ("Posix systems don't support mono_thread_state_init_from_handle");
 	return FALSE;
