@@ -3156,6 +3156,8 @@ public:
                                           CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                           bool                    isCastClass);
 
+    GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
+
     bool VarTypeIsMultiByteAndCanEnreg(var_types            type,
                                        CORINFO_CLASS_HANDLE typeClass,
                                        unsigned*            typeSize,

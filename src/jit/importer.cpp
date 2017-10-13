@@ -9763,6 +9763,99 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 }
 
 //------------------------------------------------------------------------
+// impOptimizeCastClassOrIsInst: attempt to resolve a cast when jitting
+//
+// Arguments:
+//   op1 - value to cast
+//   pResolvedToken - resolved token for type to cast to
+//   isCastClass - true if this is a castclass, false if isinst
+//
+// Return Value:
+//   tree representing optimized cast, or null if no optimization possible
+
+GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass)
+{
+    assert(op1->TypeGet() == TYP_REF);
+
+    // Don't optimize for minopts or debug codegen.
+    if (opts.compDbgCode || opts.MinOpts())
+    {
+        return nullptr;
+    }
+
+    // See what we know about the type of the object being cast.
+    bool                 isExact   = false;
+    bool                 isNonNull = false;
+    CORINFO_CLASS_HANDLE fromClass = gtGetClassHandle(op1, &isExact, &isNonNull);
+    GenTree*             optResult = nullptr;
+
+    if (fromClass != nullptr)
+    {
+        CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
+        JITDUMP("\nConsidering optimization of %s from %s%p (%s) to %p (%s)\n", isCastClass ? "castclass" : "isinst",
+                isExact ? "exact " : "", fromClass, info.compCompHnd->getClassName(fromClass), toClass,
+                info.compCompHnd->getClassName(toClass));
+
+        // Perhaps we know if the cast will succeed or fail.
+        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
+
+        if (castResult == TypeCompareState::Must)
+        {
+            // Cast will succeed, result is simply op1.
+            JITDUMP("Cast will succeed, optimizing to simply return input\n");
+            return op1;
+        }
+        else if (castResult == TypeCompareState::MustNot)
+        {
+            // See if we can sharpen exactness by looking for final classes
+            if (!isExact)
+            {
+                DWORD flags     = info.compCompHnd->getClassAttribs(fromClass);
+                DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_MARSHAL_BYREF | CORINFO_FLG_CONTEXTFUL |
+                                  CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
+                isExact = ((flags & flagsMask) == CORINFO_FLG_FINAL);
+            }
+
+            // Cast to exact type will fail. Handle case where we have
+            // an exact type (that is, fromClass is not a subtype)
+            // and we're not going to throw on failure.
+            if (isExact && !isCastClass)
+            {
+                JITDUMP("Cast will fail, optimizing to return null\n");
+                GenTree* result = gtNewIconNode(0, TYP_REF);
+
+                // If the cast was fed by a box, we can remove that too.
+                if (op1->IsBoxedValue())
+                {
+                    JITDUMP("Also removing upstream box\n");
+                    gtTryRemoveBoxUpstreamEffects(op1);
+                }
+
+                return result;
+            }
+            else if (isExact)
+            {
+                JITDUMP("Not optimizing failing castclass (yet)\n");
+            }
+            else
+            {
+                JITDUMP("Can't optimize since fromClass is inexact\n");
+            }
+        }
+        else
+        {
+            JITDUMP("Result of cast unknown, must generate runtime test\n");
+        }
+    }
+    else
+    {
+        JITDUMP("\nCan't optimize since fromClass is unknown\n");
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // impCastClassOrIsInstToTree: build and import castclass/isinst
 //
 // Arguments:
@@ -14233,7 +14326,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_ISINST:
-
+            {
                 /* Get the type token */
                 assertImp(sz == sizeof(unsigned));
 
@@ -14262,45 +14355,56 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = impPopStack().val;
 
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (opts.IsReadyToRun())
+                GenTree* optTree = impOptimizeCastClassOrIsInst(op1, &resolvedToken, false);
+
+                if (optTree != nullptr)
                 {
-                    GenTreeCall* opLookup =
-                        impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
-                                                  gtNewArgList(op1));
-                    usingReadyToRunHelper = (opLookup != nullptr);
-                    op1                   = (usingReadyToRunHelper ? opLookup : op1);
+                    impPushOnStack(optTree, tiRetVal);
+                }
+                else
+                {
 
-                    if (!usingReadyToRunHelper)
+#ifdef FEATURE_READYTORUN_COMPILER
+                    if (opts.IsReadyToRun())
                     {
-                        // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
-                        // and the isinstanceof_any call with a single call to a dynamic R2R cell that will:
-                        //      1) Load the context
-                        //      2) Perform the generic dictionary lookup and caching, and generate the appropriate stub
-                        //      3) Perform the 'is instance' check on the input object
-                        // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
+                        GenTreeCall* opLookup =
+                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
+                                                      gtNewArgList(op1));
+                        usingReadyToRunHelper = (opLookup != nullptr);
+                        op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
-                        op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
-                        if (op2 == nullptr)
-                        { // compDonotInline()
-                            return;
+                        if (!usingReadyToRunHelper)
+                        {
+                            // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
+                            // and the isinstanceof_any call with a single call to a dynamic R2R cell that will:
+                            //      1) Load the context
+                            //      2) Perform the generic dictionary lookup and caching, and generate the appropriate
+                            //      stub
+                            //      3) Perform the 'is instance' check on the input object
+                            // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
+
+                            op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                            if (op2 == nullptr)
+                            { // compDonotInline()
+                                return;
+                            }
                         }
                     }
-                }
 
-                if (!usingReadyToRunHelper)
+                    if (!usingReadyToRunHelper)
 #endif
-                {
-                    op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false);
-                }
-                if (compDonotInline())
-                {
-                    return;
-                }
+                    {
+                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false);
+                    }
+                    if (compDonotInline())
+                    {
+                        return;
+                    }
 
-                impPushOnStack(op1, tiRetVal);
-
+                    impPushOnStack(op1, tiRetVal);
+                }
                 break;
+            }
 
             case CEE_REFANYVAL:
 
@@ -14795,45 +14899,58 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             // At this point we expect typeRef to contain the token, op1 to contain the value being cast,
             // and op2 to contain code that creates the type handle corresponding to typeRef
             CASTCLASS:
+            {
+                GenTree* optTree = impOptimizeCastClassOrIsInst(op1, &resolvedToken, true);
+
+                if (optTree != nullptr)
+                {
+                    impPushOnStack(optTree, tiRetVal);
+                }
+                else
+                {
 
 #ifdef FEATURE_READYTORUN_COMPILER
-                if (opts.IsReadyToRun())
-                {
-                    GenTreeCall* opLookup = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST,
-                                                                      TYP_REF, gtNewArgList(op1));
-                    usingReadyToRunHelper = (opLookup != nullptr);
-                    op1                   = (usingReadyToRunHelper ? opLookup : op1);
-
-                    if (!usingReadyToRunHelper)
+                    if (opts.IsReadyToRun())
                     {
-                        // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
-                        // and the chkcastany call with a single call to a dynamic R2R cell that will:
-                        //      1) Load the context
-                        //      2) Perform the generic dictionary lookup and caching, and generate the appropriate stub
-                        //      3) Check the object on the stack for the type-cast
-                        // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
+                        GenTreeCall* opLookup =
+                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF,
+                                                      gtNewArgList(op1));
+                        usingReadyToRunHelper = (opLookup != nullptr);
+                        op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
-                        op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
-                        if (op2 == nullptr)
-                        { // compDonotInline()
-                            return;
+                        if (!usingReadyToRunHelper)
+                        {
+                            // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
+                            // and the chkcastany call with a single call to a dynamic R2R cell that will:
+                            //      1) Load the context
+                            //      2) Perform the generic dictionary lookup and caching, and generate the appropriate
+                            //      stub
+                            //      3) Check the object on the stack for the type-cast
+                            // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
+
+                            op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                            if (op2 == nullptr)
+                            { // compDonotInline()
+                                return;
+                            }
                         }
                     }
-                }
 
-                if (!usingReadyToRunHelper)
+                    if (!usingReadyToRunHelper)
 #endif
-                {
-                    op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, true);
-                }
-                if (compDonotInline())
-                {
-                    return;
-                }
+                    {
+                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, true);
+                    }
+                    if (compDonotInline())
+                    {
+                        return;
+                    }
 
-                /* Push the result back on the stack */
-                impPushOnStack(op1, tiRetVal);
-                break;
+                    /* Push the result back on the stack */
+                    impPushOnStack(op1, tiRetVal);
+                }
+            }
+            break;
 
             case CEE_THROW:
 
