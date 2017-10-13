@@ -471,12 +471,12 @@ namespace System.Diagnostics
 
             CategorySample categorySample = PerformanceCounterLib.GetCategorySample(machineName, categoryName);
             if (categorySample._instanceNameTable.Count == 0)
-                return new string[0];
+                return Array.Empty<string>();
 
             string[] instanceNames = new string[categorySample._instanceNameTable.Count];
             categorySample._instanceNameTable.Keys.CopyTo(instanceNames, 0);
             if (instanceNames.Length == 1 && instanceNames[0].CompareTo(PerformanceCounterLib.SingleInstanceName) == 0)
-                return new string[0];
+                return Array.Empty<string>();
 
             return instanceNames;
         }
