@@ -2354,8 +2354,38 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 		}
 	}
 
-	if (ret == SOCKET_ERROR)
+	if (ret == SOCKET_ERROR) {
 		*werror = mono_w32socket_get_last_error ();
+
+#ifdef HAVE_IP_MTU_DISCOVER
+		if (system_name == IP_MTU_DISCOVER) {
+			switch (system_level) {
+			case IP_PMTUDISC_DONT:
+			case IP_PMTUDISC_WANT:
+			case IP_PMTUDISC_DO:
+			case IP_PMTUDISC_PROBE:
+#ifdef IP_PMTUDISC_INTERFACE
+			case IP_PMTUDISC_INTERFACE:
+#endif
+#ifdef IP_PMTUDISC_OMIT
+			case IP_PMTUDISC_OMIT:
+#endif
+				/*
+				 * This happens if HAVE_IP_MTU_DISCOVER is set but the OS
+				 * doesn't actually understand it. The only OS that this is
+				 * known to happen on currently is Windows Subsystem for Linux
+				 * (newer versions have been fixed to recognize it). Just
+				 * pretend everything is fine.
+				 */
+				ret = 0;
+				*werror = 0;
+				break;
+			default:
+				break;
+			}
+		}
+#endif
+	}
 }
 
 void
