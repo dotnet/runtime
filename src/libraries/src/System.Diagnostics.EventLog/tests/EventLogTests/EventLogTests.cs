@@ -8,8 +8,6 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogTests
     {
-        string source = Guid.NewGuid().ToString("N");
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void EventLogReinitializationException()
         {
@@ -21,9 +19,11 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void ClearLogTest()
+        public void ClearLog()
         {
             string logName = "ClearTest";
+            string source = "Source_" + nameof(ClearLog);
+
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
@@ -33,10 +33,9 @@ namespace System.Diagnostics.Tests
                 using (EventLog myLog = new EventLog())
                 {
                     myLog.Source = source;
-                    myLog.WriteEntry("Writing to event log.");
-                    Assert.True(myLog.Entries.Count != 0);
                     myLog.Clear();
-                    Assert.Equal(0, myLog.Entries.Count);
+                    myLog.WriteEntry("Writing to event log.");
+                    Assert.Equal(myLog.Entries.Count, 1);
                 }
             }
             finally
@@ -56,9 +55,10 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void DeleteLogTest()
+        public void DeleteLog()
         {
             string logName = "DeleteTest";
+            string source = "Source_" + nameof(DeleteLog);
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
@@ -76,7 +76,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void GetLogNameTest()
+        public void CheckLogName()
         {
             using (EventLog eventLog = new EventLog("Application"))
             {
@@ -85,7 +85,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void GetMachineNameTest()
+        public void CheckMachineName()
         {
             using (EventLog eventLog = new EventLog("Application"))
             {
@@ -94,7 +94,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void SetLogNameDoesNotExistTest()
+        public void GetLogDisplayName_NotSet()
         {
             using (EventLog eventLog = new EventLog())
             {
@@ -104,7 +104,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void SetLogNameExistTest()
+        public void GetLogDisplayName_Set()
         {
             using (EventLog eventLog = new EventLog())
             {
@@ -114,18 +114,16 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void getEventLogTest()
+        public void EventLogs_Get()
         {
             EventLog[] eventLogCollection = EventLog.GetEventLogs();
             Assert.Contains(eventLogCollection, eventlog => eventlog.LogDisplayName.Equals("Application"));
-            Assert.Contains(eventLogCollection, eventlog => eventlog.LogDisplayName.Equals("Security"));
-            Assert.Contains(eventLogCollection, eventlog => eventlog.LogDisplayName.Equals("System"));
-            Console.WriteLine(eventLogCollection.Length);
-            Console.WriteLine("Hello");
+            //Assert.Contains(eventLogCollection, eventlog => eventlog.LogDisplayName.Equals("Security"));
+            //Assert.Contains(eventLogCollection, eventlog => eventlog.LogDisplayName.Equals("System"));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void SetGetMaxKilobytes()
+        public void GetMaxKilobytes_Set()
         {
             using (EventLog eventLog = new EventLog())
             {
@@ -147,7 +145,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void OverflowAndRetentionTests()
+        public void OverflowAndRetention_Set()
         {
             using (EventLog eventLog = new EventLog())
             {
@@ -159,7 +157,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void OverflowAndRetentionDaysOutOfRangeTests()
+        public void OverflowAndRetentionDaysOutOfRange()
         {
             using (EventLog eventLog = new EventLog())
             {
@@ -169,16 +167,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void SetMachineName()
+        public void MachineName_Set()
         {
             if (!AdminHelpers.IsProcessElevated())
                 return;
             using (EventLog myLog = new EventLog())
             {
-
                 myLog.Log = "Application";
                 myLog.MachineName = Environment.MachineName;
-
+                string source = "Source_" + nameof(MachineName_Set);
                 try
                 {
                     EventLog.CreateEventSource(source, myLog.LogDisplayName);

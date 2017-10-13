@@ -10,14 +10,14 @@ namespace System.Diagnostics.Tests
     public class EventLogEntryEventWriitenTest
     {
         static AutoResetEvent signal;
-        private string source = Guid.NewGuid().ToString("N");
         private string message = "EventLogEntryEventWrittenTestMessage";
-        private string log = Guid.NewGuid().ToString("N");
-        private static int eventCounter = 0;
+        private int eventCounter;
 
-        public void RaisingEvent(bool value = true)
+        public void RaisingEvent(string log, string methodName, bool value = true)
         {
             signal = new AutoResetEvent(false);
+            eventCounter = 0;
+            string source = "Source_" + methodName;
 
             try
             {
@@ -25,7 +25,11 @@ namespace System.Diagnostics.Tests
                 using (EventLog myLog = new EventLog())
                 {
                     myLog.Source = source;
-                    myLog.EntryWritten += new EntryWrittenEventHandler(MyOnEntryWritten);
+                    myLog.EntryWritten += new EntryWrittenEventHandler((object sourceObject, EntryWrittenEventArgs e) =>
+                    {
+                        eventCounter += 1;
+                        signal.Set();
+                    });
                     myLog.EnableRaisingEvents = value;
                     myLog.WriteEntry(message, EventLogEntryType.Information);
                     if (value)
@@ -39,28 +43,22 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        public void MyOnEntryWritten(object source, EntryWrittenEventArgs e)
-        {
-            eventCounter += 1;
-            signal.Set();
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void EntryWrittenEventTest()
+        public void EntryWrittenEventRaised()
         {
             if (!AdminHelpers.IsProcessElevated())
                 return;
-            RaisingEvent();
+            RaisingEvent("EnableEvent", nameof(EntryWrittenEventRaised));
             Assert.Equal(1, eventCounter);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void EntryWrittenEventDisableTest()
+        public void EntryWrittenEventRaiseDisable()
         {
             if (!AdminHelpers.IsProcessElevated())
                 return;
             eventCounter = 0;
-            RaisingEvent(false);
+            RaisingEvent("DisableEvent", nameof(EntryWrittenEventRaiseDisable), false);
             Assert.Equal(0, eventCounter);
         }
     }

@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
         EventInstance eventInstance = null;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void EventInstanceCreationTests()
+        public void EventInstanceCreation()
         {
             eventInstance = new EventInstance(instanceId, categoryId);
 

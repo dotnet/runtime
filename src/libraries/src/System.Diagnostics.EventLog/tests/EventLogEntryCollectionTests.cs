@@ -6,31 +6,19 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class EventLogEntryCollectionTests : IDisposable
+    public class EventLogEntryCollectionTests
     {
-        private string source = Guid.NewGuid().ToString("N");
-        private string message = Guid.NewGuid().ToString("N");
-        private string log = Guid.NewGuid().ToString("N");
-
-        public EventLogEntryCollectionTests()
-        {
-            SourceCreate();
-            Console.WriteLine("Constructor");
-        }
-
-        private void SourceCreate()
-        {
-            EventLog.CreateEventSource(source, log);
-            Console.WriteLine("Hello");
-        }
+        private string message = "EntryCollectionMessage";
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void CopyingEventLogEntryCollection()
         {
+            string log = "CopyCollection";
+            string source = "Source_" + nameof(CopyingEventLogEntryCollection);
+
             using (EventLog myLog = new EventLog())
             {
-                if (!EventLog.SourceExists(source))
-                    SourceCreate();
+                EventLog.CreateEventSource(source, log);
                 myLog.Source = source;
                 myLog.WriteEntry(message);
                 myLog.WriteEntry("Furthur Testing");
@@ -45,45 +33,59 @@ namespace System.Diagnostics.Tests
                     i += 1;
                 }
             }
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void EntryEqualityNullTest()
+        public void CheckingEntryEqualityWithNull()
         {
+            string log = "NullTest";
+            string source = "Source_" + nameof(CheckingEntryEqualityWithNull);
+
             using (EventLog myLog = new EventLog())
             {
-                if (!EventLog.SourceExists(source))
-                    SourceCreate();
+                EventLog.CreateEventSource(source, log);
                 myLog.Source = source;
                 myLog.WriteEntry(message);
                 EventLogEntry entry = myLog.Entries[myLog.Entries.Count - 1];
                 Assert.False(entry.Equals(null));
             }
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void EntryEqualityAndIndexTest()
+        public void CheckingEntryEqualityAndIndex()
         {
+            string log = "IndexTest";
+            string source = "Source_" + nameof(CheckingEntryEqualityAndIndex);
+
             using (EventLog myLog = new EventLog())
             {
-                if (!EventLog.SourceExists(source))
-                    SourceCreate();
+                EventLog.CreateEventSource(source, log);
                 myLog.Source = source;
                 myLog.Clear();
                 myLog.WriteEntry(message);
                 EventLogEntry entry = myLog.Entries[myLog.Entries.Count - 1];
                 Assert.True(entry.Equals(entry));
-                Assert.Equal(entry.Index, 1);
+                myLog.WriteEntry(message);
+                EventLogEntry secondEntry = myLog.Entries[myLog.Entries.Count - 1];
+                Assert.Equal(entry.Index + 1, secondEntry.Index);
             }
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void EntryInEqualityTest()
+        public void CheckingEntryInEquality()
         {
+            string log = "InEqualityTest";
+            string source = "Source_" + nameof(CheckingEntryInEquality);
+
             using (EventLog myLog = new EventLog())
             {
-                if (!EventLog.SourceExists(source))
-                    SourceCreate();
+                EventLog.CreateEventSource(source, log);
                 myLog.Source = source;
                 myLog.WriteEntry(message);
                 myLog.WriteEntry(message);
@@ -91,21 +93,8 @@ namespace System.Diagnostics.Tests
                 EventLogEntry secondEntry = myLog.Entries[myLog.Entries.Count - 2];
                 Assert.False(entry.Equals(secondEntry));
             }
-        }
-
-        public void Dispose()
-        {
-            if (EventLog.SourceExists(source))
-            {
-                EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
-            }
-            GC.SuppressFinalize(this);
-        }
-
-        ~EventLogEntryCollectionTests()
-        {
-            Dispose();
+            EventLog.DeleteEventSource(source);
+            EventLog.Delete(log);
         }
     }
 }
