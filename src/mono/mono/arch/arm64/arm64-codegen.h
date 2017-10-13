@@ -834,10 +834,18 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 /* C5.6.60 DMB */
 #define arm_format_dmb(p, opc, CRm) arm_emit ((p), (0x354 << 22) | (0x3 << 16) | (0x3 << 12) | ((CRm) << 8) | (0x1 << 7) | ((opc) << 5) | (0x1f << 0))
 
-#define ARM_DMB_LD 0x1
-#define ARM_DMB_ST 0x2
-#define ARM_DMB_ALL 0x3
-#define ARM_DMB_SY 0xc
+#define ARM_DMB_OSHLD 0x1
+#define ARM_DMB_OSHST 0x2
+#define ARM_DMB_OSH   0x3
+#define ARM_DMB_NSHLD 0x5
+#define ARM_DMB_NSHST 0x6
+#define ARM_DMB_NSH   0x7
+#define ARM_DMB_ISHLD 0x9
+#define ARM_DMB_ISHST 0xa
+#define ARM_DMB_ISH   0xb
+#define ARM_DMB_LD    0xd
+#define ARM_DMB_ST    0xe
+#define ARM_DMB_SY    0xf
 
 #define arm_dmb(p, imm) arm_format_dmb ((p), 0x1, (imm))
 
