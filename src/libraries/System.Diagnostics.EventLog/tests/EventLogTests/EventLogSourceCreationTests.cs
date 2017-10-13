@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
             if (!AdminHelpers.IsProcessElevated())
                 return;
 
-            string source = "Source";
+            string source = "Source_" + nameof(EventLogSourceCreationTests);
             string log = "MyLog";
             try
             {
