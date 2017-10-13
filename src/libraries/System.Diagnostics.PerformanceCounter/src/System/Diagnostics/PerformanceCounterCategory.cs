@@ -48,10 +48,10 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(categoryName), categoryName), nameof(categoryName));
 
             if (!SyntaxCheck.CheckMachineName(machineName))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "machineName", machineName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
             PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, categoryName);
             permission.Demand();
@@ -76,7 +76,7 @@ namespace System.Diagnostics
                     throw new ArgumentNullException(nameof(value));
 
                 if (value.Length == 0)
-                    throw new ArgumentException(SR.Format(SR.InvalidProperty, "CategoryName", value));
+                    throw new ArgumentException(SR.Format(SR.InvalidProperty, nameof(CategoryName), value), nameof(value));
 
                 // the lock prevents a race between setting CategoryName and MachineName, since this permission 
                 // checks depend on both pieces of info. 
@@ -141,7 +141,7 @@ namespace System.Diagnostics
             set
             {
                 if (!SyntaxCheck.CheckMachineName(value))
-                    throw new ArgumentException(SR.Format(SR.InvalidProperty, "MachineName", value));
+                    throw new ArgumentException(SR.Format(SR.InvalidProperty, nameof(MachineName), value), nameof(value));
 
                 // the lock prevents a race between setting CategoryName and MachineName, since this permission 
                 // checks depend on both pieces of info. 
@@ -192,10 +192,10 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(categoryName), categoryName), nameof(categoryName));
 
             if (!SyntaxCheck.CheckMachineName(machineName))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "machineName", machineName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
             PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, categoryName);
             permission.Demand();
@@ -446,10 +446,10 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(categoryName), categoryName), nameof(categoryName));
 
             if (!SyntaxCheck.CheckMachineName(machineName))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "machineName", machineName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
             PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, categoryName);
             permission.Demand();
@@ -528,7 +528,7 @@ namespace System.Diagnostics
         public static PerformanceCounterCategory[] GetCategories(string machineName)
         {
             if (!SyntaxCheck.CheckMachineName(machineName))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "machineName", machineName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
             PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, "*");
             permission.Demand();
@@ -587,10 +587,10 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(categoryName));
 
             if (categoryName.Length == 0)
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "categoryName", categoryName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(categoryName), categoryName), nameof(categoryName));
 
             if (!SyntaxCheck.CheckMachineName(machineName))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "machineName", machineName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
             PerformanceCounterCategory category = new PerformanceCounterCategory(categoryName, machineName);
             return category.InstanceExists(instanceName);
