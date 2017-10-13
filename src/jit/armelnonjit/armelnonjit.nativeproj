@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+      PROTO JIT: The purpose of this module is to provide an isolated environment to develop
+      the RyuJIT backend without interfering with the development of the frontend.  The
+      idea is to fork codegen and registerfp, that way we leave the PUCLR backend intact so 
+      it can be still consumed by the RyuJIT frontend separately maintaining the code stability 
+      of the PUCLR codegen.cpp logic.
+
+      This module is meant to be used as a throwaway or fallback cross-JIT (x86 -> arm) that will just
+      attempt to generate arm code, throw it away and then re-jit using the default jit on x86.
+  -->
+
+  <!--
+      Note that we are defining TargetArch directly because of altjit is not a real fully functional cross 
+      compiled binary. It is just a convenience workaround for JIT devs.
+  -->
+  <PropertyGroup>
+    <TargetArch>arm</TargetArch>
+  </PropertyGroup>
+
+  <!-- Import the CLR's settings -->
+
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
+
+  <PropertyGroup>
+
+    <!-- Set the output -->
+
+    <OutputName>armelnonjit</OutputName>
+    <FeatureMergeJitAndEngine>false</FeatureMergeJitAndEngine>
+    <TargetType>DYNLINK</TargetType>
+    <BuildCoreBinaries>false</BuildCoreBinaries>
+    <BuildSysBinaries>false</BuildSysBinaries>
+
+    <!-- Motherhood & apple pie here -->
+
+    <DllEntryPoint>_DllMainCRTStartup</DllEntryPoint>
+    <LinkSubsystem>windows</LinkSubsystem>
+    <LibCLib Condition="'$(FeatureMergeJitAndEngine)'!='true'">$(ClrCrtLib)</LibCLib>
+
+    <!-- JIT specific baloney -->
+
+    <LinkModuleDefinitionFile>$(OutputName).def</LinkModuleDefinitionFile>
+
+    <ClDefines>$(ClDefines);_TARGET_ARM_=1</ClDefines>
+    <ClDefines>$(ClDefines);ALT_JIT</ClDefines>
+
+    <Win32DllLibs>$(SdkLibPath)\kernel32.lib;$(SdkLibPath)\user32.lib;$(SdkLibPath)\advapi32.lib;$(SdkLibPath)\oleaut32.lib;$(SdkLibPath)\uuid.lib</Win32DllLibs>
+    <Win32DllLibs>$(Win32DllLibs);$(ClrLibPath)\utilcode.lib</Win32DllLibs>
+
+    <!-- Profile-guided optimization -->
+
+    <PogoOptimize>false</PogoOptimize>
+    <PogoInstrument>false</PogoInstrument>
+    <PogoUpdate>false</PogoUpdate>
+
+    <!-- Do we want to build with msvcdis disassembly? This should be enabled for DEBUG, disabled otherwise.
+         However, it can be useful to enable it temporarily in non-DEBUG builds, by changing the EnableLateDisasm property.
+    -->
+    <EnableLateDisasm>false</EnableLateDisasm>
+    <ClDefines Condition="'$(EnableLateDisasm)' == 'true'">$(ClDefines);LATE_DISASM=1</ClDefines>
+    <LinkDelayLoad Condition="'$(EnableLateDisasm)' == 'true'">$(LinkDelayLoad);msvcdis$(VC_NONCRT_ProdVerX).dll</LinkDelayLoad>
+    <UseDelayimpLib Condition="'$(EnableLateDisasm)' == 'true' and '$(FeatureMergeJitAndEngine)'!='true'">true</UseDelayimpLib>
+
+  </PropertyGroup>
+
+  <!-- Leaf Project Items -->
+  <ItemGroup>
+    <ProjectReference Include="$(ClrSrcDirectory)utilcode\dyncrt\dyncrt.nativeproj" />
+    <TargetLib Include="$(SdkLibPath)\mscoree.lib" />
+    <TargetLib Include="$(ClrLibPath)\ArmGCInfo.lib">
+      <ProjectReference>$(ClrSrcDirectory)gcinfo\armlib\ArmGCInfo.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(UseDelayimpLib)' == 'true'" Include="$(ClrLibPath)\delayimp.lib">
+      <ProjectReference>$(ClrSrcDirectory)delayimp\delayimp.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(DebugBuild)' == 'true'" Include="$(SdkLibPath)\ole32.lib" />
+    <TargetLib Condition="'$(EnableLateDisasm)' == 'true'" Include="$(VCToolsLibPath)\msvcdis.lib" />
+    <RCResourceFile Include="..\native.rc" />
+  </ItemGroup>
+
+  <Import Project="..\jit.settings.targets" />
+
+</Project>
