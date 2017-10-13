@@ -1680,7 +1680,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
 
 #if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
     // For PutArgStk of a TYP_SIMD12, we need an extra register.
-    if (type == TYP_SIMD12)
+    if (varTypeIsSIMD(type) && (putArgStk->gtNumSlots == 3))
     {
         info->srcCount           = putArgStk->gtOp1->gtLsraInfo.dstCount;
         info->internalFloatCount = 1;
