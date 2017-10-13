@@ -1002,7 +1002,7 @@ namespace System.Diagnostics
         private static string[] GetLanguageIds()
         {
             RegistryKey libraryParentKey = null;
-            string[] ids = new string[0];
+            string[] ids = Array.Empty<string>();
             new RegistryPermission(PermissionState.Unrestricted).Assert();
             try
             {
@@ -1604,14 +1604,14 @@ namespace System.Diagnostics
                 }
 
                 if (!foundCategory)
-                    return new string[0];
+                    return Array.Empty<string>();
 
                 int counterNumber = perfObject.NumCounters;
                 int instanceNumber = perfObject.NumInstances;
                 dataRef = (IntPtr)((long)dataRef + perfObject.HeaderLength);
 
                 if (instanceNumber == -1)
-                    return new string[0];
+                    return Array.Empty<string>();
 
                 CounterDefinitionSample[] samples = new CounterDefinitionSample[counterNumber];
                 for (int index = 0; index < samples.Length; ++index)
