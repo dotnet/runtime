@@ -475,7 +475,7 @@ namespace System.Diagnostics
 
             string[] instanceNames = new string[categorySample._instanceNameTable.Count];
             categorySample._instanceNameTable.Keys.CopyTo(instanceNames, 0);
-            if (instanceNames.Length == 1 && instanceNames[0].CompareTo(PerformanceCounterLib.SingleInstanceName) == 0)
+            if (instanceNames.Length == 1 && instanceNames[0] == PerformanceCounterLib.SingleInstanceName)
                 return Array.Empty<string>();
 
             return instanceNames;
