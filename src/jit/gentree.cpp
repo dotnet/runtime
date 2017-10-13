@@ -3046,7 +3046,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         switch (oper)
         {
             GenTreeIntConCommon* con;
-            bool                 iconNeedsReloc;
 
 #ifdef _TARGET_ARM_
             case GT_CNS_LNG:
@@ -3066,10 +3065,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //  applied to it.
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                con            = tree->AsIntConCommon();
-                iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                con = tree->AsIntConCommon();
 
-                if (iconNeedsReloc || !codeGen->validImmForInstr(INS_mov, tree->gtIntCon.gtIconVal))
+                if (con->ImmedValNeedsReloc(this) || !codeGen->validImmForInstr(INS_mov, tree->gtIntCon.gtIconVal))
                 {
                     // Uses movw/movt
                     costSz = 7;
@@ -3102,20 +3100,21 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 goto COMMON_CNS;
 
             case GT_CNS_INT:
-
+            {
                 // If the constant is a handle then it will need to have a relocation
                 //  applied to it.
                 //
-                con            = tree->AsIntConCommon();
-                iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                con = tree->AsIntConCommon();
 
-                if (!iconNeedsReloc && (((signed char)tree->gtIntCon.gtIconVal) == tree->gtIntCon.gtIconVal))
+                bool iconNeedsReloc = con->ImmedValNeedsReloc(this);
+
+                if (!iconNeedsReloc && con->FitsInI8())
                 {
                     costSz = 1;
                     costEx = 1;
                 }
 #if defined(_TARGET_AMD64_)
-                else if (iconNeedsReloc || ((tree->gtIntCon.gtIconVal & 0xFFFFFFFF00000000LL) != 0))
+                else if (iconNeedsReloc || !con->FitsInI32())
                 {
                     costSz = 10;
                     costEx = 3;
@@ -3127,6 +3126,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                 }
                 goto COMMON_CNS;
+            }
 
 #elif defined(_TARGET_ARM64_)
             case GT_CNS_LNG:
