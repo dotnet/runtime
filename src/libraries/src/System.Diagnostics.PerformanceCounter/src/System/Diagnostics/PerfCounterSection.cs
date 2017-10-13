@@ -8,31 +8,12 @@ namespace System.Diagnostics
 {
     internal class PerfCounterSection : ConfigurationElement
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
         private static readonly ConfigurationProperty s_propFileMappingSize = new ConfigurationProperty("filemappingsize", typeof(int), 524288, ConfigurationPropertyOptions.None);
-
-        static PerfCounterSection()
-        {
-            s_properties = new ConfigurationPropertyCollection();
-            s_properties.Add(s_propFileMappingSize);
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propFileMappingSize };
 
         [ConfigurationProperty("filemappingsize", DefaultValue = 524288)]
-        public int FileMappingSize
-        {
-            get
-            {
-                return (int)this[s_propFileMappingSize];
-            }
-        }
+        public int FileMappingSize => (int)this[s_propFileMappingSize];
 
-        protected override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                return s_properties;
-            }
-        }
+        protected override ConfigurationPropertyCollection Properties => s_properties;
     }
 }
-
