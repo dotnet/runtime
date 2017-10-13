@@ -387,33 +387,14 @@ namespace System.Runtime.CompilerServices
         {
             IAsyncStateMachineBox box = GetStateMachineBox(ref stateMachine);
 
-            // TODO https://github.com/dotnet/coreclr/issues/12877:
-            // Once the JIT is able to recognize "awaiter is ITaskAwaiter" and "awaiter is IConfiguredTaskAwaiter",
-            // use those in order to a) consolidate a lot of this code, and b) handle all Task/Task<T> and not just
-            // the few types special-cased here.  For now, handle common {Configured}TaskAwaiter.  Having the types
-            // explicitly listed here allows the JIT to generate the best code for them; otherwise we'll fall through
-            // to the later workaround.
-            if (typeof(TAwaiter) == typeof(TaskAwaiter) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<object>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<string>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<byte[]>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<bool>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<byte>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<int>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<long>))
+            // TThe null tests here ensure that the jit can optimize away the interface
+            // tests when TAwaiter is is a ref type.
+            if ((null != (object)default(TAwaiter)) && (awaiter is ITaskAwaiter))
             {
                 ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter); // relies on TaskAwaiter/TaskAwaiter<T> having the same layout
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
             }
-            else if (
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<object>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<string>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<byte[]>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<bool>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<byte>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<int>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<long>.ConfiguredTaskAwaiter))
+            else if ((null != (object)default(TAwaiter)) && (awaiter is IConfiguredTaskAwaiter))
             {
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
@@ -448,21 +429,6 @@ namespace System.Runtime.CompilerServices
             {
                 var vta = (ConfiguredValueTaskAwaitable<object>.ConfiguredValueTaskAwaiter)(object)awaiter;
                 TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
-            }
-
-            // To catch all Task/Task<T> awaits, do the currently more expensive interface checks.
-            // Eventually these and the above Task/Task<T> checks should be replaced by "is" checks,
-            // once that's recognized and optimized by the JIT.  We do these after all of the hardcoded
-            // checks above so that they don't incur the costs of these checks.
-            else if (InterfaceIsCheckWorkaround<TAwaiter>.IsITaskAwaiter)
-            {
-                ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter);
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
-            }
-            else if (InterfaceIsCheckWorkaround<TAwaiter>.IsIConfiguredTaskAwaiter)
-            {
-                ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
             }
 
             // The awaiter isn't specially known. Fall back to doing a normal await.
@@ -920,13 +886,6 @@ namespace System.Runtime.CompilerServices
         /// <returns>The cacheable task.</returns>
         internal static Task<TResult> CreateCacheableTask<TResult>(TResult result) =>
             new Task<TResult>(false, result, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
-    }
-
-    /// <summary>Temporary workaround for https://github.com/dotnet/coreclr/issues/12877.</summary>
-    internal static class InterfaceIsCheckWorkaround<TAwaiter>
-    {
-        internal static readonly bool IsITaskAwaiter = typeof(TAwaiter).GetInterface("ITaskAwaiter") != null;
-        internal static readonly bool IsIConfiguredTaskAwaiter = typeof(TAwaiter).GetInterface("IConfiguredTaskAwaiter") != null;
     }
 
     /// <summary>
