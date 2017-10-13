@@ -260,6 +260,11 @@ if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64)
     add_subdirectory(protononjit)
 endif ()
 
+if (CLR_CMAKE_PLATFORM_ARCH_I386)
+     # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
+    add_subdirectory(armelnonjit)
+endif ()
+
 if ((CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64) AND WIN32)
     # On Windows, build altjit that targets the Linux ABI:
     #   On x86, build Linux/x86 altjit. This enables UNIX_X86_ABI.
