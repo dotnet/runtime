@@ -8,23 +8,12 @@ namespace System.Diagnostics
 {
     internal class SystemDiagnosticsSection : ConfigurationSection
     {
-        private static readonly ConfigurationPropertyCollection s_properties;
         private static readonly ConfigurationProperty s_propPerfCounters = new ConfigurationProperty("performanceCounters", typeof(PerfCounterSection), new PerfCounterSection(), ConfigurationPropertyOptions.None);
-
-        static SystemDiagnosticsSection()
-        {
-            s_properties = new ConfigurationPropertyCollection();
-            s_properties.Add(s_propPerfCounters);
-        }
+        private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propPerfCounters };
 
         [ConfigurationProperty("performanceCounters")]
-        public PerfCounterSection PerfCounters
-        {
-            get
-            {
-                return (PerfCounterSection)base[s_propPerfCounters];
-            }
-        }
+        public PerfCounterSection PerfCounters => (PerfCounterSection)base[s_propPerfCounters];
+
+        protected override ConfigurationPropertyCollection Properties => s_properties;
     }
 }
-
