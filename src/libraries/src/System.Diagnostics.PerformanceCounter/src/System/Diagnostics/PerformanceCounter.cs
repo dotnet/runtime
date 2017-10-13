@@ -300,7 +300,7 @@ namespace System.Diagnostics
             set
             {
                 if (!SyntaxCheck.CheckMachineName(value))
-                    throw new ArgumentException(SR.Format(SR.InvalidParameter, "machineName", value));
+                    throw new ArgumentException(SR.Format(SR.InvalidProperty, nameof(MachineName), value), nameof(value));
 
                 if (_machineName != value)
                 {
