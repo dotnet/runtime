@@ -1088,10 +1088,10 @@ private:
 
 private:
 #if MEASURE_MEM_ALLOC
-    IAllocator* lsraIAllocator;
+    CompAllocator* lsraIAllocator;
 #endif
 
-    IAllocator* getAllocator(Compiler* comp)
+    CompAllocator* getAllocator(Compiler* comp)
     {
 #if MEASURE_MEM_ALLOC
         if (lsraIAllocator == nullptr)

@@ -789,12 +789,12 @@ void LC_Deref::DeriveLevelConditions(ExpandArrayStack<ExpandArrayStack<LC_Condit
 // EnsureChildren - Create an array of child nodes if nullptr.
 //
 // Arguments:
-//      alloc   IAllocator instance
+//      alloc   CompAllocator instance
 //
 // Return Values:
 //      None
 //
-void LC_Deref::EnsureChildren(IAllocator* alloc)
+void LC_Deref::EnsureChildren(CompAllocator* alloc)
 {
     if (children == nullptr)
     {

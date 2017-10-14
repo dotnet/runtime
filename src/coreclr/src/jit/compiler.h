@@ -1464,34 +1464,6 @@ typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, TestLabelAndNum, JitS
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif // DEBUG
 
-// This class implements the "IAllocator" interface, so that we can use
-// utilcode collection classes in the JIT, and have them use the JIT's allocator.
-
-class CompAllocator : public IAllocator
-{
-    Compiler* m_comp;
-#if MEASURE_MEM_ALLOC
-    CompMemKind m_cmk;
-#endif
-public:
-    CompAllocator(Compiler* comp, CompMemKind cmk)
-        : m_comp(comp)
-#if MEASURE_MEM_ALLOC
-        , m_cmk(cmk)
-#endif
-    {
-    }
-
-    inline void* Alloc(size_t sz);
-
-    inline void* ArrayAlloc(size_t elems, size_t elemSize);
-
-    // For the compiler's no-release allocator, free operations are no-ops.
-    void Free(void* p)
-    {
-    }
-};
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3968,8 +3940,8 @@ public:
         if (m_indirAssignMap == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_IndirAssignMap, and use that for allocation.
-            IAllocator* ialloc = new (this, CMK_IndirAssignMap) CompAllocator(this, CMK_IndirAssignMap);
-            m_indirAssignMap   = new (ialloc) NodeToIndirAssignMap(ialloc);
+            CompAllocator* ialloc = new (this, CMK_IndirAssignMap) CompAllocator(this, CMK_IndirAssignMap);
+            m_indirAssignMap      = new (ialloc) NodeToIndirAssignMap(ialloc);
         }
         return m_indirAssignMap;
     }
@@ -4314,7 +4286,7 @@ public:
         // The switch block "switchBlk" just had an entry with value "from" modified to the value "to".
         // Update "this" as necessary: if "from" is no longer an element of the jump table of "switchBlk",
         // remove it from "this", and ensure that "to" is a member.  Use "alloc" to do any required allocation.
-        void UpdateTarget(IAllocator* alloc, BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to);
+        void UpdateTarget(CompAllocator* alloc, BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to);
     };
 
     typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet, JitSimplerHashBehavior>
@@ -8757,7 +8729,7 @@ public:
     {
         VarScopeListNode*       head;
         VarScopeListNode*       tail;
-        static VarScopeMapInfo* Create(VarScopeListNode* node, IAllocator* alloc)
+        static VarScopeMapInfo* Create(VarScopeListNode* node, CompAllocator* alloc)
         {
             VarScopeMapInfo* info = new (alloc) VarScopeMapInfo;
             info->head            = node;
@@ -8833,16 +8805,16 @@ protected:
 public:
     // This one presents an implementation of the "IAllocator" abstract class that uses "compAllocator",
     // suitable for use by utilcode collection types.
-    IAllocator* compAsIAllocator;
+    CompAllocator* compAsIAllocator;
 
 #if MEASURE_MEM_ALLOC
-    IAllocator* compAsIAllocatorBitset;    // An allocator that uses the CMK_bitset tracker.
-    IAllocator* compAsIAllocatorGC;        // An allocator that uses the CMK_GC tracker.
-    IAllocator* compAsIAllocatorLoopHoist; // An allocator that uses the CMK_LoopHoist tracker.
+    CompAllocator* compAsIAllocatorBitset;    // An allocator that uses the CMK_bitset tracker.
+    CompAllocator* compAsIAllocatorGC;        // An allocator that uses the CMK_GC tracker.
+    CompAllocator* compAsIAllocatorLoopHoist; // An allocator that uses the CMK_LoopHoist tracker.
 #ifdef DEBUG
-    IAllocator* compAsIAllocatorDebugOnly; // An allocator that uses the CMK_DebugOnly tracker.
-#endif                                     // DEBUG
-#endif                                     // MEASURE_MEM_ALLOC
+    CompAllocator* compAsIAllocatorDebugOnly; // An allocator that uses the CMK_DebugOnly tracker.
+#endif                                        // DEBUG
+#endif                                        // MEASURE_MEM_ALLOC
 
     void compFunctionTraceStart();
     void compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, bool isNYI);
@@ -8881,41 +8853,41 @@ public:
     // Assumes called as part of process shutdown; does any compiler-specific work associated with that.
     static void ProcessShutdownWork(ICorStaticInfo* statInfo);
 
-    IAllocator* getAllocator()
+    CompAllocator* getAllocator()
     {
         return compAsIAllocator;
     }
 
 #if MEASURE_MEM_ALLOC
-    IAllocator* getAllocatorBitset()
+    CompAllocator* getAllocatorBitset()
     {
         return compAsIAllocatorBitset;
     }
-    IAllocator* getAllocatorGC()
+    CompAllocator* getAllocatorGC()
     {
         return compAsIAllocatorGC;
     }
-    IAllocator* getAllocatorLoopHoist()
+    CompAllocator* getAllocatorLoopHoist()
     {
         return compAsIAllocatorLoopHoist;
     }
 #else  // !MEASURE_MEM_ALLOC
-    IAllocator* getAllocatorBitset()
+    CompAllocator* getAllocatorBitset()
     {
         return compAsIAllocator;
     }
-    IAllocator* getAllocatorGC()
+    CompAllocator* getAllocatorGC()
     {
         return compAsIAllocator;
     }
-    IAllocator* getAllocatorLoopHoist()
+    CompAllocator* getAllocatorLoopHoist()
     {
         return compAsIAllocator;
     }
 #endif // !MEASURE_MEM_ALLOC
 
 #ifdef DEBUG
-    IAllocator* getAllocatorDebugOnly()
+    CompAllocator* getAllocatorDebugOnly()
     {
 #if MEASURE_MEM_ALLOC
         return compAsIAllocatorDebugOnly;
@@ -9364,7 +9336,7 @@ public:
         if (compRoot->m_fieldSeqStore == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_FieldSeqStore, and use that for allocation.
-            IAllocator* ialloc        = new (this, CMK_FieldSeqStore) CompAllocator(this, CMK_FieldSeqStore);
+            CompAllocator* ialloc     = new (this, CMK_FieldSeqStore) CompAllocator(this, CMK_FieldSeqStore);
             compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(ialloc);
         }
         return compRoot->m_fieldSeqStore;
@@ -9385,8 +9357,8 @@ public:
         {
             // Create a CompAllocator that labels sub-structure with CMK_ZeroOffsetFieldMap, and use that for
             // allocation.
-            IAllocator* ialloc   = new (this, CMK_ZeroOffsetFieldMap) CompAllocator(this, CMK_ZeroOffsetFieldMap);
-            m_zeroOffsetFieldMap = new (ialloc) NodeToFieldSeqMap(ialloc);
+            CompAllocator* ialloc = new (this, CMK_ZeroOffsetFieldMap) CompAllocator(this, CMK_ZeroOffsetFieldMap);
+            m_zeroOffsetFieldMap  = new (ialloc) NodeToFieldSeqMap(ialloc);
         }
         return m_zeroOffsetFieldMap;
     }
@@ -9413,7 +9385,7 @@ public:
         if (compRoot->m_arrayInfoMap == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            IAllocator* ialloc       = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
+            CompAllocator* ialloc    = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
             compRoot->m_arrayInfoMap = new (ialloc) NodeToArrayInfoMap(ialloc);
         }
         return compRoot->m_arrayInfoMap;
@@ -9468,7 +9440,7 @@ public:
         if (compRoot->m_memorySsaMap[memoryKind] == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            IAllocator* ialloc                   = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
+            CompAllocator* ialloc                = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
             compRoot->m_memorySsaMap[memoryKind] = new (ialloc) NodeToUnsignedMap(ialloc);
         }
         return compRoot->m_memorySsaMap[memoryKind];

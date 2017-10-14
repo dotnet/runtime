@@ -105,7 +105,7 @@ struct ArrIndex
     unsigned                   rank;     // Rank of the array
     BasicBlock*                useBlock; // Block where the [] occurs
 
-    ArrIndex(IAllocator* alloc) : arrLcl(BAD_VAR_NUM), indLcls(alloc), bndsChks(alloc), rank(0), useBlock(nullptr)
+    ArrIndex(CompAllocator* alloc) : arrLcl(BAD_VAR_NUM), indLcls(alloc), bndsChks(alloc), rank(0), useBlock(nullptr)
     {
     }
 
@@ -186,7 +186,7 @@ struct LcMdArrayOptInfo : public LcOptInfo
     {
     }
 
-    ArrIndex* GetArrIndexForDim(IAllocator* alloc)
+    ArrIndex* GetArrIndexForDim(CompAllocator* alloc)
     {
         if (index == nullptr)
         {
@@ -530,7 +530,7 @@ struct LC_Deref
     unsigned Lcl();
 
     bool HasChildren();
-    void EnsureChildren(IAllocator* alloc);
+    void EnsureChildren(CompAllocator* alloc);
     static LC_Deref* Find(ExpandArrayStack<LC_Deref*>* children, unsigned lcl);
 
     void DeriveLevelConditions(ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* len);
@@ -577,7 +577,7 @@ struct LC_Deref
  */
 struct LoopCloneContext
 {
-    IAllocator*                    alloc;        // The allocator
+    CompAllocator*                 alloc;        // The allocator
     ExpandArrayStack<LcOptInfo*>** optInfo;      // The array of optimization opportunities found in each loop. (loop x
                                                  // optimization-opportunities)
     ExpandArrayStack<LC_Condition>** conditions; // The array of conditions that influence which path to take for each
@@ -587,7 +587,7 @@ struct LoopCloneContext
     ExpandArrayStack<ExpandArrayStack<LC_Condition>*>** blockConditions; // The array of block levels of conditions for
                                                                          // each loop. (loop x level x conditions)
 
-    LoopCloneContext(unsigned loopCount, IAllocator* alloc) : alloc(alloc)
+    LoopCloneContext(unsigned loopCount, CompAllocator* alloc) : alloc(alloc)
     {
         optInfo         = new (alloc) ExpandArrayStack<LcOptInfo*>*[loopCount];
         conditions      = new (alloc) ExpandArrayStack<LC_Condition>*[loopCount];

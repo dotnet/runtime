@@ -831,6 +831,35 @@ enum CompMemKind
 };
 
 class Compiler;
+
+// This class implements the "IAllocator" interface, so that we can use
+// utilcode collection classes in the JIT, and have them use the JIT's allocator.
+
+class CompAllocator final : public IAllocator
+{
+    Compiler* const m_comp;
+#if MEASURE_MEM_ALLOC
+    CompMemKind const m_cmk;
+#endif
+public:
+    CompAllocator(Compiler* comp, CompMemKind cmk)
+        : m_comp(comp)
+#if MEASURE_MEM_ALLOC
+        , m_cmk(cmk)
+#endif
+    {
+    }
+
+    inline void* Alloc(size_t sz) override;
+
+    inline void* ArrayAlloc(size_t elems, size_t elemSize) override;
+
+    // For the compiler's no-release allocator, free operations are no-ops.
+    void Free(void* p) override
+    {
+    }
+};
+
 class JitTls
 {
 #ifdef DEBUG

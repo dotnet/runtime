@@ -98,31 +98,31 @@ void BitSetSupport::RunTests(Env env)
 class TestBitSetTraits
 {
 public:
-    static void* Alloc(IAllocator* alloc, size_t byteSize)
+    static void* Alloc(CompAllocator* alloc, size_t byteSize)
     {
         return alloc->Alloc(byteSize);
     }
-    static unsigned GetSize(IAllocator* alloc)
+    static unsigned GetSize(CompAllocator* alloc)
     {
         return 64;
     }
-    static unsigned GetArrSize(IAllocator* alloc, unsigned elemSize)
+    static unsigned GetArrSize(CompAllocator* alloc, unsigned elemSize)
     {
         assert(elemSize == sizeof(size_t));
         return (64 / 8) / sizeof(size_t);
     }
-    static unsigned GetEpoch(IAllocator* alloc)
+    static unsigned GetEpoch(CompAllocator* alloc)
     {
         return 0;
     }
 };
 
-void BitSetSupport::TestSuite(IAllocator* env)
+void BitSetSupport::TestSuite(CompAllocator* env)
 {
-    BitSetSupport::RunTests<UINT64, BSUInt64, IAllocator*, TestBitSetTraits>(env);
-    BitSetSupport::RunTests<BitSetShortLongRep, BSShortLong, IAllocator*, TestBitSetTraits>(env);
-    BitSetSupport::RunTests<BitSetUint64<IAllocator*, TestBitSetTraits>, BSUInt64Class, IAllocator*, TestBitSetTraits>(
-        env);
+    BitSetSupport::RunTests<UINT64, BSUInt64, CompAllocator*, TestBitSetTraits>(env);
+    BitSetSupport::RunTests<BitSetShortLongRep, BSShortLong, CompAllocator*, TestBitSetTraits>(env);
+    BitSetSupport::RunTests<BitSetUint64<CompAllocator*, TestBitSetTraits>, BSUInt64Class, CompAllocator*,
+                            TestBitSetTraits>(env);
 }
 #endif
 
