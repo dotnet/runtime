@@ -604,12 +604,7 @@ namespace System
 
             // Prepare for loop
             numLen++;
-            Span<byte> bytes;
-            unsafe
-            {
-                byte* tmpBytes = stackalloc byte[8];
-                bytes = new Span<byte>(tmpBytes, 8);
-            }
+            Span<byte> bytes = stackalloc byte[8];
 
             for (int i = 0; i < bytes.Length; i++)
             {
