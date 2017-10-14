@@ -30,7 +30,7 @@ def static getOSGroup(def os) {
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
             [true, false].each { isSmoketest ->
-                ['ryujit', 'legacy_backend'].each { jit ->
+                ['ryujit'].each { jit ->
 
                     if (arch == 'x64' && jit == 'legacy_backend') {
                         return
@@ -578,7 +578,7 @@ parallel(
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
-            ['ryujit', 'legacy_backend'].each { jit ->
+            ['ryujit'].each { jit ->
 
                 if (arch == 'x64' && jit == 'legacy_backend') {
                     return
