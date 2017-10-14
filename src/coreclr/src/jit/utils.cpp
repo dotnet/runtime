@@ -1004,7 +1004,7 @@ FixedBitVect* FixedBitVect::bitVectInit(UINT size, Compiler* comp)
 
     assert(bitVectMemSize * bitChunkSize() >= size);
 
-    bv = (FixedBitVect*)comp->compGetMemA(sizeof(FixedBitVect) + bitVectMemSize, CMK_FixedBitVect);
+    bv = (FixedBitVect*)comp->compGetMem(sizeof(FixedBitVect) + bitVectMemSize, CMK_FixedBitVect);
     memset(bv->bitVect, 0, bitVectMemSize);
 
     bv->bitVectSize = size;
