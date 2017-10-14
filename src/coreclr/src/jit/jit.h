@@ -860,6 +860,18 @@ public:
     }
 };
 
+// Global operator new overloads that work with CompAllocator
+
+inline void* __cdecl operator new(size_t n, CompAllocator* alloc)
+{
+    return alloc->Alloc(n);
+}
+
+inline void* __cdecl operator new[](size_t n, CompAllocator* alloc)
+{
+    return alloc->Alloc(n);
+}
+
 class JitTls
 {
 #ifdef DEBUG
