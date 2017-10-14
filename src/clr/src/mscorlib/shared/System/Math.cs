@@ -14,7 +14,6 @@
 //This class contains only static members and doesn't require serialization.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
