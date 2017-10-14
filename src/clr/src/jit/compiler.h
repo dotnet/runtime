@@ -8731,10 +8731,7 @@ public:
 #endif // LOOP_HOIST_STATS
 
     void* compGetMemArray(size_t numElem, size_t elemSize, CompMemKind cmk = CMK_Unknown);
-    void* compGetMemArrayA(size_t numElem, size_t elemSize, CompMemKind cmk = CMK_Unknown);
     void* compGetMem(size_t sz, CompMemKind cmk = CMK_Unknown);
-    void* compGetMemA(size_t sz, CompMemKind cmk = CMK_Unknown);
-    static void* compGetMemCallback(void*, size_t, CompMemKind cmk = CMK_Unknown);
     void compFreeMem(void*);
 
     bool compIsForImportOnly();

@@ -2158,19 +2158,6 @@ void Compiler::compDoComponentUnitTestsOnce()
 }
 #endif // DEBUG
 
-/******************************************************************************
- *
- *  The Emitter uses this callback function to allocate its memory
- */
-
-/* static */
-void* Compiler::compGetMemCallback(void* p, size_t size, CompMemKind cmk)
-{
-    assert(p);
-
-    return ((Compiler*)p)->compGetMem(size, cmk);
-}
-
 /*****************************************************************************
  *
  *  The central memory allocation routine used by the compiler. Normally this
@@ -5093,7 +5080,7 @@ bool Compiler::compQuirkForPPP()
         assert((varDscExposedStruct->lvExactSize / TARGET_POINTER_SIZE) == 8);
 
         BYTE* oldGCPtrs = varDscExposedStruct->lvGcLayout;
-        BYTE* newGCPtrs = (BYTE*)compGetMemA(8, CMK_LvaTable);
+        BYTE* newGCPtrs = (BYTE*)compGetMem(8, CMK_LvaTable);
 
         for (int i = 0; i < 4; i++)
         {
