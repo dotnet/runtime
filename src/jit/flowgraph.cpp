@@ -19351,7 +19351,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
 
     if (subsitutionRequired)
     {
-        char* newName = (char*)compGetMemA(lengthOut, CMK_DebugOnly);
+        char* newName = (char*)compGetMem(lengthOut, CMK_DebugOnly);
         char* pDest;
         pDest = newName;
         pChar = nameIn;
