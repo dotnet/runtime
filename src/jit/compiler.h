@@ -106,10 +106,6 @@ class Compiler;
 // Declare global operator new overloads that use the Compiler::compGetMem() function for allocation.
 //
 
-// Or the more-general IAllocator interface.
-void* __cdecl operator new(size_t n, IAllocator* alloc);
-void* __cdecl operator new[](size_t n, IAllocator* alloc);
-
 // I wanted to make the second argument optional, with default = CMK_Unknown, but that
 // caused these to be ambiguous with the global placement new operators.
 void* __cdecl operator new(size_t n, Compiler* context, CompMemKind cmk);
