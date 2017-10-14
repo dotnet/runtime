@@ -699,7 +699,7 @@ inline size_t unsigned_abs(ssize_t x)
 class Histogram
 {
 public:
-    Histogram(IAllocator* allocator, const unsigned* const sizeTable);
+    Histogram(HostAllocator* allocator, const unsigned* const sizeTable);
     ~Histogram();
 
     void dump(FILE* output);
@@ -708,7 +708,7 @@ public:
 private:
     void ensureAllocated();
 
-    IAllocator*           m_allocator;
+    HostAllocator*        m_allocator;
     unsigned              m_sizeCount;
     const unsigned* const m_sizeTable;
     unsigned*             m_counts;
