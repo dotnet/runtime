@@ -8723,7 +8723,18 @@ public:
 
     //-------------------------------------------------------------------------
 
-    typedef ListNode<VarScopeDsc*> VarScopeListNode;
+    struct VarScopeListNode
+    {
+        VarScopeDsc*             data;
+        VarScopeListNode*        next;
+        static VarScopeListNode* Create(VarScopeDsc* value, CompAllocator* alloc)
+        {
+            VarScopeListNode* node = new (alloc) VarScopeListNode;
+            node->data             = value;
+            node->next             = nullptr;
+            return node;
+        }
+    };
 
     struct VarScopeMapInfo
     {
