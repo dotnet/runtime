@@ -5114,16 +5114,6 @@ inline void* __cdecl operator new(size_t sz, void* p, const jitstd::placement_t&
     return p;
 }
 
-inline void* __cdecl operator new(size_t sz, IAllocator* alloc)
-{
-    return alloc->Alloc(sz);
-}
-
-inline void* __cdecl operator new[](size_t sz, IAllocator* alloc)
-{
-    return alloc->Alloc(sz);
-}
-
 /*****************************************************************************/
 
 #ifdef DEBUG
