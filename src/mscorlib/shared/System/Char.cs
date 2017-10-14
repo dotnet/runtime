@@ -13,7 +13,6 @@
 ===========================================================*/
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -129,7 +128,6 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Char, this method throws an ArgumentException.
         //
-        [Pure]
         public int CompareTo(Object value)
         {
             if (value == null)
@@ -144,20 +142,17 @@ namespace System
             return (m_value - ((Char)value).m_value);
         }
 
-        [Pure]
         public int CompareTo(Char value)
         {
             return (m_value - value);
         }
 
         // Overrides System.Object.ToString.
-        [Pure]
         public override String ToString()
         {
             return Char.ToString(m_value);
         }
 
-        [Pure]
         public String ToString(IFormatProvider provider)
         {
             return Char.ToString(m_value);
@@ -171,7 +166,6 @@ namespace System
         **This static methods takes a character and returns the String representation of it.
         ==============================================================================*/
         // Provides a string representation of a character.
-        [Pure]
         public static string ToString(char c) => string.CreateFromChar(c);
 
         public static char Parse(String s)
@@ -211,7 +205,6 @@ namespace System
         **character c is considered to be a digit.                                    **
         ==============================================================================*/
         // Determines whether a character is a digit.
-        [Pure]
         public static bool IsDigit(char c)
         {
             if (IsLatin1(c))
@@ -244,7 +237,6 @@ namespace System
         **character c is considered to be a letter.                                   **
         ==============================================================================*/
         // Determines whether a character is a letter.
-        [Pure]
         public static bool IsLetter(char c)
         {
             if (IsLatin1(c))
@@ -283,7 +275,6 @@ namespace System
         **character c is considered to be a whitespace character.                     **
         ==============================================================================*/
         // Determines whether a character is whitespace.
-        [Pure]
         public static bool IsWhiteSpace(char c)
         {
             if (IsLatin1(c))
@@ -299,7 +290,6 @@ namespace System
         **Returns:  True if c is an uppercase character.
         ==============================================================================*/
         // Determines whether a character is upper-case.
-        [Pure]
         public static bool IsUpper(char c)
         {
             if (IsLatin1(c))
@@ -318,7 +308,6 @@ namespace System
         **Returns:  True if c is an lowercase character.
         ==============================================================================*/
         // Determines whether a character is lower-case.
-        [Pure]
         public static bool IsLower(char c)
         {
             if (IsLatin1(c))
@@ -354,7 +343,6 @@ namespace System
         **Returns:  True if c is an punctuation mark
         ==============================================================================*/
         // Determines whether a character is a punctuation mark.
-        [Pure]
         public static bool IsPunctuation(char c)
         {
             if (IsLatin1(c))
@@ -383,7 +371,6 @@ namespace System
         }
 
         // Determines whether a character is a letter or a digit.
-        [Pure]
         public static bool IsLetterOrDigit(char c)
         {
             if (IsLatin1(c))
@@ -459,7 +446,6 @@ namespace System
         //
         // IConvertible implementation
         //    
-        [Pure]
         public TypeCode GetTypeCode()
         {
             return TypeCode.Char;
@@ -762,13 +748,11 @@ namespace System
             return (CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(s, index)));
         }
 
-        [Pure]
         public static bool IsSurrogate(char c)
         {
             return (c >= HIGH_SURROGATE_START && c <= LOW_SURROGATE_END);
         }
 
-        [Pure]
         public static bool IsSurrogate(String s, int index)
         {
             if (s == null)
@@ -907,13 +891,11 @@ namespace System
         /*================================= IsHighSurrogate ============================
          ** Check if a char is a high surrogate.
          ==============================================================================*/
-        [Pure]
         public static bool IsHighSurrogate(char c)
         {
             return ((c >= CharUnicodeInfo.HIGH_SURROGATE_START) && (c <= CharUnicodeInfo.HIGH_SURROGATE_END));
         }
 
-        [Pure]
         public static bool IsHighSurrogate(String s, int index)
         {
             if (s == null)
@@ -930,13 +912,11 @@ namespace System
         /*================================= IsLowSurrogate ============================
          ** Check if a char is a low surrogate.
          ==============================================================================*/
-        [Pure]
         public static bool IsLowSurrogate(char c)
         {
             return ((c >= CharUnicodeInfo.LOW_SURROGATE_START) && (c <= CharUnicodeInfo.LOW_SURROGATE_END));
         }
 
-        [Pure]
         public static bool IsLowSurrogate(String s, int index)
         {
             if (s == null)
@@ -953,7 +933,6 @@ namespace System
         /*================================= IsSurrogatePair ============================
          ** Check if the string specified by the index starts with a surrogate pair.
          ==============================================================================*/
-        [Pure]
         public static bool IsSurrogatePair(String s, int index)
         {
             if (s == null)
@@ -971,7 +950,6 @@ namespace System
             return (false);
         }
 
-        [Pure]
         public static bool IsSurrogatePair(char highSurrogate, char lowSurrogate)
         {
             return ((highSurrogate >= CharUnicodeInfo.HIGH_SURROGATE_START && highSurrogate <= CharUnicodeInfo.HIGH_SURROGATE_END) &&
