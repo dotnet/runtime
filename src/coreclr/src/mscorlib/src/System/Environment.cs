@@ -577,7 +577,6 @@ namespace System
             }
             else if (target == EnvironmentVariableTarget.User)
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
                 baseKey = Registry.CurrentUser;
                 keyName = "Environment";
             }
@@ -667,7 +666,6 @@ namespace System
             }
             else if (target == EnvironmentVariableTarget.User)
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
                 baseKey = Registry.CurrentUser;
                 keyName = @"Environment";
             }
@@ -745,8 +743,6 @@ namespace System
             }
             else if (target == EnvironmentVariableTarget.User)
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
-
                 // User-wide environment variables stored in the registry are limited to 255 chars for the environment variable name.
                 const int MaxUserEnvVariableLength = 255;
                 if (variable.Length >= MaxUserEnvVariableLength)
