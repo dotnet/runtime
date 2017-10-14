@@ -132,7 +132,7 @@ FORCEINLINE unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
 //
 //    typename BitSetTraits:
 //      An "adapter" class that provides methods that retrieves things from the Env:
-//        static IAllocator* GetAllococator(Env):   yields an "IAllocator*" that the BitSet implementation can use.
+//        static void* Alloc(Env, size_t byteSize): Allocates memory the BitSet implementation can use.
 //        static unsigned    GetSize(Env):          the current size (= # of bits) of this bitset type.
 //        static unsigned    GetArrSize(Env, unsigned elemSize):  The number of "elemSize" chunks sufficient to hold
 //                                                                "GetSize". A given BitSet implementation must call
