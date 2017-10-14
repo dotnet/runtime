@@ -17,7 +17,7 @@
 // The classes in this file define "BitSetTraits" arguments to the "BitSetOps" type, ones that assume that
 // Compiler* is the "Env" type.
 //
-// This class just captures the compiler's allocator as an IAllocator.
+// This class just wraps the compiler's allocator.
 //
 class CompAllocBitSetTraits
 {
