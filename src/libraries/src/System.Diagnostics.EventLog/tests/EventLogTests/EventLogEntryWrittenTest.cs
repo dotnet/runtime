@@ -43,7 +43,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         public void EntryWrittenEventRaised()
         {
             if (!AdminHelpers.IsProcessElevated())
@@ -52,7 +52,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, eventCounter);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         public void EntryWrittenEventRaiseDisable()
         {
             if (!AdminHelpers.IsProcessElevated())

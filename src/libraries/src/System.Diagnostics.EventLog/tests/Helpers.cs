@@ -6,6 +6,6 @@ namespace System.Diagnostics.Tests
 {
     internal class Helpers
     {
-        public bool IsElevatedAndNotWindowsNano { get => AdminHelpers.IsProcessElevated() && !PlatformDetection.IsNotWindowsNanoServer; }
+        public static bool IsElevatedAndNotWindowsNano { get => AdminHelpers.IsProcessElevated() && PlatformDetection.IsNotWindowsNanoServer; }
     }
 }
