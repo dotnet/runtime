@@ -103,7 +103,7 @@ public:
     class VNMap : public SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>
     {
     public:
-        VNMap(IAllocator* alloc) : SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>(alloc)
+        VNMap(CompAllocator* alloc) : SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>(alloc)
         {
         }
         ~VNMap()
@@ -128,7 +128,7 @@ private:
     Compiler* m_pComp;
 
     // For allocations.  (Other things?)
-    IAllocator* m_alloc;
+    CompAllocator* m_alloc;
 
     // TODO-Cleanup: should transform "attribs" into a struct with bit fields.  That would be simpler...
 
@@ -234,7 +234,7 @@ public:
     static void InitValueNumStoreStatics();
 
     // Initialize an empty ValueNumStore.
-    ValueNumStore(Compiler* comp, IAllocator* allocator);
+    ValueNumStore(Compiler* comp, CompAllocator* allocator);
 
     // Returns "true" iff "vnf" (which may have been created by a cast from an integral value) represents
     // a legal value number function.
@@ -907,7 +907,7 @@ private:
         // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for
         // allocations).
         // (Increments "*baseVN" by ChunkSize.)
-        Chunk(IAllocator*            alloc,
+        Chunk(CompAllocator*         alloc,
               ValueNum*              baseVN,
               var_types              typ,
               ChunkExtraAttribs      attribs,

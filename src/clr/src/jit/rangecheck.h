@@ -215,7 +215,7 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(IAllocator* alloc)
+    const char* ToString(CompAllocator* alloc)
     {
         unsigned size = 64;
         char*    buf  = (char*)alloc->Alloc(size);
@@ -280,7 +280,7 @@ struct Range
     }
 
 #ifdef DEBUG
-    char* ToString(IAllocator* alloc)
+    char* ToString(CompAllocator* alloc)
     {
         size_t size = 64;
         char*  buf  = (char*)alloc->Alloc(size);
