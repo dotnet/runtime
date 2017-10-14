@@ -617,23 +617,6 @@ unsigned CountDigits(unsigned num, unsigned base = 10);
 
 #endif // DEBUG
 
-// Utility class for lists.
-template <typename T>
-struct ListNode
-{
-    T            data;
-    ListNode<T>* next;
-
-    // Create the class without using constructors.
-    static ListNode<T>* Create(T value, IAllocator* alloc)
-    {
-        ListNode<T>* node = new (alloc) ListNode<T>;
-        node->data        = value;
-        node->next        = nullptr;
-        return node;
-    }
-};
-
 /*****************************************************************************
 * Floating point utility class
 */
