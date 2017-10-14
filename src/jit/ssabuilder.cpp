@@ -73,7 +73,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 
 void Compiler::fgSsaBuild()
 {
-    IAllocator* pIAllocator = new (this, CMK_SSA) CompAllocator(this, CMK_SSA);
+    CompAllocator* pIAllocator = new (this, CMK_SSA) CompAllocator(this, CMK_SSA);
 
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
@@ -161,7 +161,7 @@ void Compiler::fgResetForSsa()
  *
  *  @remarks Initializes the class and member pointers/objects that use constructors.
  */
-SsaBuilder::SsaBuilder(Compiler* pCompiler, IAllocator* pIAllocator)
+SsaBuilder::SsaBuilder(Compiler* pCompiler, CompAllocator* pIAllocator)
     : m_pCompiler(pCompiler)
     , m_allocator(pIAllocator)
 

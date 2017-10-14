@@ -54,7 +54,7 @@ VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
     }
 }
 
-ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc)
+ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator* alloc)
     : m_pComp(comp)
     , m_alloc(alloc)
     ,
@@ -666,8 +666,11 @@ bool ValueNumStore::IsSharedStatic(ValueNum vn)
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_SharedStatic) != 0;
 }
 
-ValueNumStore::Chunk::Chunk(
-    IAllocator* alloc, ValueNum* pNextBaseVN, var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum)
+ValueNumStore::Chunk::Chunk(CompAllocator*         alloc,
+                            ValueNum*              pNextBaseVN,
+                            var_types              typ,
+                            ChunkExtraAttribs      attribs,
+                            BasicBlock::loopNumber loopNum)
     : m_defs(nullptr), m_numUsed(0), m_baseVN(*pNextBaseVN), m_typ(typ), m_attribs(attribs), m_loopNum(loopNum)
 {
     // Allocate "m_defs" here, according to the typ/attribs pair.

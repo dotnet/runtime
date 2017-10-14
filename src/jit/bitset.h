@@ -40,7 +40,7 @@ public:
 
 #ifdef DEBUG
     // This runs the "TestSuite" method for a few important instantiations of BitSet.
-    static void TestSuite(IAllocator* env);
+    static void TestSuite(CompAllocator* env);
 #endif
 
     enum Operation
