@@ -93,11 +93,10 @@ namespace System.Net.Security.Tests
         {
             Assert.Null(_clientOptions.ClientCertificates);
 
-            X509CertificateCollection expected = new X509CertificateCollection();
-
             _clientOptions.ClientCertificates = null;
-            Assert.Equal(expected, _clientOptions.ClientCertificates);
+            Assert.Null(_clientOptions.ClientCertificates);
 
+            X509CertificateCollection expected = new X509CertificateCollection();
             _clientOptions.ClientCertificates = expected;
             Assert.Equal(expected, _clientOptions.ClientCertificates);
         }
