@@ -50,6 +50,20 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
         const BIGNUM *x, const BIGNUM *y, BN_CTX *ctx);
 #endif
 
+#if !HAVE_OPENSSL_ALPN
+#undef HAVE_OPENSSL_ALPN
+#define HAVE_OPENSSL_ALPN 1
+int SSL_CTX_set_alpn_protos(SSL_CTX* ctx, const unsigned char* protos, unsigned int protos_len);
+void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx, int (*cb) (SSL *ssl,
+                                            const unsigned char **out,
+                                            unsigned char *outlen,
+                                            const unsigned char *in,
+                                            unsigned int inlen,
+                                            void *arg), void *arg);
+void SSL_get0_alpn_selected(SSL* ssl, const unsigned char** protocol, unsigned int* len);
+int32_t SSL_select_next_proto(unsigned char** out, unsigned char* outlen, const unsigned char* server, unsigned int server_len, const unsigned char* client, unsigned int client_len);
+#endif
+
 #define API_EXISTS(fn) (fn != nullptr)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
@@ -251,8 +265,8 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
     PER_FUNCTION_BLOCK(SSL_CTX_ctrl, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_free, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_new, true) \
-    PER_FUNCTION_BLOCK(SSL_CTX_set_alpn_protos, true) \
-    PER_FUNCTION_BLOCK(SSL_CTX_set_alpn_select_cb, true) \
+    PER_FUNCTION_BLOCK(SSL_CTX_set_alpn_protos, false) \
+    PER_FUNCTION_BLOCK(SSL_CTX_set_alpn_select_cb, false) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_cert_verify_callback, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_cipher_list, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_client_CA_list, true) \
@@ -272,13 +286,13 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
     PER_FUNCTION_BLOCK(SSL_get_peer_finished, true) \
     PER_FUNCTION_BLOCK(SSL_get_SSL_CTX, true) \
     PER_FUNCTION_BLOCK(SSL_get_version, true) \
-    PER_FUNCTION_BLOCK(SSL_get0_alpn_selected, true) \
+    PER_FUNCTION_BLOCK(SSL_get0_alpn_selected, false) \
     PER_FUNCTION_BLOCK(SSL_library_init, true) \
     PER_FUNCTION_BLOCK(SSL_load_error_strings, true) \
     PER_FUNCTION_BLOCK(SSL_new, true) \
     PER_FUNCTION_BLOCK(SSL_read, true) \
     PER_FUNCTION_BLOCK(SSL_renegotiate_pending, true) \
-    PER_FUNCTION_BLOCK(SSL_select_next_proto, true) \
+    PER_FUNCTION_BLOCK(SSL_select_next_proto, false) \
     PER_FUNCTION_BLOCK(SSL_set_accept_state, true) \
     PER_FUNCTION_BLOCK(SSL_set_bio, true) \
     PER_FUNCTION_BLOCK(SSL_set_connect_state, true) \
