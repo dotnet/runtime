@@ -882,7 +882,7 @@ void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
  *  Histogram class.
  */
 
-Histogram::Histogram(IAllocator* allocator, const unsigned* const sizeTable)
+Histogram::Histogram(HostAllocator* allocator, const unsigned* const sizeTable)
     : m_allocator(allocator), m_sizeTable(sizeTable), m_counts(nullptr)
 {
     unsigned sizeCount = 0;
@@ -1540,7 +1540,7 @@ void HelperCallProperties::init()
 // MyAssembly;mscorlib;System
 // MyAssembly;mscorlib System
 
-AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, IAllocator* alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, HostAllocator* alloc) : m_alloc(alloc)
 {
     assert(m_alloc != nullptr);
 
