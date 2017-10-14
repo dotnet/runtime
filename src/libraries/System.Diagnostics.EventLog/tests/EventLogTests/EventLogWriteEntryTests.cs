@@ -123,55 +123,61 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntry(bool sourceFlag)
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             string log = "Entry";
             string source = "Source" + nameof(WriteEntry);
-            EventLog.CreateEventSource(source, log);
-            EventLogEntry eventLogEntry;
-            if (sourceFlag)
-                eventLogEntry = WriteLogEntry(source);
-            else
-                eventLogEntry = WriteLogEntryWithSource(source);
+            try
+            {
+                EventLog.CreateEventSource(source, log);
+                EventLogEntry eventLogEntry;
+                if (sourceFlag)
+                    eventLogEntry = WriteLogEntry(source);
+                else
+                    eventLogEntry = WriteLogEntryWithSource(source);
 
-            Assert.Contains(message, eventLogEntry.Message);
-            Assert.Equal(source, eventLogEntry.Source);
-            Assert.StartsWith(Environment.MachineName, eventLogEntry.MachineName);
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
+                Assert.Contains(message, eventLogEntry.Message);
+                Assert.Equal(source, eventLogEntry.Source);
+                Assert.StartsWith(Environment.MachineName, eventLogEntry.MachineName);
+                Assert.Equal(eventLogEntry.TimeWritten, eventLogEntry.TimeGenerated);
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithType(bool sourceFlag)
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             string source = "Source" + nameof(WriteEntryWithType);
             string log = "TypeEntry";
-            EventLog.CreateEventSource(source, log);
-            EventLogEntry eventLogEntry;
-            if (sourceFlag)
-                eventLogEntry = WriteLogEntry(source, true);
-            else
-                eventLogEntry = WriteLogEntryWithSource(source, true);
+            try
+            {
+                EventLog.CreateEventSource(source, log);
+                EventLogEntry eventLogEntry;
+                if (sourceFlag)
+                    eventLogEntry = WriteLogEntry(source, true);
+                else
+                    eventLogEntry = WriteLogEntryWithSource(source, true);
 
-            Assert.Contains(message, eventLogEntry.Message);
-            Assert.Equal(EventLogEntryType.Warning, eventLogEntry.EntryType);
-
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
+                Assert.Contains(message, eventLogEntry.Message);
+                Assert.Equal(EventLogEntryType.Warning, eventLogEntry.EntryType);
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeAndId(bool sourceFlag)
@@ -181,73 +187,81 @@ namespace System.Diagnostics.Tests
 
             string source = "Source" + nameof(WriteEntryWithTypeAndId);
             string log = "InstanceEntry";
-            EventLog.CreateEventSource(source, log);
-            EventLogEntry eventLogEntry;
-            if (sourceFlag)
-                eventLogEntry = WriteLogEntry(source, true, true);
-            else
-                eventLogEntry = WriteLogEntryWithSource(source, true, true);
+            try
+            {
+                EventLog.CreateEventSource(source, log);
+                EventLogEntry eventLogEntry;
+                if (sourceFlag)
+                    eventLogEntry = WriteLogEntry(source, true, true);
+                else
+                    eventLogEntry = WriteLogEntryWithSource(source, true, true);
 
-            Assert.Contains(message, eventLogEntry.Message);
-            Assert.Equal((int)myEvent.InstanceId, eventLogEntry.InstanceId);
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
-
+                Assert.Contains(message, eventLogEntry.Message);
+                Assert.Equal((int)myEvent.InstanceId, eventLogEntry.InstanceId);
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeIdAndCategory(bool sourceFlag)
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             string source = "Source" + nameof(WriteEntryWithTypeIdAndCategory);
             string log = "CategoryEntry";
-            EventLog.CreateEventSource(source, log);
-            EventLogEntry eventLogEntry;
-            if (sourceFlag)
-                eventLogEntry = WriteLogEntry(source, true, true, true);
-            else
-                eventLogEntry = WriteLogEntryWithSource(source, true, true, true);
+            try
+            {
+                EventLog.CreateEventSource(source, log);
+                EventLogEntry eventLogEntry;
+                if (sourceFlag)
+                    eventLogEntry = WriteLogEntry(source, true, true, true);
+                else
+                    eventLogEntry = WriteLogEntryWithSource(source, true, true, true);
 
-            Assert.Contains(message, eventLogEntry.Message);
-            // check on category number
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
+                Assert.Contains(message, eventLogEntry.Message);
+                Assert.Equal((short)myEvent.CategoryId, eventLogEntry.CategoryNumber);
+                Assert.Equal("(1)", eventLogEntry.Category);
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeIdCategoryAndData(bool sourceFlag)
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             string source = "Source" + nameof(WriteEntryWithTypeIdCategoryAndData);
             string log = "EntryData";
-            EventLog.CreateEventSource(source, log);
-            EventLogEntry eventLogEntry;
-            if (sourceFlag)
-                eventLogEntry = WriteLogEntry(source, true, true, true, true);
-            else
-                eventLogEntry = WriteLogEntryWithSource(source, true, true, true, true);
+            try
+            {
+                EventLog.CreateEventSource(source, log);
+                EventLogEntry eventLogEntry;
+                if (sourceFlag)
+                    eventLogEntry = WriteLogEntry(source, true, true, true, true);
+                else
+                    eventLogEntry = WriteLogEntryWithSource(source, true, true, true, true);
 
-            Assert.Contains(message, eventLogEntry.Message);
-            Assert.Equal(myRawData, eventLogEntry.Data);
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
-
+                Assert.Contains(message, eventLogEntry.Message);
+                Assert.Equal(myRawData, eventLogEntry.Data);
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void WriteEntryWithoutSource()
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             using (EventLog myLog = new EventLog())
             {
                 Assert.Throws<ArgumentException>(() => myLog.WriteEntry(message));
@@ -258,9 +272,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void WriteEntryWithInvalidType()
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             using (EventLog myLog = new EventLog())
             {
                 string source = "Source_" + nameof(WriteEntryWithInvalidType);
@@ -272,54 +283,58 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void WriteEntryWithNullOrEmptySource()
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             Assert.Throws<ArgumentException>(() => EventLog.WriteEntry(null, message));
             Assert.Throws<ArgumentException>(() => EventLog.WriteEntry("", message));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEvent(bool SourceFlag)
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
             string source = "Source_" + nameof(WriteEvent);
             string log = "Event";
-            EventLog.CreateEventSource(source, log);
-            EventLogEntry eventLogEntry;
-            if (SourceFlag)
-                eventLogEntry = WriteLogEntryEventSource(source);
-            else
-                eventLogEntry = WriteLogEntryEvent(source);
+            try
+            {
+                EventLog.CreateEventSource(source, log);
+                EventLogEntry eventLogEntry;
+                if (SourceFlag)
+                    eventLogEntry = WriteLogEntryEventSource(source);
+                else
+                    eventLogEntry = WriteLogEntryEvent(source);
 
-            Assert.All(insertStrings, message => eventLogEntry.Message.Contains(message));
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
+                Assert.All(insertStrings, message => eventLogEntry.Message.Contains(message));
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEventWithData(bool SourceFlag)
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             string log = "EventData";
             string source = "Source_" + nameof(WriteEventWithData);
-            EventLog.CreateEventSource(source, log);
-            EventLogEntry eventLogEntry;
-            if (SourceFlag)
-                eventLogEntry = WriteLogEntryEventSource(source, true);
-            else
-                eventLogEntry = WriteLogEntryEvent(source, true);
+            try
+            {
+                EventLog.CreateEventSource(source, log);
+                EventLogEntry eventLogEntry;
+                if (SourceFlag)
+                    eventLogEntry = WriteLogEntryEventSource(source, true);
+                else
+                    eventLogEntry = WriteLogEntryEvent(source, true);
 
-            Assert.Equal(myRawData, eventLogEntry.Data);
-            EventLog.DeleteEventSource(source);
-            EventLog.Delete(log);
+                Assert.Equal(myRawData, eventLogEntry.Data);
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -332,14 +347,32 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void WriteEventMessageValues_OutOfRange()
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             string source = "Source_" + nameof(WriteEventMessageValues_OutOfRange);
             string[] empty = new string[1];
             empty[0] = new string('c', 32767);
             Assert.Throws<ArgumentException>(() => EventLog.WriteEvent(source, myEvent, empty));
         }
 
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        public void WriteWithoutExistingSource()
+        {
+            string source = "Source_" + nameof(WriteEvent);
+            try
+            {
+                EventLog.WriteEvent(source, myEvent, myRawData, null);
+                Assert.Equal(EventLog.LogNameFromSourceName(source, "."), "Application");
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void SourceNameMaxLengthExceeded()
+        {
+            string source = new string('s', 254);
+            Assert.Throws<ArgumentException>(() => EventLog.WriteEntry(source, message));
+        }
     }
 }
