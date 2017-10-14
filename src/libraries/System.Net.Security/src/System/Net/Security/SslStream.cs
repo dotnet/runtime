@@ -167,8 +167,6 @@ namespace System.Net.Security
                 EnabledSslProtocols = enabledSslProtocols,
                 CertificateRevocationCheckMode = checkCertificateRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
                 EncryptionPolicy = _encryptionPolicy,
-                _certSelectionDelegate = _certSelectionDelegate,
-                _certValidationDelegate = _certValidationDelegate
             };
 
             return BeginAuthenticateAsClient(options, CancellationToken.None, asyncCallback, asyncState);
@@ -179,6 +177,10 @@ namespace System.Net.Security
             SecurityProtocol.ThrowOnNotAllowed(sslClientAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
+
+            // Set the delegates on the options.
+            sslClientAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
+            sslClientAuthenticationOptions._certSelectionDelegate = _certSelectionDelegate;
 
             _sslState.ValidateCreateContext(sslClientAuthenticationOptions);
 
@@ -221,8 +223,6 @@ namespace System.Net.Security
                 EnabledSslProtocols = enabledSslProtocols,
                 CertificateRevocationCheckMode = checkCertificateRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
                 EncryptionPolicy = _encryptionPolicy,
-                _certSelectionDelegate = _certSelectionDelegate,
-                _certValidationDelegate = _certValidationDelegate
             };
 
             return BeginAuthenticateAsServer(options, CancellationToken.None, asyncCallback, asyncState);
@@ -232,6 +232,9 @@ namespace System.Net.Security
         {
             SecurityProtocol.ThrowOnNotAllowed(sslServerAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
+
+            // Set the delegate on the options.
+            sslServerAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
 
             _sslState.ValidateCreateContext(sslServerAuthenticationOptions);
 
@@ -288,8 +291,6 @@ namespace System.Net.Security
                 EnabledSslProtocols = enabledSslProtocols,
                 CertificateRevocationCheckMode = checkCertificateRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
                 EncryptionPolicy = _encryptionPolicy,
-                _certSelectionDelegate = _certSelectionDelegate,
-                _certValidationDelegate = _certValidationDelegate
             };
 
             AuthenticateAsClient(options);
@@ -300,6 +301,10 @@ namespace System.Net.Security
             SecurityProtocol.ThrowOnNotAllowed(sslClientAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
+
+            // Set the delegates on the options.
+            sslClientAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
+            sslClientAuthenticationOptions._certSelectionDelegate = _certSelectionDelegate;
 
             _sslState.ValidateCreateContext(sslClientAuthenticationOptions);
             _sslState.ProcessAuthentication(null);
@@ -324,8 +329,6 @@ namespace System.Net.Security
                 EnabledSslProtocols = enabledSslProtocols,
                 CertificateRevocationCheckMode = checkCertificateRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
                 EncryptionPolicy = _encryptionPolicy,
-                _certSelectionDelegate = _certSelectionDelegate,
-                _certValidationDelegate = _certValidationDelegate
             };
 
             AuthenticateAsServer(options);
@@ -335,6 +338,9 @@ namespace System.Net.Security
         {
             SecurityProtocol.ThrowOnNotAllowed(sslServerAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
+
+            // Set the delegate on the options.
+            sslServerAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
 
             _sslState.ValidateCreateContext(sslServerAuthenticationOptions);
             _sslState.ProcessAuthentication(null);
