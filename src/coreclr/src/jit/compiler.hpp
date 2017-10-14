@@ -872,7 +872,13 @@ void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 #endif // MEASURE_NODE_SIZE
 
     assert(size >= sz);
-    return comp->compGetMem(size, CMK_ASTNode);
+    void* mem = comp->compGetMem(size, CMK_ASTNode);
+#ifdef _MSC_VER
+    // MSVC assumes that a user defined operator new may return nullptr and inserts
+    // a null check before invoking the constructor. This can be avoided using __assume.
+    __assume(mem != nullptr);
+#endif
+    return mem;
 }
 
 // GenTree constructor

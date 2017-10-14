@@ -864,12 +864,24 @@ public:
 
 inline void* __cdecl operator new(size_t n, CompAllocator* alloc)
 {
-    return alloc->Alloc(n);
+    void* mem = alloc->Alloc(n);
+#ifdef _MSC_VER
+    // MSVC assumes that a user defined operator new may return nullptr and inserts
+    // a null check before invoking the constructor. This can be avoided using __assume.
+    __assume(mem != nullptr);
+#endif
+    return mem;
 }
 
 inline void* __cdecl operator new[](size_t n, CompAllocator* alloc)
 {
-    return alloc->Alloc(n);
+    void* mem = alloc->Alloc(n);
+#ifdef _MSC_VER
+    // MSVC assumes that a user defined operator new may return nullptr and inserts
+    // a null check before invoking the constructor. This can be avoided using __assume.
+    __assume(mem != nullptr);
+#endif
+    return mem;
 }
 
 class JitTls
