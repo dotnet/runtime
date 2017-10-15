@@ -27,7 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "blockset.h"
 #include "jitstd.h"
 #include "bitvec.h"
-#include "simplerhash.h"
+#include "jithashtable.h"
 
 /*****************************************************************************/
 typedef BitVec EXPSET_TP;
@@ -1192,7 +1192,7 @@ public:
 };
 
 template <>
-struct PtrKeyFuncs<BasicBlock> : public KeyFuncsDefEquals<const BasicBlock*>
+struct JitPtrKeyFuncs<BasicBlock> : public JitKeyFuncsDefEquals<const BasicBlock*>
 {
 public:
     // Make sure hashing is deterministic and not on "ptr."
@@ -1200,13 +1200,13 @@ public:
 };
 
 // A set of blocks.
-typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, bool, JitSimplerHashBehavior> BlkSet;
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, bool> BlkSet;
 
 // A map of block -> set of blocks, can be used as sparse block trees.
-typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, BlkSet*, JitSimplerHashBehavior> BlkToBlkSetMap;
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkSet*> BlkToBlkSetMap;
 
 // Map from Block to Block.  Used for a variety of purposes.
-typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, BasicBlock*, JitSimplerHashBehavior> BlockToBlockMap;
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BasicBlock*> BlockToBlockMap;
 
 // In compiler terminology the control flow between two BasicBlocks
 // is typically referred to as an "edge".  Most well known are the

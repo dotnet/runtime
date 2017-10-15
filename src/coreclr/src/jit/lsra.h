@@ -939,8 +939,7 @@ private:
         unsigned fromBBNum;
         unsigned toBBNum;
     };
-    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, SplitEdgeInfo, JitSimplerHashBehavior>
-                                SplitBBNumToTargetBBNumMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, SplitEdgeInfo> SplitBBNumToTargetBBNumMap;
     SplitBBNumToTargetBBNumMap* splitBBNumToTargetBBNumMap;
     SplitBBNumToTargetBBNumMap* getSplitBBNumToTargetBBNumMap()
     {
