@@ -1200,7 +1200,7 @@ struct FileLine
     }
 };
 
-typedef JitHashTable<FileLine, FileLine, size_t> FileLineToCountMap;
+typedef JitHashTable<FileLine, FileLine, size_t, HostAllocator> FileLineToCountMap;
 FileLineToCountMap* NowayAssertMap;
 
 void Compiler::RecordNowayAssert(const char* filename, unsigned line, const char* condStr)
