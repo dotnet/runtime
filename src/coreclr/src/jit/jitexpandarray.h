@@ -4,18 +4,16 @@
 
 #pragma once
 
-#include "iallocator.h"
-
 // An array of T that expands (and never shrinks) to accomodate references (with default value T() for
 // elements newly created by expansion.)
 template <class T>
 class JitExpandArray
 {
 protected:
-    IAllocator* m_alloc;   // The IAllocator object that should be used to allocate members.
-    T*          m_members; // Pointer to the element array.
-    unsigned    m_size;    // The size of "m_members".
-    unsigned    m_minSize; // The minimum array size to allocate.
+    CompAllocator* m_alloc;   // The allocator object that should be used to allocate members.
+    T*             m_members; // Pointer to the element array.
+    unsigned       m_size;    // The size of "m_members".
+    unsigned       m_minSize; // The minimum array size to allocate.
 
     // Ensures that "m_size" > "idx", and that "m_members" is at least large enough to be
     // indexed by "idx".
@@ -38,7 +36,7 @@ public:
     // Use "alloc" for allocation of internal objects.  If "minSize" is specified,
     // the allocated size of the internal representation will hold at least that many
     // T's.
-    JitExpandArray(IAllocator* alloc, unsigned minSize = 1)
+    JitExpandArray(CompAllocator* alloc, unsigned minSize = 1)
         : m_alloc(alloc), m_members(nullptr), m_size(0), m_minSize(minSize)
     {
         assert(minSize > 0);
@@ -53,7 +51,7 @@ public:
     }
 
     // Like the constructor above, to re-initialize to the empty state.
-    void Init(IAllocator* alloc, unsigned minSize = 1)
+    void Init(CompAllocator* alloc, unsigned minSize = 1)
     {
         if (m_members != nullptr)
         {
@@ -120,7 +118,7 @@ class JitExpandArrayStack : public JitExpandArray<T>
     unsigned m_used;
 
 public:
-    JitExpandArrayStack(IAllocator* alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0)
+    JitExpandArrayStack(CompAllocator* alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0)
     {
     }
 
