@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include "iallocator.h"
-
 // JitHashTable implements a mapping from a Key type to a Value type,
 // via a hash table.
 
@@ -133,20 +131,21 @@ SELECTANY const JitPrimeInfo jitPrimeInfo[]
 
 // Hash table class definition
 
-template <typename Key, typename KeyFuncs, typename Value, typename Behavior = JitHashTableBehavior>
+template <typename Key,
+          typename KeyFuncs,
+          typename Value,
+          typename Allocator = CompAllocator,
+          typename Behavior  = JitHashTableBehavior>
 class JitHashTable
 {
 public:
     // Forward declaration.
     class KeyIterator;
 
-    // Constructor/destructor.  SHash tables always start out empty, with no
-    // allocation overhead.  Call Reallocate to prime with an initial size if
-    // desired. Pass nullptr as the IAllocator* if you want to use DefaultAllocator
-    // (basically, operator new/delete).
-
-    JitHashTable(IAllocator* alloc)
-        : m_alloc(alloc), m_table(nullptr), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
+    // Constructor/destructor. JitHashTable always start out empty, with no
+    // allocation overhead. Call Reallocate to prime with an initial size if
+    // desired.
+    JitHashTable(Allocator* alloc) : m_alloc(alloc), m_table(nullptr), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
     {
         assert(m_alloc != nullptr);
 
@@ -159,27 +158,6 @@ public:
     ~JitHashTable()
     {
         RemoveAll();
-    }
-
-    // operators new/delete when an IAllocator is to be used.
-    void* operator new(size_t sz, IAllocator* alloc)
-    {
-        return alloc->Alloc(sz);
-    }
-
-    void* operator new[](size_t sz, IAllocator* alloc)
-    {
-        return alloc->Alloc(sz);
-    }
-
-    void operator delete(void* p, IAllocator* alloc)
-    {
-        alloc->Free(p);
-    }
-
-    void operator delete[](void* p, IAllocator* alloc)
-    {
-        alloc->Free(p);
     }
 
     // If the table contains a mapping for "key", returns "true" and
@@ -580,9 +558,6 @@ private:
         Behavior::NoMemory();
     }
 
-    // Instance members
-    IAllocator* m_alloc; // IAllocator to use in this
-                         // table.
     // The node type.
     struct Node
     {
@@ -595,17 +570,19 @@ private:
         {
         }
 
-        void* operator new(size_t sz, IAllocator* alloc)
+        void* operator new(size_t sz, Allocator* alloc)
         {
             return alloc->Alloc(sz);
         }
 
-        void operator delete(void* p, IAllocator* alloc)
+        void operator delete(void* p, Allocator* alloc)
         {
             alloc->Free(p);
         }
     };
 
+    // Instance members
+    Allocator*   m_alloc;         // Allocator to use in this table.
     Node**       m_table;         // pointer to table
     JitPrimeInfo m_tableSizeInfo; // size of table (a prime) and information about it
     unsigned     m_tableCount;    // number of elements in table
