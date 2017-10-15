@@ -76,9 +76,60 @@ public:
     unsigned magic;
     unsigned shift;
 
-    inline unsigned magicNumberDivide(unsigned numerator) const;
-    inline unsigned magicNumberRem(unsigned numerator) const;
+    unsigned magicNumberDivide(unsigned numerator) const
+    {
+        unsigned __int64 num     = numerator;
+        unsigned __int64 mag     = magic;
+        unsigned __int64 product = (num * mag) >> (32 + shift);
+        return (unsigned)product;
+    }
+
+    unsigned magicNumberRem(unsigned numerator) const
+    {
+        unsigned div    = magicNumberDivide(numerator);
+        unsigned result = numerator - (div * prime);
+        assert(result == numerator % prime);
+        return result;
+    }
 };
+
+// Table of primes and their magic-number-divide constant.
+// For more info see the book "Hacker's Delight" chapter 10.9 "Unsigned Division by Divisors >= 1"
+// These were selected by looking for primes, each roughly twice as big as the next, having
+// 32-bit magic numbers, (because the algorithm for using 33-bit magic numbers is slightly slower).
+
+// clang-format off
+SELECTANY const JitPrimeInfo jitPrimeInfo[]
+{
+    JitPrimeInfo(9,         0x38e38e39, 1),
+    JitPrimeInfo(23,        0xb21642c9, 4),
+    JitPrimeInfo(59,        0x22b63cbf, 3),
+    JitPrimeInfo(131,       0xfa232cf3, 7),
+    JitPrimeInfo(239,       0x891ac73b, 7),
+    JitPrimeInfo(433,       0x975a751,  4),
+    JitPrimeInfo(761,       0x561e46a5, 8),
+    JitPrimeInfo(1399,      0xbb612aa3, 10),
+    JitPrimeInfo(2473,      0x6a009f01, 10),
+    JitPrimeInfo(4327,      0xf2555049, 12),
+    JitPrimeInfo(7499,      0x45ea155f, 11),
+    JitPrimeInfo(12973,     0x1434f6d3, 10),               
+    JitPrimeInfo(22433,     0x2ebe18db, 12),               
+    JitPrimeInfo(46559,     0xb42bebd5, 15),               
+    JitPrimeInfo(96581,     0xadb61b1b, 16),
+    JitPrimeInfo(200341,    0x29df2461, 15),
+    JitPrimeInfo(415517,    0xa181c46d, 18),
+    JitPrimeInfo(861719,    0x4de0bde5, 18),
+    JitPrimeInfo(1787021,   0x9636c46f, 20),
+    JitPrimeInfo(3705617,   0x4870adc1, 20),
+    JitPrimeInfo(7684087,   0x8bbc5b83, 22),
+    JitPrimeInfo(15933877,  0x86c65361, 23),           
+    JitPrimeInfo(33040633,  0x40fec79b, 23),           
+    JitPrimeInfo(68513161,  0x7d605cd1, 25),           
+    JitPrimeInfo(142069021, 0xf1da390b, 27),           
+    JitPrimeInfo(294594427, 0x74a2507d, 27),
+    JitPrimeInfo(733045421, 0x5dbec447, 28),
+};
+// clang-format on
 
 // Hash table class definition
 
@@ -94,57 +145,230 @@ public:
     // desired. Pass NULL as the IAllocator* if you want to use DefaultAllocator
     // (basically, operator new/delete).
 
-    JitHashTable(IAllocator* alloc);
-    ~JitHashTable();
+    JitHashTable(IAllocator* alloc) : m_alloc(alloc), m_table(NULL), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
+    {
+        assert(m_alloc != nullptr);
+
+#ifndef __GNUC__ // these crash GCC
+        static_assert_no_msg(Behavior::s_growth_factor_numerator > Behavior::s_growth_factor_denominator);
+        static_assert_no_msg(Behavior::s_density_factor_numerator < Behavior::s_density_factor_denominator);
+#endif
+    }
+
+    ~JitHashTable()
+    {
+        RemoveAll();
+    }
 
     // operators new/delete when an IAllocator is to be used.
-    void* operator new(size_t sz, IAllocator* alloc);
-    void* operator new[](size_t sz, IAllocator* alloc);
-    void operator delete(void* p, IAllocator* alloc);
-    void operator delete[](void* p, IAllocator* alloc);
+    void* operator new(size_t sz, IAllocator* alloc)
+    {
+        return alloc->Alloc(sz);
+    }
+
+    void* operator new[](size_t sz, IAllocator* alloc)
+    {
+        return alloc->Alloc(sz);
+    }
+
+    void operator delete(void* p, IAllocator* alloc)
+    {
+        alloc->Free(p);
+    }
+
+    void operator delete[](void* p, IAllocator* alloc)
+    {
+        alloc->Free(p);
+    }
 
     // If the table contains a mapping for "key", returns "true" and
     // sets "*pVal" to the value to which "key" maps.  Otherwise,
     // returns false, and does not modify "*pVal".
-    bool Lookup(Key k, Value* pVal = NULL) const;
+    bool Lookup(Key k, Value* pVal = NULL) const
+    {
+        Node* pN = FindNode(k);
 
-    Value* LookupPointer(Key k) const;
+        if (pN != NULL)
+        {
+            if (pVal != NULL)
+            {
+                *pVal = pN->m_val;
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    Value* LookupPointer(Key k) const
+    {
+        Node* pN = FindNode(k);
+
+        if (pN != NULL)
+            return &(pN->m_val);
+        else
+            return NULL;
+    }
 
     // Causes the table to map "key" to "val".  Returns "true" if
     // "key" had already been mapped by the table, "false" otherwise.
-    bool Set(Key k, Value val);
+    bool Set(Key k, Value v)
+    {
+        CheckGrowth();
+
+        assert(m_tableSizeInfo.prime != 0);
+
+        unsigned index = GetIndexForKey(k);
+
+        Node* pN = m_table[index];
+        while (pN != NULL && !KeyFuncs::Equals(k, pN->m_key))
+        {
+            pN = pN->m_next;
+        }
+        if (pN != NULL)
+        {
+            pN->m_val = v;
+            return true;
+        }
+        else
+        {
+            Node* pNewNode = new (m_alloc) Node(k, v, m_table[index]);
+            m_table[index] = pNewNode;
+            m_tableCount++;
+            return false;
+        }
+    }
 
     // Ensures that "key" is not mapped to a value by the "table."
     // Returns "true" iff it had been mapped.
-    bool Remove(Key k);
+    bool Remove(Key k)
+    {
+        unsigned index = GetIndexForKey(k);
+
+        Node*  pN  = m_table[index];
+        Node** ppN = &m_table[index];
+        while (pN != NULL && !KeyFuncs::Equals(k, pN->m_key))
+        {
+            ppN = &pN->m_next;
+            pN  = pN->m_next;
+        }
+        if (pN != NULL)
+        {
+            *ppN = pN->m_next;
+            m_tableCount--;
+            Node::operator delete(pN, m_alloc);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     // Remove all mappings in the table.
-    void RemoveAll();
+    void RemoveAll()
+    {
+        for (unsigned i = 0; i < m_tableSizeInfo.prime; i++)
+        {
+            for (Node* pN = m_table[i]; pN != NULL;)
+            {
+                Node* pNext = pN->m_next;
+                Node::operator delete(pN, m_alloc);
+                pN = pNext;
+            }
+        }
+        m_alloc->Free(m_table);
+
+        m_table         = NULL;
+        m_tableSizeInfo = JitPrimeInfo();
+        m_tableCount    = 0;
+        m_tableMax      = 0;
+
+        return;
+    }
 
     // Begin and End pointers for iteration over entire table.
-    KeyIterator Begin() const;
-    KeyIterator End() const;
+    KeyIterator Begin() const
+    {
+        KeyIterator i(this, TRUE);
+        return i;
+    }
+
+    KeyIterator End() const
+    {
+        return KeyIterator(this, FALSE);
+    }
 
     // Return the number of elements currently stored in the table
-    unsigned GetCount() const;
+    unsigned GetCount() const
+    {
+        return m_tableCount;
+    }
 
 private:
     // Forward declaration of the linked-list node class.
     struct Node;
 
-    unsigned GetIndexForKey(Key k) const;
+    unsigned GetIndexForKey(Key k) const
+    {
+        unsigned hash = KeyFuncs::GetHashCode(k);
+
+        unsigned index = m_tableSizeInfo.magicNumberRem(hash);
+
+        return index;
+    }
 
     // If the table has a mapping for "k", return the node containing
     // that mapping, else "NULL".
-    Node* FindNode(Key k) const;
+    Node* FindNode(Key k) const
+    {
+        if (m_tableSizeInfo.prime == 0)
+            return NULL;
+
+        unsigned index = GetIndexForKey(k);
+
+        Node* pN = m_table[index];
+        if (pN == NULL)
+            return NULL;
+
+        // Otherwise...
+        while (pN != NULL && !KeyFuncs::Equals(k, pN->m_key))
+            pN = pN->m_next;
+
+        assert(pN == NULL || KeyFuncs::Equals(k, pN->m_key));
+
+        // If pN != NULL, it's the node for the key, else the key isn't mapped.
+        return pN;
+    }
 
     // Resizes a hash table for growth.  The new size is computed based
     // on the current population, growth factor, and maximum density factor.
-    void Grow();
+    void Grow()
+    {
+        unsigned newSize =
+            (unsigned)(m_tableCount * Behavior::s_growth_factor_numerator / Behavior::s_growth_factor_denominator *
+                       Behavior::s_density_factor_denominator / Behavior::s_density_factor_numerator);
+        if (newSize < Behavior::s_minimum_allocation)
+            newSize = Behavior::s_minimum_allocation;
+
+        // handle potential overflow
+        if (newSize < m_tableCount)
+            Behavior::NoMemory();
+
+        Reallocate(newSize);
+    }
 
     // See if it is OK to grow the hash table by one element.  If not, reallocate
     // the hash table.
-    void CheckGrowth();
+    void CheckGrowth()
+    {
+        if (m_tableCount == m_tableMax)
+        {
+            Grow();
+        }
+    }
 
 public:
     // Reallocates a hash table to a specific size.  The size must be big enough
@@ -152,7 +376,50 @@ public:
     //
     // Note that the actual table size must always be a prime number; the number
     // passed in will be upward adjusted if necessary.
-    void Reallocate(unsigned newTableSize);
+    void Reallocate(unsigned newTableSize)
+    {
+        assert(newTableSize >=
+               (GetCount() * Behavior::s_density_factor_denominator / Behavior::s_density_factor_numerator));
+
+        // Allocation size must be a prime number.  This is necessary so that hashes uniformly
+        // distribute to all indices, and so that chaining will visit all indices in the hash table.
+        JitPrimeInfo newPrime = NextPrime(newTableSize);
+        newTableSize          = newPrime.prime;
+
+        Node** newTable = (Node**)m_alloc->ArrayAlloc(newTableSize, sizeof(Node*));
+
+        for (unsigned i = 0; i < newTableSize; i++)
+        {
+            newTable[i] = NULL;
+        }
+
+        // Move all entries over to new table (re-using the Node structures.)
+
+        for (unsigned i = 0; i < m_tableSizeInfo.prime; i++)
+        {
+            Node* pN = m_table[i];
+            while (pN != NULL)
+            {
+                Node* pNext = pN->m_next;
+
+                unsigned newIndex  = newPrime.magicNumberRem(KeyFuncs::GetHashCode(pN->m_key));
+                pN->m_next         = newTable[newIndex];
+                newTable[newIndex] = pN;
+
+                pN = pNext;
+            }
+        }
+
+        // @todo:
+        // We might want to try to delay this cleanup to allow asynchronous readers
+        if (m_table != NULL)
+            m_alloc->Free(m_table);
+
+        m_table         = newTable;
+        m_tableSizeInfo = newPrime;
+        m_tableMax =
+            (unsigned)(newTableSize * Behavior::s_density_factor_numerator / Behavior::s_density_factor_denominator);
+    }
 
     // For iteration, we use a pattern similar to the STL "forward
     // iterator" pattern.  It basically consists of wrapping an
@@ -268,39 +535,6 @@ public:
         }
     };
 
-    // HashTableRef only exists to support operator[]
-    // operator[] returns a HashTableRef which enables operator[] to support reading and writing
-    // in a normal array, it just returns a ref an actual element, which is not possible here.
-    class HashTableRef
-    {
-    public:
-        // this is really the getter for the array.
-        operator Value()
-        {
-
-            Value result;
-            table->Lookup(key, &result);
-            return result;
-        }
-
-        void operator=(const Value v)
-        {
-            table->Set(key, v);
-        }
-
-        friend class JitHashTable;
-
-    protected:
-        HashTableRef(JitHashTable* t, Key k)
-        {
-            table = t;
-            key   = k;
-        }
-
-        JitHashTable* table;
-        Key           key;
-    };
-
     Value& operator[](Key k) const
     {
         Value* p = LookupPointer(k);
@@ -310,7 +544,19 @@ public:
 
 private:
     // Find the next prime number >= the given value.
-    static JitPrimeInfo NextPrime(unsigned number);
+    static JitPrimeInfo NextPrime(unsigned number)
+    {
+        for (int i = 0; i < (int)(sizeof(jitPrimeInfo) / sizeof(jitPrimeInfo[0])); i++)
+        {
+            if (jitPrimeInfo[i].prime >= number)
+            {
+                return jitPrimeInfo[i];
+            }
+        }
+
+        // overflow
+        Behavior::NoMemory();
+    }
 
     // Instance members
     IAllocator* m_alloc; // IAllocator to use in this
@@ -343,8 +589,6 @@ private:
     unsigned     m_tableCount;    // number of elements in table
     unsigned     m_tableMax;      // maximum occupied count
 };
-
-#include "jithashtable.inl"
 
 // A few simple KeyFuncs types...
 
