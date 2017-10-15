@@ -142,10 +142,11 @@ public:
 
     // Constructor/destructor.  SHash tables always start out empty, with no
     // allocation overhead.  Call Reallocate to prime with an initial size if
-    // desired. Pass NULL as the IAllocator* if you want to use DefaultAllocator
+    // desired. Pass nullptr as the IAllocator* if you want to use DefaultAllocator
     // (basically, operator new/delete).
 
-    JitHashTable(IAllocator* alloc) : m_alloc(alloc), m_table(NULL), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
+    JitHashTable(IAllocator* alloc)
+        : m_alloc(alloc), m_table(nullptr), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
     {
         assert(m_alloc != nullptr);
 
@@ -184,13 +185,13 @@ public:
     // If the table contains a mapping for "key", returns "true" and
     // sets "*pVal" to the value to which "key" maps.  Otherwise,
     // returns false, and does not modify "*pVal".
-    bool Lookup(Key k, Value* pVal = NULL) const
+    bool Lookup(Key k, Value* pVal = nullptr) const
     {
         Node* pN = FindNode(k);
 
-        if (pN != NULL)
+        if (pN != nullptr)
         {
-            if (pVal != NULL)
+            if (pVal != nullptr)
             {
                 *pVal = pN->m_val;
             }
@@ -206,10 +207,14 @@ public:
     {
         Node* pN = FindNode(k);
 
-        if (pN != NULL)
+        if (pN != nullptr)
+        {
             return &(pN->m_val);
+        }
         else
-            return NULL;
+        {
+            return nullptr;
+        }
     }
 
     // Causes the table to map "key" to "val".  Returns "true" if
@@ -223,11 +228,11 @@ public:
         unsigned index = GetIndexForKey(k);
 
         Node* pN = m_table[index];
-        while (pN != NULL && !KeyFuncs::Equals(k, pN->m_key))
+        while ((pN != nullptr) && !KeyFuncs::Equals(k, pN->m_key))
         {
             pN = pN->m_next;
         }
-        if (pN != NULL)
+        if (pN != nullptr)
         {
             pN->m_val = v;
             return true;
@@ -249,12 +254,12 @@ public:
 
         Node*  pN  = m_table[index];
         Node** ppN = &m_table[index];
-        while (pN != NULL && !KeyFuncs::Equals(k, pN->m_key))
+        while ((pN != nullptr) && !KeyFuncs::Equals(k, pN->m_key))
         {
             ppN = &pN->m_next;
             pN  = pN->m_next;
         }
-        if (pN != NULL)
+        if (pN != nullptr)
         {
             *ppN = pN->m_next;
             m_tableCount--;
@@ -272,7 +277,7 @@ public:
     {
         for (unsigned i = 0; i < m_tableSizeInfo.prime; i++)
         {
-            for (Node* pN = m_table[i]; pN != NULL;)
+            for (Node* pN = m_table[i]; pN != nullptr;)
             {
                 Node* pNext = pN->m_next;
                 Node::operator delete(pN, m_alloc);
@@ -281,7 +286,7 @@ public:
         }
         m_alloc->Free(m_table);
 
-        m_table         = NULL;
+        m_table         = nullptr;
         m_tableSizeInfo = JitPrimeInfo();
         m_tableCount    = 0;
         m_tableMax      = 0;
@@ -321,25 +326,31 @@ private:
     }
 
     // If the table has a mapping for "k", return the node containing
-    // that mapping, else "NULL".
+    // that mapping, else "nullptr".
     Node* FindNode(Key k) const
     {
         if (m_tableSizeInfo.prime == 0)
-            return NULL;
+        {
+            return nullptr;
+        }
 
         unsigned index = GetIndexForKey(k);
 
         Node* pN = m_table[index];
-        if (pN == NULL)
-            return NULL;
+        if (pN == nullptr)
+        {
+            return nullptr;
+        }
 
         // Otherwise...
-        while (pN != NULL && !KeyFuncs::Equals(k, pN->m_key))
+        while ((pN != nullptr) && !KeyFuncs::Equals(k, pN->m_key))
+        {
             pN = pN->m_next;
+        }
 
-        assert(pN == NULL || KeyFuncs::Equals(k, pN->m_key));
+        assert((pN == nullptr) || KeyFuncs::Equals(k, pN->m_key));
 
-        // If pN != NULL, it's the node for the key, else the key isn't mapped.
+        // If pN != nullptr, it's the node for the key, else the key isn't mapped.
         return pN;
     }
 
@@ -350,12 +361,17 @@ private:
         unsigned newSize =
             (unsigned)(m_tableCount * Behavior::s_growth_factor_numerator / Behavior::s_growth_factor_denominator *
                        Behavior::s_density_factor_denominator / Behavior::s_density_factor_numerator);
+
         if (newSize < Behavior::s_minimum_allocation)
+        {
             newSize = Behavior::s_minimum_allocation;
+        }
 
         // handle potential overflow
         if (newSize < m_tableCount)
+        {
             Behavior::NoMemory();
+        }
 
         Reallocate(newSize);
     }
@@ -390,7 +406,7 @@ public:
 
         for (unsigned i = 0; i < newTableSize; i++)
         {
-            newTable[i] = NULL;
+            newTable[i] = nullptr;
         }
 
         // Move all entries over to new table (re-using the Node structures.)
@@ -398,7 +414,7 @@ public:
         for (unsigned i = 0; i < m_tableSizeInfo.prime; i++)
         {
             Node* pN = m_table[i];
-            while (pN != NULL)
+            while (pN != nullptr)
             {
                 Node* pNext = pN->m_next;
 
@@ -412,8 +428,10 @@ public:
 
         // @todo:
         // We might want to try to delay this cleanup to allow asynchronous readers
-        if (m_table != NULL)
+        if (m_table != nullptr)
+        {
             m_alloc->Free(m_table);
+        }
 
         m_table         = newTable;
         m_tableSizeInfo = newPrime;
@@ -448,15 +466,17 @@ public:
     public:
         KeyIterator(const JitHashTable* hash, BOOL begin)
             : m_table(hash->m_table)
-            , m_node(NULL)
+            , m_node(nullptr)
             , m_tableSize(hash->m_tableSizeInfo.prime)
             , m_index(begin ? 0 : m_tableSize)
         {
-            if (begin && hash->m_tableCount > 0)
+            if (begin && (hash->m_tableCount > 0))
             {
-                assert(m_table != NULL);
-                while (m_index < m_tableSize && m_table[m_index] == NULL)
+                assert(m_table != nullptr);
+                while ((m_index < m_tableSize) && (m_table[m_index] == nullptr))
+                {
                     m_index++;
+                }
 
                 if (m_index >= m_tableSize)
                 {
@@ -466,37 +486,37 @@ public:
                 {
                     m_node = m_table[m_index];
                 }
-                assert(m_node != NULL);
+                assert(m_node != nullptr);
             }
         }
 
         const Key& Get() const
         {
-            assert(m_node != NULL);
+            assert(m_node != nullptr);
 
             return m_node->m_key;
         }
 
         const Value& GetValue() const
         {
-            assert(m_node != NULL);
+            assert(m_node != nullptr);
 
             return m_node->m_val;
         }
 
         void SetValue(const Value& value) const
         {
-            assert(m_node != NULL);
+            assert(m_node != nullptr);
 
             m_node->m_val = value;
         }
 
         void Next()
         {
-            if (m_node != NULL)
+            if (m_node != nullptr)
             {
                 m_node = m_node->m_next;
-                if (m_node != NULL)
+                if (m_node != nullptr)
                 {
                     return;
                 }
@@ -504,19 +524,21 @@ public:
                 // Otherwise...
                 m_index++;
             }
-            while (m_index < m_tableSize && m_table[m_index] == NULL)
+            while ((m_index < m_tableSize) && (m_table[m_index] == nullptr))
+            {
                 m_index++;
+            }
 
             if (m_index >= m_tableSize)
             {
-                m_node = NULL;
+                m_node = nullptr;
                 return;
             }
             else
             {
                 m_node = m_table[m_index];
             }
-            assert(m_node != NULL);
+            assert(m_node != nullptr);
         }
 
         bool Equal(const KeyIterator& i) const
