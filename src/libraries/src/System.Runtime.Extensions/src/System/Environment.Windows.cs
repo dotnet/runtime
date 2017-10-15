@@ -213,13 +213,22 @@ namespace System
         {
             get
             {
-                StringBuilder sb = StringBuilderCache.Acquire(PathInternal.MaxShortPath);
-                if (Interop.Kernel32.GetSystemDirectoryW(sb, PathInternal.MaxShortPath) == 0)
+                // The path will likely be under 32 characters, e.g. C:\Windows\system32
+                Span<char> buffer = stackalloc char[32];
+                int requiredSize = Interop.Kernel32.GetSystemDirectoryW(buffer);
+
+                if (requiredSize > buffer.Length)
                 {
-                    StringBuilderCache.Release(sb);
+                    buffer = new char[requiredSize];
+                    requiredSize = Interop.Kernel32.GetSystemDirectoryW(buffer);
+                }
+
+                if (requiredSize == 0)
+                {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
-                return StringBuilderCache.GetStringAndRelease(sb);
+
+                return new string(buffer.Slice(0, requiredSize));
             }
         }
 
