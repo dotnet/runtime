@@ -21,14 +21,16 @@ protected:
     // indexed by "idx".
     void EnsureCoversInd(unsigned idx);
 
-    // Requires that m_members is not NULL, and that
+    // Requires that m_members is not nullptr, and that
     // low <= high <= m_size.  Sets elements low to high-1 of m_members to T().
     void InitializeRange(unsigned low, unsigned high)
     {
-        assert(m_members != NULL);
-        assert(low <= high && high <= m_size);
-        for (unsigned i  = low; i < high; i++)
+        assert(m_members != nullptr);
+        assert((low <= high) && (high <= m_size));
+        for (unsigned i = low; i < high; i++)
+        {
             m_members[i] = T();
+        }
     }
 
 public:
@@ -37,24 +39,28 @@ public:
     // the allocated size of the internal representation will hold at least that many
     // T's.
     JitExpandArray(IAllocator* alloc, unsigned minSize = 1)
-        : m_alloc(alloc), m_members(NULL), m_size(0), m_minSize(minSize)
+        : m_alloc(alloc), m_members(nullptr), m_size(0), m_minSize(minSize)
     {
         assert(minSize > 0);
     }
 
     ~JitExpandArray()
     {
-        if (m_members != NULL)
+        if (m_members != nullptr)
+        {
             m_alloc->Free(m_members);
+        }
     }
 
     // Like the constructor above, to re-initialize to the empty state.
     void Init(IAllocator* alloc, unsigned minSize = 1)
     {
-        if (m_members != NULL)
+        if (m_members != nullptr)
+        {
             m_alloc->Free(m_members);
+        }
         m_alloc   = alloc;
-        m_members = NULL;
+        m_members = nullptr;
         m_size    = 0;
         m_minSize = minSize;
     }
@@ -71,7 +77,9 @@ public:
     void Reset()
     {
         if (m_minSize > m_size)
+        {
             EnsureCoversInd(m_minSize - 1);
+        }
         InitializeRange(0, m_size);
     }
 
@@ -206,7 +214,7 @@ void JitExpandArray<T>::EnsureCoversInd(unsigned idx)
         {
             m_members = (T*)m_alloc->ArrayAlloc(m_size, sizeof(T));
         }
-        if (oldMembers != NULL)
+        if (oldMembers != nullptr)
         {
             memcpy(m_members, oldMembers, oldSize * sizeof(T));
             m_alloc->Free(oldMembers);
