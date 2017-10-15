@@ -509,7 +509,7 @@ void Compiler::optAddCopies()
 
 ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
 {
-    ExpandArray<ASSERT_TP>& dep = *optAssertionDep;
+    JitExpandArray<ASSERT_TP>& dep = *optAssertionDep;
     if (dep[lclNum] == nullptr)
     {
         dep[lclNum] = BitVecOps::MakeEmpty(apTraits);
@@ -559,7 +559,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     if (optAssertionDep == nullptr)
     {
-        optAssertionDep = new (this, CMK_AssertionProp) ExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
+        optAssertionDep = new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
     }
 
     optAssertionTraitsInit(optMaxAssertionCount);

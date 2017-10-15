@@ -799,7 +799,7 @@ BasicBlock* BasicBlock::GetUniqueSucc()
 // Static vars.
 BasicBlock::MemoryPhiArg* BasicBlock::EmptyMemoryPhiDef = (BasicBlock::MemoryPhiArg*)0x1;
 
-unsigned PtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
+unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
 {
 #ifdef DEBUG
     unsigned hash = SsaStressHashHelper();

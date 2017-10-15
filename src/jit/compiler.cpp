@@ -1180,7 +1180,7 @@ struct FileLine
         m_condStr = other.m_condStr;
     }
 
-    // GetHashCode() and Equals() are needed by SimplerHashTable
+    // GetHashCode() and Equals() are needed by JitHashTable
 
     static unsigned GetHashCode(FileLine fl)
     {
@@ -1200,7 +1200,7 @@ struct FileLine
     }
 };
 
-typedef SimplerHashTable<FileLine, FileLine, size_t, JitSimplerHashBehavior> FileLineToCountMap;
+typedef JitHashTable<FileLine, FileLine, size_t> FileLineToCountMap;
 FileLineToCountMap* NowayAssertMap;
 
 void Compiler::RecordNowayAssert(const char* filename, unsigned line, const char* condStr)
@@ -1921,7 +1921,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 #endif // MEASURE_MEM_ALLOC
 
 #ifdef LEGACY_BACKEND
-        compQMarks = new (this, CMK_Unknown) ExpandArrayStack<GenTreePtr>(getAllocator());
+        compQMarks = new (this, CMK_Unknown) JitExpandArrayStack<GenTreePtr>(getAllocator());
 #endif
     }
 
@@ -1961,9 +1961,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 
         // If this method were a real constructor for Compiler, these would
         // become method initializations.
-        impPendingBlockMembers    = ExpandArray<BYTE>(getAllocator());
-        impSpillCliquePredMembers = ExpandArray<BYTE>(getAllocator());
-        impSpillCliqueSuccMembers = ExpandArray<BYTE>(getAllocator());
+        impPendingBlockMembers    = JitExpandArray<BYTE>(getAllocator());
+        impSpillCliquePredMembers = JitExpandArray<BYTE>(getAllocator());
+        impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
         memset(&lvMemoryPerSsaData, 0, sizeof(PerSsaArray));
         lvMemoryPerSsaData.Init(getAllocator());
