@@ -133,23 +133,6 @@ int signum(T val)
     }
 }
 
-class JitSimplerHashBehavior
-{
-public:
-    static const unsigned s_growth_factor_numerator   = 3;
-    static const unsigned s_growth_factor_denominator = 2;
-
-    static const unsigned s_density_factor_numerator   = 3;
-    static const unsigned s_density_factor_denominator = 4;
-
-    static const unsigned s_minimum_allocation = 7;
-
-    inline static void DECLSPEC_NORETURN NoMemory()
-    {
-        NOMEM();
-    }
-};
-
 #if defined(DEBUG) || defined(INLINE_DATA)
 
 // ConfigMethodRange describes a set of methods, specified via their

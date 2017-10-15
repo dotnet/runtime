@@ -1974,9 +1974,8 @@ void Compiler::JitTestCheckSSA()
         }
     };
 
-    typedef SimplerHashTable<ssize_t, SmallPrimitiveKeyFuncs<ssize_t>, SSAName, JitSimplerHashBehavior>
-        LabelToSSANameMap;
-    typedef SimplerHashTable<SSAName, SSAName, ssize_t, JitSimplerHashBehavior> SSANameToLabelMap;
+    typedef JitHashTable<ssize_t, JitSmallPrimitiveKeyFuncs<ssize_t>, SSAName> LabelToSSANameMap;
+    typedef JitHashTable<SSAName, SSAName, ssize_t>                            SSANameToLabelMap;
 
     // If we have no test data, early out.
     if (m_nodeTestData == nullptr)

@@ -3744,11 +3744,10 @@ void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, uns
 #else // !JIT32_GCENCODER
 
 #include "gcinfoencoder.h"
-#include "simplerhash.h"
 
 // Do explicit instantiation.
-template class SimplerHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId, JitSimplerHashBehavior>;
-template class SimplerHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId, JitSimplerHashBehavior>;
+template class JitHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId>;
+template class JitHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId>;
 
 #ifdef DEBUG
 
