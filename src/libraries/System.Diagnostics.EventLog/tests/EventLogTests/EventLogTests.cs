@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class EventLogTests
+    public class EventLogTests : FileCleanupTestBase
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void EventLogReinitializationException()
@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void ClearLog()
         {
             string log = "ClearTest";
@@ -54,7 +54,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void DeleteLog()
         {
             string log = "DeleteTest";
@@ -121,7 +121,7 @@ namespace System.Diagnostics.Tests
             Assert.Contains(eventLogCollection, eventlog => eventlog.Log.Equals("System"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void GetMaxKilobytes_Set()
         {
             string source = "Source_" + nameof(GetMaxKilobytes_Set);
@@ -156,7 +156,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void OverflowAndRetention_Set()
         {
             string source = "Source_" + nameof(OverflowAndRetention_Set);
@@ -184,7 +184,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void Overflow_OverWriteOlderAndRetention_Set()
         {
             string source = "Source_" + nameof(OverflowAndRetention_Set);
@@ -211,7 +211,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void OverflowAndRetentionDaysOutOfRange()
         {
             using (EventLog eventLog = new EventLog())
@@ -221,7 +221,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void MachineName_Set()
         {
             string source = "Source_" + nameof(MachineName_Set);
@@ -241,43 +241,34 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
-        public void RegisterDisplayLogNameNull()
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        public void RegisterDisplayLogName()
         {
             string log = "DisplayName";
-            string source = "Source_" + nameof(RegisterDisplayLogNameNull);
-            string messageFile = "File_" + nameof(RegisterDisplayLogNameNull);
+            string source = "Source_" + nameof(RegisterDisplayLogName);
+            string messageFile = GetTestFilePath();
             long DisplayNameMsgId = 45;
+            EventSourceCreationData sourceData = new EventSourceCreationData(source, log);
 
-            EventSourceCreationData mySourceData = new EventSourceCreationData(source, log);
-            mySourceData.MessageResourceFile = messageFile;
-            mySourceData.CategoryResourceFile = messageFile;
-            mySourceData.ParameterResourceFile = messageFile;
-            mySourceData.CategoryCount = 2;
-
-            using (FileStream fs = File.Create(messageFile))
+            try
             {
-                try
+                EventLog.CreateEventSource(sourceData);
+                log = EventLog.LogNameFromSourceName(source, ".");
+                using (EventLog eventLog = new EventLog(log, ".", source))
                 {
-                    EventLog.CreateEventSource(mySourceData);
-                    log = EventLog.LogNameFromSourceName(source, ".");
-                    using (EventLog myEventLog = new EventLog(log, ".", source))
+                    if (messageFile.Length > 0)
                     {
-                        if (messageFile.Length > 0)
-                        {
-                            myEventLog.RegisterDisplayName(messageFile, DisplayNameMsgId);
-                        }
-                        Assert.Equal(log, myEventLog.LogDisplayName);
+                        eventLog.RegisterDisplayName(messageFile, DisplayNameMsgId);
                     }
-                }
-                finally
-                {
-                    EventLog.DeleteEventSource(source);
-                    EventLog.Delete(log);
+                    Assert.Equal(log, eventLog.LogDisplayName);
                 }
             }
+            finally
+            {
+                EventLog.DeleteEventSource(source);
+                EventLog.Delete(log);
+            }
 
-            File.Delete(messageFile);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -293,20 +284,20 @@ namespace System.Diagnostics.Tests
             Assert.False(new EventLog("log").EnableRaisingEvents);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void InvalidFormatOrNullDeleteLogName()
         {
             Assert.Throws<ArgumentException>(() => EventLog.Delete(null));
             Assert.Throws<InvalidOperationException>(() => EventLog.Delete("?"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void InvalidLogExistsLogName()
         {
             Assert.False(EventLog.Exists(null));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void InvalidMachineName()
         {
             Assert.Throws<ArgumentException>(() => EventLog.Exists("Application", ""));
@@ -314,7 +305,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => EventLog.DeleteEventSource("", ""));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void LogDisplayNameDefault()
         {
             string source = "Source_" + nameof(LogDisplayNameDefault);

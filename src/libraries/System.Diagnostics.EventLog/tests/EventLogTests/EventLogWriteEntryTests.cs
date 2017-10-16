@@ -17,63 +17,63 @@ namespace System.Diagnostics.Tests
 
         private EventLogEntry WriteLogEntry(string source, bool type = false, bool instance = false, bool category = false, bool data = false)
         {
-            using (EventLog myLog = new EventLog())
+            using (EventLog eventLog = new EventLog())
             {
-                myLog.Source = source;
+                eventLog.Source = source;
                 if (instance)
                 {
                     EventLog.WriteEvent(source, eventInstance);
                     if (data)
                     {
-                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
-                        return myLog.Entries[myLog.Entries.Count - 1];
+                        eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
+                        return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else if (category)
                     {
-                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
-                        return myLog.Entries[myLog.Entries.Count - 1];
+                        eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
+                        return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else
                     {
-                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
-                        return myLog.Entries[myLog.Entries.Count - 1];
+                        eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
+                        return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                 }
                 else if (type)
                 {
-                    myLog.WriteEntry(message, EventLogEntryType.Warning);
+                    eventLog.WriteEntry(message, EventLogEntryType.Warning);
                 }
                 else
                 {
-                    myLog.WriteEntry(message);
+                    eventLog.WriteEntry(message);
                 }
 
-                return myLog.Entries[myLog.Entries.Count - 1];
+                return eventLog.Entries[eventLog.Entries.Count - 1];
             }
         }
 
         private EventLogEntry WriteLogEntryWithSource(string source, bool type = false, bool instance = false, bool category = false, bool data = false)
         {
-            using (EventLog myLog = new EventLog())
+            using (EventLog eventLog = new EventLog())
             {
-                myLog.Source = source;
+                eventLog.Source = source;
                 if (instance)
                 {
                     EventLog.WriteEvent(source, eventInstance);
                     if (data)
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
-                        return myLog.Entries[myLog.Entries.Count - 1];
+                        return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else if (category)
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
-                        return myLog.Entries[myLog.Entries.Count - 1];
+                        return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
-                        return myLog.Entries[myLog.Entries.Count - 1];
+                        return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                 }
                 else if (type)
@@ -85,7 +85,7 @@ namespace System.Diagnostics.Tests
                     EventLog.WriteEntry(source, message);
                 }
 
-                return myLog.Entries[myLog.Entries.Count - 1];
+                return eventLog.Entries[eventLog.Entries.Count - 1];
             }
         }
 
@@ -96,30 +96,30 @@ namespace System.Diagnostics.Tests
             else
                 EventLog.WriteEvent(source, eventInstance, insertStrings);
 
-            using (EventLog myLog = new EventLog())
+            using (EventLog eventLog = new EventLog())
             {
-                myLog.Source = source;
-                return myLog.Entries[myLog.Entries.Count - 1];
+                eventLog.Source = source;
+                return eventLog.Entries[eventLog.Entries.Count - 1];
             }
 
         }
 
         private EventLogEntry WriteLogEntryEvent(string source, bool data = false)
         {
-            using (EventLog myLog = new EventLog())
+            using (EventLog eventLog = new EventLog())
             {
                 string[] insertStringsSingleton = { "ExtraText" };
-                myLog.Source = source;
+                eventLog.Source = source;
                 if (data)
-                    myLog.WriteEvent(eventInstance, rawData, insertStringsSingleton);
+                    eventLog.WriteEvent(eventInstance, rawData, insertStringsSingleton);
                 else
-                    myLog.WriteEvent(eventInstance, insertStringsSingleton);
+                    eventLog.WriteEvent(eventInstance, insertStringsSingleton);
 
-                return myLog.Entries[myLog.Entries.Count - 1];
+                return eventLog.Entries[eventLog.Entries.Count - 1];
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntry(bool sourceFlag)
@@ -147,7 +147,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithType(bool sourceFlag)
@@ -173,7 +173,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeAndId(bool sourceFlag)
@@ -202,7 +202,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeIdAndCategory(bool sourceFlag)
@@ -230,7 +230,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEntryWithTypeIdCategoryAndData(bool sourceFlag)
@@ -284,7 +284,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => EventLog.WriteEntry("", message));
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEvent(bool SourceFlag)
@@ -309,7 +309,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(false)]
         [InlineData(true)]
         public void WriteEventWithData(bool SourceFlag)
@@ -350,7 +350,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => EventLog.WriteEvent(source, eventInstance, message));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteWithoutExistingSource()
         {
             string source = "Source_" + nameof(WriteEvent);

@@ -43,14 +43,14 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void EntryWrittenEventRaised()
         {
             RaisingEvent("EnableEvent", nameof(EntryWrittenEventRaised));
             Assert.Equal(1, eventCounter);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void EntryWrittenEventRaiseDisable()
         {
             eventCounter = 0;
