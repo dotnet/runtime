@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tests
     {
         private const string message = "EntryCollectionMessage";
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CopyingEventLogEntryCollection()
         {
             string log = "CopyCollection";
@@ -43,7 +43,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryEqualityWithNull()
         {
             string log = "NullTest";
@@ -67,7 +67,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryEqualityAndIndex()
         {
             string log = "IndexTest";
@@ -94,7 +94,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryInEquality()
         {
             string log = "InEqualityTest";
