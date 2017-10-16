@@ -1225,7 +1225,7 @@ private:
 
     void TreeNodeInfoInitCheckByteable(GenTree* tree);
 
-    bool SetDelayFree(GenTree* delayUseSrc);
+    bool CheckAndSetDelayFree(GenTree* delayUseSrc);
 
     void TreeNodeInfoInitSimple(GenTree* tree);
     int GetOperandSourceCount(GenTree* node);

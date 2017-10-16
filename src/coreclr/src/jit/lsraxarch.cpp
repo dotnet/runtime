@@ -709,7 +709,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             {
                 delayUseSrc = op2;
             }
-            if ((delayUseSrc != nullptr) && SetDelayFree(delayUseSrc))
+            if ((delayUseSrc != nullptr) && CheckAndSetDelayFree(delayUseSrc))
             {
                 info->hasDelayFreeSrc = true;
             }
@@ -724,7 +724,19 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     assert(!tree->IsUnusedValue() || (info->dstCount != 0));
 }
 
-bool LinearScan::SetDelayFree(GenTree* delayUseSrc)
+//---------------------------------------------------------------------
+// CheckAndSetDelayFree - Set isDelayFree on the given operand or its child(ren), if appropriate
+//
+// Arguments
+//    delayUseSrc - a node that may have a delayed use
+//
+// Return Value:
+//    True iff the node or one of its children has been marked isDelayFree
+//
+// Notes:
+//    Only register operands should be marked isDelayFree, not contained immediates or memory.
+//
+bool LinearScan::CheckAndSetDelayFree(GenTree* delayUseSrc)
 {
     // If delayUseSrc is an indirection and it doesn't produce a result, then we need to set "delayFree'
     // on the base & index, if any.
@@ -1680,7 +1692,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
 
 #if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
     // For PutArgStk of a TYP_SIMD12, we need an extra register.
-    if (varTypeIsSIMD(type) && (putArgStk->gtNumSlots == 3))
+    if (putArgStk->isSIMD12())
     {
         info->srcCount           = putArgStk->gtOp1->gtLsraInfo.dstCount;
         info->internalFloatCount = 1;
@@ -2739,7 +2751,7 @@ void LinearScan::TreeNodeInfoInitMul(GenTreePtr tree)
     {
         containedMemOp = op2;
     }
-    if ((containedMemOp != nullptr) && SetDelayFree(containedMemOp))
+    if ((containedMemOp != nullptr) && CheckAndSetDelayFree(containedMemOp))
     {
         info->hasDelayFreeSrc = true;
     }

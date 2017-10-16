@@ -5265,6 +5265,13 @@ struct GenTreePutArgStk : public GenTreeUnOp
         return gtNumSlots * TARGET_POINTER_SIZE;
     }
 
+    // Return true if this is a PutArgStk of a SIMD12 struct.
+    // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
+    unsigned isSIMD12()
+    {
+        return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
+    }
+
     //------------------------------------------------------------------------
     // setGcPointers: Sets the number of references and the layout of the struct object returned by the VM.
     //
