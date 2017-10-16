@@ -345,20 +345,8 @@ namespace System.Threading
 
         private static void QueueTimerCompletion(TimerQueueTimer timer)
         {
-            WaitCallback callback = s_fireQueuedTimerCompletion;
-            if (callback == null)
-                s_fireQueuedTimerCompletion = callback = new WaitCallback(FireQueuedTimerCompletion);
-
-            // Can use "unsafe" variant because we take care of capturing and restoring
-            // the ExecutionContext.
-            ThreadPool.UnsafeQueueUserWorkItem(callback, timer);
-        }
-
-        private static WaitCallback s_fireQueuedTimerCompletion;
-
-        private static void FireQueuedTimerCompletion(object state)
-        {
-            ((TimerQueueTimer)state).Fire();
+            // Can use "unsafe" variant because we take care of capturing and restoring the ExecutionContext.
+            ThreadPool.UnsafeQueueCustomWorkItem(timer, forceGlobal: true);
         }
 
         #endregion
@@ -407,7 +395,7 @@ namespace System.Threading
     //
     // A timer in our TimerQueue.
     //
-    internal sealed class TimerQueueTimer
+    internal sealed class TimerQueueTimer : IThreadPoolWorkItem
     {
         //
         // The associated timer queue.
@@ -599,6 +587,10 @@ namespace System.Threading
             if (shouldSignal)
                 SignalNoCallbacksRunning();
         }
+
+        void IThreadPoolWorkItem.ExecuteWorkItem() => Fire();
+
+        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { }
 
         internal void SignalNoCallbacksRunning()
         {
