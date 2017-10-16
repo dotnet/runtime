@@ -2530,26 +2530,25 @@ struct GenTreeIntConCommon : public GenTree
     {
     }
 
-    bool FitsInI8()
+    bool FitsInI8() // IconValue() fits into 8-bit signed storage
     {
         return FitsInI8(IconValue());
     }
 
-    static bool FitsInI8(ssize_t val)
+    static bool FitsInI8(ssize_t val) // Constant fits into 8-bit signed storage
     {
-
-        return (char)val == val;
+        return (int8_t)val == val;
     }
 
-    bool FitsInI32()
+    bool FitsInI32() // IconValue() fits into 32-bit signed storage
     {
         return FitsInI32(IconValue());
     }
 
-    static bool FitsInI32(ssize_t val)
+    static bool FitsInI32(ssize_t val) // Constant fits into 32-bit signed storage
     {
 #ifdef _TARGET_64BIT_
-        return (int)val == val;
+        return (int32_t)val == val;
 #else
         return true;
 #endif
