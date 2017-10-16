@@ -6148,7 +6148,9 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         }
 #endif // !_TARGET_XARCH_
 
+#if CPU_LOAD_STORE_ARCH
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
+#endif // CPU_LOAD_STORE_ARCH
 
         //
         // Can't have a label inside the ReJIT padding area
@@ -6209,40 +6211,53 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         // The encoding differs based on the architecture and what register is
         // used (namely, using RAX has a smaller encoding).
         //
-        // loop:
         // For x86
-        //      test [esp + eax], eax       3
-        //      sub eax, 0x1000             5
-        //      cmp EAX, -frameSize         5
+        //      lea eax, [esp - frameSize]
+        // loop:
+        //      lea esp, [esp - pageSize]   7
+        //      test [esp], eax             3
+        //      cmp esp, eax                2
         //      jge loop                    2
+        //      lea rsp, [rbp + frameSize]
         //
         // For AMD64 using RAX
-        //      test [rsp + rax], rax       4
-        //      sub rax, 0x1000             6
-        //      cmp rax, -frameSize         6
+        //      lea rax, [rsp - frameSize]
+        // loop:
+        //      lea rsp, [rsp - pageSize]   8
+        //      test [rsp], rax             4
+        //      cmp rsp, rax                3
         //      jge loop                    2
+        //      lea rsp, [rax + frameSize]
         //
         // For AMD64 using RBP
-        //      test [rsp + rbp], rbp       4
-        //      sub rbp, 0x1000             7
-        //      cmp rbp, -frameSize         7
+        //      lea rbp, [rsp - frameSize]
+        // loop:
+        //      lea rsp, [rsp - pageSize]   8
+        //      test [rsp], rbp             4
+        //      cmp rsp, rbp                3
         //      jge loop                    2
+        //      lea rsp, [rbp + frameSize]
 
-        getEmitter()->emitIns_R_ARR(INS_TEST, EA_PTRSIZE, initReg, REG_SPBASE, initReg, 0);
-        inst_RV_IV(INS_sub, initReg, pageSize, EA_PTRSIZE);
-        inst_RV_IV(INS_cmp, initReg, -((ssize_t)frameSize), EA_PTRSIZE);
+        int sPageSize = (int)pageSize;
+
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, initReg, REG_SPBASE, -((ssize_t)frameSize)); // get frame border
+
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -sPageSize);
+        getEmitter()->emitIns_R_AR(INS_TEST, EA_PTRSIZE, initReg, REG_SPBASE, 0);
+        inst_RV_RV(INS_cmp, REG_SPBASE, initReg);
 
         int bytesForBackwardJump;
 #ifdef _TARGET_AMD64_
         assert((initReg == REG_EAX) || (initReg == REG_EBP)); // We use RBP as initReg for EH funclets.
-        bytesForBackwardJump = ((initReg == REG_EAX) ? -18 : -20);
+        bytesForBackwardJump = -17;
 #else  // !_TARGET_AMD64_
         assert(initReg == REG_EAX);
-        bytesForBackwardJump = -15;
+        bytesForBackwardJump = -14;
 #endif // !_TARGET_AMD64_
 
         inst_IV(INS_jge, bytesForBackwardJump); // Branch backwards to start of loop
 
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, initReg, frameSize); // restore stack pointer
 #endif // !CPU_LOAD_STORE_ARCH
 
         *pInitRegZeroed = false; // The initReg does not contain zero
