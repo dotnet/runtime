@@ -676,16 +676,7 @@ BOOL CEEInfo::shouldEnforceCallvirtRestriction(
         CORINFO_MODULE_HANDLE scopeHnd)
 {
     LIMITED_METHOD_CONTRACT;
-    // see vsw 599197
-    // verification rule added in whidbey requiring virtual methods
-    // to be called via callvirt except if certain other rules are
-    // obeyed.
-
-    if (g_pConfig->LegacyVirtualMethodCallVerification())
-        return false;
-    else 
-        return true;
-       
+    return TRUE;       
 }
 
 #ifdef FEATURE_READYTORUN_COMPILER
