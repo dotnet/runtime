@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
@@ -17,7 +15,10 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
-    [DefaultEvent("EntryWritten"), MonitoringDescription("Provides interaction with Windows event logs.")]
+    /// <summary>
+    /// Provides interaction with Windows event logs.
+    /// </summary>
+    [DefaultEvent("EntryWritten")]
     public class EventLog : Component, ISupportInitialize
     {
         private const string EventLogKey = "SYSTEM\\CurrentControlSet\\Services\\EventLog";
@@ -26,7 +27,7 @@ namespace System.Diagnostics
         private const int DefaultMaxSize = 512 * 1024;
         private const int DefaultRetention = 7 * SecondsPerDay;
         private const int SecondsPerDay = 60 * 60 * 24;
-        
+
         private EventLogInternal _underlyingEventLog;
 
         public EventLog() : this(string.Empty, ".", string.Empty)
@@ -46,9 +47,11 @@ namespace System.Diagnostics
             _underlyingEventLog = new EventLogInternal(logName, machineName, source, this);
         }
 
+        /// <summary>
+        /// The contents of the log.
+        /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        [MonitoringDescription("The contents of the log.")]
         public EventLogEntryCollection Entries
         {
             get
@@ -66,8 +69,10 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// Gets or sets the name of the log to read from and write to.
+        /// </summary>
         [ReadOnly(true)]
-        [MonitoringDescription("Gets or sets the name of the log to read from and write to.")]
         [DefaultValue("")]
         [SettingsBindable(true)]
         public string Log
@@ -92,8 +97,10 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// The machine on which this event log resides.
+        /// </summary>
         [ReadOnly(true)]
-        [MonitoringDescription("The machine on which this event log resides.")]
         [DefaultValue(".")]
         [SettingsBindable(true)]
         public string MachineName
@@ -121,7 +128,7 @@ namespace System.Diagnostics
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         [Browsable(false)]
         [ComVisible(false)]
-        public long MaximumKilobytes 
+        public long MaximumKilobytes
         {
             get => _underlyingEventLog.MaximumKilobytes;
             set => _underlyingEventLog.MaximumKilobytes = value;
@@ -151,8 +158,10 @@ namespace System.Diagnostics
             return GetService(service);
         }
 
+        /// <summary>
+        /// Indicates if the component monitors the event log for changes.
+        /// </summary>
         [Browsable(false)]
-        [MonitoringDescription("Indicates if the component monitors the event log for changes.")]
         [DefaultValue(false)]
         public bool EnableRaisingEvents
         {
@@ -160,17 +169,21 @@ namespace System.Diagnostics
             set => _underlyingEventLog.EnableRaisingEvents = value;
         }
 
+        /// <summary>
+        /// The object used to marshal the event handler calls issued as a result of an EventLog change.
+        /// </summary>
         [Browsable(false)]
         [DefaultValue(null)]
-        [MonitoringDescription("The object used to marshal the event handler calls issued as a result of an EventLog change.")]
         public ISynchronizeInvoke SynchronizingObject
         {
             get => _underlyingEventLog.SynchronizingObject;
             set => _underlyingEventLog.SynchronizingObject = value;
         }
 
+        /// <summary>
+        /// The application name (source name) to use when writing to the event log.
+        /// </summary>
         [ReadOnly(true)]
-        [MonitoringDescription("The application name (source name) to use when writing to the event log.")]
         [DefaultValue("")]
         [SettingsBindable(true)]
         public string Source
@@ -192,7 +205,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("Raised each time any application writes an entry to the event log.")]
+        /// <summary>
+        /// Raised each time any application writes an entry to the event log.
+        /// </summary>
         public event EntryWrittenEventHandler EntryWritten
         {
             add
@@ -478,7 +493,7 @@ namespace System.Diagnostics
             }
             finally
             {
-               mutex?.ReleaseMutex();
+                mutex?.ReleaseMutex();
             }
         }
 
