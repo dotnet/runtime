@@ -8,14 +8,14 @@ namespace System.Diagnostics.Tests
 {
     public class EventInstanceTests
     {
-        private long instanceId = 57;
-        private int categoryId = 657;
-        EventInstance eventInstance = null;
+        //These ids can be any non-negative numbers
+        private const long instanceId = 57;
+        private const int categoryId = 657;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void EventInstanceCreation()
         {
-            eventInstance = new EventInstance(instanceId, categoryId);
+            EventInstance eventInstance = new EventInstance(instanceId, categoryId);
 
             Assert.Equal(categoryId, eventInstance.CategoryId);
             Assert.Equal(instanceId, eventInstance.InstanceId);
@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void EventInstanceCreationWithType()
         {
-            eventInstance = new EventInstance(instanceId, categoryId, EventLogEntryType.Warning);
+            EventInstance eventInstance = new EventInstance(instanceId, categoryId, EventLogEntryType.Warning);
 
             Assert.Equal(categoryId, eventInstance.CategoryId);
             Assert.Equal(instanceId, eventInstance.InstanceId);
