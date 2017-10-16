@@ -559,7 +559,7 @@ extern "C" int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t*
     else
 #endif
     {
-        return -1;
+        return 0;
     }
 }
 
