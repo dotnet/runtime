@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.ComponentModel.Annotations.csproj">
-      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.ComponentModel.Annotations.csproj" />
     <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
