@@ -359,6 +359,22 @@ namespace Microsoft.XmlSerializer.Generator
             }
             if (xmlTypeMapping != null)
             {
+                if (xmlTypeMapping.Mapping != null && xmlTypeMapping.Mapping is StructMapping)
+                {
+                    foreach (MemberMapping memberMapping in ((StructMapping)xmlTypeMapping.Mapping).Members)
+                    {
+                        MemberInfo memberInfo = memberMapping.MemberInfo;
+                        if (memberInfo != null && memberInfo.MemberType == MemberTypes.Property)
+                        {
+                            PropertyInfo propertyInfo = memberInfo as PropertyInfo;
+                            if (propertyInfo != null && (propertyInfo.SetMethod == null || !propertyInfo.SetMethod.IsPublic))
+                            {
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 xmlTypeMapping = importer.ImportTypeMapping(type);
                 mappings.Add(xmlTypeMapping);
                 importedTypes.Add(type);

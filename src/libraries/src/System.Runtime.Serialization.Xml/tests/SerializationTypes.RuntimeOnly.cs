@@ -2234,26 +2234,6 @@ public class TypeWithPrivateFieldAndPrivateGetPublicSetProperty
     }
 }
 
-public class TypeWithoutPublicSetter
-{
-    public string Name { get; private set; }
-
-    [XmlIgnore]
-    public int Age { get; private set; }
-
-    public Type MyType { get; private set; }
-
-    public string ValidProperty { get; set; }
-
-    public string PropertyWrapper
-    {
-        get
-        {
-            return ValidProperty;
-        }
-    }
-}
-
 [CompilerGenerated]
 public class TypeWithCompilerGeneratedAttributeButWithoutPublicSetter
 {
