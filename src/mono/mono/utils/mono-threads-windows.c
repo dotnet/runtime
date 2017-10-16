@@ -39,6 +39,19 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 		return FALSE;
 	}
 
+	/* Suspend logic assumes thread is really suspended before continuing below. Surprisingly SuspendThread */
+	/* is just an async request to the scheduler, meaning that the suspended thread can continue to run */
+	/* user mode code until scheduler gets around and process the request. This will cause a thread state race */
+	/* in mono's thread state machine implementation on Windows. By requesting a threads context after issuing a */
+	/* suspended request, this will wait until thread is suspended and thread context has been collected */
+	/* and returned. */
+	CONTEXT context;
+	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+	if (!GetThreadContext (handle, &context)) {
+		CloseHandle (handle);
+		return FALSE;
+	}
+
 	/* We're in the middle of a self-suspend, resume and register */
 	if (!mono_threads_transition_finish_async_suspend (info)) {
 		mono_threads_add_to_pending_operation_set (info);
@@ -49,7 +62,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
 	}
-	info->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info);
+	info->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info, &context);
 	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (void*)id, res);
 	if (info->suspend_can_continue) {
 		if (interrupt_kernel)
