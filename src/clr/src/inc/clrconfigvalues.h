@@ -275,6 +275,9 @@ CONFIG_DWORD_INFO(UNSUPPORTED_Debugging_RequiredVersion, W("UNSUPPORTED_Debuggin
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_MiniMdBufferCapacity, W("MiniMdBufferCapacity"), 64 * 1024, "The max size of the buffer to store mini metadata information for triage- and mini-dumps.")
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
+
+CONFIG_DWORD_INFO_EX(INTERNAL_DbgNativeCodeBpBindsAcrossVersions, W("DbgNativeCodeBpBindsAcrossVersions"), 0, "If non-zero causes native breakpoints at offset 0 to bind in all tiered compilation versions of the given method", CLRConfig::REGUTIL_default)
+
 //
 // Diagnostics (internal general-purpose)
 //
