@@ -6161,8 +6161,7 @@ inline bool GenTree::IsIntegralConst() const
 inline bool GenTree::IsIntCnsFitsInI32()
 {
 #ifdef _TARGET_64BIT_
-    // cast to int and compare
-    return IsCnsIntOrI() && ((int)gtIntConCommon.IconValue() == gtIntConCommon.IconValue());
+    return IsCnsIntOrI() && AsIntCon()->FitsInI32();
 #else  // !_TARGET_64BIT_
     return IsCnsIntOrI();
 #endif // !_TARGET_64BIT_
