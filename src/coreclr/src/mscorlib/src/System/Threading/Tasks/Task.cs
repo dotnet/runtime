@@ -5444,8 +5444,7 @@ namespace System.Threading.Tasks
             // ... and create our timer and make sure that it stays rooted.
             if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
             {
-                promise.Timer = new Timer(state => ((DelayPromise)state).Complete(), promise, millisecondsDelay, Timeout.Infinite);
-                promise.Timer.KeepRootedWhileScheduled();
+                promise.Timer = new TimerQueueTimer(state => ((DelayPromise)state).Complete(), promise, (uint)millisecondsDelay, Timeout.UnsignedInfinite);
             }
 
             // Return the timer proxy task
@@ -5470,7 +5469,7 @@ namespace System.Threading.Tasks
 
             internal readonly CancellationToken Token;
             internal CancellationTokenRegistration Registration;
-            internal Timer Timer;
+            internal TimerQueueTimer Timer;
 
             internal void Complete()
             {
@@ -5496,7 +5495,7 @@ namespace System.Threading.Tasks
                 // If we set the value, also clean up.
                 if (setSucceeded)
                 {
-                    if (Timer != null) Timer.Dispose();
+                    Timer?.Close();
                     Registration.Dispose();
                 }
             }
