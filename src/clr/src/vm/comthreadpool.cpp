@@ -867,14 +867,10 @@ HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32
     AppDomain* pAppDomain = GetThread()->GetDomain();
     ADID adid = pAppDomain->GetId();
 
-    ThreadpoolMgr::TimerInfoContext* timerContext = new (nothrow) ThreadpoolMgr::TimerInfoContext();
-    if (timerContext == NULL)
-    {
-        COMPlusThrowOM();
-    }
-
+    ThreadpoolMgr::TimerInfoContext* timerContext = new ThreadpoolMgr::TimerInfoContext();
     timerContext->AppDomainId = adid;
     timerContext->TimerId = timerId;
+    NewHolder<ThreadpoolMgr::TimerInfoContext> timerContextHolder(timerContext);
 
     BOOL res = ThreadpoolMgr::CreateTimerQueueTimer(
         &hTimer,
@@ -886,12 +882,14 @@ HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32
 
     if (!res)
     {
-        delete timerContext;
-
         if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
             COMPlusThrow(kNotSupportedException);
         else
             COMPlusThrowWin32();
+    }
+    else
+    {
+        timerContextHolder.SuppressRelease();
     }
 
     END_QCALL;
