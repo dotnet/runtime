@@ -50,15 +50,19 @@ Whether this config needs stack watermark recording to know where to start scann
 
 typedef struct _HandleChunk HandleChunk;
 
-/* define MONO_HANDLE_TRACK_OWNER to store the file and line number of each call to MONO_HANDLE_NEW
+/*
+ * Define MONO_HANDLE_TRACK_OWNER to store the file and line number of each call to MONO_HANDLE_NEW
  * in the handle stack.  (This doubles the amount of memory used for handles, so it's only useful for debugging).
  */
 /*#define MONO_HANDLE_TRACK_OWNER*/
 
-/* define MONO_HANDLE_TRACK_SP to record the C stack pointer at the time of each HANDLE_FUNCTION_ENTER and
+/*
+ * Define MONO_HANDLE_TRACK_SP to record the C stack pointer at the time of each HANDLE_FUNCTION_ENTER and
  * to ensure that when a new handle is allocated the previous newest handle is not lower in the stack.
  * This is useful to catch missing HANDLE_FUNCTION_ENTER / HANDLE_FUNCTION_RETURN pairs which could cause
  * handle leaks.
+ *
+ * If defined, keep HandleStackMark in sync in RuntimeStructs.cs
  */
 /*#define MONO_HANDLE_TRACK_SP*/
 
