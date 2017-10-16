@@ -18,7 +18,8 @@ namespace LinkBench
     public class Benchmark
     {
         public string Name;
-        public bool ShouldRun;
+        public bool doRun;
+        public bool runByDefault;
         public string ProjFile;
         public string UnlinkedDir;
         public string LinkedDir;
@@ -37,20 +38,21 @@ namespace LinkBench
         private double certDiff;
         const double MB = 1024 * 1024;
 
-        public Benchmark(string _Name, string _UnlinkedDir, string _LinkedDir, SetupDelegate _setup = null, bool _shouldRun = false)
+        public Benchmark(string _Name, string _UnlinkedDir, string _LinkedDir, SetupDelegate _setup = null, bool _default = true)
         {
             Name = _Name;
             UnlinkedDir = _UnlinkedDir;
             LinkedDir = _LinkedDir;
             unlinkedDirInfo = new DirectoryInfo(UnlinkedDir);
             linkedDirInfo = new DirectoryInfo(LinkedDir);
-            ShouldRun = _shouldRun;
+            doRun = false;
+            runByDefault = _default;
             Setup = _setup;
         }
 
         public void SetToRun()
         {
-            ShouldRun = true;
+            doRun = true;
             Environment.SetEnvironmentVariable("__test_" + Name, "true");
         }
 
@@ -171,13 +173,14 @@ namespace LinkBench
             var xdoc = XDocument.Load(csproj);
             var ns = xdoc.Root.GetDefaultNamespace();
             bool added = false;
+            string illinkTasksVersion = "0.1.4-preview-981901";
             foreach (var el in xdoc.Root.Elements(ns + "ItemGroup"))
             {
                 if (el.Elements(ns + "PackageReference").Any())
                 {
                     el.Add(new XElement(ns + "PackageReference",
                         new XAttribute("Include", "ILLink.Tasks"),
-                        new XAttribute("Version", "0.1.4-preview")));
+                        new XAttribute("Version", illinkTasksVersion)));
                     added = true;
                     break;
                 }
@@ -187,7 +190,7 @@ namespace LinkBench
                 xdoc.Root.Add(new XElement(ns + "ItemGroup",
                     new XElement(ns + "PackageReference",
                         new XAttribute("Include", "ILLink.Tasks"),
-                        new XAttribute("Version", "0.1.4-preview-737646"))));
+                        new XAttribute("Version", illinkTasksVersion))));
                 added = true;
             }
             using (var fs = new FileStream(csproj, FileMode.Create))
@@ -242,29 +245,37 @@ namespace LinkBench
 
         private static Benchmark[] Benchmarks =
         {
+            // If no benchmark name is specified at the command line, 
+            // all benchmarks are set to be run by default.
+            // However, some temporary exceptions are noted below, if any:
+            // CoreFX is not enabled by default, because the lab cannot run it yet.
+            // Jenkins runs on an older OS with path-length limit, which causes CoreFX build to fail.
+            // MusicStore build currently has a failure, turned off till it is fixed.
+
             new Benchmark("HelloWorld",
                 "HelloWorld\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
                 "HelloWorld\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
-                () => Benchmark.AddLinkerReference("HelloWorld\\HelloWorld.csproj")),
+                () => Benchmark.AddLinkerReference("HelloWorld\\HelloWorld.csproj"), true),
             new Benchmark("WebAPI",
                 "WebAPI\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
                 "WebAPI\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
                 () => { Benchmark.AddLinkerReference("WebAPI\\WebAPI.csproj");
-                        Benchmark.PreventPublishFiltering("WebAPI\\WebAPI.csproj"); }),
+                        Benchmark.PreventPublishFiltering("WebAPI\\WebAPI.csproj"); }, true),
             new Benchmark("MusicStore",
                 "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
                 "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
                 () => { Benchmark.AddLinkerReference("JitBench\\src\\MusicStore\\MusicStore.csproj");
-                       Benchmark.SetRuntimeFrameworkVersion("JitBench\\src\\MusicStore\\MusicStore.csproj"); }),
+                       Benchmark.SetRuntimeFrameworkVersion("JitBench\\src\\MusicStore\\MusicStore.csproj"); }, false),
             new Benchmark("MusicStore_R2R",
                 "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\R2R\\unlinked",
-                "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\R2R\\linked"),
+                "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\R2R\\linked", null, false),
             new Benchmark("Corefx",
                 "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\pretrimmed",
-                "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\trimmed"),
+                "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\trimmed", null, false),
             new Benchmark("Roslyn",
-                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\publish",
-                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked")
+                "roslyn\\Binaries\\release\\Exes\\csc\\netcoreapp2.0\\win10-x64\\Unlinked",
+                "roslyn\\Binaries\\release\\Exes\\csc\\netcoreapp2.0\\win10-x64\\Linked",
+                () => Benchmark.AddLinkerReference("roslyn\\src\\Compilers\\CSharp\\csc\\csc.csproj"), true)
         };
 
         static int UsageError()
@@ -284,7 +295,7 @@ namespace LinkBench
             bool doSetup = true;
             bool doBuild = true;
             string runId = "";
-            string outputdir = "";
+            string outputdir = ".";
             string runOne = null;
             bool benchmarkSpecified = false;
 
@@ -359,20 +370,15 @@ namespace LinkBench
                 }
             }
 
-            // If benchmarks are not explicitly specified, run all benchmarks
+            // If benchmarks are not explicitly specified, run the default set of benchmarks
             if (!benchmarkSpecified)
             {
                 foreach (Benchmark benchmark in Benchmarks)
                 {
-                    if (String.Compare(benchmark.Name, "CoreFX", true) == 0)
+                    if (benchmark.runByDefault)
                     {
-                        // CoreFX is not enabled by default, because the lab cannot run it yet.
-                        // Jenkins runs on an older OS with path-length limit, which causes
-                        // CoreFX build to fail.
-                        continue;
+                        benchmark.SetToRun();
                     }
-
-                    benchmark.SetToRun();
                 }
             }
 
@@ -397,7 +403,8 @@ namespace LinkBench
 
             Environment.SetEnvironmentVariable("LinkBenchRoot", LinkBenchRoot);
             Environment.SetEnvironmentVariable("__dotnet", LinkBenchRoot + "\\.Net\\dotnet.exe");
-            Environment.SetEnvironmentVariable("__dotnet1", LinkBenchRoot + "\\.Net1\\dotnet.exe");
+            Environment.SetEnvironmentVariable("__dotnet2", LinkBenchRoot + "\\.Net2\\dotnet.exe");
+            
 
             // Update the build files to facilitate the link step
             if (doSetup)
@@ -419,7 +426,7 @@ namespace LinkBench
 
                 foreach (Benchmark benchmark in Benchmarks)
                 {
-                    if (benchmark.ShouldRun && benchmark.Setup != null)
+                    if (benchmark.doRun && benchmark.Setup != null)
                     {
                         benchmark.Setup();
                     }
@@ -454,7 +461,7 @@ namespace LinkBench
             for (int i = 0; i < Benchmarks.Length; i++)
             {
                 CurrentBenchmark = Benchmarks[i];
-                if (!CurrentBenchmark.ShouldRun)
+                if (!CurrentBenchmark.doRun)
                 {
                     continue;
                 }
