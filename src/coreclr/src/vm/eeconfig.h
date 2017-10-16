@@ -315,7 +315,6 @@ public:
 
     bool LegacyNullReferenceExceptionPolicy(void)   const {LIMITED_METHOD_CONTRACT;  return fLegacyNullReferenceExceptionPolicy; }
     bool LegacyUnhandledExceptionPolicy(void)       const {LIMITED_METHOD_CONTRACT;  return fLegacyUnhandledExceptionPolicy; }
-    bool LegacyVirtualMethodCallVerification(void)  const {LIMITED_METHOD_CONTRACT;  return fLegacyVirtualMethodCallVerification; }
 
     bool LegacyApartmentInitPolicy(void)            const {LIMITED_METHOD_CONTRACT;  return fLegacyApartmentInitPolicy; }
     bool LegacyComHierarchyVisibility(void)         const {LIMITED_METHOD_CONTRACT;  return fLegacyComHierarchyVisibility; }
@@ -862,7 +861,6 @@ private: //----------------------------------------------------------------
 
     bool fLegacyNullReferenceExceptionPolicy; // Old AV's as NullRef behavior
     bool fLegacyUnhandledExceptionPolicy;     // Old unhandled exception policy (many are swallowed)
-    bool fLegacyVirtualMethodCallVerification;  // Old (pre-whidbey) policy for call (nonvirt) of virtual function
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     bool fLegacyCorruptedStateExceptionsPolicy;
