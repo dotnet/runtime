@@ -36,13 +36,13 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         public void DeleteUnregisteredSource()
         {
-            Assert.Throws<System.ArgumentException>(() => EventLog.DeleteEventSource(Guid.NewGuid().ToString("N")));
+            Assert.Throws<ArgumentException>(() => EventLog.DeleteEventSource(Guid.NewGuid().ToString("N")));
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
-        public void LogNameNull()
+        public void LogNameNullMeansApplicationLog()
         {
-            string source = "Source_" + nameof(LogNameNull);
+            string source = "Source_" + nameof(LogNameNullMeansApplicationLog);
 
             try
             {
@@ -59,7 +59,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         public void SourceNameNull()
         {
-            Assert.Throws<ArgumentException>(() => EventLog.CreateEventSource(null, null));
+            Assert.Throws<ArgumentException>(() => EventLog.CreateEventSource(null, "logName"));
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
@@ -83,40 +83,37 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
-        public void SourceAlreadyExistWhileCreation()
+        public void SourceAlreadyExistsWhenCreatingSource()
         {
-            string source = "Source_" + nameof(SourceAlreadyExistWhileCreation);
+            string source = "Source_" + nameof(SourceAlreadyExistsWhenCreatingSource);
             string log = "MyLog";
             try
             {
                 EventLog.CreateEventSource(source, log);
                 Assert.True(EventLog.SourceExists(source));
                 Assert.Throws<FormatException>(() => EventLog.CreateEventSource(source, log));
-
             }
             finally
             {
                 EventLog.DeleteEventSource(source);
                 EventLog.Delete(log);
             }
-
-            Assert.False(EventLog.SourceExists(source));
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
-        public void LogNameExists()
+        public void LogNameAlreadyExists_Throws()
         {
-            string source = "Source_" + nameof(LogNameExists);
+            string source = "Source_" + nameof(LogNameAlreadyExists_Throws);
             string log = "AppEvent";
 
             Assert.Throws<ArgumentException>(() => EventLog.CreateEventSource(source, log));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void SourceCreationInvalidData()
+        public void EventSourceCategoryCount_Invalid()
         {
             string log = "InvalidData";
-            string source = "Source_" + nameof(SourceCreationInvalidData);
+            string source = "Source_" + nameof(EventSourceCategoryCount_Invalid);
 
             EventSourceCreationData mySourceData = new EventSourceCreationData(source, log);
             Assert.Throws<ArgumentOutOfRangeException>(() => mySourceData.CategoryCount = -1);
