@@ -19494,3 +19494,74 @@ CORINFO_RESOLVED_TOKEN* Compiler::impAllocateToken(CORINFO_RESOLVED_TOKEN token)
     *memory                        = token;
     return memory;
 }
+
+//------------------------------------------------------------------------
+// SpillRetExprHelper: iterate through arguments tree and spill ret_expr to local varibales.
+//
+class SpillRetExprHelper
+{
+public:
+    SpillRetExprHelper(Compiler* comp) : comp(comp)
+    {
+    }
+
+    void StoreRetExprResultsInArgs(GenTreeCall* call)
+    {
+        GenTreePtr args = call->gtCallArgs;
+        if (args != nullptr)
+        {
+            comp->fgWalkTreePre(&args, SpillRetExprVisitor, this);
+        }
+        GenTreePtr thisArg = call->gtCallObjp;
+        if (thisArg != nullptr)
+        {
+            comp->fgWalkTreePre(&thisArg, SpillRetExprVisitor, this);
+        }
+    }
+
+private:
+    static Compiler::fgWalkResult SpillRetExprVisitor(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    {
+        assert((pTree != nullptr) && (*pTree != nullptr));
+        GenTreePtr tree = *pTree;
+        if ((tree->gtFlags & GTF_CALL) == 0)
+        {
+            // Trees with ret_expr are marked as GTF_CALL.
+            return Compiler::WALK_SKIP_SUBTREES;
+        }
+        if (tree->OperGet() == GT_RET_EXPR)
+        {
+            SpillRetExprHelper* walker = static_cast<SpillRetExprHelper*>(fgWalkPre->pCallbackData);
+            walker->StoreRetExprAsLocalVar(pTree);
+        }
+        return Compiler::WALK_CONTINUE;
+    }
+
+    void StoreRetExprAsLocalVar(GenTreePtr* pRetExpr)
+    {
+        GenTreePtr retExpr = *pRetExpr;
+        assert(retExpr->OperGet() == GT_RET_EXPR);
+        JITDUMP("Store return expression %u  as a local var.\n", retExpr->gtTreeID);
+        unsigned tmp = comp->lvaGrabTemp(true DEBUGARG("spilling ret_expr"));
+        comp->impAssignTempGen(tmp, retExpr, (unsigned)Compiler::CHECK_SPILL_NONE);
+        *pRetExpr = comp->gtNewLclvNode(tmp, retExpr->TypeGet());
+    }
+
+private:
+    Compiler* comp;
+};
+
+//------------------------------------------------------------------------
+// addFatPointerCandidate: mark the call and the method, that they have a fat pointer candidate.
+//                         Spill ret_expr in the call node, because they can't be cloned.
+//
+// Arguments:
+//    call - fat calli candidate
+//
+void Compiler::addFatPointerCandidate(GenTreeCall* call)
+{
+    setMethodHasFatPointer();
+    call->SetFatPointerCandidate();
+    SpillRetExprHelper helper(this);
+    helper.StoreRetExprResultsInArgs(call);
+}
