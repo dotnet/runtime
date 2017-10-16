@@ -804,10 +804,5 @@ namespace System.Threading
         {
             m_timer.Close();
         }
-
-        internal void KeepRootedWhileScheduled()
-        {
-            GC.SuppressFinalize(m_timer);
-        }
     }
 }
