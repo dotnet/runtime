@@ -60,7 +60,7 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx, int (*cb) (SSL *ssl,
                                             const unsigned char *in,
                                             unsigned int inlen,
                                             void *arg), void *arg);
-void SSL_get0_alpn_selected(SSL* ssl, const unsigned char** protocol, unsigned int* len);
+void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
 int32_t SSL_select_next_proto(unsigned char** out, unsigned char* outlen, const unsigned char* server, unsigned int server_len, const unsigned char* client, unsigned int client_len);
 #endif
 
