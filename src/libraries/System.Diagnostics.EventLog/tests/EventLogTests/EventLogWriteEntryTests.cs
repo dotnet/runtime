@@ -9,12 +9,11 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogWriteEntryTests
     {
-        private string message = "EventLogWriteEntryTestsMessage";
+        private const string message = "EventLogWriteEntryTestsMessage";
 
-        private byte[] myRawData = new byte[4] { 0, 1, 2, 3 };
-        private EventInstance myEvent = new EventInstance(0, 1);
-        private string[] insertStrings = { "ExtraText", "MoreText" };
-        private string[] insertStringsSingleton = { "ExtraText" };
+        private readonly byte[] rawData = new byte[4] { 0, 1, 2, 3 };
+        private readonly EventInstance eventInstance = new EventInstance(0, 1);
+        private readonly string[] insertStrings = { "ExtraText", "MoreText" };
 
         private EventLogEntry WriteLogEntry(string source, bool type = false, bool instance = false, bool category = false, bool data = false)
         {
@@ -23,21 +22,20 @@ namespace System.Diagnostics.Tests
                 myLog.Source = source;
                 if (instance)
                 {
-                    EventLog.WriteEvent(source, myEvent);
+                    EventLog.WriteEvent(source, eventInstance);
                     if (data)
                     {
-                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId, myRawData);
+                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
                     else if (category)
                     {
-
-                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId);
+                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
                     else
                     {
-                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)myEvent.InstanceId);
+                        myLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
                 }
@@ -61,25 +59,22 @@ namespace System.Diagnostics.Tests
                 myLog.Source = source;
                 if (instance)
                 {
-
-                    EventLog.WriteEvent(source, myEvent);
+                    EventLog.WriteEvent(source, eventInstance);
                     if (data)
                     {
-                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId, myRawData);
+                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
                     else if (category)
                     {
-                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId, (short)myEvent.CategoryId);
+                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
                     else
                     {
-                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)myEvent.InstanceId);
+                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
                         return myLog.Entries[myLog.Entries.Count - 1];
                     }
-
-
                 }
                 else if (type)
                 {
@@ -97,9 +92,9 @@ namespace System.Diagnostics.Tests
         private EventLogEntry WriteLogEntryEventSource(string source, bool data = false)
         {
             if (data)
-                EventLog.WriteEvent(source, myEvent, myRawData, insertStrings);
+                EventLog.WriteEvent(source, eventInstance, rawData, insertStrings);
             else
-                EventLog.WriteEvent(source, myEvent, insertStrings);
+                EventLog.WriteEvent(source, eventInstance, insertStrings);
 
             using (EventLog myLog = new EventLog())
             {
@@ -113,11 +108,12 @@ namespace System.Diagnostics.Tests
         {
             using (EventLog myLog = new EventLog())
             {
+                string[] insertStringsSingleton = { "ExtraText" };
                 myLog.Source = source;
                 if (data)
-                    myLog.WriteEvent(myEvent, myRawData, insertStringsSingleton);
+                    myLog.WriteEvent(eventInstance, rawData, insertStringsSingleton);
                 else
-                    myLog.WriteEvent(myEvent, insertStringsSingleton);
+                    myLog.WriteEvent(eventInstance, insertStringsSingleton);
 
                 return myLog.Entries[myLog.Entries.Count - 1];
             }
@@ -163,9 +159,9 @@ namespace System.Diagnostics.Tests
                 EventLog.CreateEventSource(source, log);
                 EventLogEntry eventLogEntry;
                 if (sourceFlag)
-                    eventLogEntry = WriteLogEntry(source, true);
+                    eventLogEntry = WriteLogEntry(source, type: true);
                 else
-                    eventLogEntry = WriteLogEntryWithSource(source, true);
+                    eventLogEntry = WriteLogEntryWithSource(source, type: true);
 
                 Assert.Contains(message, eventLogEntry.Message);
                 Assert.Equal(EventLogEntryType.Warning, eventLogEntry.EntryType);
@@ -192,12 +188,12 @@ namespace System.Diagnostics.Tests
                 EventLog.CreateEventSource(source, log);
                 EventLogEntry eventLogEntry;
                 if (sourceFlag)
-                    eventLogEntry = WriteLogEntry(source, true, true);
+                    eventLogEntry = WriteLogEntry(source, type: true, instance: true);
                 else
-                    eventLogEntry = WriteLogEntryWithSource(source, true, true);
+                    eventLogEntry = WriteLogEntryWithSource(source, type: true, instance: true);
 
                 Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal((int)myEvent.InstanceId, eventLogEntry.InstanceId);
+                Assert.Equal((int)eventInstance.InstanceId, eventLogEntry.InstanceId);
             }
             finally
             {
@@ -218,13 +214,14 @@ namespace System.Diagnostics.Tests
                 EventLog.CreateEventSource(source, log);
                 EventLogEntry eventLogEntry;
                 if (sourceFlag)
-                    eventLogEntry = WriteLogEntry(source, true, true, true);
+                    eventLogEntry = WriteLogEntry(source, type: true, instance: true, category: true);
                 else
-                    eventLogEntry = WriteLogEntryWithSource(source, true, true, true);
+                    eventLogEntry = WriteLogEntryWithSource(source, type: true, instance: true, category: true);
 
+                //There is some prefix string already attached to the message passed
                 Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal((short)myEvent.CategoryId, eventLogEntry.CategoryNumber);
-                Assert.Equal("(1)", eventLogEntry.Category);
+                Assert.Equal((short)eventInstance.CategoryId, eventLogEntry.CategoryNumber);
+                Assert.Equal("(" + eventLogEntry.CategoryNumber + ")", eventLogEntry.Category);
             }
             finally
             {
@@ -245,12 +242,12 @@ namespace System.Diagnostics.Tests
                 EventLog.CreateEventSource(source, log);
                 EventLogEntry eventLogEntry;
                 if (sourceFlag)
-                    eventLogEntry = WriteLogEntry(source, true, true, true, true);
+                    eventLogEntry = WriteLogEntry(source, type: true, instance: true, category: true, data: true);
                 else
-                    eventLogEntry = WriteLogEntryWithSource(source, true, true, true, true);
+                    eventLogEntry = WriteLogEntryWithSource(source, type: true, instance: true, category: true, data: true);
 
                 Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal(myRawData, eventLogEntry.Data);
+                Assert.Equal(rawData, eventLogEntry.Data);
             }
             finally
             {
@@ -262,9 +259,9 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void WriteEntryWithoutSource()
         {
-            using (EventLog myLog = new EventLog())
+            using (EventLog eventLog = new EventLog())
             {
-                Assert.Throws<ArgumentException>(() => myLog.WriteEntry(message));
+                Assert.Throws<ArgumentException>(() => eventLog.WriteEntry(message));
             }
 
         }
@@ -272,11 +269,11 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void WriteEntryWithInvalidType()
         {
-            using (EventLog myLog = new EventLog())
+            using (EventLog eventLog = new EventLog())
             {
                 string source = "Source_" + nameof(WriteEntryWithInvalidType);
-                myLog.Source = source;
-                Assert.Throws<InvalidEnumArgumentException>(() => myLog.WriteEntry(message, (EventLogEntryType)7));
+                eventLog.Source = source;
+                Assert.Throws<InvalidEnumArgumentException>(() => eventLog.WriteEntry(message, (EventLogEntryType)7));
             }
         }
 
@@ -324,11 +321,11 @@ namespace System.Diagnostics.Tests
                 EventLog.CreateEventSource(source, log);
                 EventLogEntry eventLogEntry;
                 if (SourceFlag)
-                    eventLogEntry = WriteLogEntryEventSource(source, true);
+                    eventLogEntry = WriteLogEntryEventSource(source, data: true);
                 else
-                    eventLogEntry = WriteLogEntryEvent(source, true);
+                    eventLogEntry = WriteLogEntryEvent(source, data: true);
 
-                Assert.Equal(myRawData, eventLogEntry.Data);
+                Assert.Equal(rawData, eventLogEntry.Data);
             }
             finally
             {
@@ -348,9 +345,9 @@ namespace System.Diagnostics.Tests
         public void WriteEventMessageValues_OutOfRange()
         {
             string source = "Source_" + nameof(WriteEventMessageValues_OutOfRange);
-            string[] empty = new string[1];
-            empty[0] = new string('c', 32767);
-            Assert.Throws<ArgumentException>(() => EventLog.WriteEvent(source, myEvent, empty));
+            string[] message = new string[1];
+            message[0] = new string('c', 32767);
+            Assert.Throws<ArgumentException>(() => EventLog.WriteEvent(source, eventInstance, message));
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
@@ -359,7 +356,7 @@ namespace System.Diagnostics.Tests
             string source = "Source_" + nameof(WriteEvent);
             try
             {
-                EventLog.WriteEvent(source, myEvent, myRawData, null);
+                EventLog.WriteEvent(source, eventInstance, rawData, null);
                 Assert.Equal(EventLog.LogNameFromSourceName(source, "."), "Application");
             }
             finally

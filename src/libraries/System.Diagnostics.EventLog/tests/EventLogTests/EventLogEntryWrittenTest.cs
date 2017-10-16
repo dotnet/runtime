@@ -10,10 +10,10 @@ namespace System.Diagnostics.Tests
     public class EventLogEntryEventWriitenTest
     {
         static AutoResetEvent signal;
-        private string message = "EventLogEntryEventWrittenTestMessage";
+        private const string message = "EventLogEntryEventWrittenTestMessage";
         private int eventCounter;
 
-        public void RaisingEvent(string log, string methodName, bool value = true)
+        public void RaisingEvent(string log, string methodName, bool waitOnEvent = true)
         {
             signal = new AutoResetEvent(false);
             eventCounter = 0;
@@ -30,9 +30,9 @@ namespace System.Diagnostics.Tests
                         eventCounter += 1;
                         signal.Set();
                     });
-                    myLog.EnableRaisingEvents = value;
+                    myLog.EnableRaisingEvents = waitOnEvent;
                     myLog.WriteEntry(message, EventLogEntryType.Information);
-                    if (value)
+                    if (waitOnEvent)
                         signal.WaitOne();
                 }
             }
@@ -46,8 +46,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         public void EntryWrittenEventRaised()
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
             RaisingEvent("EnableEvent", nameof(EntryWrittenEventRaised));
             Assert.Equal(1, eventCounter);
         }
@@ -55,10 +53,8 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         public void EntryWrittenEventRaiseDisable()
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
             eventCounter = 0;
-            RaisingEvent("DisableEvent", nameof(EntryWrittenEventRaiseDisable), false);
+            RaisingEvent("DisableEvent", nameof(EntryWrittenEventRaiseDisable), waitOnEvent: false);
             Assert.Equal(0, eventCounter);
         }
     }

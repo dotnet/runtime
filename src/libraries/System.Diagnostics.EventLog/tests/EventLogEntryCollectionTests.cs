@@ -8,7 +8,7 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogEntryCollectionTests
     {
-        private string message = "EntryCollectionMessage";
+        private const string message = "EntryCollectionMessage";
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndNotWindowsNano))]
         public void CopyingEventLogEntryCollection()
@@ -18,13 +18,13 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                using (EventLog myLog = new EventLog())
+                EventLog.CreateEventSource(source, log);
+                using (EventLog eventLog = new EventLog())
                 {
-                    EventLog.CreateEventSource(source, log);
-                    myLog.Source = source;
-                    myLog.WriteEntry(message);
-                    myLog.WriteEntry("Furthur Testing");
-                    EventLogEntryCollection entryCollection = myLog.Entries;
+                    eventLog.Source = source;
+                    eventLog.WriteEntry(message);
+                    eventLog.WriteEntry("Further Testing");
+                    EventLogEntryCollection entryCollection = eventLog.Entries;
                     EventLogEntry[] entryCollectionCopied = new EventLogEntry[entryCollection.Count];
                     entryCollection.CopyTo(entryCollectionCopied, 0);
 
@@ -51,12 +51,12 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                using (EventLog myLog = new EventLog())
+                EventLog.CreateEventSource(source, log);
+                using (EventLog eventLog = new EventLog())
                 {
-                    EventLog.CreateEventSource(source, log);
-                    myLog.Source = source;
-                    myLog.WriteEntry(message);
-                    EventLogEntry entry = myLog.Entries[myLog.Entries.Count - 1];
+                    eventLog.Source = source;
+                    eventLog.WriteEntry(message);
+                    EventLogEntry entry = eventLog.Entries[eventLog.Entries.Count - 1];
                     Assert.False(entry.Equals(null));
                 }
             }
@@ -75,16 +75,15 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                using (EventLog myLog = new EventLog())
+                EventLog.CreateEventSource(source, log);
+                using (EventLog eventLog = new EventLog())
                 {
-                    EventLog.CreateEventSource(source, log);
-                    myLog.Source = source;
-                    myLog.Clear();
-                    myLog.WriteEntry(message);
-                    EventLogEntry entry = myLog.Entries[myLog.Entries.Count - 1];
+                    eventLog.Source = source;
+                    eventLog.WriteEntry(message);
+                    EventLogEntry entry = eventLog.Entries[eventLog.Entries.Count - 1];
                     Assert.True(entry.Equals(entry));
-                    myLog.WriteEntry(message);
-                    EventLogEntry secondEntry = myLog.Entries[myLog.Entries.Count - 1];
+                    eventLog.WriteEntry(message);
+                    EventLogEntry secondEntry = eventLog.Entries[eventLog.Entries.Count - 1];
                     Assert.Equal(entry.Index + 1, secondEntry.Index);
                 }
             }
@@ -103,14 +102,14 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                using (EventLog myLog = new EventLog())
+                EventLog.CreateEventSource(source, log);
+                using (EventLog eventLog = new EventLog())
                 {
-                    EventLog.CreateEventSource(source, log);
-                    myLog.Source = source;
-                    myLog.WriteEntry(message);
-                    myLog.WriteEntry(message);
-                    EventLogEntry entry = myLog.Entries[myLog.Entries.Count - 1];
-                    EventLogEntry secondEntry = myLog.Entries[myLog.Entries.Count - 2];
+                    eventLog.Source = source;
+                    eventLog.WriteEntry(message);
+                    eventLog.WriteEntry(message);
+                    EventLogEntry entry = eventLog.Entries[eventLog.Entries.Count - 1];
+                    EventLogEntry secondEntry = eventLog.Entries[eventLog.Entries.Count - 2];
                     Assert.False(entry.Equals(secondEntry));
                 }
             }
