@@ -18,9 +18,9 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// Exception that is thrown when an error occurs during EventSource operation.
     /// </summary>
-#if !CORECLR && !ES_BUILD_PN && !ES_BUILD_PCL && !CORERT
+#if !ES_BUILD_PN && !ES_BUILD_PCL
     [Serializable]
-#endif // !CORECLR && !ES_BUILD_PN && !ES_BUILD_PCL && !CORERT
+#endif
     public class EventSourceException : Exception
     {
         /// <summary>
