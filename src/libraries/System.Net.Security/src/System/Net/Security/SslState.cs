@@ -1346,25 +1346,27 @@ namespace System.Net.Security
 
             lock (this)
             {
-                object obj = _queuedWriteStateRequest;
-                if (obj == null)
-                {
-                    // A repeated call.
-                    return;
-                }
+                HandleWriteCallback();
+            }
+        }
 
-                _queuedWriteStateRequest = null;
-                if (obj is LazyAsyncResult)
-                {
-                    // Sync handshake is waiting on other thread.
-                    ((LazyAsyncResult)obj).InvokeCallback();
-                }
-                else
-                {
-                    // Async handshake is pending, start it on other thread.
-                    // Consider: we could start it in on this thread but that will delay THIS write completion
+        private void HandleWriteCallback()
+        {
+            object obj = _queuedWriteStateRequest;
+            _queuedWriteStateRequest = null;
+            switch (obj)
+            {
+                case null:
+                    break;
+                case LazyAsyncResult lazy:
+                    lazy.InvokeCallback();
+                    break;
+                case TaskCompletionSource<int> tsc:
+                    tsc.SetResult(0);
+                    break;
+                default:
                     ThreadPool.QueueUserWorkItem(new WaitCallback(AsyncResumeHandshake), obj);
-                }
+                    break;
             }
         }
 
@@ -1425,26 +1427,7 @@ namespace System.Net.Security
                     }
 
                     _lockWriteState = LockWrite;
-                    object obj = _queuedWriteStateRequest;
-                    if (obj == null)
-                    {
-                        // We finished before Write has grabbed the lock.
-                        return;
-                    }
-
-                    _queuedWriteStateRequest = null;
-
-                    if (obj is LazyAsyncResult)
-                    {
-                        // Sync write is waiting on other thread.
-                        ((LazyAsyncResult)obj).InvokeCallback();
-                    }
-                    else
-                    {
-                        // Async write is pending, start it on other thread.
-                        // Consider: we could start it in on this thread but that will delay THIS handshake completion
-                        ThreadPool.QueueUserWorkItem(new WaitCallback(CompleteRequestWaitCallback), obj);
-                    }
+                    HandleWriteCallback();
                 }
             }
             finally
