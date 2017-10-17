@@ -684,7 +684,15 @@ namespace Microsoft.Win32
         internal static extern bool SetEnvironmentVariable(string lpName, string lpValue);
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
-        internal static extern int GetEnvironmentVariable(string lpName, [Out]StringBuilder lpValue, int size);
+        private static extern unsafe int GetEnvironmentVariable(string lpName, char* lpValue, int size);
+
+        internal static unsafe int GetEnvironmentVariable(string lpName, Span<char> lpValue)
+        {
+            fixed (char* lpValuePtr = &lpValue.DangerousGetPinnableReference())
+            {
+                return GetEnvironmentVariable(lpName, lpValuePtr, lpValue.Length);
+            }
+        }
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode)]
         internal static unsafe extern char* GetEnvironmentStrings();
