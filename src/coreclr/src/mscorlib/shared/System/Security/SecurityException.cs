@@ -7,8 +7,17 @@ using System.Runtime.Serialization;
 
 namespace System.Security
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SecurityException : SystemException
     {
+        private const string DemandedName = "Demanded";
+        private const string GrantedSetName = "GrantedSet";
+        private const string RefusedSetName = "RefusedSet";
+        private const string DeniedName = "Denied";
+        private const string PermitOnlyName = "PermitOnly";
+        private const string UrlName = "Url";
+
         public SecurityException()
             : base(SR.Arg_SecurityException)
         {
@@ -45,12 +54,26 @@ namespace System.Security
         protected SecurityException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            Demanded = (string)info.GetValueNoThrow(DemandedName, typeof(string));
+            GrantedSet = (string)info.GetValueNoThrow(GrantedSetName, typeof(string));
+            RefusedSet = (string)info.GetValueNoThrow(RefusedSetName, typeof(string));
+            DenySetInstance = (string)info.GetValueNoThrow(DeniedName, typeof(string));
+            PermitOnlySetInstance = (string)info.GetValueNoThrow(PermitOnlyName, typeof(string));
+            Url = (string)info.GetValueNoThrow(UrlName, typeof(string));
         }
 
         public override string ToString() => base.ToString();
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) => base.GetObjectData(info, context);
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context); 
+            info.AddValue(DemandedName, Demanded, typeof(string));
+            info.AddValue(GrantedSetName, GrantedSet, typeof(string));
+            info.AddValue(RefusedSetName, RefusedSet, typeof(string));
+            info.AddValue(DeniedName, DenySetInstance, typeof(string));
+            info.AddValue(PermitOnlyName, PermitOnlySetInstance, typeof(string));
+            info.AddValue(UrlName, Url, typeof(string));
+        }
 
         public object Demanded { get; set; }
         public object DenySetInstance { get; set; }
