@@ -210,6 +210,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _framework = framework;
 
             var buildArgs = new List<string>();
+            buildArgs.Add("--no-restore");
+
             if (runtime != null)
             {
                 buildArgs.Add("--runtime");
@@ -288,6 +290,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             storeArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
 
+            // Ensure the project's OutputType isn't 'Exe', since that causes issues with 'dotnet store'
+            storeArgs.Add("/p:OutputType=Library");
+
             dotnet.Store(storeArgs.ToArray())
                 .WorkingDirectory(_testProject.ProjectDirectory)
                 .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
@@ -314,6 +319,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _framework = framework;
 
             var publishArgs = new List<string>();
+            publishArgs.Add("--no-restore");
+
             if (runtime != null)
             {
                 publishArgs.Add("--runtime");
