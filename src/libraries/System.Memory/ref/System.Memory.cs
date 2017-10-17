@@ -128,7 +128,6 @@ namespace System
         public static ReadOnlyMemory<T> Empty { get { throw null; } }
         public ReadOnlyMemory(T[] array) { throw null;}
         public ReadOnlyMemory(T[] array, int start, int length) { throw null;}
-        internal ReadOnlyMemory(Buffers.OwnedMemory<T> owner, int index, int length) { throw null;}
         public bool IsEmpty { get { throw null; } }
         public int Length { get { throw null; } }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -152,7 +151,6 @@ namespace System
         public static Memory<T> Empty { get { throw null; } }
         public Memory(T[] array) { throw null;}
         public Memory(T[] array, int start, int length) { throw null;}
-        internal Memory(Buffers.OwnedMemory<T> owner, int index, int length) { throw null;}
         public bool IsEmpty { get { throw null; } }
         public int Length { get { throw null; } }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -178,7 +176,6 @@ namespace System.Buffers
     {
         public MemoryHandle(IRetainable owner, void* pinnedPointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
         public void* PinnedPointer { get { throw null; } }
-        internal void AddOffset(int offset) { throw null; }
         public void Dispose() { throw null; }
     }
 
