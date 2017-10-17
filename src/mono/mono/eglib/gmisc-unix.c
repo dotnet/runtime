@@ -127,7 +127,7 @@ get_pw_data (void)
 {
 #ifdef HAVE_GETPWUID_R
 	struct passwd pw;
-	struct passwd *result;
+	struct passwd *result = NULL;
 	char buf [4096];
 #endif
 
@@ -145,7 +145,7 @@ get_pw_data (void)
 
 #ifdef HAVE_GETPWUID_R
 	if (home_dir == NULL || user_name == NULL) {
-		if (getpwuid_r (getuid (), &pw, buf, 4096, &result) == 0) {
+		if (getpwuid_r (getuid (), &pw, buf, 4096, &result) == 0 && result) {
 			if (home_dir == NULL)
 				home_dir = g_strdup (pw.pw_dir);
 			if (user_name == NULL)
