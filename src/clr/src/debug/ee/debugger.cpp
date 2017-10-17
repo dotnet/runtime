@@ -4973,6 +4973,15 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
                 continue;
             }
 
+            // If the patch only applies in certain generic instances, don't bind it
+            // elsewhere.
+            if(dcp->pMethodDescFilter != NULL && dcp->pMethodDescFilter != djiNew->m_fd)
+            {
+                LOG((LF_CORDB, LL_INFO10000, "Patch not in this generic instance\n"));
+                continue;
+            }
+
+
             // Do not copy over slave breakpoint patches.  Instead place a new slave
             // based off the master.
             if (dcp->IsILSlavePatch())
@@ -9706,7 +9715,7 @@ void Debugger::LoadModuleFinished(Module * pRuntimeModule, AppDomain * pAppDomai
             // Found a relevant IL master patch. Now bind all corresponding slave patches
             // that belong to this Module
             DebuggerMethodInfo::DJIIterator it;
-            dmi->IterateAllDJIs(pAppDomain, pRuntimeModule, &it);
+            dmi->IterateAllDJIs(pAppDomain, pRuntimeModule, pMasterPatchCur->pMethodDescFilter, &it);
             for (; !it.IsAtEnd(); it.Next())
             {
                 DebuggerJitInfo *dji = it.Current();

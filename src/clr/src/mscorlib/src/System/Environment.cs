@@ -115,21 +115,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message, Exception exception);
 
-        // Returns the system directory (ie, C:\WinNT\System32).
-        internal static String SystemDirectory
-        {
-            get
-            {
-                StringBuilder sb = new StringBuilder(Path.MaxPath);
-                int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
-                Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
-                if (r == 0) throw Win32Marshal.GetExceptionForLastWin32Error();
-                String path = sb.ToString();
-
-                return path;
-            }
-        }
-
         public static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)

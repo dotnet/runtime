@@ -26,6 +26,22 @@
 // The set of stub managers is extensible, but should be kept to a reasonable number
 // as they are currently linearly searched & queried for each stub.
 //
+//
+// IMPORTANT IMPLEMENTATION NOTE: Due to code versioning, tracing through a jitted code 
+// call is a speculative exercise. A trace could predict that calling method Foo would run 
+// jitted code at address 0x1234, however afterwards code versioning redirects Foo to call
+// an alternate jitted code body at address 0x5678. To handle this stub managers should
+// either: 
+//  a) stop tracing at offset zero of the newly called jitted code. The debugger knows
+//     to treat offset 0 in jitted code as potentially being any jitted code instance
+//  b) trace all the way through the jitted method such that regardless of which jitted
+//     code instance gets called the trace will still end at the predicted location.
+//
+//  If we wanted to be more rigorous about this we should probably have different trace
+//  results for intra-jitted and inter-jitted trace results but given the relative
+//  stability of this part of the code I haven't attacked that problem right now. It does
+//  work as-is.
+//
 
 
 #ifndef __stubmgr_h__
