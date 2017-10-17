@@ -985,7 +985,7 @@ void MethodContext::recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname
     else
         value.A = (DWORD)-1;
 
-    if (moduleName != nullptr)
+    if ((moduleName != nullptr) && (*moduleName != nullptr))
         value.B = GetMethodName->AddBuffer((unsigned char*)*moduleName, (DWORD)strlen(*moduleName) + 1);
     else
         value.B = (DWORD)-1;
@@ -1046,13 +1046,14 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
     else
         value.A = (DWORD)-1;
 
-    if (className != nullptr)
+    if ((className != nullptr) && (*className != nullptr))
         value.B = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*className, (DWORD)strlen(*className) + 1);
     else
         value.B = (DWORD)-1;
 
-    if (namespaceName != nullptr)
-        value.C = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
+    if ((namespaceName != nullptr) && (*namespaceName != nullptr))
+        value.C =
+            GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
     else
         value.C = (DWORD)-1;
 
@@ -4197,7 +4198,7 @@ void MethodContext::recGetFieldName(CORINFO_FIELD_HANDLE ftn, const char** modul
     else
         value.A = (DWORD)-1;
 
-    if (moduleName != nullptr) // protect strlen
+    if ((moduleName != nullptr) && (*moduleName != nullptr)) // protect strlen
         value.B = (DWORD)GetFieldName->AddBuffer((unsigned char*)*moduleName, (DWORD)strlen(*moduleName) + 1);
     else
         value.B = (DWORD)-1;
