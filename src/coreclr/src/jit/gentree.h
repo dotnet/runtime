@@ -1122,9 +1122,12 @@ public:
             return false;
         }
 
-        if (gtOper == GT_NOP || gtOper == GT_CALL)
+        if (gtType == TYP_VOID)
         {
-            return gtType != TYP_VOID;
+            // These are the only operators which can produce either VOID or non-VOID results.
+            assert(OperIs(GT_NOP, GT_CALL, GT_LOCKADD, GT_FIELD_LIST, GT_COMMA) || OperIsCompare() || OperIsLong() ||
+                   OperIsSIMD());
+            return false;
         }
 
         if (gtOper == GT_FIELD_LIST)
@@ -1177,13 +1180,13 @@ public:
     inline void ClearUnusedValue();
     inline bool IsUnusedValue() const;
 
-    bool OperIs(genTreeOps oper)
+    bool OperIs(genTreeOps oper) const
     {
         return OperGet() == oper;
     }
 
     template <typename... T>
-    bool OperIs(genTreeOps oper, T... rest)
+    bool OperIs(genTreeOps oper, T... rest) const
     {
         return OperIs(oper) || OperIs(rest...);
     }
@@ -1588,7 +1591,7 @@ public:
         return OperIsAtomicOp(gtOper);
     }
 
-    // This is basically here for cleaner FEATURE_SIMD #ifdefs.
+    // This is here for cleaner FEATURE_SIMD #ifdefs.
     static bool OperIsSIMD(genTreeOps gtOper)
     {
 #ifdef FEATURE_SIMD
@@ -1598,9 +1601,24 @@ public:
 #endif // !FEATURE_SIMD
     }
 
-    bool OperIsSIMD()
+    bool OperIsSIMD() const
     {
         return OperIsSIMD(gtOper);
+    }
+
+    // This is here for cleaner GT_LONG #ifdefs.
+    static bool OperIsLong(genTreeOps gtOper)
+    {
+#if defined(_TARGET_64BIT_) || defined(LEGACY_BACKEND)
+        return false;
+#else
+        return gtOper == GT_LONG;
+#endif
+    }
+
+    bool OperIsLong() const
+    {
+        return OperIsLong(gtOper);
     }
 
     bool OperIsFieldListHead()
@@ -3145,6 +3163,7 @@ struct GenTreeFieldList : public GenTreeArgList
         assert(!arg->OperIsAnyList());
         gtFieldOffset = fieldOffset;
         gtFieldType   = fieldType;
+        gtType        = fieldType;
         if (prevList == nullptr)
         {
             gtFlags |= GTF_FIELD_LIST_HEAD;
@@ -3958,7 +3977,7 @@ struct GenTreeMultiRegOp : public GenTreeOp
 {
     regNumber gtOtherReg;
 
-    // GTF_SPILL or GTF_SPILLED flag on a multi-reg call node indicates that one or
+    // GTF_SPILL or GTF_SPILLED flag on a multi-reg node indicates that one or
     // more of its result regs are in that state.  The spill flag of each of the
     // return register is stored here. We only need 2 bits per returned register,
     // so this is treated as a 2-bit array. No architecture needs more than 8 bits.
@@ -5231,6 +5250,13 @@ struct GenTreePutArgStk : public GenTreeUnOp
         return gtNumSlots * TARGET_POINTER_SIZE;
     }
 
+    // Return true if this is a PutArgStk of a SIMD12 struct.
+    // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
+    unsigned isSIMD12()
+    {
+        return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
+    }
+
     //------------------------------------------------------------------------
     // setGcPointers: Sets the number of references and the layout of the struct object returned by the VM.
     //
@@ -5272,7 +5298,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
     unsigned gtNumberReferenceSlots; // Number of reference slots.
     BYTE*    gtGcPtrs;               // gcPointers
 
-#endif // FEATURE_PUT_STRUCT_ARG_STK
+#elif !defined(LEGACY_BACKEND)
+    unsigned getArgSize();
+#endif // !LEGACY_BACKEND
 
 #if defined(DEBUG) || defined(UNIX_X86_ABI)
     GenTreeCall* gtCall; // the call node to which this argument belongs
