@@ -280,7 +280,7 @@ namespace System.Diagnostics
                 {
                     Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "CreateEventSource: SourceExists returned true");
                     if (".".Equals(machineName))
-                        throw new ArgumentException(SR.Format(SR.LocalSourceAlreadyExists, source));
+                        throw new ArgumentException(SR.Format(SR.LocalSourceAlreadyExists, source, machineName));
                     else
                         throw new ArgumentException(SR.Format(SR.SourceAlreadyExists, source, machineName));
                 }
