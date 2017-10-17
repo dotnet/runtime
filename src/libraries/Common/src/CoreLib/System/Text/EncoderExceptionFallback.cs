@@ -96,6 +96,8 @@ namespace System.Text
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class EncoderFallbackException : ArgumentException
     {
         private char _charUnknown;
@@ -145,6 +147,11 @@ namespace System.Text
             _charUnknownHigh = charUnknownHigh;
             _charUnknownLow = charUnknownLow;
             _index = index;
+        }
+
+        private EncoderFallbackException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        {
         }
 
         public char CharUnknown

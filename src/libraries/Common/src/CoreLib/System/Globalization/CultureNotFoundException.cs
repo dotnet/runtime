@@ -6,6 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class CultureNotFoundException : ArgumentException
     {
         private string _invalidCultureName; // unrecognized culture name
@@ -58,12 +60,15 @@ namespace System.Globalization
         protected CultureNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            _invalidCultureId = (int?)info.GetValue("InvalidCultureId", typeof(int?));
+            _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("InvalidCultureId", _invalidCultureId, typeof(int?));
+            info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));
         }
 
         public virtual Nullable<int> InvalidCultureId

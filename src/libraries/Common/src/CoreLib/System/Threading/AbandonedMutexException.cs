@@ -14,6 +14,8 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class AbandonedMutexException : SystemException
     {
         private int _mutexIndex = -1;
@@ -61,7 +63,6 @@ namespace System.Threading
         protected AbandonedMutexException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
 
         private void SetupException(int location, WaitHandle handle)
