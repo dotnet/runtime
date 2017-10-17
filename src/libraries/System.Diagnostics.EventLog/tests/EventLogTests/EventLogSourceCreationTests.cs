@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tests
             {
                 EventLog.CreateEventSource(source, log);
                 Assert.True(EventLog.SourceExists(source));
-                Assert.Throws<FormatException>(() => EventLog.CreateEventSource(source, log));
+                Assert.Throws<ArgumentException>(() => EventLog.CreateEventSource(source, log));
             }
             finally
             {
