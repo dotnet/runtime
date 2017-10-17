@@ -4230,6 +4230,12 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context)
 	MonoDomain *domain = imethod->domain;
 
 	error_init (&error);
+
+	if (mono_class_is_open_constructed_type (&method->klass->byval_arg)) {
+		mono_error_set_invalid_operation (&error, "Could not execute the method because the containing type is not fully instantiated.");
+		return mono_error_convert_to_exception (&error);
+	}
+
 	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 	method_class_vt = mono_class_vtable_full (domain, imethod->method->klass, &error);
 	if (!is_ok (&error))

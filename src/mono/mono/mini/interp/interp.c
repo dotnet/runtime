@@ -2290,6 +2290,7 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 
 		do_transform_method (frame, context);
 		if (frame->ex) {
+			context->search_for_handler = 1;
 			rtm = NULL;
 			ip = NULL;
 			goto exit_frame;
