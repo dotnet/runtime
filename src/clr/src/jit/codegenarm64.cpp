@@ -2719,10 +2719,11 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     BasicBlock* labelRetry = genCreateTempLabel();
     genDefineTempLabel(labelRetry);
 
+    emitAttr dataSize = emitActualTypeSize(data);
     // The following instruction includes a acquire half barrier
     // TODO-ARM64-CQ Evaluate whether this is necessary
     // https://github.com/dotnet/coreclr/issues/14346
-    getEmitter()->emitIns_R_R(INS_ldaxr, emitTypeSize(treeNode), loadReg, addrReg);
+    getEmitter()->emitIns_R_R(INS_ldaxr, dataSize, loadReg, addrReg);
 
     switch (treeNode->OperGet())
     {
@@ -2732,12 +2733,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
             {
                 // Even though INS_add is specified here, the encoder will choose either
                 // an INS_add or an INS_sub and encode the immediate as a positive value
-                genInstrWithConstant(INS_add, emitActualTypeSize(treeNode), storeDataReg, loadReg,
-                                     data->AsIntConCommon()->IconValue(), REG_NA);
+                genInstrWithConstant(INS_add, dataSize, storeDataReg, loadReg, data->AsIntConCommon()->IconValue(),
+                                     REG_NA);
             }
             else
             {
-                getEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(treeNode), storeDataReg, loadReg, dataReg);
+                getEmitter()->emitIns_R_R_R(INS_add, dataSize, storeDataReg, loadReg, dataReg);
             }
             break;
         case GT_XCHG:
@@ -2751,7 +2752,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     // The following instruction includes a release half barrier
     // TODO-ARM64-CQ Evaluate whether this is necessary
     // https://github.com/dotnet/coreclr/issues/14346
-    getEmitter()->emitIns_R_R_R(INS_stlxr, emitTypeSize(treeNode), exResultReg, storeDataReg, addrReg);
+    getEmitter()->emitIns_R_R_R(INS_stlxr, dataSize, exResultReg, storeDataReg, addrReg);
 
     getEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
