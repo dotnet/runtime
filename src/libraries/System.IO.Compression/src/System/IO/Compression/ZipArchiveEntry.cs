@@ -49,13 +49,6 @@ namespace System.IO.Compression
         private CompressionLevel? _compressionLevel;
 
         // Initializes, attaches it to archive
-        internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd, CompressionLevel compressionLevel)
-            : this(archive, cd)
-        {
-            _compressionLevel = compressionLevel;
-        }
-
-        // Initializes, attaches it to archive
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
         {
             _archive = archive;
@@ -1239,7 +1232,5 @@ namespace System.IO.Compression
         private enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileName = 0x800 }
 
         internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
-
-        private enum OpenableValues { Openable, FileNonExistent, FileTooLarge }
     }
 }

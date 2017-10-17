@@ -91,17 +91,6 @@ namespace System.IO.Compression
 
         private IFileFormatReader _formatReader; // class to decode header and footer (e.g. gzip)
 
-        public InflaterManaged(bool deflate64)
-        {
-            _output = new OutputWindow();
-            _input = new InputBuffer();
-
-            _codeList = new byte[HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements];
-            _codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
-            _deflate64 = deflate64;
-            Reset();
-        }
-
         internal InflaterManaged(IFileFormatReader reader, bool deflate64)
         {
             _output = new OutputWindow();
@@ -118,13 +107,6 @@ namespace System.IO.Compression
             Reset();
         }
 
-        public void SetFileFormatReader(IFileFormatReader reader)
-        {
-            _formatReader = reader;
-            _hasFormatReader = true;
-            Reset();
-        }
-
         private void Reset()
         {
             _state = _hasFormatReader ?
@@ -138,8 +120,6 @@ namespace System.IO.Compression
         public bool Finished() => _state == InflaterState.Done || _state == InflaterState.VerifyingFooter;
 
         public int AvailableOutput => _output.AvailableBytes;
-
-        public bool NeedsInput() => _input.NeedsInput();
 
         public int Inflate(byte[] bytes, int offset, int length)
         {

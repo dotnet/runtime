@@ -26,22 +26,6 @@ namespace System.IO.Compression
         private bool _wroteHeader;
         private bool _wroteBytes;
 
-        public DeflateManagedStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
-        {
-        }
-
-        // Since a reader is being taken, CompressionMode.Decompress is implied
-        internal DeflateManagedStream(Stream stream, bool leaveOpen, IFileFormatReader reader)
-        {
-            Debug.Assert(reader != null, "The IFileFormatReader passed to the internal DeflateStream constructor must be non-null");
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (!stream.CanRead)
-                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
-
-            InitializeInflater(stream, leaveOpen, reader);
-        }
-
         // A specific constructor to allow decompression of Deflate64
         internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method)
         {
@@ -52,41 +36,6 @@ namespace System.IO.Compression
 
             InitializeInflater(stream, false, null, method);
         }
-
-        public DeflateManagedStream(Stream stream, CompressionMode mode, bool leaveOpen)
-        {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            switch (mode)
-            {
-                case CompressionMode.Decompress:
-                    InitializeInflater(stream, leaveOpen);
-                    break;
-
-                case CompressionMode.Compress:
-                    InitializeDeflater(stream, leaveOpen, CompressionLevel.Optimal);
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
-            }
-        }
-
-        // Implies mode = Compress
-        public DeflateManagedStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
-        {
-        }
-
-        // Implies mode = Compress
-        public DeflateManagedStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
-        {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            InitializeDeflater(stream, leaveOpen, compressionLevel);
-        }
-
 
         /// <summary>
         /// Sets up this DeflateManagedStream to be used for Inflation/Decompression
@@ -106,23 +55,6 @@ namespace System.IO.Compression
             _buffer = new byte[DefaultBufferSize];
         }
 
-        /// <summary>
-        /// Sets up this DeflateManagedStream to be used for Deflation/Compression
-        /// </summary>
-        internal void InitializeDeflater(Stream stream, bool leaveOpen, CompressionLevel compressionLevel)
-        {
-            Debug.Assert(stream != null);
-            if (!stream.CanWrite)
-                throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
-
-            _deflater = new DeflaterManaged();
-
-            _stream = stream;
-            _mode = CompressionMode.Compress;
-            _leaveOpen = leaveOpen;
-            _buffer = new byte[DefaultBufferSize];
-        }
-
         internal void SetFileFormatWriter(IFileFormatWriter writer)
         {
             if (writer != null)
@@ -130,8 +62,6 @@ namespace System.IO.Compression
                 _formatWriter = writer;
             }
         }
-
-        public Stream BaseStream => _stream;
 
         public override bool CanRead
         {
