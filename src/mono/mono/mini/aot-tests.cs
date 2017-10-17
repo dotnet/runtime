@@ -261,7 +261,6 @@ class Tests
 
 	[Category ("DYNCALL")]
 	[Category ("!FULLAOT-AMD64")]
-	[Category ("!INTERPRETER")] //known bug in the interpreter
 	public static int test_0_dyncall_nullable () {
 		int? v;
 
@@ -412,7 +411,6 @@ class Tests
 
 	[Category ("DYNCALL")]
 	[Category ("!FULLAOT-AMD64")]
-	[Category ("!INTERPRETER")] //known bug in the interpreter
 	public static int test_0_large_nullable_invoke () {
 		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
 
