@@ -38,6 +38,6 @@ namespace System.Drawing.Internal
             IntPtr hRgn = System.Internal.HandleCollector.Add(IntCreateRectRgn(x1, y1, x2, y2), CommonHandles.GDI);
             DbgUtil.AssertWin32(hRgn != IntPtr.Zero, "IntCreateRectRgn([x1={0}, y1={1}, x2={2}, y2={3}]) failed.", x1, y1, x2, y2);
             return hRgn;
-        }
+        }        
     }
 }
