@@ -4962,9 +4962,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
     if (timerInfo->Context != NULL)
     {
         GCX_COOP();
-        DelegateInfo *pDelInfo = (DelegateInfo *)timerInfo->Context;
-        pDelInfo->Release();
-        RecycleMemory( pDelInfo, MEMTYPE_DelegateInfo );
+        delete (ThreadpoolMgr::TimerInfoContext*)timerInfo->Context;
     }
 
     if (timerInfo->ExternalEventSafeHandle != NULL)
@@ -4978,7 +4976,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
 
 // We add TimerInfos from deleted timers into a linked list.
 // A worker thread will later release the handles held by the TimerInfo
-// and recycle them if possible (See DelegateInfo::MakeDelegateInfo)
+// and recycle them if possible.
 void ThreadpoolMgr::QueueTimerInfoForRelease(TimerInfo *pTimerInfo)
 {
     CONTRACTL
@@ -5048,10 +5046,7 @@ void ThreadpoolMgr::FlushQueueOfTimerInfos()
         GCX_COOP();
         if (pCurrTimerInfo->Context != NULL)
         {
-            DelegateInfo *pCurrDelInfo = (DelegateInfo *) pCurrTimerInfo->Context;
-            pCurrDelInfo->Release();
-
-            RecycleMemory( pCurrDelInfo, MEMTYPE_DelegateInfo );
+            delete (ThreadpoolMgr::TimerInfoContext*)pCurrTimerInfo->Context;
         }
 
         if (pCurrTimerInfo->ExternalEventSafeHandle != NULL)
