@@ -58,7 +58,18 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     }
 
     // Set the default dstCount. This may be modified below.
-    info->dstCount = tree->IsValue() ? 1 : 0;
+    if (tree->IsValue())
+    {
+        info->dstCount = 1;
+        if (tree->IsUnusedValue())
+        {
+            info->isLocalDefUse = true;
+        }
+    }
+    else
+    {
+        info->dstCount = 0;
+    }
 
     switch (tree->OperGet())
     {
@@ -697,6 +708,8 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || tree->IsMultiRegCall());
+    assert(info->isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
+    assert(!tree->IsUnusedValue() || (info->dstCount != 0));
 }
 
 //------------------------------------------------------------------------
