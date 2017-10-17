@@ -427,11 +427,6 @@
     <MSBuildPassThroughPropertyList Condition="'$(OutputRid)' != ''">$(MSBuildPassThroughPropertyList) /p:OutputRid=$(OutputRid)</MSBuildPassThroughPropertyList>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- source-build currently uses a newer CLI version that requires `no-restore` to be passed into build/publish -->
-    <NoRestoreArg Condition="'$(DotNetBuildFromSource)' == 'true'">--no-restore</NoRestoreArg>
-  </PropertyGroup>
-
   <!-- Use Roslyn Compilers to build, if we are not using the .NET SDK to build --> 
   <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 
   <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" /> 

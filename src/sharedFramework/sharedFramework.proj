@@ -43,7 +43,7 @@
           WorkingDirectory="$(SharedFrameworkSourceRoot)" />
 
     <!-- We publish to a sub folder of the PublishRoot so tools like heat and zip can generate folder structures easier. -->
-    <Exec Command="$(DotnetToolCommand) publish $(NoRestoreArg) --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
+    <Exec Command="$(DotnetToolCommand) publish --no-restore --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
           WorkingDirectory="$(SharedFrameworkSourceRoot)" />
 
     <!-- Clean deps.json -->
@@ -154,7 +154,7 @@
     <Exec Command="$(DotnetRestoreCommandNoPackages) --source $(PackagesOutDir) --packages $(SharedFrameworkIntermediatePackagesDir) $(CommonLockedHostArgs)"
           WorkingDirectory="$(LockedHostSourceRoot)" />
 
-    <Exec Command="$(DotnetToolCommand) publish $(NoRestoreArg) --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
+    <Exec Command="$(DotnetToolCommand) publish --no-restore --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
           WorkingDirectory="$(LockedHostSourceRoot)" />
   </Target>
 

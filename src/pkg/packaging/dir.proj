@@ -177,7 +177,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <PackArgs>$(NoRestoreArg) --no-build --output $(PackagesOutDir)</PackArgs>
+      <PackArgs>--no-restore --no-build --output $(PackagesOutDir)</PackArgs>
       <PackArgs>$(PackArgs) $(MSBuildPassThroughPropertyList) /p:BaseOutputPath=$(IntermediateOutputForPackaging)</PackArgs>
     </PropertyGroup>
 
