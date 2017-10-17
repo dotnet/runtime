@@ -2503,7 +2503,7 @@ sgen_ensure_free_space (size_t size, int generation)
 /*
  * LOCKING: Assumes the GC lock is held.
  */
-void
+static void
 sgen_perform_collection_inner (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw)
 {
 	TV_DECLARE (gc_total_start);
