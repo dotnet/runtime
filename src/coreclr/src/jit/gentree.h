@@ -2039,7 +2039,7 @@ public:
 
     inline bool IsIntegralConst() const;
 
-    inline bool IsIntCnsFitsInI32();
+    inline bool IsIntCnsFitsInI32(); // Constant fits in INT32
 
     inline bool IsCnsFltOrDbl() const;
 
@@ -2530,15 +2530,25 @@ struct GenTreeIntConCommon : public GenTree
     {
     }
 
-    bool FitsInI32()
+    bool FitsInI8() // IconValue() fits into 8-bit signed storage
+    {
+        return FitsInI8(IconValue());
+    }
+
+    static bool FitsInI8(ssize_t val) // Constant fits into 8-bit signed storage
+    {
+        return (int8_t)val == val;
+    }
+
+    bool FitsInI32() // IconValue() fits into 32-bit signed storage
     {
         return FitsInI32(IconValue());
     }
 
-    static bool FitsInI32(ssize_t val)
+    static bool FitsInI32(ssize_t val) // Constant fits into 32-bit signed storage
     {
 #ifdef _TARGET_64BIT_
-        return (int)val == val;
+        return (int32_t)val == val;
 #else
         return true;
 #endif
@@ -6147,10 +6157,11 @@ inline bool GenTree::IsIntegralConst() const
 #endif // !_TARGET_64BIT_
 }
 
+// Is this node an integer constant that fits in a 32-bit signed integer (INT32)
 inline bool GenTree::IsIntCnsFitsInI32()
 {
 #ifdef _TARGET_64BIT_
-    return IsCnsIntOrI() && ((int)gtIntConCommon.IconValue() == gtIntConCommon.IconValue());
+    return IsCnsIntOrI() && AsIntCon()->FitsInI32();
 #else  // !_TARGET_64BIT_
     return IsCnsIntOrI();
 #endif // !_TARGET_64BIT_
