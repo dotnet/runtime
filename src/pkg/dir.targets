@@ -2,6 +2,6 @@
 <Project ToolsVersion="12.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="..\dir.targets" />
     <PropertyGroup>
-        <RuntimeIdGraphDefinitionFile>$(PackagesDir)$(PlatformPackageId.ToLowerInvariant())\$(PlatformPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
+        <RuntimeIdGraphDefinitionFile>$(PackagesDir)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
     </PropertyGroup>
 </Project>
