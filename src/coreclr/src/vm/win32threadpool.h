@@ -220,6 +220,11 @@ public:
         MEMTYPE_COUNT           = 3,
     };
 
+    typedef struct {
+        ADID AppDomainId;
+        INT32 TimerId;
+    } TimerInfoContext;
+
     static BOOL Initialize();
 
     static BOOL SetMaxThreadsHelper(DWORD MaxWorkerThreads,
