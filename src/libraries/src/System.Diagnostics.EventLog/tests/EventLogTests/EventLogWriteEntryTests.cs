@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.ComponentModel;
-using Xunit;
 
 namespace System.Diagnostics.Tests
 {
@@ -353,7 +351,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteWithoutExistingSource()
         {
-            string source = "Source_" + nameof(WriteEvent);
+            string source = "Source_" + nameof(WriteWithoutExistingSource);
             try
             {
                 EventLog.WriteEvent(source, eventInstance, rawData, null);
