@@ -11,13 +11,13 @@
   <PropertyGroup>
     <CoreFxCurrentRef>79de33577b575e7be9cb8d3b037a8411db069d9e</CoreFxCurrentRef>
     <CoreClrCurrentRef>dd697f4a9ac9f36d1841ac475ccb6ef46d11466e</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>ae4d0587203066d577bd5ed3e6c19fbda7b255e1</CoreSetupCurrentRef>
+    <CoreSetupCurrentRef>b5bbe76da89f3282b14eed27c47c9ac4267d59d3</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>20f0758de84e9de4a31912d79333a34b16017a21</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>20f0758de84e9de4a31912d79333a34b16017a21</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>3dfbdd3cd37bba41060021873c48c2fac6405737</StandardCurrentRef>
-    <BuildToolsCurrentRef>e744a70072f5c78e11a2f8ecdca736bb15c95935</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>b5bbe76da89f3282b14eed27c47c9ac4267d59d3</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -31,7 +31,7 @@
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25813-00</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.1.0-preview1-25812-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
-    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25811-02</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25816-02</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0</SniPackageVersion>
   </PropertyGroup>
