@@ -3059,13 +3059,13 @@ protected:
     GenTreePtr impTreeList; // Trees for the BB being imported
     GenTreePtr impTreeLast; // The last tree for the current BB
 
+public:
     enum
     {
         CHECK_SPILL_ALL  = -1,
         CHECK_SPILL_NONE = -2
     };
 
-public:
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, GenTreePtr firstStmt, GenTreePtr lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -5799,11 +5799,7 @@ public:
         optMethodFlags &= ~OMF_HAS_FATPOINTER;
     }
 
-    void addFatPointerCandidate(GenTreeCall* call)
-    {
-        setMethodHasFatPointer();
-        call->SetFatPointerCandidate();
-    }
+    void addFatPointerCandidate(GenTreeCall* call);
 
     unsigned optMethodFlags;
 
@@ -5824,7 +5820,7 @@ public:
     GenTreePtr getObjectHandleNodeFromAllocation(GenTreePtr tree);
     GenTreePtr optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTreePtr optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
-    bool optEarlyPropRewriteTree(GenTreePtr tree);
+    GenTreePtr optEarlyPropRewriteTree(GenTreePtr tree);
     bool optDoEarlyPropForBlock(BasicBlock* block);
     bool optDoEarlyPropForFunc();
     void optEarlyProp();

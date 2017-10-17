@@ -474,8 +474,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             BlockRange().InsertAfter(fieldList, head);
             BlockRange().Remove(fieldList);
 
-            fieldList        = head;
-            putArgStk->gtOp1 = fieldList;
+            fieldList         = head;
+            putArgStk->gtOp1  = fieldList;
+            putArgStk->gtType = fieldList->gtType;
         }
 
         // Now that the fields have been sorted, the kind of code we will generate.
@@ -557,7 +558,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     GenTreePtr src = putArgStk->gtOp1;
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    if (putArgStk->TypeGet() != TYP_STRUCT)
+    if (src->TypeGet() != TYP_STRUCT)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
     {
         // If the child of GT_PUTARG_STK is a constant, we don't need a register to
@@ -858,8 +859,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         }
 
         simdNode->gtFlags |= GTF_SET_FLAGS;
-        simdNode->SetUnusedValue();
-        simdNode->gtLsraInfo.isNoRegCompare = true;
+        simdNode->gtType = TYP_VOID;
     }
 #endif
     ContainCheckSIMD(simdNode);
