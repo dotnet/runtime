@@ -3600,16 +3600,121 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
 
     // It's available only via the run-time helper function,
-    // since optimization cases are not yet implemented.
-    assert(pLookup->indirections == CORINFO_USEHELPER);
 
-    BEGIN_DYNAMIC_HELPER_EMIT(18);
+    if (pLookup->indirections == CORINFO_USEHELPER)
+    {
+        BEGIN_DYNAMIC_HELPER_EMIT(18);
 
-    EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+        EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
 
-    END_DYNAMIC_HELPER_EMIT();
+        END_DYNAMIC_HELPER_EMIT();
+    }
+    else
+    {
+        int indirectionsSize = 0;
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
+            {
+                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 2);
+                indirectionsSize += 4;
+            }
+            else
+            {
+                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
+            }
+        }
 
-    // @TODO : Additional implementation is required for optimization cases.
+        int codeSize = indirectionsSize + (pLookup->testForNull ? 26 : 2);
+
+        BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
+
+        if (pLookup->testForNull)
+        {
+            // mov r3, r0
+            *(WORD *)p = 0x4603;
+            p += 2;
+        }
+
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
+            {
+                if (pLookup->offsets[i] >= 0xFF)
+                {
+                    // mov r2, offset
+                    MovRegImm(p, 2, pLookup->offsets[i]);
+                    p += 8;
+
+                    // add r0, r2
+                    *(WORD *)p = 0x4410;
+                    p += 2;
+                }
+                else
+                {
+                    // add r0, <offset>
+                   *(WORD *)p = (WORD)((WORD)0x3000 | (WORD)((0x00FF) & pLookup->offsets[i]));
+                   p += 2;
+                }
+
+                // r0 is pointer + offset[0]
+                // ldr r2, [r0]
+                *(WORD *)p = 0x6802;
+                p += 2;
+
+                // r2 is offset1
+                // add r0, r2
+                *(WORD *)p = 0x4410;
+                p += 2;
+            }
+            else
+            {
+                if (pLookup->offsets[i] >= 0xFFF)
+                {
+                    // mov r2, offset
+                    MovRegImm(p, 2, pLookup->offsets[i]);
+                    p += 8;
+
+                    // ldr r0, [r0, r2]
+                    *(WORD *)p = 0x5880;
+                    p += 2;
+                }
+                else
+                {
+                    // ldr r0, [r0 + offset]
+                    *(WORD *)p = 0xF8D0;
+                    p += 2;
+                    *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
+                    p += 2;
+                }
+            }
+        }
+
+        // No null test required
+        if (!pLookup->testForNull)
+        {
+            // mov pc, lr
+            *(WORD *)p = 0x46F7;
+            p += 2;
+        }
+        else
+        {
+            // cbz r0, nullvaluelabel
+            *(WORD *)p = 0xB100;
+            p += 2;
+            // mov pc, lr
+            *(WORD *)p = 0x46F7;
+            p += 2;
+            // nullvaluelabel:
+            // mov r0, r3
+            *(WORD *)p = 0x4618;
+            p += 2;
+
+            EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+        }
+
+        END_DYNAMIC_HELPER_EMIT();
+    }
 }
 #endif // FEATURE_READYTORUN
 
