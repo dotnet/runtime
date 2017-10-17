@@ -378,8 +378,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new PointF[3], new byte[3], 0, int.MaxValue };
             yield return new object[] { new PointF[3], new byte[3], 2, 0 };
         }
-
-        [ActiveIssue(22026)]
+        
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(CopyData_StartEndIndexesOutOfRange_TestData))]
         public void CopyData_StartEndIndexesOutOfRange_ReturnsExpeced(PointF[] points, byte[] types, int startIndex, int endIndex)
