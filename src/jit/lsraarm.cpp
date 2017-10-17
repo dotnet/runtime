@@ -214,7 +214,18 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     }
 
     // Set the default dstCount. This may be modified below.
-    info->dstCount = tree->IsValue() ? 1 : 0;
+    if (tree->IsValue())
+    {
+        info->dstCount = 1;
+        if (tree->IsUnusedValue())
+        {
+            info->isLocalDefUse = true;
+        }
+    }
+    else
+    {
+        info->dstCount = 0;
+    }
 
     switch (tree->OperGet())
     {
@@ -442,6 +453,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_LONG:
             assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
+                                           // An unused GT_LONG doesn't produce any registers.
+            tree->gtType = TYP_VOID;
+            tree->ClearUnusedValue();
+            info->isLocalDefUse = false;
 
             // An unused GT_LONG node needs to consume its sources.
             info->srcCount = 2;
@@ -796,6 +811,8 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || tree->IsMultiRegNode());
+    assert(info->isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
+    assert(!tree->IsUnusedValue() || (info->dstCount != 0));
 }
 
 #endif // _TARGET_ARM_

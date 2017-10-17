@@ -92,15 +92,8 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
 {
     TreeNodeInfo* info = &(tree->gtLsraInfo);
 
+    assert((info->dstCount == 1) || (tree->TypeGet() == TYP_VOID));
     info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
-    if (info->isNoRegCompare)
-    {
-        info->dstCount = 0;
-    }
-    else
-    {
-        assert((info->dstCount == 1) || tree->OperIs(GT_CMP, GT_TEST_EQ, GT_TEST_NE));
-    }
 }
 
 void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
