@@ -14465,6 +14465,10 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
             LIR::Range& blockRange = LIR::AsRange(block);
             GenTree*    jmp        = blockRange.LastNode();
             assert(jmp->OperIsConditionalJump());
+            if (jmp->OperGet() == GT_JTRUE)
+            {
+                jmp->gtOp.gtOp1->gtFlags &= ~GTF_SET_FLAGS;
+            }
 
             bool               isClosed;
             unsigned           sideEffects;
