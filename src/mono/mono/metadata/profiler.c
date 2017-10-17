@@ -226,6 +226,9 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 		GPtrArray *source_file_list;
 		MonoSymSeqPoint *sym_seq_points;
 
+		if (!minfo)
+			return TRUE;
+
 		/* Return 0 counts for all locations */
 
 		mono_debug_get_seq_points (minfo, &source_file, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
