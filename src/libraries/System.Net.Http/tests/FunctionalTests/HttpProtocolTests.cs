@@ -3,208 +3,141 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Net.Sockets;
-using System.Text;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpProtocolTests
+    public class HttpProtocolTests : HttpClientTest
     {
-        public virtual Stream GetStream(Stream s)
-        {
-            return s;
-        }
+        protected virtual Stream GetStream(Stream s) => s;
 
-        private bool GetHeaders(byte[] buffer, int length)
+        [Theory]
+        [InlineData("HTTP/1.1 200 OK", 200, "OK")]
+        [InlineData("HTTP/1.1 200 Sure why not?", 200, "Sure why not?")]
+        [InlineData("HTTP/1.1 200 OK\x0080", 200, "OK?")]
+        [InlineData("HTTP/1.1 200 O K", 200, "O K")]
+        [InlineData("HTTP/1.1 201 Created", 201, "Created")]
+        [InlineData("HTTP/1.1 202 Accepted", 202, "Accepted")]
+        [InlineData("HTTP/1.1 299 This is not a real status code", 299, "This is not a real status code")]
+        [InlineData("HTTP/1.1 345 redirect to nowhere", 345, "redirect to nowhere")]
+        [InlineData("HTTP/1.1 400 Bad Request", 400, "Bad Request")]
+        [InlineData("HTTP/1.1 500 Internal Server Error", 500, "Internal Server Error")]
+        [InlineData("HTTP/1.1 555 we just don't like you", 555, "we just don't like you")]
+        [InlineData("HTTP/1.1 600 still valid", 600, "still valid")]
+        // TODO #24713: The following pass on Windows on .NET Core but fail on .NET Framework.
+        //[InlineData("HTTP/1.1 200      ", 200, "")]
+        //[InlineData("HTTP/1.1 200      Something", 200, "Something")]
+        //[InlineData("HTTP/1.1\t200 OK", 200, "OK")]
+        //[InlineData("HTTP/1.1 200\tOK", 200, "OK")]
+        //[InlineData("HTTP/1.1 200", 200, "")]
+        //[InlineData("HTTP/1.1 200\t", 200, "")]
+        //[InlineData("HTTP/1.1 200 O\tK", 200, "O\tK")]
+        //[InlineData("HTTP/1.1 200 O    \t\t  \t\t\t\t  \t K", 200, "O    \t\t  \t\t\t\t  \t K")]
+        //[InlineData("HTTP/1.1 999 this\ttoo\t", 999, "this\ttoo\t")]
+        public async Task GetAsync_ExpectedStatusCodeAndReason_Success(string statusLine, int expectedStatusCode, string expectedReason)
         {
-            int offset = 0;
-            while (true)
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                int found = Array.IndexOf(buffer, (byte)'\r', offset, length - offset);
-                if (found < 0) return false;
-
-                if (found + 3 < length)
+                using (HttpClient client = CreateHttpClient())
                 {
-                    if (buffer[found + 1] == (byte)'\n' &&
-                        buffer[found + 2] == (byte)'\r' &&
-                        buffer[found + 3] == (byte)'\n')
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        getResponseTask,
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"{statusLine}\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "\r\n",
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream }));
+                    using (HttpResponseMessage response = await getResponseTask)
                     {
-                        return true;
+                        Assert.Equal(expectedStatusCode, (int)response.StatusCode);
+                        Assert.Equal(expectedReason, response.ReasonPhrase);
                     }
                 }
-
-                offset = found + 1;
-            }
-        }
-        private Uri CreateServer(string response)
-        {
-            Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            listen.Listen(1);
-
-            listen.AcceptAsync().ContinueWith(async t =>
-            {
-                Socket accept = t.Result;
-                accept.NoDelay = true;
-                Stream s = GetStream(new NetworkStream(accept));
-
-                // Read whatever request the client sent us
-                // Note, we assume there's no content
-                byte[] buffer = new byte[4096];
-                int length = 0;
-                while (true)
-                {
-                    int bytesRead = await s.ReadAsync(buffer, length, buffer.Length - length);
-                    if (bytesRead == 0)
-                        throw new InvalidOperationException($"unexpected end of stream, buffer={Encoding.UTF8.GetString(buffer, 0, length)}");
-
-                    length += bytesRead;
-
-                    if (GetHeaders(buffer, length))
-                        break;
-                }
-
-                // Send the specified response
-                byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-                await s.WriteAsync(responseBytes, 0, responseBytes.Length);
-                accept.Close();
-                listen.Close();
-            }, TaskContinuationOptions.ExecuteSynchronously);
-
-            IPEndPoint ep = (IPEndPoint)listen.LocalEndPoint;
-            return new Uri($"http://{ep.Address}:{ep.Port}/");
+            });
         }
 
         [Theory]
-        [InlineData(200, "OK")]
-        [InlineData(200, "Sure why not?")]
-        [InlineData(200, "")]
-        [InlineData(200, " ")]
-        [InlineData(200, "      ")]
-        [InlineData(200, "      Something")]
-        [InlineData(200, "\t")]
-        [InlineData(200, "O K")]
-        [InlineData(200, "O\tK")]
-        [InlineData(200, "O    \t\t  \t\t\t\t  \t K")]
-        [InlineData(201, "Created")]
-        [InlineData(202, "Accepted")]
-        [InlineData(299, "This is not a real status code")]
-        [InlineData(345, "redirect to nowhere")]
-        [InlineData(400, "Bad Request")]
-        [InlineData(500, "Internal Server Error")]
-        [InlineData(555, "we just don't like you")]
-        [InlineData(600, "still valid")]
-        [InlineData(999, "this\ttoo\t")]
-        public async Task ValidStatusLine(int statusCode, string reason)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                string responseString = $"HTTP/1.1 {statusCode} {reason}\r\nContent-Length: 0\r\n\r\n";
-                Uri serverUri = CreateServer(responseString);
-                HttpResponseMessage response = await client.GetAsync(serverUri);
-                Assert.Equal(statusCode, (int)response.StatusCode);
-                Assert.Equal(reason, response.ReasonPhrase);
-            }
-        }
-
-        [Theory]
-        [InlineData("NOTHTTP/1.1")]
-        [InlineData("NOTHTTP/1.1 200 OK")]
-        [InlineData("ABCD/1.1 200 OK")]
-        [InlineData("HTTP/1.1")]
-        [InlineData("HTTP/1.1 ")]
-        [InlineData("HTTP/1.1  ")]
-        [InlineData("HTTP/1.1\t")]
-        [InlineData("HTTP/1.1\t\t")]
-        [InlineData("HTTP/1.1\t200 OK")]
-        [InlineData("HTTP/1.1 200\tOK")]
-        [InlineData("HTTP/1.1 200")]    // need trailing space
-        [InlineData("HTTP/1.1 200\tOK")]
-        [InlineData("HTTP/1.1 200 O\rK")]
-        [InlineData("HTTP/1.1 200 O\nK")]
-        [InlineData("HTTP/1.1 200OK")]
         [InlineData("HTTP/1.1 2345")]
-        [InlineData("HTTP/1.1 23")]
-        [InlineData("HTTP/1.1 abc")]
-        [InlineData("HTTP/1.1 2bc")]
-        [InlineData("HTTP/1.1 20c")]
-        [InlineData("HTTP/1.1 a11")]
-        [InlineData("HTTP/1.1 !11")]
-        [InlineData("HTTP/3.5 200 OK")]
-        [InlineData("HTTP/0.1 200 OK")]
-        [InlineData("HTTP/1.12 200 OK")]
-        [InlineData("HTTP/12.1 200 OK")]
-        [InlineData("HTTP/1.A 200 OK")]
         [InlineData("HTTP/A.1 200 OK")]
         [InlineData("HTTP/X.Y.Z 200 OK")]
-        [InlineData("HTTP\\1.1 200 OK")]
-        [InlineData("HTTP 1.1 200 OK")]
-        public void InvalidStatusLine(string responseString)
+        // TODO #24713: The following pass on Windows on .NET Core but fail on .NET Framework.
+        //[InlineData("HTTP/0.1 200 OK")]
+        //[InlineData("HTTP/3.5 200 OK")]
+        //[InlineData("HTTP/1.12 200 OK")]
+        //[InlineData("HTTP/12.1 200 OK")]
+        // TODO #24713: The following pass on Windows on .NET Core but fail on UWP / WinRT.
+        //[InlineData("HTTP/1.1 200 O\nK")]
+        //[InlineData("HTTP/1.1 200OK")]
+        //[InlineData("HTTP/1.1 20c")]
+        //[InlineData("HTTP/1.1 23")]
+        //[InlineData("HTTP/1.1 2bc")]
+        // TODO #24713: The following pass on Windows but fail on CurlHandler on Linux.
+        //[InlineData("NOTHTTP/1.1")]
+        //[InlineData("HTTP/1.A 200 OK")]
+        //[InlineData("HTTP 1.1 200 OK")]
+        //[InlineData("ABCD/1.1 200 OK")]
+        //[InlineData("HTTP/1.1")]
+        //[InlineData("HTTP\\1.1 200 OK")]
+        //[InlineData("HTTP/1.1 ")]
+        //[InlineData("HTTP/1.1 !11")]
+        //[InlineData("HTTP/1.1 a11")]
+        //[InlineData("HTTP/1.1 abc")]
+        //[InlineData("HTTP/1.1 200 O\rK")]
+        //[InlineData("HTTP/1.1\t\t")]
+        //[InlineData("HTTP/1.1\t")]
+        //[InlineData("HTTP/1.1  ")]
+        //[InlineData("NOTHTTP/1.1 200 OK")]
+        public async Task GetAsync_InvalidStatusLine_ThrowsException(string responseString)
         {
-            using (HttpClient client = new HttpClient())
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                responseString += "\r\nContent-Length: 0\r\n\r\n";
-                Uri serverUri = CreateServer(responseString);
-                Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(serverUri));
-            }
+                using (HttpClient client = CreateHttpClient())
+                {
+                    Task ignoredServerTask = LoopbackServer.ReadRequestAndSendResponseAsync(
+                        server,
+                        responseString + "\r\nContent-Length: 0\r\n\r\n",
+                        new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                }
+            });
         }
     }
 
-    public sealed class ManagedHandler_HttpProtocolTests : HttpProtocolTests, IDisposable
+    public class HttpProtocolTests_Dribble : HttpProtocolTests, IDisposable
     {
-        public ManagedHandler_HttpProtocolTests() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
+        protected override Stream GetStream(Stream s) => new DribbleStream(s);
 
-    public sealed class ManagedHandler_HttpProtocolTests_Dribble : HttpProtocolTests, IDisposable
-    {
-        public override Stream GetStream(Stream s)
+        private sealed class DribbleStream : Stream
         {
-            return new DribbleStream(s);
-        }
+            private readonly Stream _wrapped;
 
-        public ManagedHandler_HttpProtocolTests_Dribble() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
+            public DribbleStream(Stream wrapped) => _wrapped = wrapped;
 
-    public class DribbleStream : Stream
-    {
-        private readonly Stream _wrapped;
-
-        public DribbleStream(Stream wrapped)
-        {
-            _wrapped = wrapped;
-        }
-
-        public override bool CanRead => throw new NotImplementedException();
-        public override bool CanSeek => throw new NotImplementedException();
-        public override bool CanWrite => throw new NotImplementedException();
-        public override long Length => throw new NotImplementedException();
-        public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public override void Flush() => throw new NotImplementedException();
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotImplementedException();
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
-        public override void SetLength(long value) => throw new NotImplementedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return _wrapped.ReadAsync(buffer, offset, count, cancellationToken);
-        }
-
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            var b = new byte[1];
-            for (int i = offset; i < offset + count; i++)
+            public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                b[0] = buffer[i];
-                await _wrapped.WriteAsync(b, 0, 1);
-                await Task.Delay(10);
+                for (int i = 0; i < count; i++)
+                {
+                    await _wrapped.WriteAsync(buffer, offset + i, 1);
+                    await Task.Yield(); // introduce short delays, enough to send packets individually but so long as to extend test duration significantly
+                }
             }
+
+            public override bool CanRead => false;
+            public override bool CanSeek => false;
+            public override bool CanWrite => _wrapped.CanWrite;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() => _wrapped.Flush();
+            public override Task FlushAsync(CancellationToken cancellationToken) => _wrapped.FlushAsync(cancellationToken);
+            public override int Read(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
+            public override void SetLength(long value) => throw new NotImplementedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
         }
     }
 }

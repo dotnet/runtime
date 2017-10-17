@@ -1282,34 +1282,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(200)]
-        [InlineData(500)]
-        [InlineData(600)]
-        [InlineData(900)]
-        [InlineData(999)]
-        public async Task GetAsync_ExpectedStatusCode(int statusCode)
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        getResponseTask,
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                            $"HTTP/1.1 {statusCode}\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n"));
-                    using (HttpResponseMessage response = await getResponseTask)
-                    {
-                        Assert.Equal(statusCode, (int)response.StatusCode);
-                    }
-                }
-            });
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Theory]
         [InlineData(99)]
         [InlineData(1000)]
         public async Task GetAsync_StatusCodeOutOfRange_ExpectedException(int statusCode)
