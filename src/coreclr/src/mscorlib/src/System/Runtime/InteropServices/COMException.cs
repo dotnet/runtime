@@ -21,7 +21,8 @@ using Microsoft.Win32;
 namespace System.Runtime.InteropServices
 {
     // Exception for COM Interop errors where we don't recognize the HResult.
-    // 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class COMException : ExternalException
     {
         public COMException()
@@ -50,7 +51,6 @@ namespace System.Runtime.InteropServices
 
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
 
         public override String ToString()
