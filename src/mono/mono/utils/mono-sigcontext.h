@@ -260,6 +260,7 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->sc_r15)
 #elif !defined(HOST_WIN32)
 	#define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext.gregs))
+#if defined(__GLIBC__)
 	/*
 	 * Ordinarily, ctx->uc_mcontext.fpregs is a pointer to somewhere in
 	 * ctx->__fpregs_mem and is the preferred way to access the fpstate.
@@ -275,6 +276,7 @@ typedef struct ucontext {
 	 */
 	#define UCONTEXT_HAS_FREGS(ctx) (!!((ucontext_t *) (ctx))->uc_mcontext.fpregs)
 	#define UCONTEXT_FREGS(ctx)	(((ucontext_t *) (ctx))->uc_mcontext.fpregs->_xmm)
+#endif
 #endif
 
 #ifdef UCONTEXT_GREGS
