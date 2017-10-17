@@ -130,7 +130,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "",
-        "inlineScript": "if ($env:ConfigurationGroup -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerSymbolPackageGlob `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
+        "inlineScript": "if ($env:ConfigurationGroup -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:SymbolPackageLocation `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -599,6 +599,10 @@
     },
     "AzureContainerSymbolPackageGlob": {
       "value": "symbolpkg\\*\\*\\*.nupkg",
+      "allowOverride": true
+    },
+    "SymbolPackageLocation": {
+      "value": "symbolpkg\\*.nupkg",
       "allowOverride": true
     },
     "GitHubRepositoryName": {
