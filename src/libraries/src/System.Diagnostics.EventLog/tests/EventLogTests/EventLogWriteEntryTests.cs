@@ -137,7 +137,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.Contains(message, eventLogEntry.Message);
                 Assert.Equal(source, eventLogEntry.Source);
-                Assert.StartsWith(Environment.MachineName, eventLogEntry.MachineName);
+                Assert.StartsWith(Environment.MachineName.ToLower(), eventLogEntry.MachineName.ToLower());
                 Assert.Equal(eventLogEntry.TimeWritten, eventLogEntry.TimeGenerated);
             }
             finally
