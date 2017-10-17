@@ -2879,6 +2879,13 @@ namespace System.Threading.Tasks
         // to be able to see the method on the stack and inspect arguments).
         private bool InternalWaitCore(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+            // If the task has already completed, there's nothing to wait for.
+            bool returnValue = IsCompleted;
+            if (returnValue)
+            {
+                return true;
+            }
+
             // ETW event for Task Wait Begin
             var etwLog = TplEtwProvider.Log;
             bool etwIsEnabled = etwLog.IsEnabled();
@@ -2890,30 +2897,24 @@ namespace System.Threading.Tasks
                     this.Id, TplEtwProvider.TaskWaitBehavior.Synchronous, 0);
             }
 
-            bool returnValue = IsCompleted;
+            // Alert a listening debugger that we can't make forward progress unless it slips threads.
+            // We call NOCTD for two reasons:
+            //    1. If the task runs on another thread, then we'll be blocked here indefinitely.
+            //    2. If the task runs inline but takes some time to complete, it will suffer ThreadAbort with possible state corruption,
+            //       and it is best to prevent this unless the user explicitly asks to view the value with thread-slipping enabled.
+            Debugger.NotifyOfCrossThreadDependency();
 
-            // If the event hasn't already been set, we will wait.
-            if (!returnValue)
+            // We will attempt inline execution only if an infinite wait was requested
+            // Inline execution doesn't make sense for finite timeouts and if a cancellation token was specified
+            // because we don't know how long the task delegate will take.
+            if (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled &&
+                WrappedTryRunInline() && IsCompleted) // TryRunInline doesn't guarantee completion, as there may be unfinished children.
             {
-                // Alert a listening debugger that we can't make forward progress unless it slips threads.
-                // We call NOCTD for two reasons:
-                //    1. If the task runs on another thread, then we'll be blocked here indefinitely.
-                //    2. If the task runs inline but takes some time to complete, it will suffer ThreadAbort with possible state corruption,
-                //       and it is best to prevent this unless the user explicitly asks to view the value with thread-slipping enabled.
-                Debugger.NotifyOfCrossThreadDependency();
-
-                // We will attempt inline execution only if an infinite wait was requested
-                // Inline execution doesn't make sense for finite timeouts and if a cancellation token was specified
-                // because we don't know how long the task delegate will take.
-                if (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled &&
-                    WrappedTryRunInline() && IsCompleted) // TryRunInline doesn't guarantee completion, as there may be unfinished children.
-                {
-                    returnValue = true;
-                }
-                else
-                {
-                    returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
-                }
+                returnValue = true;
+            }
+            else
+            {
+                returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
 
             Debug.Assert(IsCompleted || millisecondsTimeout != Timeout.Infinite);
