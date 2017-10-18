@@ -11,7 +11,7 @@
 
 #include "logging.h"
 
-// EXCEPTIONCODE_DebugBreakorAV is just the base exception number; calls to DebugBreakorAV() 
+// EXCEPTIONCODE_DebugBreakorAV is just the base exception number; calls to DebugBreakorAV()
 // pass a unique number to add to this. EXCEPTIONCODE_DebugBreakorAV_MAX is the maximum number
 // of this exception range.
 #define EXCEPTIONCODE_DebugBreakorAV 0xe0421000

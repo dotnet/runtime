@@ -15,6 +15,8 @@
 // interface declaration (with the "virtual" and "= 0" syntax removed). This is to make it easy to compare
 // against the interface declaration.
 
+// clang-format off
+
 public:
 /**********************************************************************************/
 //
