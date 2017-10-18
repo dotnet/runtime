@@ -66,7 +66,7 @@ struct ThreadLocalModule
 
             _ASSERTE(m_pGCStatics != NULL);
 
-            return dac_cast<PTR_BYTE>((PTR_OBJECTREF)((PTRARRAYREF)ObjectFromHandle(m_pGCStatics))->GetDataPtr());
+            return dac_cast<PTR_BYTE>(((PTRARRAYREF)ObjectFromHandle(m_pGCStatics))->GetDataPtr());
         }
         inline PTR_BYTE GetGCStaticsBaseHandle()
         {
@@ -125,7 +125,7 @@ struct ThreadLocalModule
 
         _ASSERTE(m_pGCStatics != NULL);
 
-        return (PTR_OBJECTREF)((PTRARRAYREF)ObjectFromHandle(m_pGCStatics))->GetDataPtr();
+        return ((PTRARRAYREF)ObjectFromHandle(m_pGCStatics))->GetDataPtr();
     }
 
     inline OBJECTHANDLE GetPrecomputedGCStaticsBaseHandle()
