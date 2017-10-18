@@ -10,7 +10,6 @@ namespace System.Net.Security
 {
     public class SslServerAuthenticationOptions
     {
-        private X509Certificate _serverCertificate;
         private X509RevocationMode _checkCertificateRevocation = X509RevocationMode.NoCheck;
         private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
@@ -25,11 +24,7 @@ namespace System.Net.Security
 
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
 
-        public X509Certificate ServerCertificate
-        {
-            get => _serverCertificate;
-            set => _serverCertificate = value;
-        }
+        public X509Certificate ServerCertificate { get; set; }
 
         public SslProtocols EnabledSslProtocols
         {
