@@ -226,11 +226,14 @@ parse_generic_type_names(char *name)
 	do {
 		switch (*name) {
 			case '<':
-				within_generic_declaration = 1;
+				within_generic_declaration ++;
 				break;
 
 			case '>':
-				within_generic_declaration = 0;
+				within_generic_declaration --;
+
+				if (within_generic_declaration)
+					break;
 
 				if (*(name - 1) != '<') {
 					*new_name++ = '`';
