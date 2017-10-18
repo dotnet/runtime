@@ -23,6 +23,18 @@ namespace System.Collections.Tests
             return arrayListOfInts;
         }
 
+        private ArrayList CreateArrayList(int size = 100000)
+        {
+            var arrayListOfInts = new ArrayList(size);
+            var obj = new object();
+            for (int i = 0; i < size; i++)
+            {
+                arrayListOfInts.Add(obj);
+            }
+
+            return arrayListOfInts;
+        }
+
         [Benchmark(InnerIterationCount = 10000000)]
         public void Add()
         {
@@ -41,11 +53,11 @@ namespace System.Collections.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 5000)]
+        [Benchmark(InnerIterationCount = 6000)]
         public void AddRange()
         {
             int size = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts(10000);
+            ArrayList elements = CreateArrayList(1000);
             foreach (var iteration in Benchmark.Iterations)
             {
                 ArrayList[] elementsCollection = new ArrayList[size];
@@ -59,7 +71,7 @@ namespace System.Collections.Tests
                     for (int index = 0; index < size; index++)
                     {
                         elementsCollection[index].AddRange(elements);
-                    }                    
+                    }
                 }
             }
         }
@@ -80,7 +92,7 @@ namespace System.Collections.Tests
                         {
                             elements.BinarySearch(i, comparer);
                         }
-                    }                    
+                    }
                 }
             }
         }
@@ -89,21 +101,21 @@ namespace System.Collections.Tests
         public void Clear()
         {
             int size = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts(10000);
+            ArrayList elements = CreateArrayList(10000);
             foreach (var iteration in Benchmark.Iterations)
-            {              
+            {
                 ArrayList[] elementsCollection = new ArrayList[size];
                 for (int index = 0; index < size; index++)
                 {
                     elementsCollection[index] = new ArrayList(elements);
-                }                    
-                
+                }
+
                 using (iteration.StartMeasurement())
                 {
                     for (int index = 0; index < size; index++)
                     {
                         elementsCollection[index].Clear();
-                    }                        
+                    }
                 }
             }
         }
@@ -132,7 +144,7 @@ namespace System.Collections.Tests
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
             foreach (var iteration in Benchmark.Iterations)
-            { 
+            {
                 using (iteration.StartMeasurement())
                 {
                     for (int i = 0; i < innerIterationCount; i++)
@@ -147,7 +159,7 @@ namespace System.Collections.Tests
         public void Ctor_ICollection()
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts(10000);
+            ArrayList elements = CreateArrayList(10000);
             object[] array = elements.ToArray();
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -165,7 +177,7 @@ namespace System.Collections.Tests
         public void Count()
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts(10000);            
+            ArrayList elements = CreateArrayList(10000);
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
@@ -182,7 +194,7 @@ namespace System.Collections.Tests
         public void Indexer()
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts((int)Benchmark.InnerIterationCount);
+            ArrayList elements = CreateArrayList((int)Benchmark.InnerIterationCount);
             object temp;
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -200,14 +212,15 @@ namespace System.Collections.Tests
         public void Enumerator()
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts(10000);
+            ArrayList elements = CreateArrayList(10000);
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
                     for (int i = 0; i < innerIterationCount; i++)
                     {
-                        foreach (var element in elements) { }
+                        foreach (var element in elements)
+                        { }
                     }
                 }
             }
@@ -218,7 +231,7 @@ namespace System.Collections.Tests
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
             int size = 10000;
-            ArrayList elements = CreateArrayListOfInts(size);
+            ArrayList elements = CreateArrayList(size);
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
@@ -238,7 +251,7 @@ namespace System.Collections.Tests
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
             foreach (var iteration in Benchmark.Iterations)
             {
-                ArrayList elements = CreateArrayListOfInts(10000);
+                ArrayList elements = CreateArrayList(10000);
 
                 using (iteration.StartMeasurement())
                 {
@@ -271,7 +284,7 @@ namespace System.Collections.Tests
                         elements.IndexOf(firstElemetnt);
                         elements.IndexOf(middleElemetnt);
                         elements.IndexOf(lastElemetnt);
-                    }                    
+                    }
                 }
             }
         }
@@ -282,7 +295,7 @@ namespace System.Collections.Tests
         public void InsertRange(int index, int length)
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts(length);
+            ArrayList elements = CreateArrayList(length);
             var arrayList = new ArrayList(elements);
 
             foreach (var iteration in Benchmark.Iterations)
@@ -292,18 +305,18 @@ namespace System.Collections.Tests
                     for (int i = 0; i < innerIterationCount; i++)
                     {
                         arrayList.InsertRange(index, elements);
-                    }                    
+                    }
                 }
             }
         }
 
-        [Benchmark(InnerIterationCount = 5000)]
+        [Benchmark(InnerIterationCount = 50000)]
         public void CopyTo()
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
             int size = 10000;
-            ArrayList elements = CreateArrayListOfInts(size);
-            int[] destination = new int[size];
+            ArrayList elements = CreateArrayList(size);
+            object[] destination = new object[size];
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -312,7 +325,7 @@ namespace System.Collections.Tests
                     for (int i = 0; i < innerIterationCount; i++)
                     {
                         elements.CopyTo(destination, 0);
-                    }                    
+                    }
                 }
             }
         }
@@ -332,7 +345,7 @@ namespace System.Collections.Tests
                     for (int i = 0; i < innerIterationCount; i++)
                     {
                         elements.LastIndexOf(element);
-                    }                    
+                    }
                 }
             }
         }
@@ -351,16 +364,16 @@ namespace System.Collections.Tests
                     for (int i = 0; i < innerIterationCount; i++)
                     {
                         elements.Remove(element);
-                    }                    
+                    }
                 }
             }
         }
 
-        [Benchmark(InnerIterationCount = 10000)]
+        [Benchmark(InnerIterationCount = 7000)]
         public void RemoveRange()
         {
             int size = (int)Benchmark.InnerIterationCount;
-            ArrayList elements = CreateArrayListOfInts(size);
+            ArrayList elements = CreateArrayList(size);
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -386,7 +399,7 @@ namespace System.Collections.Tests
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
             int startIndex = 0;
             int count = 100000;
-            ArrayList elements = CreateArrayListOfInts(count);
+            ArrayList elements = CreateArrayList(count);
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -395,7 +408,7 @@ namespace System.Collections.Tests
                     for (int i = 0; i < innerIterationCount; i++)
                     {
                         elements.Reverse(startIndex, count);
-                    }                   
+                    }
                 }
             }
         }
@@ -406,7 +419,7 @@ namespace System.Collections.Tests
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
             int startIndex = 0;
             int size = 100000;
-            ArrayList elements = CreateArrayListOfInts(size);
+            ArrayList elements = CreateArrayList(size);
             var newElemnts = new ArrayList(size);
 
             foreach (var iteration in Benchmark.Iterations)
@@ -416,7 +429,7 @@ namespace System.Collections.Tests
                     for (int i = 0; i < innerIterationCount; i++)
                     {
                         elements.SetRange(startIndex, elements);
-                    }                    
+                    }
                 }
             }
         }
@@ -427,7 +440,7 @@ namespace System.Collections.Tests
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
             int startIndex = 0;
             int size = 100000;
-            ArrayList elements = CreateArrayListOfInts(size);
+            ArrayList elements = CreateArrayList(size);
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -436,7 +449,7 @@ namespace System.Collections.Tests
                     for (int i = 0; i < innerIterationCount; i++)
                     {
                         elements.GetRange(startIndex, size);
-                    }                    
+                    }
                 }
             }
         }
@@ -444,7 +457,7 @@ namespace System.Collections.Tests
         [Benchmark(InnerIterationCount = 10000000)]
         public void Sort()
         {
-            int size = (int)Benchmark.InnerIterationCount;           
+            int size = (int)Benchmark.InnerIterationCount;
             var random = new Random(32829);
             ArrayList elements = new ArrayList(size);
             for (int index = 0; index < elements.Count; index++)
