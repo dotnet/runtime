@@ -59,6 +59,7 @@
     <Compile Include="Basic\UsedStructIsKept.cs" />
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
@@ -151,6 +152,7 @@
     <Content Include="LinkXml\UnusedPropertyPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedTypeIsPresservedWhenEntireAssemblyIsPreserved.xml" />
     <Content Include="LinkXml\UnusedTypePreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.xml" />
     <Content Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveAllHasAllMembersPreserved.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveFieldsHasMethodsRemoved.xml" />
