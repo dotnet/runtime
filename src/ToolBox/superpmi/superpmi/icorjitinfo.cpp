@@ -163,10 +163,10 @@ CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 
 // This function returns the offset of the specified method in the
 // vtable of it's owning class or interface.
-void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
-                                   unsigned*             offsetOfIndirection,   /* OUT */
-                                   unsigned*             offsetAfterIndirection,/* OUT */
-                                   bool*                 isRelative             /* OUT */
+void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                 /* IN */
+                                   unsigned*             offsetOfIndirection,    /* OUT */
+                                   unsigned*             offsetAfterIndirection, /* OUT */
+                                   bool*                 isRelative              /* OUT */
                                    )
 {
     jitInstance->mc->cr->AddCall("getMethodVTableOffset");
@@ -194,9 +194,7 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
     return result;
 }
 
-void MyICJI::expandRawHandleIntrinsic(
-    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-    CORINFO_GENERICHANDLE_RESULT *  pResult)
+void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
     LogError("Hit unimplemented expandRawHandleIntrinsic");
@@ -834,7 +832,8 @@ void* MyICJI::getArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size)
 CorInfoIsAccessAllowedResult MyICJI::canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                     CORINFO_METHOD_HANDLE   callerHandle,
                                                     CORINFO_HELPER_DESC*    pAccessHelper /* If canAccessMethod returns
-                                                                                             something other    than ALLOWED,
+                                                                                             something other    than
+                                                                                             ALLOWED,
                                                                                              then this is filled in. */
                                                     )
 {
@@ -1007,7 +1006,7 @@ void MyICJI::getVars(CORINFO_METHOD_HANDLE      ftn,   // [IN]  method of intere
 void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of interest
                      ULONG32                       cVars, // [IN] size of 'vars'
                      ICorDebugInfo::NativeVarInfo* vars   // [IN] map telling where local vars are stored at what points
-                                                        //      jit allocated with allocateArray, EE frees
+                                                          //      jit allocated with allocateArray, EE frees
                      )
 {
     jitInstance->mc->cr->AddCall("setVars");
@@ -1700,8 +1699,8 @@ BOOL MyICJI::logMsg(unsigned level, const char* fmt, va_list args)
 
     //  if(level<=2)
     //  {
-     //jitInstance->mc->cr->recMessageLog(fmt, args);
-     //DebugBreakorAV(0x99);
+    // jitInstance->mc->cr->recMessageLog(fmt, args);
+    // DebugBreakorAV(0x99);
     //}
     jitInstance->mc->cr->recMessageLog(fmt, args);
     return 0;

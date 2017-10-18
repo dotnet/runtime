@@ -72,7 +72,7 @@ int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
     if (forceValue != nullptr)
     {
         wchar_t* endPtr;
-        result = static_cast<int>(wcstoul(forceValue, &endPtr, 16));
+        result         = static_cast<int>(wcstoul(forceValue, &endPtr, 16));
         bool succeeded = (errno != ERANGE) && (endPtr != forceValue);
         if (succeeded)
         {
@@ -127,7 +127,8 @@ const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
 
     const wchar_t* result = nullptr;
 
-    // First check the force options, then mc value. If value is not presented there, probe the JIT options and then the environment.
+    // First check the force options, then mc value. If value is not presented there, probe the JIT options and then the
+    // environment.
 
     result = jitInstance.getForceOption(key);
 
