@@ -11,94 +11,94 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-// NOTE:
-// Currently the managed handler is opt-in on both Windows and Unix, due to still being a nascent implementation
-// that's missing features, robustness, perf, etc.  One opts into it currently by setting an environment variable,
-// which makes it a bit difficult to test.  There are two straightforward ways to test it:
-// - This file contains test classes that derive from the other test classes in the project that create
-//   HttpClient{Handler} instances, and in the ctor sets the env var and in Dispose removes the env var.
-//   That has the effect of running all of those same tests again, but with the managed handler enabled.
-// - By setting the env var prior to running tests, every test will implicitly use the managed handler,
-//   at which point the tests in this file are duplicative and can be commented out.
-
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class ManagedHandler_HttpClientTest : HttpClientTest, IDisposable
+    public sealed class ManagedHandler_HttpProtocolTests : HttpProtocolTests
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_DiagnosticsTest : DiagnosticsTest, IDisposable
+    public sealed class ManagedHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
+    public sealed class ManagedHandler_HttpClientTest : HttpClientTest
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test, IDisposable
+    public sealed class ManagedHandler_DiagnosticsTest : DiagnosticsTest
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
+    public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest
+    {
+        protected override bool UseManagedHandler => true;
+    }
+
+    public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
+    {
+        protected override bool UseManagedHandler => true;
+    }
+
+    public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
     {
         public ManagedHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test, IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
+    public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest
     {
         public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest, IDisposable
+    public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest
     {
         public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test, IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest, IDisposable
+    public sealed class ManagedHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
     {
         public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress, IDisposable
+    public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress
     {
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest, IDisposable
+    public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseManagedHandler => true;
     }
 
-    public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
+    public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseManagedHandler => true;
@@ -109,19 +109,19 @@ namespace System.Net.Http.Functional.Tests
     // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
     // or we need to just recognize that cancellation in such situations can be left up to the caller to do the
     // same thing if it's really important.
-    //public sealed class ManagedHandler_CancellationTest : CancellationTest, IDisposable
+    //public sealed class ManagedHandler_CancellationTest : CancellationTest
     //{
     //    public ManagedHandler_CancellationTest(ITestOutputHelper output) : base(output) { }
     //    protected override bool UseManagedHandler => true;
     //}
 
     // TODO #23142: The managed handler doesn't currently track how much data was written for the response headers.
-    //public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test, IDisposable
+    //public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     //{
     //    protected override bool UseManagedHandler => true;
     //}
 
-    public sealed class ManagedHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase, IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase
     {
         protected override bool UseManagedHandler => true;
 
@@ -253,7 +253,7 @@ namespace System.Net.Http.Functional.Tests
 
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase, IDisposable
+    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase
     {
         protected override bool UseManagedHandler => true;
 
