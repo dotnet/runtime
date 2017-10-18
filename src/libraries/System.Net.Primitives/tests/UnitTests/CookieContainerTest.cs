@@ -518,6 +518,30 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
+        [ActiveIssue(24368)]
+        public void GetCookies_DifferentPaths_ReturnsConsistentResults()
+        {
+            Cookie c1 = new Cookie("name1", "value", "/base", ".url.com");
+            Cookie c2 = new Cookie("name2", "value", "/base/url1", ".url.com");
+            Cookie c3 = new Cookie("name3", "value", "/base/url2", ".url.com");
+
+            CookieContainer cc1 = new CookieContainer();
+            cc1.Add(c1);
+            cc1.Add(c2);
+            cc1.Add(c3);
+
+            CookieCollection cc2 = cc1.GetCookies(new Uri("http://url.com/base/url1"));
+            Assert.Equal(2, cc2.Count);
+            Assert.Equal(c2, cc2[0]);
+            Assert.Equal(c1, cc2[1]);
+
+            CookieCollection cc3 = cc1.GetCookies(new Uri("http://url.com/base/url2"));
+            Assert.Equal(2, cc3.Count);
+            Assert.Equal(c3, cc3[0]);
+            Assert.Equal(c1, cc3[1]);
+        }
+
+        [Fact]
         public async Task GetCookies_RemovesExpired_Cookies()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".url1.com");
