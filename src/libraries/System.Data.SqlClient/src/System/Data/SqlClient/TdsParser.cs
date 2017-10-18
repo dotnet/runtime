@@ -7278,7 +7278,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
             }
             finally
