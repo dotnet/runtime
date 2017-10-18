@@ -108,8 +108,6 @@ GSList *jit_classes;
 /* If TRUE, interpreted code will be interrupted at function entry/backward branches */
 static gboolean ss_enabled;
 
-void ves_exec_method (InterpFrame *frame);
-
 static char* dump_frame (InterpFrame *inv);
 static MonoArray *get_trace_ips (MonoDomain *domain, InterpFrame *top);
 static void ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsigned short *start_with_ip, MonoException *filter_exception, int exit_at_finally);
@@ -5248,52 +5246,6 @@ exit_frame:
 		MONO_PROFILER_RAISE (method_exception_leave, (frame->imethod->method, &frame->ex->object));
 
 	DEBUG_LEAVE ();
-}
-
-void
-ves_exec_method (InterpFrame *frame)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	ThreadContext context_struct;
-	MonoDomain *domain = frame->imethod->domain;
-	MonoError error;
-	jmp_buf env;
-
-	frame->ex = NULL;
-
-	if (setjmp(env)) {
-		mono_unhandled_exception ((MonoObject*)frame->ex);
-		return;
-	}
-	if (context == NULL) {
-		context = &context_struct;
-		context_struct.base_frame = frame;
-		context_struct.current_frame = NULL;
-		context_struct.env_frame = frame;
-		context_struct.current_env = &env;
-		context_struct.search_for_handler = 0;
-		context_struct.managed_code = 0;
-		set_context (context);
-	}
-	frame->ip = NULL;
-	frame->parent = context->current_frame;
-	frame->imethod = mono_interp_get_imethod (domain, frame->method, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	context->managed_code = 1;
-	ves_exec_method_with_context (frame, context, NULL, NULL, -1);
-	context->managed_code = 0;
-	if (frame->ex) {
-		if (context != &context_struct && context->current_env) {
-			context->env_frame->ex = frame->ex;
-			longjmp (*context->current_env, 1);
-		}
-		else
-			mono_unhandled_exception ((MonoObject*)frame->ex);
-	}
-	if (context->base_frame == frame)
-		set_context (NULL);
-	else
-		context->current_frame = frame->parent;
 }
 
 void
