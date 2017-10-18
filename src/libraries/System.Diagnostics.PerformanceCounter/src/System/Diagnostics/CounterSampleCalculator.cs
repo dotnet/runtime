@@ -237,7 +237,7 @@ namespace System.Diagnostics
 
             new FileIOPermission(PermissionState.Unrestricted).Assert();
 
-            string installPath = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
+            string installPath = SharedUtils.GetLatestBuildDllDirectory(".");
             string perfcounterPath = Path.Combine(installPath, "perfcounter.dll");
             if (Interop.Kernel32.LoadLibrary(perfcounterPath) == IntPtr.Zero)
             {
