@@ -157,7 +157,7 @@ namespace System.Diagnostics
                     string msg = owner.FormatMessageWrapper(dllNames, (uint)msgId, ReplacementStrings);
                     if (msg == null)
                     {
-                        StringBuilder msgBuf = new StringBuilder(SR.MessageNotFormatted + msgId + Source);
+                        StringBuilder msgBuf = new StringBuilder(SR.Format(SR.MessageNotFormatted, msgId, Source));
                         string[] strings = ReplacementStrings;
                         for (int i = 0; i < strings.Length; i++)
                         {

@@ -8,7 +8,7 @@ namespace System.Diagnostics.Tests
 {
     public class EventInstanceTests
     {
-        //These ids can be any non-negative numbers
+        // These ids can be any non-negative numbers
         private const long instanceId = 57;
         private const int categoryId = 657;
 
