@@ -47,9 +47,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend Const OptionCompareTextFlags As CompareOptions = (CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreKanaType)
 
-        ' DON'T ACCESS DIRECTLY! Go through the property below
-        Private Shared s_VBAResourceManager As System.Resources.ResourceManager
-        Private Shared s_triedLoadingResourceManager As Boolean
         Private Shared ReadOnly s_resourceManagerSyncObj As Object = New Object
 
         Friend Shared m_achIntlSpace() As Char = {chSpace, chIntlSpace}
@@ -79,7 +76,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         '         This one is exposed because I have to be able to get at localized error
         '         strings from the MY template
         '  Param: ID - Identifier for the string to be retrieved
-        '  Param: Args - An array of params used to replace placeholders. 
+        '  Param: Args - An array of params used to replace placeholders.
         'Returns: The resource string if found or an error message string
         '*****************************************************************************
         Public Shared Function GetResourceString(ByVal resourceKey As String, ByVal ParamArray args() As String) As String
