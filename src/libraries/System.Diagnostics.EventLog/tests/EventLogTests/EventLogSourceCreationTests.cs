@@ -27,7 +27,7 @@ namespace System.Diagnostics.Tests
             Assert.False(EventLog.SourceExists(source));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void CheckSourceExistsArgumentNull()
         {
             Assert.False(EventLog.SourceExists(null));
@@ -109,7 +109,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => EventLog.CreateEventSource(source, log));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventSourceCategoryCount_Invalid()
         {
             string log = "InvalidData";
@@ -119,7 +119,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => mySourceData.CategoryCount = -1);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void MessageResourceFile_Set()
         {
             string messageFile = "ResourceFile";
@@ -130,7 +130,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(messageFile, sourceData.MessageResourceFile);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void CategoryResourceFile_Set()
         {
             string messageFile = "ResourceFile";
@@ -141,7 +141,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(messageFile, sourceData.CategoryResourceFile);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void ParameterResourceFile_Set()
         {
             string messageFile = "ResourceFile";
@@ -152,7 +152,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(messageFile, sourceData.ParameterResourceFile);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void CategoryCount_Set()
         {
             string source = "Source" + nameof(CategoryCount_Set);
