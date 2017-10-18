@@ -227,11 +227,11 @@ namespace System.Diagnostics.Tests
             using (EventLog eventLog = new EventLog())
             {
                 eventLog.Log = "Application";
-                eventLog.MachineName = Environment.MachineName;
+                eventLog.MachineName = Environment.MachineName.ToLowerInvariant();
                 try
                 {
                     EventLog.CreateEventSource(source, eventLog.LogDisplayName);
-                    Assert.True(EventLog.SourceExists(source, Environment.MachineName));
+                    Assert.True(EventLog.SourceExists(source, Environment.MachineName.ToLowerInvariant()));
                 }
                 finally
                 {
