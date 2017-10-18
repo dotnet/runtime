@@ -72,10 +72,14 @@ namespace System.Net.Security
 
         public override int GetHashCode()
         {
+            if (_readOnlyProtocol.Length == 0)
+                return 0;
+
             int hash1 = 0;
+            ReadOnlySpan<byte> pSpan = _readOnlyProtocol.Span;
             for (int i = 0; i < _readOnlyProtocol.Length; i++)
             {
-                hash1 = ((hash1 << 5) + hash1) ^ _readOnlyProtocol.Span[i];
+                hash1 = ((hash1 << 5) + hash1) ^ pSpan[i];
             }
 
             return hash1;
@@ -99,9 +103,10 @@ namespace System.Net.Security
                 char[] byteChars = new char[byteCharsLength];
                 int index = 0;
 
+                ReadOnlySpan<byte> pSpan = _readOnlyProtocol.Span;
                 for (int i = 0; i < byteCharsLength; i += 5)
                 {
-                    byte b = _readOnlyProtocol.Span[index++];
+                    byte b = pSpan[index++];
                     byteChars[i] = '0';
                     byteChars[i + 1] = 'x';
                     byteChars[i + 2] = GetHexValue(Math.DivRem(b, 16, out int rem));

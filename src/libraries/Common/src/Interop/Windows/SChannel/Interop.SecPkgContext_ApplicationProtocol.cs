@@ -22,7 +22,7 @@ internal static partial class Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe class SecPkgContext_ApplicationProtocol
+    internal class SecPkgContext_ApplicationProtocol
     {
         private const int MaxProtocolIdSize = 0xFF;
 
@@ -35,10 +35,7 @@ internal static partial class Interop
         {
             get
             {
-                fixed (byte* p = ProtocolId)
-                {
-                    return new Span<byte>(p, ProtocolIdSize).ToArray();
-                }
+                return new Span<byte>(ProtocolId, 0, ProtocolIdSize).ToArray();
             }
         }
     }

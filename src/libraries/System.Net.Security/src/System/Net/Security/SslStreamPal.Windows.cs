@@ -182,6 +182,7 @@ namespace System.Net.Security
                 context,
                 Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL) as Interop.SecPkgContext_ApplicationProtocol;
 
+            // Check if the context returned is alpn data, with successful negotiation.
             if (alpnContext == null ||
                 alpnContext.ProtoNegoExt != Interop.ApplicationProtocolNegotiationExt.ALPN ||
                 alpnContext.ProtoNegoStatus != Interop.ApplicationProtocolNegotiationStatus.Success)
