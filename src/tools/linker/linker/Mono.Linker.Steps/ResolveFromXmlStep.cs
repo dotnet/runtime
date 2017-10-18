@@ -69,11 +69,10 @@ namespace Mono.Linker.Steps {
 		protected override void Process ()
 		{
 			XPathNavigator nav = _document.CreateNavigator ();
-			nav.MoveToFirstChild ();
 
 			// This step can be created with XML files that aren't necessarily
 			// linker descriptor files. So bail if we don't have a <linker> element.
-			if (nav.LocalName != "linker")
+			if (!nav.MoveToChild("linker", _ns))
 				return;
 
 			try {
