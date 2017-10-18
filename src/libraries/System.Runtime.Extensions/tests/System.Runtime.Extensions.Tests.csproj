@@ -38,6 +38,7 @@
   <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
     <Compile Include="System\BitConverterSpan.cs" />
     <Compile Include="System\BitConverter.netcoreapp.cs" />
+    <Compile Include="System\Convert.netcoreapp.cs" />
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
     <Compile Include="System\MathTests.netcoreapp.cs" />
     <Compile Include="System\MathF.netcoreapp.cs" />
