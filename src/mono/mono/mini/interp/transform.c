@@ -2977,8 +2977,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			ADD_CODE(td, get_data_item_index (td, klass));
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				size = mono_class_value_size (klass, NULL);
-				size = (size + 7) & ~7;
-				td->vt_sp -= size;
+				POP_VT (td, size);
 			}
 			td->ip += 5;
 			td->sp -= 2;
