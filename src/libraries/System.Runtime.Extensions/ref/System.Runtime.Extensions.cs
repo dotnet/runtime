@@ -191,6 +191,7 @@ namespace System
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options) { throw null; }
         public static string ToBase64String(byte[] inArray, Base64FormattingOptions options) { throw null; }
         public static string ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options) { throw null; }
+        public static string ToBase64String(System.ReadOnlySpan<byte> bytes, Base64FormattingOptions options = Base64FormattingOptions.None) { throw null; }
         public static bool ToBoolean(char value) { throw null; }
         public static bool ToBoolean(DateTime value) { throw null; }
         public static byte ToByte(DateTime value) { throw null; }
@@ -620,6 +621,9 @@ namespace System
         public static ulong ToUInt64(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong ToUInt64(ulong value) { throw null; }
+        public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, Base64FormattingOptions options = Base64FormattingOptions.None) { throw null; }
+        public static bool TryFromBase64String(string s, System.Span<byte> bytes, out int bytesWritten) { throw null; }
+        public static bool TryFromBase64Chars(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
     }
     public static partial class Environment
     {
