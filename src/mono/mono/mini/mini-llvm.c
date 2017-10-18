@@ -7480,7 +7480,22 @@ mono_llvm_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 	if (cfg->gsharedvt && cfg->llvm_only) {
+		gboolean vretaddr = FALSE;
+
 		if (mini_is_gsharedvt_variable_signature (sig) && sig->ret->type != MONO_TYPE_VOID) {
+			vretaddr = TRUE;
+		} else {
+			MonoMethodSignature *sig = mono_method_signature (cfg->method);
+			LLVMCallInfo *linfo;
+
+			linfo = get_llvm_call_info (cfg, sig);
+			vretaddr = (linfo->ret.storage == LLVMArgVtypeRetAddr || linfo->ret.storage == LLVMArgVtypeByRef || linfo->ret.storage == LLVMArgGsharedvtFixed || linfo->ret.storage == LLVMArgGsharedvtVariable || linfo->ret.storage == LLVMArgGsharedvtFixedVtype);
+		}
+		if (vretaddr) {
+			/*
+			 * Creating vret_addr forces CEE_SETRET to store the result into it,
+			 * so we don't have to generate any code in our OP_SETRET case.
+			 */
 			cfg->vret_addr = mono_compile_create_var (cfg, &mono_get_intptr_class ()->byval_arg, OP_ARG);
 			if (G_UNLIKELY (cfg->verbose_level > 1)) {
 				printf ("vret_addr = ");

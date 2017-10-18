@@ -2017,6 +2017,23 @@ public class Tests
 			return 2;
 		return 0;
 	}
+
+	interface IFace59956 {
+		int foo<T> ();
+	}
+
+	class Impl59956 : IFace59956 {
+		public int foo<T> () {
+			var builder = new SparseArrayBuilder<T>(true);
+
+			return builder.Markers._count;
+		}
+	}
+
+	public static int test_1_59956_regress () {
+		IFace59956 iface = new Impl59956 ();
+		return iface.foo<int> ();
+	}
 }
 
 // #13191
@@ -2032,6 +2049,35 @@ public class MobileServiceCollection<TTable, TCol>
 		await Task.Delay (1000);
 		throw new Exception ();
 	}
+}
+
+// #59956
+internal struct Marker
+{
+	public Marker(int count, int index) {
+	}
+}
+
+public struct ArrayBuilder<T>
+{
+	private T[] _array;
+	public int _count;
+
+	public ArrayBuilder(int capacity) {
+		_array = new T[capacity];
+		_count = 1;
+	}
+}
+
+internal struct SparseArrayBuilder<T>
+{
+	private ArrayBuilder<Marker> _markers;
+
+	public SparseArrayBuilder(bool initialize) : this () {
+		_markers = new ArrayBuilder<Marker> (10);
+	}
+
+	public ArrayBuilder<Marker> Markers => _markers;
 }
 
 #if !__MOBILE__
