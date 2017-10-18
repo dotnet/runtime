@@ -520,9 +520,16 @@ namespace System.Net.Http
                 {
                     unsafe
                     {
-                        fixed (byte* reasonPtr = &reasonBytes.DangerousGetPinnableReference())
+                        try
                         {
-                            response.ReasonPhrase = Encoding.ASCII.GetString(reasonPtr, reasonBytes.Length);
+                            fixed (byte* reasonPtr = &reasonBytes.DangerousGetPinnableReference())
+                            {
+                                response.ReasonPhrase = Encoding.ASCII.GetString(reasonPtr, reasonBytes.Length);
+                            }
+                        }
+                        catch (FormatException e)
+                        {
+                            ThrowInvalidHttpResponse(e);
                         }
                     }
                 }
@@ -1155,6 +1162,8 @@ namespace System.Net.Http
         public override string ToString() => $"{nameof(HttpConnection)}(Host:{_key.Host})"; // Description for diagnostic purposes
 
         private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
+
+        private static void ThrowInvalidHttpResponse(Exception innerException) => throw new HttpRequestException(SR.net_http_invalid_response, innerException);
 
         internal void Trace(string message, [CallerMemberName] string memberName = null) =>
             NetEventSource.Log.HandlerMessage(
