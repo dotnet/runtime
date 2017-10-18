@@ -1155,9 +1155,15 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 		MonoReflectionMethodHandle m = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
 		MonoMethod *method = MONO_HANDLE_GETVAL (m, method);
 		if (method->is_inflated) {
-			if (create_open_instance)
-				token = mono_image_get_methodspec_token (assembly, method);
-			else
+			if (create_open_instance) {
+				guint32 methodspec_token = mono_image_get_methodspec_token (assembly, method);
+				MonoReflectionMethodHandle canonical_obj =
+					mono_method_get_object_handle (MONO_HANDLE_DOMAIN (obj), method, NULL, error);
+				if (!is_ok (error))
+					goto leave;
+				MONO_HANDLE_ASSIGN (register_obj, canonical_obj);
+				token = methodspec_token;
+			} else
 				token = mono_image_get_inflated_method_token (assembly, method);
 		} else if ((method->klass->image == &assembly->image) &&
 			 !mono_class_is_ginst (method->klass)) {

@@ -204,9 +204,12 @@ mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, Mo
 	if (prev) {
 		switch (how_collide) {
 		case MONO_DYN_IMAGE_TOK_NEW:
-			g_assert_not_reached ();
+			g_warning ("%s: Unexpected previous object when called with MONO_DYN_IMAGE_TOK_NEW", __func__);
+			break;
 		case MONO_DYN_IMAGE_TOK_SAME_OK:
-			g_assert (prev == MONO_HANDLE_RAW (obj));
+			if (prev != MONO_HANDLE_RAW (obj)) {
+				g_warning ("%s: condition `prev == MONO_HANDLE_RAW (obj)' not met", __func__);
+			}
 			break;
 		case MONO_DYN_IMAGE_TOK_REPLACE:
 			break;
