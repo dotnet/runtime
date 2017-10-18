@@ -12,7 +12,7 @@ namespace System.Diagnostics.Tests
         private const long instanceId = 57;
         private const int categoryId = 657;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventInstanceCreation()
         {
             EventInstance eventInstance = new EventInstance(instanceId, categoryId);
@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(EventLogEntryType.Information, eventInstance.EntryType);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventInstanceOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new EventInstance(-1, 0));
@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new EventInstance(long.MaxValue, 0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventInstanceCreationWithType()
         {
             EventInstance eventInstance = new EventInstance(instanceId, categoryId, EventLogEntryType.Warning);
