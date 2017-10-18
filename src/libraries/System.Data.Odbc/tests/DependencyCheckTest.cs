@@ -11,6 +11,9 @@ namespace System.Data.Odbc.Tests
         [ConditionalFact(Helpers.OdbcNotAvailable)]
         public void OdbcConnection_OpenWhenOdbcNotInstalled_ThrowsException()
         {
+            if (PlatformDetection.IsWindowsServerCore && !Environment.Is64BitProcess)
+                return; // On 32 bit Server Core, it does not throw DllNotFoundException.
+
             using (var connection = new OdbcConnection(ConnectionStrings.WorkingConnection))
             {
                 Assert.Throws<DllNotFoundException>(() => connection.Open()); 
