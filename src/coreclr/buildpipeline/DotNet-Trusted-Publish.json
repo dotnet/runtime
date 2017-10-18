@@ -219,7 +219,7 @@
       "alwaysRun": false,
       "displayName": "Packages -> Azure",
       "timeoutInMinutes": 0,
-      "condition": "and(succeeded(), ne(variables['ConfigurationGroup'], 'Release'))",
+      "condition": "and(succeeded(), eq(variables['ConfigurationGroup'], 'Release'))",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -238,7 +238,7 @@
       "alwaysRun": false,
       "displayName": "Symbol Packages -> Azure",
       "timeoutInMinutes": 0,
-      "condition": "and(succeeded(), ne(variables['ConfigurationGroup'], 'Release'))",
+      "condition": "and(succeeded(), eq(variables['ConfigurationGroup'], 'Release'))",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
