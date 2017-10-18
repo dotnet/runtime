@@ -16,15 +16,15 @@ namespace System.Buffers.Binary
         public static void WriteMachineEndian<T>(Span<byte> buffer, ref T value)
             where T : struct
         {
-#if IsPartialFacade
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, typeof(T)));
-            }
-#else
+#if netstandard
             if (SpanHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#else
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, typeof(T)));
             }
 #endif
             if ((uint)Unsafe.SizeOf<T>() > (uint)buffer.Length)
@@ -42,15 +42,15 @@ namespace System.Buffers.Binary
         public static bool TryWriteMachineEndian<T>(Span<byte> buffer, ref T value)
             where T : struct
         {
-#if IsPartialFacade
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, typeof(T)));
-            }
-#else
+#if netstandard
             if (SpanHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#else
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, typeof(T)));
             }
 #endif
             if (Unsafe.SizeOf<T>() > (uint)buffer.Length)
