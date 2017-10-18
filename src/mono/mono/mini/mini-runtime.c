@@ -1994,6 +1994,11 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 
 	error_init (error);
 
+	if (mono_class_is_open_constructed_type (&method->klass->byval_arg)) {
+		mono_error_set_invalid_operation (error, "Could not execute the method because the containing type is not fully instantiated.");
+		return NULL;
+	}
+
 #ifdef ENABLE_INTERPRETER
 	if (mono_use_interpreter && !jit_only) {
 		code = mono_interp_create_method_pointer (method, error);

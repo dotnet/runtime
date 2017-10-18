@@ -247,6 +247,7 @@ TESTS_CS_SRC=		\
 	delegate12.cs		\
 	delegate13.cs		\
 	delegate14.cs		\
+	delegate15.cs		\
 	largeexp.cs		\
 	largeexp2.cs		\
 	marshalbyref1.cs	\
