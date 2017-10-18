@@ -2630,19 +2630,20 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				klass = mono_class_get_full (image, token, generic_context);
 
 			MonoClass *tos_klass = td->sp [-1].klass;
-			if (tos_klass && mint_type (&tos_klass->byval_arg) == MINT_TYPE_VT) {
+			if (tos_klass && td->sp [-1].type == STACK_TYPE_VT) {
 				int tos_size = mono_class_value_size (tos_klass, NULL);
 				POP_VT (td, tos_size);
 			}
 
 			ADD_CODE(td, MINT_LDOBJ);
 			ADD_CODE(td, get_data_item_index(td, klass));
-			if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
+			int mt = mint_type (&klass->byval_arg);
+			if (mt == MINT_TYPE_VT) {
 				size = mono_class_value_size (klass, NULL);
-				PUSH_VT(td, size);
+				PUSH_VT (td, size);
 			}
 			td->ip += 5;
-			SET_TYPE(td->sp - 1, stack_type[mint_type(&klass->byval_arg)], klass);
+			SET_TYPE (td->sp - 1, stack_type [mt], klass);
 			BARRIER_IF_VOLATILE (td);
 			break;
 		}
