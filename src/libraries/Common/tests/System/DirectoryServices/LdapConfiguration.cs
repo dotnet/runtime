@@ -31,6 +31,21 @@ namespace System.DirectoryServices.Tests
         internal AuthenticationTypes AuthenticationTypes { get; set; }
         internal string LdapPath => String.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/{Domain}" : $"LDAP://{ServerName}:{Port}/{Domain}";
         internal string RootDSEPath => String.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/rootDSE" : $"LDAP://{ServerName}:{Port}/rootDSE";
+        internal string UserNameWithNoDomain
+        {
+            get
+            {
+                string [] parts = UserName.Split('\\');
+                if (parts.Length > 1)
+                    return parts[parts.Length - 1];
+
+                parts = UserName.Split('@');
+                if (parts.Length > 1)
+                    return parts[0];
+
+                return UserName;
+            }
+        }
 
         internal string GetLdapPath(string prefix) // like "ou=something"
         {
