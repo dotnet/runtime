@@ -181,7 +181,7 @@ namespace System.Diagnostics.Tests
                 return;
 
             string source = "Source" + nameof(WriteEntryWithTypeAndId);
-            string log = "InstanceEntry";
+            string log = "InstanceEntry";          
             try
             {
                 EventLog.CreateEventSource(source, log);
@@ -218,6 +218,11 @@ namespace System.Diagnostics.Tests
                     eventLogEntry = WriteLogEntryWithSource(source, type: true, instance: true, category: true);
 
                 // There is some prefix string already attached to the message passed
+                // The description for Event ID '0' in Source 'SourceWriteEntryWithTypeIDAndCategory' cannot be found.  The local computer may not have the necessary registry information or message DLL files to display the message, or you may not have permission
+                // to access them.  The following information is part of the event:'EventLogWriteEntryTestsMessage'
+                // The last part is the associated message
+                // The initial message is due in insufficient permission to access resource library EventLogMsgs.dll
+
                 Assert.Contains(message, eventLogEntry.Message);
                 Assert.Equal((short)eventInstance.CategoryId, eventLogEntry.CategoryNumber);
                 Assert.Equal("(" + eventLogEntry.CategoryNumber + ")", eventLogEntry.Category);

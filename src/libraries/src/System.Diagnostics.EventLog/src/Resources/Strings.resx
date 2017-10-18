@@ -166,7 +166,7 @@
     <value>Cannot open registry key {0}\\{1}\\{2}.</value>
   </data>
   <data name="LocalSourceAlreadyExists" xml:space="preserve">
-    <value>Source {0} already exists on the computer '{1}'.</value>
+    <value>Source {0} already exists on the local computer.</value>
   </data>
   <data name="LocalSourceNotRegistered" xml:space="preserve">
     <value>Source {0} is not registered on the local computer.</value>
