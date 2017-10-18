@@ -27,6 +27,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/utils/bsearch.h>
+#include <mono/utils/mono-logger-internals.h>
 
 #include "debug-mono-ppdb.h"
 
@@ -125,8 +126,10 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return create_ppdb_file (image);
 	}
 
-	if (!get_pe_debug_guid (image, pe_guid, &pe_age, &pe_timestamp))
+	if (!get_pe_debug_guid (image, pe_guid, &pe_age, &pe_timestamp)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Image '%s' has no debug directory.", image->name);
 		return NULL;
+	}
 
 	if (raw_contents) {
 		if (size > 4 && strncmp ((char*)raw_contents, "BSJB", 4) == 0)
