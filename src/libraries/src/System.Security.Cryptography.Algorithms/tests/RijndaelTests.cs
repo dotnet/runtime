@@ -52,6 +52,42 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
         }
 
         [Fact]
+        public static void VerifyBlocksizeIVNulling()
+        {
+            using (var testIVAlg = Rijndael.Create())
+            {
+                using (var alg = Rijndael.Create())
+                {
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 128;
+                    Assert.Equal(testIVAlg.IV, alg.IV);
+                }
+
+                using (var alg = new RijndaelManaged())
+                {
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 128;
+                    Assert.Equal(testIVAlg.IV, alg.IV);
+                }
+
+                using (var alg = new RijndaelLegalSizesBreaker())
+                {
+                    // This one should set IV to null on setting BlockSize since there is only one valid BlockSize
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 1;
+                    Assert.Throws<NotImplementedException>(() => alg.IV);
+                }
+
+                using (var alg = new RijndaelMinimal())
+                {
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 128;
+                    Assert.Equal(testIVAlg.IV, alg.IV);
+                }
+            }
+        }
+
+        [Fact]
         public static void EncryptDecryptKnownECB192()
         {
             using (var alg = Rijndael.Create())
