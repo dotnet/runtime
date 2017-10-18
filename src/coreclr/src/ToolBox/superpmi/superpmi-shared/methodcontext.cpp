@@ -1029,9 +1029,10 @@ const char* MethodContext::repGetMethodName(CORINFO_METHOD_HANDLE ftn, const cha
     return result;
 }
 
-
-void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, 
-    char* methodName, const char** className, const char **namespaceName)
+void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                                 char*                 methodName,
+                                                 const char**          className,
+                                                 const char**          namespaceName)
 {
     if (GetMethodNameFromMetadata == nullptr)
         GetMethodNameFromMetadata = new LightWeightMap<DLDD, DDD>();
@@ -1063,15 +1064,18 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
 void MethodContext::dmpGetMethodNameFromMetadata(DLDD key, DDD value)
 {
-    unsigned char* methodName = (unsigned char*)GetMethodName->GetBuffer(value.A);
-    unsigned char* className = (unsigned char*)GetMethodName->GetBuffer(value.B);
+    unsigned char* methodName    = (unsigned char*)GetMethodName->GetBuffer(value.A);
+    unsigned char* className     = (unsigned char*)GetMethodName->GetBuffer(value.B);
     unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.C);
-    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u, value meth-'%s', class-'%s', namespace-'%s'", 
-        key.A, key.B, key.C, methodName, className, namespaceName);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u, value meth-'%s', "
+           "class-'%s', namespace-'%s'",
+           key.A, key.B, key.C, methodName, className, namespaceName);
     GetMethodNameFromMetadata->Unlock();
 }
 
-const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** moduleName, const char** namespaceName)
+const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                                        const char**          moduleName,
+                                                        const char**          namespaceName)
 {
     const char* result = nullptr;
     DDD         value;
@@ -1092,16 +1096,16 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
     }
     else
     {
-        value = GetMethodNameFromMetadata->Get(key);
+        value  = GetMethodNameFromMetadata->Get(key);
         result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.A);
 
         if (moduleName != nullptr)
-        {            
+        {
             *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.B);
         }
 
         if (namespaceName != nullptr)
-        {            
+        {
             *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.C);
         }
     }
@@ -1465,7 +1469,8 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->stubLookup.runtimeLookup.testForNull         = value.stubLookup.runtimeLookup.testForNull != 0;
         pResult->stubLookup.runtimeLookup.testForFixup        = value.stubLookup.runtimeLookup.testForFixup != 0;
         pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
-        pResult->stubLookup.runtimeLookup.indirectSecondOffset = value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
+        pResult->stubLookup.runtimeLookup.indirectSecondOffset =
+            value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
         for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
     }
@@ -5289,7 +5294,9 @@ BOOL MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return value;
 }
 
-void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result)
+void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
+                                           CORINFO_CLASS_HANDLE toClass,
+                                           TypeCompareState     result)
 {
     if (CompareTypesForCast == nullptr)
         CompareTypesForCast = new LightWeightMap<DLDL, DWORD>();
@@ -5322,7 +5329,9 @@ TypeCompareState MethodContext::repCompareTypesForCast(CORINFO_CLASS_HANDLE from
     return value;
 }
 
-void MethodContext::recCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, TypeCompareState result)
+void MethodContext::recCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1,
+                                               CORINFO_CLASS_HANDLE cls2,
+                                               TypeCompareState     result)
 {
     if (CompareTypesForEquality == nullptr)
         CompareTypesForEquality = new LightWeightMap<DLDL, DWORD>();
@@ -6075,12 +6084,12 @@ bool MethodContext::wasEnviromentChanged()
         for (unsigned int i = 0; i < Environment->GetCount(); i++)
         {
             Agnostic_Environment currEnvValue = Environment->Get(i);
-            LPCSTR currKey = (LPCSTR)Environment->GetBuffer(currEnvValue.name_index);
-            LPCSTR currVal = (LPCSTR)Environment->GetBuffer(currEnvValue.val_index);
+            LPCSTR               currKey      = (LPCSTR)Environment->GetBuffer(currEnvValue.name_index);
+            LPCSTR               currVal      = (LPCSTR)Environment->GetBuffer(currEnvValue.val_index);
 
             Agnostic_Environment prevEnvValue = prevEnviroment->Get(i);
-            LPCSTR prevKey = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.name_index);
-            LPCSTR prevVal = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.val_index);
+            LPCSTR               prevKey      = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.name_index);
+            LPCSTR               prevVal      = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.val_index);
             if (strcmp(currKey, prevKey) != 0 || strcmp(currVal, prevVal) != 0)
             {
                 changed = true;
