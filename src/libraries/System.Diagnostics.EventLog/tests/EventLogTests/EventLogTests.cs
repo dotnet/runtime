@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogTests : FileCleanupTestBase
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventLogReinitializationException()
         {
             using (EventLog eventLog = new EventLog())
@@ -45,7 +45,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void ApplicationEventLog_Count()
         {
             using (EventLog eventLog = new EventLog("Application"))
@@ -73,7 +73,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void CheckLogName_Get()
         {
             using (EventLog eventLog = new EventLog("Application"))
@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void CheckMachineName_Get()
         {
             using (EventLog eventLog = new EventLog("Application"))
@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void GetLogDisplayName_NotSet_Throws()
         {
             using (EventLog eventLog = new EventLog())
@@ -101,7 +101,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void GetLogDisplayName_Set()
         {
             using (EventLog eventLog = new EventLog())
@@ -111,7 +111,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventLogs_Get()
         {
             Assert.Throws<ArgumentException>(() => EventLog.GetEventLogs(""));
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void MaxKilobytesOutOfRangeException()
         {
             using (EventLog eventLog = new EventLog())
@@ -269,14 +269,14 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void InvalidFormatOrNullLogName()
         {
             Assert.Throws<ArgumentNullException>(() => new EventLog(null));
             Assert.Throws<ArgumentException>(() => new EventLog("?"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventLog_EnableRaisingEvents_DefaultFalse()
         {
             using (EventLog eventLog = new EventLog("log"))
