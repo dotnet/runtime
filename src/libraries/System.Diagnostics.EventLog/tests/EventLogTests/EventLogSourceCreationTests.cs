@@ -48,7 +48,7 @@ namespace System.Diagnostics.Tests
             {
                 EventLog.CreateEventSource(source, null);
                 Assert.True(EventLog.SourceExists(source));
-                Assert.Equal(EventLog.LogNameFromSourceName(source, "."), "Application");
+                Assert.Equal("Application", EventLog.LogNameFromSourceName(source, "."));
             }
             finally
             {
@@ -134,7 +134,7 @@ namespace System.Diagnostics.Tests
         public void CategoryResourceFile_Set()
         {
             string messageFile = "ResourceFile";
-            string source = "Source" + nameof(MessageResourceFile_Set);
+            string source = "Source" + nameof(CategoryResourceFile_Set);
             string log = "MessageResourceFile";
             EventSourceCreationData sourceData = new EventSourceCreationData(source, log);
             sourceData.CategoryResourceFile = messageFile;
@@ -145,7 +145,7 @@ namespace System.Diagnostics.Tests
         public void ParameterResourceFile_Set()
         {
             string messageFile = "ResourceFile";
-            string source = "Source" + nameof(MessageResourceFile_Set);
+            string source = "Source" + nameof(ParameterResourceFile_Set);
             string log = "MessageResourceFile";
             EventSourceCreationData sourceData = new EventSourceCreationData(source, log);
             sourceData.ParameterResourceFile = messageFile;
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void CategoryCount_Set()
         {
-            string source = "Source" + nameof(MessageResourceFile_Set);
+            string source = "Source" + nameof(CategoryCount_Set);
             string log = "MessageResourceFile";
             EventSourceCreationData sourceData = new EventSourceCreationData(source, log);
             sourceData.CategoryCount = 2;
