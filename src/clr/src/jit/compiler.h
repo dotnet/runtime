@@ -7832,7 +7832,7 @@ private:
     bool compSupports(InstructionSet isa)
     {
 #ifdef _TARGET_XARCH_
-        return (opts.compSupportsISA & (1 << isa)) != 0;
+        return (opts.compSupportsISA & (1ULL << isa)) != 0;
 #else
         return false;
 #endif
@@ -7952,7 +7952,7 @@ public:
         uint64_t compSupportsISA;
         void setSupportedISA(InstructionSet isa)
         {
-            compSupportsISA |= 1 << isa;
+            compSupportsISA |= 1ULL << isa;
         }
 #endif
 
