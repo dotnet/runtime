@@ -87,6 +87,7 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
+        [ActiveIssue(24722, TestPlatforms.Linux)]
         [MemberData(nameof(Alpn_TestData))]
         public void SslStream_StreamToStream_Alpn_Success(List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
