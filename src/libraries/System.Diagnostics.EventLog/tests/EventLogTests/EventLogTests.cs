@@ -231,6 +231,7 @@ namespace System.Diagnostics.Tests
                 try
                 {
                     EventLog.CreateEventSource(source, eventLog.LogDisplayName);
+                    Assert.Equal(eventLog.MachineName, Environment.MachineName.ToLowerInvariant());
                     Assert.True(EventLog.SourceExists(source, Environment.MachineName.ToLowerInvariant()));
                 }
                 finally
