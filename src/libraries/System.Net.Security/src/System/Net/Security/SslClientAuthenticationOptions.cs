@@ -11,8 +11,6 @@ namespace System.Net.Security
 {
     public class SslClientAuthenticationOptions
     {
-        private string _targetHost;
-        private X509CertificateCollection _clientCertificates;
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
         private X509RevocationMode _checkCertificateRevocation = X509RevocationMode.NoCheck;
         private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
@@ -28,17 +26,9 @@ namespace System.Net.Security
 
         public List<SslApplicationProtocol> ApplicationProtocols { get; set; }
 
-        public string TargetHost
-        {
-            get => _targetHost;
-            set => _targetHost = value;
-        }
+        public string TargetHost { get; set; }
 
-        public X509CertificateCollection ClientCertificates
-        {
-            get => _clientCertificates;
-            set => _clientCertificates = value;
-        }
+        public X509CertificateCollection ClientCertificates { get; set; }
 
         public X509RevocationMode CertificateRevocationCheckMode
         {
