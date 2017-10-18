@@ -176,14 +176,7 @@ namespace System.Diagnostics
 
             try
             {
-                if (machineName.Equals("."))
-                {
-                    return GetLocalBuildDirectory();
-                }
-                else
-                {
-                    baseKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, machineName);
-                }
+                baseKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, machineName);
                 if (baseKey == null)
                     throw new InvalidOperationException(SR.Format(SR.RegKeyMissingShort, "HKEY_LOCAL_MACHINE", machineName));
 
