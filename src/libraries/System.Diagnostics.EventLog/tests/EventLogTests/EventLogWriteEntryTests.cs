@@ -101,7 +101,6 @@ namespace System.Diagnostics.Tests
                 eventLog.Source = source;
                 return eventLog.Entries[eventLog.Entries.Count - 1];
             }
-
         }
 
         private EventLogEntry WriteLogEntryEvent(string source, bool data = false)
@@ -137,7 +136,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.Contains(message, eventLogEntry.Message);
                 Assert.Equal(source, eventLogEntry.Source);
-                Assert.StartsWith(Environment.MachineName.ToLower(), eventLogEntry.MachineName.ToLower());
+                Assert.StartsWith(Environment.MachineName.ToLowerInvariant(), eventLogEntry.MachineName.ToLowerInvariant());
                 Assert.Equal(eventLogEntry.TimeWritten, eventLogEntry.TimeGenerated);
             }
             finally
@@ -218,7 +217,7 @@ namespace System.Diagnostics.Tests
                 else
                     eventLogEntry = WriteLogEntryWithSource(source, type: true, instance: true, category: true);
 
-                //There is some prefix string already attached to the message passed
+                // There is some prefix string already attached to the message passed
                 Assert.Contains(message, eventLogEntry.Message);
                 Assert.Equal((short)eventInstance.CategoryId, eventLogEntry.CategoryNumber);
                 Assert.Equal("(" + eventLogEntry.CategoryNumber + ")", eventLogEntry.Category);
@@ -263,7 +262,6 @@ namespace System.Diagnostics.Tests
             {
                 Assert.Throws<ArgumentException>(() => eventLog.WriteEntry(message));
             }
-
         }
 
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
@@ -273,7 +271,7 @@ namespace System.Diagnostics.Tests
             {
                 string source = "Source_" + nameof(WriteEntryWithInvalidType);
                 eventLog.Source = source;
-                Assert.Throws<InvalidEnumArgumentException>(() => eventLog.WriteEntry(message, (EventLogEntryType)7));
+                Assert.Throws<InvalidEnumArgumentException>(() => eventLog.WriteEntry(message, (EventLogEntryType)7)); // 7 is a random number which is not associated with any type in EventLogEntryType
             }
         }
 
@@ -357,7 +355,7 @@ namespace System.Diagnostics.Tests
             try
             {
                 EventLog.WriteEvent(source, eventInstance, rawData, null);
-                Assert.Equal(EventLog.LogNameFromSourceName(source, "."), "Application");
+                Assert.Equal("Application", EventLog.LogNameFromSourceName(source, "."));
             }
             finally
             {

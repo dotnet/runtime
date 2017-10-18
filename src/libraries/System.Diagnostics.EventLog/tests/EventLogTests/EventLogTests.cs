@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tests
                     eventLog.Clear();
                     Assert.Equal(0, eventLog.Entries.Count);
                     eventLog.WriteEntry("Writing to event log.");
-                    Assert.Equal(eventLog.Entries.Count, 1);
+                    Assert.Equal(1,eventLog.Entries.Count);
                 }
             }
             finally
@@ -142,7 +142,6 @@ namespace System.Diagnostics.Tests
                 EventLog.DeleteEventSource(source);
                 EventLog.Delete(log);
             }
-
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -169,11 +168,11 @@ namespace System.Diagnostics.Tests
                 {
                     eventLog.Source = source;
 
-                    //The second argument is only used when the overflow policy is set to OverWrite Older
+                    // The second argument is only used when the overflow policy is set to OverWrite Older
                     eventLog.ModifyOverflowPolicy(OverflowAction.DoNotOverwrite, 1);
                     Assert.Equal(OverflowAction.DoNotOverwrite, eventLog.OverflowAction);
 
-                    // -1 means overflow action is donot overrite
+                    // -1 means overflow action is donot OverWrite
                     Assert.Equal(-1, eventLog.MinimumRetentionDays);
                 }
             }
@@ -189,7 +188,7 @@ namespace System.Diagnostics.Tests
         {
             string source = "Source_" + nameof(OverflowAndRetention_Set);
             string log = "Overflow_Set";
-            int retentionDays = 30; //A number between 0 and 365 should work
+            int retentionDays = 30; // A number between 0 and 365 should work
 
             try
             {
@@ -198,7 +197,7 @@ namespace System.Diagnostics.Tests
                 {
                     eventLog.Source = source;
 
-                    //The second argument is only used when the overflow policy is set to OverWrite Older
+                    // The second argument is only used when the overflow policy is set to OverWrite Older
                     eventLog.ModifyOverflowPolicy(OverflowAction.OverwriteOlder, retentionDays);
                     Assert.Equal(OverflowAction.OverwriteOlder, eventLog.OverflowAction);
                     Assert.Equal(retentionDays, eventLog.MinimumRetentionDays);
@@ -247,7 +246,7 @@ namespace System.Diagnostics.Tests
             string log = "DisplayName";
             string source = "Source_" + nameof(RegisterDisplayLogName);
             string messageFile = GetTestFilePath();
-            long DisplayNameMsgId = 45;
+            long DisplayNameMsgId = 42; // It could be any number
             EventSourceCreationData sourceData = new EventSourceCreationData(source, log);
 
             try
@@ -268,7 +267,6 @@ namespace System.Diagnostics.Tests
                 EventLog.DeleteEventSource(source);
                 EventLog.Delete(log);
             }
-
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -281,7 +279,10 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void EventLog_EnableRaisingEvents_DefaultFalse()
         {
-            Assert.False(new EventLog("log").EnableRaisingEvents);
+            using (EventLog eventLog = new EventLog("log"))
+            {
+                Assert.False(eventLog.EnableRaisingEvents);
+            }        
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
