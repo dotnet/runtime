@@ -181,7 +181,7 @@ namespace System.Diagnostics.Tests
                 return;
 
             string source = "Source" + nameof(WriteEntryWithTypeAndId);
-            string log = "InstanceEntry";          
+            string log = "InstanceEntry";
             try
             {
                 EventLog.CreateEventSource(source, log);
@@ -222,7 +222,6 @@ namespace System.Diagnostics.Tests
                 // to access them.  The following information is part of the event:'EventLogWriteEntryTestsMessage'
                 // The last part is the associated message
                 // The initial message is due in insufficient permission to access resource library EventLogMsgs.dll
-
                 Assert.Contains(message, eventLogEntry.Message);
                 Assert.Equal((short)eventInstance.CategoryId, eventLogEntry.CategoryNumber);
                 Assert.Equal("(" + eventLogEntry.CategoryNumber + ")", eventLogEntry.Category);
