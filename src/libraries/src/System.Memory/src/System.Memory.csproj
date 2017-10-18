@@ -7,7 +7,7 @@
     <CLSCompliant>false</CLSCompliant>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(DefineConstants);IsPartialFacade</DefineConstants>
+    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
   </PropertyGroup>
@@ -55,9 +55,8 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Condition="'$(TargetGroup)' != 'netstandard1.1'" Include="System.Numerics.Vectors" />
-    <Reference Condition="'$(TargetGroup)' != 'netstandard1.1'" Include="System.Runtime.CompilerServices.Unsafe" />
-    <ProjectReference Condition="'$(TargetGroup)' == 'netstandard1.1'" Include="..\..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Compile Include="System\SpanExtensions.Fast.cs" />
