@@ -521,7 +521,8 @@ test_sources = 			\
 	gshared.cs \
 	unaligned.cs	\
 	MemoryIntrinsics.il	\
-	mixed.cs
+	mixed.cs	\
+	ratests.cs
 
 regtests_UNIVERSAL = \
 	aot-tests.exe \
@@ -540,7 +541,8 @@ regtests_UNIVERSAL = \
 	generics.exe \
 	basic-simd.exe \
 	unaligned.exe	\
-	basic-vectors.exe
+	basic-vectors.exe	\
+	ratests.exe
 
 regtests_DISABLED = 
 

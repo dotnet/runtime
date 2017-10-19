@@ -13846,6 +13846,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			regtype = spec [MONO_INST_DEST];
 			g_assert (((ins->dreg == -1) && (regtype == ' ')) || ((ins->dreg != -1) && (regtype != ' ')));
 			prev_dreg = -1;
+			int dreg_using_dest_to_membase_op = -1;
 
 			if ((ins->dreg != -1) && get_vreg_to_inst (cfg, ins->dreg)) {
 				MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
@@ -13867,6 +13868,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						NULLIFY_INS (ins);
 						def_ins = NULL;
 					} else {
+						dreg_using_dest_to_membase_op = ins->dreg;
 						ins->opcode = op_to_op_dest_membase (store_opcode, ins->opcode);
 						ins->inst_basereg = var->inst_basereg;
 						ins->inst_offset = var->inst_offset;
@@ -14052,7 +14054,12 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 									sreg = ins->dreg;
 								}
 								g_assert (sreg != -1);
-								vreg_to_lvreg [var->dreg] = sreg;
+								if (var->dreg == dreg_using_dest_to_membase_op) {
+									if (cfg->verbose_level > 2)
+										printf ("\tCan't cache R%d because it's part of a dreg dest_membase optimization\n", var->dreg);
+								} else {
+									vreg_to_lvreg [var->dreg] = sreg;
+								}
 								if (lvregs_len >= lvregs_size) {
 									guint32 *new_lvregs = mono_mempool_alloc0 (cfg->mempool, sizeof (guint32) * lvregs_size * 2);
 									memcpy (new_lvregs, lvregs, sizeof (guint32) * lvregs_size);

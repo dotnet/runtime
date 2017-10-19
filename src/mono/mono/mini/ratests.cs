@@ -380,4 +380,20 @@ public class Tests {
 
 		return 0;
 	}
+
+	static int balanceSegment(int start, int end) {
+		int median = 1;
+
+		if ((3 * median) <= (end - start + 1)) {
+			median += median;
+			median += (start - 1);
+			return median;
+		}
+		return 99;
+	}
+
+	public static int test_2_spiller_bug_56194 () {
+		return balanceSegment (1, 3);
+	}
+
 }
