@@ -105,6 +105,10 @@ initTargetDistroRid()
         export __DistroRid="$__HostDistroRid"
     fi
 
+    if [ "$__BuildOS" == "OSX" ]; then
+        __PortableBuild=1
+    fi
+
     # Portable builds target the base RID
     if [ $__PortableBuild == 1 ]; then
         if [ "$__BuildOS" == "Linux" ]; then
