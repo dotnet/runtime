@@ -14,23 +14,6 @@
 #include "error_codes.h"
 #include "deps_format.h"
 
-/**
- * Multilevel Lookup is enabled by default
- *  It can be disabled by setting DOTNET_MULTILEVEL_LOOKUP env var to a value that is not 1
- */
-bool multilevel_lookup_enabled()
-{
-    pal::string_t env_lookup;
-    bool multilevel_lookup = true;
-
-    if (pal::getenv(_X("DOTNET_MULTILEVEL_LOOKUP"), &env_lookup))
-    {
-        auto env_val = pal::xtoi(env_lookup.c_str());
-        multilevel_lookup = (env_val == 1);
-    }
-    return multilevel_lookup;
-}
-
 void get_all_fx_versions(
     host_mode_t mode,
     const pal::string_t& own_dir,
