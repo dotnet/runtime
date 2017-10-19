@@ -1992,10 +1992,7 @@ public:
 
     unsigned gtTokenToIconFlags(unsigned token);
 
-    GenTreePtr gtNewIconEmbHndNode(void*    value,
-                                   void*    pValue,
-                                   unsigned flags,
-                                   void*    compileTimeHandle = nullptr);
+    GenTreePtr gtNewIconEmbHndNode(void* value, void* pValue, unsigned flags, void* compileTimeHandle = nullptr);
 
     GenTreePtr gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd, unsigned hnd1 = 0, void* hnd2 = nullptr);
     GenTreePtr gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd, unsigned hnd1 = 0, void* hnd2 = nullptr);
