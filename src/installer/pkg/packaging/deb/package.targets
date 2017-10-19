@@ -17,14 +17,7 @@
     </PropertyGroup>
 
     <Exec Command="$(DotnetRestoreCommand) $(dotnetDebToolSource)"/>
-    <Exec Command="$(DotnetToolCommand) pack $(dotnetDebToolSource) --output $(PackagesOutDir)intermediate/ $(VersionSuffixArg)"/>
-
-    <ItemGroup>
-      <pkFiles Include="$(PackagesOutDir)intermediate/dotnet-deb-tool.*.nupkg"
-               Exclude="$(PackagesOutDir)intermediate/*.symbols.nupkg" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(pkFiles)" DestinationFolder="$(PackagesOutDir)" />
+    <Exec Command="$(DotnetToolCommand) pack $(dotnetDebToolSource) --output $(PackageOutputPath) $(VersionSuffixArg)"/>
 
     <RemoveDir Condition="Exists('$(consumingProjectDirectory)')"
                Directories="$(consumingProjectDirectory)" />
