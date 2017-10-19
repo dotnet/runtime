@@ -7,7 +7,6 @@
 
 #include "bitset.h"
 #include "compiler.h"
-#include "iallocator.h"
 #include "bitsetasshortlong.h"
 
 ///////////////////////////////////////////////////////////////////////////////
