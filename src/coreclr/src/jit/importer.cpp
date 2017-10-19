@@ -3289,14 +3289,13 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 //    clsHnd - handle for the intrinsic method's class
 //    method - handle for the intrinsic method
 //    sig    - signature of the intrinsic method
+//    methodFlags - CORINFO_FLG_XXX flags of the intrinsic method
 //    memberRef - the token for the intrinsic method
 //    readonlyCall - true if call has a readonly prefix
 //    tailCall - true if call is in tail position
 //    pConstrainedResolvedToken -- resolved token for constrained call, or nullptr
 //       if call is not constrained
 //    constraintCallThisTransform -- this transform to apply for a constrained call
-//    isJitIntrinsic - true if method is a "new" jit intrinsic that the jit
-//       must identify by name
 //    pIntrinsicID [OUT] -- intrinsic ID (see enumeration in corinfo.h)
 //       for "traditional" jit intrinsics
 //    isSpecialIntrinsic [OUT] -- set true if intrinsic expansion is a call
@@ -3333,33 +3332,33 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_CLASS_HANDLE    clsHnd,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
+                                unsigned                methodFlags,
                                 int                     memberRef,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                 CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
-                                bool                    isJitIntrinsic,
                                 CorInfoIntrinsics*      pIntrinsicID,
                                 bool*                   isSpecialIntrinsic)
 {
+    assert((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0);
+
     bool              mustExpand  = false;
     bool              isSpecial   = false;
-    CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
-    *pIntrinsicID                 = intrinsicID;
+    CorInfoIntrinsics intrinsicID = CORINFO_INTRINSIC_Illegal;
 
-    // Jit intrinsics won't have an IntrinsicID, and won't be identifed
-    // by the VM as must-expand.
-    if (isJitIntrinsic)
+    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        assert(!mustExpand);
-        assert(intrinsicID == CORINFO_INTRINSIC_Illegal);
+        intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
+    }
 
-        // They however may still be must-expand. The convention we
-        // have adopted is that if we are compiling the intrinsic and
-        // it calls itself recursively, the recursive call is
-        // must-expand.
+    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    {
+        // The recursive calls to Jit intrinsics are must-expand by convention.
         mustExpand = gtIsRecursiveCall(method);
     }
+
+    *pIntrinsicID = intrinsicID;
 
 #ifndef _TARGET_ARM_
     genTreeOps interlockedOperator;
@@ -3847,11 +3846,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
         default:
             /* Unknown intrinsic */
+            intrinsicID = CORINFO_INTRINSIC_Illegal;
             break;
     }
 
     // Look for new-style jit intrinsics by name
-    if (isJitIntrinsic)
+    if ((intrinsicID == CORINFO_INTRINSIC_Illegal) && ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0))
     {
         assert(retNode == nullptr);
         const NamedIntrinsic ni = lookupNamedIntrinsic(method);
@@ -7107,15 +7107,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // DEBUG
 
         // <NICE> Factor this into getCallInfo </NICE>
-        const bool isIntrinsic        = (mflags & CORINFO_FLG_INTRINSIC) != 0;
-        const bool isJitIntrinsic     = (mflags & CORINFO_FLG_JIT_INTRINSIC) != 0;
-        const bool isTail             = canTailCall && (tailCall != 0);
-        bool       isSpecialIntrinsic = false;
-        if (isIntrinsic || isJitIntrinsic)
+        bool isSpecialIntrinsic = false;
+        if ((mflags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
         {
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall, isTail,
-                                pConstrainedResolvedToken, callInfo->thisTransform, isJitIntrinsic, &intrinsicID,
-                                &isSpecialIntrinsic);
+            const bool isTail = canTailCall && (tailCall != 0);
+
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, readonlyCall, isTail,
+                                pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
