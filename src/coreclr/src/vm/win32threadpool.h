@@ -861,7 +861,7 @@ public:
         {
             ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
             if (counts.NumActive <= counts.MaxWorking)
-                return true;
+                return !IsHillClimbingDisabled;
         }
 
         return false;
@@ -1025,6 +1025,7 @@ private:
     static LARGE_INTEGER CurrentSampleStartTime;
 
     static unsigned int WorkerThreadSpinLimit;
+    static bool IsHillClimbingDisabled;
     static int ThreadAdjustmentInterval;
 
     SPTR_DECL(WorkRequest,WorkRequestHead);             // Head of work request queue
