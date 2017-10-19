@@ -1445,7 +1445,7 @@ namespace System.Diagnostics
                                                      sid, (short)strings.Length, rawData.Length, new HandleRef(this, stringsRootHandle.AddrOfPinnedObject()), rawData);
                 if (!success)
                 {
-                    //Trace("WriteEvent", "Throwing Win32Exception");
+                    // Trace("WriteEvent", "Throwing Win32Exception");
                     throw SharedUtils.CreateSafeWin32Exception();
                 }
             }
