@@ -78,4 +78,7 @@ Some of the libraries for which contracts and tests live in the corefx repo are 
 1. Follow the steps outlined at [Testing with Private CoreClr Bits](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits).  Make sure to include the optional steps listed as being required for code coverage.
 2. Add /p:CodeCoverageAssemblies="System.Private.CoreLib" to the previously discussed msbuild command, e.g. msbuild /t:BuildAndTest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"
 
+Note that you will also want to copy the System.Private.CoreLib.pdb along with the System.Private.CoreLib.dll.  As of 10/2017 this PDB must be a windows PDB (Hopefully by early 2018 OpenCOver will directly support portable PDBs.  
+You can determine if it is a windows PDB by doing 'more System.Private.CoreLib.pdb.  If it begins with 'Microsoft C/C++ MSF 7.00' it is a windows PDB)  If you need a windows PDB the Pdb2Pdb tool will convert (or you can do a msbuild /t:rebuild /p:DebugType=full in the src\mscorlib)
+
 The resulting code coverage report should now also include details for System.Private.CoreLib.
