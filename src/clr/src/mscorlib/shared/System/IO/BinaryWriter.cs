@@ -390,33 +390,33 @@ namespace System.IO
             }
         }
 
-        public virtual void Write(ReadOnlySpan<byte> value)
+        public virtual void Write(ReadOnlySpan<byte> buffer)
         {
             if (GetType() == typeof(BinaryWriter))
             {
-                OutStream.Write(value);
+                OutStream.Write(buffer);
             }
             else
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(value.Length);
+                byte[] array = ArrayPool<byte>.Shared.Rent(buffer.Length);
                 try
                 {
-                    value.CopyTo(buffer);
-                    Write(buffer, 0, value.Length);
+                    buffer.CopyTo(array);
+                    Write(array, 0, buffer.Length);
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    ArrayPool<byte>.Shared.Return(array);
                 }
             }
         }
 
-        public virtual void Write(ReadOnlySpan<char> value)
+        public virtual void Write(ReadOnlySpan<char> chars)
         {
-            byte[] bytes = ArrayPool<byte>.Shared.Rent(_encoding.GetMaxByteCount(value.Length));
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(_encoding.GetMaxByteCount(chars.Length));
             try
             {
-                int bytesWritten = _encoding.GetBytes(value, bytes);
+                int bytesWritten = _encoding.GetBytes(chars, bytes);
                 Write(bytes, 0, bytesWritten);
             }
             finally
