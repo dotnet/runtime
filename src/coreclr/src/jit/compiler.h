@@ -1988,16 +1988,13 @@ public:
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
 
     GenTreePtr gtNewJmpTableNode();
-    GenTreePtr gtNewIconHandleNode(
-        size_t value, unsigned flags, FieldSeqNode* fields = nullptr, unsigned handle1 = 0, void* handle2 = nullptr);
+    GenTreePtr gtNewIconHandleNode(size_t value, unsigned flags, FieldSeqNode* fields = nullptr);
 
     unsigned gtTokenToIconFlags(unsigned token);
 
     GenTreePtr gtNewIconEmbHndNode(void*    value,
                                    void*    pValue,
                                    unsigned flags,
-                                   unsigned handle1           = 0,
-                                   void*    handle2           = nullptr,
                                    void*    compileTimeHandle = nullptr);
 
     GenTreePtr gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd, unsigned hnd1 = 0, void* hnd2 = nullptr);
