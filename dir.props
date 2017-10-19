@@ -231,6 +231,11 @@
     <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRid)</TestTargetRid>
   </PropertyGroup>
 
+  <!-- Produce assets into the specified blob feed. -->
+  <PropertyGroup Condition="'$(DotNetOutputBlobFeedDir)' != ''">
+    <AssetOutputPath>$(DotNetOutputBlobFeedDir)assets/</AssetOutputPath>
+  </PropertyGroup>
+
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(OutputRid).$(ConfigurationGroup)</OSPlatformConfig>
@@ -248,8 +253,9 @@
     <CoreRuntimeTaskDir>$(BaseOutputRootPath)Microsoft.Build.Net.CoreRuntimeTask</CoreRuntimeTaskDir>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)/</PackagesBasePath>
-    <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(PackagesBasePath)packages/</PackagesOutDir>
-    <SymbolPackagesOutDir Condition="'$(SymbolPackagesOutDir)'==''">$(PackagesOutDir)</SymbolPackagesOutDir>
+    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackagesBasePath)packages/</PackageOutputPath>
+    <AssetOutputPath Condition="'$(AssetOutputPath)'==''">$(PackageOutputPath)</AssetOutputPath>
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)</SymbolPackageOutputPath>
     <PackageSymbolsBinDir Condition="'$(PackageSymbolsBinDir)' == ''">$(PackagesBasePath)symbols/</PackageSymbolsBinDir>
 
     <SharedFrameworkPublishDir>$(IntermediateOutputRootPath)sharedFrameworkPublish\</SharedFrameworkPublishDir>
@@ -266,11 +272,11 @@
     <DotnetHostFxrString>dotnet-hostfxr-</DotnetHostFxrString>
     <DotnetRuntimeString>dotnet-runtime-</DotnetRuntimeString>
     <DotnetRuntimeDependenciesPackageString>dotnet-runtime-deps-</DotnetRuntimeDependenciesPackageString>
-    <CombinedInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</CombinedInstallerStart>
-    <SharedHostInstallerStart>$(PackagesOutDir)$(DotnetHostString)</SharedHostInstallerStart>
-    <HostFxrInstallerStart>$(PackagesOutDir)$(DotnetHostFxrString)</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
-    <DotnetRuntimeDependenciesPackageInstallerStart>$(PackagesOutDir)$(DotnetRuntimeDependenciesPackageString)</DotnetRuntimeDependenciesPackageInstallerStart>
+    <CombinedInstallerStart>$(AssetOutputPath)$(DotnetRuntimeString)</CombinedInstallerStart>
+    <SharedHostInstallerStart>$(AssetOutputPath)$(DotnetHostString)</SharedHostInstallerStart>
+    <HostFxrInstallerStart>$(AssetOutputPath)$(DotnetHostFxrString)</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart>$(AssetOutputPath)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
+    <DotnetRuntimeDependenciesPackageInstallerStart>$(AssetOutputPath)$(DotnetRuntimeDependenciesPackageString)</DotnetRuntimeDependenciesPackageInstallerStart>
 
     <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
          and runtime ( earlier as dotnet-sharedframework-*)	-->

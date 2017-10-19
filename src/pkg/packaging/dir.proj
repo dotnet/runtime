@@ -79,8 +79,8 @@
           DestinationFolder="$(CombinedPublishRoot)/%(CombinedFiles.RecursiveDir)" />
 
     <!-- create output dir -->
-    <MakeDir Condition="!Exists('$(PackagesOutDir)')"
-             Directories="$(PackagesOutDir)" />
+    <MakeDir Condition="!Exists('$(AssetOutputPath)')"
+             Directories="$(AssetOutputPath)" />
   </Target>
 
   <Target Name="GenerateVersionBadge">
@@ -105,22 +105,22 @@
 
     <ZipFileCreateFromDirectory
         SourceDirectory="$(CombinedPublishRoot)"
-        DestinationArchive="$(PackagesOutDir)$(CombinedCompressedFile)"
+        DestinationArchive="$(AssetOutputPath)$(CombinedCompressedFile)"
         OverwriteDestination="true" />
 
     <ZipFileCreateFromDirectory
         SourceDirectory="$(HostFxrPublishRoot)"
-        DestinationArchive="$(PackagesOutDir)$(HostFxrCompressedFile)"
+        DestinationArchive="$(AssetOutputPath)$(HostFxrCompressedFile)"
         OverwriteDestination="true" />
 
     <ZipFileCreateFromDirectory
         SourceDirectory="$(SharedFrameworkPublishRoot)"
-        DestinationArchive="$(PackagesOutDir)$(SharedFrameworkCompressedFile)"
+        DestinationArchive="$(AssetOutputPath)$(SharedFrameworkCompressedFile)"
         OverwriteDestination="true" />
 
     <ZipFileCreateFromDirectory
         SourceDirectory="$(SharedFrameworkPublishSymbolsDir)"
-        DestinationArchive="$(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)"
+        DestinationArchive="$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)"
         OverwriteDestination="true" />
   </Target>
 
@@ -129,22 +129,22 @@
 
     <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
          we use -C so that we get a relative folder structure which is compressed rather than the full path -->
-    <Exec Command="tar -C $(CombinedPublishRoot) -czf $(PackagesOutDir)$(CombinedCompressedFile) ."
+    <Exec Command="tar -C $(CombinedPublishRoot) -czf $(AssetOutputPath)$(CombinedCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="tar -C $(HostFxrPublishRoot) -czf $(PackagesOutDir)$(HostFxrCompressedFile) ."
+    <Exec Command="tar -C $(HostFxrPublishRoot) -czf $(AssetOutputPath)$(HostFxrCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(PackagesOutDir)$(SharedFrameworkCompressedFile) ."
+    <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(AssetOutputPath)$(SharedFrameworkCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="tar -C $(SharedFrameworkPublishSymbolsDir) -czf $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile) ."
+    <Exec Command="tar -C $(SharedFrameworkPublishSymbolsDir) -czf $(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
-    <Error Condition="!Exists('$(PackagesOutDir)$(CombinedCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(CombinedCompressedFile)" />
-    <Error Condition="!Exists('$(PackagesOutDir)$(HostFxrCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(HostFxrCompressedFile)" />
-    <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkCompressedFile)" />
-    <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(CombinedCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(HostFxrCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>
 
   <Import Project="windows\package.targets" />
@@ -177,7 +177,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <PackArgs>--no-restore --no-build --output $(PackagesOutDir)</PackArgs>
+      <PackArgs>--no-restore --no-build --output $(PackageOutputPath)</PackArgs>
       <PackArgs>$(PackArgs) $(MSBuildPassThroughPropertyList) /p:BaseOutputPath=$(IntermediateOutputForPackaging)</PackArgs>
     </PropertyGroup>
 
