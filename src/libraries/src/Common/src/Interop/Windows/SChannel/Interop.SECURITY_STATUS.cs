@@ -48,7 +48,8 @@ internal static partial class Interop
         SmartcardLogonRequired = unchecked((int)0x8009033E),
         UnsupportedPreauth = unchecked((int)0x80090343),
         BadBinding = unchecked((int)0x80090346),
-        DowngradeDetected = unchecked((int)0x80090350)
+        DowngradeDetected = unchecked((int)0x80090350),
+        ApplicationProtocolMismatch = unchecked((int)0x80090367),
     }
 
 #if TRACE_VERBOSE
