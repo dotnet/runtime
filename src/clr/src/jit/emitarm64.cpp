@@ -1478,6 +1478,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2M[2] = {IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode2N[2] = {IF_DV_2N, IF_DV_2O};
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
+    const static insFormat formatEncode2P[2] = {IF_DV_2G, IF_DV_3B};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -1897,6 +1898,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 2; index++)
             {
                 if (fmt == formatEncode2O[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN2P:
+            for (index = 0; index < 2; index++)
+            {
+                if (fmt == formatEncode2P[index])
                 {
                     encoding_found = true;
                     break;
