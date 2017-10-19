@@ -3353,7 +3353,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
     {
         // The recursive calls to Jit intrinsics are must-expand by convention.
-        mustExpand = gtIsRecursiveCall(method);
+        mustExpand = mustExpand || gtIsRecursiveCall(method);
     }
 
     *pIntrinsicID = intrinsicID;
