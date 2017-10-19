@@ -49,7 +49,11 @@ void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t
     }
 
     // Global shared store dir
-    get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), init.tfm);
+    bool multilevel_lookup = multilevel_lookup_enabled();
+    if (multilevel_lookup)
+    {
+        get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), init.tfm);
+    }
 }
 
 bool parse_arguments(

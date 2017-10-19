@@ -44,4 +44,5 @@ bool parse_known_args(
 bool skip_utf8_bom(pal::ifstream_t* stream);
 bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
+bool multilevel_lookup_enabled();
 #endif
