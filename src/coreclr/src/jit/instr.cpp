@@ -1214,35 +1214,17 @@ void CodeGen::sched_AM(instruction ins,
         assert(baseReg != REG_NA);
         reg = baseReg;
 
-#ifdef LATE_DISASM
-        /*
-            Keep in mind that non-static data members (GT_FIELD nodes) were
-            transformed into GT_IND nodes - we keep the CLS/CPX information
-            in the GT_CNS_INT node representing the field offset of the
-            class member
-         */
-
-        if (addr->gtOper != GT_LEA && (addr->gtOp.gtOp2->gtOper == GT_CNS_INT) &&
-            addr->gtOp.gtOp2->IsIconHandle(GTF_ICON_FIELD_HDL))
-        {
-            /* This is a field offset - set the CPX/CLS values to emit a fixup */
-
-            cpx = addr->gtOp.gtOp2->gtIntCon.gtIconFld.gtIconCPX;
-            cls = addr->gtOp.gtOp2->gtIntCon.gtIconFld.gtIconCls;
-        }
-#endif
-
         if (cons)
         {
-            getEmitter()->emitIns_I_AR(ins, size, imm, reg, offs, cpx, cls);
+            getEmitter()->emitIns_I_AR(ins, size, imm, reg, offs);
         }
         else if (rdst)
         {
-            getEmitter()->emitIns_R_AR(ins, size, ireg, reg, offs, cpx, cls);
+            getEmitter()->emitIns_R_AR(ins, size, ireg, reg, offs);
         }
         else
         {
-            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, offs, cpx, cls);
+            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, offs);
         }
     }
 }
