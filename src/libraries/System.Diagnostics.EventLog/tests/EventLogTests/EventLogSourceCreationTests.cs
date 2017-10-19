@@ -86,7 +86,7 @@ namespace System.Diagnostics.Tests
         public void SourceAlreadyExistsWhenCreatingSource()
         {
             string source = "Source_" + nameof(SourceAlreadyExistsWhenCreatingSource);
-            string log = "MyLog";
+            string log = "ExistingSource";
             try
             {
                 EventLog.CreateEventSource(source, log);
