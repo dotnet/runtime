@@ -361,4 +361,16 @@
   <data name="net_encryptionpolicy_notsupported" xml:space="preserve">
     <value>The '{0}' encryption policy is not supported on this platform.</value>
   </data>
+  <data name="net_alpn_config_failed" xml:space="preserve">
+    <value>ALPN configuration failed on this platform.</value>
+  </data>
+  <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
+    <value>The application protocol list is invalid.</value>
+  </data>
+  <data name="net_ssl_app_protocol_invalid" xml:space="preserve">
+    <value>The application protocol value is invalid.</value>
+  </data>
+  <data name="net_conflicting_options" xml:space="preserve">
+    <value>The '{0}' option was already set in the SslStream constructor.</value>
+  </data>
 </root>

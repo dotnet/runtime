@@ -33,7 +33,7 @@ namespace System.Net.Security
         public abstract bool IsSigned { get; }
         public abstract bool IsServer { get; }
 
-        public abstract Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
+        public new abstract Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
     }
 }
 

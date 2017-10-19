@@ -476,6 +476,10 @@ namespace System.Net
                     nativeBlockSize = Marshal.SizeOf<SecPkgContext_ConnectionInfo>();
                     break;
 
+                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL:
+                    nativeBlockSize = Marshal.SizeOf<Interop.SecPkgContext_ApplicationProtocol>();
+                    break;
+
                 default:
                     throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(contextAttribute)), nameof(contextAttribute));
             }
@@ -540,6 +544,17 @@ namespace System.Net
                     case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CONNECTION_INFO:
                         attribute = new SecPkgContext_ConnectionInfo(nativeBuffer);
                         break;
+
+                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL:
+                        unsafe
+                        {
+                            fixed (void *ptr = nativeBuffer)
+                            {
+                                attribute = Marshal.PtrToStructure<Interop.SecPkgContext_ApplicationProtocol>(new IntPtr(ptr));
+                            }
+                        }
+                        break;
+
                     default:
                         // Will return null.
                         break;
