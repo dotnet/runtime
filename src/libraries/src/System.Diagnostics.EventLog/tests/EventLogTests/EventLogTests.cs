@@ -341,11 +341,7 @@ namespace System.Diagnostics.Tests
             {
                 eventlog.Source = "Security";
                 EventLogEntry eventLogEntry = eventlog.Entries[0];
-                Assert.Contains("Process Name", eventLogEntry.Message);
-                // Process Information:
-                // Process ID:             0x2634
-                // Process Name:                C:\Windows\WinSxS\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.1
-                // These lines are present if taken from a resourceDLL
+                Assert.Contains("", eventLogEntry.Message);
             }
         }
     }
