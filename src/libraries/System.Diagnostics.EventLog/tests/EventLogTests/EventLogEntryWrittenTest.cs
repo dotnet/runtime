@@ -22,16 +22,16 @@ namespace System.Diagnostics.Tests
             try
             {
                 EventLog.CreateEventSource(source, log);
-                using (EventLog myLog = new EventLog())
+                using (EventLog eventLog = new EventLog())
                 {
-                    myLog.Source = source;
-                    myLog.EntryWritten += new EntryWrittenEventHandler((object sourceObject, EntryWrittenEventArgs e) =>
+                    eventLog.Source = source;
+                    eventLog.EntryWritten += new EntryWrittenEventHandler((object sourceObject, EntryWrittenEventArgs e) =>
                     {
                         eventCounter += 1;
                         signal.Set();
                     });
-                    myLog.EnableRaisingEvents = waitOnEvent;
-                    myLog.WriteEntry(message, EventLogEntryType.Information);
+                    eventLog.EnableRaisingEvents = waitOnEvent;
+                    eventLog.WriteEntry(message, EventLogEntryType.Information);
                     if (waitOnEvent)
                         signal.WaitOne();
                 }
