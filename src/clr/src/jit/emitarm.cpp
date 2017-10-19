@@ -7889,7 +7889,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             jumpKind                = isUnsignedOverflow ? EJ_lo : EJ_vs;
             if (jumpKind == EJ_lo)
             {
-                if ((dst->OperGet() != GT_SUB) && (dst->OperGet() != GT_ASG_SUB) && (dst->OperGet() != GT_SUB_HI))
+                if ((dst->OperGet() != GT_SUB) &&
+#ifdef LEGACY_BACKEND
+                    (dst->OperGet() != GT_ASG_SUB) &&
+#endif
+                    (dst->OperGet() != GT_SUB_HI))
                 {
                     jumpKind = EJ_hs;
                 }

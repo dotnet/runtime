@@ -414,8 +414,7 @@ typedef ptrdiff_t ssize_t;
 
 //=============================================================================
 
-#define OPT_MULT_ADDSUB 1 // optimize consecutive "lclVar += or -= icon"
-#define OPT_BOOL_OPS 1    // optimize boolean operations
+#define OPT_BOOL_OPS 1 // optimize boolean operations
 
 //=============================================================================
 
