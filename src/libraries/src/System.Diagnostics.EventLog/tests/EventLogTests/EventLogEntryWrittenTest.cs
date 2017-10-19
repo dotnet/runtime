@@ -34,10 +34,10 @@ namespace System.Diagnostics.Tests
                     eventLog.WriteEntry(message, EventLogEntryType.Information);
                     if (waitOnEvent)
                     {
-                        if (!signal.WaitOne(360))
+                        if (!signal.WaitOne(6000))
                         {
                             eventLog.WriteEntry(message, EventLogEntryType.Information);
-                            Assert.True(signal.WaitOne(360));
+                            Assert.True(signal.WaitOne(6000));
                         }
                     }
                 }
