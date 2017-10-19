@@ -4256,26 +4256,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context)
 		return mono_error_convert_to_exception (&error);
 
 	if (!method_class_vt->initialized) {
-		jmp_buf env;
-		InterpFrame *last_env_frame = context->env_frame;
-		jmp_buf *old_env = context->current_env;
-		error_init (&error);
-
-		if (setjmp(env)) {
-			MonoException *failed = context->env_frame->ex;
-			context->env_frame->ex = NULL;
-			context->env_frame = last_env_frame;
-			context->current_env = old_env;
-			return failed;
-		}
-		context->env_frame = context->current_frame;
-		context->current_env = &env;
 		mono_runtime_class_init_full (method_class_vt, &error);
 		if (!mono_error_ok (&error)) {
 			return mono_error_convert_to_exception (&error);
 		}
-		context->env_frame = last_env_frame;
-		context->current_env = old_env;
 	}
 
 	MONO_PROFILER_RAISE (jit_begin, (method));
