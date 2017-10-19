@@ -53,7 +53,7 @@ namespace System.Diagnostics.Tests
         public void EntryWrittenEventRaised()
         {
             RaisingEvent("EnableEvent", nameof(EntryWrittenEventRaised));
-            Assert.Equal(1, eventCounter);
+            Assert.NotEqual(0, eventCounter);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
