@@ -397,7 +397,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
 
             default:
 #ifndef LEGACY_BACKEND
-                unreached();
+                noway_assert(false);
 #endif
                 // All other 'asg->OperGet()' kinds, return false
                 break;
@@ -891,7 +891,7 @@ Range RangeCheck::ComputeRangeForLocalDef(
 
         default:
 #ifndef LEGACY_BACKEND
-            unreached();
+            noway_assert(false);
 #endif
             // All other 'asg->OperGet()' kinds, return Limit::keUnknown
             break;
@@ -1058,7 +1058,7 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreeP
 
         default:
 #ifndef LEGACY_BACKEND
-            unreached();
+            noway_assert(false);
 #endif
             // All other 'asg->OperGet()' kinds, conservatively return true
             break;
