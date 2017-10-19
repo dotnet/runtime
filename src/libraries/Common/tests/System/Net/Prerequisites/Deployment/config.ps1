@@ -28,7 +28,7 @@ $COREFX_NET_AD_MachineIP = ""           #Example: "192.168.0.1" - must be a Stat
 $COREFX_NET_IISSERVER_Machine = ""      #Example: "TESTIIS"
 $COREFX_NET_IISSERVER_MachineIP = ""    #Example: "192.168.0.1" - must be a Static IPv4 address.
 
-# A Windows Client or Server SKU hosting the corefx enlistment. This machine will be joined to the Domain.
+# A Windows Client or Server SKU hosting the corefx repo. This machine will be joined to the Domain.
 $COREFX_NET_CLIENT_Machine = ""         #Example: "TESTCLIENT"
 
 # -- Test Parameters
