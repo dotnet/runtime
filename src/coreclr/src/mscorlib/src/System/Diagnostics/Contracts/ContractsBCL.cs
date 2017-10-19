@@ -185,10 +185,15 @@ namespace System.Diagnostics.Contracts
         }
     }
 
-    [SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class ContractException : Exception
+#if CORECLR
+    [SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
+    internal
+#else
+    public // On CoreRT this must be public to support binary serialization with type forwarding.
+#endif
+    sealed class ContractException : Exception
     {
         private readonly ContractFailureKind _kind;
         private readonly string _userMessage;
@@ -242,14 +247,14 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class ContractHelper
     {
-        #region Private fields
+#region Private fields
 
         private static volatile EventHandler<ContractFailedEventArgs> contractFailedEvent;
         private static readonly Object lockObject = new Object();
 
         internal const int COR_E_CODECONTRACTFAILED = unchecked((int)0x80131542);
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Allows a managed application environment such as an interactive interpreter (IronPython) or a
