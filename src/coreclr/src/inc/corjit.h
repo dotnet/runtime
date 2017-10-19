@@ -113,7 +113,6 @@ public:
         CORJIT_FLAG_USE_AVX                 = 14,
         CORJIT_FLAG_USE_AVX2                = 15,
         CORJIT_FLAG_USE_AVX_512             = 16,
-        CORJIT_FLAG_FEATURE_SIMD            = 17,
 
     #else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
@@ -121,9 +120,14 @@ public:
         CORJIT_FLAG_UNUSED7                 = 14,
         CORJIT_FLAG_UNUSED8                 = 15,
         CORJIT_FLAG_UNUSED9                 = 16,
-        CORJIT_FLAG_UNUSED10                = 17,
 
     #endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+
+    #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+        CORJIT_FLAG_FEATURE_SIMD            = 17,
+    #else
+        CORJIT_FLAG_UNUSED10                = 17,
+    #endif // !(defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
 
         CORJIT_FLAG_MAKEFINALCODE           = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN              = 19, // Use version-resilient code generation
