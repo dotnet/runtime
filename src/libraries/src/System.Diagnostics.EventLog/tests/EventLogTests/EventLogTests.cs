@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.IO;
 using Xunit;
 
@@ -35,7 +36,7 @@ namespace System.Diagnostics.Tests
                     eventLog.Clear();
                     Assert.Equal(0, eventLog.Entries.Count);
                     eventLog.WriteEntry("Writing to event log.");
-                    Assert.Equal(1,eventLog.Entries.Count);
+                    Assert.Equal(1, eventLog.Entries.Count);
                 }
             }
             finally
@@ -283,7 +284,7 @@ namespace System.Diagnostics.Tests
             using (EventLog eventLog = new EventLog("log"))
             {
                 Assert.False(eventLog.EnableRaisingEvents);
-            }        
+            }
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
@@ -331,6 +332,11 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void GetMessageUsingEventMesaageDLL()
         {
+            if (CultureInfo.CurrentCulture.ToString() != "en-US")
+            {
+                return;
+            }
+
             using (EventLog eventlog = new EventLog("Security"))
             {
                 eventlog.Source = "Security";
