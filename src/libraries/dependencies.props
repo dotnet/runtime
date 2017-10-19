@@ -10,11 +10,11 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>3a5b9d25514fe788eeeb6ecdca6c5b187703d5f3</CoreFxCurrentRef>
-    <CoreClrCurrentRef>41cec0941b3e81e30e69648c44110acc2a069bba</CoreClrCurrentRef>
+    <CoreClrCurrentRef>f539e489ae4f034751b54e0af8c553144076489a</CoreClrCurrentRef>
     <CoreSetupCurrentRef>41cec0941b3e81e30e69648c44110acc2a069bba</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>20f0758de84e9de4a31912d79333a34b16017a21</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>20f0758de84e9de4a31912d79333a34b16017a21</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>f539e489ae4f034751b54e0af8c553144076489a</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>f539e489ae4f034751b54e0af8c553144076489a</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>3814b0d53f4139b68c2fac85c28030fe8fa50a9d</StandardCurrentRef>
     <BuildToolsCurrentRef>075b515e3dfb615b45182c033af48abed349eea5</BuildToolsCurrentRef>
@@ -24,11 +24,11 @@
   <PropertyGroup>
     <PlatformPackageVersion>2.1.0-preview1-25819-01</PlatformPackageVersion>
     <CoreFxExpectedPrerelease>preview1-25819-01</CoreFxExpectedPrerelease>
-    <CoreClrPackageVersion>2.1.0-preview1-25818-04</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview1-25819-02</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25627-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25813-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-25813-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25813-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25819-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-25819-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25819-00</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.1.0-preview1-25818-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25818-02</MicrosoftNETCoreAppPackageVersion>
