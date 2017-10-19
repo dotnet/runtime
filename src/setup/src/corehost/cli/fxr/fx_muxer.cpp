@@ -1116,7 +1116,7 @@ int fx_muxer_t::parse_args_and_execute(
         trace::error(_X("Failed to parse supported options or their values:"));
         for (const auto& arg : known_opts)
         {
-            trace::error(_X("  %s"), arg.option.c_str());
+            trace::error(_X("  %s"), (arg.option + _X(" ") + arg.argument).c_str());
         }
         return InvalidArgFailure;
     }
