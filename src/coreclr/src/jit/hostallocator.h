@@ -4,7 +4,7 @@
 
 #pragma once
 
-class HostAllocator final : public IAllocator
+class HostAllocator final
 {
 private:
     static HostAllocator s_hostAllocator;
@@ -14,11 +14,11 @@ private:
     }
 
 public:
-    void* Alloc(size_t size) override;
+    void* Alloc(size_t size);
 
-    void* ArrayAlloc(size_t elemSize, size_t numElems) override;
+    void* ArrayAlloc(size_t elemSize, size_t numElems);
 
-    void Free(void* p) override;
+    void Free(void* p);
 
     static HostAllocator* getHostAllocator();
 };
