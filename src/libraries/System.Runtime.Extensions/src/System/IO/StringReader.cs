@@ -118,13 +118,13 @@ namespace System.IO
             return n;
         }
 
-        public override int Read(Span<char> destination)
+        public override int Read(Span<char> buffer)
         {
             if (GetType() != typeof(StringReader))
             {
                 // This overload was added affter the Read(char[], ...) overload, and so in case
                 // a derived type may have overridden it, we need to delegate to it, which the base does.
-                return base.Read(destination);
+                return base.Read(buffer);
             }
 
             if (_s == null)
@@ -135,19 +135,19 @@ namespace System.IO
             int n = _length - _pos;
             if (n > 0)
             {
-                if (n > destination.Length)
+                if (n > buffer.Length)
                 {
-                    n = destination.Length;
+                    n = buffer.Length;
                 }
 
-                _s.AsReadOnlySpan().Slice(_pos, n).CopyTo(destination);
+                _s.AsReadOnlySpan().Slice(_pos, n).CopyTo(buffer);
                 _pos += n;
             }
 
             return n;
         }
 
-        public override int ReadBlock(Span<char> destination) => Read(destination);
+        public override int ReadBlock(Span<char> buffer) => Read(buffer);
 
         public override string ReadToEnd()
         {
@@ -241,9 +241,9 @@ namespace System.IO
             return Task.FromResult(ReadBlock(buffer, index, count));
         }
 
-        public override ValueTask<int> ReadBlockAsync(Memory<char> destination, CancellationToken cancellationToken = default) =>
+        public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
-            new ValueTask<int>(ReadBlock(destination.Span));
+            new ValueTask<int>(ReadBlock(buffer.Span));
 
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
@@ -263,9 +263,9 @@ namespace System.IO
             return Task.FromResult(Read(buffer, index, count));
         }
 
-        public override ValueTask<int> ReadAsync(Memory<char> destination, CancellationToken cancellationToken = default) =>
+        public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
-            new ValueTask<int>(Read(destination.Span));
+            new ValueTask<int>(Read(buffer.Span));
         #endregion
     }
 }
