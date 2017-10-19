@@ -8795,18 +8795,15 @@ protected:
     ArenaAllocator* compAllocator;
 
 public:
-    // This one presents an implementation of the "IAllocator" abstract class that uses "compAllocator",
-    // suitable for use by utilcode collection types.
-    CompAllocator* compAsIAllocator;
-
+    CompAllocator* compAllocatorGeneric; // An allocator that uses the CMK_Generic tracker.
 #if MEASURE_MEM_ALLOC
-    CompAllocator* compAsIAllocatorBitset;    // An allocator that uses the CMK_bitset tracker.
-    CompAllocator* compAsIAllocatorGC;        // An allocator that uses the CMK_GC tracker.
-    CompAllocator* compAsIAllocatorLoopHoist; // An allocator that uses the CMK_LoopHoist tracker.
+    CompAllocator* compAllocatorBitset;    // An allocator that uses the CMK_bitset tracker.
+    CompAllocator* compAllocatorGC;        // An allocator that uses the CMK_GC tracker.
+    CompAllocator* compAllocatorLoopHoist; // An allocator that uses the CMK_LoopHoist tracker.
 #ifdef DEBUG
-    CompAllocator* compAsIAllocatorDebugOnly; // An allocator that uses the CMK_DebugOnly tracker.
-#endif                                        // DEBUG
-#endif                                        // MEASURE_MEM_ALLOC
+    CompAllocator* compAllocatorDebugOnly; // An allocator that uses the CMK_DebugOnly tracker.
+#endif                                     // DEBUG
+#endif                                     // MEASURE_MEM_ALLOC
 
     void compFunctionTraceStart();
     void compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, bool isNYI);
@@ -8847,34 +8844,34 @@ public:
 
     CompAllocator* getAllocator()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
 
 #if MEASURE_MEM_ALLOC
     CompAllocator* getAllocatorBitset()
     {
-        return compAsIAllocatorBitset;
+        return compAllocatorBitset;
     }
     CompAllocator* getAllocatorGC()
     {
-        return compAsIAllocatorGC;
+        return compAllocatorGC;
     }
     CompAllocator* getAllocatorLoopHoist()
     {
-        return compAsIAllocatorLoopHoist;
+        return compAllocatorLoopHoist;
     }
 #else  // !MEASURE_MEM_ALLOC
     CompAllocator* getAllocatorBitset()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
     CompAllocator* getAllocatorGC()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
     CompAllocator* getAllocatorLoopHoist()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
 #endif // !MEASURE_MEM_ALLOC
 
@@ -8882,9 +8879,9 @@ public:
     CompAllocator* getAllocatorDebugOnly()
     {
 #if MEASURE_MEM_ALLOC
-        return compAsIAllocatorDebugOnly;
+        return compAllocatorDebugOnly;
 #else  // !MEASURE_MEM_ALLOC
-        return compAsIAllocator;
+        return compAllocatorGeneric;
 #endif // !MEASURE_MEM_ALLOC
     }
 #endif // DEBUG

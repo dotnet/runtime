@@ -1892,13 +1892,15 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     {
         m_inlineStrategy = nullptr;
         compInlineResult = inlineInfo->inlineResult;
-        compAsIAllocator = nullptr; // We shouldn't be using the compAsIAllocator for other than the root compiler.
+
+        // We shouldn't be using the compAllocatorGeneric for other than the root compiler.
+        compAllocatorGeneric = nullptr;
 #if MEASURE_MEM_ALLOC
-        compAsIAllocatorBitset    = nullptr;
-        compAsIAllocatorGC        = nullptr;
-        compAsIAllocatorLoopHoist = nullptr;
+        compAllocatorBitset    = nullptr;
+        compAllocatorGC        = nullptr;
+        compAllocatorLoopHoist = nullptr;
 #ifdef DEBUG
-        compAsIAllocatorDebugOnly = nullptr;
+        compAllocatorDebugOnly = nullptr;
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
@@ -1910,13 +1912,14 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     {
         m_inlineStrategy = new (this, CMK_Inlining) InlineStrategy(this);
         compInlineResult = nullptr;
-        compAsIAllocator = new (this, CMK_Unknown) CompAllocator(this, CMK_AsIAllocator);
+
+        compAllocatorGeneric = new (this, CMK_Unknown) CompAllocator(this, CMK_Generic);
 #if MEASURE_MEM_ALLOC
-        compAsIAllocatorBitset    = new (this, CMK_Unknown) CompAllocator(this, CMK_bitset);
-        compAsIAllocatorGC        = new (this, CMK_Unknown) CompAllocator(this, CMK_GC);
-        compAsIAllocatorLoopHoist = new (this, CMK_Unknown) CompAllocator(this, CMK_LoopHoist);
+        compAllocatorBitset    = new (this, CMK_Unknown) CompAllocator(this, CMK_bitset);
+        compAllocatorGC        = new (this, CMK_Unknown) CompAllocator(this, CMK_GC);
+        compAllocatorLoopHoist = new (this, CMK_Unknown) CompAllocator(this, CMK_LoopHoist);
 #ifdef DEBUG
-        compAsIAllocatorDebugOnly = new (this, CMK_Unknown) CompAllocator(this, CMK_DebugOnly);
+        compAllocatorDebugOnly = new (this, CMK_Unknown) CompAllocator(this, CMK_DebugOnly);
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
