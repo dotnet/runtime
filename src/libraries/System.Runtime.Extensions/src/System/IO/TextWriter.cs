@@ -164,18 +164,18 @@ namespace System.IO
 
         // Writes a span of characters to the text stream.
         //
-        public virtual void Write(ReadOnlySpan<char> source)
+        public virtual void Write(ReadOnlySpan<char> buffer)
         {
-            char[] buffer = ArrayPool<char>.Shared.Rent(source.Length);
+            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
 
             try
             {
-                source.CopyTo(new Span<char>(buffer));
-                Write(buffer, 0, source.Length);
+                buffer.CopyTo(new Span<char>(array));
+                Write(array, 0, buffer.Length);
             }
             finally
             {
-                ArrayPool<char>.Shared.Return(buffer);
+                ArrayPool<char>.Shared.Return(array);
             }
         }
 
@@ -346,18 +346,18 @@ namespace System.IO
             WriteLine();
         }
 
-        public virtual void WriteLine(ReadOnlySpan<char> source)
+        public virtual void WriteLine(ReadOnlySpan<char> buffer)
         {
-            char[] buffer = ArrayPool<char>.Shared.Rent(source.Length);
+            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
 
             try
             {
-                source.CopyTo(new Span<char>(buffer));
-                WriteLine(buffer, 0, source.Length);
+                buffer.CopyTo(new Span<char>(array));
+                WriteLine(array, 0, buffer.Length);
             }
             finally
             {
-                ArrayPool<char>.Shared.Return(buffer);
+                ArrayPool<char>.Shared.Return(array);
             }
         }
 
@@ -544,14 +544,14 @@ namespace System.IO
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public virtual Task WriteAsync(ReadOnlyMemory<char> source, CancellationToken cancellationToken = default(CancellationToken)) =>
-            source.DangerousTryGetArray(out ArraySegment<char> array) ?
+        public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+            buffer.DangerousTryGetArray(out ArraySegment<char> array) ?
                 WriteAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {
                     var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
                     t.Item1.Write(t.Item2.Span);
-                }, Tuple.Create(this, source), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         public virtual Task WriteLineAsync(char value)
         {
@@ -596,14 +596,14 @@ namespace System.IO
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public virtual Task WriteLineAsync(ReadOnlyMemory<char> source, CancellationToken cancellationToken = default(CancellationToken)) =>
-            source.DangerousTryGetArray(out ArraySegment<char> array) ?
+        public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+            buffer.DangerousTryGetArray(out ArraySegment<char> array) ?
                 WriteLineAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {
                     var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
                     t.Item1.WriteLine(t.Item2.Span);
-                }, Tuple.Create(this, source), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         public virtual Task WriteLineAsync()
         {
