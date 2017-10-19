@@ -3585,19 +3585,24 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     switch (oper)
     {
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             return type == TYP_DOUBLE ? INS_addsd : INS_addss;
-            break;
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             return type == TYP_DOUBLE ? INS_subsd : INS_subss;
-            break;
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             return type == TYP_DOUBLE ? INS_mulsd : INS_mulss;
-            break;
         case GT_DIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             return type == TYP_DOUBLE ? INS_divsd : INS_divss;
         case GT_AND:
             return type == TYP_DOUBLE ? INS_andpd : INS_andps;
@@ -3759,19 +3764,25 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     switch (oper)
     {
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             return INS_vadd;
-            break;
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             return INS_vsub;
-            break;
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             return INS_vmul;
             break;
         case GT_DIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             return INS_vdiv;
         case GT_NEG:
             return INS_vneg;
