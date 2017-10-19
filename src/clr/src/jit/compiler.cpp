@@ -2443,6 +2443,52 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 #endif // DEBUG
 /*****************************************************************************/
 
+#ifdef _TARGET_XARCH_
+static bool configEnableISA(InstructionSet isa)
+{
+#ifdef DEBUG
+    switch (isa)
+    {
+        case InstructionSet_SSE:
+            return JitConfig.EnableSSE() != 0;
+        case InstructionSet_SSE2:
+            return JitConfig.EnableSSE2() != 0;
+        case InstructionSet_SSE3:
+            return JitConfig.EnableSSE3() != 0;
+        case InstructionSet_SSSE3:
+            return JitConfig.EnableSSSE3() != 0;
+        case InstructionSet_SSE41:
+            return JitConfig.EnableSSE41() != 0;
+        case InstructionSet_SSE42:
+            return JitConfig.EnableSSE42() != 0;
+        case InstructionSet_AVX:
+            return JitConfig.EnableAVX() != 0;
+        case InstructionSet_AVX2:
+            return JitConfig.EnableAVX2() != 0;
+
+        case InstructionSet_AES:
+            return JitConfig.EnableAES() != 0;
+        case InstructionSet_BMI1:
+            return JitConfig.EnableBMI1() != 0;
+        case InstructionSet_BMI2:
+            return JitConfig.EnableBMI2() != 0;
+        case InstructionSet_FMA:
+            return JitConfig.EnableFMA() != 0;
+        case InstructionSet_LZCNT:
+            return JitConfig.EnableLZCNT() != 0;
+        case InstructionSet_PCLMULQDQ:
+            return JitConfig.EnablePCLMULQDQ() != 0;
+        case InstructionSet_POPCNT:
+            return JitConfig.EnablePOPCNT() != 0;
+        default:
+            return false;
+    }
+#else
+    return true;
+#endif
+}
+#endif // _TARGET_XARCH_
+
 void Compiler::compSetProcessor()
 {
     const JitFlags& jitFlags = *opts.jitFlags;
@@ -2558,59 +2604,104 @@ void Compiler::compSetProcessor()
     {
         if (opts.compCanUseSSE2)
         {
-            opts.setSupportedISA(InstructionSet_SSE);
-            opts.setSupportedISA(InstructionSet_SSE2);
+            if (configEnableISA(InstructionSet_SSE))
+            {
+                opts.setSupportedISA(InstructionSet_SSE);
+            }
+            if (configEnableISA(InstructionSet_SSE2))
+            {
+                opts.setSupportedISA(InstructionSet_SSE2);
+            }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES))
             {
-                opts.setSupportedISA(InstructionSet_AES);
+                if (configEnableISA(InstructionSet_AES))
+                {
+                    opts.setSupportedISA(InstructionSet_AES);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX))
             {
-                opts.setSupportedISA(InstructionSet_AVX);
+                if (configEnableISA(InstructionSet_AVX))
+                {
+                    opts.setSupportedISA(InstructionSet_AVX);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
             {
-                opts.setSupportedISA(InstructionSet_AVX2);
+                if (configEnableISA(InstructionSet_AVX2))
+                {
+                    opts.setSupportedISA(InstructionSet_AVX2);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1))
             {
-                opts.setSupportedISA(InstructionSet_BMI1);
+                if (configEnableISA(InstructionSet_BMI1))
+                {
+                    opts.setSupportedISA(InstructionSet_BMI1);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2))
             {
-                opts.setSupportedISA(InstructionSet_BMI2);
+                if (configEnableISA(InstructionSet_BMI2))
+                {
+                    opts.setSupportedISA(InstructionSet_BMI2);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FMA))
             {
-                opts.setSupportedISA(InstructionSet_FMA);
+                if (configEnableISA(InstructionSet_FMA))
+                {
+                    opts.setSupportedISA(InstructionSet_FMA);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT))
             {
-                opts.setSupportedISA(InstructionSet_LZCNT);
+                if (configEnableISA(InstructionSet_LZCNT))
+                {
+                    opts.setSupportedISA(InstructionSet_LZCNT);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_PCLMULQDQ))
             {
-                opts.setSupportedISA(InstructionSet_PCLMULQDQ);
+                if (configEnableISA(InstructionSet_PCLMULQDQ))
+                {
+                    opts.setSupportedISA(InstructionSet_PCLMULQDQ);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT))
             {
-                opts.setSupportedISA(InstructionSet_POPCNT);
+                if (configEnableISA(InstructionSet_POPCNT))
+                {
+                    opts.setSupportedISA(InstructionSet_POPCNT);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3))
             {
-                opts.setSupportedISA(InstructionSet_SSE3);
+                if (configEnableISA(InstructionSet_SSE3))
+                {
+                    opts.setSupportedISA(InstructionSet_SSE3);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41))
             {
-                opts.setSupportedISA(InstructionSet_SSE41);
+                if (configEnableISA(InstructionSet_SSE41))
+                {
+                    opts.setSupportedISA(InstructionSet_SSE41);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
             {
-                opts.setSupportedISA(InstructionSet_SSE42);
+                if (configEnableISA(InstructionSet_SSE42))
+                {
+                    opts.setSupportedISA(InstructionSet_SSE42);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3))
             {
-                opts.setSupportedISA(InstructionSet_SSSE3);
+                if (configEnableISA(InstructionSet_SSSE3))
+                {
+                    opts.setSupportedISA(InstructionSet_SSSE3);
+                }
             }
         }
     }

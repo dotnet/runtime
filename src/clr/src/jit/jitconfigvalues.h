@@ -186,7 +186,26 @@ CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))                 // Ngen Xml Flo
 CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile"))               // Ngen Xml Flowgraph support
 CONFIG_STRING(NgenDumpIRFormat, W("NgenDumpIRFormat"))           // Same as JitDumpIRFormat, but for ngen
 CONFIG_STRING(NgenDumpIRPhase, W("NgenDumpIRPhase"))             // Same as JitDumpIRPhase, but for ngen
-#endif                                                           // defined(DEBUG)
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+CONFIG_INTEGER(EnableSSE, W("EnableSSE"), 1)     // Enable SSE
+CONFIG_INTEGER(EnableSSE2, W("EnableSSE2"), 1)   // Enable SSE2
+CONFIG_INTEGER(EnableSSE3, W("EnableSSE3"), 1)   // Enable SSE3
+CONFIG_INTEGER(EnableSSSE3, W("EnableSSSE3"), 1) // Enable SSSE3
+CONFIG_INTEGER(EnableSSE41, W("EnableSSE41"), 1) // Enable SSE41
+CONFIG_INTEGER(EnableSSE42, W("EnableSSE42"), 1) // Enable SSE42
+// EnableAVX is already defined for DEBUG and non-DEBUG mode both
+CONFIG_INTEGER(EnableAVX2, W("EnableAVX2"), 1) // Enable AVX2
+
+CONFIG_INTEGER(EnableAES, W("EnableAES"), 1)             // Enable AES
+CONFIG_INTEGER(EnableBMI1, W("EnableBMI1"), 1)           // Enable BMI1
+CONFIG_INTEGER(EnableBMI2, W("EnableBMI2"), 1)           // Enable BMI2
+CONFIG_INTEGER(EnableFMA, W("EnableFMA"), 1)             // Enable FMA
+CONFIG_INTEGER(EnableLZCNT, W("EnableLZCNT"), 1)         // Enable AES
+CONFIG_INTEGER(EnablePCLMULQDQ, W("EnablePCLMULQDQ"), 1) // Enable PCLMULQDQ
+CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)       // Enable POPCNT
+#endif                                                   // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif                                                   // defined(DEBUG)
 
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
 CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
