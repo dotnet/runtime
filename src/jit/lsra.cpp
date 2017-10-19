@@ -7288,6 +7288,42 @@ bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
     return isAssigned;
 }
 
+void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap)
+{
+    // Is there another interval currently assigned to this register?  If so unassign it.
+    Interval* assignedInterval = regRecord->assignedInterval;
+    if (assignedInterval != nullptr)
+    {
+        if (isAssignedToInterval(assignedInterval, regRecord))
+        {
+            // Only localVars or constants should be assigned to registers at block boundaries.
+            if (!assignedInterval->isLocalVar)
+            {
+                assert(assignedInterval->isConstant);
+                // Don't need to update the VarToRegMap.
+                inVarToRegMap = nullptr;
+            }
+
+            regNumber assignedRegNum = assignedInterval->assignedReg->regNum;
+
+            // If the interval is active, it will be set to active when we reach its new
+            // register assignment (which we must not yet have done, or it wouldn't still be
+            // assigned to this register).
+            assignedInterval->isActive = false;
+            unassignPhysReg(assignedInterval->assignedReg, nullptr);
+            if ((inVarToRegMap != nullptr) && inVarToRegMap[assignedInterval->getVarIndex(compiler)] == assignedRegNum)
+            {
+                inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
+            }
+        }
+        else
+        {
+            // This interval is no longer assigned to this register.
+            updateAssignedInterval(regRecord, nullptr, assignedInterval->registerType);
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
 //                             registers.
@@ -7465,33 +7501,22 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 interval->physReg     = targetReg;
                 interval->assignedReg = targetRegRecord;
             }
-            Interval* assignedInterval = targetRegRecord->assignedInterval;
-            if (assignedInterval != interval)
+            if (targetRegRecord->assignedInterval != interval)
             {
-                // Is there another interval currently assigned to this register?  If so unassign it.
-                if (assignedInterval != nullptr)
+#ifdef _TARGET_ARM_
+                // If this is a TYP_DOUBLE interval, and the assigned interval is either null or is TYP_FLOAT,
+                // we also need to unassign the other half of the register.
+                // Note that if the assigned interval is TYP_DOUBLE, it will be unassigned below.
+                if ((interval->registerType == TYP_DOUBLE) &&
+                    ((targetRegRecord->assignedInterval == nullptr) ||
+                     (targetRegRecord->assignedInterval->registerType == TYP_FLOAT)))
                 {
-                    if (isAssignedToInterval(assignedInterval, targetRegRecord))
-                    {
-                        regNumber assignedRegNum = assignedInterval->assignedReg->regNum;
-
-                        // If the interval is active, it will be set to active when we reach its new
-                        // register assignment (which we must not yet have done, or it wouldn't still be
-                        // assigned to this register).
-                        assignedInterval->isActive = false;
-                        unassignPhysReg(assignedInterval->assignedReg, nullptr);
-                        if (allocationPass && assignedInterval->isLocalVar &&
-                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] == assignedRegNum)
-                        {
-                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
-                        }
-                    }
-                    else
-                    {
-                        // This interval is no longer assigned to this register.
-                        updateAssignedInterval(targetRegRecord, nullptr, assignedInterval->registerType);
-                    }
+                    assert(genIsValidDoubleReg(targetReg));
+                    unassignIntervalBlockStart(findAnotherHalfRegRec(targetRegRecord),
+                                               allocationPass ? inVarToRegMap : nullptr);
                 }
+#endif // _TARGET_ARM_
+                unassignIntervalBlockStart(targetRegRecord, allocationPass ? inVarToRegMap : nullptr);
                 assignPhysReg(targetRegRecord, interval);
             }
             if (interval->recentRefPosition != nullptr && !interval->recentRefPosition->copyReg &&
@@ -8518,17 +8543,23 @@ void LinearScan::allocateRegisters()
 //
 void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType)
 {
-    reg->assignedInterval = interval;
-
 #ifdef _TARGET_ARM_
-    // Update overlapping floating point register for TYP_DOUBLE
+    // Update overlapping floating point register for TYP_DOUBLE.
+    Interval* oldAssignedInterval = reg->assignedInterval;
     if (regType == TYP_DOUBLE)
     {
         RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
 
         anotherHalfReg->assignedInterval = interval;
     }
+    else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))
+    {
+        RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
+
+        anotherHalfReg->assignedInterval = nullptr;
+    }
 #endif
+    reg->assignedInterval = interval;
 }
 
 //-----------------------------------------------------------------------------
