@@ -3235,8 +3235,6 @@ abort_threads (gpointer key, gpointer value, gpointer user)
 
 	if ((thread->flags & MONO_THREAD_FLAG_DONT_MANAGE))
 		return;
-	if (!(thread->state & ThreadState_Background))
-		return;
 
 	wait->handles[wait->num] = mono_threads_open_thread_handle (thread->handle);
 	wait->threads[wait->num] = thread;
