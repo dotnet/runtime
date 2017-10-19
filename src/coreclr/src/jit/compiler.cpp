@@ -9218,10 +9218,12 @@ int cTreeKindsIR(Compiler* comp, GenTree* tree)
     {
         chars += printf("[LOGOP]");
     }
+#ifdef LEGACY_BACKEND
     if (kind & GTK_ASGOP)
     {
         chars += printf("[ASGOP]");
     }
+#endif
     if (kind & GTK_COMMUTE)
     {
         chars += printf("[COMMUTE]");
@@ -9794,8 +9796,10 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
             case GT_CAST:
             case GT_ADD:
             case GT_SUB:
+#ifdef LEGACY_BACKEND
             case GT_ASG_ADD:
             case GT_ASG_SUB:
+#endif
                 if (tree->gtFlags & GTF_OVERFLOW)
                 {
                     chars += printf("[OVERFLOW]");

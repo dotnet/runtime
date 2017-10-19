@@ -25,6 +25,7 @@ const unsigned short GenTree::gtOperKindTable[] = {
 #include "gtlist.h"
 };
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************/
 // static
 genTreeOps GenTree::OpAsgToOper(genTreeOps op)
@@ -69,6 +70,7 @@ genTreeOps GenTree::OpAsgToOper(genTreeOps op)
             unreached(); // Precondition implies we don't get here.
     }
 }
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************
  *
@@ -1611,7 +1613,7 @@ AGAIN:
                 return false;
             }
 
-            if (kind & GTK_ASGOP)
+            if (GenTree::OperIsAssignment(oper))
             {
                 // 'tree' is the gtOp1 of an assignment node. So we can handle
                 // the case where defOnly is either true or false.
@@ -3071,8 +3073,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
     /* Figure out what kind of a node we have */
 
-    genTreeOps oper = tree->OperGet();
-    unsigned   kind = tree->OperKind();
+    const genTreeOps oper = tree->OperGet();
+    const unsigned   kind = tree->OperKind();
 
     /* Assume no fixed registers will be trashed */
 
@@ -4074,9 +4076,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_ADD:
             case GT_SUB:
+#ifdef LEGACY_BACKEND
             case GT_ASG_ADD:
             case GT_ASG_SUB:
-
+#endif
                 if (isflt)
                 {
                     /* FP instructions are a bit more expensive */
@@ -4141,7 +4144,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
         /* Assignments need a bit of special handling */
 
-        if (kind & GTK_ASGOP)
+        if (GenTree::OperIsAssignment(oper))
         {
             /* Process the target */
 
@@ -4225,7 +4228,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif // FEATURE_STACK_FP_X87
 
         bool bReverseInAssignment = false;
-        if (kind & GTK_ASGOP)
+        if (GenTree::OperIsAssignment(oper))
         {
             GenTreePtr op1Val = op1;
 
@@ -4324,10 +4327,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+#ifdef LEGACY_BACKEND
             case GT_ASG_LSH:
             case GT_ASG_RSH:
             case GT_ASG_RSZ:
-
+#endif
                 /* Variable sized shifts are more expensive and use REG_SHIFT */
 
                 if (!op2->IsCnsIntOrI())
@@ -5831,7 +5835,7 @@ GenTreePtr GenTree::gtGetParent(GenTreePtr** parentChildPtrPtr) const
 
 bool GenTree::OperRequiresAsgFlag()
 {
-    return ((OperKind() & GTK_ASGOP) || (gtOper == GT_XADD) || (gtOper == GT_XCHG) || (gtOper == GT_LOCKADD) ||
+    return (OperIsAssignment() || (gtOper == GT_XADD) || (gtOper == GT_XCHG) || (gtOper == GT_LOCKADD) ||
             (gtOper == GT_CMPXCHG) || (gtOper == GT_MEMORYBARRIER));
 }
 
@@ -12814,7 +12818,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             break;
 
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             if (val == 0)
             {
                 goto DONE_FOLD;
@@ -12822,7 +12828,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             break;
 
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             if (val == 1)
             {
                 goto DONE_FOLD;
@@ -12844,7 +12852,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
 
         case GT_DIV:
         case GT_UDIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             if ((op2 == cons) && (val == 1) && !(op1->OperKind() & GTK_CONST))
             {
                 goto DONE_FOLD;
@@ -12852,7 +12862,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             break;
 
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             if ((op2 == cons) && (val == 0) && !(op1->OperKind() & GTK_CONST))
             {
                 goto DONE_FOLD;
@@ -12921,9 +12933,11 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
+#ifdef LEGACY_BACKEND
         case GT_ASG_LSH:
         case GT_ASG_RSH:
         case GT_ASG_RSZ:
+#endif
             if (val == 0)
             {
                 if (op2 == cons)
@@ -12990,7 +13004,7 @@ DONE_FOLD:
     // a use, update the flags appropriately
     if (op->gtOper == GT_LCL_VAR)
     {
-        assert((tree->OperKind() & GTK_ASGOP) || (op->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF)) == 0);
+        assert(tree->OperIsAssignment() || (op->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF)) == 0);
 
         op->gtFlags &= ~(GTF_VAR_USEASG | GTF_VAR_DEF);
     }
@@ -13472,7 +13486,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                         break;
 
                     case GT_NEG:
+#ifdef LEGACY_BACKEND
                     case GT_CHS:
+#endif
                         i1 = -i1;
                         break;
 
@@ -13601,7 +13617,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                         break;
 
                     case GT_NEG:
+#ifdef LEGACY_BACKEND
                     case GT_CHS:
+#endif
                         lval1 = -lval1;
                         break;
 
@@ -13706,7 +13724,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                 switch (tree->gtOper)
                 {
                     case GT_NEG:
+#ifdef LEGACY_BACKEND
                     case GT_CHS:
+#endif
                         d1 = -d1;
                         break;
 
@@ -15076,7 +15096,7 @@ bool Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned flags)
 {
     if (flags & GTF_ASG)
     {
-        if ((tree->OperKind() & GTK_ASGOP))
+        if (tree->OperIsAssignment())
         {
             return true;
         }
@@ -16157,12 +16177,14 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
                     *pOper      = rhs->gtOper;
                 }
             }
+#ifdef LEGACY_BACKEND
             else
             {
                 lclNum      = lhsLclNum;
                 *pOper      = GenTree::OpAsgToOper(gtOper);
                 *pOtherTree = gtOp.gtOp2;
             }
+#endif
         }
     }
     return lclNum;
