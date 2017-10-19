@@ -83,7 +83,8 @@ void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
                     useCandidates = RBM_FLOATRET;
                     break;
                 case TYP_DOUBLE:
-                    useCandidates = RBM_DOUBLERET;
+                    // We ONLY want the valid double register in the RBM_DOUBLERET mask.
+                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
                     break;
                 case TYP_LONG:
                     useCandidates = RBM_LNGRET;
