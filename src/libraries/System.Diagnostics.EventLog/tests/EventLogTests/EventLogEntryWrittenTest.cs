@@ -33,7 +33,13 @@ namespace System.Diagnostics.Tests
                     eventLog.EnableRaisingEvents = waitOnEvent;
                     eventLog.WriteEntry(message, EventLogEntryType.Information);
                     if (waitOnEvent)
-                        signal.WaitOne();
+                    {
+                        if (!signal.WaitOne(360))
+                        {
+                            eventLog.WriteEntry(message, EventLogEntryType.Information);
+                            Assert.True(signal.WaitOne(360));
+                        }
+                    }
                 }
             }
             finally
