@@ -27,7 +27,7 @@ static pthread_mutex_t spin G_GNUC_UNUSED = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef WAPI_NO_ATOMIC_ASM
 
-gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch,
+gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch,
 				  gint32 comp)
 {
 	gint32 old;
@@ -51,7 +51,7 @@ gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch,
 	return(old);
 }
 
-gpointer InterlockedCompareExchangePointer(volatile gpointer *dest,
+gpointer mono_atomic_cas_ptr(volatile gpointer *dest,
 					   gpointer exch, gpointer comp)
 {
 	gpointer old;
@@ -75,7 +75,7 @@ gpointer InterlockedCompareExchangePointer(volatile gpointer *dest,
 	return(old);
 }
 
-gint32 InterlockedAdd(volatile gint32 *dest, gint32 add)
+gint32 mono_atomic_add_i32(volatile gint32 *dest, gint32 add)
 {
 	gint32 ret;
 	int thr_ret;
@@ -96,7 +96,7 @@ gint32 InterlockedAdd(volatile gint32 *dest, gint32 add)
 	return(ret);
 }
 
-gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
+gint64 mono_atomic_add_i64(volatile gint64 *dest, gint64 add)
 {
 	gint64 ret;
 	int thr_ret;
@@ -117,7 +117,7 @@ gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
 	return(ret);
 }
 
-gint32 InterlockedIncrement(volatile gint32 *dest)
+gint32 mono_atomic_inc_i32(volatile gint32 *dest)
 {
 	gint32 ret;
 	int thr_ret;
@@ -138,7 +138,7 @@ gint32 InterlockedIncrement(volatile gint32 *dest)
 	return(ret);
 }
 
-gint64 InterlockedIncrement64(volatile gint64 *dest)
+gint64 mono_atomic_inc_i64(volatile gint64 *dest)
 {
 	gint64 ret;
 	int thr_ret;
@@ -159,7 +159,7 @@ gint64 InterlockedIncrement64(volatile gint64 *dest)
 	return(ret);
 }
 
-gint32 InterlockedDecrement(volatile gint32 *dest)
+gint32 mono_atomic_dec_i32(volatile gint32 *dest)
 {
 	gint32 ret;
 	int thr_ret;
@@ -180,7 +180,7 @@ gint32 InterlockedDecrement(volatile gint32 *dest)
 	return(ret);
 }
 
-gint64 InterlockedDecrement64(volatile gint64 *dest)
+gint64 mono_atomic_dec_i64(volatile gint64 *dest)
 {
 	gint64 ret;
 	int thr_ret;
@@ -201,7 +201,7 @@ gint64 InterlockedDecrement64(volatile gint64 *dest)
 	return(ret);
 }
 
-gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
+gint32 mono_atomic_xchg_i32(volatile gint32 *dest, gint32 exch)
 {
 	gint32 ret;
 	int thr_ret;
@@ -222,7 +222,7 @@ gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 	return(ret);
 }
 
-gint64 InterlockedExchange64(volatile gint64 *dest, gint64 exch)
+gint64 mono_atomic_xchg_i64(volatile gint64 *dest, gint64 exch)
 {
 	gint64 ret;
 	int thr_ret;
@@ -243,7 +243,7 @@ gint64 InterlockedExchange64(volatile gint64 *dest, gint64 exch)
 	return(ret);
 }
 
-gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
+gpointer mono_atomic_xchg_ptr(volatile gpointer *dest, gpointer exch)
 {
 	gpointer ret;
 	int thr_ret;
@@ -264,7 +264,7 @@ gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
 	return(ret);
 }
 
-gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
+gint32 mono_atomic_fetch_add_i32(volatile gint32 *dest, gint32 add)
 {
 	gint32 ret;
 	int thr_ret;
@@ -285,7 +285,7 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 	return(ret);
 }
 
-gint64 InterlockedExchangeAdd64(volatile gint64 *dest, gint64 add)
+gint64 mono_atomic_fetch_add_i64(volatile gint64 *dest, gint64 add)
 {
 	gint64 ret;
 	int thr_ret;
@@ -306,7 +306,7 @@ gint64 InterlockedExchangeAdd64(volatile gint64 *dest, gint64 add)
 	return(ret);
 }
 
-gint8 InterlockedRead8(volatile gint8 *src)
+gint8 mono_atomic_load_i8(volatile gint8 *src)
 {
 	gint8 ret;
 	int thr_ret;
@@ -326,7 +326,7 @@ gint8 InterlockedRead8(volatile gint8 *src)
 	return(ret);
 }
 
-gint16 InterlockedRead16(volatile gint16 *src)
+gint16 mono_atomic_load_i16(volatile gint16 *src)
 {
 	gint16 ret;
 	int thr_ret;
@@ -346,7 +346,7 @@ gint16 InterlockedRead16(volatile gint16 *src)
 	return(ret);
 }
 
-gint32 InterlockedRead(volatile gint32 *src)
+gint32 mono_atomic_load_i32(volatile gint32 *src)
 {
 	gint32 ret;
 	int thr_ret;
@@ -366,7 +366,7 @@ gint32 InterlockedRead(volatile gint32 *src)
 	return(ret);
 }
 
-gint64 InterlockedRead64(volatile gint64 *src)
+gint64 mono_atomic_load_i64(volatile gint64 *src)
 {
 	gint64 ret;
 	int thr_ret;
@@ -386,7 +386,7 @@ gint64 InterlockedRead64(volatile gint64 *src)
 	return(ret);
 }
 
-gpointer InterlockedReadPointer(volatile gpointer *src)
+gpointer mono_atomic_load_ptr(volatile gpointer *src)
 {
 	gpointer ret;
 	int thr_ret;
@@ -406,7 +406,7 @@ gpointer InterlockedReadPointer(volatile gpointer *src)
 	return(ret);
 }
 
-void InterlockedWrite8(volatile gint8 *dst, gint8 val)
+void mono_atomic_store_i8(volatile gint8 *dst, gint8 val)
 {
 	int thr_ret;
 	
@@ -423,7 +423,7 @@ void InterlockedWrite8(volatile gint8 *dst, gint8 val)
 	pthread_cleanup_pop (0);
 }
 
-void InterlockedWrite16(volatile gint16 *dst, gint16 val)
+void mono_atomic_store_i16(volatile gint16 *dst, gint16 val)
 {
 	int thr_ret;
 	
@@ -440,7 +440,7 @@ void InterlockedWrite16(volatile gint16 *dst, gint16 val)
 	pthread_cleanup_pop (0);
 }
 
-void InterlockedWrite(volatile gint32 *dst, gint32 val)
+void mono_atomic_store_i32(volatile gint32 *dst, gint32 val)
 {
 	int thr_ret;
 	
@@ -457,7 +457,7 @@ void InterlockedWrite(volatile gint32 *dst, gint32 val)
 	pthread_cleanup_pop (0);
 }
 
-void InterlockedWrite64(volatile gint64 *dst, gint64 val)
+void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 {
 	int thr_ret;
 	
@@ -474,7 +474,7 @@ void InterlockedWrite64(volatile gint64 *dst, gint64 val)
 	pthread_cleanup_pop (0);
 }
 
-void InterlockedWritePointer(volatile gpointer *dst, gpointer val)
+void mono_atomic_store_ptr(volatile gpointer *dst, gpointer val)
 {
 	int thr_ret;
 	
@@ -500,7 +500,7 @@ void InterlockedWritePointer(volatile gpointer *dst, gpointer val)
 /* The compiler breaks if this code is in the header... */
 
 gint64
-InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 	return __sync_val_compare_and_swap (dest, comp, exch);
 }
@@ -514,7 +514,7 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 #endif
 
 gint64
-InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 	return  __sync_val_compare_and_swap (dest, comp, exch);
 }
@@ -525,10 +525,10 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
  * so we have to roll our own...
  */
 
-gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp) __attribute__ ((__naked__));
+gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp) __attribute__ ((__naked__));
 
 gint64
-InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 	__asm__ (
 		"push		{r4, r5, r6, r7}\n"
@@ -560,7 +560,7 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 #else
 
 gint64
-InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 	gint64 old;
 	int ret;

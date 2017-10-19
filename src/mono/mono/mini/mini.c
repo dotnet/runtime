@@ -3087,7 +3087,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	static gboolean verbose_method_inited;
 	static char *verbose_method_name;
 
-	InterlockedIncrement (&mono_jit_stats.methods_compiled);
+	mono_atomic_inc_i32 (&mono_jit_stats.methods_compiled);
 	MONO_PROFILER_RAISE (jit_begin, (method));
 	if (MONO_METHOD_COMPILE_BEGIN_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_BEGIN (method);
@@ -3126,9 +3126,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)
-			InterlockedIncrement (&mono_stats.generics_sharable_methods);
+			mono_atomic_inc_i32 (&mono_stats.generics_sharable_methods);
 		else if (mono_method_is_generic_impl (method))
-			InterlockedIncrement (&mono_stats.generics_unsharable_methods);
+			mono_atomic_inc_i32 (&mono_stats.generics_unsharable_methods);
 	}
 
 #ifdef ENABLE_LLVM
@@ -3834,9 +3834,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	}
 
 	if (COMPILE_LLVM (cfg))
-		InterlockedIncrement (&mono_jit_stats.methods_with_llvm);
+		mono_atomic_inc_i32 (&mono_jit_stats.methods_with_llvm);
 	else
-		InterlockedIncrement (&mono_jit_stats.methods_without_llvm);
+		mono_atomic_inc_i32 (&mono_jit_stats.methods_without_llvm);
 
 	MONO_TIME_TRACK (mono_jit_stats.jit_create_jit_info, cfg->jit_info = create_jit_info (cfg, method_to_compile));
 
@@ -3878,25 +3878,25 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	/* collect statistics */
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedIncrement (&mono_perfcounters->jit_methods);
-	InterlockedAdd (&mono_perfcounters->jit_bytes, header->code_size);
+	mono_atomic_inc_i32 (&mono_perfcounters->jit_methods);
+	mono_atomic_fetch_add_i32 (&mono_perfcounters->jit_bytes, header->code_size);
 #endif
 	gint32 code_size_ratio = cfg->code_len;
-	InterlockedAdd (&mono_jit_stats.allocated_code_size, code_size_ratio);
-	InterlockedAdd (&mono_jit_stats.native_code_size, code_size_ratio);
+	mono_atomic_fetch_add_i32 (&mono_jit_stats.allocated_code_size, code_size_ratio);
+	mono_atomic_fetch_add_i32 (&mono_jit_stats.native_code_size, code_size_ratio);
 	/* FIXME: use an explicit function to read booleans */
-	if ((gboolean)InterlockedRead ((gint32*)&mono_jit_stats.enabled)) {
-		if (code_size_ratio > InterlockedRead (&mono_jit_stats.biggest_method_size)) {
-			InterlockedWrite (&mono_jit_stats.biggest_method_size, code_size_ratio);
+	if ((gboolean)mono_atomic_load_i32 ((gint32*)&mono_jit_stats.enabled)) {
+		if (code_size_ratio > mono_atomic_load_i32 (&mono_jit_stats.biggest_method_size)) {
+			mono_atomic_store_i32 (&mono_jit_stats.biggest_method_size, code_size_ratio);
 			char *biggest_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
-			biggest_method = InterlockedExchangePointer ((gpointer*)&mono_jit_stats.biggest_method, biggest_method);
+			biggest_method = mono_atomic_xchg_ptr ((gpointer*)&mono_jit_stats.biggest_method, biggest_method);
 			g_free (biggest_method);
 		}
 		code_size_ratio = (code_size_ratio * 100) / header->code_size;
-		if (code_size_ratio > InterlockedRead (&mono_jit_stats.max_code_size_ratio)) {
-			InterlockedWrite (&mono_jit_stats.max_code_size_ratio, code_size_ratio);
+		if (code_size_ratio > mono_atomic_load_i32 (&mono_jit_stats.max_code_size_ratio)) {
+			mono_atomic_store_i32 (&mono_jit_stats.max_code_size_ratio, code_size_ratio);
 			char *max_ratio_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
-			max_ratio_method = InterlockedExchangePointer ((gpointer*)&mono_jit_stats.max_ratio_method, max_ratio_method);
+			max_ratio_method = mono_atomic_xchg_ptr ((gpointer*)&mono_jit_stats.max_ratio_method, max_ratio_method);
 			g_free (max_ratio_method);
 		}
 	}
@@ -4254,16 +4254,16 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		code = cfg->native_code;
 
 		if (cfg->gshared && mono_method_is_generic_sharable (method, FALSE))
-			InterlockedIncrement (&mono_stats.generics_shared_methods);
+			mono_atomic_inc_i32 (&mono_stats.generics_shared_methods);
 		if (cfg->gsharedvt)
-			InterlockedIncrement (&mono_stats.gsharedvt_methods);
+			mono_atomic_inc_i32 (&mono_stats.gsharedvt_methods);
 	}
 
 	jinfo = cfg->jit_info;
 
 	/*
 	 * Update global stats while holding a lock, instead of doing many
-	 * InterlockedIncrement operations during JITting.
+	 * mono_atomic_inc_i32 operations during JITting.
 	 */
 	mono_update_jit_stats (cfg);
 

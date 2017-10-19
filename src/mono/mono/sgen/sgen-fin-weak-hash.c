@@ -342,7 +342,7 @@ try_lock_stage_for_processing (int num_entries, volatile gint32 *next_entry)
 	gint32 old = *next_entry;
 	if (old < num_entries)
 		return FALSE;
-	return InterlockedCompareExchange (next_entry, -1, old) == old;
+	return mono_atomic_cas_i32 (next_entry, -1, old) == old;
 }
 
 /* LOCKING: requires that the GC lock is held */
@@ -378,7 +378,7 @@ process_stage_entries (int num_entries, volatile gint32 *next_entry, StageEntry 
 			 * the entry to `USED`, in which case we must process it, so we must
 			 * detect that eventuality.
 			 */
-			if (InterlockedCompareExchange (&entries [i].state, STAGE_ENTRY_INVALID, STAGE_ENTRY_BUSY) != STAGE_ENTRY_BUSY)
+			if (mono_atomic_cas_i32 (&entries [i].state, STAGE_ENTRY_INVALID, STAGE_ENTRY_BUSY) != STAGE_ENTRY_BUSY)
 				goto retry;
 			continue;
 		case STAGE_ENTRY_USED:
@@ -448,7 +448,7 @@ add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entri
 		}
 		/* FREE -> BUSY */
 		if (entries [index].state != STAGE_ENTRY_FREE ||
-				InterlockedCompareExchange (&entries [index].state, STAGE_ENTRY_BUSY, STAGE_ENTRY_FREE) != STAGE_ENTRY_FREE) {
+				mono_atomic_cas_i32 (&entries [index].state, STAGE_ENTRY_BUSY, STAGE_ENTRY_FREE) != STAGE_ENTRY_FREE) {
 			/*
 			 * If we can't get the entry it must be because another thread got
 			 * it first.  We don't want to wait for that thread to increment
@@ -456,7 +456,7 @@ add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entri
 			 * or not, we start over.
 			 */
 			if (*next_entry == index) {
-				InterlockedCompareExchange (next_entry, index + 1, index);
+				mono_atomic_cas_i32 (next_entry, index + 1, index);
 				//g_print ("tried increment for other thread\n");
 				HEAVY_STAT (++stat_increment_other_thread);
 			}
@@ -477,7 +477,7 @@ add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entri
 		 * sets it to `-1`, that also takes care of the case that the drainer is
 		 * currently running.
 		 */
-		old_next_entry = InterlockedCompareExchange (next_entry, index + 1, index);
+		old_next_entry = mono_atomic_cas_i32 (next_entry, index + 1, index);
 		if (old_next_entry < index) {
 			/* BUSY -> FREE */
 			/* INVALID -> FREE */
@@ -508,7 +508,7 @@ add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entri
 	 * `INVALID`.  In the former case, we set it to `USED` and we're finished.  In the
 	 * latter case, we reset it to `FREE` and start over.
 	 */
-	previous_state = InterlockedCompareExchange (&entries [index].state, STAGE_ENTRY_USED, STAGE_ENTRY_BUSY);
+	previous_state = mono_atomic_cas_i32 (&entries [index].state, STAGE_ENTRY_USED, STAGE_ENTRY_BUSY);
 	if (previous_state == STAGE_ENTRY_BUSY) {
 		SGEN_ASSERT (0, new_next_entry >= index || new_next_entry < 0, "Invalid next entry index - as long as we're busy, other thread can only increment or invalidate it");
 		HEAVY_STAT (++stat_success);

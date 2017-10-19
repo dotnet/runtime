@@ -1719,7 +1719,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoO
 	if (proxy->ref_count == 0)
 		return -1;
 
-	ref_count = InterlockedDecrement (&proxy->ref_count);
+	ref_count = mono_atomic_dec_i32 (&proxy->ref_count);
 
 	g_assert (ref_count >= 0);
 
@@ -2458,7 +2458,7 @@ cominterop_ccw_addref (MonoCCWInterface* ccwe)
 	MonoCCW* ccw = ccwe->ccw;
 	g_assert (ccw);
 	g_assert (ccw->gc_handle);
-	ref_count = InterlockedIncrement ((gint32*)&ccw->ref_count);
+	ref_count = mono_atomic_inc_i32 ((gint32*)&ccw->ref_count);
 	if (ref_count == 1) {
 		guint32 oldhandle = ccw->gc_handle;
 		g_assert (oldhandle);
@@ -2476,7 +2476,7 @@ cominterop_ccw_release (MonoCCWInterface* ccwe)
 	MonoCCW* ccw = ccwe->ccw;
 	g_assert (ccw);
 	g_assert (ccw->ref_count > 0);
-	ref_count = InterlockedDecrement ((gint32*)&ccw->ref_count);
+	ref_count = mono_atomic_dec_i32 ((gint32*)&ccw->ref_count);
 	if (ref_count == 0) {
 		/* allow gc of object */
 		guint32 oldhandle = ccw->gc_handle;

@@ -88,20 +88,20 @@ extern MonoCoopMutex sgen_interruption_mutex;
 #define LOCK_INTERRUPTION mono_coop_mutex_lock (&sgen_interruption_mutex)
 #define UNLOCK_INTERRUPTION mono_coop_mutex_unlock (&sgen_interruption_mutex)
 
-/* FIXME: Use InterlockedAdd & InterlockedAdd64 to reduce the CAS cost. */
-#define SGEN_CAS	InterlockedCompareExchange
-#define SGEN_CAS_PTR	InterlockedCompareExchangePointer
+/* FIXME: Use mono_atomic_add_i32 & mono_atomic_add_i64 to reduce the CAS cost. */
+#define SGEN_CAS	mono_atomic_cas_i32
+#define SGEN_CAS_PTR	mono_atomic_cas_ptr
 #define SGEN_ATOMIC_ADD(x,i)	do {					\
 		int __old_x;						\
 		do {							\
 			__old_x = (x);					\
-		} while (InterlockedCompareExchange (&(x), __old_x + (i), __old_x) != __old_x); \
+		} while (mono_atomic_cas_i32 (&(x), __old_x + (i), __old_x) != __old_x); \
 	} while (0)
 #define SGEN_ATOMIC_ADD_P(x,i) do { \
 		size_t __old_x;                                            \
 		do {                                                    \
 			__old_x = (x);                                  \
-		} while (InterlockedCompareExchangePointer ((void**)&(x), (void*)(__old_x + (i)), (void*)__old_x) != (void*)__old_x); \
+		} while (mono_atomic_cas_ptr ((void**)&(x), (void*)(__old_x + (i)), (void*)__old_x) != (void*)__old_x); \
 	} while (0)
 
 #ifdef HEAVY_STATISTICS
@@ -261,7 +261,7 @@ sgen_get_nursery_end (void)
 		if (final_fw_addr)						\
 			break;							\
 		new_vtable_word = SGEN_POINTER_TAG_FORWARDED ((fw_addr));	\
-		old_vtable_word = InterlockedCompareExchangePointer ((gpointer*)obj, new_vtable_word, old_vtable_word); \
+		old_vtable_word = mono_atomic_cas_ptr ((gpointer*)obj, new_vtable_word, old_vtable_word); \
 		final_fw_addr = SGEN_VTABLE_IS_FORWARDED (old_vtable_word);	\
 		if (!final_fw_addr)						\
 			final_fw_addr = (fw_addr);				\

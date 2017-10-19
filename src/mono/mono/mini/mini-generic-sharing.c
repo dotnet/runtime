@@ -367,8 +367,8 @@ alloc_template (MonoClass *klass)
 {
 	gint32 size = sizeof (MonoRuntimeGenericContextTemplate);
 
-	InterlockedIncrement (&rgctx_template_num_allocated);
-	InterlockedAdd(&rgctx_template_bytes_allocated, size);
+	mono_atomic_inc_i32 (&rgctx_template_num_allocated);
+	mono_atomic_fetch_add_i32 (&rgctx_template_bytes_allocated, size);
 
 	return (MonoRuntimeGenericContextTemplate *)mono_image_alloc0 (klass->image, size);
 }
@@ -379,8 +379,8 @@ alloc_oti (MonoImage *image)
 {
 	gint32 size = sizeof (MonoRuntimeGenericContextInfoTemplate);
 
-	InterlockedIncrement (&rgctx_oti_num_allocated);
-	InterlockedAdd (&rgctx_oti_bytes_allocated, size);
+	mono_atomic_inc_i32 (&rgctx_oti_num_allocated);
+	mono_atomic_fetch_add_i32 (&rgctx_oti_bytes_allocated, size);
 
 	return (MonoRuntimeGenericContextInfoTemplate *)mono_image_alloc0 (image, size);
 }
@@ -1695,7 +1695,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	else
 		addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
 
-	InterlockedIncrement (&gsharedvt_num_trampolines);
+	mono_atomic_inc_i32 (&gsharedvt_num_trampolines);
 
 	/* Cache it */
 	tramp_info = (GSharedVtTrampInfo *)mono_domain_alloc0 (domain, sizeof (GSharedVtTrampInfo));

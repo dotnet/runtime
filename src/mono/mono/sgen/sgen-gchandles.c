@@ -65,7 +65,7 @@ try_set_slot (volatile gpointer *slot, GCObject *obj, gpointer old, GCHandleType
 	else
 		new_ = MONO_GC_HANDLE_METADATA_POINTER (sgen_client_default_metadata (), GC_HANDLE_TYPE_IS_WEAK (type));
 	SGEN_ASSERT (0, new_, "Why is the occupied bit not set?");
-	if (InterlockedCompareExchangePointer (slot, new_, old) == old) {
+	if (mono_atomic_cas_ptr (slot, new_, old) == old) {
 		protocol_gchandle_update (type, (gpointer)slot, old, new_);
 		return new_;
 	}
@@ -153,7 +153,7 @@ alloc_handle (HandleData *handles, GCObject *obj, gboolean track)
 	 */
 	index = sgen_array_list_add (array, obj, handles->type, TRUE);
 #ifdef HEAVY_STATISTICS
-	InterlockedIncrement ((volatile gint32 *)&stat_gc_handles_allocated);
+	mono_atomic_inc_i32 ((volatile gint32 *)&stat_gc_handles_allocated);
 	if (stat_gc_handles_allocated > stat_gc_handles_max_allocated)
 		stat_gc_handles_max_allocated = stat_gc_handles_allocated;
 #endif
@@ -196,7 +196,7 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, SgenGCHandl
 		if (result)
 			SGEN_ASSERT (0, MONO_GC_HANDLE_OCCUPIED (result), "Why did the callback return an unoccupied entry?");
 		else
-			HEAVY_STAT (InterlockedDecrement ((volatile gint32 *)&stat_gc_handles_allocated));
+			HEAVY_STAT (mono_atomic_dec_i32 ((volatile gint32 *)&stat_gc_handles_allocated));
 		protocol_gchandle_update (handle_type, (gpointer)slot, hidden, result);
 		*slot = result;
 	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
@@ -353,7 +353,7 @@ sgen_gchandle_free (guint32 gchandle)
 	if (index < handles->entries_array.capacity && MONO_GC_HANDLE_OCCUPIED (entry)) {
 		*slot = NULL;
 		protocol_gchandle_update (handles->type, (gpointer)slot, entry, NULL);
-		HEAVY_STAT (InterlockedDecrement ((volatile gint32 *)&stat_gc_handles_allocated));
+		HEAVY_STAT (mono_atomic_dec_i32 ((volatile gint32 *)&stat_gc_handles_allocated));
 	} else {
 		/* print a warning? */
 	}

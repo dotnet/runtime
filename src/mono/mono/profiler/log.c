@@ -238,7 +238,7 @@ process_id (void)
 			buffer_lock (); \
 		g_assert (!thread__->busy && "Why are we trying to write a new event while already writing one?"); \
 		thread__->busy = TRUE; \
-		InterlockedIncrement ((COUNTER)); \
+		mono_atomic_inc_i32 ((COUNTER)); \
 		LogBuffer *BUFFER = ensure_logbuf_unsafe (thread__, (SIZE))
 
 #define EXIT_LOG_EXPLICIT(SEND) \
@@ -474,7 +474,7 @@ create_buffer (uintptr_t tid, int bytes)
 {
 	LogBuffer* buf = (LogBuffer *) alloc_buffer (MAX (BUFFER_SIZE, bytes));
 
-	InterlockedIncrement (&buffer_allocations_ctr);
+	mono_atomic_inc_i32 (&buffer_allocations_ctr);
 
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
@@ -629,7 +629,7 @@ buffer_lock (void)
 	 * the exclusive lock in the gc_event () callback when the world
 	 * is about to stop.
 	 */
-	if (InterlockedRead (&log_profiler.buffer_lock_state) != get_thread ()->small_id << 16) {
+	if (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) != get_thread ()->small_id << 16) {
 		MONO_ENTER_GC_SAFE;
 
 		gint32 old, new_;
@@ -637,10 +637,10 @@ buffer_lock (void)
 		do {
 		restart:
 			// Hold off if a thread wants to take the exclusive lock.
-			while (InterlockedRead (&log_profiler.buffer_lock_exclusive_intent))
+			while (mono_atomic_load_i32 (&log_profiler.buffer_lock_exclusive_intent))
 				mono_thread_info_yield ();
 
-			old = InterlockedRead (&log_profiler.buffer_lock_state);
+			old = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
 
 			// Is a thread holding the exclusive lock?
 			if (old >> 16) {
@@ -649,7 +649,7 @@ buffer_lock (void)
 			}
 
 			new_ = old + 1;
-		} while (InterlockedCompareExchange (&log_profiler.buffer_lock_state, new_, old) != old);
+		} while (mono_atomic_cas_i32 (&log_profiler.buffer_lock_state, new_, old) != old);
 
 		MONO_EXIT_GC_SAFE;
 	}
@@ -662,7 +662,7 @@ buffer_unlock (void)
 {
 	mono_memory_barrier ();
 
-	gint32 state = InterlockedRead (&log_profiler.buffer_lock_state);
+	gint32 state = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
 
 	// See the comment in buffer_lock ().
 	if (state == PROF_TLS_GET ()->small_id << 16)
@@ -671,7 +671,7 @@ buffer_unlock (void)
 	g_assert (state && "Why are we decrementing a zero reader count?");
 	g_assert (!(state >> 16) && "Why is the exclusive lock held?");
 
-	InterlockedDecrement (&log_profiler.buffer_lock_state);
+	mono_atomic_dec_i32 (&log_profiler.buffer_lock_state);
 }
 
 static void
@@ -679,13 +679,13 @@ buffer_lock_excl (void)
 {
 	gint32 new_ = get_thread ()->small_id << 16;
 
-	g_assert (InterlockedRead (&log_profiler.buffer_lock_state) != new_ && "Why are we taking the exclusive lock twice?");
+	g_assert (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) != new_ && "Why are we taking the exclusive lock twice?");
 
-	InterlockedIncrement (&log_profiler.buffer_lock_exclusive_intent);
+	mono_atomic_inc_i32 (&log_profiler.buffer_lock_exclusive_intent);
 
 	MONO_ENTER_GC_SAFE;
 
-	while (InterlockedCompareExchange (&log_profiler.buffer_lock_state, new_, 0))
+	while (mono_atomic_cas_i32 (&log_profiler.buffer_lock_state, new_, 0))
 		mono_thread_info_yield ();
 
 	MONO_EXIT_GC_SAFE;
@@ -698,15 +698,15 @@ buffer_unlock_excl (void)
 {
 	mono_memory_barrier ();
 
-	gint32 state = InterlockedRead (&log_profiler.buffer_lock_state);
+	gint32 state = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
 	gint32 excl = state >> 16;
 
 	g_assert (excl && "Why is the exclusive lock not held?");
 	g_assert (excl == PROF_TLS_GET ()->small_id && "Why does another thread hold the exclusive lock?");
 	g_assert (!(state & 0xFFFF) && "Why are there readers when the exclusive lock is held?");
 
-	InterlockedWrite (&log_profiler.buffer_lock_state, 0);
-	InterlockedDecrement (&log_profiler.buffer_lock_exclusive_intent);
+	mono_atomic_store_i32 (&log_profiler.buffer_lock_state, 0);
+	mono_atomic_dec_i32 (&log_profiler.buffer_lock_exclusive_intent);
 }
 
 static void
@@ -1032,7 +1032,7 @@ free_thread (gpointer p)
 		 * threads. We need to synthesize a thread end event.
 		 */
 
-		InterlockedIncrement (&thread_ends_ctr);
+		mono_atomic_inc_i32 (&thread_ends_ctr);
 
 		LogBuffer *buf = ensure_logbuf_unsafe (thread,
 			EVENT_SIZE /* event */ +
@@ -1124,7 +1124,7 @@ send_log_unsafe (gboolean if_needed)
 static void
 sync_point_flush (void)
 {
-	g_assert (InterlockedRead (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
+	g_assert (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
 	MONO_LLS_FOREACH_SAFE (&log_profiler.profiler_thread_list, MonoProfilerThread, thread) {
 		g_assert (thread->attached && "Why is a thread in the LLS not attached?");
@@ -1138,7 +1138,7 @@ sync_point_flush (void)
 static void
 sync_point_mark (MonoProfilerSyncPointType type)
 {
-	g_assert (InterlockedRead (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
+	g_assert (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
 	ENTER_LOG (&sync_points_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -1230,7 +1230,7 @@ gc_roots (MonoProfiler *prof, MonoObject *const *objects, const MonoProfilerGCRo
 static void
 trigger_on_demand_heapshot (void)
 {
-	if (InterlockedRead (&log_profiler.heapshot_requested))
+	if (mono_atomic_load_i32 (&log_profiler.heapshot_requested))
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
@@ -1263,7 +1263,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 			log_profiler.do_heap_walk = generation == mono_gc_max_generation ();
 			break;
 		case MONO_PROFILER_HEAPSHOT_ON_DEMAND:
-			log_profiler.do_heap_walk = InterlockedRead (&log_profiler.heapshot_requested);
+			log_profiler.do_heap_walk = mono_atomic_load_i32 (&log_profiler.heapshot_requested);
 			break;
 		case MONO_PROFILER_HEAPSHOT_X_GC:
 			log_profiler.do_heap_walk = !(log_profiler.gc_count % log_config.hs_freq_gc);
@@ -1282,7 +1282,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		 * switch above, so check it here and override any decision we made
 		 * above.
 		 */
-		if (InterlockedRead (&log_profiler.heapshot_requested))
+		if (mono_atomic_load_i32 (&log_profiler.heapshot_requested))
 			log_profiler.do_heap_walk = TRUE;
 
 		if (ENABLED (PROFLOG_GC_ROOT_EVENTS) && log_profiler.do_heap_walk)
@@ -1340,7 +1340,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 			log_profiler.do_heap_walk = FALSE;
 			log_profiler.last_hs_time = current_time ();
 
-			InterlockedWrite (&log_profiler.heapshot_requested, 0);
+			mono_atomic_store_i32 (&log_profiler.heapshot_requested, 0);
 		}
 
 		/*
@@ -1423,7 +1423,7 @@ emit_bt (LogBuffer *logbuffer, FrameData *data)
 static void
 gc_alloc (MonoProfiler *prof, MonoObject *obj)
 {
-	int do_bt = (!log_config.enter_leave && InterlockedRead (&log_profiler.runtime_inited) && log_config.num_frames) ? TYPE_ALLOC_BT : 0;
+	int do_bt = (!log_config.enter_leave && mono_atomic_load_i32 (&log_profiler.runtime_inited) && log_config.num_frames) ? TYPE_ALLOC_BT : 0;
 	FrameData data;
 	uintptr_t len = mono_object_get_size (obj);
 	/* account for object alignment in the heap */
@@ -1480,7 +1480,7 @@ gc_moves (MonoProfiler *prof, MonoObject *const *objects, uint64_t num)
 static void
 gc_handle (MonoProfiler *prof, int op, MonoGCHandleType type, uint32_t handle, MonoObject *obj)
 {
-	int do_bt = !log_config.enter_leave && InterlockedRead (&log_profiler.runtime_inited) && log_config.num_frames;
+	int do_bt = !log_config.enter_leave && mono_atomic_load_i32 (&log_profiler.runtime_inited) && log_config.num_frames;
 	FrameData data;
 
 	if (do_bt)
@@ -1728,7 +1728,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 {
 	char *name;
 
-	if (InterlockedRead (&log_profiler.runtime_inited))
+	if (mono_atomic_load_i32 (&log_profiler.runtime_inited))
 		name = mono_type_get_name (mono_class_get_type (klass));
 	else
 		name = type_name (klass);
@@ -1753,7 +1753,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 
 	EXIT_LOG;
 
-	if (InterlockedRead (&log_profiler.runtime_inited))
+	if (mono_atomic_load_i32 (&log_profiler.runtime_inited))
 		mono_free (name);
 	else
 		g_free (name);
@@ -1876,7 +1876,7 @@ code_buffer_new (MonoProfiler *prof, const mono_byte *buffer, uint64_t size, Mon
 static void
 throw_exc (MonoProfiler *prof, MonoObject *object)
 {
-	int do_bt = (!log_config.enter_leave && InterlockedRead (&log_profiler.runtime_inited) && log_config.num_frames) ? TYPE_THROW_BT : 0;
+	int do_bt = (!log_config.enter_leave && mono_atomic_load_i32 (&log_profiler.runtime_inited) && log_config.num_frames) ? TYPE_THROW_BT : 0;
 	FrameData data;
 
 	if (do_bt)
@@ -1925,7 +1925,7 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, uint32_t clause_num, MonoExc
 static void
 monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEvent ev)
 {
-	int do_bt = (!log_config.enter_leave && InterlockedRead (&log_profiler.runtime_inited) && log_config.num_frames) ? TYPE_MONITOR_BT : 0;
+	int do_bt = (!log_config.enter_leave && mono_atomic_load_i32 (&log_profiler.runtime_inited) && log_config.num_frames) ? TYPE_MONITOR_BT : 0;
 	FrameData data;
 
 	if (do_bt)
@@ -2179,7 +2179,7 @@ mono_sample_hit (MonoProfiler *profiler, const mono_byte *ip, const void *contex
 	 * invoking runtime functions, which is not async-signal-safe.
 	 */
 
-	if (InterlockedRead (&log_profiler.in_shutdown))
+	if (mono_atomic_load_i32 (&log_profiler.in_shutdown))
 		return;
 
 	SampleHit *sample = (SampleHit *) mono_lock_free_queue_dequeue (&profiler->sample_reuse_queue);
@@ -2189,13 +2189,13 @@ mono_sample_hit (MonoProfiler *profiler, const mono_byte *ip, const void *contex
 		 * If we're out of reusable sample events and we're not allowed to
 		 * allocate more, we have no choice but to drop the event.
 		 */
-		if (InterlockedRead (&sample_allocations_ctr) >= log_config.max_allocated_sample_hits)
+		if (mono_atomic_load_i32 (&sample_allocations_ctr) >= log_config.max_allocated_sample_hits)
 			return;
 
 		sample = mono_lock_free_alloc (&profiler->sample_allocator);
 		mono_lock_free_queue_node_init (&sample->node, TRUE);
 
-		InterlockedIncrement (&sample_allocations_ctr);
+		mono_atomic_inc_i32 (&sample_allocations_ctr);
 	}
 
 	sample->count = 0;
@@ -2538,7 +2538,7 @@ dump_unmanaged_coderefs (void)
 static void
 counters_add_agent (MonoCounter *counter)
 {
-	if (InterlockedRead (&log_profiler.in_shutdown))
+	if (mono_atomic_load_i32 (&log_profiler.in_shutdown))
 		return;
 
 	MonoCounterAgent *agent, *item;
@@ -3524,7 +3524,7 @@ static void
 log_early_shutdown (MonoProfiler *prof)
 {
 	if (log_config.hs_on_shutdown) {
-		InterlockedWrite (&log_profiler.heapshot_requested, 1);
+		mono_atomic_store_i32 (&log_profiler.heapshot_requested, 1);
 		mono_gc_collect (mono_gc_max_generation ());
 	}
 }
@@ -3532,7 +3532,7 @@ log_early_shutdown (MonoProfiler *prof)
 static void
 log_shutdown (MonoProfiler *prof)
 {
-	InterlockedWrite (&log_profiler.in_shutdown, 1);
+	mono_atomic_store_i32 (&log_profiler.in_shutdown, 1);
 
 	if (ENABLED (PROFLOG_COUNTER_EVENTS))
 		counters_and_perfcounters_sample ();
@@ -3584,12 +3584,12 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	mono_thread_hazardous_try_free_all ();
 
-	InterlockedWrite (&prof->run_dumper_thread, 0);
+	mono_atomic_store_i32 (&prof->run_dumper_thread, 0);
 	mono_os_sem_post (&prof->dumper_queue_sem);
 	mono_native_thread_join (prof->dumper_thread);
 	mono_os_sem_destroy (&prof->dumper_queue_sem);
 
-	InterlockedWrite (&prof->run_writer_thread, 0);
+	mono_atomic_store_i32 (&prof->run_writer_thread, 0);
 	mono_os_sem_post (&prof->writer_queue_sem);
 	mono_native_thread_join (prof->writer_thread);
 	mono_os_sem_destroy (&prof->writer_queue_sem);
@@ -3610,7 +3610,7 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	mono_thread_hazardous_try_free_all ();
 
-	gint32 state = InterlockedRead (&log_profiler.buffer_lock_state);
+	gint32 state = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
 
 	g_assert (!(state & 0xFFFF) && "Why is the reader count still non-zero?");
 	g_assert (!(state >> 16) && "Why is the exclusive lock still held?");
@@ -3801,7 +3801,7 @@ helper_thread (void *arg)
 
 			if (log_config.hs_mode == MONO_PROFILER_HEAPSHOT_ON_DEMAND && !strcmp (buf, "heapshot\n")) {
 				// Rely on the finalization callback triggering a GC.
-				InterlockedWrite (&log_profiler.heapshot_requested, 1);
+				mono_atomic_store_i32 (&log_profiler.heapshot_requested, 1);
 				mono_gc_finalize_notify ();
 			}
 		}
@@ -3991,7 +3991,7 @@ writer_thread (void *arg)
 
 	MonoProfilerThread *thread = init_thread (FALSE);
 
-	while (InterlockedRead (&log_profiler.run_writer_thread)) {
+	while (mono_atomic_load_i32 (&log_profiler.run_writer_thread)) {
 		mono_os_sem_wait (&log_profiler.writer_queue_sem, MONO_SEM_FLAGS_NONE);
 		handle_writer_queue_entry ();
 	}
@@ -4010,7 +4010,7 @@ writer_thread (void *arg)
 static void
 start_writer_thread (void)
 {
-	InterlockedWrite (&log_profiler.run_writer_thread, 1);
+	mono_atomic_store_i32 (&log_profiler.run_writer_thread, 1);
 
 	if (!mono_native_thread_create (&log_profiler.writer_thread, writer_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start log profiler writer thread");
@@ -4096,7 +4096,7 @@ dumper_thread (void *arg)
 
 	MonoProfilerThread *thread = init_thread (FALSE);
 
-	while (InterlockedRead (&log_profiler.run_dumper_thread)) {
+	while (mono_atomic_load_i32 (&log_profiler.run_dumper_thread)) {
 		/*
 		 * Flush samples every second so it doesn't seem like the profiler is
 		 * not working if the program is mostly idle.
@@ -4121,7 +4121,7 @@ dumper_thread (void *arg)
 static void
 start_dumper_thread (void)
 {
-	InterlockedWrite (&log_profiler.run_dumper_thread, 1);
+	mono_atomic_store_i32 (&log_profiler.run_dumper_thread, 1);
 
 	if (!mono_native_thread_create (&log_profiler.dumper_thread, dumper_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start log profiler dumper thread");
@@ -4457,7 +4457,7 @@ proflog_icall_SetJitEvents (MonoBoolean value)
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
-	InterlockedWrite (&log_profiler.runtime_inited, 1);
+	mono_atomic_store_i32 (&log_profiler.runtime_inited, 1);
 
 	register_counter ("Sample events allocated", &sample_allocations_ctr);
 	register_counter ("Log buffers allocated", &buffer_allocations_ctr);

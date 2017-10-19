@@ -496,7 +496,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		if (found) {
 			/* We have to decrement it wherever we
 			 * remove it from domains_to_finalize */
-			if (InterlockedDecrement (&req->ref) != 1)
+			if (mono_atomic_dec_i32 (&req->ref) != 1)
 				g_error ("%s: req->ref should be 1, as we are the first one to decrement it", __func__);
 		}
 
@@ -504,7 +504,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	}
 
 done:
-	if (InterlockedDecrement (&req->ref) == 0) {
+	if (mono_atomic_dec_i32 (&req->ref) == 0) {
 		mono_coop_sem_destroy (&req->done);
 		g_free (req);
 	}
@@ -734,7 +734,7 @@ hazard_free_queue_is_too_big (size_t size)
 	if (size < HAZARD_QUEUE_OVERFLOW_SIZE)
 		return;
 
-	if (finalizer_thread_pulsed || InterlockedCompareExchange (&finalizer_thread_pulsed, TRUE, FALSE))
+	if (finalizer_thread_pulsed || mono_atomic_cas_i32 (&finalizer_thread_pulsed, TRUE, FALSE))
 		return;
 
 	mono_gc_finalize_notify ();
@@ -818,7 +818,7 @@ finalize_domain_objects (void)
 	/* printf ("DONE.\n"); */
 	mono_coop_sem_post (&req->done);
 
-	if (InterlockedDecrement (&req->ref) == 0) {
+	if (mono_atomic_dec_i32 (&req->ref) == 0) {
 		/* mono_domain_finalize already returned, and
 		 * doesn't hold a reference to req anymore. */
 		mono_coop_sem_destroy (&req->done);
@@ -1076,7 +1076,7 @@ ref_list_remove_element (RefQueueEntry **prev, RefQueueEntry *element)
 		/* Guard if head is changed concurrently. */
 		while (*prev != element)
 			prev = &(*prev)->next;
-	} while (prev && InterlockedCompareExchangePointer ((volatile gpointer *)prev, element->next, element) != element);
+	} while (prev && mono_atomic_cas_ptr ((volatile gpointer *)prev, element->next, element) != element);
 }
 
 static void
@@ -1087,7 +1087,7 @@ ref_list_push (RefQueueEntry **head, RefQueueEntry *value)
 		current = *head;
 		value->next = current;
 		STORE_STORE_FENCE; /*Must make sure the previous store is visible before the CAS. */
-	} while (InterlockedCompareExchangePointer ((volatile gpointer *)head, value, current) != current);
+	} while (mono_atomic_cas_ptr ((volatile gpointer *)head, value, current) != current);
 }
 
 static void

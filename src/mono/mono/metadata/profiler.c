@@ -161,13 +161,13 @@ mono_profiler_create (MonoProfiler *prof)
 void
 mono_profiler_set_cleanup_callback (MonoProfilerHandle handle, MonoProfilerCleanupCallback cb)
 {
-	InterlockedWritePointer (&handle->cleanup_callback, (gpointer) cb);
+	mono_atomic_store_ptr (&handle->cleanup_callback, (gpointer) cb);
 }
 
 void
 mono_profiler_set_coverage_filter_callback (MonoProfilerHandle handle, MonoProfilerCoverageFilterCallback cb)
 {
-	InterlockedWritePointer (&handle->coverage_filter, (gpointer) cb);
+	mono_atomic_store_ptr (&handle->coverage_filter, (gpointer) cb);
 }
 
 mono_bool
@@ -408,7 +408,7 @@ mono_profiler_enable_allocations (void)
 void
 mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handle, MonoProfilerCallInstrumentationFilterCallback cb)
 {
-	InterlockedWritePointer (&handle->call_instrumentation_filter, (gpointer) cb);
+	mono_atomic_store_ptr (&handle->call_instrumentation_filter, (gpointer) cb);
 }
 
 mono_bool
@@ -570,8 +570,8 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 	gpointer old;
 
 	do {
-		old = InterlockedReadPointer (location);
-	} while (InterlockedCompareExchangePointer (location, new_, old) != old);
+		old = mono_atomic_load_ptr (location);
+	} while (mono_atomic_cas_ptr (location, new_, old) != old);
 
 	/*
 	 * At this point, we could have installed a NULL callback while the counter
@@ -583,10 +583,10 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 	 */
 
 	if (old)
-		InterlockedDecrement (counter);
+		mono_atomic_dec_i32 (counter);
 
 	if (new_)
-		InterlockedIncrement (counter);
+		mono_atomic_inc_i32 (counter);
 }
 
 #define _MONO_PROFILER_EVENT(name, type) \

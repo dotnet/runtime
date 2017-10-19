@@ -333,7 +333,7 @@ sgen_cement_lookup_or_register (GCObject *obj)
 
 	if (!hash [i].obj) {
 		GCObject *old_obj;
-		old_obj = InterlockedCompareExchangePointer ((gpointer*)&hash [i].obj, obj, NULL);
+		old_obj = mono_atomic_cas_ptr ((gpointer*)&hash [i].obj, obj, NULL);
 		/* Check if the slot was occupied by some other object */
 		if (old_obj != NULL && old_obj != obj)
 			return FALSE;
@@ -344,7 +344,7 @@ sgen_cement_lookup_or_register (GCObject *obj)
 	if (hash [i].count >= SGEN_CEMENT_THRESHOLD)
 		return TRUE;
 
-	if (InterlockedIncrement ((gint32*)&hash [i].count) == SGEN_CEMENT_THRESHOLD) {
+	if (mono_atomic_inc_i32 ((gint32*)&hash [i].count) == SGEN_CEMENT_THRESHOLD) {
 		SGEN_ASSERT (9, sgen_get_current_collection_generation () >= 0, "We can only cement objects when we're in a collection pause.");
 		SGEN_ASSERT (9, SGEN_OBJECT_IS_PINNED (obj), "Can only cement pinned objects");
 		SGEN_CEMENT_OBJECT (obj);

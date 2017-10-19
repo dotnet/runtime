@@ -712,7 +712,7 @@ processes_cleanup (void)
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s", __func__);
 
 	/* Ensure we're not in here in multiple threads at once, nor recursive. */
-	if (InterlockedCompareExchange (&cleaning_up, 1, 0) != 0)
+	if (mono_atomic_cas_i32 (&cleaning_up, 1, 0) != 0)
 		return;
 
 	/*
@@ -752,7 +752,7 @@ processes_cleanup (void)
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s done", __func__);
 
-	InterlockedExchange (&cleaning_up, 0);
+	mono_atomic_xchg_i32 (&cleaning_up, 0);
 }
 
 static void
@@ -766,7 +766,7 @@ process_close (gpointer handle, gpointer data)
 	g_free (process_handle->pname);
 	process_handle->pname = NULL;
 	if (process_handle->process)
-		InterlockedDecrement (&process_handle->process->handle_count);
+		mono_atomic_dec_i32 (&process_handle->process->handle_count);
 	processes_cleanup ();
 }
 

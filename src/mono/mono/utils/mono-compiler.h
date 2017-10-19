@@ -77,6 +77,16 @@ typedef SSIZE_T ssize_t;
 #define MONO_EMPTY_SOURCE_FILE(x)
 #endif
 
+#ifdef _MSC_VER
+#define MONO_PRAGMA_WARNING_PUSH() __pragma(warning (push))
+#define MONO_PRAGMA_WARNING_DISABLE(x) __pragma(warning (disable:x))
+#define MONO_PRAGMA_WARNING_POP() __pragma(warning (pop))
+#else
+#define MONO_PRAGMA_WARNING_PUSH()
+#define MONO_PRAGMA_WARNING_DISABLE(x)
+#define MONO_PRAGMA_WARNING_POP()
+#endif
+
 #if !defined(_MSC_VER) && !defined(HOST_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN
 #if MONO_LLVM_LOADED
 #define MONO_LLVM_INTERNAL MONO_API

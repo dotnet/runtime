@@ -523,7 +523,7 @@ mono_w32handle_ref_core (gpointer handle, MonoW32HandleBase *handle_data)
 			return FALSE;
 
 		new = old + 1;
-	} while (InterlockedCompareExchange ((gint32*) &handle_data->ref, new, old) != old);
+	} while (mono_atomic_cas_i32 ((gint32*) &handle_data->ref, (gint32)new, (gint32)old) != (gint32)old);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: ref %s handle %p, ref: %d -> %d",
 		__func__, mono_w32handle_ops_typename (handle_data->type), handle, old, new);
@@ -545,7 +545,7 @@ mono_w32handle_unref_core (gpointer handle, MonoW32HandleBase *handle_data)
 			g_error ("%s: handle %p has ref %d, it should be >= 1", __func__, handle, old);
 
 		new = old - 1;
-	} while (InterlockedCompareExchange ((gint32*) &handle_data->ref, new, old) != old);
+	} while (mono_atomic_cas_i32 ((gint32*) &handle_data->ref, (gint32)new, (gint32)old) != (gint32)old);
 
 	/* handle_data might contain invalid data from now on, if
 	 * another thread is unref'ing this handle at the same time */

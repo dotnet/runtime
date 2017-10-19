@@ -94,7 +94,7 @@ void
 mono_threads_notify_initiator_of_abort (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-ABORT] %p\n", mono_thread_info_get_tid (info));
-	InterlockedIncrement (&abort_posts);
+	mono_atomic_inc_i32 (&abort_posts);
 	mono_os_sem_post (&suspend_semaphore);
 }
 
@@ -102,7 +102,7 @@ void
 mono_threads_notify_initiator_of_suspend (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-SUSPEND] %p\n", mono_thread_info_get_tid (info));
-	InterlockedIncrement (&suspend_posts);
+	mono_atomic_inc_i32 (&suspend_posts);
 	mono_os_sem_post (&suspend_semaphore);
 }
 
@@ -110,7 +110,7 @@ void
 mono_threads_notify_initiator_of_resume (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-RESUME] %p\n", mono_thread_info_get_tid (info));
-	InterlockedIncrement (&resume_posts);
+	mono_atomic_inc_i32 (&resume_posts);
 	mono_os_sem_post (&suspend_semaphore);
 }
 
@@ -174,7 +174,7 @@ mono_threads_add_to_pending_operation_set (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("added %p to pending suspend\n", mono_thread_info_get_tid (info));
 	++pending_suspends;
-	InterlockedIncrement (&pending_ops);
+	mono_atomic_inc_i32 (&pending_ops);
 }
 
 void
@@ -242,7 +242,7 @@ mono_threads_wait_pending_operations (void)
 		mono_stopwatch_start (&suspension_time);
 		for (i = 0; i < pending_suspends; ++i) {
 			THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-WAITING]\n");
-			InterlockedIncrement (&waits_done);
+			mono_atomic_inc_i32 (&waits_done);
 			if (mono_os_sem_timedwait (&suspend_semaphore, sleepAbortDuration, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_SUCCESS)
 				continue;
 			mono_stopwatch_stop (&suspension_time);
@@ -1456,7 +1456,7 @@ mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer d
 	token->callback = callback;
 	token->data = data;
 
-	previous_token = (MonoThreadInfoInterruptToken *)InterlockedCompareExchangePointer ((gpointer*) &info->interrupt_token, token, NULL);
+	previous_token = (MonoThreadInfoInterruptToken *)mono_atomic_cas_ptr ((gpointer*) &info->interrupt_token, token, NULL);
 
 	if (previous_token) {
 		if (previous_token != INTERRUPT_STATE)
@@ -1483,7 +1483,7 @@ mono_thread_info_uninstall_interrupt (gboolean *interrupted)
 	info = mono_thread_info_current ();
 	g_assert (info);
 
-	previous_token = (MonoThreadInfoInterruptToken *)InterlockedExchangePointer ((gpointer*) &info->interrupt_token, NULL);
+	previous_token = (MonoThreadInfoInterruptToken *)mono_atomic_xchg_ptr ((gpointer*) &info->interrupt_token, NULL);
 
 	/* only the installer can uninstall the token */
 	g_assert (previous_token);
@@ -1519,7 +1519,7 @@ set_interrupt_state (MonoThreadInfo *info)
 		}
 
 		token = previous_token;
-	} while (InterlockedCompareExchangePointer ((gpointer*) &info->interrupt_token, INTERRUPT_STATE, previous_token) != previous_token);
+	} while (mono_atomic_cas_ptr ((gpointer*) &info->interrupt_token, INTERRUPT_STATE, previous_token) != previous_token);
 
 	return token;
 }
@@ -1592,7 +1592,7 @@ mono_thread_info_clear_self_interrupt ()
 	info = mono_thread_info_current ();
 	g_assert (info);
 
-	previous_token = (MonoThreadInfoInterruptToken *)InterlockedCompareExchangePointer ((gpointer*) &info->interrupt_token, NULL, INTERRUPT_STATE);
+	previous_token = (MonoThreadInfoInterruptToken *)mono_atomic_cas_ptr ((gpointer*) &info->interrupt_token, NULL, INTERRUPT_STATE);
 	g_assert (previous_token == NULL || previous_token == INTERRUPT_STATE);
 
 	THREADS_INTERRUPT_DEBUG ("interrupt clear self tid %p previous_token %p\n", mono_thread_info_get_tid (info), previous_token);
@@ -1602,7 +1602,7 @@ gboolean
 mono_thread_info_is_interrupt_state (MonoThreadInfo *info)
 {
 	g_assert (info);
-	return InterlockedReadPointer ((gpointer*) &info->interrupt_token) == INTERRUPT_STATE;
+	return mono_atomic_load_ptr ((gpointer*) &info->interrupt_token) == INTERRUPT_STATE;
 }
 
 void
@@ -1610,9 +1610,9 @@ mono_thread_info_describe_interrupt_token (MonoThreadInfo *info, GString *text)
 {
 	g_assert (info);
 
-	if (!InterlockedReadPointer ((gpointer*) &info->interrupt_token))
+	if (!mono_atomic_load_ptr ((gpointer*) &info->interrupt_token))
 		g_string_append_printf (text, "not waiting");
-	else if (InterlockedReadPointer ((gpointer*) &info->interrupt_token) == INTERRUPT_STATE)
+	else if (mono_atomic_load_ptr ((gpointer*) &info->interrupt_token) == INTERRUPT_STATE)
 		g_string_append_printf (text, "interrupted state");
 	else
 		g_string_append_printf (text, "waiting");

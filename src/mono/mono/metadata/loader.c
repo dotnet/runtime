@@ -168,7 +168,7 @@ cache_memberref_sig (MonoImage *image, guint32 sig_idx, gpointer sig)
 	else {
 		g_hash_table_insert (image->memberref_signatures, GUINT_TO_POINTER (sig_idx), sig);
 		/* An approximation based on glib 2.18 */
-		InterlockedAdd (&memberref_sig_cache_size, sizeof (gpointer) * 4);
+		mono_atomic_fetch_add_i32 (&memberref_sig_cache_size, sizeof (gpointer) * 4);
 	}
 	mono_image_unlock (image);
 
@@ -737,7 +737,7 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 		if (cached != sig)
 			mono_metadata_free_inflated_signature (sig);
 		else
-			InterlockedAdd (&inflated_signatures_size, mono_metadata_signature_size (cached));
+			mono_atomic_fetch_add_i32 (&inflated_signatures_size, mono_metadata_signature_size (cached));
 		sig = cached;
 	}
 
@@ -1684,10 +1684,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
 	} else {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethod));
-		InterlockedAdd (&methods_size, sizeof (MonoMethod));
+		mono_atomic_fetch_add_i32 (&methods_size, sizeof (MonoMethod));
 	}
 
-	InterlockedIncrement (&mono_stats.method_count);
+	mono_atomic_inc_i32 (&mono_stats.method_count);
 
 	result->slot = -1;
 	result->klass = klass;
@@ -2423,7 +2423,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		if (!mono_error_ok (error))
 			return NULL;
 
-		InterlockedAdd (&inflated_signatures_size, mono_metadata_signature_size (signature));
+		mono_atomic_fetch_add_i32 (&inflated_signatures_size, mono_metadata_signature_size (signature));
 
 		mono_image_lock (img);
 
@@ -2480,7 +2480,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 			mono_image_unlock (img);
 		}
 
-		InterlockedAdd (&signatures_size, mono_metadata_signature_size (signature));
+		mono_atomic_fetch_add_i32 (&signatures_size, mono_metadata_signature_size (signature));
 	}
 
 	/* Verify metadata consistency */

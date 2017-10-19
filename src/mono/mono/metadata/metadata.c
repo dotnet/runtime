@@ -3171,7 +3171,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_image_set_alloc0 (set, size);
 #ifndef MONO_SMALL_CONFIG
-		ginst->id = InterlockedIncrement (&next_generic_inst_id);
+		ginst->id = mono_atomic_inc_i32 (&next_generic_inst_id);
 #endif
 		ginst->is_open = is_open;
 		ginst->type_argc = type_argc;
@@ -3411,7 +3411,7 @@ get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar)
 
 		// If another thread already made a container, use that and leak this new one.
 		// (Technically it would currently be safe to just assign instead of CASing.)
-		MonoGenericContainer *exchange = (MonoGenericContainer *)InterlockedCompareExchangePointer ((volatile gpointer *)container_pointer, result, NULL);
+		MonoGenericContainer *exchange = (MonoGenericContainer *)mono_atomic_cas_ptr ((volatile gpointer *)container_pointer, result, NULL);
 		if (exchange)
 			result = exchange;
 	}

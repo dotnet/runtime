@@ -175,7 +175,7 @@ try_lock_exclusive (void)
 	do {
 		if (binary_protocol_use_count)
 			return FALSE;
-	} while (InterlockedCompareExchange (&binary_protocol_use_count, -1, 0) != 0);
+	} while (mono_atomic_cas_i32 (&binary_protocol_use_count, -1, 0) != 0);
 	mono_memory_barrier ();
 	return TRUE;
 }
@@ -185,7 +185,7 @@ unlock_exclusive (void)
 {
 	mono_memory_barrier ();
 	SGEN_ASSERT (0, binary_protocol_use_count == -1, "Exclusively locked count must be -1");
-	if (InterlockedCompareExchange (&binary_protocol_use_count, 0, -1) != -1)
+	if (mono_atomic_cas_i32 (&binary_protocol_use_count, 0, -1) != -1)
 		SGEN_ASSERT (0, FALSE, "Somebody messed with the exclusive lock");
 }
 
@@ -201,7 +201,7 @@ lock_recursive (void)
 			/* FIXME: short back-off */
 			goto retry;
 		}
-	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count + 1, old_count) != old_count);
+	} while (mono_atomic_cas_i32 (&binary_protocol_use_count, old_count + 1, old_count) != old_count);
 	mono_memory_barrier ();
 }
 
@@ -213,7 +213,7 @@ unlock_recursive (void)
 	do {
 		old_count = binary_protocol_use_count;
 		SGEN_ASSERT (0, old_count > 0, "Locked use count must be at least 1");
-	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count - 1, old_count) != old_count);
+	} while (mono_atomic_cas_i32 (&binary_protocol_use_count, old_count - 1, old_count) != old_count);
 }
 
 static void
@@ -328,7 +328,7 @@ binary_protocol_get_buffer (int length)
 	new_buffer->next = buffer;
 	new_buffer->index = 0;
 
-	if (InterlockedCompareExchangePointer ((void**)&binary_protocol_buffers, new_buffer, buffer) != buffer) {
+	if (mono_atomic_cas_ptr ((void**)&binary_protocol_buffers, new_buffer, buffer) != buffer) {
 		sgen_free_os_memory (new_buffer, sizeof (BinaryProtocolBuffer), SGEN_ALLOC_INTERNAL, MONO_MEM_ACCOUNT_SGEN_BINARY_PROTOCOL);
 		goto retry;
 	}
@@ -356,7 +356,7 @@ protocol_entry (unsigned char type, gpointer data, int size)
 	if (index + entry_size > BINARY_PROTOCOL_BUFFER_SIZE)
 		goto retry;
 
-	if (InterlockedCompareExchange (&buffer->index, index + entry_size, index) != index)
+	if (mono_atomic_cas_i32 (&buffer->index, index + entry_size, index) != index)
 		goto retry_same_buffer;
 
 	/* FIXME: if we're interrupted at this point, we have a buffer

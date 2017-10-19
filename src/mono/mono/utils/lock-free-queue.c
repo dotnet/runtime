@@ -156,11 +156,11 @@ mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node)
 				 * might append to a node that isn't
 				 * in the queue anymore here.
 				 */
-				if (InterlockedCompareExchangePointer ((gpointer volatile*)&tail->next, node, END_MARKER) == END_MARKER)
+				if (mono_atomic_cas_ptr ((gpointer volatile*)&tail->next, node, END_MARKER) == END_MARKER)
 					break;
 			} else {
 				/* Try to advance tail */
-				InterlockedCompareExchangePointer ((gpointer volatile*)&q->tail, next, tail);
+				mono_atomic_cas_ptr ((gpointer volatile*)&q->tail, next, tail);
 			}
 		}
 
@@ -169,7 +169,7 @@ mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node)
 	}
 
 	/* Try to advance tail */
-	InterlockedCompareExchangePointer ((gpointer volatile*)&q->tail, node, tail);
+	mono_atomic_cas_ptr ((gpointer volatile*)&q->tail, node, tail);
 
 	mono_memory_write_barrier ();
 	mono_hazard_pointer_clear (hp, 0);
@@ -195,7 +195,7 @@ get_dummy (MonoLockFreeQueue *q)
 		if (dummy->in_use)
 			continue;
 
-		if (InterlockedCompareExchange (&dummy->in_use, 1, 0) == 0)
+		if (mono_atomic_cas_i32 (&dummy->in_use, 1, 0) == 0)
 			return dummy;
 	}
 	return NULL;
@@ -219,7 +219,7 @@ try_reenqueue_dummy (MonoLockFreeQueue *q)
 	if (!dummy)
 		return FALSE;
 
-	if (InterlockedCompareExchange (&q->has_dummy, 1, 0) != 0) {
+	if (mono_atomic_cas_i32 (&q->has_dummy, 1, 0) != 0) {
 		dummy->in_use = 0;
 		return FALSE;
 	}
@@ -275,11 +275,11 @@ mono_lock_free_queue_dequeue (MonoLockFreeQueue *q)
 				}
 
 				/* Try to advance tail */
-				InterlockedCompareExchangePointer ((gpointer volatile*)&q->tail, next, tail);
+				mono_atomic_cas_ptr ((gpointer volatile*)&q->tail, next, tail);
 			} else {
 				g_assert (next != END_MARKER);
 				/* Try to dequeue head */
-				if (InterlockedCompareExchangePointer ((gpointer volatile*)&q->head, next, head) == head)
+				if (mono_atomic_cas_ptr ((gpointer volatile*)&q->head, next, head) == head)
 					break;
 			}
 		}

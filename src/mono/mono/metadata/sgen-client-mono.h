@@ -297,9 +297,9 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 
 #ifndef DISABLE_PERFCOUNTERS
 	if (generation == GENERATION_NURSERY)
-		InterlockedIncrement (&mono_perfcounters->gc_collections0);
+		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections0);
 	else
-		InterlockedIncrement (&mono_perfcounters->gc_collections1);
+		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections1);
 #endif
 }
 

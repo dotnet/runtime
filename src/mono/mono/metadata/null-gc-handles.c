@@ -220,7 +220,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	}
 
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedIncrement (&mono_perfcounters->gc_num_handles);
+	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 	unlock_handles (handles);
 	res = MONO_GC_HANDLE (slot, handles->type);
@@ -412,7 +412,7 @@ mono_gchandle_free (guint32 gchandle)
 		/* print a warning? */
 	}
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedDecrement (&mono_perfcounters->gc_num_handles);
+	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);

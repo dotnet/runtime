@@ -138,7 +138,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 
 	if (G_UNLIKELY (has_per_allocation_action)) {
 		static int alloc_count;
-		int current_alloc = InterlockedIncrement (&alloc_count);
+		int current_alloc = mono_atomic_inc_i32 (&alloc_count);
 
 		if (collect_before_allocs) {
 			if (((current_alloc % collect_before_allocs) == 0) && nursery_section) {
@@ -393,7 +393,7 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 
 	if (G_UNLIKELY (has_per_allocation_action)) {
 		static int alloc_count;
-		int current_alloc = InterlockedIncrement (&alloc_count);
+		int current_alloc = mono_atomic_inc_i32 (&alloc_count);
 
 		if (verify_before_allocs) {
 			if ((current_alloc % verify_before_allocs) == 0) {

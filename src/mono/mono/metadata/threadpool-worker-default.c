@@ -184,14 +184,14 @@ static ThreadPoolWorker worker;
 			(var) = __old; \
 			{ block; } \
 			COUNTER_CHECK (var); \
-		} while (InterlockedCompareExchange64 (&worker.counters.as_gint64, (var).as_gint64, __old.as_gint64) != __old.as_gint64); \
+		} while (mono_atomic_cas_i64 (&worker.counters.as_gint64, (var).as_gint64, __old.as_gint64) != __old.as_gint64); \
 	} while (0)
 
 static inline ThreadPoolWorkerCounter
 COUNTER_READ (void)
 {
 	ThreadPoolWorkerCounter counter;
-	counter.as_gint64 = InterlockedRead64 (&worker.counters.as_gint64);
+	counter.as_gint64 = mono_atomic_load_i64 (&worker.counters.as_gint64);
 	return counter;
 }
 
@@ -313,11 +313,11 @@ work_item_push (void)
 	gint32 old, new;
 
 	do {
-		old = InterlockedRead (&worker.work_items_count);
+		old = mono_atomic_load_i32 (&worker.work_items_count);
 		g_assert (old >= 0);
 
 		new = old + 1;
-	} while (InterlockedCompareExchange (&worker.work_items_count, new, old) != old);
+	} while (mono_atomic_cas_i32 (&worker.work_items_count, new, old) != old);
 }
 
 static gboolean
@@ -326,14 +326,14 @@ work_item_try_pop (void)
 	gint32 old, new;
 
 	do {
-		old = InterlockedRead (&worker.work_items_count);
+		old = mono_atomic_load_i32 (&worker.work_items_count);
 		g_assert (old >= 0);
 
 		if (old == 0)
 			return FALSE;
 
 		new = old - 1;
-	} while (InterlockedCompareExchange (&worker.work_items_count, new, old) != old);
+	} while (mono_atomic_cas_i32 (&worker.work_items_count, new, old) != old);
 
 	return TRUE;
 }
@@ -341,7 +341,7 @@ work_item_try_pop (void)
 static gint32
 work_item_count (void)
 {
-	return InterlockedRead (&worker.work_items_count);
+	return mono_atomic_load_i32 (&worker.work_items_count);
 }
 
 static void worker_request (void);
@@ -613,7 +613,7 @@ monitor_should_keep_running (void)
 
 	g_assert (worker.monitor_status == MONITOR_STATUS_WAITING_FOR_REQUEST || worker.monitor_status == MONITOR_STATUS_REQUESTED);
 
-	if (InterlockedExchange (&worker.monitor_status, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST) {
+	if (mono_atomic_xchg_i32 (&worker.monitor_status, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST) {
 		gboolean should_keep_running = TRUE, force_should_keep_running = FALSE;
 
 		if (mono_runtime_is_shutting_down ()) {
@@ -634,7 +634,7 @@ monitor_should_keep_running (void)
 				last_should_keep_running = mono_100ns_ticks ();
 		} else {
 			last_should_keep_running = -1;
-			if (InterlockedCompareExchange (&worker.monitor_status, MONITOR_STATUS_NOT_RUNNING, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST)
+			if (mono_atomic_cas_i32 (&worker.monitor_status, MONITOR_STATUS_NOT_RUNNING, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST)
 				return FALSE;
 		}
 	}
@@ -775,13 +775,13 @@ monitor_ensure_running (void)
 			return;
 		case MONITOR_STATUS_WAITING_FOR_REQUEST:
 			// printf ("monitor_thread: waiting for request\n");
-			InterlockedCompareExchange (&worker.monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_WAITING_FOR_REQUEST);
+			mono_atomic_cas_i32 (&worker.monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_WAITING_FOR_REQUEST);
 			break;
 		case MONITOR_STATUS_NOT_RUNNING:
 			// printf ("monitor_thread: not running\n");
 			if (mono_runtime_is_shutting_down ())
 				return;
-			if (InterlockedCompareExchange (&worker.monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_NOT_RUNNING) == MONITOR_STATUS_NOT_RUNNING) {
+			if (mono_atomic_cas_i32 (&worker.monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_NOT_RUNNING) == MONITOR_STATUS_NOT_RUNNING) {
 				// printf ("monitor_thread: creating\n");
 				if (!mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK, &error)) {
 					// printf ("monitor_thread: creating failed\n");
@@ -1079,7 +1079,7 @@ static void
 heuristic_adjust (void)
 {
 	if (mono_coop_mutex_trylock (&worker.heuristic_lock) == 0) {
-		gint32 completions = InterlockedExchange (&worker.heuristic_completions, 0);
+		gint32 completions = mono_atomic_xchg_i32 (&worker.heuristic_completions, 0);
 		gint64 sample_end = mono_msec_ticks ();
 		gint64 sample_duration = sample_end - worker.heuristic_sample_start;
 
@@ -1108,7 +1108,7 @@ heuristic_adjust (void)
 static void
 heuristic_notify_work_completed (void)
 {
-	InterlockedIncrement (&worker.heuristic_completions);
+	mono_atomic_inc_i32 (&worker.heuristic_completions);
 	worker.heuristic_last_dequeue = mono_msec_ticks ();
 
 	if (heuristic_should_adjust ())

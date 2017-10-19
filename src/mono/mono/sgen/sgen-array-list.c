@@ -46,12 +46,12 @@ sgen_array_list_grow (SgenArrayList *array, guint32 old_capacity)
 	 * the new bucket pointer.
 	 */
 	mono_memory_write_barrier ();
-	if (InterlockedCompareExchangePointer ((volatile gpointer *)&array->entries [new_bucket], entries, NULL) == NULL) {
+	if (mono_atomic_cas_ptr ((volatile gpointer *)&array->entries [new_bucket], entries, NULL) == NULL) {
 		/*
 		 * It must not be the case that we succeeded in setting the bucket
 		 * pointer, while someone else succeeded in changing the capacity.
 		 */
-		if (InterlockedCompareExchange ((volatile gint32 *)&array->capacity, new_capacity, old_capacity) != old_capacity)
+		if (mono_atomic_cas_i32 ((volatile gint32 *)&array->capacity, (gint32)new_capacity, (gint32)old_capacity) != (gint32)old_capacity)
 			g_assert_not_reached ();
 		array->slot_hint = old_capacity;
 		return;
@@ -109,7 +109,7 @@ sgen_array_list_update_next_slot (SgenArrayList *array, guint32 new_index)
 			old_next_slot = array->next_slot;
 			if (new_index < old_next_slot)
 				break;
-		} while (InterlockedCompareExchange ((volatile gint32 *)&array->next_slot, new_index + 1, old_next_slot) != old_next_slot);
+		} while (mono_atomic_cas_i32 ((volatile gint32 *)&array->next_slot, (gint32)(new_index + 1), (gint32)old_next_slot) != (gint32)old_next_slot);
 	}
 }
 
@@ -196,7 +196,7 @@ sgen_array_list_find (SgenArrayList *array, gpointer ptr)
 gboolean
 sgen_array_list_default_cas_setter (volatile gpointer *slot, gpointer ptr, int data)
 {
-	if (InterlockedCompareExchangePointer (slot, ptr, NULL) == NULL)
+	if (mono_atomic_cas_ptr (slot, ptr, NULL) == NULL)
 		return TRUE;
 	return FALSE;
 }

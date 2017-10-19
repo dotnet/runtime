@@ -153,7 +153,7 @@ reset_alloc_records (void)
 static void
 add_alloc_record (char *addr, size_t size, int reason)
 {
-	int idx = InterlockedIncrement (&next_record) - 1;
+	int idx = mono_atomic_inc_i32 (&next_record) - 1;
 	alloc_records [idx].address = addr;
 	alloc_records [idx].size = size;
 	alloc_records [idx].reason = reason;
@@ -322,7 +322,7 @@ try_again:
 			prev = &cur->next;
 		} else {
 			next = (SgenFragment *)unmask (next);
-			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) != cur)
+			if (mono_atomic_cas_ptr ((volatile gpointer*)prev, next, cur) != cur)
 				goto try_again;
 			/*we must make sure that the next from cur->next happens after*/
 			mono_memory_write_barrier ();
@@ -341,7 +341,7 @@ claim_remaining_size (SgenFragment *frag, char *alloc_end)
 		return FALSE;
 
 	/* Try to alloc all the remaining space. */
-	return InterlockedCompareExchangePointer ((volatile gpointer*)&frag->fragment_next, frag->fragment_end, alloc_end) == alloc_end;
+	return mono_atomic_cas_ptr ((volatile gpointer*)&frag->fragment_next, frag->fragment_end, alloc_end) == alloc_end;
 }
 
 static void*
@@ -356,7 +356,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 	/* p = frag->fragment_next must happen before */
 	mono_memory_barrier ();
 
-	if (InterlockedCompareExchangePointer ((volatile gpointer*)&frag->fragment_next, end, p) != p)
+	if (mono_atomic_cas_ptr ((volatile gpointer*)&frag->fragment_next, end, p) != p)
 		return NULL;
 
 	if (frag->fragment_end - end < SGEN_MAX_NURSERY_WASTE) {
@@ -390,7 +390,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 				mono_memory_write_barrier ();
 
 				/*Fail if the next node is removed concurrently and its CAS wins */
-				if (InterlockedCompareExchangePointer ((volatile gpointer*)&frag->next, mask (next, 1), next) != next) {
+				if (mono_atomic_cas_ptr ((volatile gpointer*)&frag->next, mask (next, 1), next) != next) {
 					continue;
 				}
 			}
@@ -399,7 +399,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 			mono_memory_write_barrier ();
 
 			/* Fail if the previous node was deleted and its CAS wins */
-			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev_ptr, unmask (next), frag) != frag) {
+			if (mono_atomic_cas_ptr ((volatile gpointer*)prev_ptr, unmask (next), frag) != frag) {
 				prev_ptr = find_previous_pointer_fragment (allocator, frag);
 				continue;
 			}
@@ -439,7 +439,7 @@ sgen_fragment_allocator_par_alloc (SgenFragmentAllocator *allocator, size_t size
 	SgenFragment *frag;
 
 #ifdef NALLOC_DEBUG
-	InterlockedIncrement (&alloc_count);
+	mono_atomic_inc_i32 (&alloc_count);
 #endif
 
 restart:
@@ -473,7 +473,7 @@ sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, si
 	size_t current_minimum = minimum_size;
 
 #ifdef NALLOC_DEBUG
-	InterlockedIncrement (&alloc_count);
+	mono_atomic_inc_i32 (&alloc_count);
 #endif
 
 	previous = &allocator->alloc_head;
@@ -528,7 +528,7 @@ restart:
 	current_minimum = minimum_size;
 
 #ifdef NALLOC_DEBUG
-	InterlockedIncrement (&alloc_count);
+	mono_atomic_inc_i32 (&alloc_count);
 #endif
 
 	for (frag = (SgenFragment *)unmask (allocator->alloc_head); frag; frag = (SgenFragment *)unmask (frag->next)) {

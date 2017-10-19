@@ -167,7 +167,7 @@ lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
 	/* Add to list of chunks lock-free */
 	while (TRUE) {
 		prev = mp->chunks;
-		if (InterlockedCompareExchangePointer ((volatile gpointer*)&mp->chunks, chunk, prev) == prev)
+		if (mono_atomic_cas_ptr ((volatile gpointer*)&mp->chunks, chunk, prev) == prev)
 			break;
 	}
 	chunk->prev = prev;
@@ -197,7 +197,7 @@ lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
 	}
 
 	/* The code below is lock-free, 'chunk' is shared state */
-	oldpos = InterlockedExchangeAdd (&chunk->pos, size);
+	oldpos = mono_atomic_fetch_add_i32 (&chunk->pos, size);
 	if (oldpos + size > chunk->size) {
 		chunk = lock_free_mempool_chunk_new (mp, size);
 		g_assert (chunk->pos + size <= chunk->size);
@@ -430,8 +430,8 @@ mono_domain_create (void)
 	mono_appdomains_unlock ();
 
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedIncrement (&mono_perfcounters->loader_appdomains);
-	InterlockedIncrement (&mono_perfcounters->loader_total_appdomains);
+	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
+	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
 
 	mono_debug_domain_create (domain);
@@ -1172,7 +1172,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	} else {
 #ifndef DISABLE_PERFCOUNTERS
 		/* FIXME: use an explicit subtraction method as soon as it's available */
-		InterlockedAdd (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (domain->mp));
+		mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (domain->mp));
 #endif
 		mono_mempool_destroy (domain->mp);
 		domain->mp = NULL;
@@ -1219,7 +1219,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_gc_free_fixed (domain);
 
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedDecrement (&mono_perfcounters->loader_appdomains);
+	mono_atomic_dec_i32 (&mono_perfcounters->loader_appdomains);
 #endif
 
 	if (domain == mono_root_domain)
@@ -1287,7 +1287,7 @@ mono_domain_alloc (MonoDomain *domain, guint size)
 
 	mono_domain_lock (domain);
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedAdd (&mono_perfcounters->loader_bytes, size);
+	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
 	res = mono_mempool_alloc (domain->mp, size);
 	mono_domain_unlock (domain);
@@ -1307,7 +1307,7 @@ mono_domain_alloc0 (MonoDomain *domain, guint size)
 
 	mono_domain_lock (domain);
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedAdd (&mono_perfcounters->loader_bytes, size);
+	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
 	res = mono_mempool_alloc0 (domain->mp, size);
 	mono_domain_unlock (domain);

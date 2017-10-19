@@ -711,7 +711,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 
 	delegate_hash_table_remove (delegate);
 
-	ptr = (gpointer)InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
+	ptr = (gpointer)mono_atomic_xchg_ptr (&delegate->delegate_trampoline, NULL);
 
 	if (!delegate->target) {
 		/* The wrapper method is shared between delegates -> no need to free it */
@@ -9255,7 +9255,7 @@ mono_marshal_get_castclass_with_cache (void)
 	res = mono_mb_create (mb, sig, 8, info);
 	STORE_STORE_FENCE;
 
-	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
+	if (mono_atomic_cas_ptr ((volatile gpointer *)&cached, res, NULL)) {
 		mono_free_method (res);
 		mono_metadata_free_method_signature (sig);
 	}
@@ -9339,7 +9339,7 @@ mono_marshal_get_isinst_with_cache (void)
 	res = mono_mb_create (mb, sig, 8, info);
 	STORE_STORE_FENCE;
 
-	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
+	if (mono_atomic_cas_ptr ((volatile gpointer *)&cached, res, NULL)) {
 		mono_free_method (res);
 		mono_metadata_free_method_signature (sig);
 	}

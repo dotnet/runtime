@@ -93,8 +93,8 @@
     <ClCompile>
       <DllExportPreprocessorDefinitions>MONO_DLL_EXPORT</DllExportPreprocessorDefinitions>
       <DllImportPreprocessorDefinitions>MONO_DLL_IMPORT</DllImportPreprocessorDefinitions>
-      <PreprocessorDefinitions>__default_codegen__;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;HAVE_CONFIG_H;GC_NOT_DLL;WIN32_THREADS;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;_UNICODE;UNICODE;FD_SETSIZE=1024;%(PreprocessorDefinitions);</PreprocessorDefinitions>
-      <DisableSpecificWarnings>4273;4005</DisableSpecificWarnings>
+      <PreprocessorDefinitions>__default_codegen__;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;HAVE_CONFIG_H;GC_NOT_DLL;WIN32_THREADS;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;_UNICODE;UNICODE;FD_SETSIZE=1024;NVALGRIND;%(PreprocessorDefinitions);</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4273;4005;4152;4221;4214;4204;4201</DisableSpecificWarnings>
       <RuntimeLibrary>$(MONO_C_RUNTIME)</RuntimeLibrary>
     </ClCompile>
     <Link>

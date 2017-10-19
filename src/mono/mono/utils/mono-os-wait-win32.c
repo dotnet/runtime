@@ -39,12 +39,12 @@ request_interrupt (gpointer thread_info, HANDLE native_thread_handle, gint32 pen
 	gint32 old_wait_info, new_wait_info;
 
 	do {
-		old_wait_info = InterlockedRead (&info->thread_wait_info);
+		old_wait_info = mono_atomic_load_i32 (&info->thread_wait_info);
 		if (old_wait_info & pending_apc_slot)
 			return;
 
 		new_wait_info = old_wait_info | pending_apc_slot;
-	} while (InterlockedCompareExchange (&info->thread_wait_info, new_wait_info, old_wait_info) != old_wait_info);
+	} while (mono_atomic_cas_i32 (&info->thread_wait_info, new_wait_info, old_wait_info) != old_wait_info);
 
 	THREADS_INTERRUPT_DEBUG ("%06d - Interrupting/Aborting syscall in thread %06d", GetCurrentThreadId (), tid);
 	QueueUserAPC (apc_callback, native_thread_handle, (ULONG_PTR)NULL);
@@ -78,7 +78,7 @@ static inline void
 enter_alertable_wait (MonoThreadInfo *info)
 {
 	// Clear any previous flags. Set alertable wait flag.
-	InterlockedExchange (&info->thread_wait_info, THREAD_WAIT_INFO_ALERTABLE_WAIT_SLOT);
+	mono_atomic_xchg_i32 (&info->thread_wait_info, THREAD_WAIT_INFO_ALERTABLE_WAIT_SLOT);
 }
 
 static inline void
@@ -86,7 +86,7 @@ leave_alertable_wait (MonoThreadInfo *info)
 {
 	// Clear any previous flags. Thread is exiting alertable wait state, and info around pending interrupt/abort APC's
 	// can now be discarded as well, thread is out of wait operation and can proceed it's execution.
-	InterlockedExchange (&info->thread_wait_info, THREAD_WAIT_INFO_CLEARED);
+	mono_atomic_xchg_i32 (&info->thread_wait_info, THREAD_WAIT_INFO_CLEARED);
 }
 
 DWORD

@@ -96,14 +96,14 @@ static ThreadPool threadpool;
 				g_error ("%s: counter._.starting = %d, but should be >= 0", __func__, counter._.starting); \
 			if (!(counter._.working >= 0)) \
 				g_error ("%s: counter._.working = %d, but should be >= 0", __func__, counter._.working); \
-		} while (InterlockedCompareExchange (&threadpool.counters.as_gint32, (var).as_gint32, __old.as_gint32) != __old.as_gint32); \
+		} while (mono_atomic_cas_i32 (&threadpool.counters.as_gint32, (var).as_gint32, __old.as_gint32) != __old.as_gint32); \
 	} while (0)
 
 static inline ThreadPoolCounter
 COUNTER_READ (void)
 {
 	ThreadPoolCounter counter;
-	counter.as_gint32 = InterlockedRead (&threadpool.counters.as_gint32);
+	counter.as_gint32 = mono_atomic_load_i32 (&threadpool.counters.as_gint32);
 	return counter;
 }
 

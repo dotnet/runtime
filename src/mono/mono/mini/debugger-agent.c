@@ -1079,7 +1079,7 @@ finish_agent_init (gboolean on_startup)
 {
 	int res;
 
-	if (InterlockedCompareExchange (&inited, 1, 0) == 1)
+	if (mono_atomic_cas_i32 (&inited, 1, 0) == 1)
 		return;
 
 	if (agent_config.launch) {
@@ -1830,7 +1830,7 @@ send_packet (int command_set, int command, Buffer *data)
 	int len, id;
 	gboolean res;
 
-	id = InterlockedIncrement (&packet_id);
+	id = mono_atomic_inc_i32 (&packet_id);
 
 	len = data->p - data->buf + 11;
 	buffer_init (&buf, len);
@@ -2019,7 +2019,7 @@ get_objref (MonoObject *obj)
 	}
 
 	ref = g_new0 (ObjRef, 1);
-	ref->id = InterlockedIncrement (&objref_id);
+	ref->id = mono_atomic_inc_i32 (&objref_id);
 	ref->handle = mono_gchandle_new_weakref (obj, FALSE);
 
 	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
@@ -3271,7 +3271,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 		}
 
 		if (i >= tls->frame_count)
-			f->id = InterlockedIncrement (&frame_id);
+			f->id = mono_atomic_inc_i32 (&frame_id);
 
 		new_frames [findex ++] = f;
 	}
@@ -5409,7 +5409,7 @@ static void
 start_single_stepping (void)
 {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-	int val = InterlockedIncrement (&ss_count);
+	int val = mono_atomic_inc_i32 (&ss_count);
 
 	if (val == 1) {
 		mono_arch_start_single_stepping ();
@@ -5424,7 +5424,7 @@ static void
 stop_single_stepping (void)
 {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-	int val = InterlockedDecrement (&ss_count);
+	int val = mono_atomic_dec_i32 (&ss_count);
 
 	if (val == 0) {
 		mono_arch_stop_single_stepping ();
@@ -7895,7 +7895,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		nmodifiers = decode_byte (p, &p, end);
 
 		req = (EventRequest *)g_malloc0 (sizeof (EventRequest) + (nmodifiers * sizeof (Modifier)));
-		req->id = InterlockedIncrement (&event_request_id);
+		req->id = mono_atomic_inc_i32 (&event_request_id);
 		req->event_kind = event_kind;
 		req->suspend_policy = suspend_policy;
 		req->nmodifiers = nmodifiers;

@@ -114,7 +114,7 @@ retry_state_change:
 	case STATE_STARTING:
 		if (!(suspend_count == 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ATTACH", info, raw_state, STATE_RUNNING, 0);
 		break;
@@ -142,7 +142,7 @@ retry_state_change:
 	case STATE_BLOCKING: /* An OS thread on coop goes STARTING->BLOCKING->RUNNING->BLOCKING->DETACHED */
 		if (!(suspend_count == 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, STATE_DETACHED, raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, STATE_DETACHED, raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("DETACH", info, raw_state, STATE_DETACHED, 0);
 		return TRUE;
@@ -183,7 +183,7 @@ retry_state_change:
 	case STATE_RUNNING: //Post an async suspend request
 		if (!(suspend_count == 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, 1), raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, STATE_ASYNC_SUSPEND_REQUESTED, 1);
 		return AsyncSuspendInitSuspend; //This is the first async suspend request against the target
@@ -193,7 +193,7 @@ retry_state_change:
 	case STATE_BLOCKING_AND_SUSPENDED:
 		if (!(suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count + 1), raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, cur_state, 1);
 		return AsyncSuspendAlreadySuspended; //Thread is already suspended so we don't need to wait it to suspend
@@ -201,7 +201,7 @@ retry_state_change:
 	case STATE_SELF_SUSPEND_REQUESTED: //This suspend needs to notify the initiator, so we need to promote the suspend to async
 		if (!(suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, suspend_count + 1), raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, STATE_ASYNC_SUSPEND_REQUESTED, 1);
 		return AsyncSuspendWait; //This is the first async suspend request, change the thread and let it notify us [1]
@@ -209,7 +209,7 @@ retry_state_change:
 	case STATE_BLOCKING:
 		if (!(suspend_count < THREAD_SUSPEND_COUNT_MAX))
 			mono_fatal_with_history ("suspend_count = %d, but should be < THREAD_SUSPEND_COUNT_MAX", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count + 1), raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, cur_state, 1);
 		return AsyncSuspendBlocking; //A thread in the blocking state has its state saved so we can treat it as suspended.
@@ -258,7 +258,7 @@ retry_state_change:
 	case STATE_SELF_SUSPEND_REQUESTED: //Start the self suspend process
 		if (!(suspend_count > 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("STATE_POLL", info, raw_state, STATE_SELF_SUSPENDED, 0);
 		if (cur_state == STATE_SELF_SUSPEND_REQUESTED)
@@ -319,7 +319,7 @@ retry_state_change:
 			trace_state_change ("RESUME", info, raw_state, cur_state, 0);
 			return ResumeError;
 		} else {
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count - 1), raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1), raw_state) != raw_state)
 					goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, cur_state, -1);
 			return ResumeOk; //Resume worked and there's nothing for the caller to do.
@@ -331,13 +331,13 @@ retry_state_change:
 		if (!(suspend_count > 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (suspend_count > 1) {
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count - 1), raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1), raw_state) != raw_state)
 					goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, cur_state, -1);
 
 			return ResumeOk; //Resume worked and there's nothing for the caller to do.
 		} else {
-			if (InterlockedCompareExchange (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, STATE_RUNNING, -1);
 
@@ -353,11 +353,11 @@ retry_state_change:
 		if (!(suspend_count > 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (suspend_count > 1) {
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count - 1), raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1), raw_state) != raw_state)
 					goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, cur_state, -1);
 		} else {
-			if (InterlockedCompareExchange (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, STATE_RUNNING, -1);
 		}
@@ -400,7 +400,7 @@ retry_state_change:
 		return FALSE; //let self suspend wait
 
 	case STATE_ASYNC_SUSPEND_REQUESTED:
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPENDED, suspend_count), raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_ASYNC_SUSPENDED, 0);
 		return TRUE; //Async suspend worked, now wait for resume
@@ -440,7 +440,7 @@ retry_state_change:
 	case STATE_RUNNING: //transition to blocked
 		if (!(suspend_count == 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_BLOCKING, suspend_count), raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("DO_BLOCKING", info, raw_state, STATE_BLOCKING, 0);
 		return DoBlockingContinue;
@@ -482,14 +482,14 @@ retry_state_change:
 	switch (cur_state) {
 	case STATE_BLOCKING:
 		if (suspend_count == 0) {
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count), raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("DONE_BLOCKING", info, raw_state, STATE_RUNNING, 0);
 			return DoneBlockingOk;
 		} else {
 			if (!(suspend_count >= 0))
 				mono_fatal_with_history ("suspend_count = %d, but should be >= 0", suspend_count);
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_BLOCKING_AND_SUSPENDED, suspend_count), raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_AND_SUSPENDED, suspend_count), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("DONE_BLOCKING", info, raw_state, STATE_BLOCKING_AND_SUSPENDED, 0);
 			return DoneBlockingWait;
@@ -537,14 +537,14 @@ retry_state_change:
 
 	case STATE_BLOCKING:
 		if (suspend_count == 0) {
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count), raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_RUNNING, 0);
 			return AbortBlockingOk;
 		} else {
 			if (!(suspend_count > 0))
 				mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_BLOCKING_AND_SUSPENDED, suspend_count), raw_state) != raw_state)
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_AND_SUSPENDED, suspend_count), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_BLOCKING_AND_SUSPENDED, 0);
 			return AbortBlockingWait;

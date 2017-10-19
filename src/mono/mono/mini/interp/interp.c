@@ -3205,7 +3205,7 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 		MINT_IN_CASE(MINT_MONO_ATOMIC_STORE_I4)
 			++ip;
 			sp -= 2;
-			InterlockedWrite ((gint32 *) sp->data.p, sp [1].data.i);
+			mono_atomic_store_i32 ((gint32 *) sp->data.p, sp [1].data.i);
 			MINT_IN_BREAK;
 #define BINOP(datamem, op) \
 	--sp; \

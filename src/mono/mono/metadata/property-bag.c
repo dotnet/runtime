@@ -51,7 +51,7 @@ retry:
 		cur = *prev;
 		if (!cur || cur->tag > tag) {
 			item->next = cur;
-			if (InterlockedCompareExchangePointer ((void*)prev, item, cur) == cur)
+			if (mono_atomic_cas_ptr ((void*)prev, item, cur) == cur)
 				return item;
 			goto retry;
 		} else if (cur->tag == tag) {

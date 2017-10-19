@@ -92,7 +92,7 @@ mono_runtime_fire_process_exit_event (void)
 gboolean
 mono_runtime_try_shutdown (void)
 {
-	if (InterlockedCompareExchange (&shutting_down_inited, TRUE, FALSE))
+	if (mono_atomic_cas_i32 (&shutting_down_inited, TRUE, FALSE))
 		return FALSE;
 
 	mono_runtime_fire_process_exit_event ();

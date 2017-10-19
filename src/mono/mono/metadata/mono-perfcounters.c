@@ -1074,52 +1074,52 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 	case CATEGORY_EXC:
 		switch (id) {
 		case COUNTER_EXC_THROWN:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->exceptions_thrown);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->exceptions_thrown);
 			return TRUE;
 		}
 		break;
 	case CATEGORY_ASPNET:
 		switch (id) {
 		case COUNTER_ASPNET_REQ_Q:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->aspnet_requests_queued);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->aspnet_requests_queued);
 			return TRUE;
 		case COUNTER_ASPNET_REQ_TOTAL:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->aspnet_requests);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->aspnet_requests);
 			return TRUE;
 		}
 		break;
 	case CATEGORY_THREADPOOL:
 		switch (id) {
 		case COUNTER_THREADPOOL_WORKITEMS:
-			sample->rawValue = InterlockedRead64 (&mono_perfcounters->threadpool_workitems);
+			sample->rawValue = mono_atomic_load_i64 (&mono_perfcounters->threadpool_workitems);
 			return TRUE;
 		case COUNTER_THREADPOOL_IOWORKITEMS:
-			sample->rawValue = InterlockedRead64 (&mono_perfcounters->threadpool_ioworkitems);
+			sample->rawValue = mono_atomic_load_i64 (&mono_perfcounters->threadpool_ioworkitems);
 			return TRUE;
 		case COUNTER_THREADPOOL_THREADS:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->threadpool_threads);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->threadpool_threads);
 			return TRUE;
 		case COUNTER_THREADPOOL_IOTHREADS:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->threadpool_iothreads);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->threadpool_iothreads);
 			return TRUE;
 		}
 		break;
 	case CATEGORY_JIT:
 		switch (id) {
 		case COUNTER_JIT_BYTES:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_bytes);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->jit_bytes);
 			return TRUE;
 		case COUNTER_JIT_METHODS:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_methods);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->jit_methods);
 			return TRUE;
 		case COUNTER_JIT_TIME:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_time);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->jit_time);
 			return TRUE;
 		case COUNTER_JIT_BYTES_PSEC:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_bytes);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->jit_bytes);
 			return TRUE;
 		case COUNTER_JIT_FAILURES:
-			sample->rawValue = InterlockedRead (&mono_perfcounters->jit_failures);
+			sample->rawValue = mono_atomic_load_i32 (&mono_perfcounters->jit_failures);
 			return TRUE;
 		}
 		break;
@@ -1154,11 +1154,11 @@ predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 	if (ptr) {
 		if (do_incr) {
 			if (value == 1)
-				return InterlockedIncrement (ptr);
+				return mono_atomic_inc_i32 (ptr);
 			if (value == -1)
-				return InterlockedDecrement (ptr);
+				return mono_atomic_dec_i32 (ptr);
 
-			return InterlockedAdd(ptr, value);
+			return mono_atomic_add_i32 (ptr, (gint32)value);
 		}
 		/* this can be non-atomic */
 		*ptr = value;
@@ -1166,11 +1166,11 @@ predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 	} else if (ptr64) {
 		if (do_incr) {
 			if (value == 1)
-				return UnlockedIncrement64 (ptr64); /* FIXME: use InterlockedIncrement64 () */
+				return UnlockedIncrement64 (ptr64); /* FIXME: use mono_atomic_inc_i64 () */
 			if (value == -1)
-				return UnlockedDecrement64 (ptr64); /* FIXME: use InterlockedDecrement64 () */
+				return UnlockedDecrement64 (ptr64); /* FIXME: use mono_atomic_dec_i64 () */
 
-			return UnlockedAdd64 (ptr64, value); /* FIXME: use InterlockedAdd64 () */
+			return UnlockedAdd64 (ptr64, value); /* FIXME: use mono_atomic_add_i64 () */
 		}
 		/* this can be non-atomic */
 		*ptr64 = value;

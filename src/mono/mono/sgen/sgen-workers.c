@@ -57,7 +57,7 @@ set_state (WorkerData *data, State old_state, State new_state)
 	else if (new_state == STATE_WORKING)
 		SGEN_ASSERT (0, old_state == STATE_WORK_ENQUEUED, "We can only transition to WORKING from WORK ENQUEUED");
 
-	return InterlockedCompareExchange (&data->state, new_state, old_state) == old_state;
+	return mono_atomic_cas_i32 (&data->state, new_state, old_state) == old_state;
 }
 
 static gboolean

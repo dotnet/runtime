@@ -374,7 +374,7 @@ mon_finalize (MonoThreadsSync *mon)
 	mon->data = monitor_freelist;
 	monitor_freelist = mon;
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedDecrement (&mono_perfcounters->gc_sync_blocks);
+	mono_atomic_dec_i32 (&mono_perfcounters->gc_sync_blocks);
 #endif
 }
 
@@ -446,7 +446,7 @@ mon_new (gsize id)
 	new_->data = NULL;
 	
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedIncrement (&mono_perfcounters->gc_sync_blocks);
+	mono_atomic_inc_i32 (&mono_perfcounters->gc_sync_blocks);
 #endif
 	return new_;
 }
@@ -497,7 +497,7 @@ mono_monitor_inflate_owned (MonoObject *obj, int id)
 	nlw = lock_word_new_inflated (mon);
 
 	mono_memory_write_barrier ();
-	tmp_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
+	tmp_lw.sync = (MonoThreadsSync *)mono_atomic_cas_ptr ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
 	if (tmp_lw.sync != old_lw.sync) {
 		/* Someone else inflated the lock in the meantime */
 		discard_mon (mon);
@@ -540,7 +540,7 @@ mono_monitor_inflate (MonoObject *obj)
 			mon->nest = lock_word_get_nest (old_lw);
 		}
 		mono_memory_write_barrier ();
-		tmp_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
+		tmp_lw.sync = (MonoThreadsSync *)mono_atomic_cas_ptr ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
 		if (tmp_lw.sync == old_lw.sync) {
 			/* Successfully inflated the lock */
 			return;
@@ -596,7 +596,7 @@ mono_object_hash (MonoObject* obj)
 		LockWord old_lw;
 		lw = lock_word_new_thin_hash (hash);
 
-		old_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, NULL);
+		old_lw.sync = (MonoThreadsSync *)mono_atomic_cas_ptr ((gpointer*)&obj->synchronisation, lw.sync, NULL);
 		if (old_lw.sync == NULL) {
 			return hash;
 		}
@@ -680,7 +680,7 @@ mono_monitor_exit_inflated (MonoObject *obj)
 			new_status = mon_status_set_owner (old_status, 0);
 			if (have_waiters)
 				new_status = mon_status_decrement_entry_count (new_status);
-			tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
+			tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
 			if (tmp_status == old_status) {
 				if (have_waiters)
 					mono_coop_sem_post (mon->entry_sem);
@@ -712,7 +712,7 @@ mono_monitor_exit_flat (MonoObject *obj, LockWord old_lw)
 	else
 		new_lw.lock_word = 0;
 
-	tmp_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, new_lw.sync, old_lw.sync);
+	tmp_lw.sync = (MonoThreadsSync *)mono_atomic_cas_ptr ((gpointer*)&obj->synchronisation, new_lw.sync, old_lw.sync);
 	if (old_lw.sync != tmp_lw.sync) {
 		/* Someone inflated the lock in the meantime */
 		mono_monitor_exit_inflated (obj);
@@ -730,7 +730,7 @@ mon_decrement_entry_count (MonoThreadsSync *mon)
 	old_status = mon->status;
 	for (;;) {
 		new_status = mon_status_decrement_entry_count (old_status);
-		tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
+		tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
 		if (tmp_status == old_status) {
 			break;
 		}
@@ -774,7 +774,7 @@ retry:
 		* operation
 		*/
 		new_status = mon_status_set_owner (old_status, id);
-		tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
+		tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
 		if (G_LIKELY (tmp_status == old_status)) {
 			/* Success */
 			g_assert (mon->nest == 1);
@@ -793,7 +793,7 @@ retry:
 
 	/* The object must be locked by someone else... */
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedIncrement (&mono_perfcounters->thread_contentions);
+	mono_atomic_inc_i32 (&mono_perfcounters->thread_contentions);
 #endif
 
 	/* If ms is 0 we don't block, but just fail straight away */
@@ -821,7 +821,7 @@ retry_contended:
 		* operation
 		*/
 		new_status = mon_status_set_owner (old_status, id);
-		tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
+		tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
 		if (G_LIKELY (tmp_status == old_status)) {
 			/* Success */
 			g_assert (mon->nest == 1);
@@ -844,7 +844,7 @@ retry_contended:
 		/* Create the semaphore */
 		sem = g_new0 (MonoCoopSem, 1);
 		mono_coop_sem_init (sem, 0);
-		if (InterlockedCompareExchangePointer ((gpointer*)&mon->entry_sem, sem, NULL) != NULL) {
+		if (mono_atomic_cas_ptr ((gpointer*)&mon->entry_sem, sem, NULL) != NULL) {
 			/* Someone else just put a handle here */
 			mono_coop_sem_destroy (sem);
 			g_free (sem);
@@ -861,7 +861,7 @@ retry_contended:
 			if (mon_status_get_owner (old_status) == 0)
 				goto retry_contended;
 			new_status = mon_status_increment_entry_count (old_status);
-			tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
+			tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
 			if (tmp_status == old_status) {
 				break;
 			}
@@ -875,8 +875,8 @@ retry_contended:
 	waitms = ms;
 	
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedIncrement (&mono_perfcounters->thread_queue_len);
-	InterlockedIncrement (&mono_perfcounters->thread_queue_max);
+	mono_atomic_inc_i32 (&mono_perfcounters->thread_queue_len);
+	mono_atomic_inc_i32 (&mono_perfcounters->thread_queue_max);
 #endif
 	thread = mono_thread_internal_current ();
 
@@ -910,7 +910,7 @@ retry_contended:
 
 done_waiting:
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedDecrement (&mono_perfcounters->thread_queue_len);
+	mono_atomic_dec_i32 (&mono_perfcounters->thread_queue_len);
 #endif
 
 	if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED && !allow_interruption) {
@@ -977,7 +977,7 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 
 	if (G_LIKELY (lock_word_is_free (lw))) {
 		LockWord nlw = lock_word_new_flat (id);
-		if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, NULL) == NULL) {
+		if (mono_atomic_cas_ptr ((gpointer*)&obj->synchronisation, nlw.sync, NULL) == NULL) {
 			return 1;
 		} else {
 			/* Someone acquired it in the meantime or put a hash */
@@ -994,7 +994,7 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 			} else {
 				LockWord nlw, old_lw;
 				nlw = lock_word_increment_nest (lw);
-				old_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, lw.sync);
+				old_lw.sync = (MonoThreadsSync *)mono_atomic_cas_ptr ((gpointer*)&obj->synchronisation, nlw.sync, lw.sync);
 				if (old_lw.sync != lw.sync) {
 					/* Someone else inflated it in the meantime */
 					g_assert (lock_word_is_inflated (old_lw));

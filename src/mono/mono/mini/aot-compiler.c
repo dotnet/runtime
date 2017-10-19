@@ -7676,11 +7676,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (acfg->aot_opts.profile_only && !method->is_inflated && !g_hash_table_lookup (acfg->profile_methods, method))
 		return;
 
-	InterlockedIncrement (&acfg->stats.mcount);
+	mono_atomic_inc_i32 (&acfg->stats.mcount);
 
 #if 0
 	if (method->is_generic || mono_class_is_gtd (method->klass)) {
-		InterlockedIncrement (&acfg->stats.genericcount);
+		mono_atomic_inc_i32 (&acfg->stats.genericcount);
 		return;
 	}
 #endif
@@ -7712,7 +7712,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (gshared failure): %s (%s)\n", mono_method_get_full_name (method), cfg->exception_message);
-		InterlockedIncrement (&acfg->stats.genericcount);
+		mono_atomic_inc_i32 (&acfg->stats.genericcount);
 		return;
 	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
@@ -7726,7 +7726,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (cfg->disable_aot) {
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (disabled): %s\n", mono_method_get_full_name (method));
-		InterlockedIncrement (&acfg->stats.ocount);
+		mono_atomic_inc_i32 (&acfg->stats.ocount);
 		return;
 	}
 	cfg->method_index = index;
@@ -7768,7 +7768,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (skip) {
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (abs call): %s\n", mono_method_get_full_name (method));
-		InterlockedIncrement (&acfg->stats.abscount);
+		mono_atomic_inc_i32 (&acfg->stats.abscount);
 		return;
 	}
 
@@ -7901,7 +7901,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (!cfg->has_got_slots)
-		InterlockedIncrement (&acfg->stats.methods_without_got_slots);
+		mono_atomic_inc_i32 (&acfg->stats.methods_without_got_slots);
 
 	/* Add gsharedvt wrappers for signatures used by the method */
 	if (acfg->aot_opts.llvm_only) {
@@ -8007,7 +8007,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	mono_acfg_unlock (acfg);
 
-	InterlockedIncrement (&acfg->stats.ccount);
+	mono_atomic_inc_i32 (&acfg->stats.ccount);
 }
  
 static mono_thread_start_return_t WINAPI

@@ -241,7 +241,7 @@ mono_hazard_pointer_save_for_signal_handler (void)
 	 */
 	g_assert (small_id < HAZARD_TABLE_OVERFLOW);
 
-	if (InterlockedCompareExchange (&overflow_busy [small_id], 1, 0) != 0)
+	if (mono_atomic_cas_i32 (&overflow_busy [small_id], 1, 0) != 0)
 		goto search;
 
 	hp_overflow = &hazard_table [small_id];
@@ -327,7 +327,7 @@ mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func)
 {
 	DelayedFreeItem item = { p, free_func };
 
-	InterlockedIncrement (&hazardous_pointer_count);
+	mono_atomic_inc_i32 (&hazardous_pointer_count);
 
 	mono_lock_free_array_queue_push (&delayed_free_queue, &item);
 

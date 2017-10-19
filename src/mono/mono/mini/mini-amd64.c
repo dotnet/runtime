@@ -1417,7 +1417,7 @@ mono_arch_get_iregs_clobbered_by_call (MonoCallInst *call)
 		regs = g_list_prepend (regs, (gpointer)AMD64_RCX);
 		regs = g_list_prepend (regs, (gpointer)AMD64_RAX);
 
-		InterlockedCompareExchangePointer ((gpointer*)&r, regs, NULL);
+		mono_atomic_cas_ptr ((gpointer*)&r, regs, NULL);
 	}
 
 	return r;
@@ -1435,7 +1435,7 @@ mono_arch_get_fregs_clobbered_by_call (MonoCallInst *call)
 		for (i = 0; i < AMD64_XMM_NREG; ++i)
 			regs = g_list_prepend (regs, GINT_TO_POINTER (MONO_MAX_IREGS + i));
 
-		InterlockedCompareExchangePointer ((gpointer*)&r, regs, NULL);
+		mono_atomic_cas_ptr ((gpointer*)&r, regs, NULL);
 	}
 
 	return r;

@@ -1119,7 +1119,7 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 void
 mono_assembly_addref (MonoAssembly *assembly)
 {
-	InterlockedIncrement (&assembly->ref_count);
+	mono_atomic_inc_i32 (&assembly->ref_count);
 }
 
 /*
@@ -3791,7 +3791,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 		return FALSE;
 
 	/* Might be 0 already */
-	if (InterlockedDecrement (&assembly->ref_count) > 0)
+	if (mono_atomic_dec_i32 (&assembly->ref_count) > 0)
 		return FALSE;
 
 	MONO_PROFILER_RAISE (assembly_unloading, (assembly));

@@ -118,7 +118,7 @@ file_mmap_init (void)
 retry:	
 	switch (mmap_init_state) {
 	case  0:
-		if (InterlockedCompareExchange (&mmap_init_state, 1, 0) != 0)
+		if (mono_atomic_cas_i32 (&mmap_init_state, 1, 0) != 0)
 			goto retry;
 		named_regions = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
 		mono_coop_mutex_init (&named_regions_mutex);

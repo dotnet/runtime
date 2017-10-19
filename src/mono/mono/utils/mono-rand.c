@@ -122,7 +122,7 @@ gboolean
 mono_rand_open (void)
 {
 	static gint32 status = 0;
-	if (status != 0 || InterlockedCompareExchange (&status, 1, 0) != 0) {
+	if (status != 0 || mono_atomic_cas_i32 (&status, 1, 0) != 0) {
 		while (status != 2)
 			mono_thread_info_yield ();
 		return TRUE;
@@ -201,7 +201,7 @@ gboolean
 mono_rand_open (void)
 {
 	static gint32 status = 0;
-	if (status != 0 || InterlockedCompareExchange (&status, 1, 0) != 0) {
+	if (status != 0 || mono_atomic_cas_i32 (&status, 1, 0) != 0) {
 		while (status != 2)
 			mono_thread_info_yield ();
 		return TRUE;

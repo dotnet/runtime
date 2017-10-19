@@ -148,7 +148,7 @@ typedef struct {
 		first = FALSE;						\
 		while (!(tmp_mark_word & (ONE_P << (b)))) {		\
 			old_mark_word = tmp_mark_word;			\
-			tmp_mark_word = InterlockedCompareExchange ((volatile gint32*)&(bl)->mark_words [w], old_mark_word | (ONE_P << (b)), old_mark_word); \
+			tmp_mark_word = mono_atomic_cas_i32 ((volatile gint32*)&(bl)->mark_words [w], old_mark_word | (ONE_P << (b)), old_mark_word); \
 			if (tmp_mark_word == old_mark_word) {		\
 				first = TRUE;				\
 				break;					\
