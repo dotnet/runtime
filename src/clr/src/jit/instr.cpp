@@ -1224,7 +1224,7 @@ void CodeGen::sched_AM(instruction ins,
         }
         else
         {
-            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, off);
+            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, offs);
         }
     }
 }
