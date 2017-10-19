@@ -12,11 +12,17 @@
     -->
     <NoWarn>436</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="SslApplicationProtocolTests.cs" />
+    <Compile Include="SslAuthenticationOptionsTests.cs" />
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTest.cs" />
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
@@ -33,6 +39,18 @@
     <!-- Production code references -->
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs">
       <Link>ProductionCode\System\Net\Security\SslStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslClientAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslClientAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslServerAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslServerAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslApplicationProtocol.cs">
+      <Link>ProductionCode\System\Net\Security\SslApplicationProtocol.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs">
       <Link>ProductionCode\System\Net\SslStreamContext.cs</Link>
@@ -56,6 +74,14 @@
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

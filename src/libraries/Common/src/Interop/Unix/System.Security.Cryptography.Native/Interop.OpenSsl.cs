@@ -20,7 +20,8 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
-        private static Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
+        private static readonly Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
+        private static readonly Ssl.SslCtxSetAlpnCallback s_alpnServerCallback = AlpnServerSelectCallback;
 
         #region internal methods
 
@@ -47,7 +48,7 @@ internal static partial class Interop
             return bindingHandle;
         }
 
-        internal static SafeSslHandle AllocateSslContext(SslProtocols protocols, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, EncryptionPolicy policy, bool isServer, bool remoteCertRequired)
+        internal static SafeSslHandle AllocateSslContext(SslProtocols protocols, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, EncryptionPolicy policy, SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeSslHandle context = null;
 
@@ -88,17 +89,32 @@ internal static partial class Interop
                     SetSslCertificate(innerContext, certHandle, certKeyHandle);
                 }
 
-                if (remoteCertRequired)
+                if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                 {
-                    Debug.Assert(isServer, "isServer flag should be true");
-                    Ssl.SslCtxSetVerify(innerContext,
-                        s_verifyClientCertificate);
+                    Ssl.SslCtxSetVerify(innerContext, s_verifyClientCertificate);
 
                     //update the client CA list 
                     UpdateCAListFromRootStore(innerContext);
                 }
 
-                context = SafeSslHandle.Create(innerContext, isServer);
+                if (sslAuthenticationOptions.ApplicationProtocols != null)
+                {
+                    if (sslAuthenticationOptions.IsServer)
+                    {
+                        byte[] protos = Interop.Ssl.ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                        sslAuthenticationOptions.AlpnProtocolsHandle = GCHandle.Alloc(protos);
+                        Interop.Ssl.SslCtxSetAlpnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(sslAuthenticationOptions.AlpnProtocolsHandle));
+                    }
+                    else
+                    {
+                        if (Interop.Ssl.SslCtxSetAlpnProtos(innerContext, sslAuthenticationOptions.ApplicationProtocols) != 0)
+                        {
+                            throw CreateSslException(SR.net_alpn_config_failed);
+                        }
+                    }
+                }
+
+                context = SafeSslHandle.Create(innerContext, sslAuthenticationOptions.IsServer);
                 Debug.Assert(context != null, "Expected non-null return value from SafeSslHandle.Create");
                 if (context.IsInvalid)
                 {
@@ -312,6 +328,18 @@ internal static partial class Interop
             // we'll process it after the handshake finishes.
             const int OpenSslSuccess = 1;
             return OpenSslSuccess;
+        }
+
+        private static unsafe int AlpnServerSelectCallback(IntPtr ssl, out IntPtr outp, out byte outlen, IntPtr inp, uint inlen, IntPtr arg)
+        {
+            GCHandle protocols = GCHandle.FromIntPtr(arg);
+            byte[] server = (byte[])protocols.Target;
+
+            fixed (byte* sp = server)
+            {
+                return Interop.Ssl.SslSelectNextProto(out outp, out outlen, (IntPtr)sp, (uint)server.Length, inp, inlen) == Interop.Ssl.OPENSSL_NPN_NEGOTIATED ?
+                    Interop.Ssl.SSL_TLSEXT_ERR_OK : Interop.Ssl.SSL_TLSEXT_ERR_NOACK;
+            }
         }
 
         private static void UpdateCAListFromRootStore(SafeSslContextHandle context)
