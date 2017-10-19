@@ -330,7 +330,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
-        public void GetMessageUsingEventMesaageDLL()
+        public void GetMessageUsingEventMessageDLL()
         {
             if (CultureInfo.CurrentCulture.ToString() != "en-US")
             {
