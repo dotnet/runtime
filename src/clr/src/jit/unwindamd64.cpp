@@ -127,39 +127,7 @@ int Compiler::mapRegNumToDwarfReg(regNumber reg)
     return dwarfReg;
 }
 
-void Compiler::createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR cfiOpcode, USHORT dwarfReg, INT offset)
-{
-    CFI_CODE cfiEntry(codeOffset, cfiOpcode, dwarfReg, offset);
-    func->cfiCodes->push_back(cfiEntry);
-}
 #endif // UNIX_AMD64_ABI
-
-//------------------------------------------------------------------------
-// Compiler::unwindGetCurrentOffset: Calculate the current byte offset of the
-// prolog being generated.
-//
-// Arguments:
-//    func - The main function or funclet of interest.
-//
-// Return Value:
-//    The byte offset of the prolog currently being generated.
-//
-UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
-{
-    assert(compGeneratingProlog);
-    UNATIVE_OFFSET offset;
-    if (func->funKind == FUNC_ROOT)
-    {
-        offset = genEmitter->emitGetPrologOffsetEstimate();
-    }
-    else
-    {
-        assert(func->startLoc != nullptr);
-        offset = func->startLoc->GetFuncletPrologOffset(genEmitter);
-    }
-
-    return offset;
-}
 
 //------------------------------------------------------------------------
 // Compiler::unwindBegProlog: Initialize the unwind info data structures.
@@ -202,36 +170,6 @@ void Compiler::unwindBegPrologWindows()
     func->unwindHeader.FrameRegister      = 0;
     func->unwindHeader.FrameOffset        = 0;
 }
-
-#ifdef UNIX_AMD64_ABI
-template <typename T>
-inline static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 5)
-{
-    return jitstd::allocator<T>(alloc).allocate(count);
-}
-typedef jitstd::vector<CFI_CODE> CFICodeVector;
-
-void Compiler::unwindBegPrologCFI()
-{
-    assert(compGeneratingProlog);
-
-    FuncInfoDsc* func = funCurrentFunc();
-
-    // There is only one prolog for a function/funclet, and it comes first. So now is
-    // a good time to initialize all the unwind data structures.
-
-    unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
-
-    if (fgFirstColdBlock != nullptr)
-    {
-        unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
-    }
-
-    jitstd::allocator<void> allocator(getAllocator());
-
-    func->cfiCodes = new (allocate_any<CFICodeVector>(allocator), jitstd::placement_t()) CFICodeVector(allocator);
-}
-#endif // UNIX_AMD64_ABI
 
 //------------------------------------------------------------------------
 // Compiler::unwindEndProlog: Called at the end of main function or funclet
@@ -316,29 +254,6 @@ void Compiler::unwindPushWindows(regNumber reg)
 }
 
 #ifdef UNIX_AMD64_ABI
-void Compiler::unwindPushCFI(regNumber reg)
-{
-    assert(compGeneratingProlog);
-
-    FuncInfoDsc* func = funCurrentFunc();
-
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
-
-    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, 8);
-    if ((RBM_CALLEE_SAVED & genRegMask(reg))
-#if ETW_EBP_FRAMED
-        // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
-        // is excluded from the callee-save register list.
-        // Make sure the register gets PUSH unwind info in this case,
-        // since it is pushed as a frame register.
-        || (reg == REG_FPBASE)
-#endif // ETW_EBP_FRAMED
-            )
-    {
-        createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
-    }
-}
 #endif // UNIX_AMD64_ABI
 
 //------------------------------------------------------------------------
@@ -400,19 +315,6 @@ void Compiler::unwindAllocStackWindows(unsigned size)
     noway_assert((BYTE)cbProlog == cbProlog);
     code->CodeOffset = (BYTE)cbProlog;
 }
-
-#ifdef UNIX_AMD64_ABI
-void Compiler::unwindAllocStackCFI(unsigned size)
-{
-    assert(compGeneratingProlog);
-
-    FuncInfoDsc* func = funCurrentFunc();
-
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
-    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, size);
-}
-#endif // UNIX_AMD64_ABI
 
 //------------------------------------------------------------------------
 // Compiler::unwindSetFrameReg: Record a frame register.
@@ -479,36 +381,6 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
         func->unwindHeader.FrameOffset = offset / 16;
     }
 }
-
-#ifdef UNIX_AMD64_ABI
-//------------------------------------------------------------------------
-// Compiler::unwindSetFrameRegCFI: Record a cfi info for a frame register set.
-//
-// Arguments:
-//    reg    - The register being set as the frame register.
-//    offset - The offset from the current stack pointer that the frame pointer will point at.
-//
-void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
-{
-    assert(compGeneratingProlog);
-    FuncInfoDsc* func = funCurrentFunc();
-
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
-
-    createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, mapRegNumToDwarfReg(reg));
-    if (offset != 0)
-    {
-        // before: cfa = rsp + old_cfa_offset;
-        //         rbp = rsp + offset;
-        // after: cfa should be based on rbp, but points to the old address:
-        //         rsp + old_cfa_offset == rbp + old_cfa_offset + adjust;
-        // adjust = -offset;
-        int adjust = -(int)offset;
-        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, adjust);
-    }
-}
-#endif // UNIX_AMD64_ABI
 
 //------------------------------------------------------------------------
 // Compiler::unwindSaveReg: Record a register save.
@@ -756,55 +628,6 @@ void DumpUnwindInfo(bool                     isHotCode,
     }
 }
 
-#ifdef UNIX_AMD64_ABI
-//------------------------------------------------------------------------
-// DumpCfiInfo: Dump the Cfi data.
-//
-// Arguments:
-//    isHotCode   - true if this cfi data is for the hot section, false otherwise.
-//    startOffset - byte offset of the code start that this cfi data represents.
-//    endOffset   - byte offset of the code end   that this cfi data represents.
-//    pcFiCode    - pointer to the cfi data blob.
-//
-void DumpCfiInfo(bool                  isHotCode,
-                 UNATIVE_OFFSET        startOffset,
-                 UNATIVE_OFFSET        endOffset,
-                 DWORD                 cfiCodeBytes,
-                 const CFI_CODE* const pCfiCode)
-{
-    printf("Cfi Info%s:\n", isHotCode ? "" : " COLD");
-    printf("  >> Start offset   : 0x%06x \n", dspOffset(startOffset));
-    printf("  >>   End offset   : 0x%06x \n", dspOffset(endOffset));
-
-    for (int i = 0; i < cfiCodeBytes / sizeof(CFI_CODE); i++)
-    {
-        const CFI_CODE* const pCode = &(pCfiCode[i]);
-
-        UCHAR codeOffset = pCode->CodeOffset;
-        SHORT dwarfReg   = pCode->DwarfReg;
-        INT   offset     = pCode->Offset;
-
-        switch (pCode->CfiOpCode)
-        {
-            case CFI_REL_OFFSET:
-                printf("    CodeOffset: 0x%02X Op: RelOffset DwarfReg:0x%x Offset:0x%X\n", codeOffset, dwarfReg,
-                       offset);
-                break;
-            case CFI_DEF_CFA_REGISTER:
-                assert(offset == 0);
-                printf("    CodeOffset: 0x%02X Op: DefCfaRegister DwarfReg:0x%X\n", codeOffset, dwarfReg);
-                break;
-            case CFI_ADJUST_CFA_OFFSET:
-                assert(dwarfReg == DWARF_REG_ILLEGAL);
-                printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
-                break;
-            default:
-                printf("    Unrecognized CFI_CODE: 0x%IX\n", *(UINT64*)pCode);
-                break;
-        }
-    }
-}
-#endif // UNIX_AMD64_ABI
 #endif // DEBUG
 
 //------------------------------------------------------------------------
