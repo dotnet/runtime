@@ -3610,7 +3610,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
 
     /* Is this an assigment? */
 
-    if (tree->OperKind() & GTK_ASGOP)
+    if (tree->OperIsAssignment())
     {
         GenTreePtr op1 = tree->gtOp.gtOp1;
         GenTreePtr op2 = tree->gtOp.gtOp2;
@@ -3622,6 +3622,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
             unsigned   lclNum;
             LclVarDsc* varDsc = nullptr;
 
+#ifdef LEGACY_BACKEND
             /* GT_CHS is special it doesn't have a valid op2 */
             if (tree->gtOper == GT_CHS)
             {
@@ -3633,6 +3634,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
                 }
             }
             else
+#endif
             {
                 if (op2->gtOper == GT_LCL_VAR)
                 {

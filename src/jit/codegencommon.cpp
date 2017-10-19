@@ -2845,7 +2845,11 @@ void CodeGen::genCheckOverflow(GenTreePtr tree)
 
         if (jumpKind == EJ_lo)
         {
-            if ((tree->OperGet() != GT_SUB) && (tree->gtOper != GT_ASG_SUB))
+            if ((tree->OperGet() != GT_SUB)
+#ifdef LEGACY_BACKEND
+                && (tree->gtOper != GT_ASG_SUB)
+#endif
+                    )
             {
                 jumpKind = EJ_hs;
             }
