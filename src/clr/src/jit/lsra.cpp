@@ -6342,8 +6342,8 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         // Now, if we have a recentAssignedRef, check that it is going to be OK to spill it.
         Interval*    assignedInterval        = physRegRecord->assignedInterval;
         unsigned     recentAssignedRefWeight = BB_ZERO_WEIGHT;
-        RefPosition* recentAssignedRef;
-        RefPosition* recentAssignedRef2 = nullptr;
+        RefPosition* recentAssignedRef       = nullptr;
+        RefPosition* recentAssignedRef2      = nullptr;
 #ifdef _TARGET_ARM_
         if (current->registerType == TYP_DOUBLE)
         {
