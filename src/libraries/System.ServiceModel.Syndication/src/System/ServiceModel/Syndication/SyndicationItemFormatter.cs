@@ -47,7 +47,7 @@ namespace System.ServiceModel.Syndication
 
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
+            return string.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", GetType(), Version);
         }
 
         public abstract Task WriteToAsync(XmlWriter writer);
