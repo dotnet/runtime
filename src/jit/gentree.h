@@ -1017,7 +1017,7 @@ public:
 #define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle
 #define GTF_ICON_TLS_HDL            0xC0000000 // GT_CNS_INT -- constant is a TLS ref with offset
 #define GTF_ICON_FTN_ADDR           0xD0000000 // GT_CNS_INT -- constant is a function address
-#define GTF_ICON_CIDMID_HDL         0xE0000000 // GT_CNS_INT -- constant is a class or module ID handle
+#define GTF_ICON_MID_HDL            0xE0000000 // GT_CNS_INT -- constant is a module ID handle
 #define GTF_ICON_BBC_PTR            0xF0000000 // GT_CNS_INT -- constant is a basic block count pointer
 
 #define GTF_ICON_FIELD_OFF          0x08000000 // GT_CNS_INT -- constant is a field offset
