@@ -3281,7 +3281,7 @@ GenTreePtr CodeGen::genMakeAddressableStackFP(GenTreePtr tree,
                     printf(" with value %lf\n", tree->gtDblCon.gtDconVal);
                 }
 #endif // DEBUG
-                tree->CopyFrom(addr, compiler);
+                tree->ReplaceWith(addr, compiler);
                 return tree;
             }
             break;

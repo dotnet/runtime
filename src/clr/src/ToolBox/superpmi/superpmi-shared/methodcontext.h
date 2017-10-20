@@ -617,9 +617,14 @@ public:
     void dmpGetMethodName(DLD key, DD value);
     const char* repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char** moduleName);
 
-    void recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName, const char** namespaceName);
+    void recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                      char*                 methodname,
+                                      const char**          moduleName,
+                                      const char**          namespaceName);
     void dmpGetMethodNameFromMetadata(DLDD key, DDD value);
-    const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName);
+    const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                             const char**          className,
+                                             const char**          namespaceName);
 
     void recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result);
     void dmpGetJitFlags(DWORD key, DD value);
@@ -875,7 +880,6 @@ public:
     void recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls);
-
 
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result);
     void dmpGetTokenTypeAsHandle(const GetTokenTypeAsHandleValue& key, DWORDLONG value);
@@ -1251,7 +1255,7 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const wchar_t* repGetStringConfigValue(const wchar_t* name);
 
-    bool wasEnviromentChanged();
+    bool                                              wasEnviromentChanged();
     static DenseLightWeightMap<Agnostic_Environment>* prevEnviroment;
 
     CompileResult* cr;
@@ -1363,7 +1367,7 @@ enum mcPackets
     Packet_GetMethodHash                                 = 73,
     Packet_GetMethodInfo                                 = 74,
     Packet_GetMethodName                                 = 75,
-    Packet_GetMethodNameFromMetadata                     = 161,  // Added 9/6/17
+    Packet_GetMethodNameFromMetadata                     = 161, // Added 9/6/17
     Packet_GetMethodSig                                  = 76,
     Packet_GetMethodSync                                 = 77,
     Packet_GetMethodVTableOffset                         = 78,

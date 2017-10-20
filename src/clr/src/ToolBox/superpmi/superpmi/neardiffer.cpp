@@ -20,7 +20,7 @@
 
 //
 // Helper functions to print messages from CoreDisTools Library
-// The file/linenumber information is from this helper itself, 
+// The file/linenumber information is from this helper itself,
 // since we are only linking with the CoreDisTools library.
 //
 static void LogFromCoreDisToolsHelper(LogLevel level, const char* msg, va_list argList)
@@ -29,32 +29,36 @@ static void LogFromCoreDisToolsHelper(LogLevel level, const char* msg, va_list a
 }
 
 #define LOGGER(L)                                                                                                      \
+    \
 static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                            \
-{                                                                                                                      \
-    va_list argList;                                                                                                   \
-    va_start(argList, msg);                                                                                            \
-    LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                             \
-    va_end(argList);                                                                                                   \
+    \
+{                                                                                                               \
+        va_list argList;                                                                                               \
+        va_start(argList, msg);                                                                                        \
+        LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                         \
+        va_end(argList);                                                                                               \
+    \
 }
 
 LOGGER(VERBOSE)
 LOGGER(ERROR)
 LOGGER(WARNING)
 
-const PrintControl CorPrinter = {CorDisToolsLogERROR, CorDisToolsLogWARNING, CorDisToolsLogVERBOSE, CorDisToolsLogVERBOSE};
+const PrintControl CorPrinter = {CorDisToolsLogERROR, CorDisToolsLogWARNING, CorDisToolsLogVERBOSE,
+                                 CorDisToolsLogVERBOSE};
 
 #endif // USE_COREDISTOOLS
 
 #ifdef USE_COREDISTOOLS
-NewDiffer_t* g_PtrNewDiffer = nullptr;
-FinishDiff_t* g_PtrFinishDiff = nullptr;
+NewDiffer_t*          g_PtrNewDiffer          = nullptr;
+FinishDiff_t*         g_PtrFinishDiff         = nullptr;
 NearDiffCodeBlocks_t* g_PtrNearDiffCodeBlocks = nullptr;
-DumpDiffBlocks_t* g_PtrDumpDiffBlocks = nullptr;
+DumpDiffBlocks_t*     g_PtrDumpDiffBlocks     = nullptr;
 #endif // USE_COREDISTOOLS
 
 //
 // The NearDiff Disassembler initialization.
-// 
+//
 // Returns true on success, false on failure.
 //
 bool NearDiffer::InitAsmDiff()
@@ -106,7 +110,7 @@ bool NearDiffer::InitAsmDiff()
 #ifdef USE_COREDISTOOLS
 // static
 bool __cdecl NearDiffer::CoreDisCompareOffsetsCallback(
-        const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
+    const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
 {
     return compareOffsets(payload, blockOffset, instrLen, offset1, offset2);
 }
@@ -265,7 +269,7 @@ struct DiffData
 
 //
 // NearDiff Offset Comparator.
-// Determine whether two syntactically different constants are 
+// Determine whether two syntactically different constants are
 // semantically equivalent, using certain heuristics.
 //
 bool NearDiffer::compareOffsets(
@@ -297,7 +301,7 @@ bool NearDiffer::compareOffsets(
         (roOffset1a < data->datablockSize1)) // Confirm its an offset that fits inside our RoRegion
         return true;
 
-    // This case is written to catch IP-relative offsets to the RO data-section 
+    // This case is written to catch IP-relative offsets to the RO data-section
     // For example:
     //
     size_t roOffset1b = ipRelOffset1 - data->originalDataBlock1;
@@ -329,7 +333,7 @@ bool NearDiffer::compareOffsets(
     if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1) != (DWORD)-1)
     {
         // This logging is too noisy, so disable it.
-         //LogVerbose("Found VSD callsite, did softer compare than ideal");
+        // LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
 
@@ -339,24 +343,24 @@ bool NearDiffer::compareOffsets(
     if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1b) != (DWORD)-1)
     {
         // This logging is too noisy, so disable it.
-         //LogVerbose("Found VSD callsite, did softer compare than ideal");
+        // LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
     if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset2b) != (DWORD)-1)
     {
         // This logging is too noisy, so disable it.
-         //LogVerbose("Found VSD callsite, did softer compare than ideal");
+        // LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
 
     // Case might be a field address that we handed out to handle inlined values being loaded into
-     //a register as an immediate value (and where the address is encoded as an indirect immediate load)
+    // a register as an immediate value (and where the address is encoded as an indirect immediate load)
     size_t realTargetAddr = (size_t)data->cr->searchAddressMap((void*)gOffset2);
     if (realTargetAddr == gOffset1)
         return true;
 
     // Case might be a field address that we handed out to handle inlined values being loaded into
-     //a register as an immediate value (and where the address is encoded and loaded by immediate into a register)
+    // a register as an immediate value (and where the address is encoded and loaded by immediate into a register)
     realTargetAddr = (size_t)data->cr->searchAddressMap((void*)offset2);
     if (realTargetAddr == offset1)
         return true;
@@ -455,12 +459,12 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
     if (UseCoreDisTools)
     {
         bool areSame = (*g_PtrNearDiffCodeBlocks)(corAsmDiff, &data, (const uint8_t*)originalBlock1, block1, blocksize1,
-                                          (const uint8_t*)originalBlock2, block2, blocksize2);
+                                                  (const uint8_t*)originalBlock2, block2, blocksize2);
 
         if (!areSame)
         {
             (*g_PtrDumpDiffBlocks)(corAsmDiff, (const uint8_t*)originalBlock1, block1, blocksize1,
-                           (const uint8_t*)originalBlock2, block2, blocksize2);
+                                   (const uint8_t*)originalBlock2, block2, blocksize2);
         }
 
         return areSame;
@@ -507,7 +511,7 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
             if (haveSeenRet)
             {
                 // This logging is pretty noisy, so disable it.
-                 //LogVerbose("instruction size of zero after seeing a ret (soft issue?).");
+                // LogVerbose("instruction size of zero after seeing a ret (soft issue?).");
                 break;
             }
             LogWarning("instruction size of zero.");
@@ -604,13 +608,13 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
                 }
 
                 //
-                // These are special.. we can often reason out exactly why these values 
+                // These are special.. we can often reason out exactly why these values
                 // are different using heuristics.
                 //
                 // Why is Instruction size passed as zero?
                 // Ans: Because the implementation of areOffsetsEquivalent() uses
-                // the instruction size to compute absolute offsets in the case of 
-                // PC-relative addressing, and MSVCDis already reports the 
+                // the instruction size to compute absolute offsets in the case of
+                // PC-relative addressing, and MSVCDis already reports the
                 // absolute offsets! For example:
                 // 0F 2E 05 67 00 9A FD ucomiss xmm0, dword ptr[FFFFFFFFFD9A006Eh]
                 //

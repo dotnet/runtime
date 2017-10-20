@@ -309,8 +309,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_ASG:
-        case GT_ASG_ADD:
-        case GT_ASG_SUB:
             noway_assert(!"We should never hit any assignment operator in lowering");
             info->srcCount = 0;
             break;
