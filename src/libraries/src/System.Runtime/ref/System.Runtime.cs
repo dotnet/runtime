@@ -3838,9 +3838,10 @@ namespace System.Buffers
     public unsafe struct MemoryHandle : IDisposable 
     {
         [System.CLSCompliantAttribute(false)]
-        public MemoryHandle(IRetainable owner, void* pinnedPointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
+        public MemoryHandle(IRetainable owner, void* pointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public void* PinnedPointer { get { throw null; } }
+        public void* Pointer { get { throw null; } }
+        public bool HasPointer { get { throw null; } }
         public void Dispose() { throw null; }
     }
 
