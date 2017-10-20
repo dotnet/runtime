@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.ComponentModel;
-using Xunit;
 
 namespace System.Diagnostics.Tests
 {
@@ -177,9 +175,6 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public void WriteEntryWithTypeAndId(bool sourceFlag)
         {
-            if (!AdminHelpers.IsProcessElevated())
-                return;
-
             string source = "Source" + nameof(WriteEntryWithTypeAndId);
             string log = "InstanceEntry";
             try
