@@ -1926,13 +1926,16 @@ AGAIN:
                 break;
         }
 
+        // clang-format off
         // narrow 'add' into a 32-bit 'val'
         unsigned val;
 #ifdef _TARGET_64BIT_
         val = genTreeHashAdd(uhi32(add), ulo32(add));
 #else // 32-bit target
         val = add;
+        val = add;
 #endif
+        // clang-format on
 
         hash = genTreeHashAdd(hash, val);
         goto DONE;
