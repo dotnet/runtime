@@ -699,7 +699,8 @@ namespace System.IO
                                                      char[] charBuffer, int charPos, int charLen, char[] coreNewLine,
                                                      bool autoFlush, bool appendNewLine, CancellationToken cancellationToken)
         {
-            while (source.Length > 0)
+            int copied = 0;
+            while (copied < source.Length)
             {
                 if (charPos == charLen)
                 {
@@ -708,13 +709,12 @@ namespace System.IO
                     charPos = 0;
                 }
 
-                int n = Math.Min(charLen - charPos, source.Length);
+                int n = Math.Min(charLen - charPos, source.Length - copied);
                 Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
 
-                source.Span.Slice(0, n).CopyTo(new Span<char>(charBuffer, charPos, n));
-
-                source = source.Slice(n);
+                source.Span.Slice(copied, n).CopyTo(new Span<char>(charBuffer, charPos, n));
                 charPos += n;
+                copied += n;
             }
 
             if (appendNewLine)
