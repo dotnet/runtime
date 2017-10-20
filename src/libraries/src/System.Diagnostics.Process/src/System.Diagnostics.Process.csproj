@@ -365,7 +365,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.OSX.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.libproc.cs">
@@ -394,7 +396,26 @@
     <Compile Include="System\Diagnostics\ProcessManager.Uap.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Uap.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" ('$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true')">
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.BSD.cs" />
+    <Compile Include="System\Diagnostics\Process.FreeBSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.FreeBSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.FreeBSD.cs" />
+    <Compile Include="$(CommonPath)\Interop\BSD\System.Native\Interop.Sysctl.cs">
+      <Link>Common\Interop\BSD\System.Native\Interop.Sysctl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Process.cs">
+      <Link>Common\Interop\FreeBSD\Interop.Process.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
+      <Link>Common\Unix\System.Native\Interop.GetTimestamp.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
+      <Link>Common\Unix\System.Native\Interop.Stat.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" ('$(TargetsUnknownUnix)' == 'true')">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />

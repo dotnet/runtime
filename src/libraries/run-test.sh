@@ -119,7 +119,9 @@ case $CPUName in
     aarch64)
         __Arch=arm64
         ;;
-
+    amd64)
+        __Arch=x64
+        ;;
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         __Arch=x64
@@ -385,7 +387,7 @@ if [ $RunTestSequential -eq 1 ]
 then
     maxProcesses=1;
 else
-    if [ `uname` = "NetBSD" ]; then
+    if [ `uname` = "NetBSD" ] || [ `uname` = "FreeBSD" ]; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else
       maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))

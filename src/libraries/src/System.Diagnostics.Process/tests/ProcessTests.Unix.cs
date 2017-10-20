@@ -257,7 +257,9 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            Assert.Equal(0, chmod(path, 644)); // no execute permissions
+            int mode = Convert.ToInt32("644", 8);
+
+            Assert.Equal(0, chmod(path, mode));
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
@@ -268,7 +270,9 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            Assert.Equal(0, chmod(path, 744)); // execute permissions
+            int mode = Convert.ToInt32("744", 8);
+
+            Assert.Equal(0, chmod(path, mode)); // execute permissions
 
             using (Process p = Process.Start(path))
             {
