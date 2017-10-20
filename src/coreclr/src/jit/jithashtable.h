@@ -7,25 +7,19 @@
 // JitHashTable implements a mapping from a Key type to a Value type,
 // via a hash table.
 
-// Synchronization is the responsibility of the caller: if a
-// JitHashTable is used in a multithreaded context, the table should be
-// associated with a lock.
-
-// JitHashTable actually takes four template arguments: Key,
-// KeyFuncs, Value, and Behavior.  We don't assume that Key has hash or equality
-// functions specific names; rather, we assume that KeyFuncs has
-// statics methods
+// JitHashTable takes four template parameters:
+//    Key, KeyFuncs, Value, Allocator and Behavior.
+// We don't assume that Key has hash or equality functions specific names;
+// rather, we assume that KeyFuncs has the following static methods
 //    int GetHashCode(Key)
-// and
 //    bool Equals(Key, Key)
-// and use those.  An
-// instantiator can thus make a small "adaptor class" to invoke
-// existing instance method hash and/or equality functions.  If the
-// implementor of a candidate Key class K understands this convention,
+// and use those. An instantiator can thus make a small "adaptor class"
+// to invoke existing instance method hash and/or equality functions.
+// If the implementor of a candidate Key class K understands this convention,
 // these static methods can be implemented by K, so that K can be used
-// as the actual arguments for the both Key and KeyTrait classes.
+// as the actual arguments for the both Key and KeyFuncs template parameters.
 //
-// The "Behavior" argument provides the following static members:
+// The "Behavior" parameter must provide the following static members:
 //
 // s_growth_factor_numerator
 // s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).
@@ -37,7 +31,7 @@
 //
 // s_minimum_allocation                         Minimum table allocation count (size on first growth.)  It is
 //                                              probably preferable to call Reallocate on initialization rather
-//                                              than override his from the default traits. (7)
+//                                              than override this from the default traits.
 //
 // NoMemory()                                   Called when the hash table is unable to grow due to potential
 //                                              overflow or the lack of a sufficiently large prime.
@@ -74,6 +68,7 @@ public:
     unsigned magic;
     unsigned shift;
 
+    // Compute `numerator` / `prime` using magic division
     unsigned magicNumberDivide(unsigned numerator) const
     {
         unsigned __int64 num     = numerator;
@@ -82,6 +77,7 @@ public:
         return (unsigned)product;
     }
 
+    // Compute `numerator` % `prime` using magic division
     unsigned magicNumberRem(unsigned numerator) const
     {
         unsigned div    = magicNumberDivide(numerator);
@@ -139,12 +135,18 @@ template <typename Key,
 class JitHashTable
 {
 public:
-    // Forward declaration.
     class KeyIterator;
 
-    // Constructor/destructor. JitHashTable always start out empty, with no
-    // allocation overhead. Call Reallocate to prime with an initial size if
-    // desired.
+    //------------------------------------------------------------------------
+    // JitHashTable: Construct an empty JitHashTable object.
+    //
+    // Arguments:
+    //    alloc - the allocator to be used by the new JitHashTable object
+    //
+    // Notes:
+    //    JitHashTable always starts out empty, with no allocation overhead.
+    //    Call Reallocate to prime with an initial size if desired.
+    //
     JitHashTable(Allocator* alloc) : m_alloc(alloc), m_table(nullptr), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
     {
         assert(m_alloc != nullptr);
@@ -155,14 +157,32 @@ public:
 #endif
     }
 
+    //------------------------------------------------------------------------
+    // ~JitHashTable: Destruct the JitHashTable object.
+    //
+    // Notes:
+    //    Destructs all keys and values stored in the table and frees all
+    //    owned memory.
+    //
     ~JitHashTable()
     {
         RemoveAll();
     }
 
-    // If the table contains a mapping for "key", returns "true" and
-    // sets "*pVal" to the value to which "key" maps.  Otherwise,
-    // returns false, and does not modify "*pVal".
+    //------------------------------------------------------------------------
+    // Lookup: Get the value associated to the specified key, if any.
+    //
+    // Arguments:
+    //    k    - the key
+    //    pVal - pointer to a location used to store the associated value
+    //
+    // Return Value:
+    //    `true` if the key exists, `false` otherwise
+    //
+    // Notes:
+    //    If the key does not exist *pVal is not updated. pVal may be nullptr
+    //    so this function can be used to simply check if the key exists.
+    //
     bool Lookup(Key k, Value* pVal = nullptr) const
     {
         Node* pN = FindNode(k);
@@ -181,6 +201,21 @@ public:
         }
     }
 
+    //------------------------------------------------------------------------
+    // Lookup: Get a pointer to the value associated to the specified key.
+    // if any.
+    //
+    // Arguments:
+    //    k - the key
+    //
+    // Return Value:
+    //    A pointer to the value associated with the specified key or nullptr
+    //    if the key is not found
+    //
+    // Notes:
+    //    This is similar to `Lookup` but avoids copying the value and allows
+    //    updating the value without using `Set`.
+    //
     Value* LookupPointer(Key k) const
     {
         Node* pN = FindNode(k);
@@ -195,8 +230,20 @@ public:
         }
     }
 
-    // Causes the table to map "key" to "val".  Returns "true" if
-    // "key" had already been mapped by the table, "false" otherwise.
+    //------------------------------------------------------------------------
+    // Set: Associate the specified value with the specified key.
+    //
+    // Arguments:
+    //    k - the key
+    //    v - the value
+    //
+    // Return Value:
+    //    `true` if the key already exists, `false` otherwise.
+    //
+    // Notes:
+    //    If the key already exists then its associated value is updated to
+    //    the new value.
+    //
     bool Set(Key k, Value v)
     {
         CheckGrowth();
@@ -224,8 +271,18 @@ public:
         }
     }
 
-    // Ensures that "key" is not mapped to a value by the "table."
-    // Returns "true" iff it had been mapped.
+    //------------------------------------------------------------------------
+    // Remove: Remove the specified key and its associated value.
+    //
+    // Arguments:
+    //    k - the key
+    //
+    // Return Value:
+    //    `true` if the key exists, `false` otherwise.
+    //
+    // Notes:
+    //    Removing a inexistent key is not an error.
+    //
     bool Remove(Key k)
     {
         unsigned index = GetIndexForKey(k);
@@ -250,7 +307,12 @@ public:
         }
     }
 
-    // Remove all mappings in the table.
+    //------------------------------------------------------------------------
+    // RemoveAll: Remove all keys and their associated values.
+    //
+    // Notes:
+    //    This also frees all the memory owned by the table.
+    //
     void RemoveAll()
     {
         for (unsigned i = 0; i < m_tableSizeInfo.prime; i++)
@@ -272,28 +334,37 @@ public:
         return;
     }
 
-    // Begin and End pointers for iteration over entire table.
+    // Get an iterator to the first key in the table.
     KeyIterator Begin() const
     {
         KeyIterator i(this, TRUE);
         return i;
     }
 
+    // Get an iterator following the last key in the table.
     KeyIterator End() const
     {
         return KeyIterator(this, FALSE);
     }
 
-    // Return the number of elements currently stored in the table
+    // Get the number of keys currently stored in the table.
     unsigned GetCount() const
     {
         return m_tableCount;
     }
 
 private:
-    // Forward declaration of the linked-list node class.
     struct Node;
 
+    //------------------------------------------------------------------------
+    // GetIndexForKey: Get the bucket index for the specified key.
+    //
+    // Arguments:
+    //    k - the key
+    //
+    // Return Value:
+    //    A bucket index
+    //
     unsigned GetIndexForKey(Key k) const
     {
         unsigned hash = KeyFuncs::GetHashCode(k);
@@ -303,8 +374,15 @@ private:
         return index;
     }
 
-    // If the table has a mapping for "k", return the node containing
-    // that mapping, else "nullptr".
+    //------------------------------------------------------------------------
+    // FindNode: Return a pointer to the node having the specified key, if any.
+    //
+    // Arguments:
+    //    k - the key
+    //
+    // Return Value:
+    //    A pointer to the node or `nullptr` if the key is not found.
+    //
     Node* FindNode(Key k) const
     {
         if (m_tableSizeInfo.prime == 0)
@@ -332,8 +410,13 @@ private:
         return pN;
     }
 
-    // Resizes a hash table for growth.  The new size is computed based
-    // on the current population, growth factor, and maximum density factor.
+    //------------------------------------------------------------------------
+    // Grow: Increase the size of the bucket table.
+    //
+    // Notes:
+    //    The new size is computed based on the current population, growth factor,
+    //    and maximum density factor.
+    //
     void Grow()
     {
         unsigned newSize =
@@ -354,8 +437,10 @@ private:
         Reallocate(newSize);
     }
 
-    // See if it is OK to grow the hash table by one element.  If not, reallocate
-    // the hash table.
+    //------------------------------------------------------------------------
+    // CheckGrowth: Check if the maximum hashtable density has been reached
+    // and increase the size of the bucket table if necessary.
+    //
     void CheckGrowth()
     {
         if (m_tableCount == m_tableMax)
@@ -365,11 +450,16 @@ private:
     }
 
 public:
-    // Reallocates a hash table to a specific size.  The size must be big enough
-    // to hold all elements in the table appropriately.
+    //------------------------------------------------------------------------
+    // CheckGrowth: Replace the bucket table with a larger one and copy all nodes
+    // from the existing bucket table.
     //
-    // Note that the actual table size must always be a prime number; the number
-    // passed in will be upward adjusted if necessary.
+    // Notes:
+    //    The new size must be large enough to hold all existing keys in
+    //    the table without exceeding the density. Note that the actual
+    //    table size must always be a prime number; the specified size
+    //    will be increased to the next prime if necessary.
+    //
     void Reallocate(unsigned newTableSize)
     {
         assert(newTableSize >=
@@ -404,8 +494,6 @@ public:
             }
         }
 
-        // @todo:
-        // We might want to try to delay this cleanup to allow asynchronous readers
         if (m_table != nullptr)
         {
             m_alloc->Free(m_table);
@@ -433,15 +521,20 @@ public:
     private:
         friend class JitHashTable;
 
-        // The method implementations have to be here for portability.
-        // Some compilers won't compile the separate implementation in shash.inl
-
         Node**   m_table;
         Node*    m_node;
         unsigned m_tableSize;
         unsigned m_index;
 
     public:
+        //------------------------------------------------------------------------
+        // KeyIterator: Construct an iterator for the specified JitHashTable.
+        //
+        // Arguments:
+        //    hash  - the hashtable
+        //    begin - `true` to construct an "begin" iterator,
+        //            `false` to construct an "end" iterator
+        //
         KeyIterator(const JitHashTable* hash, BOOL begin)
             : m_table(hash->m_table)
             , m_node(nullptr)
@@ -468,6 +561,15 @@ public:
             }
         }
 
+        //------------------------------------------------------------------------
+        // Get: Get a reference to this iterator's key.
+        //
+        // Return Value:
+        //    A reference to this iterator's key.
+        //
+        // Assumptions:
+        //    This must not be the "end" iterator.
+        //
         const Key& Get() const
         {
             assert(m_node != nullptr);
@@ -475,6 +577,15 @@ public:
             return m_node->m_key;
         }
 
+        //------------------------------------------------------------------------
+        // GetValue: Get a reference to this iterator's value.
+        //
+        // Return Value:
+        //    A reference to this iterator's value.
+        //
+        // Assumptions:
+        //    This must not be the "end" iterator.
+        //
         const Value& GetValue() const
         {
             assert(m_node != nullptr);
@@ -482,6 +593,15 @@ public:
             return m_node->m_val;
         }
 
+        //------------------------------------------------------------------------
+        // SetValue: Assign a new value to this iterator's key
+        //
+        // Arguments:
+        //    value - the value to assign
+        //
+        // Assumptions:
+        //    This must not be the "end" iterator.
+        //
         void SetValue(const Value& value) const
         {
             assert(m_node != nullptr);
@@ -489,6 +609,12 @@ public:
             m_node->m_val = value;
         }
 
+        //------------------------------------------------------------------------
+        // Next: Advance the iterator to the next node.
+        //
+        // Notes:
+        //    Advancing the end iterator has no effect.
+        //
         void Next()
         {
             if (m_node != nullptr)
@@ -519,22 +645,37 @@ public:
             assert(m_node != nullptr);
         }
 
+        // Return `true` if the specified iterator has the same position as this iterator
         bool Equal(const KeyIterator& i) const
         {
             return i.m_node == m_node;
         }
 
+        // Advance the iterator to the next node
         void operator++()
         {
             Next();
         }
 
+        // Advance the iterator to the next node
         void operator++(int)
         {
             Next();
         }
     };
 
+    //------------------------------------------------------------------------
+    // operator[]: Get a reference to the value associated with the specified key.
+    //
+    // Arguments:
+    //    k - the key
+    //
+    // Return Value:
+    //    A reference to the value associated with the specified key.
+    //
+    // Notes:
+    //    The specified key must exist.
+    //
     Value& operator[](Key k) const
     {
         Value* p = LookupPointer(k);
@@ -543,7 +684,15 @@ public:
     }
 
 private:
-    // Find the next prime number >= the given value.
+    //------------------------------------------------------------------------
+    // NextPrime: Get a prime number greater than or equal to the specified number.
+    //
+    // Arguments:
+    //    number - the minimum value
+    //
+    // Return Value:
+    //    A prime number.
+    //
     static JitPrimeInfo NextPrime(unsigned number)
     {
         for (int i = 0; i < (int)(sizeof(jitPrimeInfo) / sizeof(jitPrimeInfo[0])); i++)
@@ -561,8 +710,8 @@ private:
     // The node type.
     struct Node
     {
-        Node* m_next; // Assume that the alignment requirement of Key and Value are no greater than Node*, so put m_next
-                      // to avoid unnecessary padding.
+        Node* m_next; // Assume that the alignment requirement of Key and Value are no greater than Node*,
+                      // so put m_next first to avoid unnecessary padding.
         Key   m_key;
         Value m_val;
 
@@ -589,7 +738,7 @@ private:
     unsigned     m_tableMax;      // maximum occupied count
 };
 
-// A few simple KeyFuncs types...
+// Commonly used KeyFuncs types:
 
 // Base class for types whose equality function is the same as their "==".
 template <typename T>
@@ -607,12 +756,14 @@ struct JitPtrKeyFuncs : public JitKeyFuncsDefEquals<const T*>
 public:
     static unsigned GetHashCode(const T* ptr)
     {
-        // Hmm.  Maybe (unsigned) ought to be "ssize_t" -- or this ought to be ifdef'd by size.
+        // Using the lower 32 bits of a pointer as a hashcode should be good enough.
+        // In fact, this should result in an unique hash code unless we allocate
+        // more than 4 gigabytes or if the virtual address space is fragmented.
         return static_cast<unsigned>(reinterpret_cast<uintptr_t>(ptr));
     }
 };
 
-template <typename T> // Must be coercable to "unsigned" with no loss of information.
+template <typename T> // Must be coercible to "unsigned" with no loss of information.
 struct JitSmallPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<T>
 {
     static unsigned GetHashCode(const T& val)
