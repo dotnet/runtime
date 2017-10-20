@@ -11,21 +11,21 @@ namespace System.Net.Http.Headers
     // This type is used for headers supporting a list of values. It essentially just forwards calls to
     // the actual header-store in HttpHeaders.
     //
-    // This type can deal with a so called "special value": The RFC defines some headers which are collection of 
-    // values, but the RFC only defines 1 value, e.g. Transfer-Encoding: chunked, Connection: close, 
+    // This type can deal with a so called "special value": The RFC defines some headers which are collection of
+    // values, but the RFC only defines 1 value, e.g. Transfer-Encoding: chunked, Connection: close,
     // Expect: 100-continue.
-    // We expose strongly typed properties for these special values: TransferEncodingChunked, ConnectionClose, 
+    // We expose strongly typed properties for these special values: TransferEncodingChunked, ConnectionClose,
     // ExpectContinue.
-    // So we have 2 properties for each of these headers ('Transfer-Encoding' => TransferEncoding, 
+    // So we have 2 properties for each of these headers ('Transfer-Encoding' => TransferEncoding,
     // TransferEncodingChunked; 'Connection' => Connection, ConnectionClose; 'Expect' => Expect, ExpectContinue)
     //
     // The following solution was chosen:
-    // - Keep HttpHeaders clean: HttpHeaders is unaware of these "special values"; it just stores the collection of 
-    //   headers. 
+    // - Keep HttpHeaders clean: HttpHeaders is unaware of these "special values"; it just stores the collection of
+    //   headers.
     // - It is the responsibility of "higher level" components (HttpHeaderValueCollection, HttpRequestHeaders,
-    //   HttpResponseHeaders) to deal with special values. 
+    //   HttpResponseHeaders) to deal with special values.
     // - HttpHeaderValueCollection can be configured with an IEqualityComparer and a "special value".
-    // 
+    //
     // Example: Server sends header "Transfer-Encoding: gzip, custom, chunked" to the client.
     // - HttpHeaders: HttpHeaders will have an entry in the header store for "Transfer-Encoding" with values
     //   "gzip", "custom", "chunked"
@@ -181,7 +181,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                // We have multiple values. Iterate through the values and return them. 
+                // We have multiple values. Iterate through the values and return them.
                 foreach (object item in storeValues)
                 {
                     Debug.Assert(item is T);
@@ -204,15 +204,6 @@ namespace System.Net.Http.Headers
         public override string ToString()
         {
             return _store.GetHeaderString(_descriptor);
-        }
-
-        internal string GetHeaderStringWithoutSpecial()
-        {
-            if (!IsSpecialValueSet)
-            {
-                return ToString();
-            }
-            return _store.GetHeaderString(_descriptor, _specialValue);
         }
 
         internal void SetSpecialValue()
