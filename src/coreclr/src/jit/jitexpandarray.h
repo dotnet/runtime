@@ -4,23 +4,33 @@
 
 #pragma once
 
-// An array of T that expands (and never shrinks) to accomodate references (with default value T() for
-// elements newly created by expansion.)
+// An array of T that expands automatically (and never shrinks) to accomodate
+// any index access. Elements added as a result of automatic expansion are
+// value-initialized (that is, they are assigned T()).
 template <class T>
 class JitExpandArray
 {
 protected:
     CompAllocator* m_alloc;   // The allocator object that should be used to allocate members.
     T*             m_members; // Pointer to the element array.
-    unsigned       m_size;    // The size of "m_members".
-    unsigned       m_minSize; // The minimum array size to allocate.
+    unsigned       m_size;    // The size of the element array.
+    unsigned       m_minSize; // The minimum size of the element array.
 
-    // Ensures that "m_size" > "idx", and that "m_members" is at least large enough to be
-    // indexed by "idx".
+    // Ensure that the element array is large enough for the specified index to be valid.
     void EnsureCoversInd(unsigned idx);
 
-    // Requires that m_members is not nullptr, and that
-    // low <= high <= m_size.  Sets elements low to high-1 of m_members to T().
+    //------------------------------------------------------------------------
+    // InitializeRange: Value-initialize the specified range of elements.
+    //
+    // Arguments:
+    //    low  - inclusive lower bound of the range to initialize
+    //    high - exclusive upper bound of the range to initialize
+    //
+    // Assumptions:
+    //    Assumes that the element array has aready been allocated
+    //    and that low and high are valid indices. The array is not
+    //    expanded to accomodate invalid indices.
+    //
     void InitializeRange(unsigned low, unsigned high)
     {
         assert(m_members != nullptr);
@@ -32,16 +42,31 @@ protected:
     }
 
 public:
-    // Initializes "*this" to represent an empty array of size zero.
-    // Use "alloc" for allocation of internal objects.  If "minSize" is specified,
-    // the allocated size of the internal representation will hold at least that many
-    // T's.
+    //------------------------------------------------------------------------
+    // JitExpandArray: Construct an empty JitExpandArray object.
+    //
+    // Arguments:
+    //    alloc   - the allocator used to allocate the element array
+    //    minSize - the initial size of the element array
+    //
+    // Notes:
+    //    Initially no memory is allocated for the element array. The first
+    //    time an array element (having index `idx`) is accessed, an array
+    //    of size max(`minSize`, `idx`) is allocated.
+    //
     JitExpandArray(CompAllocator* alloc, unsigned minSize = 1)
         : m_alloc(alloc), m_members(nullptr), m_size(0), m_minSize(minSize)
     {
         assert(minSize > 0);
     }
 
+    //------------------------------------------------------------------------
+    // ~JitExpandArray: Destruct the JitExpandArray object.
+    //
+    // Notes:
+    //    Frees the element array. Destructors of elements stored in the
+    //    array are NOT invoked.
+    //
     ~JitExpandArray()
     {
         if (m_members != nullptr)
@@ -50,7 +75,17 @@ public:
         }
     }
 
-    // Like the constructor above, to re-initialize to the empty state.
+    //------------------------------------------------------------------------
+    // Init: Re-initialize the array to the empty state.
+    //
+    // Arguments:
+    //    alloc   - the allocator used to allocate the element array
+    //    minSize - the initial size of the element array
+    //
+    // Notes:
+    //    This is equivalent to calling the destructor and then constructing
+    //    the array again.
+    //
     void Init(CompAllocator* alloc, unsigned minSize = 1)
     {
         if (m_members != nullptr)
@@ -63,15 +98,29 @@ public:
         m_minSize = minSize;
     }
 
-    // Resets "*this" to represent an array of size zero, with the given "minSize".
+    //------------------------------------------------------------------------
+    // Reset: Change the minimum size and value-initialize all the elements.
+    //
+    // Arguments:
+    //    minSize - the initial size of the element array
+    //
+    // Notes:
+    //    Ensures that an element array of at least `minSize` elements
+    //    has been allocated.
+    //
     void Reset(unsigned minSize)
     {
         m_minSize = minSize;
         Reset();
     }
 
-    // Resets "*this" to represent an array of size zero, whose
-    // allocated representation can represent at least "m_minSize" T's.
+    //------------------------------------------------------------------------
+    // Reset: Value-initialize all the array elements.
+    //
+    // Notes:
+    //    Ensures that an element array of at least `m_minSize` elements
+    //    has been allocated.
+    //
     void Reset()
     {
         if (m_minSize > m_size)
@@ -81,30 +130,73 @@ public:
         InitializeRange(0, m_size);
     }
 
-    // Returns the T at index "idx".  Expands the representation, if necessary,
-    // to contain "idx" in its domain, so the result will be an all-zero T if
-    // it had not previously been set.
+    //------------------------------------------------------------------------
+    // Get: Get a copy of the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //
+    // Return Value:
+    //    A copy of the element at index `idx`.
+    //
+    // Notes:
+    //    Expands the element array, if necessary, to contain `idx`.
+    //    The result will be a value-initialized T if a value wasn't
+    //    previously assigned to the specififed index.
+    //
     T Get(unsigned idx)
     {
         EnsureCoversInd(idx);
         return m_members[idx];
     }
 
-    // Like "Get", but returns a reference, so suitable for use as the LHS of an assignment.
+    //------------------------------------------------------------------------
+    // GetRef: Get a reference to the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //
+    // Return Value:
+    //    A reference to the element at index `idx`.
+    //
+    // Notes:
+    //    Like `Get`, but returns a reference, so suitable for use as
+    //    the LHS of an assignment.
+    //
     T& GetRef(unsigned idx)
     {
         EnsureCoversInd(idx);
         return m_members[idx];
     }
 
-    // Expands the representation, if necessary, to contain "idx" in its domain, and
-    // sets the value at "idx" to "val".
+    //------------------------------------------------------------------------
+    // Set: Assign a copy of `val` to the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //    val - the value to assign
+    //
+    // Notes:
+    //    Expands the element array, if necessary, to contain `idx`.
+    //
     void Set(unsigned idx, T val)
     {
         EnsureCoversInd(idx);
         m_members[idx] = val;
     }
 
+    //------------------------------------------------------------------------
+    // operator[]: Get a reference to the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //
+    // Return Value:
+    //    A reference to the element at index `idx`.
+    //
+    // Notes:
+    //    Same as `GetRef`.
+    //
     T& operator[](unsigned idx)
     {
         EnsureCoversInd(idx);
@@ -115,28 +207,59 @@ public:
 template <class T>
 class JitExpandArrayStack : public JitExpandArray<T>
 {
-    unsigned m_used;
+    unsigned m_used; // The stack depth
 
 public:
+    //------------------------------------------------------------------------
+    // JitExpandArrayStack: Construct an empty JitExpandArrayStack object.
+    //
+    // Arguments:
+    //    alloc   - the allocator used to allocate the element array
+    //    minSize - the initial size of the element array
+    //
+    // Notes:
+    //    See JitExpandArray constructor notes.
+    //
     JitExpandArrayStack(CompAllocator* alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0)
     {
     }
 
+    //------------------------------------------------------------------------
+    // Set: Assign value a copy of `val` to the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the index of element
+    //    val - the value to assign
+    //
+    // Notes:
+    //    Expands the element array, if necessary, to contain `idx`.
+    //    If `idx` is larger than the current stack depth then this
+    //    is the equivalent of series of Push(T()) followed by a Push(val).
+    //
     void Set(unsigned idx, T val)
     {
         JitExpandArray<T>::Set(idx, val);
         m_used = max((idx + 1), m_used);
     }
 
-    // Resets "*this" to represent an array of size zero, whose
-    // allocated representation can represent at least "m_minSize" T's.
+    //------------------------------------------------------------------------
+    // Reset: Remove all the elements from the stack.
+    //
     void Reset()
     {
         JitExpandArray<T>::Reset();
         m_used = 0;
     }
 
-    // Returns the index at which "val" is stored.
+    //------------------------------------------------------------------------
+    // Push: Push a copy of the specified value onto the stack.
+    //
+    // Arguments:
+    //    val - the value
+    //
+    // Return Value:
+    //    The index of the pushed value.
+    //
     unsigned Push(T val)
     {
         unsigned res = m_used;
@@ -145,7 +268,15 @@ public:
         return res;
     }
 
-    // Requires Size() > 0
+    //------------------------------------------------------------------------
+    // Pop: Remove the top element of the stack.
+    //
+    // Return Value:
+    //    A copy of the removed element.
+    //
+    // Assumptions:
+    //    The stack must not be empty.
+    //
     T Pop()
     {
         assert(Size() > 0);
@@ -153,33 +284,71 @@ public:
         return this->m_members[m_used];
     }
 
-    // Requires Size() > 0
+    //------------------------------------------------------------------------
+    // Top: Get a copy of the top element.
+    //
+    // Return Value:
+    //    A copy of the top element.
+    //
+    // Assumptions:
+    //    The stack must not be empty.
+    //
     T Top()
     {
         assert(Size() > 0);
         return this->m_members[m_used - 1];
     }
 
-    // Requires Size() > 0
+    //------------------------------------------------------------------------
+    // TopRef: Get a reference to the top element.
+    //
+    // Return Value:
+    //    A reference to the top element.
+    //
+    // Assumptions:
+    //    The stack must not be empty.
+    //
     T& TopRef()
     {
         assert(Size() > 0);
         return this->m_members[m_used - 1];
     }
 
-    // Requires that "idx" < "m_used" (asserting this in debug), and returns
-    // "Get(idx)" (which is covered, by the invariant that all indices in "[0..m_used)" are
-    // covered).
+    //------------------------------------------------------------------------
+    // GetNoExpand: Get a copy of the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //
+    // Return Value:
+    //    A copy of the element at index `idx`.
+    //
+    // Notes:
+    //    Unlike `Get` this does not expand the array if the index is not valid.
+    //
+    // Assumptions:
+    //    The element index does not exceed the current stack depth.
+    //
     T GetNoExpand(unsigned idx)
     {
         assert(idx < m_used);
         return this->m_members[idx];
     }
 
-    // Requires that "idx" < "m_used" (asserting this in debug).
-    // Removes the element at "idx" and shifts contents of the array beyond "idx", if any,
-    // to occupy the free slot created at "idx".
-    // O(n) worst case operation, no memory is allocated.
+    //------------------------------------------------------------------------
+    // Remove: Remove the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //
+    // Notes:
+    //    Shifts contents of the array beyond `idx`, if any, to occupy the free
+    //    slot created at `idx`. O(n) worst case operation, no memory is allocated.
+    //    Elements are bitwise copied, copy constructors are NOT invoked.
+    //
+    // Assumptions:
+    //    The element index does not exceed the current stack depth.
+    //
     void Remove(unsigned idx)
     {
         assert(idx < m_used);
@@ -190,12 +359,30 @@ public:
         m_used--;
     }
 
+    //------------------------------------------------------------------------
+    // Size: Get the current stack depth.
+    //
+    // Return Value:
+    //    The stack depth.
+    //
     unsigned Size()
     {
         return m_used;
     }
 };
 
+//------------------------------------------------------------------------
+// EnsureCoversInd: Ensure that the array is large enough for the specified
+// index to be valid.
+//
+// Arguments:
+//    idx - the element index
+//
+// Notes:
+//    If the array is expanded then
+//      - the existing elements are bitwise copied (copy constructors are NOT invoked)
+//      - the newly added elements are value-initialized
+//
 template <class T>
 void JitExpandArray<T>::EnsureCoversInd(unsigned idx)
 {
