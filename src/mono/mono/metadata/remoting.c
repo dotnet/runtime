@@ -403,8 +403,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 					/* runtime_invoke expects a boxed instance */
 					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
 						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass, &error);
-						if (!is_ok (&error))
-							goto fail;
+						goto_if_nok (&error, fail);
 					} else
 						mparams[i] = params [i];
 				}
@@ -414,19 +413,16 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		}
 
 		res = mono_runtime_invoke_checked (method, method->klass->valuetype? mono_object_unbox ((MonoObject*)this_obj): this_obj, mparams, &error);
-		if (!is_ok (&error))
-			goto fail;
+		goto_if_nok (&error, fail);
 
 		return res;
 	}
 
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL, &error);
-	if (!is_ok (&error))
-		goto fail;
+	goto_if_nok (&error, fail);
 
 	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args, &error);
-	if (!is_ok (&error))
-		goto fail;
+	goto_if_nok (&error, fail);
 
 	if (exc) {
 		error_init (&error);
@@ -436,7 +432,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	}
 
 	mono_method_return_message_restore (method, params, out_args, &error);
-	if (!is_ok (&error)) goto fail;
+	goto_if_nok (&error, fail);
 
 	return res;
 fail:
@@ -1982,8 +1978,7 @@ xdomain_copy_array_element_inplace (MonoArrayHandle arr, int i, MonoError *error
 	MONO_HANDLE_ARRAY_GETREF (item, arr, i);
 	
 	MonoObjectHandle item_copy = mono_marshal_xdomain_copy_value_handle (item, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MONO_HANDLE_ARRAY_SETREF (arr, i, item_copy);
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
@@ -2027,8 +2022,7 @@ mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
 		MonoObjectHandle res = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (domain, klass, ((char*)val) + sizeof(MonoObject), error)); /* FIXME use handles in mono_value_box_checked */
 		mono_gchandle_free (gchandle);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		MONO_HANDLE_ASSIGN (result, res);
 		break;
 	}
@@ -2037,8 +2031,7 @@ mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
 		MonoStringHandle res = mono_string_new_utf16_handle (domain, mono_string_chars (MONO_HANDLE_RAW (str)), mono_string_handle_length (str), error);
 		mono_gchandle_free (gchandle);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		MONO_HANDLE_ASSIGN (result, res);
 		break;
 	}
@@ -2049,8 +2042,7 @@ mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 		if (mt == MONO_MARSHAL_SERIALIZE)
 			goto leave;
 		MonoArrayHandle acopy = mono_array_clone_in_domain (domain, arr, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 
 		if (mt == MONO_MARSHAL_COPY) {
 			int i, len = mono_array_handle_length (acopy);

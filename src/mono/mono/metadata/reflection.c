@@ -268,25 +268,20 @@ module_object_construct (MonoDomain *domain, MonoClass *unused_klass, MonoImage 
 	
 	error_init (error);
 	MonoReflectionModuleHandle res = MONO_HANDLE_NEW (MonoReflectionModule, mono_object_new_checked (domain, mono_class_get_mono_module_class (), error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	MONO_HANDLE_SETVAL (res, image, MonoImage *, image);
 	MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (domain, image->assembly, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, assembly, assm_obj);
 
 	MONO_HANDLE_SET (res, fqname, mono_string_new_handle (domain, image->name, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	basename = g_path_get_basename (image->name);
 	MONO_HANDLE_SET (res, name, mono_string_new_handle (domain, basename, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, scopename, mono_string_new_handle (domain, image->module_name, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	g_free (basename);
 
@@ -342,8 +337,7 @@ mono_module_file_get_object_handle (MonoDomain *domain, MonoImage *image, int ta
 	error_init (error);
 
 	MonoReflectionModuleHandle res = MONO_HANDLE_NEW (MonoReflectionModule, mono_object_new_checked (domain, mono_class_get_mono_module_class (), error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	table = &image->tables [MONO_TABLE_FILE];
 	g_assert (table_index < table->rows);
@@ -351,8 +345,7 @@ mono_module_file_get_object_handle (MonoDomain *domain, MonoImage *image, int ta
 
 	MONO_HANDLE_SETVAL (res, image, MonoImage*, NULL);
 	MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (domain, image->assembly, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, assembly, assm_obj);
 	name = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
 
@@ -366,14 +359,11 @@ mono_module_file_get_object_handle (MonoDomain *domain, MonoImage *image, int ta
 	}
 
 	MONO_HANDLE_SET (res, fqname, mono_string_new_handle (domain, name, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, name, mono_string_new_handle (domain, name, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, scopename, mono_string_new_handle (domain, name, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SETVAL (res, is_resource, MonoBoolean, cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA);
 	MONO_HANDLE_SETVAL (res, token, guint32, mono_metadata_make_token (MONO_TABLE_FILE, table_index + 1));
 
@@ -599,13 +589,11 @@ method_object_construct (MonoDomain *domain, MonoClass *refclass, MonoMethod *me
 		klass = mono_class_get_mono_method_class ();
 	}
 	MonoReflectionMethodHandle ret = MONO_HANDLE_NEW (MonoReflectionMethod, mono_object_new_checked (domain, klass, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SETVAL (ret, method, MonoMethod*, method);
 
 	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &refclass->byval_arg, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	MONO_HANDLE_SET (ret, reftype, rt);
 
@@ -701,19 +689,16 @@ field_object_construct (MonoDomain *domain, MonoClass *klass, MonoClassField *fi
 	error_init (error);
 
 	MonoReflectionFieldHandle res = MONO_HANDLE_NEW (MonoReflectionField, mono_object_new_checked (domain, mono_class_get_mono_field_class (), error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SETVAL (res, klass, MonoClass *, klass);
 	MONO_HANDLE_SETVAL (res, field, MonoClassField *, field);
 	MonoStringHandle name = mono_string_new_handle (domain, mono_field_get_name (field), error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, name, name);
 
 	if (field->type) {
 		MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, field->type, error);
-		if (!is_ok (error))
-			goto fail;
+		goto_if_nok (error, fail);
 
 		MONO_HANDLE_SET (res, type, rt);
 	}
@@ -784,8 +769,7 @@ property_object_construct (MonoDomain *domain, MonoClass *klass, MonoProperty *p
 	error_init (error);
 
 	MonoReflectionPropertyHandle res = MONO_HANDLE_NEW (MonoReflectionProperty, mono_object_new_checked (domain, mono_class_get_mono_property_class (), error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SETVAL (res, klass, MonoClass *, klass);
 	MONO_HANDLE_SETVAL (res, property, MonoProperty *, property);
 	return res;
@@ -944,20 +928,17 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoReflectionParameterHandle param = MONO_HANDLE_NEW (MonoReflectionParameter, mono_object_new_checked (domain, mono_class_get_mono_parameter_info_class (), error));
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, sig_param, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	MONO_HANDLE_SET (param, ClassImpl, rt);
 
 	MONO_HANDLE_SET (param, MemberImpl, member);
 
 	MonoStringHandle name_str = mono_string_new_handle (domain, name, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	MONO_HANDLE_SET (param, NameImpl, name_str);
 
@@ -970,8 +951,7 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 			MONO_HANDLE_SET (param, DefaultValueImpl, get_reflection_missing (domain, missing));
 		else
 			MONO_HANDLE_SET (param, DefaultValueImpl, get_dbnull (domain, dbnull, error));
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else {
 
 		MonoType blob_type;
@@ -989,8 +969,7 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 			blob_type.data.klass = mono_class_from_mono_type (&blob_type);
 
 		MonoObjectHandle default_val_obj = MONO_HANDLE_NEW (MonoObject, mono_get_object_from_blob (domain, &blob_type, blob, error)); /* FIXME make mono_get_object_from_blob return a handle */
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		MONO_HANDLE_SET (param, DefaultValueImpl, default_val_obj);
 
 		/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
@@ -999,15 +978,13 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 				MONO_HANDLE_SET (param, DefaultValueImpl, get_reflection_missing (domain, missing));
 			else
 				MONO_HANDLE_SET (param, DefaultValueImpl, get_dbnull (domain, dbnull, error));
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 		}
 	}
 
 	if (mspec) {
 		MonoReflectionMarshalAsAttributeHandle mobj = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspec, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		MONO_HANDLE_SET (param, MarshalAsImpl, mobj);
 	}
 
@@ -1032,8 +1009,7 @@ param_objects_construct (MonoDomain *domain, MonoClass *refclass, MonoMethodSign
 	error_init (error);
 	
 	MonoReflectionMethodHandle member = mono_method_get_object_handle (domain, method, refclass, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method, (const char **) names);
 
@@ -1099,13 +1075,11 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 
 	/* side-effect: sets method->signature non-NULL on success */
 	MonoMethodSignature *sig = mono_method_signature_checked (method, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	if (!sig->param_count) {
 		MonoArrayHandle res = mono_array_new_handle (domain, mono_class_get_mono_parameter_info_class (), 0, error);
-		if (!is_ok (error))
-			goto fail;
+		goto_if_nok (error, fail);
 
 		return res;
 	}
@@ -1137,12 +1111,10 @@ add_local_var_info_to_array (MonoDomain *domain, MonoMethodHeader *header, int i
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoReflectionLocalVariableInfoHandle info = MONO_HANDLE_NEW (MonoReflectionLocalVariableInfo, mono_object_new_checked (domain, mono_class_get_local_variable_info_class (), error));
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, header->locals [idx], error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	MONO_HANDLE_SET (info, local_type, rt);
 
@@ -1161,8 +1133,7 @@ add_exception_handling_clause_to_array (MonoDomain *domain, MonoMethodHeader *he
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoReflectionExceptionHandlingClauseHandle info = MONO_HANDLE_NEW (MonoReflectionExceptionHandlingClause, mono_object_new_checked (domain, mono_class_get_exception_handling_clause_class (), error));
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MonoExceptionClause *clause = &header->clauses [idx];
 
 	MONO_HANDLE_SETVAL (info, flags, gint32, clause->flags);
@@ -1174,8 +1145,7 @@ add_exception_handling_clause_to_array (MonoDomain *domain, MonoMethodHeader *he
 		MONO_HANDLE_SETVAL (info, filter_offset, gint32, clause->data.filter_offset);
 	else if (clause->data.catch_class) {
 		MonoReflectionTypeHandle rt = mono_type_get_object_handle (mono_domain_get (), &clause->data.catch_class->byval_arg, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 
 		MONO_HANDLE_SET (info, catch_type, rt);
 	}
@@ -1229,8 +1199,7 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 
 	image = method->klass->image;
 	header = mono_method_get_header_checked (method, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	if (!image_is_dynamic (image)) {
 		/* Obtain local vars signature token */
@@ -1255,15 +1224,13 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 		local_var_sig_token = 0; //FIXME
 
 	MonoReflectionMethodBodyHandle ret = MONO_HANDLE_NEW (MonoReflectionMethodBody, mono_object_new_checked (domain, mono_class_get_method_body_class (), error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	MONO_HANDLE_SETVAL (ret, init_locals, MonoBoolean, header->init_locals);
 	MONO_HANDLE_SETVAL (ret, max_stack, guint32, header->max_stack);
 	MONO_HANDLE_SETVAL (ret, local_var_sig_token, guint32, local_var_sig_token);
 	MonoArrayHandle il_arr = mono_array_new_handle (domain, mono_defaults.byte_class, header->code_size, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (ret, il, il_arr);
 	uint32_t il_gchandle;
 	guint8* il_data = MONO_ARRAY_HANDLE_PIN (il_arr, guint8, 0, &il_gchandle);
@@ -1272,8 +1239,7 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 
 	/* Locals */
 	MonoArrayHandle locals_arr = mono_array_new_handle (domain, mono_class_get_local_variable_info_class (), header->num_locals, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (ret, locals, locals_arr);
 	for (i = 0; i < header->num_locals; ++i) {
 		if (!add_local_var_info_to_array (domain, header, i, locals_arr, error))
@@ -1282,8 +1248,7 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 
 	/* Exceptions */
 	MonoArrayHandle exn_clauses = mono_array_new_handle (domain, mono_class_get_exception_handling_clause_class (), header->num_clauses, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (ret, clauses, exn_clauses);
 	for (i = 0; i < header->num_clauses; ++i) {
 		if (!add_exception_handling_clause_to_array (domain, header, i, exn_clauses, error))
@@ -2104,8 +2069,7 @@ mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *a
 	error_init (error);
 	g_assert (assembly_is_dynamic (assembly));
 	MonoReflectionAssemblyBuilderHandle abuilder = MONO_HANDLE_CAST (MonoReflectionAssemblyBuilder, mono_assembly_get_object_handle (((MonoDynamicAssembly*)assembly)->domain, assembly, error));
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	/* Enumerate all modules */
 
@@ -2117,8 +2081,7 @@ mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *a
 			type = module_builder_array_get_type (modules, i, rootimage, info, ignorecase, error);
 			if (type)
 				break;
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 		}
 	}
 
@@ -2130,8 +2093,7 @@ mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *a
 			type = module_array_get_type (loaded_modules, i, rootimage, info, ignorecase, error);
 			if (type)
 				break;
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 		}
 	}
 
@@ -2472,8 +2434,7 @@ generic_inst_from_type_array_handle (MonoArrayHandle types, MonoError *error)
 	for (int i = 0; i < count; i++) {
 		MONO_HANDLE_ARRAY_GETREF (garg, types, i);
 		type_argv [i] = mono_reflection_type_handle_mono_type (garg, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 
 	}
 	ginst = mono_metadata_get_generic_inst (count, type_argv);

@@ -732,8 +732,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 		len++;
 
 	ret = mono_array_new_checked (domain, klass, len, &error);
-	if (!is_ok (&error))
-		goto fail;
+	goto_if_nok (&error, fail);
 
 	if (len == 0)
 		return ret;
@@ -747,9 +746,9 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 		is_neutral = ci->territory == 0;
 		if ((neutral && is_neutral) || (specific && !is_neutral)) {
 			culture = (MonoCultureInfo *) mono_object_new_checked (domain, klass, &error);
-			if (!is_ok (&error)) goto fail;
+			goto_if_nok (&error, fail);
 			mono_runtime_object_init_checked ((MonoObject *) culture, &error);
-			if (!is_ok (&error)) goto fail;
+			goto_if_nok (&error, fail);
 			if (!construct_culture (culture, ci, &error))
 				goto fail;
 			culture->use_user_override = TRUE;

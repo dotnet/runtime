@@ -1627,15 +1627,13 @@ mono_perfcounter_category_names (MonoString *machine)
 	for (i = 0; i < NUM_CATEGORIES; ++i) {
 		const CategoryDesc *cdesc = &predef_categories [i];
 		MonoString *name = mono_string_new_checked (domain, cdesc->name, &error);
-		if (!is_ok (&error))
-			goto leave;
+		goto_if_nok (&error, leave);
 		mono_array_setref (res, i, name);
 	}
 	for (tmp = custom_categories; tmp; tmp = tmp->next) {
 		SharedCategory *scat = (SharedCategory *)tmp->data;
 		MonoString *name = mono_string_new_checked (domain, scat->name, &error);
-		if (!is_ok (&error))
-			goto leave;
+		goto_if_nok (&error, leave);
 		mono_array_setref (res, i, name);
 		i++;
 	}
@@ -1688,8 +1686,7 @@ mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
 
 		for (i = 0; i < scat->num_counters; ++i) {
 			MonoString *str = mono_string_new_checked (domain, p + 1, &error);
-			if (!is_ok (&error))
-				goto leave;
+			goto_if_nok (&error, leave);
 			mono_array_setref (res, i, str);
 			p += 2; /* skip counter type */
 			p += strlen (p) + 1; /* skip counter name */

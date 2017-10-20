@@ -2227,8 +2227,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		method_count = mono_class_num_methods (iclass);
 	
 		ifaces = mono_class_get_implemented_interfaces (iclass, error);
-		if (!is_ok (error))
-			goto failure;
+		goto_if_nok (error, failure);
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
 				MonoClass *ic = (MonoClass *)g_ptr_array_index (ifaces, i);
@@ -2274,8 +2273,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		 */
 		MonoType *itf_proxy_type = &remote_class->interfaces[0]->byval_arg;
 		pvt->type = mono_type_get_object_checked (domain, itf_proxy_type, error);
-		if (!is_ok (error))
-			goto failure;
+		goto_if_nok (error, failure);
 	}
 
 	/* initialize vtable */
@@ -2285,8 +2283,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		    
 		if ((cm = klass->vtable [i])) {
 			pvt->vtable [i] = create_remoting_trampoline (domain, cm, target_type, error);
-			if (!is_ok (error))
-				goto failure;
+			goto_if_nok (error, failure);
 		} else
 			pvt->vtable [i] = NULL;
 	}
@@ -2299,8 +2296,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			while ((m = mono_class_get_methods (k, &iter)))
 				if (!pvt->vtable [m->slot]) {
 					pvt->vtable [m->slot] = create_remoting_trampoline (domain, m, target_type, error);
-					if (!is_ok (error))
-						goto failure;
+					goto_if_nok (error, failure);
 				}
 		}
 	}
@@ -2335,8 +2331,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			j = 0;
 			while ((cm = mono_class_get_methods (interf, &iter))) {
 				pvt->vtable [slot + j++] = create_remoting_trampoline (domain, cm, target_type, error);
-				if (!is_ok (error))
-					goto failure;
+				goto_if_nok (error, failure);
 			}
 			
 			slot += mono_class_num_methods (interf);
@@ -2713,8 +2708,7 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObjectHandle proxy_object, Mo
 		MonoRealProxyHandle real_proxy = MONO_HANDLE_NEW (MonoRealProxy, NULL);
 		MONO_HANDLE_GET (real_proxy, tproxy, rp);
 		MONO_HANDLE_SETVAL (proxy_object, vtable, MonoVTable*, mono_remote_class_vtable (domain, fresh_remote_class, real_proxy, error));
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	}
 	
 leave:
@@ -5643,8 +5637,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 	if (array_bounds == NULL) {
 		size = mono_array_handle_length (array_handle);
 		o = mono_array_new_full_handle (domain, klass, &size, NULL, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		size *= mono_array_element_size (klass);
 	} else {
 		uintptr_t *sizes = (uintptr_t *)alloca (klass->rank * sizeof (uintptr_t));
@@ -5656,8 +5649,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 			lower_bounds [i] = array_bounds [i].lower_bound;
 		}
 		o = mono_array_new_full_handle (domain, klass, sizes, lower_bounds, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	}
 
 	uint32_t dst_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, o), TRUE);
@@ -6629,25 +6621,21 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 			goto leave;
 		}
 		im = mono_object_handle_get_virtual_method (rp, im, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		g_assert (im);
 	
 		MonoReflectionTypeHandle reftype = mono_type_get_object_handle (domain, &klass->byval_arg, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 
 		pa [0] = MONO_HANDLE_RAW (reftype);
 		pa [1] = MONO_HANDLE_RAW (obj);
 		MonoObject *res = mono_runtime_invoke_checked (im, MONO_HANDLE_RAW (rp), pa, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 
 		if (*(MonoBoolean *) mono_object_unbox(res)) {
 			/* Update the vtable of the remote type, so it can safely cast to this new type */
 			mono_upgrade_remote_class (domain, obj, klass, error);
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 			MONO_HANDLE_ASSIGN (result, obj);
 		}
 	}

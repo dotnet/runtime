@@ -273,8 +273,7 @@ encode_custom_modifiers (MonoDynamicImage *assembly, MonoArrayHandle modreq, Mon
 	if (!MONO_HANDLE_IS_NULL (modreq)) {
 		for (i = 0; i < mono_array_handle_length (modreq); ++i) {
 			MonoType *mod = mono_type_array_get_and_resolve (modreq, i, error);
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_REQD);
 			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod));
 		}
@@ -282,8 +281,7 @@ encode_custom_modifiers (MonoDynamicImage *assembly, MonoArrayHandle modreq, Mon
 	if (!MONO_HANDLE_IS_NULL (modopt)) {
 		for (i = 0; i < mono_array_handle_length (modopt); ++i) {
 			MonoType *mod = mono_type_array_get_and_resolve (modopt, i, error);
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_OPT);
 			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod));
 		}
@@ -381,11 +379,9 @@ mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, Refle
 		sigbuffer_add_value (&buf, ngparams);
 	sigbuffer_add_value (&buf, nparams + notypes);
 	encode_custom_modifiers_raw (assembly, mb->return_modreq, mb->return_modopt, &buf, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	encode_reflection_type_raw (assembly, mb->rtype, &buf, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	for (i = 0; i < nparams; ++i) {
 		MonoArray *modreq = NULL;
 		MonoArray *modopt = NULL;
@@ -396,12 +392,10 @@ mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, Refle
 		if (mb->param_modopt && (i < mono_array_length (mb->param_modopt)))
 			modopt = mono_array_get (mb->param_modopt, MonoArray*, i);
 		encode_custom_modifiers_raw (assembly, modreq, modopt, &buf, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
 		encode_reflection_type_raw (assembly, pt, &buf, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	}
 	if (notypes)
 		sigbuffer_add_byte (&buf, MONO_TYPE_SENTINEL);
@@ -410,8 +404,7 @@ mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, Refle
 
 		pt = mono_array_get (mb->opt_types, MonoReflectionType*, i);
 		encode_reflection_type_raw (assembly, pt, &buf, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	}
 
 	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
@@ -640,8 +633,7 @@ mono_dynimage_encode_field_signature (MonoDynamicImage *assembly, MonoReflection
 	
 	sigbuffer_add_value (&buf, 0x06);
 	encode_custom_modifiers_raw (assembly, fb->modreq, fb->modopt, &buf, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	/* encode custom attributes before the type */
 
 	if (mono_class_is_gtd (klass))
@@ -878,13 +870,11 @@ encode_sighelper_arg (MonoDynamicImage *assembly, int i, MonoArrayHandle helper_
 		MONO_HANDLE_ARRAY_GETREF (modopts, helper_modopts, i);
 
 	encode_custom_modifiers (assembly, modreqs, modopts, buf, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MonoReflectionTypeHandle pt = MONO_HANDLE_NEW (MonoReflectionType, NULL);
 	MONO_HANDLE_ARRAY_GETREF (pt, helper_arguments, i);
 	encode_reflection_type (assembly, pt, buf, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
@@ -932,8 +922,7 @@ mono_dynimage_encode_reflection_sighelper (MonoDynamicImage *assembly, MonoRefle
 	sigbuffer_add_byte (&buf, idx);
 	sigbuffer_add_value (&buf, nargs);
 	encode_reflection_type (assembly, MONO_HANDLE_NEW_GET (MonoReflectionType, helper, return_type), &buf, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MonoArrayHandle modreqs = MONO_HANDLE_NEW_GET (MonoArray, helper, modreqs);
 	MonoArrayHandle modopts = MONO_HANDLE_NEW_GET (MonoArray, helper, modopts);
 	for (i = 0; i < nargs; ++i) {
@@ -993,7 +982,7 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, Mon
 
 	buflen = buf.p - buf.buf;
 	MonoArrayHandle result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
-	if (!is_ok (error)) goto fail;
+	goto_if_nok (error, fail);
 	uint32_t gchandle;
 	void *base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);
@@ -1027,7 +1016,7 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 
 	buflen = buf.p - buf.buf;
 	MonoArrayHandle result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
-	if (!is_ok (error)) goto fail;
+	goto_if_nok (error, fail);
 	uint32_t gchandle;
 	void *base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);

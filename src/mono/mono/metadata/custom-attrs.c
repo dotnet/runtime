@@ -768,8 +768,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	p += 2;
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
 		params [i] = load_cattr_value (image, mono_method_signature (method)->params [i], p, data_end, &p, error);
-		if (!is_ok (error))
-			goto fail;
+		goto_if_nok (error, fail);
 	}
 
 	named = p;
@@ -1099,8 +1098,7 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 	}
 
 	mono_reflection_create_custom_attr_data_args (image, method, (const guchar *)data, len, &typedargs, &namedargs, &arginfo, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	if (!typedargs || !namedargs)
 		goto leave;
@@ -1110,8 +1108,7 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 		MonoObject *typedarg;
 
 		typedarg = create_cattr_typed_arg (mono_method_signature (method)->params [i], obj, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		mono_array_setref (typedargs, i, typedarg);
 	}
 
@@ -1125,16 +1122,13 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 				goto leave;
 		} else {
 			minfo = (MonoObject*)mono_field_get_object_checked (domain, NULL, arginfo [i].field, error);
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 		}
 
 		typedarg = create_cattr_typed_arg (arginfo [i].type, obj, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		namedarg = create_cattr_named_arg (minfo, typedarg, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 
 		mono_array_setref (namedargs, i, namedarg);
 	}
@@ -1173,15 +1167,12 @@ create_custom_attr_data_handle (MonoImage *image, MonoCustomAttrEntry *cattr, Mo
 	domain = mono_domain_get ();
 
 	MonoObjectHandle attr = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, mono_defaults.customattribute_data_class, error));
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	MonoReflectionMethod *ctor_obj = mono_method_get_object_checked (domain, cattr->ctor, NULL, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	MonoReflectionAssemblyHandle assm = mono_assembly_get_object_handle (domain, image->assembly, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	params [0] = ctor_obj;
 	params [1] = MONO_HANDLE_RAW (assm);
 	params [2] = (gpointer)&cattr->data;
@@ -1769,46 +1760,38 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 	klass = mono_handle_class (obj);
 	if (klass == mono_defaults.runtimetype_class) {
 		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST(MonoReflectionType, obj), error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		klass = mono_class_from_mono_type (type);
 		/*We cannot mono_class_init the class from which we'll load the custom attributes since this must work with broken types.*/
 		cinfo = mono_custom_attrs_from_class_checked (klass, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else if (strcmp ("Assembly", klass->name) == 0 || strcmp ("MonoAssembly", klass->name) == 0) {
 		MonoReflectionAssemblyHandle rassembly = MONO_HANDLE_CAST (MonoReflectionAssembly, obj);
 		cinfo = mono_custom_attrs_from_assembly_checked (MONO_HANDLE_GETVAL (rassembly, assembly), FALSE, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else if (strcmp ("Module", klass->name) == 0 || strcmp ("MonoModule", klass->name) == 0) {
 		MonoReflectionModuleHandle module = MONO_HANDLE_CAST (MonoReflectionModule, obj);
 		cinfo = mono_custom_attrs_from_module (MONO_HANDLE_GETVAL (module, image), error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else if (strcmp ("MonoProperty", klass->name) == 0) {
 		MonoReflectionPropertyHandle rprop = MONO_HANDLE_CAST (MonoReflectionProperty, obj);
 		MonoProperty *property = MONO_HANDLE_GETVAL (rprop, property);
 		cinfo = mono_custom_attrs_from_property_checked (property->parent, property, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else if (strcmp ("MonoEvent", klass->name) == 0) {
 		MonoReflectionMonoEventHandle revent = MONO_HANDLE_CAST (MonoReflectionMonoEvent, obj);
 		MonoEvent *event = MONO_HANDLE_GETVAL (revent, event);
 		cinfo = mono_custom_attrs_from_event_checked (event->parent, event, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionFieldHandle rfield = MONO_HANDLE_CAST (MonoReflectionField, obj);
 		MonoClassField *field = MONO_HANDLE_GETVAL (rfield, field);
 		cinfo = mono_custom_attrs_from_field_checked (field->parent, field, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else if ((strcmp ("MonoMethod", klass->name) == 0) || (strcmp ("MonoCMethod", klass->name) == 0)) {
 		MonoReflectionMethodHandle rmethod = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
 		cinfo = mono_custom_attrs_from_method_checked (MONO_HANDLE_GETVAL (rmethod, method), error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else if (strcmp ("ParameterInfo", klass->name) == 0 || strcmp ("MonoParameterInfo", klass->name) == 0) {
 		MonoReflectionParameterHandle param = MONO_HANDLE_CAST (MonoReflectionParameter, obj);
 		MonoObjectHandle member_impl = MONO_HANDLE_NEW_GET (MonoObject, param, MemberImpl);
@@ -1816,8 +1799,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		if (mono_class_is_reflection_method_or_constructor (member_class)) {
 			MonoReflectionMethodHandle rmethod = MONO_HANDLE_CAST (MonoReflectionMethod, member_impl);
 			cinfo = mono_custom_attrs_from_param_checked (MONO_HANDLE_GETVAL (rmethod, method), MONO_HANDLE_GETVAL (param, PositionImpl) + 1, error);
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 		} else if (mono_is_sr_mono_property (member_class)) {
 			MonoReflectionPropertyHandle prop = MONO_HANDLE_CAST (MonoReflectionProperty, member_impl);
 			MonoProperty *property = MONO_HANDLE_GETVAL (prop, property);
@@ -1827,8 +1809,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 			g_assert (method);
 
 			cinfo = mono_custom_attrs_from_param_checked (method, MONO_HANDLE_GETVAL (param, PositionImpl) + 1, error);
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 		} 
 #ifndef DISABLE_REFLECTION_EMIT
 		else if (mono_is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
@@ -1886,8 +1867,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoReflectionGenericClassHandle gclass = MONO_HANDLE_CAST (MonoReflectionGenericClass, obj);
 		MonoReflectionTypeHandle generic_type = MONO_HANDLE_NEW_GET (MonoReflectionType, gclass, generic_type);
 		cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_CAST (MonoObject, generic_type), error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
@@ -1922,8 +1902,7 @@ mono_reflection_get_custom_attrs_by_type_handle (MonoObjectHandle obj, MonoClass
 	error_init (error);
 
 	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	if (cinfo) {
 		MONO_HANDLE_ASSIGN (result, MONO_HANDLE_NEW (MonoArray, mono_custom_attrs_construct_by_type (cinfo, attr_klass, error))); /* FIXME use coop handles for mono_custom_attrs_construct_by_type */
 		if (!cinfo->cached)
@@ -1992,14 +1971,12 @@ mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *
 	error_init (error);
 
 	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	if (cinfo) {
 		MONO_HANDLE_ASSIGN (result, MONO_HANDLE_NEW (MonoArray, mono_custom_attrs_data_construct (cinfo, error))); /* FIXME use coop handles in mono_custom_attrs_data_construct */
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else 
 		MONO_HANDLE_ASSIGN (result, mono_array_new_handle (mono_domain_get (), mono_defaults.customattribute_data_class, 0, error));
 

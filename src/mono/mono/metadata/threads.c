@@ -3692,11 +3692,9 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 	ud.max_frames = 256;
 
 	*out_threads = mono_array_new_checked (domain, mono_defaults.thread_class, nthreads, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	*out_stack_frames = mono_array_new_checked (domain, mono_defaults.array_class, nthreads, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	for (tindex = 0; tindex < nthreads; ++tindex) {
 		MonoInternalThread *thread = thread_array [tindex];
@@ -3716,16 +3714,14 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 		mono_array_setref_fast (*out_threads, tindex, mono_thread_current_for_thread (thread));
 
 		thread_frames = mono_array_new_checked (domain, mono_defaults.stack_frame_class, ud.nframes, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 		mono_array_setref_fast (*out_stack_frames, tindex, thread_frames);
 
 		for (i = 0; i < ud.nframes; ++i) {
 			MonoStackFrameInfo *frame = &ud.frames [i];
 			MonoMethod *method = NULL;
 			MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, error);
-			if (!is_ok (error))
-				goto leave;
+			goto_if_nok (error, leave);
 
 			sf->native_offset = frame->native_offset;
 
@@ -3736,8 +3732,7 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 				sf->method_address = (gsize) frame->ji->code_start;
 
 				MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
-				if (!is_ok (error))
-					goto leave;
+				goto_if_nok (error, leave);
 				MONO_OBJECT_SETREF (sf, method, rm);
 
 				location = mono_debug_lookup_source_location (method, frame->native_offset, domain);
@@ -3746,8 +3741,7 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 
 					if (location && location->source_file) {
 						MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
-						if (!is_ok (error))
-							goto leave;
+						goto_if_nok (error, leave);
 						MONO_OBJECT_SETREF (sf, filename, filename);
 						sf->line = location->row;
 						sf->column = location->column;

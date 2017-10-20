@@ -134,8 +134,7 @@ mono_icall_get_environment_variable_names (MonoError *error)
 				equal_str = wcschr(env_string, '=');
 				g_assert(equal_str);
 				str = mono_string_new_utf16_checked (domain, env_string, (gint32)(equal_str - env_string), error);
-				if (!is_ok (error))
-					goto cleanup;
+				goto_if_nok (error, cleanup);
 
 				mono_array_setref (names, n, str);
 				n++;

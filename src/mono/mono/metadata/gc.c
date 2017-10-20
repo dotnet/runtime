@@ -297,8 +297,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	runtime_invoke = (RuntimeInvokeFunction)domain->finalize_runtime_invoke;
 
 	mono_runtime_class_init_full (o->vtable, &error);
-	if (!is_ok (&error))
-		goto unhandled_error;
+	goto_if_nok (&error, unhandled_error);
 
 	if (G_UNLIKELY (MONO_GC_FINALIZE_INVOKE_ENABLED ())) {
 		MONO_GC_FINALIZE_INVOKE ((unsigned long)o, mono_object_get_size (o),

@@ -624,8 +624,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, M
 
 	for (int i = 0; i < header->num_locals; ++i) {
 		res->locals [i] = mono_class_inflate_generic_type_checked (header->locals [i], context, error);
-		if (!is_ok (error))
-			goto fail;
+		goto_if_nok (error, fail);
 	}
 	if (res->num_clauses) {
 		for (int i = 0; i < header->num_clauses; ++i) {
@@ -633,8 +632,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, M
 			if (clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
 				continue;
 			clause->data.catch_class = mono_class_inflate_generic_class_checked (clause->data.catch_class, context, error);
-			if (!is_ok (error))
-				goto fail;
+			goto_if_nok (error, fail);
 		}
 	}
 	return res;

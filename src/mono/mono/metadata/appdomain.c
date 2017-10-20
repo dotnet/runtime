@@ -490,21 +490,18 @@ mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_f
 
 	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	MonoAppDomainSetupHandle setup = MONO_HANDLE_NEW (MonoAppDomainSetup, mono_object_new_checked (mono_domain_get (), klass, error));
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MonoStringHandle config_file;
 	if (configuration_file != NULL) {
 		config_file = mono_string_new_handle (mono_domain_get (), configuration_file, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	} else {
 		config_file = MONO_HANDLE_NEW (MonoString, NULL);
 	}
 	MONO_HANDLE_SET (setup, configuration_file, config_file);
 
 	MonoAppDomainHandle ad = mono_domain_create_appdomain_internal (friendly_name, setup, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	result = mono_domain_from_appdomain_handle (ad);
 leave:
@@ -539,12 +536,10 @@ mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const 
 	error_init (error);
 	MonoAppDomainSetupHandle setup = MONO_HANDLE_NEW (MonoAppDomainSetup, domain->setup);
 	MonoStringHandle base_dir_str = mono_string_new_handle (domain, base_dir, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MONO_HANDLE_SET (setup, application_base, base_dir_str);
 	MonoStringHandle config_file_name_str = mono_string_new_handle (domain, config_file_name, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MONO_HANDLE_SET (setup, configuration_file, config_file_name_str);
 leave:
 	return is_ok (error);
@@ -564,8 +559,7 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoE
 	ads_class = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 
 	MonoAppDomainSetupHandle copy = MONO_HANDLE_NEW (MonoAppDomainSetup, mono_object_new_checked (domain, ads_class, error));
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	mono_domain_set_internal (domain);
 
@@ -573,8 +567,7 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoE
 	do {								\
 		MonoObjectHandle src_val = MONO_HANDLE_NEW_GET (MonoObject, (src), field); \
 		MonoObjectHandle copied_val = mono_marshal_xdomain_copy_value_handle (src_val, error); \
-		if (!is_ok (error))					\
-			goto leave;					\
+		goto_if_nok (error, leave);					\
 		MONO_HANDLE_SET ((dst),field,copied_val);		\
 	} while (0)
 
@@ -630,8 +623,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 	data = mono_domain_create();
 
 	MonoAppDomainHandle ad = MONO_HANDLE_NEW (MonoAppDomain,  mono_object_new_checked (data, adclass, error));
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MONO_HANDLE_SETVAL (ad, data, MonoDomain*, data);
 	data->domain = MONO_HANDLE_RAW (ad);
 	data->friendly_name = g_strdup (friendly_name);
@@ -658,8 +650,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 	}
 
 	mono_context_init_checked (data, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 
 	data->setup = MONO_HANDLE_RAW (copy_app_domain_setup (data, setup, error));
 	if (!mono_error_ok (error)) {
@@ -1084,8 +1075,7 @@ add_assembly_to_array (MonoDomain *domain, MonoArrayHandle dest, int dest_idx, M
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (domain, assm, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	MONO_HANDLE_ARRAY_SETREF (dest, dest_idx, assm_obj);
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
@@ -1119,8 +1109,7 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomainHandle ad, MonoBoolean re
 	mono_domain_assemblies_unlock (domain);
 
 	MonoArrayHandle res = mono_array_new_handle (domain, mono_class_get_assembly_class (), assemblies->len, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	for (i = 0; i < assemblies->len; ++i) {
 		if (!add_assembly_to_array (domain, res, i, (MonoAssembly *)g_ptr_array_index (assemblies, i), error))
 			goto leave;
@@ -1138,8 +1127,7 @@ mono_try_assembly_resolve (MonoDomain *domain, const char *fname_raw, MonoAssemb
 	error_init (error);
 	MonoAssembly *result = NULL;
 	MonoStringHandle fname = mono_string_new_handle (domain, fname_raw, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	result = mono_try_assembly_resolve_handle (domain, fname, requesting, refonly, error);
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
@@ -1168,8 +1156,7 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 	MonoReflectionAssemblyHandle requesting_handle;
 	if (requesting) {
 		requesting_handle = mono_assembly_get_object_handle (domain, requesting, error);
-		if (!is_ok (error))
-			goto leave;
+		goto_if_nok (error, leave);
 	}
 	params [0] = MONO_HANDLE_RAW (fname);
 	params[1] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
@@ -2119,8 +2106,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	}
 		
 	name = filename = mono_string_handle_to_utf8 (fname, error);
-	if (!is_ok (error))
-		goto leave;
+	goto_if_nok (error, leave);
 	
 	MonoAssembly *ass = mono_assembly_open_predicate (filename, refOnly, TRUE, NULL, NULL, &status);
 	
@@ -2209,8 +2195,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 	g_assert (assRef);
 
 	name = mono_string_handle_to_utf8 (assRef, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 	parsed = mono_assembly_name_parse (name, &aname);
 	g_free (name);
 
@@ -2219,12 +2204,10 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 		/* This is a parse error... */
 		if (!refOnly) {
 			MonoAssembly *assm = mono_try_assembly_resolve_handle (domain, assRef, NULL, refOnly, error);
-			if (!is_ok (error))
-				goto fail;
+			goto_if_nok (error, fail);
 			if (assm) {
 				refass = mono_assembly_get_object_handle (domain, assm, error);
-				if (!is_ok (error))
-					goto fail;
+				goto_if_nok (error, fail);
 			}
 		}
 		return refass;
@@ -2237,8 +2220,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 		/* MS.NET doesn't seem to call the assembly resolve handler for refonly assemblies */
 		if (!refOnly) {
 			ass = mono_try_assembly_resolve_handle (domain, assRef, NULL, refOnly, error);
-			if (!is_ok (error))
-				goto fail;
+			goto_if_nok (error, fail);
 		}
 		if (!ass)
 			goto fail;
@@ -2246,8 +2228,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 
 	g_assert (ass);
 	MonoReflectionAssemblyHandle refass = mono_assembly_get_object_handle (domain, ass, error);
-	if (!is_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
 
 	MONO_HANDLE_SET (refass, evidence, evidence);
 

@@ -52,6 +52,8 @@ struct _MonoErrorBoxed {
 #define return_if_nok(error) do { if (!is_ok ((error))) return; } while (0)
 #define return_val_if_nok(error,val) do { if (!is_ok ((error))) return (val); } while (0)
 
+#define goto_if_nok(error,label) do { if (!is_ok ((error))) goto label; } while (0)
+
 /* Only use this in icalls */
 #define return_val_and_set_pending_if_nok(error,value)	\
 	if (mono_error_set_pending_exception ((error)))	\
