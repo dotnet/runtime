@@ -559,6 +559,13 @@
     ]
   },
   {
+    "Name": "System.Diagnostics.EventLog",
+    "Description": "Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.",
+    "CommonTypes": [
+      "System.Diagnostics.EventLog"
+    ]
+  },
+  {
     "Name": "System.Diagnostics.Process",
     "Description": "Provides the System.Diagnostics.Process class, which allows interaction with local and remote processes.",
     "CommonTypes": [
