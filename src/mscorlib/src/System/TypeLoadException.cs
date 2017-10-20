@@ -18,9 +18,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security;
+using System.Diagnostics.Contracts;
 
 namespace System
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class TypeLoadException : SystemException, ISerializable
     {
         public TypeLoadException()
@@ -103,7 +106,10 @@ namespace System
 
         protected TypeLoadException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            ClassName = info.GetString("TypeLoadClassName");
+            AssemblyName = info.GetString("TypeLoadAssemblyName");
+            MessageArg = info.GetString("TypeLoadMessageArg");
+            ResourceId = info.GetInt32("TypeLoadResourceID");
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -113,6 +119,10 @@ namespace System
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("TypeLoadClassName", ClassName, typeof(string));
+            info.AddValue("TypeLoadAssemblyName", AssemblyName, typeof(string));
+            info.AddValue("TypeLoadMessageArg", MessageArg, typeof(string));
+            info.AddValue("TypeLoadResourceID", ResourceId);
         }
 
         // If ClassName != null, GetMessage will construct on the fly using it

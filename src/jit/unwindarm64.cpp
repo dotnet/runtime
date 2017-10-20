@@ -18,6 +18,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(_TARGET_ARM64_)
 
+#if defined(_TARGET_UNIX_)
+int Compiler::mapRegNumToDwarfReg(regNumber reg)
+{
+    int dwarfReg = DWARF_REG_ILLEGAL;
+
+    NYI("CFI codes");
+
+    return dwarfReg;
+}
+#endif // _TARGET_ARM_
+
 void Compiler::unwindPush(regNumber reg)
 {
     unreached(); // use one of the unwindSaveReg* functions instead.

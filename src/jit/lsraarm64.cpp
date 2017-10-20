@@ -209,8 +209,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_ASG:
-        case GT_ASG_ADD:
-        case GT_ASG_SUB:
             noway_assert(!"We should never hit any assignment operator in lowering");
             info->srcCount = 0;
             break;
@@ -401,7 +399,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_LOCKADD:
         case GT_XADD:
         case GT_XCHG:
-            assert(info->dstCount == (tree->OperIs(GT_LOCKADD) ? 0 : 1));
+            assert(info->dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
             info->srcCount         = tree->gtOp.gtOp2->isContained() ? 1 : 2;
             info->internalIntCount = (tree->OperGet() == GT_XCHG) ? 1 : 2;
 
