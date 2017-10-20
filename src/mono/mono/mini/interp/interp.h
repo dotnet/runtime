@@ -54,6 +54,9 @@ void
 mono_interp_init_delegate (MonoDelegate *del);
 
 gpointer
+mono_interp_get_remoting_invoke (gpointer imethod, MonoError *error);
+
+gpointer
 mono_interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error);
 
 void

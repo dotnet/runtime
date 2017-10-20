@@ -255,6 +255,16 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 	return rtm;
 }
 
+gpointer
+mono_interp_get_remoting_invoke (gpointer imethod, MonoError *error)
+{
+	InterpMethod *imethod_cast = (InterpMethod*) imethod;
+
+	g_assert (mono_use_interpreter);
+
+	return mono_interp_get_imethod (mono_domain_get (), mono_marshal_get_remoting_invoke (imethod_cast->method), error);
+}
+
 InterpMethod*
 mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
@@ -1600,6 +1610,9 @@ interp_entry (InterpEntryData *data)
 static stackval * 
 do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 {
+	MonoLMFExt ext;
+	interp_push_lmf (&ext, context->current_frame);
+
 	switch (op) {
 	case MINT_ICALL_V_V: {
 		void (*func)(void) = ptr;
@@ -1663,6 +1676,7 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 		g_assert_not_reached ();
 	}
 
+	interp_pop_lmf (&ext);
 	return sp;
 }
 
@@ -2414,13 +2428,6 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 				--sp;
 			child_frame.stack_args = sp;
 
-#ifndef DISABLE_REMOTING
-			/* `this' can be NULL for string:.ctor */
-			if (csignature->hasthis && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.imethod->method), &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			} else
-#endif
 			if (child_frame.imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_native_wrapper (child_frame.imethod->method, FALSE, FALSE), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -2527,14 +2534,6 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 				--sp;
 			child_frame.stack_args = sp;
 
-#ifndef DISABLE_REMOTING
-			/* `this' can be NULL for string:.ctor */
-			if (child_frame.imethod->hasthis && !child_frame.imethod->method->klass->valuetype && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.imethod->method), &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-#endif
-
 			ves_exec_method_with_context (&child_frame, context, NULL, NULL, -1);
 
 			context->current_frame = frame;
@@ -2576,13 +2575,6 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 					THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			}
 			child_frame.stack_args = sp;
-
-#ifndef DISABLE_REMOTING
-			if (child_frame.imethod->hasthis && !child_frame.imethod->method->klass->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.imethod->method), &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-#endif
 
 			ves_exec_method_with_context (&child_frame, context, NULL, NULL, -1);
 
@@ -2760,9 +2752,21 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 				g_warning ("ret.vt: more values on stack: %d", sp-frame->stack);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_BR_S)
+			/* Checkpoint to be able to handle aborts */
+			if (*mono_thread_interruption_request_flag ()) {
+				MonoException *exc = mono_thread_interruption_checkpoint ();
+				if (exc)
+					THROW_EX (exc, ip);
+			}
 			ip += (short) *(ip + 1);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BR)
+			/* Checkpoint to be able to handle aborts */
+			if (*mono_thread_interruption_request_flag ()) {
+				MonoException *exc = mono_thread_interruption_checkpoint ();
+				if (exc)
+					THROW_EX (exc, ip);
+			}
 			ip += (gint32) READ32(ip + 1);
 			MINT_IN_BREAK;
 #define ZEROP_S(datamem, op) \
@@ -4402,16 +4406,25 @@ array_constructed:
 				--sp;
 			}
 			frame->ip = ip;
+
+			if (frame->ex_handler != NULL && MONO_OFFSET_IN_HANDLER(frame->ex_handler, frame->ip - rtm->code)) {
+				MonoException *exc = frame->ex;
+				frame->ex_handler = NULL;
+				frame->ex = NULL;
+				if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+					MonoException *abort_exc = mono_thread_get_undeniable_exception ();
+					if (abort_exc)
+						THROW_EX (abort_exc, frame->ip);
+				}
+
+			}
+
 			if (*ip == MINT_LEAVE_S) {
 				ip += (short) *(ip + 1);
 			} else {
 				ip += (gint32) READ32 (ip + 1);
 			}
 			endfinally_ip = ip;
-			if (frame->ex_handler != NULL && MONO_OFFSET_IN_HANDLER(frame->ex_handler, frame->ip - rtm->code)) {
-				frame->ex_handler = NULL;
-				frame->ex = NULL;
-			}
 			goto handle_finally;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_V_V) 
@@ -4478,7 +4491,7 @@ array_constructed:
 
 			context->original_domain = NULL;
 			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
-			gpointer tls_jit = ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
+			gpointer tls_jit = ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_JIT_TLS, FALSE)) ();
 
 			if (tls_domain != rtm->domain || !tls_jit)
 				context->original_domain = mono_jit_thread_attach (rtm->domain);

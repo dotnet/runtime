@@ -629,6 +629,7 @@ typedef struct {
 	void     (*free_method) (MonoDomain *domain, MonoMethod *method);
 	gpointer (*create_remoting_trampoline) (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error);
 	gpointer (*create_delegate_trampoline) (MonoDomain *domain, MonoClass *klass);
+	gpointer (*interp_get_remoting_invoke) (gpointer imethod, MonoError *error);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
