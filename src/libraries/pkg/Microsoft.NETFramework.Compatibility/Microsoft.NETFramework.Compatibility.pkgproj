@@ -46,6 +46,7 @@
     <LibraryPackage Include="System.ServiceModel.Security" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
+    <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
   </ItemGroup>
 
   <ItemGroup>

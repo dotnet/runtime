@@ -1326,6 +1326,12 @@
         "4.0.3.0": "4.5.0"
       }
     },
+    "System.Diagnostics.EventLog": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "System.Diagnostics.FileVersionInfo": {
       "StableVersions": [
         "4.0.0",
