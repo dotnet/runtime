@@ -309,21 +309,22 @@ void Compiler::fgInstrumentMethod()
                 continue;
             }
 
+            // Assign the current block's IL offset into the profile data
             bbProfileBuffer->ILOffset = block->bbCodeOffs;
 
-            GenTreePtr addr;
-            GenTreePtr value;
+            size_t addrOfBlockCount = (size_t)&bbProfileBuffer->ExecutionCount;
 
-            value = gtNewOperNode(GT_IND, TYP_INT, gtNewIconEmbHndNode((void*)&bbProfileBuffer->ExecutionCount, nullptr,
-                                                                       GTF_ICON_BBC_PTR));
-            value = gtNewOperNode(GT_ADD, TYP_INT, value, gtNewIconNode(1));
+            // Read Basic-Block count value
+            GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfBlockCount, GTF_ICON_BBC_PTR, false);
 
-            addr = gtNewOperNode(GT_IND, TYP_INT, gtNewIconEmbHndNode((void*)&bbProfileBuffer->ExecutionCount, nullptr,
-                                                                      GTF_ICON_BBC_PTR));
+            // Increment value by 1
+            GenTree* rhsNode = gtNewOperNode(GT_ADD, TYP_INT, valueNode, gtNewIconNode(1));
 
-            addr = gtNewAssignNode(addr, value);
+            // Write new Basic-Block count value
+            GenTree* lhsNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfBlockCount, GTF_ICON_BBC_PTR, false);
+            GenTree* asgNode = gtNewAssignNode(lhsNode, rhsNode);
 
-            fgInsertStmtAtBeg(block, addr);
+            fgInsertStmtAtBeg(block, asgNode);
 
             countOfBlocks--;
             bbProfileBuffer++;
@@ -358,10 +359,13 @@ void Compiler::fgInstrumentMethod()
         GenTreeArgList* args = gtNewArgList(arg);
         GenTreePtr      call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
-        GenTreePtr handle =
-            gtNewIconEmbHndNode((void*)&bbProfileBufferStart->ExecutionCount, nullptr, GTF_ICON_BBC_PTR);
-        GenTreePtr value = gtNewOperNode(GT_IND, TYP_INT, handle);
-        GenTreePtr relop = gtNewOperNode(GT_NE, TYP_INT, value, gtNewIconNode(0, TYP_INT));
+        size_t addrOfBlockCount = (size_t)&bbProfileBuffer->ExecutionCount;
+
+        // Read Basic-Block count value
+        GenTreePtr valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfBlockCount, GTF_ICON_BBC_PTR, false);
+
+        // Compare Basic-Block count value against zero
+        GenTreePtr relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
         relop->gtFlags |= GTF_RELOP_QMARK; // TODO-Cleanup: [Simple]  Move this to gtNewQmarkNode
         GenTreePtr colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
         GenTreePtr cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
@@ -3984,23 +3988,30 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         noway_assert(pAddrOfCaptureThreadGlobal == nullptr);
 #endif
 
-        GenTreePtr trap;
+        GenTreePtr value; // The value of g_TrapReturningThreads
         if (pAddrOfCaptureThreadGlobal != nullptr)
         {
-            trap = gtNewOperNode(GT_IND, TYP_I_IMPL,
-                                 gtNewIconHandleNode((size_t)pAddrOfCaptureThreadGlobal, GTF_ICON_PTR_HDL));
+            // Use a double indirection
+            GenTreePtr addr =
+                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pAddrOfCaptureThreadGlobal, GTF_ICON_PTR_HDL, true);
+
+            value = gtNewOperNode(GT_IND, TYP_INT, addr);
+            // This indirection won't cause an exception.
+            value->gtFlags |= GTF_IND_NONFAULTING;
         }
         else
         {
-            trap = gtNewIconHandleNode((size_t)addrTrap, GTF_ICON_PTR_HDL);
+            // Use a single indirection
+            value = gtNewIndOfIconHandleNode(TYP_INT, (size_t)addrTrap, GTF_ICON_PTR_HDL, false);
         }
 
-        GenTreePtr trapRelop = gtNewOperNode(GT_EQ, TYP_INT,
-                                             // lhs [g_TrapReturningThreads]
-                                             gtNewOperNode(GT_IND, TYP_INT, trap),
-                                             // rhs 0
-                                             gtNewIconNode(0, TYP_INT));
-        trapRelop->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE; // Treat reading g_TrapReturningThreads as volatile.
+        // Treat the reading of g_TrapReturningThreads as volatile.
+        value->gtFlags |= GTF_IND_VOLATILE;
+
+        // Compare for equal to zero
+        GenTreePtr trapRelop = gtNewOperNode(GT_EQ, TYP_INT, value, gtNewIconNode(0, TYP_INT));
+
+        trapRelop->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
         GenTreePtr trapCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, trapRelop);
         fgInsertStmtAtEnd(top, trapCheck);
         top->bbJumpDest = bottom;
@@ -7023,8 +7034,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if (pmoduleID)
     {
-        opModuleIDArg = gtNewIconHandleNode((size_t)pmoduleID, GTF_ICON_CIDMID_HDL);
-        opModuleIDArg = gtNewOperNode(GT_IND, TYP_I_IMPL, opModuleIDArg);
+        opModuleIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pmoduleID, GTF_ICON_MID_HDL, true);
+        // This indirection also is invariant.
         opModuleIDArg->gtFlags |= GTF_IND_INVARIANT;
     }
     else
@@ -7036,9 +7047,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         if (pclsID)
         {
-            opClassIDArg = gtNewIconHandleNode((size_t)pclsID, GTF_ICON_CIDMID_HDL);
-            opClassIDArg = gtNewOperNode(GT_IND, TYP_INT, opClassIDArg);
-            opClassIDArg->gtFlags |= GTF_IND_INVARIANT;
+            opClassIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pclsID, GTF_ICON_CLASS_HDL, true);
         }
         else
         {
@@ -7651,7 +7660,7 @@ GenTreePtr Compiler::fgGetCritSectOfStaticMethod()
         critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
         noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_METHOD_HDL);
+        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_METHOD_HDL, info.compMethodHnd);
     }
     else
     {
@@ -8889,9 +8898,9 @@ void Compiler::fgAddInternal()
 
     if (dbgHandle || pDbgHandle)
     {
-        GenTreePtr guardCheckVal =
-            gtNewOperNode(GT_IND, TYP_INT, gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_TOKEN_HDL));
-        GenTreePtr guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
+        GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_TOKEN_HDL, info.compMethodHnd);
+        GenTree* guardCheckVal  = gtNewOperNode(GT_IND, TYP_INT, embNode);
+        GenTree* guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
         guardCheckCond->gtFlags |= GTF_RELOP_QMARK;
 
         // Create the callback which will yield the final answer
