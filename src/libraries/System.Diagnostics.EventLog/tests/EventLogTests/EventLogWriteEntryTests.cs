@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.ComponentModel;
+using Xunit;
+
 namespace System.Diagnostics.Tests
 {
     public class EventLogWriteEntryTests
