@@ -183,9 +183,9 @@ namespace System.Net.Http
 
         internal static string ReadBufferAsString(ArraySegment<byte> buffer, HttpContentHeaders headers)
         {
-            // We don't validate the Content-Encoding header: If the content was encoded, it's the caller's 
-            // responsibility to make sure to only call ReadAsString() on already decoded content. E.g. if the 
-            // Content-Encoding is 'gzip' the user should set HttpClientHandler.AutomaticDecompression to get a 
+            // We don't validate the Content-Encoding header: If the content was encoded, it's the caller's
+            // responsibility to make sure to only call ReadAsString() on already decoded content. E.g. if the
+            // Content-Encoding is 'gzip' the user should set HttpClientHandler.AutomaticDecompression to get a
             // decoded response stream.
 
             Encoding encoding = null;
@@ -208,7 +208,7 @@ namespace System.Net.Http
                 }
             }
 
-            // If no content encoding is listed in the ContentType HTTP header, or no Content-Type header present, 
+            // If no content encoding is listed in the ContentType HTTP header, or no Content-Type header present,
             // then check for a BOM in the data to figure out the encoding.
             if (encoding == null)
             {
@@ -235,9 +235,9 @@ namespace System.Net.Http
 
         internal byte[] ReadBufferedContentAsByteArray()
         {
-            // The returned array is exposed out of the library, so use ToArray rather 
+            // The returned array is exposed out of the library, so use ToArray rather
             // than TryGetBuffer in order to make a copy.
-            return _bufferedContent.ToArray(); 
+            return _bufferedContent.ToArray();
         }
 
         public Task<Stream> ReadAsStreamAsync()
@@ -359,7 +359,7 @@ namespace System.Net.Http
             CheckDisposed();
             if (maxBufferSize > HttpContent.MaxBufferSize)
             {
-                // This should only be hit when called directly; HttpClient/HttpClientHandler 
+                // This should only be hit when called directly; HttpClient/HttpClientHandler
                 // will not exceed this limit.
                 throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
                     string.Format(System.Globalization.CultureInfo.InvariantCulture,
@@ -692,8 +692,6 @@ namespace System.Net.Http
                 Debug.Assert(capacity <= maxSize);
                 _maxSize = maxSize;
             }
-
-            public int MaxSize => _maxSize;
 
             public byte[] GetSizedBuffer()
             {
