@@ -156,7 +156,7 @@ namespace System.ServiceModel.Syndication
             }
             if (feedAlternateLink != null)
             {
-                this.Links.Add(SyndicationLink.CreateAlternateLink(feedAlternateLink));
+                Links.Add(SyndicationLink.CreateAlternateLink(feedAlternateLink));
             }
             _id = id;
             _lastUpdatedTime = lastUpdatedTime;
@@ -366,21 +366,21 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            XmlReaderWrapper wrappedReader = XmlReaderWrapper.CreateFromReader(reader);
+            reader = XmlReaderWrapper.CreateFromReader(reader);
 
             Atom10FeedFormatter atomSerializer = Atomformatter;
-            if (atomSerializer.CanRead(wrappedReader))
+            if (atomSerializer.CanRead(reader))
             {
-                await atomSerializer.ReadFromAsync(wrappedReader, new CancellationToken());
+                await atomSerializer.ReadFromAsync(reader, new CancellationToken());
                 return atomSerializer.Feed;
             }
             Rss20FeedFormatter rssSerializer = Rssformatter;
-            if (rssSerializer.CanRead(wrappedReader))
+            if (rssSerializer.CanRead(reader))
             {
-                await rssSerializer.ReadFromAsync(wrappedReader, new CancellationToken());
+                await rssSerializer.ReadFromAsync(reader, new CancellationToken());
                 return rssSerializer.Feed;
             }
-            throw new XmlException(string.Format(SR.UnknownFeedXml, wrappedReader.LocalName, wrappedReader.NamespaceURI));
+            throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 
         //=================================
@@ -419,7 +419,7 @@ namespace System.ServiceModel.Syndication
                 return rssSerializer.Feed as TSyndicationFeed;
             }
 
-            throw new XmlException(string.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+            throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 
         public virtual SyndicationFeed Clone(bool cloneItems)

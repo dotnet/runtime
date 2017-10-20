@@ -47,13 +47,13 @@ namespace System.ServiceModel.Syndication
         {
             if (title != null)
             {
-                this.Title = new TextSyndicationContent(title);
+                Title = new TextSyndicationContent(title);
             }
 
             _content = content;
             if (itemAlternateLink != null)
             {
-                this.Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
+                Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
             }
             _id = id;
             _lastUpdatedTime = lastUpdatedTime;
@@ -218,7 +218,7 @@ namespace System.ServiceModel.Syndication
                 return rssSerializer.Item as TSyndicationItem;
             }
 
-            throw new XmlException(string.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
+            throw new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
         }
 
 
@@ -228,8 +228,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(permalink));
             }
-            this.Id = permalink.AbsoluteUri;
-            this.Links.Add(SyndicationLink.CreateAlternateLink(permalink));
+            Id = permalink.AbsoluteUri;
+            Links.Add(SyndicationLink.CreateAlternateLink(permalink));
         }
 
         public virtual SyndicationItem Clone()

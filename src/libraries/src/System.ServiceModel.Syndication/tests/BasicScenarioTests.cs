@@ -626,7 +626,7 @@ namespace System.ServiceModel.Syndication.Tests
             // *** SETUP *** \\
             Atom10FeedFormatter atomformatter = new Atom10FeedFormatter();
 
-            atomformatter.stringParser = (val, name, ns) =>
+            atomformatter.StringParser = (val, name, ns) =>
             {
                 Assert.False(string.IsNullOrEmpty(name));
                 switch (name)

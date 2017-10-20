@@ -54,18 +54,18 @@ namespace System.ServiceModel.Syndication
             }
             else
             {
-                this.Add(extension, (DataContractSerializer)null);
+                Add(extension, (DataContractSerializer)null);
             }
         }
 
         public void Add(string outerName, string outerNamespace, object dataContractExtension)
         {
-            this.Add(outerName, outerNamespace, dataContractExtension, null);
+            Add(outerName, outerNamespace, dataContractExtension, null);
         }
 
         public void Add(object dataContractExtension, DataContractSerializer serializer)
         {
-            this.Add(null, null, dataContractExtension, serializer);
+            Add(null, null, dataContractExtension, serializer);
         }
 
         public void Add(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
@@ -149,9 +149,9 @@ namespace System.ServiceModel.Syndication
             }
             else
             {
-                for (int i = 0; i < this.Items.Count; ++i)
+                for (int i = 0; i < Items.Count; ++i)
                 {
-                    await this.Items[i].WriteToAsync(writer);
+                    await Items[i].WriteToAsync(writer);
                 }
             }
         }
@@ -214,7 +214,7 @@ namespace System.ServiceModel.Syndication
             using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                for (int i = 0; i < this.Count; ++i)
+                for (int i = 0; i < Count; ++i)
                 {
                     await this[i].WriteToAsync(writer);
                 }
@@ -255,7 +255,7 @@ namespace System.ServiceModel.Syndication
             }
 
             Collection<TExtension> results = new Collection<TExtension>();
-            for (int i = 0; i < this.Count; ++i)
+            for (int i = 0; i < Count; ++i)
             {
                 if (extensionName != this[i].OuterName || extensionNamespace != this[i].OuterNamespace)
                 {

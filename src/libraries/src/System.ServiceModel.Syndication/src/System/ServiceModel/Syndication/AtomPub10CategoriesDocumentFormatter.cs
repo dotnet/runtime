@@ -35,7 +35,7 @@ namespace System.ServiceModel.Syndication
 
             if (!typeof(InlineCategoriesDocument).IsAssignableFrom(inlineDocumentType))
             {
-                throw new ArgumentException(string.Format(SR.InvalidObjectTypePassed, nameof(inlineDocumentType), nameof(InlineCategoriesDocument)));
+                throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(inlineDocumentType), nameof(InlineCategoriesDocument)));
             }
 
             if (referencedDocumentType == null)
@@ -45,7 +45,7 @@ namespace System.ServiceModel.Syndication
 
             if (!typeof(ReferencedCategoriesDocument).IsAssignableFrom(referencedDocumentType))
             {
-                throw new ArgumentException(string.Format(SR.InvalidObjectTypePassed, nameof(referencedDocumentType), nameof(ReferencedCategoriesDocument)));
+                throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(referencedDocumentType), nameof(ReferencedCategoriesDocument)));
             }
 
             _maxExtensionSize = int.MaxValue;
@@ -86,13 +86,11 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            XmlReaderWrapper wrappedReader = XmlReaderWrapper.CreateFromReader(reader);
-            return wrappedReader.IsStartElementAsync(App10Constants.Categories, App10Constants.Namespace);
+            reader = XmlReaderWrapper.CreateFromReader(reader);
+            return reader.IsStartElementAsync(App10Constants.Categories, App10Constants.Namespace);
         }
 
-
-
-        private Task ReadXmlAsync(XmlReaderWrapper reader)
+        Task ReadXmlAsync(XmlReader reader)
         {
             if (reader == null)
             {
@@ -109,7 +107,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (this.Document == null)
+            if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
@@ -126,7 +124,7 @@ namespace System.ServiceModel.Syndication
 
             if (!await CanReadAsync(reader))
             {
-                throw new XmlException(string.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
+                throw new XmlException(SR.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
 
             await ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader));
@@ -139,7 +137,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (this.Document == null)
+            if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
@@ -173,7 +171,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private async Task ReadDocumentAsync(XmlReaderWrapper reader)
+        private async Task ReadDocumentAsync(XmlReader reader)
         {
             try
             {
@@ -181,14 +179,14 @@ namespace System.ServiceModel.Syndication
                 SetDocument(await AtomPub10ServiceDocumentFormatter.ReadCategories(reader, null,
                     delegate ()
                     {
-                        return this.CreateInlineCategoriesDocument();
+                        return CreateInlineCategoriesDocument();
                     },
 
                     delegate ()
                     {
-                        return this.CreateReferencedCategoriesDocument();
+                        return CreateReferencedCategoriesDocument();
                     },
-                    this.Version,
+                    Version,
                     _preserveElementExtensions,
                     _preserveAttributeExtensions,
                     _maxExtensionSize));
@@ -207,7 +205,7 @@ namespace System.ServiceModel.Syndication
         {
             // declare the atom10 namespace upfront for compactness
             writer.WriteAttributeString(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);
-            return AtomPub10ServiceDocumentFormatter.WriteCategoriesInnerXml(writer, this.Document, null, this.Version);
+            return AtomPub10ServiceDocumentFormatter.WriteCategoriesInnerXml(writer, Document, null, Version);
         }
     }
 }

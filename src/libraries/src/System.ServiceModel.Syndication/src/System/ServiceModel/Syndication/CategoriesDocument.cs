@@ -83,7 +83,7 @@ namespace System.ServiceModel.Syndication
 
         public void Save(XmlWriter writer)
         {
-            this.GetFormatter().WriteTo(writer);
+            GetFormatter().WriteTo(writer);
         }
 
         protected internal virtual bool TryParseAttribute(string name, string ns, string value, string version)
@@ -106,7 +106,7 @@ namespace System.ServiceModel.Syndication
             return _extensions.WriteElementExtensionsAsync(writer);
         }
 
-        internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
             _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }

@@ -98,7 +98,7 @@ namespace System.ServiceModel.Syndication
             writer = XmlWriterWrapper.CreateFromWriter(writer);
 
             await writer.WriteStartElementAsync(outerElementName, outerElementNamespace);
-            await writer.WriteAttributeStringAsync(Atom10Constants.TypeTag, string.Empty, this.Type);
+            await writer.WriteAttributeStringAsync(Atom10Constants.TypeTag, string.Empty, Type);
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName key in _attributeExtensions.Keys)
@@ -128,7 +128,7 @@ namespace System.ServiceModel.Syndication
             {
                 foreach (XmlQualifiedName key in source._attributeExtensions.Keys)
                 {
-                    this.AttributeExtensions.Add(key, source._attributeExtensions[key]);
+                    AttributeExtensions.Add(key, source._attributeExtensions[key]);
                 }
             }
         }
