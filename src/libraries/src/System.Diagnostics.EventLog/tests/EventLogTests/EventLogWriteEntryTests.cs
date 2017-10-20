@@ -27,16 +27,28 @@ namespace System.Diagnostics.Tests
                     if (data)
                     {
                         eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
+
+                        if (eventLog.Entries.Count == 0)
+                            return null;
+
                         return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else if (category)
                     {
                         eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
+
+                        if (eventLog.Entries.Count == 0)
+                            return null;
+
                         return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else
                     {
                         eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
+
+                        if (eventLog.Entries.Count == 0)
+                            return null;
+
                         return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                 }
@@ -48,6 +60,10 @@ namespace System.Diagnostics.Tests
                 {
                     eventLog.WriteEntry(message);
                 }
+
+
+                if (eventLog.Entries.Count == 0)
+                    return null;
 
                 return eventLog.Entries[eventLog.Entries.Count - 1];
             }
@@ -64,16 +80,28 @@ namespace System.Diagnostics.Tests
                     if (data)
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
+
+                        if (eventLog.Entries.Count == 0)
+                            return null;
+
                         return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else if (category)
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
+
+                        if (eventLog.Entries.Count == 0)
+                            return null;
+
                         return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                     else
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
+
+                        if (eventLog.Entries.Count == 0)
+                            return null;
+
                         return eventLog.Entries[eventLog.Entries.Count - 1];
                     }
                 }
@@ -85,6 +113,9 @@ namespace System.Diagnostics.Tests
                 {
                     EventLog.WriteEntry(source, message);
                 }
+
+                if (eventLog.Entries.Count == 0)
+                    return null;
 
                 return eventLog.Entries[eventLog.Entries.Count - 1];
             }
@@ -100,6 +131,10 @@ namespace System.Diagnostics.Tests
             using (EventLog eventLog = new EventLog())
             {
                 eventLog.Source = source;
+
+                if (eventLog.Entries.Count == 0)
+                    return null;
+
                 return eventLog.Entries[eventLog.Entries.Count - 1];
             }
         }
@@ -114,6 +149,9 @@ namespace System.Diagnostics.Tests
                     eventLog.WriteEvent(eventInstance, rawData, insertStringsSingleton);
                 else
                     eventLog.WriteEvent(eventInstance, insertStringsSingleton);
+
+                if (eventLog.Entries.Count == 0)
+                    return null;
 
                 return eventLog.Entries[eventLog.Entries.Count - 1];
             }
@@ -135,10 +173,13 @@ namespace System.Diagnostics.Tests
                 else
                     eventLogEntry = WriteLogEntryWithSource(source);
 
-                Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal(source, eventLogEntry.Source);
-                Assert.StartsWith(Environment.MachineName.ToLowerInvariant(), eventLogEntry.MachineName.ToLowerInvariant());
-                Assert.Equal(eventLogEntry.TimeWritten, eventLogEntry.TimeGenerated);
+                if (eventLogEntry != null)
+                {
+                    Assert.Contains(message, eventLogEntry.Message);
+                    Assert.Equal(source, eventLogEntry.Source);
+                    Assert.StartsWith(Environment.MachineName.ToLowerInvariant(), eventLogEntry.MachineName.ToLowerInvariant());
+                    Assert.Equal(eventLogEntry.TimeWritten, eventLogEntry.TimeGenerated);
+                }
             }
             finally
             {
@@ -163,8 +204,11 @@ namespace System.Diagnostics.Tests
                 else
                     eventLogEntry = WriteLogEntryWithSource(source, type: true);
 
-                Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal(EventLogEntryType.Warning, eventLogEntry.EntryType);
+                if (eventLogEntry != null)
+                {
+                    Assert.Contains(message, eventLogEntry.Message);
+                    Assert.Equal(EventLogEntryType.Warning, eventLogEntry.EntryType);
+                }
             }
             finally
             {
@@ -189,8 +233,11 @@ namespace System.Diagnostics.Tests
                 else
                     eventLogEntry = WriteLogEntryWithSource(source, type: true, instance: true);
 
-                Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal((int)eventInstance.InstanceId, eventLogEntry.InstanceId);
+                if (eventLogEntry != null)
+                {
+                    Assert.Contains(message, eventLogEntry.Message);
+                    Assert.Equal((int)eventInstance.InstanceId, eventLogEntry.InstanceId);
+                }
             }
             finally
             {
@@ -220,9 +267,12 @@ namespace System.Diagnostics.Tests
                 // to access them.  The following information is part of the event:'EventLogWriteEntryTestsMessage'
                 // The last part is the associated message
                 // The initial message is due in insufficient permission to access resource library EventLogMsgs.dll
-                Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal((short)eventInstance.CategoryId, eventLogEntry.CategoryNumber);
-                Assert.Equal("(" + eventLogEntry.CategoryNumber + ")", eventLogEntry.Category);
+                if (eventLogEntry != null)
+                {
+                    Assert.Contains(message, eventLogEntry.Message);
+                    Assert.Equal((short)eventInstance.CategoryId, eventLogEntry.CategoryNumber);
+                    Assert.Equal("(" + eventLogEntry.CategoryNumber + ")", eventLogEntry.Category);
+                }
             }
             finally
             {
@@ -247,8 +297,11 @@ namespace System.Diagnostics.Tests
                 else
                     eventLogEntry = WriteLogEntryWithSource(source, type: true, instance: true, category: true, data: true);
 
-                Assert.Contains(message, eventLogEntry.Message);
-                Assert.Equal(rawData, eventLogEntry.Data);
+                if (eventLogEntry != null)
+                {
+                    Assert.Contains(message, eventLogEntry.Message);
+                    Assert.Equal(rawData, eventLogEntry.Data);
+                }
             }
             finally
             {
@@ -300,7 +353,9 @@ namespace System.Diagnostics.Tests
                 else
                     eventLogEntry = WriteLogEntryEvent(source);
 
-                Assert.All(insertStrings, message => eventLogEntry.Message.Contains(message));
+                if (eventLogEntry != null)
+                    Assert.All(insertStrings, message => eventLogEntry.Message.Contains(message));
+
             }
             finally
             {
@@ -325,7 +380,8 @@ namespace System.Diagnostics.Tests
                 else
                     eventLogEntry = WriteLogEntryEvent(source, data: true);
 
-                Assert.Equal(rawData, eventLogEntry.Data);
+                if (eventLogEntry != null)
+                    Assert.Equal(rawData, eventLogEntry.Data);
             }
             finally
             {
