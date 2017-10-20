@@ -772,7 +772,7 @@ void Lowering::ReplaceArgWithPutArgOrCopy(GenTree** argSlot, GenTree* putArgOrCo
 {
     assert(argSlot != nullptr);
     assert(*argSlot != nullptr);
-    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_BITCAST) || putArgOrCopy->OperIs(GT_COPY));
+    assert(putArgOrCopy->OperIsPutArg() || putArgOrCopy->OperIs(GT_BITCAST));
 
     GenTree* arg = *argSlot;
 
@@ -1317,15 +1317,16 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
     {
 
 #ifdef _TARGET_ARMARCH_
-        // For vararg call or on armel, reg args should be all integer.
-        // Insert a copy to move float value to integer register.
-        if ((call->IsVarargs() || comp->opts.compUseSoftFP) && varTypeIsFloating(type))
+        if (isReg)
         {
-            var_types intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
-
-            GenTreePtr intArg;
-            if (isReg)
+            // For vararg call or on armel, reg args should be all integer.
+            // Insert a copy to move float value to integer register.
+            if ((call->IsVarargs() || comp->opts.compUseSoftFP) && varTypeIsFloating(type))
             {
+                var_types intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
+
+                GenTreePtr intArg;
+
                 intArg           = comp->gtNewBitCastNode(intType, arg);
                 intArg->gtRegNum = info->regNum;
 
@@ -1340,18 +1341,14 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
                     intArg->AsMultiRegOp()->gtOtherReg = regNext;
                 }
 #endif // _TARGET_ARM_
-            }
-            else
-            {
-                intArg = new (comp, GT_COPY) GenTreeCopyOrReload(GT_COPY, intType, arg);
-            }
 
-            info->node = intArg;
-            ReplaceArgWithPutArgOrCopy(ppArg, intArg);
+                info->node = intArg;
+                ReplaceArgWithPutArgOrCopy(ppArg, intArg);
 
-            // Update arg/type with new ones.
-            arg  = intArg;
-            type = intType;
+                // Update arg/type with new ones.
+                arg  = intArg;
+                type = intType;
+            }
         }
 #endif // _TARGET_ARMARCH_
 
