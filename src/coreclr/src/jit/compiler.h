@@ -2008,11 +2008,14 @@ public:
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
 
     GenTreePtr gtNewJmpTableNode();
+
+    GenTreePtr gtNewIndOfIconHandleNode(var_types indType, size_t value, unsigned iconFlags, bool isInvariant);
+
     GenTreePtr gtNewIconHandleNode(size_t value, unsigned flags, FieldSeqNode* fields = nullptr);
 
     unsigned gtTokenToIconFlags(unsigned token);
 
-    GenTreePtr gtNewIconEmbHndNode(void* value, void* pValue, unsigned flags, void* compileTimeHandle = nullptr);
+    GenTreePtr gtNewIconEmbHndNode(void* value, void* pValue, unsigned flags, void* compileTimeHandle);
 
     GenTreePtr gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
     GenTreePtr gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd);

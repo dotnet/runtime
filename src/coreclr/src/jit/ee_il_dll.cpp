@@ -506,7 +506,7 @@ GenTreePtr Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig)
     cookie = info.compCompHnd->GetCookieForPInvokeCalliSig(szMetaSig, &pCookie);
     assert((cookie == nullptr) != (pCookie == nullptr));
 
-    return gtNewIconEmbHndNode(cookie, pCookie, GTF_ICON_PINVKI_HDL);
+    return gtNewIconEmbHndNode(cookie, pCookie, GTF_ICON_PINVKI_HDL, szMetaSig);
 }
 
 //------------------------------------------------------------------------
