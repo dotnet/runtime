@@ -1963,7 +1963,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 // b) The size argument of the InitBlk is >= INITBLK_STOS_LIMIT bytes.
 void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 {
-    // Make sure we got the arguments of the initblk operation in the right registers
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
     GenTreePtr initVal = initBlkNode->Data();
@@ -1974,14 +1973,6 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    if (initBlkNode->gtOper == GT_STORE_DYN_BLK)
-    {
-        assert(initBlkNode->AsDynBlk()->gtDynamicSize->gtRegNum == REG_ARG_2);
-    }
-    else
-    {
-        assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
-    }
 
 #ifdef _TARGET_ARM64_
     if (size != 0)
