@@ -6150,8 +6150,13 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 #endif
                             ))
     {
+#ifdef _TARGET_ARM64_
+        // Note that stack offsets are negative or equal to zero
+        assert(stkOffs <= 0);
+#else
         // Note that stack offsets are negative
         assert(stkOffs < 0);
+#endif
 
         // alignment padding
         unsigned pad = 0;
