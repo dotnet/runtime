@@ -1337,7 +1337,7 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG)
     /* In debug mode we clear/set some additional fields */
 
     instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
@@ -1346,7 +1346,6 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
     info->idSize       = sz;
     info->idVarRefOffs = 0;
     info->idMemCookie  = 0;
-    info->idClsCookie  = nullptr;
 #ifdef TRANSLATE_PDB
     info->idilStart = emitInstrDescILBase;
 #endif
@@ -1356,7 +1355,7 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
 
     id->idDebugOnlyInfo(info);
 
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG)
 
     /* Store the size and handle the two special values
        that indicate GCref and ByRef */
