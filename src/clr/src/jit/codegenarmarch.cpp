@@ -3659,9 +3659,6 @@ void CodeGen::genStructReturn(GenTreePtr treeNode)
     }
     else // op1 must be multi-reg GT_CALL
     {
-#ifdef _TARGET_ARM_
-        NYI_ARM("struct return from multi-reg GT_CALL");
-#endif
         assert(op1->IsMultiRegCall() || op1->IsCopyOrReloadOfMultiRegCall());
 
         genConsumeRegs(op1);
