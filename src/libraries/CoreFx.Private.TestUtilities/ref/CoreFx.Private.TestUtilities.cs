@@ -50,6 +50,7 @@ namespace System
         public static bool IsInvokingStaticConstructorsSupported { get { throw null; } }
         public static bool IsMacOsHighSierraOrHigher { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public static bool IsNetBSD { get { throw null; } }
+        public static bool IsFreeBSD { get { throw null; } }
         public static bool IsNetCore { get { throw null; } }
         public static bool IsNetNative { get { throw null; } }
         public static bool IsNonZeroLowerBoundArraySupported { get { throw null; } }

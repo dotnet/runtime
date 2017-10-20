@@ -577,7 +577,7 @@ check_cxx_source_compiles(
 )
 
 check_include_files(
-    sys/sysctl.h
+    "sys/types.h;sys/sysctl.h"
     HAVE_SYS_SYSCTL_H)
 
 check_include_files(
