@@ -11525,6 +11525,14 @@ void Compiler::gtDispTree(GenTreePtr   tree,
 
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
+            if (tree->OperIsCopyBlkOp())
+            {
+                printf(" (copy)");
+            }
+            else if (tree->OperIsInitBlkOp())
+            {
+                printf(" (init)");
+            }
             gtDispVN(tree);
             printf("\n");
             if (!topOnly)
@@ -11535,14 +11543,6 @@ void Compiler::gtDispTree(GenTreePtr   tree,
                 }
                 gtDispChild(tree->gtDynBlk.Addr(), indentStack, IIArc, nullptr, topOnly);
                 gtDispChild(tree->gtDynBlk.gtDynamicSize, indentStack, IIArcBottom, nullptr, topOnly);
-            }
-            if (tree->OperIsCopyBlkOp())
-            {
-                printf(" (copy)");
-            }
-            else if (tree->OperIsInitBlkOp())
-            {
-                printf(" (init)");
             }
             break;
 
