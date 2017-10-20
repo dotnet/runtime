@@ -11569,16 +11569,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (info->sig->param_count);
 				sp -= info->sig->param_count;
 
-				if (cfg->compile_aot && !strcmp (info->name, "mono_threads_attach_coop")) {
+				if (!strcmp (info->name, "mono_threads_attach_coop")) {
 					MonoInst *addr;
+					MonoBasicBlock *next_bb;
+
+					if (cfg->compile_aot) {
+						/*
+						 * This is called on unattached threads, so it cannot go through the trampoline
+						 * infrastructure. Use an indirect call through a got slot initialized at load time
+						 * instead.
+						 */
+						EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, (char*)info->name);
+						ins = mini_emit_calli (cfg, info->sig, sp, addr, NULL, NULL);
+					} else {
+						ins = mono_emit_jit_icall (cfg, info->func, sp);
+					}
 
 					/*
-					 * This is called on unattached threads, so it cannot go through the trampoline
-					 * infrastructure. Use an indirect call through a got slot initialized at load time
-					 * instead.
+					 * Parts of the initlocals code needs to come after this, since it might call methods like memset.
 					 */
-					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, (char*)info->name);
-					ins = mini_emit_calli (cfg, info->sig, sp, addr, NULL, NULL);
+					init_localsbb2 = cfg->cbb;
+					NEW_BBLOCK (cfg, next_bb);
+					MONO_START_BB (cfg, next_bb);
 				} else {
 					ins = mono_emit_jit_icall (cfg, info->func, sp);
 				}
