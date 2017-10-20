@@ -53,9 +53,7 @@ void genPutArgSplit(GenTreePutArgSplit* treeNode);
 unsigned getBaseVarForPutArgStk(GenTreePtr treeNode);
 #endif // _TARGET_XARCH_
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 unsigned getFirstArgWithStackSlot();
-#endif // _TARGET_XARCH_ || _TARGET_ARM64_
 
 void genCompareFloat(GenTreePtr treeNode);
 void genCompareInt(GenTreePtr treeNode);
