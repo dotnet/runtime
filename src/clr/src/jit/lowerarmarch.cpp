@@ -484,6 +484,28 @@ void Lowering::LowerRotate(GenTreePtr tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
+#ifdef FEATURE_SIMD
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
+//
+//  Arguments:
+//     simdNode - The SIMD intrinsic node.
+//
+void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
+{
+    assert(simdNode->gtType != TYP_SIMD32);
+
+    if (simdNode->TypeGet() == TYP_SIMD12)
+    {
+        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
+        // produces a TYP_SIMD16 result
+        simdNode->gtType = TYP_SIMD16;
+    }
+
+    ContainCheckSIMD(simdNode);
+}
+#endif // FEATURE_SIMD
+
 //------------------------------------------------------------------------
 // Containment analysis
 //------------------------------------------------------------------------
@@ -715,6 +737,55 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         CheckImmedAndMakeContained(node, node->gtArrLen);
     }
 }
+
+#ifdef FEATURE_SIMD
+//----------------------------------------------------------------------------------------------
+// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
+//
+//  Arguments:
+//     simdNode - The SIMD intrinsic node.
+//
+void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
+{
+    switch (simdNode->gtSIMDIntrinsicID)
+    {
+        GenTree* op1;
+        GenTree* op2;
+
+        case SIMDIntrinsicInit:
+            // TODO-ARM64-CQ Support containing 0
+            break;
+
+        case SIMDIntrinsicInitArray:
+            // We have an array and an index, which may be contained.
+            CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
+            break;
+
+        case SIMDIntrinsicOpEquality:
+        case SIMDIntrinsicOpInEquality:
+            // TODO-ARM64-CQ Support containing 0
+            break;
+
+        case SIMDIntrinsicGetItem:
+        {
+            // TODO-ARM64-CQ Support containing op1 memory ops
+
+            // This implements get_Item method. The sources are:
+            //  - the source SIMD struct
+            //  - index (which element to get)
+            // The result is baseType of SIMD struct.
+            op2 = simdNode->gtOp.gtOp2;
+
+            // If the index is a constant, mark it as contained.
+            CheckImmedAndMakeContained(simdNode, op2);
+            break;
+        }
+
+        default:
+            break;
+    }
+}
+#endif // FEATURE_SIMD
 
 #endif // _TARGET_ARMARCH_
 
