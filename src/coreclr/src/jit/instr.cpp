@@ -1214,35 +1214,17 @@ void CodeGen::sched_AM(instruction ins,
         assert(baseReg != REG_NA);
         reg = baseReg;
 
-#ifdef LATE_DISASM
-        /*
-            Keep in mind that non-static data members (GT_FIELD nodes) were
-            transformed into GT_IND nodes - we keep the CLS/CPX information
-            in the GT_CNS_INT node representing the field offset of the
-            class member
-         */
-
-        if (addr->gtOper != GT_LEA && (addr->gtOp.gtOp2->gtOper == GT_CNS_INT) &&
-            addr->gtOp.gtOp2->IsIconHandle(GTF_ICON_FIELD_HDL))
-        {
-            /* This is a field offset - set the CPX/CLS values to emit a fixup */
-
-            cpx = addr->gtOp.gtOp2->gtIntCon.gtIconFld.gtIconCPX;
-            cls = addr->gtOp.gtOp2->gtIntCon.gtIconFld.gtIconCls;
-        }
-#endif
-
         if (cons)
         {
-            getEmitter()->emitIns_I_AR(ins, size, imm, reg, offs, cpx, cls);
+            getEmitter()->emitIns_I_AR(ins, size, imm, reg, offs);
         }
         else if (rdst)
         {
-            getEmitter()->emitIns_R_AR(ins, size, ireg, reg, offs, cpx, cls);
+            getEmitter()->emitIns_R_AR(ins, size, ireg, reg, offs);
         }
         else
         {
-            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, offs, cpx, cls);
+            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, offs);
         }
     }
 }
@@ -3585,19 +3567,24 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     switch (oper)
     {
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             return type == TYP_DOUBLE ? INS_addsd : INS_addss;
-            break;
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             return type == TYP_DOUBLE ? INS_subsd : INS_subss;
-            break;
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             return type == TYP_DOUBLE ? INS_mulsd : INS_mulss;
-            break;
         case GT_DIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             return type == TYP_DOUBLE ? INS_divsd : INS_divss;
         case GT_AND:
             return type == TYP_DOUBLE ? INS_andpd : INS_andps;
@@ -3759,19 +3746,25 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     switch (oper)
     {
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             return INS_vadd;
-            break;
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             return INS_vsub;
-            break;
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             return INS_vmul;
             break;
         case GT_DIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             return INS_vdiv;
         case GT_NEG:
             return INS_vneg;

@@ -690,6 +690,7 @@ private:
     void setFrameType();
 
     // Update allocations at start/end of block
+    void unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap);
     void processBlockEndAllocation(BasicBlock* current);
 
     // Record variable locations at start/end of block
@@ -699,23 +700,17 @@ private:
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
-    bool canSpillDoubleReg(RegRecord*   physRegRecord,
-                           LsraLocation refLocation,
-                           unsigned*    recentAssignedRefWeight,
-                           unsigned     farthestRefPosWeight);
+    bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
-    bool checkActiveInterval(Interval* interval, LsraLocation refLocation);
-    bool checkActiveIntervals(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType);
-    bool canSpillReg(RegRecord*   physRegRecord,
-                     LsraLocation refLocation,
-                     unsigned*    recentAssignedRefWeight,
-                     unsigned     farthestRefPosWeight);
-    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLocation* nextLocation);
+    bool isIntervalActiveHelper(Interval* interval, LsraLocation refLocation);
+    bool isIntervalActive(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType);
+    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
+    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
@@ -888,13 +883,14 @@ private:
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
     regNumber tryAllocateFreeReg(Interval* current, RefPosition* refPosition);
-    RegRecord* findBestPhysicalReg(RegisterType regType,
-                                   LsraLocation endLocation,
-                                   regMaskTP    candidates,
-                                   regMaskTP    preferences);
     regNumber allocateBusyReg(Interval* current, RefPosition* refPosition, bool allocateIfProfitable);
     regNumber assignCopyReg(RefPosition* refPosition);
 
+    bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
+    bool isSpillCandidate(Interval*     current,
+                          RefPosition*  refPosition,
+                          RegRecord*    physRegRecord,
+                          LsraLocation& nextLocation);
     void checkAndAssignInterval(RegRecord* regRec, Interval* interval);
     void assignPhysReg(RegRecord* regRec, Interval* interval);
     void assignPhysReg(regNumber reg, Interval* interval)

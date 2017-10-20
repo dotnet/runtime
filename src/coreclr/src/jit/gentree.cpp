@@ -25,6 +25,7 @@ const unsigned short GenTree::gtOperKindTable[] = {
 #include "gtlist.h"
 };
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************/
 // static
 genTreeOps GenTree::OpAsgToOper(genTreeOps op)
@@ -69,6 +70,7 @@ genTreeOps GenTree::OpAsgToOper(genTreeOps op)
             unreached(); // Precondition implies we don't get here.
     }
 }
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************
  *
@@ -427,6 +429,48 @@ bool GenTree::IsNodeProperlySized() const
 
     return GenTree::s_gtNodeSizes[gtOper] <= size;
 }
+#endif
+
+#if SMALL_TREE_NODES
+//------------------------------------------------------------------------
+// ReplaceWith: replace this with the src node. The source must be an isolated node
+//              and cannot be used after the replacement.
+//
+// Arguments:
+//    src  - source tree, that replaces this.
+//    comp - the compiler instance to transfer annotations for arrays.
+//
+void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
+{
+    // The source may be big only if the target is also a big node
+    assert((gtDebugFlags & GTF_DEBUG_NODE_LARGE) || GenTree::s_gtNodeSizes[src->gtOper] == TREE_NODE_SZ_SMALL);
+
+    // The check is effective only if nodes have been already threaded.
+    assert((src->gtPrev == nullptr) && (src->gtNext == nullptr));
+
+    RecordOperBashing(OperGet(), src->OperGet()); // nop unless NODEBASH_STATS is enabled
+
+    GenTreePtr prev = gtPrev;
+    GenTreePtr next = gtNext;
+    // The VTable pointer is copied intentionally here
+    memcpy((void*)this, (void*)src, src->GetNodeSize());
+    this->gtPrev = prev;
+    this->gtNext = next;
+
+#ifdef DEBUG
+    gtSeqNum = 0;
+#endif
+    // Transfer any annotations.
+    if (src->OperGet() == GT_IND && src->gtFlags & GTF_IND_ARR_INDEX)
+    {
+        ArrayInfo arrInfo;
+        bool      b = comp->GetArrayInfoMap()->Lookup(src, &arrInfo);
+        assert(b);
+        comp->GetArrayInfoMap()->Set(this, arrInfo);
+    }
+    DEBUG_DESTROY_NODE(src);
+}
+
 #endif
 
 /*****************************************************************************
@@ -1569,7 +1613,7 @@ AGAIN:
                 return false;
             }
 
-            if (kind & GTK_ASGOP)
+            if (GenTree::OperIsAssignment(oper))
             {
                 // 'tree' is the gtOp1 of an assignment node. So we can handle
                 // the case where defOnly is either true or false.
@@ -3029,8 +3073,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
     /* Figure out what kind of a node we have */
 
-    genTreeOps oper = tree->OperGet();
-    unsigned   kind = tree->OperKind();
+    const genTreeOps oper = tree->OperGet();
+    const unsigned   kind = tree->OperKind();
 
     /* Assume no fixed registers will be trashed */
 
@@ -4032,9 +4076,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_ADD:
             case GT_SUB:
+#ifdef LEGACY_BACKEND
             case GT_ASG_ADD:
             case GT_ASG_SUB:
-
+#endif
                 if (isflt)
                 {
                     /* FP instructions are a bit more expensive */
@@ -4099,7 +4144,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
         /* Assignments need a bit of special handling */
 
-        if (kind & GTK_ASGOP)
+        if (GenTree::OperIsAssignment(oper))
         {
             /* Process the target */
 
@@ -4183,7 +4228,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif // FEATURE_STACK_FP_X87
 
         bool bReverseInAssignment = false;
-        if (kind & GTK_ASGOP)
+        if (GenTree::OperIsAssignment(oper))
         {
             GenTreePtr op1Val = op1;
 
@@ -4282,10 +4327,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+#ifdef LEGACY_BACKEND
             case GT_ASG_LSH:
             case GT_ASG_RSH:
             case GT_ASG_RSZ:
-
+#endif
                 /* Variable sized shifts are more expensive and use REG_SHIFT */
 
                 if (!op2->IsCnsIntOrI())
@@ -5789,7 +5835,7 @@ GenTreePtr GenTree::gtGetParent(GenTreePtr** parentChildPtrPtr) const
 
 bool GenTree::OperRequiresAsgFlag()
 {
-    return ((OperKind() & GTK_ASGOP) || (gtOper == GT_XADD) || (gtOper == GT_XCHG) || (gtOper == GT_LOCKADD) ||
+    return (OperIsAssignment() || (gtOper == GT_XADD) || (gtOper == GT_XCHG) || (gtOper == GT_LOCKADD) ||
             (gtOper == GT_CMPXCHG) || (gtOper == GT_MEMORYBARRIER));
 }
 
@@ -6072,8 +6118,7 @@ unsigned Compiler::gtTokenToIconFlags(unsigned token)
  *  If the handle needs to be accessed via an indirection, pValue points to it.
  */
 
-GenTreePtr Compiler::gtNewIconEmbHndNode(
-    void* value, void* pValue, unsigned flags, unsigned handle1, void* handle2, void* compileTimeHandle)
+GenTreePtr Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned flags, void* compileTimeHandle)
 {
     GenTreePtr node;
 
@@ -6081,12 +6126,12 @@ GenTreePtr Compiler::gtNewIconEmbHndNode(
 
     if (value)
     {
-        node = gtNewIconHandleNode((size_t)value, flags, /*fieldSeq*/ FieldSeqStore::NotAField(), handle1, handle2);
+        node = gtNewIconHandleNode((size_t)value, flags, /*fieldSeq*/ FieldSeqStore::NotAField());
         node->gtIntCon.gtCompileTimeHandle = (size_t)compileTimeHandle;
     }
     else
     {
-        node = gtNewIconHandleNode((size_t)pValue, flags, /*fieldSeq*/ FieldSeqStore::NotAField(), handle1, handle2);
+        node = gtNewIconHandleNode((size_t)pValue, flags, /*fieldSeq*/ FieldSeqStore::NotAField());
         node->gtIntCon.gtCompileTimeHandle = (size_t)compileTimeHandle;
         node                               = gtNewOperNode(GT_IND, TYP_I_IMPL, node);
 
@@ -7166,8 +7211,7 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
 #if defined(LATE_DISASM)
             if (tree->IsIconHandle())
             {
-                copy = gtNewIconHandleNode(tree->gtIntCon.gtIconVal, tree->gtFlags, tree->gtIntCon.gtFieldSeq,
-                                           tree->gtIntCon.gtIconHdl.gtIconHdl1, tree->gtIntCon.gtIconHdl.gtIconHdl2);
+                copy = gtNewIconHandleNode(tree->gtIntCon.gtIconVal, tree->gtFlags, tree->gtIntCon.gtFieldSeq);
                 copy->gtIntCon.gtCompileTimeHandle = tree->gtIntCon.gtCompileTimeHandle;
                 copy->gtType                       = tree->gtType;
             }
@@ -7331,8 +7375,7 @@ GenTreePtr Compiler::gtCloneExpr(
 #if defined(LATE_DISASM)
                 if (tree->IsIconHandle())
                 {
-                    copy = gtNewIconHandleNode(tree->gtIntCon.gtIconVal, tree->gtFlags, tree->gtIntCon.gtFieldSeq,
-                                               tree->gtIntCon.gtIconFld.gtIconCPX, tree->gtIntCon.gtIconFld.gtIconCls);
+                    copy = gtNewIconHandleNode(tree->gtIntCon.gtIconVal, tree->gtFlags, tree->gtIntCon.gtFieldSeq);
                     copy->gtIntCon.gtCompileTimeHandle = tree->gtIntCon.gtCompileTimeHandle;
                     copy->gtType                       = tree->gtType;
                 }
@@ -12772,7 +12815,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             break;
 
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             if (val == 0)
             {
                 goto DONE_FOLD;
@@ -12780,7 +12825,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             break;
 
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             if (val == 1)
             {
                 goto DONE_FOLD;
@@ -12802,7 +12849,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
 
         case GT_DIV:
         case GT_UDIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             if ((op2 == cons) && (val == 1) && !(op1->OperKind() & GTK_CONST))
             {
                 goto DONE_FOLD;
@@ -12810,7 +12859,9 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             break;
 
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             if ((op2 == cons) && (val == 0) && !(op1->OperKind() & GTK_CONST))
             {
                 goto DONE_FOLD;
@@ -12879,9 +12930,11 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
+#ifdef LEGACY_BACKEND
         case GT_ASG_LSH:
         case GT_ASG_RSH:
         case GT_ASG_RSZ:
+#endif
             if (val == 0)
             {
                 if (op2 == cons)
@@ -12948,7 +13001,7 @@ DONE_FOLD:
     // a use, update the flags appropriately
     if (op->gtOper == GT_LCL_VAR)
     {
-        assert((tree->OperKind() & GTK_ASGOP) || (op->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF)) == 0);
+        assert(tree->OperIsAssignment() || (op->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF)) == 0);
 
         op->gtFlags &= ~(GTF_VAR_USEASG | GTF_VAR_DEF);
     }
@@ -13430,7 +13483,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                         break;
 
                     case GT_NEG:
+#ifdef LEGACY_BACKEND
                     case GT_CHS:
+#endif
                         i1 = -i1;
                         break;
 
@@ -13559,7 +13614,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                         break;
 
                     case GT_NEG:
+#ifdef LEGACY_BACKEND
                     case GT_CHS:
+#endif
                         lval1 = -lval1;
                         break;
 
@@ -13664,7 +13721,9 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                 switch (tree->gtOper)
                 {
                     case GT_NEG:
+#ifdef LEGACY_BACKEND
                     case GT_CHS:
+#endif
                         d1 = -d1;
                         break;
 
@@ -15034,7 +15093,7 @@ bool Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned flags)
 {
     if (flags & GTF_ASG)
     {
-        if ((tree->OperKind() & GTK_ASGOP))
+        if (tree->OperIsAssignment())
         {
             return true;
         }
@@ -15248,9 +15307,8 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
         if (oper == GT_XADD)
         {
             expr->SetOperRaw(GT_LOCKADD);
-#ifndef _TARGET_ARM64_
+            assert(genActualType(expr->gtType) == genActualType(expr->gtOp.gtOp2->gtType));
             expr->gtType = TYP_VOID;
-#endif
         }
 
         // These operations are kind of important to keep
@@ -16116,12 +16174,14 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
                     *pOper      = rhs->gtOper;
                 }
             }
+#ifdef LEGACY_BACKEND
             else
             {
                 lclNum      = lhsLclNum;
                 *pOper      = GenTree::OpAsgToOper(gtOper);
                 *pOtherTree = gtOp.gtOp2;
             }
+#endif
         }
     }
     return lclNum;

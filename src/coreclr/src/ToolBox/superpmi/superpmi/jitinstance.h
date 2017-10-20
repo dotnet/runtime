@@ -44,7 +44,12 @@ public:
     ICorJitCompiler* pJitInstance;
 
     // Allocate and initialize the jit provided
-    static JitInstance* InitJit(char* nameOfJit, bool breakOnAssert, SimpleTimer* st1, MethodContext* firstContext, LightWeightMap<DWORD, DWORD>* forceOptions, LightWeightMap<DWORD, DWORD>* options);
+    static JitInstance* InitJit(char*          nameOfJit,
+                                bool           breakOnAssert,
+                                SimpleTimer*   st1,
+                                MethodContext* firstContext,
+                                LightWeightMap<DWORD, DWORD>* forceOptions,
+                                LightWeightMap<DWORD, DWORD>* options);
 
     HRESULT StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
     bool reLoad(MethodContext* firstContext);

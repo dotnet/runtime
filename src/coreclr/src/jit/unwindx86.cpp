@@ -20,6 +20,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #error "This should be included only for x86"
 #endif // _TARGET_X86_
 
+#if defined(_TARGET_UNIX_)
+int Compiler::mapRegNumToDwarfReg(regNumber reg)
+{
+    int dwarfReg = DWARF_REG_ILLEGAL;
+
+    NYI("CFI codes");
+
+    return dwarfReg;
+}
+#endif // _TARGET_UNIX_
+
 void Compiler::unwindBegProlog()
 {
 }

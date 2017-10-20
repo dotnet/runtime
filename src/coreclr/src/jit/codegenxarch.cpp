@@ -5211,7 +5211,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             if (arg->OperGet() == GT_PUTARG_STK)
             {
                 GenTree* source = arg->gtOp.gtOp1;
-                ssize_t  size   = arg->AsPutArgStk()->getArgSize();
+                unsigned size   = arg->AsPutArgStk()->getArgSize();
                 stackArgBytes += size;
 #ifdef DEBUG
                 fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);

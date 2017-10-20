@@ -1777,7 +1777,7 @@ GenTreePtr Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         {
             pIndirection = pLookup->constLookup.addr;
         }
-        return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, 0, nullptr, compileTimeHandle);
+        return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
     }
     else if (compIsForInlining())
     {
@@ -1812,7 +1812,7 @@ GenTreePtr Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
     {
         pIndirection = pLookup->addr;
     }
-    return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, 0, nullptr, compileTimeHandle);
+    return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
 }
 
 GenTreeCall* Compiler::impReadyToRunHelperToTree(
@@ -1958,9 +1958,8 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
         }
 #endif
 
-        GenTreeArgList* helperArgs =
-            gtNewArgList(ctxTree, gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, 0,
-                                                      nullptr, compileTimeHandle));
+        GenTreeArgList* helperArgs = gtNewArgList(ctxTree, gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr,
+                                                                               GTF_ICON_TOKEN_HDL, compileTimeHandle));
 
         return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
     }
@@ -2061,9 +2060,8 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
                                          nullptr DEBUGARG("impRuntimeLookup typehandle"));
 
     // Call to helper
-    GenTreeArgList* helperArgs =
-        gtNewArgList(ctxTree, gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, 0, nullptr,
-                                                  compileTimeHandle));
+    GenTreeArgList* helperArgs = gtNewArgList(ctxTree, gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr,
+                                                                           GTF_ICON_TOKEN_HDL, compileTimeHandle));
     GenTreePtr helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 
     // Check for null and possibly call helper
@@ -3289,14 +3287,13 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 //    clsHnd - handle for the intrinsic method's class
 //    method - handle for the intrinsic method
 //    sig    - signature of the intrinsic method
+//    methodFlags - CORINFO_FLG_XXX flags of the intrinsic method
 //    memberRef - the token for the intrinsic method
 //    readonlyCall - true if call has a readonly prefix
 //    tailCall - true if call is in tail position
 //    pConstrainedResolvedToken -- resolved token for constrained call, or nullptr
 //       if call is not constrained
 //    constraintCallThisTransform -- this transform to apply for a constrained call
-//    isJitIntrinsic - true if method is a "new" jit intrinsic that the jit
-//       must identify by name
 //    pIntrinsicID [OUT] -- intrinsic ID (see enumeration in corinfo.h)
 //       for "traditional" jit intrinsics
 //    isSpecialIntrinsic [OUT] -- set true if intrinsic expansion is a call
@@ -3333,33 +3330,33 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_CLASS_HANDLE    clsHnd,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
+                                unsigned                methodFlags,
                                 int                     memberRef,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                 CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
-                                bool                    isJitIntrinsic,
                                 CorInfoIntrinsics*      pIntrinsicID,
                                 bool*                   isSpecialIntrinsic)
 {
+    assert((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0);
+
     bool              mustExpand  = false;
     bool              isSpecial   = false;
-    CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
-    *pIntrinsicID                 = intrinsicID;
+    CorInfoIntrinsics intrinsicID = CORINFO_INTRINSIC_Illegal;
 
-    // Jit intrinsics won't have an IntrinsicID, and won't be identifed
-    // by the VM as must-expand.
-    if (isJitIntrinsic)
+    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        assert(!mustExpand);
-        assert(intrinsicID == CORINFO_INTRINSIC_Illegal);
-
-        // They however may still be must-expand. The convention we
-        // have adopted is that if we are compiling the intrinsic and
-        // it calls itself recursively, the recursive call is
-        // must-expand.
-        mustExpand = gtIsRecursiveCall(method);
+        intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
     }
+
+    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    {
+        // The recursive calls to Jit intrinsics are must-expand by convention.
+        mustExpand = mustExpand || gtIsRecursiveCall(method);
+    }
+
+    *pIntrinsicID = intrinsicID;
 
 #ifndef _TARGET_ARM_
     genTreeOps interlockedOperator;
@@ -3847,11 +3844,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
         default:
             /* Unknown intrinsic */
+            intrinsicID = CORINFO_INTRINSIC_Illegal;
             break;
     }
 
     // Look for new-style jit intrinsics by name
-    if (isJitIntrinsic)
+    if ((intrinsicID == CORINFO_INTRINSIC_Illegal) && ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0))
     {
         assert(retNode == nullptr);
         const NamedIntrinsic ni = lookupNamedIntrinsic(method);
@@ -7107,15 +7105,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // DEBUG
 
         // <NICE> Factor this into getCallInfo </NICE>
-        const bool isIntrinsic        = (mflags & CORINFO_FLG_INTRINSIC) != 0;
-        const bool isJitIntrinsic     = (mflags & CORINFO_FLG_JIT_INTRINSIC) != 0;
-        const bool isTail             = canTailCall && (tailCall != 0);
-        bool       isSpecialIntrinsic = false;
-        if (isIntrinsic || isJitIntrinsic)
+        bool isSpecialIntrinsic = false;
+        if ((mflags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
         {
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall, isTail,
-                                pConstrainedResolvedToken, callInfo->thisTransform, isJitIntrinsic, &intrinsicID,
-                                &isSpecialIntrinsic);
+            const bool isTail = canTailCall && (tailCall != 0);
+
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, readonlyCall, isTail,
+                                pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -11370,6 +11366,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     Verify(tiArray.IsNullObjRef() || verGetArrayElemType(tiArray).IsType(TI_REF), "bad array");
                 }
 
+            STELEM_REF_POST_VERIFY:
+
                 arrayNodeTo      = impStackTop(2).val;
                 arrayNodeToIndex = impStackTop(1).val;
                 arrayNodeFrom    = impStackTop().val;
@@ -11381,27 +11379,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Check for assignment to same array, ie. arrLcl[i] = arrLcl[j]
                 // This does not need CORINFO_HELP_ARRADDR_ST
-
                 if (arrayNodeFrom->OperGet() == GT_INDEX && arrayNodeFrom->gtOp.gtOp1->gtOper == GT_LCL_VAR &&
                     arrayNodeTo->gtOper == GT_LCL_VAR &&
                     arrayNodeTo->gtLclVarCommon.gtLclNum == arrayNodeFrom->gtOp.gtOp1->gtLclVarCommon.gtLclNum &&
                     !lvaTable[arrayNodeTo->gtLclVarCommon.gtLclNum].lvAddrExposed)
                 {
+                    JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
                     lclTyp = TYP_REF;
                     goto ARR_ST_POST_VERIFY;
                 }
 
                 // Check for assignment of NULL. This does not need CORINFO_HELP_ARRADDR_ST
-
                 if (arrayNodeFrom->OperGet() == GT_CNS_INT)
                 {
+                    JITDUMP("\nstelem of null: skipping covariant store check\n");
                     assert(arrayNodeFrom->gtType == TYP_REF && arrayNodeFrom->gtIntCon.gtIconVal == 0);
-
                     lclTyp = TYP_REF;
                     goto ARR_ST_POST_VERIFY;
                 }
-
-            STELEM_REF_POST_VERIFY:
 
                 /* Call a helper function to do the assignment */
                 op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, impPopList(3, nullptr));

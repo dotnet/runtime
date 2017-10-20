@@ -17,6 +17,8 @@ using System.Globalization;
 
 namespace System
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class MissingFieldException : MissingMemberException, ISerializable
     {
         public MissingFieldException()
@@ -39,7 +41,6 @@ namespace System
 
         protected MissingFieldException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
 
         public override String Message

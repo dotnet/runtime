@@ -38,7 +38,7 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
     our_ICorJitInfo.mc->recCompileMethod(info, flags);
 
     // force some extra data into our tables..
-     //data probably not needed with RyuJIT, but needed in 4.5 and 4.5.1 to help with catching cached values
+    // data probably not needed with RyuJIT, but needed in 4.5 and 4.5.1 to help with catching cached values
     our_ICorJitInfo.getBuiltinClass(CLASSID_SYSTEM_OBJECT);
     our_ICorJitInfo.getBuiltinClass(CLASSID_TYPED_BYREF);
     our_ICorJitInfo.getBuiltinClass(CLASSID_TYPE_HANDLE);

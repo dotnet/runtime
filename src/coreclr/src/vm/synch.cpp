@@ -668,8 +668,19 @@ bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
 #endif // FEATURE_PAL
         }
 
+        if (!waitSuccessful)
+        {
+            // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
+            // not observe a signal to the object being waited upon.
+            Counts toSubtract;
+            ++toSubtract.waiterCount;
+            Counts countsBeforeUpdate = m_counts.ExchangeAdd(-toSubtract);
+            _ASSERTE(countsBeforeUpdate.waiterCount != (UINT16)0);
+            return false;
+        }
+
         // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
-        Counts counts = m_counts.VolatileLoad();
+        Counts counts = m_counts;
         while (true)
         {
             _ASSERTE(counts.waiterCount != (UINT16)0);
@@ -679,16 +690,8 @@ bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
                 --newCounts.signalCount;
                 --newCounts.waiterCount;
             }
-            else if (!waitSuccessful)
-            {
-                --newCounts.waiterCount;
-            }
 
-            // This waiter has woken up and this needs to be reflected in the count of waiters signaled to wake. Since we don't
-            // have thread-specific signal state, there is not enough information to tell whether this thread woke up because it
-            // was signaled. For instance, this thread may have timed out and then we don't know whether this thread also got
-            // signaled. So in any woken case, decrement the count if possible. As such, timeouts could cause more waiters to
-            // wake than necessary.
+            // This waiter has woken up and this needs to be reflected in the count of waiters signaled to wake
             if (counts.countOfWaitersSignaledToWake != (UINT8)0)
             {
                 --newCounts.countOfWaitersSignaledToWake;
@@ -706,11 +709,6 @@ bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
 
             counts = countsBeforeUpdate;
         }
-
-        if (!waitSuccessful)
-        {
-            return false;
-        }
     }
 }
 
@@ -721,7 +719,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs)
     _ASSERTE(m_handle != nullptr);
 
     // Acquire the semaphore or register as a waiter
-    Counts counts = m_counts.VolatileLoad();
+    Counts counts = m_counts;
     while (true)
     {
         _ASSERTE(counts.signalCount <= m_maximumSignalCount);
@@ -764,7 +762,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
     }
 
     // Try to acquire the semaphore or register as a spinner
-    Counts counts = m_counts.VolatileLoad();
+    Counts counts = m_counts;
     while (true)
     {
         Counts newCounts = counts;
@@ -811,7 +809,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
         ClrSleepEx(0, false);
 
         // Try to acquire the semaphore and unregister as a spinner
-        counts = m_counts.VolatileLoad();
+        counts = m_counts;
         while (true)
         {
             _ASSERTE(counts.spinnerCount != (UINT8)0);
@@ -870,7 +868,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
         }
 
         // Try to acquire the semaphore and unregister as a spinner
-        counts = m_counts.VolatileLoad();
+        counts = m_counts;
         while (true)
         {
             _ASSERTE(counts.spinnerCount != (UINT8)0);
@@ -895,7 +893,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
 #endif // _TARGET_ARM64_
 
     // Unregister as a spinner, and acquire the semaphore or register as a waiter
-    counts = m_counts.VolatileLoad();
+    counts = m_counts;
     while (true)
     {
         _ASSERTE(counts.spinnerCount != (UINT8)0);
@@ -936,7 +934,7 @@ void CLRLifoSemaphore::Release(INT32 releaseCount)
     _ASSERTE(m_handle != INVALID_HANDLE_VALUE);
 
     INT32 countOfWaitersToWake;
-    Counts counts = m_counts.VolatileLoad();
+    Counts counts = m_counts;
     while (true)
     {
         Counts newCounts = counts;

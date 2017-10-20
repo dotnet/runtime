@@ -21079,10 +21079,10 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
 {
     noway_assert(tree->gtOper != GT_STMT);
 
-    genTreeOps oper      = tree->OperGet();
-    unsigned   kind      = tree->OperKind();
-    unsigned   treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
-    unsigned   chkFlags  = 0;
+    const genTreeOps oper      = tree->OperGet();
+    const unsigned   kind      = tree->OperKind();
+    unsigned         treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
+    unsigned         chkFlags  = 0;
 
     if (tree->OperMayThrow(this))
     {
@@ -21224,7 +21224,7 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
 
             /* For a GT_ASG(GT_IND(x), y) we are interested in the side effects of x */
             GenTreePtr op1p;
-            if ((kind & GTK_ASGOP) && (op1->gtOper == GT_IND))
+            if (GenTree::OperIsAssignment(oper) && (op1->gtOper == GT_IND))
             {
                 op1p = op1->gtOp.gtOp1;
             }
@@ -21599,71 +21599,92 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     fgDebugCheckBlockLinks();
 
     /* For each basic block check the bbTreeList links */
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-    PROCESS_BLOCK_AGAIN:;
         if (block->IsLIR())
         {
             LIR::AsRange(block).CheckLIR(this);
         }
         else
         {
-            for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+            fgDebugCheckStmtsList(block, morphTrees);
+        }
+    }
+
+    fgDebugCheckNodesUniqueness();
+}
+
+//------------------------------------------------------------------------------
+// fgDebugCheckStmtsList : Perfoms the set of checks:
+//    - all statements in the block are linked correctly
+//    - check statements flags
+//    - check nodes gtNext and gtPrev values, if the node list is threaded
+//
+// Arguments:
+//    block  - the block to check statements in
+//    morphTrees - try to morph trees in the checker
+//
+// Note:
+//    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
+
+void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
+{
+    for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
+    {
+        /* Verify that bbTreeList is threaded correctly */
+        /* Note that for the GT_STMT list, the gtPrev list is circular. The gtNext list is not: gtNext of the
+        * last GT_STMT in a block is nullptr. */
+
+        noway_assert(stmt->gtPrev);
+
+        if (stmt == block->bbTreeList)
+        {
+            noway_assert(stmt->gtPrev->gtNext == nullptr);
+        }
+        else
+        {
+            noway_assert(stmt->gtPrev->gtNext == stmt);
+        }
+
+        if (stmt->gtNext)
+        {
+            noway_assert(stmt->gtNext->gtPrev == stmt);
+        }
+        else
+        {
+            noway_assert(block->lastStmt() == stmt);
+        }
+
+        /* For each statement check that the exception flags are properly set */
+
+        noway_assert(stmt->gtStmtExpr);
+
+        if (verbose && 0)
+        {
+            gtDispTree(stmt->gtStmtExpr);
+        }
+
+        fgDebugCheckFlags(stmt->gtStmtExpr);
+
+        // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
+        // done by fgMorphTree()
+
+        if (morphTrees)
+        {
+            // If 'stmt' is removed from the block, start a new check for the current block,
+            // break the current check.
+            if (fgMorphBlockStmt(block, stmt DEBUGARG("test morphing")))
             {
-                /* Verify that bbTreeList is threaded correctly */
-                /* Note that for the GT_STMT list, the gtPrev list is circular. The gtNext list is not: gtNext of the
-                 * last GT_STMT in a block is nullptr. */
-
-                noway_assert(stmt->gtPrev);
-
-                if (stmt == block->bbTreeList)
-                {
-                    noway_assert(stmt->gtPrev->gtNext == nullptr);
-                }
-                else
-                {
-                    noway_assert(stmt->gtPrev->gtNext == stmt);
-                }
-
-                if (stmt->gtNext)
-                {
-                    noway_assert(stmt->gtNext->gtPrev == stmt);
-                }
-                else
-                {
-                    noway_assert(block->lastStmt() == stmt);
-                }
-
-                /* For each statement check that the exception flags are properly set */
-
-                noway_assert(stmt->gtStmtExpr);
-
-                if (verbose && 0)
-                {
-                    gtDispTree(stmt->gtStmtExpr);
-                }
-
-                fgDebugCheckFlags(stmt->gtStmtExpr);
-
-                // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
-                // done by fgMorphTree()
-
-                if (morphTrees)
-                {
-                    // If 'stmt' is removed from the block, restart
-                    if (fgMorphBlockStmt(block, stmt DEBUGARG("test morphing")))
-                    {
-                        goto PROCESS_BLOCK_AGAIN;
-                    }
-                }
-
-                /* For each GT_STMT node check that the nodes are threaded correcly - gtStmtList */
-
-                if (fgStmtListThreaded)
-                {
-                    fgDebugCheckNodeLinks(block, stmt);
-                }
+                fgDebugCheckStmtsList(block, morphTrees);
+                break;
             }
+        }
+
+        /* For each GT_STMT node check that the nodes are threaded correcly - gtStmtList */
+
+        if (fgStmtListThreaded)
+        {
+            fgDebugCheckNodeLinks(block, stmt);
         }
     }
 }
@@ -21673,7 +21694,7 @@ void Compiler::fgDebugCheckBlockLinks()
 {
     assert(fgFirstBB->bbPrev == nullptr);
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         if (block->bbNext)
         {
@@ -21725,6 +21746,76 @@ void Compiler::fgDebugCheckBlockLinks()
     }
 }
 
+// UniquenessCheckWalker keeps data that is neccesary to check
+// that each tree has it is own unique id and they do not repeat.
+class UniquenessCheckWalker
+{
+public:
+    UniquenessCheckWalker(Compiler* comp)
+        : comp(comp), nodesVecTraits(comp->compGenTreeID, comp), uniqueNodes(BitVecOps::MakeEmpty(&nodesVecTraits))
+    {
+    }
+
+    //------------------------------------------------------------------------
+    // fgMarkTreeId: Visit all subtrees in the tree and check gtTreeIDs.
+    //
+    // Arguments:
+    //    pTree     - Pointer to the tree to walk
+    //    fgWalkPre - the UniquenessCheckWalker instance
+    //
+    static Compiler::fgWalkResult MarkTreeId(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    {
+        UniquenessCheckWalker* walker   = static_cast<UniquenessCheckWalker*>(fgWalkPre->pCallbackData);
+        unsigned               gtTreeID = (*pTree)->gtTreeID;
+        walker->CheckTreeId(gtTreeID);
+        return Compiler::WALK_CONTINUE;
+    }
+
+    //------------------------------------------------------------------------
+    // CheckTreeId: Check that this tree was not visit before and memorize it as visited.
+    //
+    // Arguments:
+    //    gtTreeID - identificator of GenTree.
+    //
+    void CheckTreeId(unsigned gtTreeID)
+    {
+        assert(!BitVecOps::IsMember(&nodesVecTraits, uniqueNodes, gtTreeID));
+        BitVecOps::AddElemD(&nodesVecTraits, uniqueNodes, gtTreeID);
+    }
+
+private:
+    Compiler*    comp;
+    BitVecTraits nodesVecTraits;
+    BitVec       uniqueNodes;
+};
+
+//------------------------------------------------------------------------------
+// fgDebugCheckNodesUniqueness: Check that each tree in the method has its own unique gtTreeId.
+//
+void Compiler::fgDebugCheckNodesUniqueness()
+{
+    UniquenessCheckWalker walker(this);
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (block->IsLIR())
+        {
+            for (GenTreePtr i : LIR::AsRange(block))
+            {
+                walker.CheckTreeId(i->gtTreeID);
+            }
+        }
+        else
+        {
+            for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
+            {
+                GenTreePtr root = stmt->gtStmtExpr;
+                fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
+            }
+        }
+    }
+}
+
 /*****************************************************************************/
 #endif // DEBUG
 /*****************************************************************************/
@@ -21743,7 +21834,7 @@ void Compiler::fgDebugCheckBlockLinks()
 //
 //    Likewise the depth limit is a policy consideration, and serves mostly
 //    as a safeguard to prevent runaway inlining of small methods.
-
+//
 unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 {
     BYTE*          candidateCode = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
@@ -22123,7 +22214,7 @@ void Compiler::fgAttachStructInlineeToAsg(GenTreePtr tree, GenTreePtr child, COR
             ? fgAssignStructInlineeToVar(child, retClsHnd) // Assign to a variable if it is a call.
             : child);                                      // Just get the address, if not a call.
 
-    tree->CopyFrom(gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false), this);
+    tree->ReplaceWith(gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false), this);
 }
 
 #endif // FEATURE_MULTIREG_RET
@@ -22197,12 +22288,12 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                 printf(" with ");
                 printTreeID(inlineCandidate);
                 printf("\n");
-                // Dump out the old return expression placeholder it will be overwritten by the CopyFrom below
+                // Dump out the old return expression placeholder it will be overwritten by the ReplaceWith below
                 comp->gtDispTree(tree);
             }
 #endif // DEBUG
 
-            tree->CopyFrom(inlineCandidate, comp);
+            tree->ReplaceWith(inlineCandidate, comp);
 
 #ifdef DEBUG
             if (comp->verbose)
@@ -22273,7 +22364,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
             else
             {
                 // Just assign the inlinee to a variable to keep it simple.
-                tree->CopyFrom(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
+                tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
             }
         }
     }
@@ -22903,7 +22994,7 @@ _Done:
         }
 #endif // DEBUG
         // Replace the call with the return expression
-        iciCall->CopyFrom(pInlineInfo->retExpr, this);
+        iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }
 
     //
@@ -23023,7 +23114,7 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
                     assert(argNode->gtOper != GT_OBJ);
-                    argSingleUseNode->CopyFrom(argNode, this);
+                    argSingleUseNode->ReplaceWith(argNode, this);
                     continue;
                 }
                 else
@@ -23462,8 +23553,10 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTreePtr* pTree, fgWalkData* dat
         case GT_MUL:
         case GT_ADD:
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
         case GT_ASG_SUB:
+#endif
         case GT_CAST:
             if (tree->gtOverflow())
             {

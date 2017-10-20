@@ -346,12 +346,12 @@ namespace System.IO
             return InternalReadChars(new Span<char>(buffer, index, count));
         }
 
-        public virtual int Read(Span<char> destination)
+        public virtual int Read(Span<char> buffer)
         {
             if (_stream == null)
                 __Error.FileNotOpen();
 
-            return InternalReadChars(destination);
+            return InternalReadChars(buffer);
         }
 
         private int InternalReadChars(Span<char> buffer)
@@ -560,12 +560,12 @@ namespace System.IO
             return _stream.Read(buffer, index, count);
         }
 
-        public virtual int Read(Span<byte> destination)
+        public virtual int Read(Span<byte> buffer)
         {
             if (_stream == null)
                 __Error.FileNotOpen();
 
-            return _stream.Read(destination);
+            return _stream.Read(buffer);
         }
 
         public virtual byte[] ReadBytes(int count)

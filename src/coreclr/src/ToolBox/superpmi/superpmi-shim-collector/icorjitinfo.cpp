@@ -76,22 +76,25 @@ bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
     param.info  = info;
     param.temp  = false;
 
-    PAL_TRY(Param*, pOuterParam,
-            &param){PAL_TRY(Param*, pParam, pOuterParam){pParam->pThis->mc->cr->AddCall("getMethodInfo");
-    pParam->temp = pParam->pThis->original_ICorJitInfo->getMethodInfo(pParam->ftn, pParam->info);
-}
-PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
-{
-}
-PAL_ENDTRY
-}
-PAL_FINALLY
-{
-    this->mc->recGetMethodInfo(ftn, info, param.temp, param.exceptionCode);
-}
-PAL_ENDTRY
+    PAL_TRY(Param*, pOuterParam, &param)
+    {
+        PAL_TRY(Param*, pParam, pOuterParam)
+        {
+            pParam->pThis->mc->cr->AddCall("getMethodInfo");
+            pParam->temp = pParam->pThis->original_ICorJitInfo->getMethodInfo(pParam->ftn, pParam->info);
+        }
+        PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
+        {
+        }
+        PAL_ENDTRY
+    }
+    PAL_FINALLY
+    {
+        this->mc->recGetMethodInfo(ftn, info, param.temp, param.exceptionCode);
+    }
+    PAL_ENDTRY
 
-return param.temp;
+    return param.temp;
 }
 
 // Decides if you have any limitations for inlining. If everything's OK, it will return
@@ -122,23 +125,26 @@ CorInfoInline interceptor_ICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /*
     param.pRestrictions = pRestrictions;
     param.temp          = INLINE_NEVER;
 
-    PAL_TRY(Param*, pOuterParam,
-            &param){PAL_TRY(Param*, pParam, pOuterParam){pParam->pThis->mc->cr->AddCall("canInline");
-    pParam->temp =
-        pParam->pThis->original_ICorJitInfo->canInline(pParam->callerHnd, pParam->calleeHnd, pParam->pRestrictions);
-}
-PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
-{
-}
-PAL_ENDTRY
-}
-PAL_FINALLY
-{
-    this->mc->recCanInline(callerHnd, calleeHnd, pRestrictions, param.temp, param.exceptionCode);
-}
-PAL_ENDTRY
+    PAL_TRY(Param*, pOuterParam, &param)
+    {
+        PAL_TRY(Param*, pParam, pOuterParam)
+        {
+            pParam->pThis->mc->cr->AddCall("canInline");
+            pParam->temp = pParam->pThis->original_ICorJitInfo->canInline(pParam->callerHnd, pParam->calleeHnd,
+                                                                          pParam->pRestrictions);
+        }
+        PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
+        {
+        }
+        PAL_ENDTRY
+    }
+    PAL_FINALLY
+    {
+        this->mc->recCanInline(callerHnd, calleeHnd, pRestrictions, param.temp, param.exceptionCode);
+    }
+    PAL_ENDTRY
 
-return param.temp;
+    return param.temp;
 }
 
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
@@ -212,10 +218,10 @@ CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE me
 
 // This function returns the offset of the specified method in the
 // vtable of it's owning class or interface.
-void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
-                                             unsigned*             offsetOfIndirection,   /* OUT */
-                                             unsigned*             offsetAfterIndirection,/* OUT */
-                                             bool*                 isRelative             /* OUT */
+void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                 /* IN */
+                                             unsigned*             offsetOfIndirection,    /* OUT */
+                                             unsigned*             offsetAfterIndirection, /* OUT */
+                                             bool*                 isRelative              /* OUT */
                                              )
 {
     mc->cr->AddCall("getMethodVTableOffset");
@@ -246,9 +252,8 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_C
     return result;
 }
 
-void interceptor_ICJI::expandRawHandleIntrinsic(
-    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-    CORINFO_GENERICHANDLE_RESULT *  pResult)
+void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+                                                CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
@@ -398,20 +403,23 @@ void interceptor_ICJI::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResol
     param.pThis          = this;
     param.pResolvedToken = pResolvedToken;
 
-    PAL_TRY(Param*, pOuterParam,
-            &param){PAL_TRY(Param*, pParam, pOuterParam){pParam->pThis->mc->cr->AddCall("resolveToken");
-    pParam->pThis->original_ICorJitInfo->resolveToken(pParam->pResolvedToken);
-}
-PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
-{
-}
-PAL_ENDTRY
-}
-PAL_FINALLY
-{
-    this->mc->recResolveToken(param.pResolvedToken, param.exceptionCode);
-}
-PAL_ENDTRY
+    PAL_TRY(Param*, pOuterParam, &param)
+    {
+        PAL_TRY(Param*, pParam, pOuterParam)
+        {
+            pParam->pThis->mc->cr->AddCall("resolveToken");
+            pParam->pThis->original_ICorJitInfo->resolveToken(pParam->pResolvedToken);
+        }
+        PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
+        {
+        }
+        PAL_ENDTRY
+    }
+    PAL_FINALLY
+    {
+        this->mc->recResolveToken(param.pResolvedToken, param.exceptionCode);
+    }
+    PAL_ENDTRY
 }
 
 bool interceptor_ICJI::tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
@@ -1107,7 +1115,7 @@ void interceptor_ICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,        // [IN] m
 // Note that debugger (and profiler) is assuming that all of the
 // offsets form a contiguous block of memory, and that the
 // OffsetMapping is sorted in order of increasing native offset.
- //Note - Ownership of pMap is transfered with this call.  We need to record it before its passed on to the EE.
+// Note - Ownership of pMap is transfered with this call.  We need to record it before its passed on to the EE.
 void interceptor_ICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of interest
                                      ULONG32                       cMap, // [IN] size of pMap
                                      ICorDebugInfo::OffsetMapping* pMap  // [IN] map including all points of interest.
@@ -1144,7 +1152,7 @@ void interceptor_ICJI::getVars(CORINFO_METHOD_HANDLE      ftn,   // [IN]  method
 // Report back to the EE the location of every variable.
 // note that the JIT might split lifetimes into different
 // locations etc.
- //Note - Ownership of vars is transfered with this call.  We need to record it before its passed on to the EE.
+// Note - Ownership of vars is transfered with this call.  We need to record it before its passed on to the EE.
 void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of interest
                                ULONG32                       cVars, // [IN] size of 'vars'
                                ICorDebugInfo::NativeVarInfo* vars   // [IN] map telling where local vars are stored at
@@ -1221,26 +1229,30 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     param.vcTypeRet = vcTypeRet;
     param.temp      = (CorInfoTypeWithMod)CORINFO_TYPE_UNDEF;
 
-    PAL_TRY(Param*, pOuterParam,
-            &param){PAL_TRY(Param*, pParam, pOuterParam){pParam->pThis->mc->cr->AddCall("getArgType");
-    pParam->temp = pParam->pThis->original_ICorJitInfo->getArgType(pParam->sig, pParam->args, pParam->vcTypeRet);
+    PAL_TRY(Param*, pOuterParam, &param)
+    {
+        PAL_TRY(Param*, pParam, pOuterParam)
+        {
+            pParam->pThis->mc->cr->AddCall("getArgType");
+            pParam->temp =
+                pParam->pThis->original_ICorJitInfo->getArgType(pParam->sig, pParam->args, pParam->vcTypeRet);
 
 #ifdef fatMC
-    CORINFO_CLASS_HANDLE temp3 = pParam->pThis->getArgClass(pParam->sig, pParam->args);
+            CORINFO_CLASS_HANDLE temp3 = pParam->pThis->getArgClass(pParam->sig, pParam->args);
 #endif
-}
-PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
-{
-}
-PAL_ENDTRY
-}
-PAL_FINALLY
-{
-    this->mc->recGetArgType(sig, args, vcTypeRet, param.temp, param.exceptionCode);
-}
-PAL_ENDTRY
+        }
+        PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
+        {
+        }
+        PAL_ENDTRY
+    }
+    PAL_FINALLY
+    {
+        this->mc->recGetArgType(sig, args, vcTypeRet, param.temp, param.exceptionCode);
+    }
+    PAL_ENDTRY
 
-return param.temp;
+    return param.temp;
 }
 
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
@@ -1260,25 +1272,28 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, 
     param.args  = args;
     param.temp  = 0;
 
-    PAL_TRY(Param*, pOuterParam,
-            &param){PAL_TRY(Param*, pParam, pOuterParam){pParam->pThis->mc->cr->AddCall("getArgClass");
-    pParam->temp = pParam->pThis->original_ICorJitInfo->getArgClass(pParam->sig, pParam->args);
-}
-PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
-{
-}
-PAL_ENDTRY
-}
-PAL_FINALLY
-{
-    this->mc->recGetArgClass(sig, args, param.temp, param.exceptionCode);
+    PAL_TRY(Param*, pOuterParam, &param)
+    {
+        PAL_TRY(Param*, pParam, pOuterParam)
+        {
+            pParam->pThis->mc->cr->AddCall("getArgClass");
+            pParam->temp = pParam->pThis->original_ICorJitInfo->getArgClass(pParam->sig, pParam->args);
+        }
+        PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
+        {
+        }
+        PAL_ENDTRY
+    }
+    PAL_FINALLY
+    {
+        this->mc->recGetArgClass(sig, args, param.temp, param.exceptionCode);
 
-    // to build up a fat mc
-    getClassName(param.temp);
-}
-PAL_ENDTRY
+        // to build up a fat mc
+        getClassName(param.temp);
+    }
+    PAL_ENDTRY
 
-return param.temp;
+    return param.temp;
 }
 
 // Returns type of HFA for valuetype
@@ -1399,7 +1414,7 @@ const char* interceptor_ICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* 
 
 const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,          /* IN */
                                                         const char**          className,    /* OUT */
-                                                        const char**          namespaceName /* OUT */            
+                                                        const char**          namespaceName /* OUT */
                                                         )
 {
     mc->cr->AddCall("getMethodNameFromMetadata");
@@ -1683,22 +1698,25 @@ void interceptor_ICJI::getCallInfo(
     param.flags                     = flags;
     param.pResult                   = pResult;
 
-    PAL_TRY(Param*, pOuterParam,
-            &param){PAL_TRY(Param*, pParam, pOuterParam){pParam->pThis->mc->cr->AddCall("getCallInfo");
-    pParam->pThis->original_ICorJitInfo->getCallInfo(pParam->pResolvedToken, pParam->pConstrainedResolvedToken,
-                                                     pParam->callerHandle, pParam->flags, pParam->pResult);
-}
-PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
-{
-}
-PAL_ENDTRY
-}
-PAL_FINALLY
-{
-    this->mc->recGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
-                             param.exceptionCode);
-}
-PAL_ENDTRY
+    PAL_TRY(Param*, pOuterParam, &param)
+    {
+        PAL_TRY(Param*, pParam, pOuterParam)
+        {
+            pParam->pThis->mc->cr->AddCall("getCallInfo");
+            pParam->pThis->original_ICorJitInfo->getCallInfo(pParam->pResolvedToken, pParam->pConstrainedResolvedToken,
+                                                             pParam->callerHandle, pParam->flags, pParam->pResult);
+        }
+        PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
+        {
+        }
+        PAL_ENDTRY
+    }
+    PAL_FINALLY
+    {
+        this->mc->recGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
+                                 param.exceptionCode);
+    }
+    PAL_ENDTRY
 }
 
 BOOL interceptor_ICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)

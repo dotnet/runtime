@@ -132,10 +132,10 @@ CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE me
 
 // This function returns the offset of the specified method in the
 // vtable of it's owning class or interface.
-void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
-                                             unsigned*             offsetOfIndirection,   /* OUT */
-                                             unsigned*             offsetAfterIndirection,/* OUT */
-                                             bool*                 isRelative             /* OUT */
+void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                 /* IN */
+                                             unsigned*             offsetOfIndirection,    /* OUT */
+                                             unsigned*             offsetAfterIndirection, /* OUT */
+                                             bool*                 isRelative              /* OUT */
                                              )
 {
     original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
@@ -157,9 +157,8 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_C
     return original_ICorJitInfo->getDefaultEqualityComparerClass(cls);
 }
 
-void interceptor_ICJI::expandRawHandleIntrinsic(
-    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-    CORINFO_GENERICHANDLE_RESULT *  pResult)
+void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+                                                CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     return original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
 }

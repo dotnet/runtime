@@ -952,6 +952,13 @@ public:
         return GetMethodTable()->GetApproxArrayElementTypeHandle();
     }
 
+    PTR_OBJECTREF GetDataPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        return dac_cast<PTR_OBJECTREF>(dac_cast<PTR_BYTE>(this) + GetDataOffset());
+    }
+
     static SIZE_T GetDataOffset()
     {
         LIMITED_METHOD_CONTRACT;
