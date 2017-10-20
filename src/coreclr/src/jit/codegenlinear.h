@@ -66,6 +66,9 @@ enum SIMDScalarMoveType
     SMT_PreserveUpper                   // preserve target upper bits
 };
 
+#ifdef _TARGET_ARM64_
+insOpts genGetSimdInsOpt(bool is16B, var_types elementType);
+#endif
 instruction getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival = nullptr);
 void genSIMDScalarMove(
     var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
