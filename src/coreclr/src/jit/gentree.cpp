@@ -1933,7 +1933,6 @@ AGAIN:
         val = genTreeHashAdd(uhi32(add), ulo32(add));
 #else // 32-bit target
         val = add;
-        val = add;
 #endif
         // clang-format on
 
