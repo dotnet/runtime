@@ -7,6 +7,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup>
     <ProjectGuid>{5B218883-369E-4C3D-8BD0-74843474DCBD}</ProjectGuid>
+    <XUnitOptions>-showprogress</XUnitOptions>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />
