@@ -285,7 +285,7 @@ void Compiler::unwindEmitFuncCFI(FuncInfoDsc* func, void* pHotCode, void* pColdC
     eeAllocUnwindInfo((BYTE*)pHotCode, nullptr /* pColdCode */, startOffset, endOffset, unwindCodeBytes, pUnwindBlock,
                       (CorJitFuncKind)func->funKind);
 
-    if (pColdCode != NULL)
+    if (pColdCode != nullptr)
     {
         assert(fgFirstColdBlock != nullptr);
         assert(func->funKind == FUNC_ROOT); // No splitting of funclets.
