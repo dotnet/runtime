@@ -12,7 +12,7 @@ namespace System.Diagnostics.Tests
         public void CheckSourceExistenceAndDeletion()
         {
             string source = "Source_" + nameof(EventLogSourceCreationTests);
-            string log = "MyLog";
+            string log = "eventLog";
             try
             {
                 EventLog.CreateEventSource(source, log);
