@@ -105,7 +105,9 @@ enum genTreeKinds
     GTK_BINOP = 0x0008, // binary       operator
     GTK_RELOP = 0x0010, // comparison   operator
     GTK_LOGOP = 0x0020, // logical      operator
+#ifdef LEGACY_BACKEND
     GTK_ASGOP = 0x0040, // assignment   operator
+#endif
 
     GTK_KINDMASK = 0x007F, // operator kind mask
 
@@ -1513,12 +1515,32 @@ public:
 
     static bool OperIsAssignment(genTreeOps gtOper)
     {
+#ifdef LEGACY_BACKEND
         return (OperKind(gtOper) & GTK_ASGOP) != 0;
+#else
+        return gtOper == GT_ASG;
+#endif
     }
 
     bool OperIsAssignment() const
     {
         return OperIsAssignment(gtOper);
+    }
+
+    static bool OperMayOverflow(genTreeOps gtOper)
+    {
+        return ((gtOper == GT_ADD) || (gtOper == GT_SUB) || (gtOper == GT_MUL) || (gtOper == GT_CAST)
+#ifdef LEGACY_BACKEND
+                || (gtOper == GT_ASG_ADD) || (gtOper == GT_ASG_SUB)
+#elif !defined(_TARGET_64BIT_)
+                || (gtOper == GT_ADD_HI) || (gtOper == GT_SUB_HI)
+#endif
+                    );
+    }
+
+    bool OperMayOverflow() const
+    {
+        return OperMayOverflow(gtOper);
     }
 
     static bool OperIsIndir(genTreeOps gtOper)
@@ -1651,9 +1673,11 @@ public:
         return OperIsBoundsCheck(OperGet());
     }
 
+#ifdef LEGACY_BACKEND
     // Requires that "op" is an op= operator.  Returns
     // the corresponding "op".
     static genTreeOps OpAsgToOper(genTreeOps op);
+#endif
 
 #ifdef DEBUG
     bool NullOp1Legal() const
@@ -1822,7 +1846,7 @@ public:
 
     bool IsNodeProperlySized() const;
 
-    void CopyFrom(const GenTree* src, Compiler* comp);
+    void ReplaceWith(GenTree* src, Compiler* comp);
 
     static genTreeOps ReverseRelop(genTreeOps relop);
 
@@ -2656,34 +2680,6 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
     // sequence of fields.
     FieldSeqNode* gtFieldSeq;
-
-#if defined(LATE_DISASM)
-
-    /*  If the constant was morphed from some other node,
-        these fields enable us to get back to what the node
-        originally represented. See use of gtNewIconHandleNode()
-     */
-
-    union {
-        /* Template struct - The significant field of the other
-         * structs should overlap exactly with this struct
-         */
-
-        struct
-        {
-            unsigned gtIconHdl1;
-            void*    gtIconHdl2;
-        } gtIconHdl;
-
-        /* GT_FIELD, etc */
-
-        struct
-        {
-            unsigned             gtIconCPX;
-            CORINFO_CLASS_HANDLE gtIconCls;
-        } gtIconFld;
-    };
-#endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
@@ -6006,6 +6002,7 @@ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
         case GT_ROR:
         case GT_INDEX:
         case GT_ASG:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
         case GT_ASG_SUB:
         case GT_ASG_MUL:
@@ -6019,6 +6016,7 @@ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
         case GT_ASG_LSH:
         case GT_ASG_RSH:
         case GT_ASG_RSZ:
+#endif
         case GT_EQ:
         case GT_NE:
         case GT_LT:

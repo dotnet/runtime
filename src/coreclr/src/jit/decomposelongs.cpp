@@ -1014,7 +1014,7 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
         loResult->gtFlags |= GTF_SET_FLAGS;
         hiResult->gtFlags |= GTF_USE_FLAGS;
 
-        if (loResult->gtOverflow())
+        if ((loResult->gtFlags & GTF_OVERFLOW) != 0)
         {
             hiResult->gtFlags |= GTF_OVERFLOW | GTF_EXCEPT;
             loResult->gtFlags &= ~(GTF_OVERFLOW | GTF_EXCEPT);

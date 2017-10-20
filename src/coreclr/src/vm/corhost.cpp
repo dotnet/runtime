@@ -564,13 +564,6 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
         return HOST_E_CLRNOTAVAILABLE;
     }       
 
-    if(!(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
-    {
-        // Ensure that code is not loaded in the Default AppDomain
-        if (dwAppDomainId == DefaultADID)
-           return HOST_E_INVALIDOPERATION;
-    }
-
     // Moved this here since no point validating the pointer
     // if the basic checks [above] fail
     if( pCallback == NULL)
@@ -626,7 +619,7 @@ HRESULT CorHost2::_CreateAppDomain(
     HRESULT hr=S_OK;
 
     //cannot call the function more than once when single appDomain is allowed
-    if (m_fAppDomainCreated && (m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
+    if (m_fAppDomainCreated)
     {
         return HOST_E_INVALIDOPERATION;
     }
@@ -655,15 +648,7 @@ HRESULT CorHost2::_CreateAppDomain(
 
     AppDomainCreationHolder<AppDomain> pDomain;
 
-    // If StartupFlag specifies single appDomain then return the default domain instead of creating new one
-    if(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN)
-    {
-        pDomain.Assign(SystemDomain::System()->DefaultDomain());
-    }
-    else
-    {
-        AppDomain::CreateUnmanagedObject(pDomain);
-    }
+    pDomain.Assign(SystemDomain::System()->DefaultDomain());
 
     ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
 
@@ -738,11 +723,7 @@ HRESULT CorHost2::_CreateAppDomain(
 
         *pAppDomainID=pDomain->GetId().m_dwId;
 
-        // If StartupFlag specifies single appDomain then set the flag that appdomain has already been created
-        if(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN)
-        {
-            m_fAppDomainCreated = TRUE;
-        }
+        m_fAppDomainCreated = TRUE;
     }
 #ifdef PROFILING_SUPPORTED
     EX_HOOK
@@ -814,13 +795,6 @@ HRESULT CorHost2::_CreateDelegate(
     
     if (!m_fStarted)
         return HOST_E_INVALIDOPERATION;
-
-    if(!(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
-    {
-        // Ensure that code is not loaded in the Default AppDomain
-        if (appDomainID == DefaultADID)
-            return HOST_E_INVALIDOPERATION;
-    }
 
     BEGIN_ENTRYPOINT_NOTHROW;
 
@@ -1180,57 +1154,52 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
     if (!m_fStarted)
         return HOST_E_INVALIDOPERATION;
 
-    if(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN)
+    if (!g_fEEStarted)
     {
-        if (!g_fEEStarted)
-        {
-            return HOST_E_CLRNOTAVAILABLE;
-        }
+        return HOST_E_CLRNOTAVAILABLE;
+    }
 
-        if(!m_fAppDomainCreated)
-        {
-            return HOST_E_INVALIDOPERATION;
-        }
+    if(!m_fAppDomainCreated)
+    {
+        return HOST_E_INVALIDOPERATION;
+    }
 
-        HRESULT hr=S_OK;
-        BEGIN_ENTRYPOINT_NOTHROW;
+    HRESULT hr=S_OK;
+    BEGIN_ENTRYPOINT_NOTHROW;
     
-        if (!m_fFirstToLoadCLR)
+    if (!m_fFirstToLoadCLR)
+    {
+        _ASSERTE(!"Not reachable");
+        hr = HOST_E_CLRNOTAVAILABLE;
+    }
+    else
+    {
+        LONG refCount = m_RefCount;
+        if (refCount == 0)
         {
-            _ASSERTE(!"Not reachable");
             hr = HOST_E_CLRNOTAVAILABLE;
         }
         else
+        if (1 == refCount)
         {
-            LONG refCount = m_RefCount;
-            if (refCount == 0)
-            {
-                hr = HOST_E_CLRNOTAVAILABLE;
-            }
-            else
-            if (1 == refCount)
-            {
-                // Stop coreclr on unload.
-                m_fStarted = FALSE;
-                EEShutDown(FALSE);
-            }
-            else
-            {
-                _ASSERTE(!"Not reachable");
-                hr = S_FALSE;
-            }
+            // Stop coreclr on unload.
+            m_fStarted = FALSE;
+            EEShutDown(FALSE);
         }
-        END_ENTRYPOINT_NOTHROW;
-
-        if (pLatchedExitCode)
+        else
         {
-            *pLatchedExitCode = GetLatchedExitCode();
+            _ASSERTE(!"Not reachable");
+            hr = S_FALSE;
         }
+    }
+    END_ENTRYPOINT_NOTHROW;
 
-        return hr;
+    if (pLatchedExitCode)
+    {
+        *pLatchedExitCode = GetLatchedExitCode();
     }
 
-    return CorRuntimeHostBase::UnloadAppDomain2(dwDomainId, fWaitUntilDone, pLatchedExitCode);
+    return hr;
 }
 
 HRESULT CorRuntimeHostBase::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)

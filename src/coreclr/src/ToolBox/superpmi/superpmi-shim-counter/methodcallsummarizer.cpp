@@ -75,7 +75,8 @@ MethodCallSummarizer::MethodCallSummarizer(WCHAR* logPath)
 }
 
 // lots of ways will be faster.. this happens to be decently simple and good enough for the task at hand and nicely
-// sorts the output. in this approach the most commonly added items are at the top of the list... 60% landed in the first
+// sorts the output. in this approach the most commonly added items are at the top of the list... 60% landed in the
+// first
 // three slots in short runs
 void MethodCallSummarizer::AddCall(const char* name)
 {

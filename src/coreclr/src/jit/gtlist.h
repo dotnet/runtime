@@ -50,8 +50,10 @@ GTNODE(NEG              , GenTreeOp          ,0,GTK_UNOP)
 GTNODE(COPY             , GenTreeCopyOrReload,0,GTK_UNOP)               // Copies a variable from its current location to a register that satisfies
                                                                         // code generation constraints.  The child is the actual lclVar node.
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,GTK_UNOP)
+#ifdef LEGACY_BACKEND
 GTNODE(CHS              , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR) // GT_CHS is actually unary -- op2 is ignored.
                                                                                 // Changing to unary presently causes problems, though -- take a little work to fix.
+#endif
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)      // array-length
 
@@ -128,6 +130,9 @@ GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP) // returns high bits 
                                                            // the div into a MULHI + some adjustments. In codegen, we only use the
                                                            // results of the high register, and we drop the low results.
 
+#ifndef LEGACY_BACKEND
+GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
+#else
 GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_ADD          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_SUB          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
@@ -144,7 +149,7 @@ GTNODE(ASG_AND          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_LSH          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_RSH          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_RSZ          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
-
+#endif
 GTNODE(EQ               , GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(NE               , GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(LT               , GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
