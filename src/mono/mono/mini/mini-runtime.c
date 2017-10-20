@@ -3865,7 +3865,7 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.create_remoting_trampoline = mono_jit_create_remoting_trampoline;
 #endif
 #endif
-#ifdef ENABLE_INTERPRETER
+#if defined (ENABLE_INTERPRETER) && !defined (DISABLE_REMOTING)
 	callbacks.interp_get_remoting_invoke = mono_interp_get_remoting_invoke;
 #endif
 
