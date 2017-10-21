@@ -84,6 +84,7 @@ IF_DEF(EN2L, IS_NONE, NONE) // Instruction has 2 possible encoding types, type L
 IF_DEF(EN2M, IS_NONE, NONE) // Instruction has 2 possible encoding types, type M
 IF_DEF(EN2N, IS_NONE, NONE) // Instruction has 2 possible encoding types, type N
 IF_DEF(EN2O, IS_NONE, NONE) // Instruction has 2 possible encoding types, type O
+IF_DEF(EN2P, IS_NONE, NONE) // Instruction has 2 possible encoding types, type P
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
