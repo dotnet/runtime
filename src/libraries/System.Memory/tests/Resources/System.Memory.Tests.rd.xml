@@ -1,0 +1,6 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because OwnedMemory is reflection blocked and xunit tries to reflect on this concrete type during discovery -->
+    <Type Name="System.MemoryTests.CustomMemoryForTest{T}" Dynamic="Excluded" Browse="Excluded" Serialize="Excluded" />
+  </Library>
+</Directives>
