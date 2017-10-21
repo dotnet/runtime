@@ -35,7 +35,9 @@ namespace System.ServiceModel.Syndication
         public abstract string Version
         { get; }
 
-        public abstract Task<bool> CanReadAsync(XmlReader reader);
+        public abstract bool CanRead(XmlReader reader);
+        public abstract void ReadFrom(System.Xml.XmlReader reader);
+        public abstract void WriteTo(System.Xml.XmlWriter writer);
         public abstract Task ReadFromAsync(XmlReader reader);
         public abstract Task WriteToAsync(XmlWriter writer);
 
@@ -242,8 +244,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(document));
             }
-
-            document.WriteAttributeExtensionsAsync(writer, version);
+            document.WriteAttributeExtensions(writer, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, Workspace workspace, string version)
@@ -252,8 +253,81 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
-
             workspace.WriteAttributeExtensions(writer, version);
+        }
+
+        protected static void WriteAttributeExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
+        {
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+            collection.WriteAttributeExtensions(writer, version);
+        }
+
+        protected static void WriteAttributeExtensions(XmlWriter writer, CategoriesDocument categories, string version)
+        {
+            if (categories == null)
+            {
+                throw new ArgumentNullException(nameof(categories));
+            }
+            categories.WriteAttributeExtensions(writer, version);
+        }
+
+        protected static void WriteElementExtensions(XmlWriter writer, ServiceDocument document, string version)
+        {
+            if (document == null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+            document.WriteElementExtensions(writer, version);
+        }
+
+        protected static void WriteElementExtensions(XmlWriter writer, Workspace workspace, string version)
+        {
+            if (workspace == null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
+            workspace.WriteElementExtensions(writer, version);
+        }
+
+        protected static void WriteElementExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
+        {
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+            collection.WriteElementExtensions(writer, version);
+        }
+
+        protected static void WriteElementExtensions(XmlWriter writer, CategoriesDocument categories, string version)
+        {
+            if (categories == null)
+            {
+                throw new ArgumentNullException(nameof(categories));
+            }
+            categories.WriteElementExtensions(writer, version);
+        }
+
+        protected static Task WriteAttributeExtensionsAsync(XmlWriter writer, ServiceDocument document, string version)
+        {
+            if (document == null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
+            return document.WriteAttributeExtensionsAsync(writer, version);
+        }
+
+        protected static Task WriteAttributeExtensionsAsync(XmlWriter writer, Workspace workspace, string version)
+        {
+            if (workspace == null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
+
+            return workspace.WriteAttributeExtensionsAsync(writer, version);
         }
 
         protected static Task WriteAttributeExtensionsAsync(XmlWriter writer, ResourceCollectionInfo collection, string version)

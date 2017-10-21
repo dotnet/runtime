@@ -94,16 +94,36 @@ namespace System.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(xmlSerializerExtension, serializer));
         }
 
-        public void Add(XmlReader reader)
+        public void Add(XmlReader xmlReader)
         {
-            if (reader == null)
+            if (xmlReader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                throw new ArgumentNullException(nameof(xmlReader));
             }
-            base.Add(new SyndicationElementExtension(reader));
+            base.Add(new SyndicationElementExtension(xmlReader));
         }
 
-        public async Task<XmlReader> GetReaderAtElementExtensions()
+        public XmlReader GetReaderAtElementExtensions()
+        {
+            return GetReaderAtElementExtensionsAsync().GetAwaiter().GetResult();
+        }
+
+        public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace)
+        {
+            return ReadElementExtensions<TExtension>(extensionName, extensionNamespace, new DataContractSerializer(typeof(TExtension)));
+        }
+
+        public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
+        {
+            return ReadElementExtensionsAsync<TExtension>(extensionName, extensionNamespace, serializer).GetAwaiter().GetResult();
+        }
+
+        public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
+        {
+            return ReadElementExtensionsAsync<TExtension>(extensionName, extensionNamespace, serializer).GetAwaiter().GetResult();
+        }
+
+        public async Task<XmlReader> GetReaderAtElementExtensionsAsync()
         {
             XmlBuffer extensionsBuffer = await GetOrCreateBufferOverExtensions();
             XmlReader reader = extensionsBuffer.GetReader(0);
@@ -111,12 +131,12 @@ namespace System.ServiceModel.Syndication
             return reader;
         }
 
-        public Task<Collection<TExtension>> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace)
+        public Task<Collection<TExtension>> ReadElementExtensionsAsync<TExtension>(string extensionName, string extensionNamespace)
         {
-            return ReadElementExtensions<TExtension>(extensionName, extensionNamespace, new DataContractSerializer(typeof(TExtension)));
+            return ReadElementExtensionsAsync<TExtension>(extensionName, extensionNamespace, new DataContractSerializer(typeof(TExtension)));
         }
 
-        public Task<Collection<TExtension>> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
+        public Task<Collection<TExtension>> ReadElementExtensionsAsync<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
         {
             if (serializer == null)
             {
@@ -125,7 +145,7 @@ namespace System.ServiceModel.Syndication
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
 
-        public Task<Collection<TExtension>> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
+        public Task<Collection<TExtension>> ReadElementExtensionsAsync<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
         {
             if (serializer == null)
             {
@@ -264,11 +284,11 @@ namespace System.ServiceModel.Syndication
 
                 if (dcSerializer != null)
                 {
-                    results.Add(await this[i].GetObject<TExtension>(dcSerializer));
+                    results.Add(await this[i].GetObjectAsync<TExtension>(dcSerializer));
                 }
                 else
                 {
-                    results.Add(await this[i].GetObject<TExtension>(xmlSerializer));
+                    results.Add(await this[i].GetObjectAsync<TExtension>(xmlSerializer));
                 }
             }
             return results;

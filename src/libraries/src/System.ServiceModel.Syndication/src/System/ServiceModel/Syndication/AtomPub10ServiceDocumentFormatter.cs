@@ -5,7 +5,6 @@
 namespace System.ServiceModel.Syndication
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
@@ -16,7 +15,7 @@ namespace System.ServiceModel.Syndication
     internal delegate ReferencedCategoriesDocument CreateReferencedCategoriesDelegate();
 
     [XmlRoot(ElementName = App10Constants.Service, Namespace = App10Constants.Namespace)]
-    public class AtomPub10ServiceDocumentFormatter : ServiceDocumentFormatter
+    public class AtomPub10ServiceDocumentFormatter : ServiceDocumentFormatter, IXmlSerializable
     {
         private Type _documentType;
         private int _maxExtensionSize;
@@ -60,7 +59,7 @@ namespace System.ServiceModel.Syndication
             get { return App10Constants.Namespace; }
         }
 
-        public override Task<bool> CanReadAsync(XmlReader reader)
+        public override bool CanRead(XmlReader reader)
         {
             if (reader == null)
             {
@@ -68,17 +67,46 @@ namespace System.ServiceModel.Syndication
             }
 
             reader = XmlReaderWrapper.CreateFromReader(reader);
-            return reader.IsStartElementAsync(App10Constants.Service, App10Constants.Namespace);
+            return reader.IsStartElement(App10Constants.Service, App10Constants.Namespace);
         }
 
-        Task ReadXml(XmlReader reader)
+        XmlSchema IXmlSerializable.GetSchema()
+        {
+            return null;
+        }
+
+        void IXmlSerializable.ReadXml(XmlReader reader)
         {
             if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            return ReadDocumentAsync(reader);
+            ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader)).GetAwaiter().GetResult();
+        }
+
+        void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+            if (this.Document == null)
+            {
+                throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
+            }
+
+            WriteDocumentAsync(XmlWriterWrapper.CreateFromWriter(writer)).GetAwaiter().GetResult();
+        }
+
+        public override void ReadFrom(XmlReader reader)
+        {
+            ReadFromAsync(reader).GetAwaiter().GetResult();
+        }
+
+        public override void WriteTo(XmlWriter writer)
+        {
+            WriteToAsync(writer).GetAwaiter().GetResult();
         }
 
         private Task WriteXml(XmlWriter writer)
@@ -106,7 +134,7 @@ namespace System.ServiceModel.Syndication
             reader = XmlReaderWrapper.CreateFromReader(reader);
             await reader.MoveToContentAsync();
 
-            if (!await CanReadAsync(reader))
+            if (!CanRead(reader))
             {
                 throw new XmlException(SR.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
@@ -406,7 +434,7 @@ namespace System.ServiceModel.Syndication
             writer.WriteAttributeString("xml", "lang", Atom10FeedFormatter.XmlNs, lang);
         }
 
-        private async Task<ResourceCollectionInfo> ReadCollection(XmlReader reader, Workspace workspace)
+        private async Task<ResourceCollectionInfo> ReadCollectionAsync(XmlReader reader, Workspace workspace)
         {
             ResourceCollectionInfo result = CreateCollection(workspace);
             result.BaseUri = workspace.BaseUri;
@@ -557,7 +585,7 @@ namespace System.ServiceModel.Syndication
                         {
                             if (await reader.IsStartElementAsync(App10Constants.Workspace, App10Constants.Namespace))
                             {
-                                result.Workspaces.Add(ReadWorkspace(reader, result).Result);
+                                result.Workspaces.Add(await ReadWorkspaceAsync(reader, result));
                             }
                             else if (!TryParseElement(reader, result, Version))
                             {
@@ -599,7 +627,7 @@ namespace System.ServiceModel.Syndication
             SetDocument(result);
         }
 
-        private async Task<Workspace> ReadWorkspace(XmlReader reader, ServiceDocument document)
+        private async Task<Workspace> ReadWorkspaceAsync(XmlReader reader, ServiceDocument document)
         {
             Workspace result = CreateWorkspace(document);
             result.BaseUri = document.BaseUri;
@@ -645,7 +673,7 @@ namespace System.ServiceModel.Syndication
                     }
                     else if (await reader.IsStartElementAsync(App10Constants.Collection, App10Constants.Namespace))
                     {
-                        result.Collections.Add(ReadCollection(reader, result).Result);
+                        result.Collections.Add(await ReadCollectionAsync(reader, result));
                     }
                     else if (!TryParseElement(reader, result, Version))
                     {

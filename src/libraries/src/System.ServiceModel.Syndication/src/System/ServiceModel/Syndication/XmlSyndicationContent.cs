@@ -108,18 +108,38 @@ namespace System.ServiceModel.Syndication
             return new XmlSyndicationContent(this);
         }
 
-        public async Task<XmlDictionaryReader> GetReaderAtContent()
+        public XmlDictionaryReader GetReaderAtContent()
+        {
+            return GetReaderAtContentAsync().GetAwaiter().GetResult();
+        }
+
+        public TContent ReadContent<TContent>()
+        {
+            return ReadContent<TContent>((DataContractSerializer)null);
+        }
+
+        public TContent ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
+        {
+            return ReadContentAsync<TContent>(dataContractSerializer).GetAwaiter().GetResult();
+        }
+
+        public TContent ReadContent<TContent>(XmlSerializer serializer)
+        {
+            return ReadContentAsync<TContent>(serializer).GetAwaiter().GetResult();
+        }
+
+        public async Task<XmlDictionaryReader> GetReaderAtContentAsync()
         {
             await EnsureContentBufferAsync();
             return _contentBuffer.GetReader(0);
         }
 
-        public Task<TContent> ReadContent<TContent>()
+        public Task<TContent> ReadContentAsync<TContent>()
         {
-            return ReadContent<TContent>((DataContractSerializer)null);
+            return ReadContentAsync<TContent>((DataContractSerializer)null);
         }
 
-        public async Task<TContent> ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
+        public async Task<TContent> ReadContentAsync<TContent>(XmlObjectSerializer dataContractSerializer)
         {
             if (dataContractSerializer == null)
             {
@@ -127,7 +147,7 @@ namespace System.ServiceModel.Syndication
             }
             if (_extension != null)
             {
-                return await _extension.GetObject<TContent>(dataContractSerializer);
+                return await _extension.GetObjectAsync<TContent>(dataContractSerializer);
             }
             else
             {
@@ -141,7 +161,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Task<TContent> ReadContent<TContent>(XmlSerializer serializer)
+        public Task<TContent> ReadContentAsync<TContent>(XmlSerializer serializer)
         {
             if (serializer == null)
             {
@@ -149,7 +169,7 @@ namespace System.ServiceModel.Syndication
             }
             if (_extension != null)
             {
-                return _extension.GetObject<TContent>(serializer);
+                return _extension.GetObjectAsync<TContent>(serializer);
             }
             else
             {

@@ -69,6 +69,11 @@ namespace System.ServiceModel.Syndication
             return new ReferencedCategoriesDocument(linkToCategoriesDocument);
         }
 
+        public static CategoriesDocument Load(XmlReader reader)
+        {
+            return LoadAsync(reader).GetAwaiter().GetResult();
+        }
+
         public static async Task<CategoriesDocument> LoadAsync(XmlReader reader)
         {
             AtomPub10CategoriesDocumentFormatter formatter = new AtomPub10CategoriesDocumentFormatter();
@@ -94,6 +99,16 @@ namespace System.ServiceModel.Syndication
         protected internal virtual bool TryParseElement(XmlReader reader, string version)
         {
             return false;
+        }
+
+        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteAttributeExtensions(writer);
+        }
+
+        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteElementExtensions(writer);
         }
 
         protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)

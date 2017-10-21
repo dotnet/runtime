@@ -13,10 +13,11 @@ namespace System.ServiceModel.Syndication
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
+    using System.Xml.Schema;
     using System.Xml.Serialization;
 
     [XmlRoot(ElementName = Atom10Constants.FeedTag, Namespace = Atom10Constants.Atom10Namespace)]
-    public class Atom10FeedFormatter : SyndicationFeedFormatter
+    public class Atom10FeedFormatter : SyndicationFeedFormatter, IXmlSerializable
     {
         internal static readonly TimeSpan zeroOffset = new TimeSpan(0, 0, 0);
         internal const string XmlNs = "http://www.w3.org/XML/1998/namespace";
@@ -97,6 +98,41 @@ namespace System.ServiceModel.Syndication
             }
 
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
+        }
+
+        XmlSchema IXmlSerializable.GetSchema()
+        {
+            return null;
+        }
+
+        void IXmlSerializable.ReadXml(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
+            ReadFromAsync(reader, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            WriteFeedAsync(writer).GetAwaiter().GetResult();
+        }
+
+        public override void ReadFrom(XmlReader reader)
+        {
+            ReadFromAsync(reader, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        public override void WriteTo(XmlWriter writer)
+        {
+            WriteToAsync(writer, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         public override async Task ReadFromAsync(XmlReader reader, CancellationToken ct)
@@ -523,6 +559,18 @@ namespace System.ServiceModel.Syndication
             return SyndicationFeedFormatter.CreateFeedInstance(_feedType);
         }
 
+        protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
+        {
+            return ReadItemAsync(reader, feed).GetAwaiter().GetResult();
+        }
+
+        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+        {
+            IEnumerable<SyndicationItem> result = ReadItemsAsync(reader, feed).GetAwaiter().GetResult();
+            areAllItemsRead = true;
+            return result;
+        }
+
         protected virtual async Task<SyndicationItem> ReadItemAsync(XmlReader reader, SyndicationFeed feed)
         {
             if (feed == null)
@@ -563,6 +611,16 @@ namespace System.ServiceModel.Syndication
             }
 
             return items;
+        }
+
+        protected virtual void WriteItem(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
+        {
+            WriteItemAsync(writer, item, feedBaseUri).GetAwaiter().GetResult();
+        }
+
+        protected virtual void WriteItems(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
+        {
+            WriteItemsAsync(writer, items, feedBaseUri).GetAwaiter().GetResult();
         }
 
         protected virtual async Task WriteItemAsync(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)

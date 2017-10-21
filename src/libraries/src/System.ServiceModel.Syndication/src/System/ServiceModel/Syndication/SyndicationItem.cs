@@ -197,6 +197,17 @@ namespace System.ServiceModel.Syndication
             set { _title = value; }
         }
 
+        public static SyndicationItem Load(XmlReader reader)
+        {
+            return LoadAsync(reader).GetAwaiter().GetResult();
+        }
+
+        public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader)
+            where TSyndicationItem : SyndicationItem, new()
+        {
+            return LoadAsync<TSyndicationItem>(reader).GetAwaiter().GetResult();
+        }
+
         public static Task<SyndicationItem> LoadAsync(XmlReader reader)
         {
             return LoadAsync<SyndicationItem>(reader);
@@ -252,12 +263,22 @@ namespace System.ServiceModel.Syndication
             return new Rss20ItemFormatter(this, serializeExtensionsAsAtom);
         }
 
-        public Task SaveAsAtom10(XmlWriter writer)
+        public void SaveAsAtom10(XmlWriter writer)
+        {
+            SaveAsAtom10Async(writer).GetAwaiter().GetResult();
+        }
+
+        public void SaveAsRss20(XmlWriter writer)
+        {
+            SaveAsRss20Async(writer).GetAwaiter().GetResult();
+        }
+
+        public Task SaveAsAtom10Async(XmlWriter writer)
         {
             return GetAtom10Formatter().WriteToAsync(writer);
         }
 
-        public Task SaveAsRss20(XmlWriter writer)
+        public Task SaveAsRss20Async(XmlWriter writer)
         {
             return GetRss20Formatter().WriteToAsync(writer);
         }
@@ -291,6 +312,16 @@ namespace System.ServiceModel.Syndication
         protected internal virtual bool TryParseElement(XmlReader reader, string version)
         {
             return false;
+        }
+
+        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteAttributeExtensions(writer);
+        }
+
+        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteElementExtensions(writer);
         }
 
         protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
