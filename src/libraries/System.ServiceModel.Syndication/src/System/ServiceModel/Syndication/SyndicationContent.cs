@@ -72,9 +72,9 @@ namespace System.ServiceModel.Syndication
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, dataContractSerializer);
         }
 
-        public static XmlSyndicationContent CreateXmlContent(XmlReader XmlReaderWrapper)
+        public static XmlSyndicationContent CreateXmlContent(XmlReader xmlReader)
         {
-            return new XmlSyndicationContent(XmlReaderWrapper);
+            return new XmlSyndicationContent(xmlReader);
         }
 
         public static XmlSyndicationContent CreateXmlContent(object xmlSerializerObject, XmlSerializer serializer)
@@ -83,6 +83,11 @@ namespace System.ServiceModel.Syndication
         }
 
         public abstract SyndicationContent Clone();
+
+        public void WriteTo(XmlWriter writer, string outerElementName, string outerElementNamespace)
+        {
+            WriteToAsync(writer, outerElementName, outerElementNamespace).GetAwaiter().GetResult();
+        }
 
         public async Task WriteToAsync(XmlWriter writer, string outerElementName, string outerElementNamespace)
         {

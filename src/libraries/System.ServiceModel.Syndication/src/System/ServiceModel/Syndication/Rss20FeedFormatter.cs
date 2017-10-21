@@ -7,7 +7,6 @@ namespace System.ServiceModel.Syndication
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Text;
     using System.Threading;
@@ -18,7 +17,7 @@ namespace System.ServiceModel.Syndication
 
 
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
-    public class Rss20FeedFormatter : SyndicationFeedFormatter
+    public class Rss20FeedFormatter : SyndicationFeedFormatter, IXmlSerializable
     {
         private static readonly XmlQualifiedName s_rss20Domain = new XmlQualifiedName(Rss20Constants.DomainTag, string.Empty);
         private static readonly XmlQualifiedName s_rss20Length = new XmlQualifiedName(Rss20Constants.LengthTag, string.Empty);
@@ -135,6 +134,32 @@ namespace System.ServiceModel.Syndication
             return reader.IsStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
         }
 
+        XmlSchema IXmlSerializable.GetSchema()
+        {
+            return null;
+        }
+
+        void IXmlSerializable.ReadXml(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
+            ReadFeedAsync(reader).GetAwaiter().GetResult();
+        }
+
+        void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            WriteFeedAsync(writer).GetAwaiter().GetResult();
+        }
+
+
         public override Task ReadFromAsync(XmlReader reader, CancellationToken ct)
         {
             if (!CanRead(reader))
@@ -154,6 +179,16 @@ namespace System.ServiceModel.Syndication
             }
 
             return WriteFeedAsync(writer);
+        }
+
+        public override void ReadFrom(XmlReader reader)
+        {
+            ReadFromAsync(reader, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        public override void WriteTo(XmlWriter writer)
+        {
+            WriteToAsync(writer, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         public override async Task WriteToAsync(XmlWriter writer, CancellationToken ct)
@@ -336,7 +371,7 @@ namespace System.ServiceModel.Syndication
 
                         if (notHandled)
                         {
-                            bool parsedExtension = _serializeExtensionsAsAtom && _atomSerializer.TryParseItemElementFromAsync(reader, result).Result;
+                            bool parsedExtension = _serializeExtensionsAsAtom && _atomSerializer.TryParseItemElementFromAsync(reader, result).GetAwaiter().GetResult();
 
                             if (!parsedExtension)
                             {
@@ -402,6 +437,31 @@ namespace System.ServiceModel.Syndication
             return SyndicationFeedFormatter.CreateFeedInstance(_feedType);
         }
 
+        protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
+        {
+            return ReadItemAsync(reader, feed).GetAwaiter().GetResult();
+        }
+
+        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+        {
+            if (feed == null)
+            {
+                throw new ArgumentNullException(nameof(feed));
+            }
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
+            NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
+            while (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
+            {
+                items.Add(ReadItem(reader, feed));
+            }
+            areAllItemsRead = true;
+            return items;
+        }
+
         protected virtual async Task<SyndicationItem> ReadItemAsync(XmlReader reader, SyndicationFeed feed)
         {
             if (feed == null)
@@ -416,6 +476,16 @@ namespace System.ServiceModel.Syndication
             reader = XmlReaderWrapper.CreateFromReader(reader);
             await ReadItemFromAsync(reader, item, feed.BaseUri);
             return item;
+        }
+
+        protected virtual void WriteItem(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
+        {
+            WriteItemAsync(writer, item, feedBaseUri).GetAwaiter().GetResult();
+        }
+
+        protected virtual void WriteItems(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
+        {
+            WriteItemsAsync(writer, items, feedBaseUri).GetAwaiter().GetResult();
         }
 
         protected virtual async Task WriteItemAsync(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
@@ -438,6 +508,12 @@ namespace System.ServiceModel.Syndication
             {
                 await WriteItemAsync(writer, item, feedBaseUri);
             }
+        }
+
+        private Task ReadFeedAsync(XmlReader reader)
+        {
+            SetFeed(CreateFeedInstance());
+            return ReadXmlAsync(XmlReaderWrapper.CreateFromReader(reader), Feed);
         }
 
         private static string NormalizeTimeZone(string rfc822TimeZone, out bool isUtc)

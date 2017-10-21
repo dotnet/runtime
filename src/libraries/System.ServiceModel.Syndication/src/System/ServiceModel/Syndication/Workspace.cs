@@ -95,7 +95,17 @@ namespace System.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual Task WriteAttributeExtensions(XmlWriter writer, string version)
+        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteAttributeExtensions(writer);
+        }
+
+        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteElementExtensions(writer);
+        }
+
+        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
         {
             return _extensions.WriteAttributeExtensionsAsync(writer);
         }

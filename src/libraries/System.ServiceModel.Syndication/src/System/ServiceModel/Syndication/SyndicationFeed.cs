@@ -59,7 +59,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public SyndicationTextInput TextInput
+        internal SyndicationTextInput TextInput
         {
             get
             {
@@ -442,6 +442,16 @@ namespace System.ServiceModel.Syndication
             return new Rss20FeedFormatter(this, serializeExtensionsAsAtom);
         }
 
+        public void SaveAsAtom10(XmlWriter writer)
+        {
+            SaveAsAtom10Async(writer, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        public void SaveAsRss20(XmlWriter writer)
+        {
+            SaveAsRss20Async(writer, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
         public Task SaveAsAtom10Async(XmlWriter writer, CancellationToken ct)
         {
             return GetAtom10Formatter().WriteToAsync(writer, ct);
@@ -490,6 +500,16 @@ namespace System.ServiceModel.Syndication
         protected internal virtual Task WriteElementExtensionsAsync(XmlWriter writer, string version)
         {
             return _extensions.WriteElementExtensionsAsync(writer);
+        }
+
+        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteAttributeExtensions(writer);
+        }
+
+        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteElementExtensions(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)

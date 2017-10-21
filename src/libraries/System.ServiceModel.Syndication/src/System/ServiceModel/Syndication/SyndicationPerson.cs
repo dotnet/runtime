@@ -6,7 +6,6 @@ namespace System.ServiceModel.Syndication
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
@@ -29,7 +28,6 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "2#", Justification = "The Uri represents a unique category and not a network location")]
         public SyndicationPerson(string email, string name, string uri)
         {
             _name = name;
@@ -71,7 +69,6 @@ namespace System.ServiceModel.Syndication
             set { _name = value; }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings", Scope = "property", Justification = "The Uri represents a unique category and not a network location")]
         public string Uri
         {
             get { return _uri; }
@@ -91,6 +88,16 @@ namespace System.ServiceModel.Syndication
         protected internal virtual bool TryParseElement(XmlReader reader, string version)
         {
             return false;
+        }
+
+        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteAttributeExtensions(writer);
+        }
+
+        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        {
+            _extensions.WriteElementExtensions(writer);
         }
 
         protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
