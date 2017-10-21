@@ -1912,12 +1912,17 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         standaloneGc = 'buildstandalonegc'
                     }
                     
+                    def disablePgo = ''
+                    if (lowerConfiguration == 'release') {
+                        disablePgo = 'nopgooptimize'
+                    }
+
                     if (!enableCorefxTesting) {
                         // We run pal tests on all OS but generate mscorlib (and thus, nuget packages)
                         // only on supported OS platforms.
                         def bootstrapRid = Utilities.getBoostrapPublishRid(os)
                         def bootstrapRidEnv = bootstrapRid != null ? "__PUBLISH_RID=${bootstrapRid} " : ''
-                        buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture} ${standaloneGc}"
+                        buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture} ${standaloneGc} ${disablePgo}"
                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
 
                         // Set time out
