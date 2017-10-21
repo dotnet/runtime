@@ -6,7 +6,7 @@
 
 namespace System.ServiceModel.Syndication
 {
-    public static class Atom10Constants
+    internal static class Atom10Constants
     {
         public const string AlternateTag = "alternate";
         public const string Atom10Namespace = "http://www.w3.org/2005/Atom";

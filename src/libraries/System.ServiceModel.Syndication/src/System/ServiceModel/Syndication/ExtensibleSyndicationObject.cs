@@ -102,6 +102,16 @@ namespace System.ServiceModel.Syndication
             _elementExtensions = new SyndicationElementExtensionCollection(buffer);
         }
 
+        internal void WriteAttributeExtensions(XmlWriter writer)
+        {
+            WriteAttributeExtensionsAsync(writer).GetAwaiter().GetResult();
+        }
+
+        internal void WriteElementExtensions(XmlWriter writer)
+        {
+            WriteElementExtensionsAsync(writer).GetAwaiter().GetResult();
+        }
+
         internal async Task WriteAttributeExtensionsAsync(XmlWriter writer)
         {
             if (writer == null)

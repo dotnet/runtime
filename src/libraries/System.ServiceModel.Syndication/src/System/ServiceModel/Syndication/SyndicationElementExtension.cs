@@ -23,20 +23,20 @@ namespace System.ServiceModel.Syndication
         private string _outerName;
         private string _outerNamespace;
 
-        public SyndicationElementExtension(XmlReader reader)
+        public SyndicationElementExtension(XmlReader xmlReader)
         {
-            if (reader == null)
+            if (xmlReader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                throw new ArgumentNullException(nameof(xmlReader));
             }
-            SyndicationFeedFormatter.MoveToStartElement(reader);
-            _outerName = reader.LocalName;
-            _outerNamespace = reader.NamespaceURI;
+            SyndicationFeedFormatter.MoveToStartElement(xmlReader);
+            _outerName = xmlReader.LocalName;
+            _outerNamespace = xmlReader.NamespaceURI;
             _buffer = new XmlBuffer(int.MaxValue);
             using (XmlDictionaryWriter writer = _buffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                writer.WriteNode(reader, false);
+                writer.WriteNode(xmlReader, false);
                 writer.WriteEndElement();
             }
             _buffer.CloseSection();
@@ -125,12 +125,37 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Task<TExtension> GetObject<TExtension>()
+        public TExtension GetObject<TExtension>()
         {
             return GetObject<TExtension>(new DataContractSerializer(typeof(TExtension)));
         }
 
-        public async Task<TExtension> GetObject<TExtension>(XmlObjectSerializer serializer)
+        public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
+        {
+            return GetObjectAsync<TExtension>(serializer).GetAwaiter().GetResult();
+        }
+
+        public TExtension GetObject<TExtension>(XmlSerializer serializer)
+        {
+            return GetObjectAsync<TExtension>(serializer).GetAwaiter().GetResult();
+        }
+
+        public XmlReader GetReader()
+        {
+            return GetReaderAsync().GetAwaiter().GetResult();
+        }
+
+        public void WriteTo(XmlWriter writer)
+        {
+            WriteToAsync(writer).GetAwaiter().GetResult();
+        }
+
+        public Task<TExtension> GetObjectAsync<TExtension>()
+        {
+            return GetObjectAsync<TExtension>(new DataContractSerializer(typeof(TExtension)));
+        }
+
+        public async Task<TExtension> GetObjectAsync<TExtension>(XmlObjectSerializer serializer)
         {
             if (serializer == null)
             {
@@ -147,7 +172,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public async Task<TExtension> GetObject<TExtension>(XmlSerializer serializer)
+        public async Task<TExtension> GetObjectAsync<TExtension>(XmlSerializer serializer)
         {
             if (serializer == null)
             {

@@ -9,10 +9,11 @@ namespace System.ServiceModel.Syndication
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
+    using System.Xml.Schema;
     using System.Xml.Serialization;
 
     [XmlRoot(ElementName = App10Constants.Categories, Namespace = App10Constants.Namespace)]
-    public class AtomPub10CategoriesDocumentFormatter : CategoriesDocumentFormatter
+    public class AtomPub10CategoriesDocumentFormatter : CategoriesDocumentFormatter, IXmlSerializable
     {
         private Type _inlineDocumentType;
         private int _maxExtensionSize;
@@ -79,7 +80,7 @@ namespace System.ServiceModel.Syndication
             get { return App10Constants.Namespace; }
         }
 
-        public override Task<bool> CanReadAsync(XmlReader reader)
+        public override bool CanRead(XmlReader reader)
         {
             if (reader == null)
             {
@@ -87,32 +88,46 @@ namespace System.ServiceModel.Syndication
             }
 
             reader = XmlReaderWrapper.CreateFromReader(reader);
-            return reader.IsStartElementAsync(App10Constants.Categories, App10Constants.Namespace);
+            return reader.IsStartElement(App10Constants.Categories, App10Constants.Namespace);
         }
 
-        Task ReadXmlAsync(XmlReader reader)
+        XmlSchema IXmlSerializable.GetSchema()
+        {
+            return null;
+        }
+
+        void IXmlSerializable.ReadXml(XmlReader reader)
         {
             if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            return ReadDocumentAsync(reader);
+            ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader)).GetAwaiter().GetResult();
         }
 
-        private Task WriteXmlAsync(XmlWriter writer)
+        void IXmlSerializable.WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
 
-            return WriteDocumentAsync(writer);
+            WriteDocumentAsync(XmlWriterWrapper.CreateFromWriter(writer)).GetAwaiter().GetResult();
+        }
+
+        public override void ReadFrom(XmlReader reader)
+        {
+            ReadFromAsync(reader).GetAwaiter().GetResult();
+        }
+
+        public override void WriteTo(XmlWriter writer)
+        {
+            WriteToAsync(writer).GetAwaiter().GetResult();
         }
 
         public override async Task ReadFromAsync(XmlReader reader)
@@ -122,7 +137,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            if (!await CanReadAsync(reader))
+            if (!CanRead(reader))
             {
                 throw new XmlException(SR.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
@@ -130,7 +145,7 @@ namespace System.ServiceModel.Syndication
             await ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader));
         }
 
-        public override async Task WriteTo(XmlWriter writer)
+        public override async Task WriteToAsync(XmlWriter writer)
         {
             if (writer == null)
             {

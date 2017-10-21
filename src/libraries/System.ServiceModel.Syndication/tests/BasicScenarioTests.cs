@@ -524,37 +524,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static async Task SyndicationFeed_RSS_Optional_TextInput()
-        {
-            // *** SETUP *** \\
-            XmlReaderSettings setting = new XmlReaderSettings();
-            setting.Async = true;
-            XmlReader reader = null;
-            Task<SyndicationFeed> rss = null;
-            CancellationToken ct = new CancellationToken();
-
-            try
-            {
-                // *** EXECUTE *** \\
-                reader = XmlReader.Create(@"rssSpecExample.xml", setting);
-                rss = SyndicationFeed.LoadAsync(reader, ct);
-                await Task.WhenAll(rss);
-
-                // *** ASSERT *** \\
-                Assert.True(rss.Result.TextInput.Description == "Search Online");
-                Assert.True(rss.Result.TextInput.title == "Search");
-                Assert.True(rss.Result.TextInput.name == "input Name");
-                Assert.True(rss.Result.TextInput.link.GetAbsoluteUri().ToString() == "http://www.contoso.no/search?");
-            }
-            finally
-            {
-                // *** CLEANUP *** \\
-                Assert.True(rss.Result.Items != null);
-                reader.Close();
-            }
-        }
-
-        [Fact]
         public static async Task SyndicationFeed__Atom_Optional_Icon()
         {
             // *** SETUP *** \\
@@ -631,11 +600,11 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.False(string.IsNullOrEmpty(name));
                 switch (name)
                 {
-                    case Atom10Constants.IdTag:
+                    case "id":
                         return "No id!";
-                    case Atom10Constants.NameTag:
+                    case "name":
                         return "new name";
-                    case Atom10Constants.TitleTag:
+                    case "title":
                         return "new title";
                     default:
                         return "Custom Text";

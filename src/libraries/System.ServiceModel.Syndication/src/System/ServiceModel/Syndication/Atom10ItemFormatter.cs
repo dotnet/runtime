@@ -11,7 +11,6 @@
 namespace System.ServiceModel.Syndication
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
@@ -19,7 +18,7 @@ namespace System.ServiceModel.Syndication
     using System.Xml.Serialization;
 
     [XmlRoot(ElementName = Atom10Constants.EntryTag, Namespace = Atom10Constants.Atom10Namespace)]
-    public class Atom10ItemFormatter : SyndicationItemFormatter
+    public class Atom10ItemFormatter : SyndicationItemFormatter, IXmlSerializable
     {
         private Atom10FeedFormatter _feedSerializer;
         private Type _itemType;
@@ -98,6 +97,40 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(reader));
             }
             return reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
+        }
+
+        XmlSchema IXmlSerializable.GetSchema()
+        {
+            return null;
+        }
+
+        void IXmlSerializable.ReadXml(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+            ReadItemAsync(reader).GetAwaiter().GetResult();
+        }
+
+        void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            WriteItemAsync(writer).GetAwaiter().GetResult();
+        }
+
+        public override void ReadFrom(XmlReader reader)
+        {
+            ReadFromAsync(reader).GetAwaiter().GetResult();
+        }
+
+        public override void WriteTo(XmlWriter writer)
+        {
+            WriteToAsync(writer).GetAwaiter().GetResult();
         }
 
         public override Task ReadFromAsync(XmlReader reader)
