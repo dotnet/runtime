@@ -47,10 +47,12 @@ namespace System.IO.Pipes
             _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
         }
 
-        private void UninitializeAsyncHandle()
+        private void DisposeCore(bool disposing)
         {
-            if (_threadPoolBinding != null)
-                _threadPoolBinding.Dispose();
+            if (disposing)
+            {
+                _threadPoolBinding?.Dispose();
+            }
         }
 
         [SecurityCritical]

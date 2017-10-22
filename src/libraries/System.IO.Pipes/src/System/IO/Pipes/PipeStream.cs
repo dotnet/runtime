@@ -6,7 +6,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -395,7 +394,7 @@ namespace System.IO.Pipes
                     _handle.Dispose();
                 }
 
-                UninitializeAsyncHandle();
+                DisposeCore(disposing);
             }
             finally
             {
