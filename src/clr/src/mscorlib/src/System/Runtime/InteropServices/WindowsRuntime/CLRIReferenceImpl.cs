@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public CLRIReferenceImpl(PropertyType type, T obj)
             : base(type, obj)
         {
-            BCLDebug.Assert(obj != null, "Must not be null");
+            Debug.Assert(obj != null, "Must not be null");
             _value = obj;
         }
 
@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public CLRIReferenceArrayImpl(PropertyType type, T[] obj)
             : base(type, obj)
         {
-            BCLDebug.Assert(obj != null, "Must not be null");
+            Debug.Assert(obj != null, "Must not be null");
 
             _value = obj;
 
