@@ -149,21 +149,6 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DesignerNamespaceResolutionEnabled, W("desi
 CONFIG_DWORD_INFO_EX(INTERNAL_GetAssemblyIfLoadedIgnoreRidMap, W("GetAssemblyIfLoadedIgnoreRidMap"), 0, "Used to force loader to ignore assemblies cached in the rid-map", CLRConfig::REGUTIL_default)
 
 // 
-// BCL
-// 
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_BCLCorrectnessWarnings, W("BCLCorrectnessWarnings"), "Flag a few common correctness bugs in the library with additional runtime checks.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_BCLPerfWarnings, W("BCLPerfWarnings"), "Flag some performance-related problems via asserts when people mis-use the library.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TimeSpan_LegacyFormatMode, W("TimeSpan_LegacyFormatMode"), 0, "Flag to enable System.TimeSpan legacy (.NET Framework 3.5 and earlier) ToString behavior.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_CompatSortNLSVersion, W("CompatSortNLSVersion"), 0, "Determines the version of desired sorting behavior for AppCompat.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NetFx45_CultureAwareComparerGetHashCode_LongStrings, W("NetFx45_CultureAwareComparerGetHashCode_LongStrings"), 0, "Opt in to use the new (as of v4.5) constant space hash algorithm for strings")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Resources_DisableUserPreferredFallback, W("DisableUserPreferredFallback"), 0, "Resource lookups should be dependent only on the CurrentUICulture, not a user-defined list of preferred languages nor the OS preferred fallback language.  Intended to avoid falling back to a right-to-left language, which is undisplayable in console apps.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_RelativeBindForResources , W("relativeBindForResources"), 0, "Enables probing for satellite assemblies only next to the parent assembly")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NetFx45_LegacyManagedDeflateStream, W("NetFx45_LegacyManagedDeflateStream"), 0, "Flag to enable legacy managed implementation of the deflater used by System.IO.Compression.DeflateStream.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DateTime_NetFX35ParseMode, W("DateTime_NetFX35ParseMode"), 0, "Flag to enable the .NET 3.5 System.DateTime Token Replacement Policy")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThrowUnobservedTaskExceptions, W("ThrowUnobservedTaskExceptions"), 0, "Flag to propagate unobserved task exceptions on the finalizer thread.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DateTime_NetFX40AmPmParseAdjustment, W("EnableAmPmParseAdjustment"), 0, "Flag to enable the .NET 4.0 DateTimeParse to correctly parse AM/PM cases")
-
-// 
 // Conditional breakpoints
 // 
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_BreakOnBadExit, W("BreakOnBadExit"), 0, "", CLRConfig::REGUTIL_default)
@@ -1062,7 +1047,6 @@ RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_RepositoryFlags, W("RepositoryFl
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
 CONFIG_DWORD_INFO_EX(INTERNAL_ReturnSourceTypeForTesting, W("ReturnSourceTypeForTesting"), 0, "allows returning the (internal only) source type of an IL to Native mapping for debugging purposes", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_RSStressLog, W("RSStressLog"), 0, "allows turning on logging for RS startup", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SafeHandleStackTraces, W("SafeHandleStackTraces"), "Debug-only ability to get a stack trace attached to every SafeHandle instance at creation time, for tracking down handle corruption problems.")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SaveThreadInfo, W("SaveThreadInfo"), "")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SaveThreadInfoMask, W("SaveThreadInfoMask"), "")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnNewIndex, W("SBDumpOnNewIndex"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
