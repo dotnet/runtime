@@ -389,7 +389,7 @@ namespace System
                             list = PopulateInterfaces(filter);
                             break;
                         default:
-                            BCLDebug.Assert(false, "Invalid CacheType");
+                            Debug.Assert(false, "Invalid CacheType");
                             break;
                     }
 

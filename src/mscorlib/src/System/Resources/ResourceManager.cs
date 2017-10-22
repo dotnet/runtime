@@ -243,10 +243,6 @@ namespace System.Resources
         internal const String ResFileExtension = ".resources";
         internal const int ResFileExtensionLength = 10;
 
-        // My private debugging aid.  Set to 5 or 6 for verbose output.  Set to 3
-        // for summary level information.
-        internal static readonly int DEBUG = 0; //Making this const causes C# to consider all of the code that it guards unreachable.
-
         private static volatile bool s_IsAppXModel;
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod

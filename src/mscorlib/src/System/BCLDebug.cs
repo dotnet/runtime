@@ -48,9 +48,6 @@ namespace System
     {
         internal static volatile bool m_registryChecked = false;
         internal static volatile bool m_loggingNotEnabled = false;
-        internal static bool m_perfWarnings;
-        internal static bool m_correctnessWarnings;
-        internal static bool m_safeHandleStackTraces;
 #if _DEBUG
         internal static volatile bool m_domainUnloadAdded;
 #endif
@@ -85,40 +82,6 @@ namespace System
             LogLevel.Trace,
             LogLevel.Trace
         };
-
-
-#if _DEBUG
-        internal static void WaitForFinalizers(Object sender, EventArgs e)
-        {
-            if (!m_registryChecked)
-            {
-                CheckRegistry();
-            }
-            if (m_correctnessWarnings)
-            {
-                GC.GetTotalMemory(true);
-                GC.WaitForPendingFinalizers();
-            }
-        }
-#endif
-        [Conditional("_DEBUG")]
-        static public void Assert(bool condition)
-        {
-#if _DEBUG
-            Assert(condition, "Assert failed.");
-#endif
-        }
-
-        [Conditional("_DEBUG")]
-        static public void Assert(bool condition, String message)
-        {
-#if _DEBUG
-            // Speed up debug builds marginally by avoiding the garbage from
-            // concatinating "BCL Assert: " and the message.
-            if (!condition)
-                System.Diagnostics.Assert.Check(condition, "BCL Assert", message);
-#endif
-        }
 
         [Conditional("_LOGGING")]
         static public void Log(String message)
@@ -165,7 +128,7 @@ namespace System
         // just a small helper in native code instead of that.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern static int GetRegistryLoggingValues(out bool loggingEnabled, out bool logToConsole, out int logLevel, out bool perfWarnings, out bool correctnessWarnings, out bool safeHandleStackTraces);
+        private extern static int GetRegistryLoggingValues(out bool loggingEnabled, out bool logToConsole, out int logLevel);
 
         private static void CheckRegistry()
         {
@@ -182,7 +145,7 @@ namespace System
             bool logToConsole;
             int logLevel;
             int facilityValue;
-            facilityValue = GetRegistryLoggingValues(out loggingEnabled, out logToConsole, out logLevel, out m_perfWarnings, out m_correctnessWarnings, out m_safeHandleStackTraces);
+            facilityValue = GetRegistryLoggingValues(out loggingEnabled, out logToConsole, out logLevel);
 
             // Note we can get into some recursive situations where we call
             // ourseves recursively through the .cctor.  That's why we have the 
@@ -198,7 +161,7 @@ namespace System
                     //The values returned for the logging levels in the registry don't map nicely onto the
                     //values which we support internally (which are an approximation of the ones that 
                     //the System.Diagnostics namespace uses) so we have a quick map.
-                    Assert(logLevel >= 0 && logLevel <= 10, "logLevel>=0 && logLevel<=10");
+                    Debug.Assert(logLevel >= 0 && logLevel <= 10, "logLevel>=0 && logLevel<=10");
                     logLevel = (int)levelConversions[logLevel];
 
                     if (facilityValue > 0)
@@ -313,70 +276,6 @@ namespace System
             sb.Append(Environment.NewLine);
 
             System.Diagnostics.Log.LogMessage(LoggingLevels.TraceLevel0, logSwitch, StringBuilderCache.GetStringAndRelease(sb));
-        }
-
-        // For perf-related asserts.  On a debug build, set the registry key
-        // BCLPerfWarnings to non-zero.
-        [Conditional("_DEBUG")]
-        internal static void Perf(bool expr, String msg)
-        {
-            if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
-                return;
-            if (!m_registryChecked)
-                CheckRegistry();
-            if (!m_perfWarnings)
-                return;
-
-            if (!expr)
-            {
-                Log("PERF", "BCL Perf Warning: " + msg);
-            }
-            System.Diagnostics.Assert.Check(expr, "BCL Perf Warning: Your perf may be less than perfect because...", msg);
-        }
-
-        // For correctness-related asserts.  On a debug build, set the registry key
-        // BCLCorrectnessWarnings to non-zero.
-        [Conditional("_DEBUG")]
-#if _DEBUG
-#endif
-        internal static void Correctness(bool expr, String msg)
-        {
-#if _DEBUG
-            if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
-                return;
-            if (!m_registryChecked)
-                CheckRegistry();
-            if (!m_correctnessWarnings)
-                return;
-
-            if (!m_domainUnloadAdded)
-            {
-                m_domainUnloadAdded = true;
-                AppDomain.CurrentDomain.DomainUnload += new EventHandler(WaitForFinalizers);
-            }
-
-            if (!expr)
-            {
-                Log("CORRECTNESS", "BCL Correctness Warning: " + msg);
-            }
-            System.Diagnostics.Assert.Check(expr, "BCL Correctness Warning: Your program may not work because...", msg);
-#endif
-        }
-
-        // Whether SafeHandles include a stack trace showing where they 
-        // were allocated.  Only useful in checked & debug builds.
-        internal static bool SafeHandleStackTracesEnabled
-        {
-            get
-            {
-#if _DEBUG
-                if (!m_registryChecked)
-                    CheckRegistry();
-                return m_safeHandleStackTraces;
-#else
-                return false;
-#endif
-            }
         }
     }
 }

@@ -224,9 +224,6 @@ DEFINE_CLASS(RUNTIME_CLASS,                  WinRT,         RuntimeClass)
 #endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS_U(Interop,                CriticalHandle,             CriticalHandle)
-#ifdef _DEBUG
-DEFINE_FIELD_U(_stackTrace,                CriticalHandle,     m_debugStackTrace)
-#endif
 DEFINE_FIELD_U(handle,                     CriticalHandle,     m_handle)
 DEFINE_FIELD_U(_isClosed,                  CriticalHandle,     m_isClosed)
 DEFINE_CLASS(CRITICAL_HANDLE,       Interop,                CriticalHandle)
