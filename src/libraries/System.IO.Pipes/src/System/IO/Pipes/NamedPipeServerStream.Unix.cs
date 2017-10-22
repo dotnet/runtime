@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,6 +18,7 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
+        private Socket _socket;
         private string _path;
         private PipeDirection _direction;
         private PipeOptions _options;
@@ -52,10 +52,27 @@ namespace System.IO.Pipes
             _inBufferSize = inBufferSize;
             _outBufferSize = outBufferSize;
             _inheritability = inheritability;
+
+            // Binding to an existing path fails, so we need to remove anything left over at this location.
+            // There's of course a race condition here, where it could be recreated by someone else between this
+            // deletion and the bind below, in which case we'll simply let the bind fail and throw.
+            Interop.Sys.Unlink(_path); // ignore any failures
+
+            // Start listening for connections on the path.  They'll only be accepted in WaitForConnection{Async}.
+            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            try
+            {
+                socket.Bind(new UnixDomainSocketEndPoint(_path));
+                socket.Listen(int.MaxValue);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+            _socket = socket;
         }
 
-        [SecurityCritical]
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
         public void WaitForConnection()
         {
             CheckConnectOperationsServer();
@@ -64,40 +81,7 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
             }
 
-            // Binding to an existing path fails, so we need to remove anything left over at this location.
-            // There's of course a race condition here, where it could be recreated by someone else between this
-            // deletion and the bind below, in which case we'll simply let the bind fail and throw.
-            Interop.Sys.Unlink(_path); // ignore any failures
-            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            try
-            {
-                socket.Bind(new UnixDomainSocketEndPoint(_path));
-                socket.Listen(1);
-
-                Socket acceptedSocket = socket.Accept();
-                SafePipeHandle serverHandle = new SafePipeHandle(acceptedSocket);
-                try
-                {
-                    ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
-                }
-                catch
-                {
-                    serverHandle.Dispose();
-                    acceptedSocket.Dispose();
-                    throw;
-                }
-                
-                InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
-                State = PipeState.Connected;
-            }
-            finally
-            {
-                // Bind will have created a file.  Now that the client is connected, it's no longer necessary, so get rid of it.
-                Interop.Sys.Unlink(_path); // ignore any failures; worst case is we leave a tmp file
-
-                // Clean up the listening socket
-                socket.Dispose();
-            }
+            HandleAcceptedSocket(_socket.Accept());
         }
 
         public Task WaitForConnectionAsync(CancellationToken cancellationToken)
@@ -111,37 +95,35 @@ namespace System.IO.Pipes
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled(cancellationToken) :
                 WaitForConnectionAsyncCore();
+
+            async Task WaitForConnectionAsyncCore() =>
+               HandleAcceptedSocket(await _socket.AcceptAsync().ConfigureAwait(false));
         }
 
-        private async Task WaitForConnectionAsyncCore()
-        {   
-            // This is the same implementation as is in WaitForConnection(), but using Socket.AcceptAsync
-            // instead of Socket.Accept.
-             
-            // Binding to an existing path fails, so we need to remove anything left over at this location.
-            // There's of course a race condition here, where it could be recreated by someone else between this
-            // deletion and the bind below, in which case we'll simply let the bind fail and throw.
-            Interop.Sys.Unlink(_path); // ignore any failures
-            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        private void HandleAcceptedSocket(Socket acceptedSocket)
+        {
+            var serverHandle = new SafePipeHandle(acceptedSocket);
             try
             {
-                socket.Bind(new UnixDomainSocketEndPoint(_path));
-                socket.Listen(1);
-
-                Socket acceptedSocket = await socket.AcceptAsync().ConfigureAwait(false);
-                SafePipeHandle serverHandle = new SafePipeHandle(acceptedSocket);
                 ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
-
-                InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
-                State = PipeState.Connected;
             }
-            finally
+            catch
             {
-                // Bind will have created a file.  Now that the client is connected, it's no longer necessary, so get rid of it.
-                Interop.Sys.Unlink(_path); // ignore any failures; worst case is we leave a tmp file
+                serverHandle.Dispose();
+                acceptedSocket.Dispose();
+                throw;
+            }
 
-                // Clean up the listening socket
-                socket.Dispose();
+            InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
+            State = PipeState.Connected;
+        }
+
+        internal override void DisposeCore(bool disposing)
+        {
+            Interop.Sys.Unlink(_path); // ignore any failures
+            if (disposing)
+            {
+                _socket?.Dispose();
             }
         }
 

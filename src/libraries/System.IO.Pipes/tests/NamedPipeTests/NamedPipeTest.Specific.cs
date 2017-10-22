@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
@@ -73,6 +74,48 @@ namespace System.IO.Pipes.Tests
             {
                 Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
                 Assert.False(client.IsConnected);
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        public async Task MultipleWaitingClients_ServerServesOneAtATime(int numClients)
+        {
+            string name = GetUniquePipeName();
+            using (NamedPipeServerStream server = new NamedPipeServerStream(name))
+            {
+                var clients = new List<NamedPipeClientStream>(numClients);
+                var clientConnects = new List<Task>();
+                for (int i = 0; i < numClients; i++)
+                {
+                    clients.Add(new NamedPipeClientStream(name));
+                    clientConnects.Add(clients[i].ConnectAsync());
+                }
+
+                while (clientConnects.Count > 0)
+                {
+                    Task serverWait = server.WaitForConnectionAsync();
+
+                    int connectedIndex = clientConnects.IndexOf(await Task.WhenAny(clientConnects));
+                    NamedPipeClientStream client = clients[connectedIndex];
+                    clientConnects.RemoveAt(connectedIndex);
+                    clients.RemoveAt(connectedIndex);
+
+                    await serverWait;
+
+                    Task writeAsync = client.WriteAsync(new byte[1], 0, 1);
+                    Task<int> readAsync = server.ReadAsync(new byte[1], 0, 1);
+                    await Task.WhenAll(writeAsync, readAsync);
+                    Assert.Equal(1, await readAsync);
+
+                    writeAsync = server.WriteAsync(new byte[1], 0, 1);
+                    readAsync = client.ReadAsync(new byte[1], 0, 1);
+                    await Task.WhenAll(writeAsync, readAsync);
+                    Assert.Equal(1, await readAsync);
+
+                    server.Disconnect();
+                }
             }
         }
 

@@ -49,10 +49,14 @@ namespace System.IO.Pipes
                 throw new PlatformNotSupportedException(SR.PlatformNotSupproted_InvalidNameChars);
             }
 
-            // Return the pipe path.  The pipe is created directly under %TMPDIR%.  We don't bother
-            // putting it into subdirectories, as the pipe will only exist on disk for the
-            // duration between when the server starts listening and the client connects, after
-            // which the pipe will be deleted.
+            // Return the pipe path.  The pipe is created directly under %TMPDIR%.  We previously
+            // didn't put it into a subdirectory because it only existed on disk for the duration
+            // between when the server started listening in WaitForConnection and when the client
+            // connected, after which the pipe was deleted.  We now create the pipe when the
+            // server stream is created, which leaves it on disk longer, but we can't change the
+            // naming scheme used as that breaks the ability for code running on an older
+            // runtime to connect to code running on the newer runtime.  That means we're stuck
+            // with a tmp file for the lifetime of the server stream.
             return s_pipePrefix + pipeName;
         }
 
@@ -83,7 +87,7 @@ namespace System.IO.Pipes
             // nop
         }
 
-        private void UninitializeAsyncHandle()
+        internal virtual void DisposeCore(bool disposing)
         {
             // nop
         }
