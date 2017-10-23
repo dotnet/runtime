@@ -55,14 +55,20 @@ namespace System.ServiceModel.Syndication
 
         public abstract void WriteTo(XmlWriter writer);
 
-        public abstract Task ReadFromAsync(XmlReader reader, CancellationToken ct);
+        public virtual Task ReadFromAsync(XmlReader reader, CancellationToken ct)
+        {
+            throw new NotImplementedException();
+        }
 
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", GetType(), Version);
         }
 
-        public abstract Task WriteToAsync(XmlWriter writer, CancellationToken ct);
+        public virtual Task WriteToAsync(XmlWriter writer, CancellationToken ct)
+        {
+            throw new NotImplementedException();
+        }
 
         internal static protected SyndicationCategory CreateCategory(SyndicationFeed feed)
         {

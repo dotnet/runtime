@@ -47,14 +47,20 @@ namespace System.ServiceModel.Syndication
 
         public abstract void WriteTo(XmlWriter writer);
 
-        public abstract Task ReadFromAsync(XmlReader reader);
+        public virtual Task ReadFromAsync(XmlReader reader)
+        {
+            throw new NotImplementedException();
+        }
 
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", GetType(), Version);
         }
 
-        public abstract Task WriteToAsync(XmlWriter writer);
+        public virtual Task WriteToAsync(XmlWriter writer)
+        {
+            throw new NotImplementedException();
+        }
 
         internal protected virtual void SetItem(SyndicationItem item)
         {
