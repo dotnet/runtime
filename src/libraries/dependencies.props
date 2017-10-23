@@ -44,9 +44,6 @@
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
 
-    <!-- Backward compatibility for BuildTools usage. -->
-    <PlatformPackageVersion>$(MicrosoftNETCorePlatformsPackageVersion)</PlatformPackageVersion>
-
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0007</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>1.0.3-alpha-experimental</TraceEventPackageVersion>
@@ -226,4 +223,13 @@
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)"
           Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
+
+  <!--
+    Map PackageVersion properties that don't match the Repo API naming conventions. This must be
+    defined after the DotNetPackageVersionPropsPath Import so overrides apply correctly.
+  -->
+  <PropertyGroup>
+    <!-- Backward compatibility for BuildTools usage. -->
+    <PlatformPackageVersion>$(MicrosoftNETCorePlatformsPackageVersion)</PlatformPackageVersion>
+  </PropertyGroup>
 </Project>
