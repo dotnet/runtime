@@ -303,3 +303,20 @@ bool get_global_shared_store_dirs(std::vector<pal::string_t>*  dirs, const pal::
     }
     return true;
 }
+
+/**
+* Multilevel Lookup is enabled by default
+*  It can be disabled by setting DOTNET_MULTILEVEL_LOOKUP env var to a value that is not 1
+*/
+bool multilevel_lookup_enabled()
+{
+    pal::string_t env_lookup;
+    bool multilevel_lookup = true;
+
+    if (pal::getenv(_X("DOTNET_MULTILEVEL_LOOKUP"), &env_lookup))
+    {
+        auto env_val = pal::xtoi(env_lookup.c_str());
+        multilevel_lookup = (env_val == 1);
+    }
+    return multilevel_lookup;
+}
