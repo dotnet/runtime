@@ -1908,7 +1908,7 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 	/* Use the parent frame as the current frame is not complete yet */
 	interp_push_lmf (&ext, frame->parent);
 
-	frame->ex = mono_interp_transform_method (frame->imethod, context);
+	frame->ex = mono_interp_transform_method (frame->imethod, context, (MonoDelegate *) frame->stack_args [0].data.p);
 
 	interp_pop_lmf (&ext);
 }
@@ -2391,7 +2391,7 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 
 			if (!new_method->transformed) {
 				frame->ip = ip;
-				frame->ex = mono_interp_transform_method (new_method, context);
+				frame->ex = mono_interp_transform_method (new_method, context, NULL);
 				if (frame->ex)
 					goto exit_frame;
 			}
