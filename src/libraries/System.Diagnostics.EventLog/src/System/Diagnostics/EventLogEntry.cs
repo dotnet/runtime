@@ -37,7 +37,9 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
-        [MonitoringDescription("The machine on which this event log resides.")]
+        /// <summary>
+        /// The machine on which this event log resides.
+        /// </summary>
         public string MachineName
         {
             get
@@ -60,7 +62,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The binary data associated with this entry in the event log.")]
+        /// <summary>
+        /// The binary data associated with this entry in the event log.
+        /// </summary>
         public byte[] Data
         {
             get
@@ -73,7 +77,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The sequence of this entry in the event log.")]
+        /// <summary>
+        /// The sequence of this entry in the event log.
+        /// </summary>
         public int Index
         {
             get
@@ -82,7 +88,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The category for this message.")]
+        /// <summary>
+        /// The category for this message.
+        /// </summary>
         public string Category
         {
             get
@@ -101,7 +109,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("An application-specific category number assigned to this entry.")]
+        /// <summary>
+        /// An application-specific category number assigned to this entry.
+        /// </summary>
         public short CategoryNumber
         {
             get
@@ -110,10 +120,10 @@ namespace System.Diagnostics
             }
         }
 
-        [
-        MonitoringDescription("The number identifying the message for this source."),
-        Obsolete("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  http://go.microsoft.com/fwlink/?linkid=14202")
-        ]
+        /// <summary>
+        /// The number identifying the message for this source.
+        /// </summary>
+        [Obsolete("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public int EventID
         {
             get
@@ -122,7 +132,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The type of entry - Information, Warning, etc.")]
+        /// <summary>
+        /// The type of entry - Information, Warning, etc.
+        /// </summary>
         public EventLogEntryType EntryType
         {
             get
@@ -131,7 +143,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The text of the message for this entry.")]
+        /// <summary>
+        /// The text of the message for this entry.
+        /// </summary>
         public string Message
         {
             get
@@ -143,7 +157,7 @@ namespace System.Diagnostics
                     string msg = owner.FormatMessageWrapper(dllNames, (uint)msgId, ReplacementStrings);
                     if (msg == null)
                     {
-                        StringBuilder msgBuf = new StringBuilder(SR.MessageNotFormatted + msgId + Source);
+                        StringBuilder msgBuf = new StringBuilder(SR.Format(SR.MessageNotFormatted, msgId, Source));
                         string[] strings = ReplacementStrings;
                         for (int i = 0; i < strings.Length; i++)
                         {
@@ -166,7 +180,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The name of the application that wrote this entry.")]
+        /// <summary>
+        /// The name of the application that wrote this entry.
+        /// </summary>
         public string Source
         {
             get
@@ -186,7 +202,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The application-supplied strings used in the message.")]
+        /// <summary>
+        /// The application-supplied strings used in the message.
+        /// </summary>
         public string[] ReplacementStrings
         {
             get
@@ -214,10 +232,10 @@ namespace System.Diagnostics
             }
         }
 
-        [
-            MonitoringDescription("The full number identifying the message in the event message dll."),
-            ComVisible(false)
-        ]
+        /// <summary>
+        /// The full number identifying the message in the event message dll.
+        /// </summary>
+        [ComVisible(false)]
         public Int64 InstanceId
         {
             get
@@ -226,7 +244,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The time at which the application logged this entry.")]
+        /// <summary>
+        /// The time at which the application logged this entry.
+        /// </summary>
         public DateTime TimeGenerated
         {
             get
@@ -235,7 +255,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The time at which the system logged this entry to the event log.")]
+        /// <summary>
+        /// The time at which the system logged this entry to the event log.
+        /// </summary>
         public DateTime TimeWritten
         {
             get
@@ -244,7 +266,9 @@ namespace System.Diagnostics
             }
         }
 
-        [MonitoringDescription("The username of the account associated with this entry by the writing application.")]
+        /// <summary>
+        /// The username of the account associated with this entry by the writing application.
+        /// </summary>
         public string UserName
         {
             get

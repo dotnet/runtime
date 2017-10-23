@@ -9,8 +9,13 @@
     <ProjectGuid>{5B218883-369E-4C3D-8BD0-74843474DCBD}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="EventInstanceTests.cs" />
+    <Compile Include="EventLogEntryCollectionTests.cs" />
+    <Compile Include="EventLogTests\EventLogEntryWrittenTest.cs" />
     <Compile Include="EventLogTests\EventLogSourceCreationTests.cs" />
     <Compile Include="EventLogTests\EventLogTests.cs" />
+    <Compile Include="EventLogTests\EventLogWriteEntryTests.cs" />
+    <Compile Include="Helpers.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

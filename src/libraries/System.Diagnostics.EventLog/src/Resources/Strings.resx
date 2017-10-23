@@ -117,72 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="EventLogDesc" xml:space="preserve">
-    <value>Provides interaction with Windows event logs.</value>
-  </data>
-  <data name="LogEntries" xml:space="preserve">
-    <value>The contents of the log.</value>
-  </data>
-  <data name="LogEntryCategory" xml:space="preserve">
-    <value>The category for this message.</value>
-  </data>
-  <data name="LogEntryCategoryNumber" xml:space="preserve">
-    <value>An application-specific category number assigned to this entry.</value>
-  </data>
-  <data name="LogEntryData" xml:space="preserve">
-    <value>The binary data associated with this entry in the event log.</value>
-  </data>
-  <data name="LogEntryEntryType" xml:space="preserve">
-    <value>The type of entry - Information, Warning, etc.</value>
-  </data>
-  <data name="LogEntryEventID" xml:space="preserve">
-    <value>The number identifying the message for this source.</value>
-  </data>
-  <data name="LogEntryIndex" xml:space="preserve">
-    <value>The sequence of this entry in the event log.</value>
-  </data>
-  <data name="LogEntryMachineName" xml:space="preserve">
-    <value>The machine on which this event log resides.</value>
-  </data>
-  <data name="LogEntryMessage" xml:space="preserve">
-    <value>The text of the message for this entry.</value>
-  </data>
-  <data name="LogEntryReplacementStrings" xml:space="preserve">
-    <value>The application-supplied strings used in the message.</value>
-  </data>
-  <data name="LogEntryResourceId" xml:space="preserve">
-    <value>The full number identifying the message in the event message dll.</value>
-  </data>
-  <data name="LogEntrySource" xml:space="preserve">
-    <value>The name of the application that wrote this entry.</value>
-  </data>
-  <data name="LogEntryTimeGenerated" xml:space="preserve">
-    <value>The time at which the application logged this entry.</value>
-  </data>
-  <data name="LogEntryTimeWritten" xml:space="preserve">
-    <value>The time at which the system logged this entry to the event log.</value>
-  </data>
-  <data name="LogEntryUserName" xml:space="preserve">
-    <value>The username of the account associated with this entry by the writing application.</value>
-  </data>
-  <data name="LogEntryWritten" xml:space="preserve">
-    <value>Raised each time any application writes an entry to the event log.</value>
-  </data>
-  <data name="LogLog" xml:space="preserve">
-    <value>Gets or sets the name of the log to read from and write to.</value>
-  </data>
-  <data name="LogMonitoring" xml:space="preserve">
-    <value>Indicates if the component monitors the event log for changes.</value>
-  </data>
-  <data name="LogSource" xml:space="preserve">
-    <value>The application name (source name) to use when writing to the event log.</value>
-  </data>
-  <data name="LogSynchronizingObject" xml:space="preserve">
-    <value>The object used to marshal the event handler calls issued as a result of an EventLog change.</value>
-  </data>
-  <data name="LogMachineName" xml:space="preserve">
-    <value>The name of the machine on which to read or write events.</value>
-  </data>
   <data name="BadLogName" xml:space="preserve">
     <value>Event log names must consist of printable characters and cannot contain \\, *, ?, or spaces</value>
   </data>
@@ -232,7 +166,7 @@
     <value>Cannot open registry key {0}\\{1}\\{2}.</value>
   </data>
   <data name="LocalSourceAlreadyExists" xml:space="preserve">
-    <value>Source {0} already exists on the computer '{1}'.</value>
+    <value>Source {0} already exists on the local computer.</value>
   </data>
   <data name="LocalSourceNotRegistered" xml:space="preserve">
     <value>Source {0} is not registered on the local computer.</value>
