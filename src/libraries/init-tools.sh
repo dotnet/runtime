@@ -16,7 +16,7 @@ __BUILD_TOOLS_SEMAPHORE=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/init-t
 
 if [ -e $__BUILD_TOOLS_SEMAPHORE ]; then
     echo "Tools are already initialized"
-    exit 0
+    return #return instead of exit because this script is inlined in other scripts which we don't want to exit
 fi
 
 if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
