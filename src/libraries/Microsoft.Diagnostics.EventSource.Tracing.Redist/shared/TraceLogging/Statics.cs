@@ -532,7 +532,7 @@ namespace System.Diagnostics.Tracing
 
             if (recursionCheck.Contains(dataType))
             {
-                throw new NotSupportedException(Resources.GetResourceString("EventSource_RecursiveTypeDefinition"));
+                throw new NotSupportedException(SR.EventSource_RecursiveTypeDefinition);
             }
 
             recursionCheck.Add(dataType);
@@ -715,7 +715,7 @@ namespace System.Diagnostics.Tracing
                     }
                     else
                     {
-                        throw new ArgumentException(Resources.GetResourceString("EventSource_NonCompliantTypeError", dataType.Name));
+                        throw new ArgumentException(SR.Format(SR.EventSource_NonCompliantTypeError, dataType.Name));
                     }
                 }
             }
