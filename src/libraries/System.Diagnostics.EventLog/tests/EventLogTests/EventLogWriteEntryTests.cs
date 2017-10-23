@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System.ComponentModel;
 using Xunit;
 
@@ -60,7 +59,6 @@ namespace System.Diagnostics.Tests
                 {
                     eventLog.WriteEntry(message);
                 }
-
 
                 if (eventLog.Entries.Count == 0)
                     return null;
