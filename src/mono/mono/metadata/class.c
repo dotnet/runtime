@@ -2195,8 +2195,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	}
 
 	/*valuetypes can't be neither bigger than 1Mb or empty. */
-	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + sizeof (MonoObject))))
-		mono_class_set_type_load_failure (klass, "Value type instance size (%d) cannot be zero, negative, or bigger than 1Mb", klass->instance_size);
+	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + sizeof (MonoObject)))) {
+		/* Special case compiler generated types */
+		/* Hard to check for [CompilerGenerated] here */
+		if (!strstr (klass->name, "StaticArrayInitTypeSize") && !strstr (klass->name, "$ArrayType"))
+			mono_class_set_type_load_failure (klass, "Value type instance size (%d) cannot be zero, negative, or bigger than 1Mb", klass->instance_size);
+	}
 
 	/* Publish the data */
 	mono_loader_lock ();
