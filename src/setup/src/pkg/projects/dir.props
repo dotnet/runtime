@@ -13,6 +13,9 @@
     <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(NuGetRuntimeIdentifier)</PackageTargetRuntime>
 
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+
+    <IncludeSourceFilesInPackage Condition="'$(DotNetBuildFromSource)' == 'true'">false</IncludeSourceFilesInPackage>
+    <IncludeSourceFilesInPackage Condition="'$(IncludeSourceFilesInPackage)' == ''">true</IncludeSourceFilesInPackage>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">

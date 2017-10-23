@@ -12,6 +12,7 @@
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
 
     <!-- Input Directories -->
+    <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
     <PackagesDir Condition="'$(PackagesDir)'==''">$(RepoRoot)packages/</PackagesDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(RepoRoot)Tools/</ToolRuntimePath>
     <LocalToolRuntimePath Condition="'$(LocalToolRuntimePath)' == ''">$(ToolRuntimePath)local/</LocalToolRuntimePath>
@@ -26,5 +27,9 @@
     <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <HostMachineInfoProps>$(BaseIntermediateOutputPath)HostMachineInfo.props</HostMachineInfoProps>
   </PropertyGroup>
 </Project>

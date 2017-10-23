@@ -12,9 +12,19 @@
   
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="PublishCoreHostPackagesToFeed;FinalizeBuildInAzure;UpdatePublishedVersions" />
-          
-  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
+          DependsOnTargets="PublishCoreHostPackagesToFeed;FinalizeBuildInAzure;UpdateVersionsRepo" />
+
+  <!--
+    Target wrapping UpdatePublishedVersions: ensures that ShippedNuGetPackage items are created and
+    disables versions repo update if no auth token is defined. Otherwise, not specifying an auth
+    token would cause an error.
+  -->
+  <Target Name="UpdateVersionsRepo"
+          Condition="'$(GitHubAuthToken)' != ''"
+          DependsOnTargets="ExcludeSymbolsPackagesFromPublishedVersions;
+                            UpdatePublishedVersions" />
+
+  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions">
     <ItemGroup>
       <PackagesToShip Include="$(PublishDirectory)*.nupkg" Exclude="$(PublishDirectory)*.symbols.nupkg" />
       <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
@@ -30,7 +40,7 @@
              Properties="%(Project.AdditionalProperties)"
              BuildInParallel="true" />
   </Target>
-
+  
   <Target Name="EnsureUniqueItemsToUpload">
     <ItemGroup>
       <DedupItems Include="@(ItemsToPublish->Distinct())" />
@@ -86,8 +96,13 @@
   </Target>
 
   <Target Name="PublishDebFilesToDebianRepo"
-          DependsOnTargets="GenerateDebRepoFiles">
-      <Exec Condition="'@(DebInstallerFile)' != ''" Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -addpkg %(DebInstallerFile.UploadJsonFilename)" />
+          DependsOnTargets="GenerateDebRepoFiles"
+          Condition="'$(DebRepoId)' != '' AND
+                     '$(DebRepoUser)' != '' AND
+                     '$(DebRepoPass)' != '' AND
+                     '$(DebRepoServer)' != ''">
+    <Exec Condition="'@(DebInstallerFile)' != ''"
+          Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -addpkg %(DebInstallerFile.UploadJsonFilename)" />
   </Target>
 
   <Target Name="FinalizeBuildInAzure"
@@ -136,7 +151,7 @@
 
   <Target Name="PublishCoreHostPackagesToFeed"
           DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignSymbolPackages;DoPushCoreHostPackagesToFeed"
-          Condition="'@(_MissingBlobNames)' == ''">
+          Condition="'@(_MissingBlobNames)' == '' AND '$(NuGetFeedUrl)' != ''">
     <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
     <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
@@ -227,8 +242,7 @@
   </Target>
 
   <Target Name="PublishDebToolPackageToFeed"
-          Condition="'$(PublishDebToolToFeed)' == 'true'">
-    <Error Condition="'$(CliNuGetFeedUrl)' ==''" Text="Missing required property CliNuGetFeedUrl" />
+          Condition="'$(PublishDebToolToFeed)' == 'true' AND '$(CliNuGetFeedUrl)' != ''">
     <Error Condition="'$(CliNuGetApiKey)' == ''" Text="Missing required property CliNuGetApiKey" />
     <ItemGroup>
       <DebToolPackages Include="$(PackagesOutDir)/dotnet-deb-tool.*.nupkg" />

@@ -3,6 +3,7 @@ using Microsoft.Build.Utilities;
 using Microsoft.Extensions.DependencyModel;
 using NuGet.Common;
 using NuGet.ProjectModel;
+using System;
 using System.IO;
 using System.Linq;
 
@@ -41,7 +42,12 @@ namespace Microsoft.DotNet.Build.Tasks
             {
                 context = new DependencyContextJsonReader().Read(depsStream);
             }
+            
             LockFile lockFile = LockFileUtilities.GetLockFile(AssetsFilePath, NullLogger.Instance);
+            if (lockFile == null)
+            {
+                throw new ArgumentException($"Could not load a LockFile at '{AssetsFilePath}'.", nameof(AssetsFilePath));
+            }
 
             var manager = new RuntimeGraphManager();
             var graph = manager.Collect(lockFile);
