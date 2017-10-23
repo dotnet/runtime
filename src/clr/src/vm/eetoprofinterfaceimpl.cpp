@@ -2006,7 +2006,8 @@ HRESULT EEToProfInterfaceImpl::EnsureProfilerDetachable()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if ((g_profControlBlock.dwEventMask & COR_PRF_MONITOR_IMMUTABLE) != 0)
+    if (((g_profControlBlock.dwEventMask & COR_PRF_MONITOR_IMMUTABLE) != 0) ||
+        ((g_profControlBlock.dwEventMaskHigh & COR_PRF_HIGH_MONITOR_IMMUTABLE) != 0))
     {
         LOG((
             LF_CORPROF, 
@@ -2268,12 +2269,14 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     if (g_profControlBlock.curProfStatus.Get() != kProfStatusInitializingForStartupLoad)
     {
 #ifdef _DEBUG
-        if ((dwEventMask & dwImmutableEventFlags) !=
-            (g_profControlBlock.dwEventMask & dwImmutableEventFlags))
+        if (((dwEventMask & dwImmutableEventFlags) !=
+                (g_profControlBlock.dwEventMask & dwImmutableEventFlags)) ||
 #else //!_DEBUG
-        if ((dwEventMask & COR_PRF_MONITOR_IMMUTABLE) !=
-            (g_profControlBlock.dwEventMask & COR_PRF_MONITOR_IMMUTABLE))
+        if (((dwEventMask & COR_PRF_MONITOR_IMMUTABLE) !=
+                (g_profControlBlock.dwEventMask & COR_PRF_MONITOR_IMMUTABLE)) ||
 #endif //_DEBUG
+            ((dwEventMaskHigh & COR_PRF_HIGH_MONITOR_IMMUTABLE) !=
+                (g_profControlBlock.dwEventMaskHigh & COR_PRF_HIGH_MONITOR_IMMUTABLE)))
         {
             // FUTURE: Should we have a dedicated HRESULT for setting immutable flag?
             return E_FAIL;
@@ -2284,10 +2287,11 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     // allowable after an attach
     if (m_fLoadedViaAttach &&
 #ifdef _DEBUG
-        ((dwEventMask & (~dwAllowableAfterAttachEventFlags)) != 0))
+        (((dwEventMask & (~dwAllowableAfterAttachEventFlags)) != 0) ||
 #else //!_DEBUG
-        ((dwEventMask & (~COR_PRF_ALLOWABLE_AFTER_ATTACH)) != 0))
+        (((dwEventMask & (~COR_PRF_ALLOWABLE_AFTER_ATTACH)) != 0) ||
 #endif //_DEBUG
+        (dwEventMaskHigh & (~COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH))))
     {
         return CORPROF_E_UNSUPPORTED_FOR_ATTACHING_PROFILER;
     }
