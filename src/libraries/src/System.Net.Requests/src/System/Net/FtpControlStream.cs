@@ -11,13 +11,6 @@ using System.Text;
 
 namespace System.Net
 {
-    internal enum FtpPrimitive
-    {
-        Upload = 0,
-        Download = 1,
-        CommandOnly = 2
-    };
-
     internal enum FtpLoginState : byte
     {
         NotLoggedIn,
@@ -381,7 +374,7 @@ namespace System.Net
             // OR set us up for SSL/TLS, after this we'll be writing securely
             else if (status == FtpStatusCode.ServerWantsSecureSession)
             {
-                // If NetworkStream is a TlsStream, then this must be in the async callback 
+                // If NetworkStream is a TlsStream, then this must be in the async callback
                 // from completing the SSL handshake.
                 // So just let the pipeline continue.
                 if (!(NetworkStream is TlsStream))
@@ -741,14 +734,6 @@ namespace System.Net
                 }
             }
             return result;
-        }
-
-        //
-        // A door into protected CloseSocket() method
-        //
-        internal void Quit()
-        {
-            CloseSocket();
         }
 
         private enum GetPathOption
