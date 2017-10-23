@@ -439,7 +439,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Ubuntu1704) $(DistroSpecificMSBuildArguments)",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies $(DistroSpecificMSBuildArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -459,7 +459,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Ubuntu1704) $(DistroSpecificMSBuildArguments)",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) $(DistroSpecificMSBuildArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -479,7 +479,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Ubuntu1704) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -1191,9 +1191,6 @@
     "CliNuGetApiKey": {
       "value": null,
       "isSecret": true
-    },
-    "DistroRid_Ubuntu1704": {
-      "value": "ubuntu.17.04-$(PB_TargetArchitecture)"
     },
     "DockerCommonRunArgs_Ubuntu1704": {
       "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1704) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1704)"
