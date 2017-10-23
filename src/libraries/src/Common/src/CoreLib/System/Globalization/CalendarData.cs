@@ -105,7 +105,7 @@ namespace System.Globalization
 
             if (!LoadCalendarDataFromSystem(localeName, calendarId))
             {
-                Debug.Assert(false, "[CalendarData] LoadCalendarDataFromSystem call isn't expected to fail for calendar " + calendarId + " locale " + localeName);
+                Debug.Fail("[CalendarData] LoadCalendarDataFromSystem call isn't expected to fail for calendar " + calendarId + " locale " + localeName);
 
                 // Something failed, try invariant for missing parts
                 // This is really not good, but we don't want the callers to crash.
