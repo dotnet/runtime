@@ -30,12 +30,6 @@
       "values": [ "True", "False"],
       "defaultValue": "False"
     },
-    "DistroRid": {
-      "description": "Specifies the distro rid for Unix OS.",
-      "valueType": "property",
-      "values": [],
-      "defaultValue": "${OSRid}-${CPUArch}"
-    },
     "TargetArchitecture":{
       "description": "Build for the specified architecture (x64, x86 (supported only on Windows), arm, or arm64, default: x64)",
       "valueType": "property",
@@ -270,7 +264,6 @@
            "TargetArchitecture": "default",
            "OSGroup": "default",
            "MsBuildLogging":"default",
-           "DistroRid":"default",
            "Project":"build.proj"
         }
       }

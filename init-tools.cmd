@@ -12,9 +12,6 @@ set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSI
 set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
 set BUILD_TOOLS_SEMAPHORE=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%\init-tools.completed
 
-:: We do not want to run the first-time experience.
-set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
-
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
   if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
@@ -29,10 +26,24 @@ if exist "%BUILD_TOOLS_SEMAPHORE%" (
 
 if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
 
+if exist "%DotNetBuildToolsDir%" (
+  echo Using tools from '%DotNetBuildToolsDir%'.
+  mklink /j "%TOOLRUNTIME_DIR%" "%DotNetBuildToolsDir%"
+
+  if not exist "%DOTNET_CMD%" (
+    echo ERROR: Ensure that '%DotNetBuildToolsDir%' contains the .NET Core SDK at '%DOTNET_PATH%'
+    exit /b 1
+  )
+
+  echo Done initializing tools.
+  echo Using tools from '%DotNetBuildToolsDir%'. > "%BUILD_TOOLS_SEMAPHORE%"
+  exit /b 0
+)
+
 echo Running %0 > "%INIT_TOOLS_LOG%"
 
 set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
-if exist "%DOTNET_CMD%" goto :afterdotnetinstall
+if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
 echo Installing dotnet cli...
 if NOT exist "%DOTNET_PATH%" mkdir "%DOTNET_PATH%"
@@ -46,7 +57,7 @@ if NOT exist "%DOTNET_LOCAL_PATH%" (
   exit /b 1
 )
 
-:afterdotnetinstall
+:afterdotnetrestore
 
 if exist "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
 echo Restoring BuildTools version %BUILDTOOLS_VERSION%...

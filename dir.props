@@ -38,10 +38,23 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(DotNetBuildOffline)' != 'true'">
+    <!-- list of nuget package sources passed to NuGet -->
+    <RestoreSources>
+      $(OverridePackageSource);
+      https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
+      https://dotnet.myget.org/F/cli-deps/api/v3/index.json;
+      https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
+      https://www.myget.org/F/nugetbuild/api/v3/index.json;
+      https://api.nuget.org/v3/index.json;
+      https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json;
+    </RestoreSources>
+  </PropertyGroup>
+  
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
-  <!-- Versioning --> 
+  <!-- Versioning -->
   <PropertyGroup>
     <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
     <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
@@ -60,11 +73,11 @@
     <!--
       By default, we are always building the nuget packages for HostPolicy, HostFXR and
       Dotnet/AppHost. Thus, the "UseShipped*" properties (below) are always set to false.
-      
+
       However, there are scenarios when some of these components will not change (e.g. during
       servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
       set the appropriate "UseShipped*" property below to true so that we will use the last shipped
-      version of the package. 
+      version of the package.
     -->
 
     <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
@@ -75,20 +88,20 @@
     <UseShippedAppHostPackage>false</UseShippedAppHostPackage>
     <AppHostVersion Condition="'$(UseShippedAppHostPackage)' != 'true'">$(ProductVersion)</AppHostVersion>
     <AppHostVersion Condition="'$(UseShippedAppHostPackage)' == 'true'">2.0.0</AppHostVersion>
-    
-    <!-- 
-        The FXR Resolver package version is only updated whenever there is a change in it. 
+
+    <!--
+        The FXR Resolver package version is only updated whenever there is a change in it.
         If there is ever a need to use a shipped version of the package, then set the property
-        below to true. 
+        below to true.
     -->
     <UseShippedHostResolverPackage>false</UseShippedHostResolverPackage>
     <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductVersion)</HostResolverVersion>
     <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' == 'true'">2.0.0</HostResolverVersion>
 
-    <!-- 
+    <!--
          Host Policy package version is only updated whenever there is a change in it.
          If there is ever a need to use a shipped version of the package, then set the property
-         below to true. 
+         below to true.
     -->
     <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
     <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
@@ -98,18 +111,11 @@
     <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)</InstallersRelativePath>
   </PropertyGroup>
 
-  <!-- list of nuget package sources passed to dnu -->
+  <!-- temporary workaround until https://github.com/dotnet/buildtools/pull/1707 is merged to master -->
   <ItemGroup>
-    <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DotnetSourceList Include="$(OverridePackageSource)" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
+    <DotnetSourceList Include="$(RestoreSources)" />
   </ItemGroup>
-
+  
   <!-- list of projects to perform batch restore -->
   <ItemGroup>
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\pkg\deps\deps.csproj" />
@@ -119,6 +125,8 @@
   <PropertyGroup>
     <DotnetRestorePrefix Condition="'$(RunningOnUnix)' == 'true'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 </DotnetRestorePrefix>
     <DotnetRestoreCommand>$(DotnetRestorePrefix)$(DotnetRestoreCommand)</DotnetRestoreCommand>
+    <!-- Same as $(DotnetRestoreCommand), only doesn't specify `packages` arg -->
+    <DotnetRestoreCommandNoPackages>$(DotnetRestorePrefix)"$(DotnetToolCommand)" restore $(DotnetRestoreSource)</DotnetRestoreCommandNoPackages>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
@@ -130,7 +138,7 @@
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
-  <!-- 
+  <!--
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
   if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
@@ -145,13 +153,13 @@
   <PropertyGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(OsEnvironment)</OSGroup>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)'==''">
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
     <Configuration>$(ConfigurationGroup)</Configuration>
     <Configuration>$(OSGroup)_$(Configuration)</Configuration>
   </PropertyGroup>
-  
+
   <!--
   If Configuration is set then someone explicitly passed it in or we building from VS. In either case
   default $(ConfigurationGroup) or $(OSGroup) from the Configuration if they aren't
@@ -203,34 +211,28 @@
   <PropertyGroup>
     <Framework>netcoreapp2.1</Framework>
   </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'Windows_NT'">
-    <TargetRid Condition="'$(TargetArchitecture)' == 'x86'">win7-x86</TargetRid>
-    <TargetRid Condition="'$(TargetArchitecture)' == 'x64'">win7-x64</TargetRid>
-    <TargetRid Condition="'$(TargetArchitecture)' == 'arm'">win8-arm</TargetRid>
-    <TargetRid Condition="'$(TargetArchitecture)' == 'arm64'">win10-arm64</TargetRid>
+
+  <Import Project="$(HostMachineInfoProps)"
+          Condition="Exists('$(HostMachineInfoProps)')" />
+
+  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(HostMachineRid)' != ''">
+    <OutputRid>$(HostMachineRid.Remove($(HostMachineRid.LastIndexOf('-'))))-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'OSX'">
-    <TargetRid>osx.10.12-x64</TargetRid>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetRid)' == '' and '$(DistroRid)' != ''">
-    <TargetRid>$(DistroRid)</TargetRid>
-  </PropertyGroup>
+
   <!-- Portable -->
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
-    <TargetRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</TargetRid>
-    <TargetRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</TargetRid>
-    <TargetRid Condition="'$(OSGroup)' == 'Linux'">linux-$(TargetArchitecture)</TargetRid>
+    <OutputRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
-    <TestTargetRid Condition="'$(TestTargetRid)' == '' and '$(PortableBuild)' != 'true' and '$(OSGroup)' == 'Windows_NT'">win10-$(TargetArchitecture)</TestTargetRid>
-    <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(TargetRid)</TestTargetRid>
+    <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRid)</TestTargetRid>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
-    <OSPlatformConfig>$(TargetRid).$(ConfigurationGroup)</OSPlatformConfig>
+    <OSPlatformConfig>$(OutputRid).$(ConfigurationGroup)</OSPlatformConfig>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
     <BaseOutputRootPath>$(BaseOutputPath)$(OSPlatformConfig)\</BaseOutputRootPath>
@@ -251,12 +253,11 @@
 
     <SharedFrameworkPublishDir>$(IntermediateOutputRootPath)sharedFrameworkPublish\</SharedFrameworkPublishDir>
     <SharedFrameworkPublishSymbolsDir>$(IntermediateOutputRootPath)sharedFrameworkPublish.symbols\</SharedFrameworkPublishSymbolsDir>
-    <SharedFrameworkNameAndVersionRoot>$(SharedFrameworkPublishDir)shared\$(SharedFrameworkName)\$(SharedFrameworkNugetVersion)</SharedFrameworkNameAndVersionRoot>
   </PropertyGroup>
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
-    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(TargetRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
+    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(OutputRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -294,39 +295,39 @@
     <TargetsCentos>false</TargetsCentos>
   </PropertyGroup>
   <Choose>
-    <When Condition="$(TargetRid.StartsWith('win'))">
+    <When Condition="$(OutputRid.StartsWith('win'))">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('osx'))">
+    <When Condition="$(OutputRid.StartsWith('osx'))">
       <PropertyGroup>
         <TargetsOSX>true</TargetsOSX>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('debian'))">
+    <When Condition="$(OutputRid.StartsWith('debian'))">
       <PropertyGroup>
         <TargetsDebian>true</TargetsDebian>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('ubuntu'))">
+    <When Condition="$(OutputRid.StartsWith('ubuntu'))">
       <PropertyGroup>
         <TargetsUbuntu>true</TargetsUbuntu>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-    <When Condition="$(TargetRid.StartsWith('rhel'))">
+    <When Condition="$(OutputRid.StartsWith('rhel'))">
       <PropertyGroup>
         <TargetsRhel>true</TargetsRhel>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
-        <When Condition="$(TargetRid.StartsWith('centos'))">
+    <When Condition="$(OutputRid.StartsWith('centos'))">
       <PropertyGroup>
         <TargetsCentos>true</TargetsCentos>
         <TargetsLinux>true</TargetsLinux>
@@ -349,18 +350,18 @@
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true'">.deb</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true'">.rpm</InstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>    
+    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
 
   <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
-  <PropertyGroup Condition="'$(TargetRid)' != ''">
-    <PackageTargetRid>$(TargetRid)</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.0-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
+  <PropertyGroup Condition="'$(OutputRid)' != ''">
+    <PackageTargetRid>$(OutputRid)</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.0-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(OutputRid)' == 'rhel.7.4-x64'">rhel.7-x64</PackageTargetRid>
     <ProductMoniker>$(SharedFrameworkNugetVersion)-$(PackageTargetRid)</ProductMoniker>
     <HostResolverVersionMoniker>$(HostResolverVersion)-$(PackageTargetRid)</HostResolverVersionMoniker>
   </PropertyGroup>
@@ -372,7 +373,7 @@
     <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
     <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
@@ -416,7 +417,13 @@
     <!-- These properties should be passed through to new msbuild instances (like 'dotnet build') 
          in order to get the correct output directories in the child project.
     -->
-    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:DistroRid=$(DistroRid) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
+    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
+    <MSBuildPassThroughPropertyList Condition="'$(OutputRid)' != ''">$(MSBuildPassThroughPropertyList) /p:OutputRid=$(OutputRid)</MSBuildPassThroughPropertyList>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- source-build currently uses a newer CLI version that requires `no-restore` to be passed into build/publish -->
+    <NoRestoreArg Condition="'$(DotNetBuildFromSource)' == 'true'">--no-restore</NoRestoreArg>
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build, if we are not using the .NET SDK to build --> 

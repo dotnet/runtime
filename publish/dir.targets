@@ -70,7 +70,7 @@
       </RepoIds>
     </ItemGroup>
     <PropertyGroup>
-      <RidWithoutDots>$([System.String]::Copy($(DistroRid)).Replace('.', ''))</RidWithoutDots>
+      <RidWithoutDots>$([System.String]::Copy($(OutputRid)).Replace('.', ''))</RidWithoutDots>
       <DebRepoId Condition="$([System.String]::Copy(%(RepoIds.Identity)).EndsWith('$(RidWithoutDots)'))">%(RepoIds.Key)</DebRepoId>
     </PropertyGroup>
     <Error Condition="'$(DebRepoId)'=='' OR '$(DebRepoUser)'=='' OR '$(DebRepoPass)'=='' OR '$(DebRepoServer)'==''"
