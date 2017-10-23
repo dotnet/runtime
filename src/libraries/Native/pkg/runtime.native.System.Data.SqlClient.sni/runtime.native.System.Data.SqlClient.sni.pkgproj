@@ -7,13 +7,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Dependency Include="runtime.win-x64.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(SniPackageVersion)</Version>
+      <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
     </Dependency>
     <Dependency Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(SniPackageVersion)</Version>
+      <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
     </Dependency>
     <Dependency Include="runtime.win-arm64.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(SniPackageVersion)</Version>
+      <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
     </Dependency>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
