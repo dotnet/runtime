@@ -14,6 +14,7 @@
     <Compile Include="Perf.Span.Fill.cs" />
     <Compile Include="Perf.Span.IndexOf.cs" />
     <Compile Include="Perf.Span.StartsWith.cs" />
+    <Compile Include="Perf.MemorySlice.cs" />
     <Compile Include="..\TestHelpers.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
