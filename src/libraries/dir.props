@@ -66,21 +66,18 @@
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <!-- list of nuget package sources passed to nuget restore -->
-  <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
-    <!-- Example to consume local CoreCLR package:
-         /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
-    -->
-    <DotnetSourceList Include="$(OverridePackageSource)" />
-    <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <DotnetSourceList Include="$(DotNetSourceBuildRestoreSources)" />
-  </ItemGroup>
+  <!-- Example to consume local CoreCLR package:
+       /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
+       -->
+  <PropertyGroup>
+    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
+      https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
+      https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
+      https://api.nuget.org/v3/index.json;
+      $(OverridePackageSource);
+      $(RestoreSources)
+    </RestoreSources>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
