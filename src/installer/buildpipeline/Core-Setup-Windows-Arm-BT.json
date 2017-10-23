@@ -291,7 +291,7 @@
         "msbuildLocation": "",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken)",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -445,10 +445,6 @@
     "CertificateId": {
       "value": "400"
     },
-    "PB_DistroRid": {
-      "value": "win-$(PB_TargetArchitecture)",
-      "allowOverride": true
-    },
     "MsbuildSigningArguments": {
       "value": "/p:CertificateId=$(CertificateId) /v:detailed /p:SignType=$(PB_SignType)"
     },
@@ -468,6 +464,9 @@
     "PB_ChecksumAzureAccountName": {
       "value": "dotnetclichecksums"
     },
+    "PB_ChecksumContainerName": {
+      "value": "dotnet"
+    },
     "PB_ChecksumAzureAccessToken": {
       "value": null,
       "isSecret": true
@@ -477,6 +476,9 @@
     },
     "PB_AzureAccountName": {
       "value": "sourcebuild"
+    },
+    "PB_ContainerName": {
+      "value": "dotnet"
     },
     "PB_AzureAccessToken": {
       "value": null,
@@ -501,7 +503,7 @@
       "allowOverride": true
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalBuildArguments)"
+      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalBuildArguments)"
     },
     "PB_AdditionalBuildArguments": {
       "value": ""
