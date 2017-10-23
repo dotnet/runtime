@@ -240,9 +240,11 @@ mono_object_get_size         (MonoObject *o);
 MONO_API void 
 mono_monitor_exit            (MonoObject *obj);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_raise_exception	    (MonoException *ex);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_reraise_exception	    (MonoException *ex);
 

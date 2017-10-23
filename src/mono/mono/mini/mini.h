@@ -3267,12 +3267,6 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #define ARCH_VARARG_ICALLS 0
 #endif
 
-/*
- * Coop support for trampolines
- */
-void mono_interruption_checkpoint_from_trampoline (void);
-
-
 #if defined (HOST_WASM)
 
 #define MONO_RETURN_ADDRESS_N(N) NULL

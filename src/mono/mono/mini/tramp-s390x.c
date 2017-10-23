@@ -313,7 +313,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	s390_stg  (buf, s390_r2, 0, STK_BASE, G_STRUCT_OFFSET(trampStack_t, saveFn));
 
 	/* Check for thread interruption */
-	S390_SET  (buf, s390_r1, (guint8 *)mono_interruption_checkpoint_from_trampoline);
+	S390_SET  (buf, s390_r1, (guint8 *)mono_interruption_checkpoint_from_trampoline_deprecated);
 	s390_basr (buf, s390_r14, s390_r1);
 
 	/*----------------------------------------------------------

@@ -2895,7 +2895,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 			mono_error_cleanup (&error);
 	} else {
 		res = mono_runtime_invoke_checked (method, obj, params, &error);
-		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
+		mono_error_raise_exception_deprecated (&error); /* OK to throw, external only without a good alternative */
 	}
 	return res;
 }
@@ -3942,7 +3942,7 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 		}
 	} else {
 		MonoObject *result = mono_runtime_delegate_invoke_checked (delegate, params, &error);
-		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
+		mono_error_raise_exception_deprecated (&error); /* OK to throw, external only without a good alternative */
 		return result;
 	}
 }
@@ -4217,7 +4217,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 		res = mono_runtime_try_exec_main (method, args, exc);
 	} else {
 		res = mono_runtime_exec_main_checked (method, args, &error);
-		mono_error_raise_exception (&error); /* OK to throw, external only without a better alternative */
+		mono_error_raise_exception_deprecated (&error); /* OK to throw, external only without a better alternative */
 	}
 	return res;
 }
@@ -4802,7 +4802,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 		return rval;
 	} else {
 		int rval = do_exec_main_checked (method, args, &error);
-		mono_error_raise_exception (&error); /* OK to throw, external only with no better option */
+		mono_error_raise_exception_deprecated (&error); /* OK to throw, external only with no better option */
 		return rval;
 	}
 }
@@ -4993,7 +4993,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		}
 	} else {
 		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, NULL, &error);
-		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
+		mono_error_raise_exception_deprecated (&error); /* OK to throw, external only without a good alternative */
 		return result;
 	}
 }
@@ -7304,42 +7304,53 @@ mono_get_eh_callbacks (void)
  * mono_raise_exception:
  * \param ex exception object
  * Signal the runtime that the exception \p ex has been raised in unmanaged code.
+ * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
  */
 void
 mono_raise_exception (MonoException *ex) 
 {
+	mono_raise_exception_deprecated (ex);
+}
+
+/*
+ * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
+ */
+void
+mono_raise_exception_deprecated (MonoException *ex) 
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	/*
-	 * NOTE: Do NOT annotate this function with G_GNUC_NORETURN, since
-	 * that will cause gcc to omit the function epilog, causing problems when
-	 * the JIT tries to walk the stack, since the return address on the stack
-	 * will point into the next function in the executable, not this one.
-	 */	
 	eh_callbacks.mono_raise_exception (ex);
 }
 
 /**
- * mono_raise_exception:
+ * mono_reraise_exception:
  * \param ex exception object
  * Signal the runtime that the exception \p ex has been raised in unmanaged code.
+ * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
  */
 void
 mono_reraise_exception (MonoException *ex)
 {
+	mono_reraise_exception_deprecated (ex);
+}
+
+/*
+ * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
+ */
+void
+mono_reraise_exception_deprecated (MonoException *ex)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	/*
-	 * NOTE: Do NOT annotate this function with G_GNUC_NORETURN, since
-	 * that will cause gcc to omit the function epilog, causing problems when
-	 * the JIT tries to walk the stack, since the return address on the stack
-	 * will point into the next function in the executable, not this one.
-	 */
 	eh_callbacks.mono_reraise_exception (ex);
 }
 
+/*
+ * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
+ */
 void
-mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx) 
+mono_raise_exception_with_context_deprecated (MonoException *ex, MonoContext *ctx) 
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7719,7 +7730,7 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc)
 			mono_error_cleanup (&error);
 	} else {
 		s = (MonoString *) mono_runtime_invoke_checked (method, target, NULL, &error);
-		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
+		mono_error_raise_exception_deprecated (&error); /* OK to throw, external only without a good alternative */
 	}
 
 	return s;

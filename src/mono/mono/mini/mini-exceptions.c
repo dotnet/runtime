@@ -2415,7 +2415,7 @@ restore_stack_protection (void)
 	/* here we also throw a stack overflow exception */
 	ex->trace_ips = NULL;
 	ex->stack_trace = NULL;
-	mono_raise_exception (ex);
+	mono_raise_exception_deprecated (ex);
 }
 
 gpointer

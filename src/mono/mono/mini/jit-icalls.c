@@ -1914,15 +1914,16 @@ mono_ckfinite (double d)
  * Architectures should move away from calling this function and
  * instead call mono_thread_force_interruption_checkpoint_noraise (),
  * rewrind to the parent frame, and throw the exception normally.
+ * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
  */
 void
-mono_interruption_checkpoint_from_trampoline (void)
+mono_interruption_checkpoint_from_trampoline_deprecated (void)
 {
 	MonoException *ex;
 
 	ex = mono_thread_force_interruption_checkpoint_noraise ();
 	if (ex)
-		mono_raise_exception (ex);
+		mono_raise_exception_deprecated (ex);
 }
 
 void

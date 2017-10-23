@@ -1032,7 +1032,7 @@ ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *
 }
 
 /**
- * mono_error_raise_exception:
+ * mono_error_raise_exception_deprecated:
  * \param target_error the exception to raise
  *
  * Raises the exception of \p target_error.
@@ -1042,11 +1042,11 @@ ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *
  * The error object \p target_error is cleaned up.
 */
 void
-mono_error_raise_exception (MonoError *target_error)
+mono_error_raise_exception_deprecated (MonoError *target_error)
 {
 	MonoException *ex = mono_error_convert_to_exception (target_error);
 	if (ex)
-		mono_raise_exception (ex);
+		mono_raise_exception_deprecated (ex);
 }
 
 /**
