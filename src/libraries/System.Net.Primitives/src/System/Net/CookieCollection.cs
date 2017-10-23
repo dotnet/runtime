@@ -173,16 +173,16 @@ namespace System.Net
         // If isStrict == true, replace the cookie if found same with newest Variant.
         // Returns 1 if added, 0 if replaced or rejected.
 
-/* 
+/*
     TODO: #13607
     VSO 449560
     Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
     block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens. 
+    public, this is a temporary workaround till that happens.
 */
-#if uap 
+#if uap
         public
-#else 
+#else
         internal
 #endif
         int InternalAdd(Cookie cookie, bool isStrict)
@@ -245,19 +245,5 @@ namespace System.Net
         {
             return m_list.GetEnumerator();
         }
-
-#if DEBUG
-        internal void Dump()
-        {
-            if (NetEventSource.IsEnabled)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-                foreach (Cookie cookie in this)
-                {
-                    cookie.Dump();
-                }
-            }
-        }
-#endif
     }
 }
