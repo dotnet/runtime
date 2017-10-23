@@ -418,6 +418,7 @@
          in order to get the correct output directories in the child project.
     -->
     <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
+    <MSBuildPassThroughPropertyList Condition="'$(OutputRid)' != ''">$(MSBuildPassThroughPropertyList) /p:OutputRid=$(OutputRid)</MSBuildPassThroughPropertyList>
   </PropertyGroup>
 
   <PropertyGroup>
