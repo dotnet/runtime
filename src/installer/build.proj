@@ -42,7 +42,7 @@
 
     <PropertyGroup>
       <HostMachineInfoPropsContent>
-&lt;Project&gt;
+&lt;Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"&gt;
   &lt;PropertyGroup&gt;
     &lt;HostMachineRid&gt;$(HostMachineRid)&lt;/HostMachineRid&gt;
   &lt;/PropertyGroup&gt;
