@@ -2839,7 +2839,7 @@ namespace System.Globalization
                 }
                 previousNode = temp;
             };
-            Debug.Assert(false, "The hashtable is full.  This should not happen.");
+            Debug.Fail("The hashtable is full.  This should not happen.");
         }
 
         private void InsertHash(TokenHashValue[] hashTable, String str, TokenType tokenType, int tokenValue)
@@ -2927,7 +2927,7 @@ namespace System.Globalization
                 hashcode += hashProbe;
                 if (hashcode >= TOKEN_HASH_SIZE) hashcode -= TOKEN_HASH_SIZE;
             } while (i < TOKEN_HASH_SIZE);
-            Debug.Assert(false, "The hashtable is full.  This should not happen.");
+            Debug.Fail("The hashtable is full.  This should not happen.");
         }
 
         private bool CompareStringIgnoreCaseOptimized(string string1, int offset1, int length1, string string2, int offset2, int length2)

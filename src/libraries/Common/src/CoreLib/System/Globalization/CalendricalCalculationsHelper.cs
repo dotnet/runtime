@@ -215,7 +215,7 @@ namespace System.Globalization
                 }
             }
 
-            Debug.Assert(false, "Not expected to come here");
+            Debug.Fail("Not expected to come here");
             return DefaultEphemerisCorrection(year);
         }
 

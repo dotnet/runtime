@@ -4647,7 +4647,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 case ParseFailureKind.FormatBadDateTimeCalendar:
                     return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), result.calendar));
                 default:
-                    Debug.Assert(false, "Unkown DateTimeParseFailure: " + result);
+                    Debug.Fail("Unkown DateTimeParseFailure: " + result);
                     return null;
             }
         }
