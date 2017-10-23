@@ -303,7 +303,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return Activator.CreateInstance(specificType, new Object[] { propType.Value, obj });
             }
 
-            Debug.Assert(false, "We should not see non-WinRT type here");
+            Debug.Fail("We should not see non-WinRT type here");
             return null;
         }
 

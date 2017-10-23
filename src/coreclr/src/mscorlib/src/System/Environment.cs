@@ -773,7 +773,7 @@ namespace System
             IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST),
                 Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, "Environment", 0, 1000, IntPtr.Zero);
 
-            if (r == IntPtr.Zero) Debug.Assert(false, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
+            Debug.Assert(r != IntPtr.Zero, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
 #endif // FEATURE_WIN32_REGISTRY
         }
     }
