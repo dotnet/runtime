@@ -32,7 +32,7 @@ if [ -d "$DotNetBuildToolsDir" ]; then
 
     echo "Done initializing tools."
     mkdir -p "$(dirname "$__BUILD_TOOLS_SEMAPHORE")" && touch $__BUILD_TOOLS_SEMAPHORE
-    exit 0
+    return #return instead of exit because this script is inlined in other scripts which we don't want to exit
 fi
 
 echo "Running: $__scriptpath/init-tools.sh" > $__init_tools_log
