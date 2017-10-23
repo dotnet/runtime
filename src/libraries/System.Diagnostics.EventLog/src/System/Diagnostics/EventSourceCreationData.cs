@@ -21,18 +21,6 @@ namespace System.Diagnostics
             MachineName = machineName;
         }
 
-        private EventSourceCreationData(string source, string logName, string machineName,
-                                          string messageResourceFile, string parameterResourceFile,
-                                          string categoryResourceFile, short categoryCount)
-                                          : this(source, logName, machineName)
-
-        {
-            MessageResourceFile = messageResourceFile;
-            ParameterResourceFile = parameterResourceFile;
-            CategoryResourceFile = categoryResourceFile;
-            CategoryCount = categoryCount;
-        }
-        
         public string LogName { get; set; } = "Application";
 
         public string MachineName { get; set; } = ".";

@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26919.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.EventLog.Tests", "tests\System.Diagnostics.EventLog.Tests.csproj", "{5B218883-369E-4C3D-8BD0-74843474DCBD}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -46,5 +46,8 @@ Global
 		{5B218883-369E-4C3D-8BD0-74843474DCBD} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{432779B9-3CBD-4871-A7DC-D8A192319DBD} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{F405C42E-EF6F-4404-80FD-3B87E216707C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {330591ED-A3EA-449B-964F-48B5BA135EDF}
 	EndGlobalSection
 EndGlobal

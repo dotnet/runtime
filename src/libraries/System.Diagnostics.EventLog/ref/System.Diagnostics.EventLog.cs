@@ -20,7 +20,6 @@ namespace System.Diagnostics
         public long InstanceId { get { throw null; } set { } }
     }
     [System.ComponentModel.DefaultEventAttribute("EntryWritten")]
-    [System.Diagnostics.MonitoringDescriptionAttribute("Provides interaction with Windows event logs.")]
     public partial class EventLog : System.ComponentModel.Component, System.ComponentModel.ISupportInitialize
     {
         public EventLog() { }
@@ -29,23 +28,19 @@ namespace System.Diagnostics
         public EventLog(string logName, string machineName, string source) { }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(false)]
-        [System.Diagnostics.MonitoringDescriptionAttribute("Indicates if the component monitors the event log for changes.")]
         public bool EnableRaisingEvents { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
-        [System.Diagnostics.MonitoringDescriptionAttribute("The contents of the log.")]
         public System.Diagnostics.EventLogEntryCollection Entries { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.ReadOnlyAttribute(true)]
         [System.ComponentModel.SettingsBindableAttribute(true)]
-        [System.Diagnostics.MonitoringDescriptionAttribute("Gets or sets the name of the log to read from and write to.")]
         public string Log { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public string LogDisplayName { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(".")]
         [System.ComponentModel.ReadOnlyAttribute(true)]
         [System.ComponentModel.SettingsBindableAttribute(true)]
-        [System.Diagnostics.MonitoringDescriptionAttribute("The machine on which this event log resides.")]
         public string MachineName { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
@@ -60,13 +55,10 @@ namespace System.Diagnostics
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.ReadOnlyAttribute(true)]
         [System.ComponentModel.SettingsBindableAttribute(true)]
-        [System.Diagnostics.MonitoringDescriptionAttribute("The application name (source name) to use when writing to the event log.")]
         public string Source { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(null)]
-        [System.Diagnostics.MonitoringDescriptionAttribute("The object used to marshal the event handler calls issued as a result of an EventLog change.")]
-        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { [System.Security.Permissions.HostProtectionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Synchronization=true)]get { throw null; } set { } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("Raised each time any application writes an entry to the event log.")]
+        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { [System.Security.Permissions.HostProtectionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Synchronization = true)]get { throw null; } set { } }
         public event System.Diagnostics.EntryWrittenEventHandler EntryWritten { add { } remove { } }
         public void BeginInit() { }
         public void Clear() { }
@@ -114,35 +106,21 @@ namespace System.Diagnostics
     public sealed partial class EventLogEntry : System.ComponentModel.Component, System.Runtime.Serialization.ISerializable
     {
         internal EventLogEntry() { }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The category for this message.")]
         public string Category { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("An application-specific category number assigned to this entry.")]
         public short CategoryNumber { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The binary data associated with this entry in the event log.")]
         public byte[] Data { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The type of entry - Information, Warning, etc.")]
         public System.Diagnostics.EventLogEntryType EntryType { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The number identifying the message for this source.")]
         [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public int EventID { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The sequence of this entry in the event log.")]
         public int Index { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The full number identifying the message in the event message dll.")]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public long InstanceId { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The machine on which this event log resides.")]
         public string MachineName { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The text of the message for this entry.")]
         public string Message { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The application-supplied strings used in the message.")]
         public string[] ReplacementStrings { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The name of the application that wrote this entry.")]
         public string Source { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The time at which the application logged this entry.")]
         public System.DateTime TimeGenerated { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The time at which the system logged this entry to the event log.")]
         public System.DateTime TimeWritten { get { throw null; } }
-        [System.Diagnostics.MonitoringDescriptionAttribute("The username of the account associated with this entry by the writing application.")]
         public string UserName { get { throw null; } }
         public bool Equals(System.Diagnostics.EventLogEntry otherEntry) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }

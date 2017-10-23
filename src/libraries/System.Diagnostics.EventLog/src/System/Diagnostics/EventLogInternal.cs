@@ -105,14 +105,6 @@ namespace System.Diagnostics
             }
         }
 
-        public EventLogInternal() : this("", ".", "", null)
-        {
-        }
-
-        public EventLogInternal(string logName) : this(logName, ".", "", null)
-        {
-        }
-
         public EventLogInternal(string logName, string machineName) : this(logName, machineName, "", null)
         {
         }
@@ -1348,26 +1340,6 @@ namespace System.Diagnostics
             boolFlags[Flag_sourceVerified] = true;
         }
 
-        public void WriteEntry(string message)
-        {
-            WriteEntry(message, EventLogEntryType.Information, (short)0, 0, null);
-        }
-
-        public void WriteEntry(string message, EventLogEntryType type)
-        {
-            WriteEntry(message, type, (short)0, 0, null);
-        }
-
-        public void WriteEntry(string message, EventLogEntryType type, int eventID)
-        {
-            WriteEntry(message, type, eventID, 0, null);
-        }
-
-        public void WriteEntry(string message, EventLogEntryType type, int eventID, short category)
-        {
-            WriteEntry(message, type, eventID, category, null);
-        }
-
         public void WriteEntry(string message, EventLogEntryType type, int eventID, short category,
                                byte[] rawData)
         {
@@ -1392,12 +1364,6 @@ namespace System.Diagnostics
             // Our DLL has 64K different entries; all of them just display the first
             // insertion string.
             InternalWriteEvent((uint)eventID, (ushort)category, type, new string[] { message }, rawData, currentMachineName);
-        }
-
-        [ComVisible(false)]
-        public void WriteEvent(EventInstance instance, params Object[] values)
-        {
-            WriteEvent(instance, null, values);
         }
 
         [ComVisible(false)]
@@ -1479,7 +1445,7 @@ namespace System.Diagnostics
                                                      sid, (short)strings.Length, rawData.Length, new HandleRef(this, stringsRootHandle.AddrOfPinnedObject()), rawData);
                 if (!success)
                 {
-                    //Trace("WriteEvent", "Throwing Win32Exception");
+                    // Trace("WriteEvent", "Throwing Win32Exception");
                     throw SharedUtils.CreateSafeWin32Exception();
                 }
             }
