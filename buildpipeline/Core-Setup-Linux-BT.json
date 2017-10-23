@@ -1,11 +1,13 @@
 {
   "build": [
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Cleanup previous build",
       "timeoutInMinutes": 0,
+      "refName": "Task1",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -19,11 +21,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Clone repo",
       "timeoutInMinutes": 0,
+      "refName": "Task2",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -37,11 +41,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "git checkout",
       "timeoutInMinutes": 0,
+      "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -55,11 +61,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create host machine tools sandbox",
       "timeoutInMinutes": 0,
+      "refName": "Task4",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -75,11 +83,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize tools in sandbox for host machine",
       "timeoutInMinutes": 0,
+      "refName": "Task5",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -93,11 +103,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize docker",
       "timeoutInMinutes": 0,
+      "refName": "Task6",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -111,11 +123,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build",
       "timeoutInMinutes": 0,
+      "refName": "Task7",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -129,11 +143,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish",
       "timeoutInMinutes": 0,
+      "refName": "Task8",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -147,11 +163,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Copy built Portable binaries to staging directory",
       "timeoutInMinutes": 0,
+      "refName": "Task9",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -167,11 +185,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize docker - Ubuntu14.04",
       "timeoutInMinutes": 0,
+      "refName": "Task10",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -185,11 +205,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Init tools - Ubuntu14.04",
       "timeoutInMinutes": 0,
+      "refName": "Task11",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -203,11 +225,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Ubuntu 14.04",
       "timeoutInMinutes": 0,
+      "refName": "Task12",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -221,11 +245,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Package - Ubuntu 14.04 ",
       "timeoutInMinutes": 0,
+      "refName": "Task13",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -239,11 +265,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish - Ubuntu 14.04 ",
       "timeoutInMinutes": 0,
+      "refName": "Task14",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -257,11 +285,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize docker - Ubuntu16.04",
       "timeoutInMinutes": 0,
+      "refName": "Task15",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -275,11 +305,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Init tools - Ubuntu16.04 ",
       "timeoutInMinutes": 0,
+      "refName": "Task16",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -293,11 +325,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies -Ubuntu 16.04 ",
       "timeoutInMinutes": 0,
+      "refName": "Task17",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -311,11 +345,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Package - Ubuntu 16.04",
       "timeoutInMinutes": 0,
+      "refName": "Task18",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -329,11 +365,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish - Ubuntu 16.04 ",
       "timeoutInMinutes": 0,
+      "refName": "Task19",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -347,11 +385,113 @@
       }
     },
     {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker - Ubuntu17.04",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedTask151",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Ubuntu1704)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Ubuntu17.04",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedTask162",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies -Ubuntu 17.04",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedTask173",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Ubuntu1704) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Ubuntu 17.04",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedTask184",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Ubuntu1704) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Ubuntu 17.04",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedTask195",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Ubuntu1704) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize docker - Ubuntu16.10",
       "timeoutInMinutes": 0,
+      "refName": "Task20",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -365,11 +505,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Init tools - Ubuntu16.10",
       "timeoutInMinutes": 0,
+      "refName": "Task21",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -383,11 +525,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Ubuntu 16.10",
       "timeoutInMinutes": 0,
+      "refName": "Task22",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -401,11 +545,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Package - Ubuntu 16.10",
       "timeoutInMinutes": 0,
+      "refName": "Task23",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -419,11 +565,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish - Ubuntu 16.10",
       "timeoutInMinutes": 0,
+      "refName": "Task24",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -437,11 +585,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize docker - Debian 8",
       "timeoutInMinutes": 0,
+      "refName": "Task25",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -455,11 +605,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Init tools - Debian 8 container",
       "timeoutInMinutes": 0,
+      "refName": "Task26",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -473,11 +625,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Debian 8",
       "timeoutInMinutes": 0,
+      "refName": "Task27",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -491,11 +645,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Package - Debian 8",
       "timeoutInMinutes": 0,
+      "refName": "Task28",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -509,11 +665,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish - Debian 8",
       "timeoutInMinutes": 0,
+      "refName": "Task29",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -526,12 +684,14 @@
         "failOnStandardError": "false"
       }
     },
-	{
+    {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize docker - Debian 9",
       "timeoutInMinutes": 0,
+      "refName": "Task30",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -545,11 +705,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Init tools - Debian 9 container",
       "timeoutInMinutes": 0,
+      "refName": "Task31",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -563,11 +725,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Debian 9",
       "timeoutInMinutes": 0,
+      "refName": "Task32",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -581,11 +745,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Package - Debian 9",
       "timeoutInMinutes": 0,
+      "refName": "Task33",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -599,11 +765,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish - Debian 9",
       "timeoutInMinutes": 0,
+      "refName": "Task34",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -617,11 +785,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Initialize docker - Rhel7",
       "timeoutInMinutes": 0,
+      "refName": "Task35",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -635,11 +805,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Init tools - Rhel7",
       "timeoutInMinutes": 0,
+      "refName": "Task36",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -653,11 +825,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Rhel7",
       "timeoutInMinutes": 0,
+      "refName": "Task37",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -671,11 +845,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Package - Rhel7",
       "timeoutInMinutes": 0,
+      "refName": "Task38",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -689,11 +865,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish - Rhel7",
       "timeoutInMinutes": 0,
+      "refName": "Task39",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -707,11 +885,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
+      "refName": "Task40",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -725,11 +905,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Copy Publish Artifact: Build Logs",
       "timeoutInMinutes": 0,
+      "refName": "Task41",
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
         "versionSpec": "1.*",
@@ -744,11 +926,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
+      "refName": "Task42",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -776,31 +960,10 @@
     {
       "enabled": false,
       "definition": {
-        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
-      },
-      "inputs": {
-        "additionalFields": "{}"
-      }
-    },
-    {
-      "enabled": false,
-      "definition": {
-        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
-      },
-      "inputs": {
-        "multipliers": "[]",
-        "parallel": "false",
-        "continueOnError": "true",
-        "additionalFields": "{}"
-      }
-    },
-    {
-      "enabled": false,
-      "definition": {
         "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
       },
       "inputs": {
-        "workItemType": "4777",
+        "workItemType": "234347",
         "assignToRequestor": "true",
         "additionalFields": "{}"
       }
@@ -839,7 +1002,7 @@
       "value": null,
       "isSecret": true
     },
-	"PB_DebianId_debian9-x64": {
+    "PB_DebianId_debian9-x64": {
       "value": null,
       "isSecret": true
     },
@@ -963,7 +1126,7 @@
       "value": "/p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) $(PB_DebianKeys)"
     },
     "PB_DebianKeys": {
-      "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_debian9-x64=$(PB_DebianId_debian9-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64)"
+      "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_debian9-x64=$(PB_DebianId_debian9-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64) /p:DebianId_ubuntu1704-x64=$(PB_DebianId_ubuntu1704-x64)"
     },
     "DockerTag_Ubuntu1404": {
       "value": "ubuntu-14.04-debpkg-e5cf912-20175003025046"
@@ -1028,6 +1191,22 @@
     "CliNuGetApiKey": {
       "value": null,
       "isSecret": true
+    },
+    "DistroRid_Ubuntu1704": {
+      "value": "ubuntu.17.04-$(PB_TargetArchitecture)"
+    },
+    "DockerCommonRunArgs_Ubuntu1704": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1704) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1704)"
+    },
+    "DockerImageName_Ubuntu1704": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Ubuntu1704)"
+    },
+    "DockerTag_Ubuntu1704": {
+      "value": "ubuntu-17.04-debpkg-7968025-20172512022553"
+    },
+    "PB_DebianId_ubuntu1704-x64": {
+      "value": null,
+      "isSecret": true
     }
   },
   "demands": [
@@ -1061,7 +1240,9 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "3"
+      "cleanOptions": "3",
+      "checkoutNestedSubmodules": "false",
+      "labelSourcesFormat": "$(build.buildNumber)"
     },
     "id": "c19ea379-feb7-4ca5-8f7f-5f2b5095ea62",
     "type": "TfsGit",
@@ -1073,6 +1254,7 @@
   },
   "processParameters": {},
   "quality": "definition",
+  "drafts": [],
   "queue": {
     "id": 36,
     "name": "DotNet-Build",
@@ -1085,13 +1267,14 @@
   "name": "Core-Setup-Linux-BT",
   "path": "\\",
   "type": "build",
+  "queueStatus": "enabled",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097676,
-    "visibility": "private"
+    "revision": 418098235,
+    "visibility": "organization"
   }
 }
