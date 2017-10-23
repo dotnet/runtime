@@ -91,7 +91,42 @@ namespace System.Net.Http
 
             if (HttpUtilities.IsSupportedSecureScheme(uri.Scheme))
             {
-                SslStream sslStream = await EstablishSslConnection(uri.IdnHost, request, stream).ConfigureAwait(false);
+                // Get the appropriate host name to use for the SSL connection, allowing a host header to override.
+                string host = request.Headers.Host;
+                if (host == null)
+                {
+                    // No host header, use the host from the Uri.
+                    host = uri.IdnHost;
+                }
+                else
+                {
+                    // There is a host header.  Use it, but first see if we need to trim off a port.
+                    int colonPos = host.IndexOf(':');
+                    if (colonPos >= 0)
+                    {
+                        // There is colon, which could either be a port separator or a separator in
+                        // an IPv6 address.  See if this is an IPv6 address; if it's not, use everything
+                        // before the colon as the host name, and if it is, use everything before the last
+                        // colon iff the last colon is after the end of the IPv6 address (otherwise it's a
+                        // part of the address).
+                        int ipV6AddressEnd = host.IndexOf(']');
+                        if (ipV6AddressEnd == -1)
+                        {
+                            host = host.Substring(0, colonPos);
+                        }
+                        else
+                        {
+                            colonPos = host.LastIndexOf(':');
+                            if (colonPos > ipV6AddressEnd)
+                            {
+                                host = host.Substring(0, colonPos);
+                            }
+                        }
+                    }
+                }
+
+                // Establish the connection using the parsed host name.
+                SslStream sslStream = await EstablishSslConnection(host, request, stream).ConfigureAwait(false);
                 stream = sslStream;
                 transportContext = sslStream.TransportContext;
             }
