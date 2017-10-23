@@ -3292,6 +3292,8 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             // latter.
             return (aligned) ? INS_movaps : INS_movups;
         }
+#elif defined(_TARGET_ARM64_)
+        return INS_ldr;
 #else
         assert(!"ins_Load with SIMD type");
 #endif
