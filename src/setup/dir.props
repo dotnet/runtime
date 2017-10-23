@@ -264,10 +264,12 @@
     <DotnetHostString>dotnet-host-</DotnetHostString>
     <DotnetHostFxrString>dotnet-hostfxr-</DotnetHostFxrString>
     <DotnetRuntimeString>dotnet-runtime-</DotnetRuntimeString>
+    <DotnetRuntimeDependenciesPackageString>dotnet-runtime-deps-</DotnetRuntimeDependenciesPackageString>
     <CombinedInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</CombinedInstallerStart>
     <SharedHostInstallerStart>$(PackagesOutDir)$(DotnetHostString)</SharedHostInstallerStart>
     <HostFxrInstallerStart>$(PackagesOutDir)$(DotnetHostFxrString)</HostFxrInstallerStart>
     <SharedFrameworkInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
+    <DotnetRuntimeDependenciesPackageInstallerStart>$(PackagesOutDir)$(DotnetRuntimeDependenciesPackageString)</DotnetRuntimeDependenciesPackageInstallerStart>
 
     <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
          and runtime ( earlier as dotnet-sharedframework-*)	-->
@@ -372,6 +374,7 @@
     <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
     <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
+    <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -381,6 +384,8 @@
     <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
     <SharedFxDebPkgName>$(DotnetRuntimeString)$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
     <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
+    <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductVersion)</RuntimeDependenciesDebPkgName>
+    <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
   </PropertyGroup>
 
   <PropertyGroup>

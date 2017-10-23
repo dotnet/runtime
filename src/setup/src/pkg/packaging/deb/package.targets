@@ -49,7 +49,7 @@
           Condition="'$(BuildDebPackage)'=='true'" />
 
   <Target Name="BuildDebs"
-          DependsOnTargets="InitializeDotnetDebTool;GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb"
+          DependsOnTargets="InitializeDotnetDebTool;GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb;GenerateRuntimeDependenciesDeb"
           Condition="'$(BuildDebPackage)'=='true' and '$(DebuildPresent)' == 'true'" />
 
   <Target Name="GenerateSharedHostDeb">
@@ -198,7 +198,8 @@
 
   </Target>
 
-  <Target Name="GenerateSharedFrameworkDeb">
+  <Target Name="GenerateSharedFrameworkDeb" DependsOnTargets="GetLibIcuPackageName">
+  
     <PropertyGroup>
       <DebPackageName>$(SharedFxDebPkgName)</DebPackageName>
       <DebPackageVersion>$(SharedFrameworkNugetVersion)</DebPackageVersion>
@@ -220,12 +221,6 @@
 
     <RemoveDir Condition="Exists('$(debIntermediatesDir)')" Directories="$(debIntermediatesDir)" />
     <MakeDir Directories="$(debIntermediatesDir)" />
-
-    <!-- Compute ICU Version -->
-    <Exec Command="apt-cache search --names-only '^libicu[0-9]+$' | cut -d' ' -f1"
-          ConsoleToMSBuild="true">
-        <Output TaskParameter="ConsoleOutput" PropertyName="LibIcuPackageName" />
-    </Exec>
 
     <!-- Create empty debian layout -->
     <RemoveDir Condition="Exists('$(debLayoutDirectory)')" Directories="$(debLayoutDirectory)" />
@@ -287,6 +282,81 @@
           UseHardlinksIfPossible="False" />
 
   </Target>
+  
+  <Target Name="GenerateRuntimeDependenciesDeb" DependsOnTargets="GetLibIcuPackageName">
+    <PropertyGroup>
+      <DebPackageName>$(RuntimeDependenciesDebPkgName)</DebPackageName>
+      <DebPackageVersion>$(SharedFrameworkNugetVersion)</DebPackageVersion>
+      <DebFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</DebFile>
+      <ConfigJsonName>dotnet-runtime-deps-debian_config.json</ConfigJsonName>
+      <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
+      <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <debLayoutDirectory>$(debIntermediatesDir)/debianLayoutDirectory/</debLayoutDirectory>
+      <debLayoutAbsolute>$(debLayoutDirectory)$</debLayoutAbsolute>
+      <debLayoutPackageRoot>$(debLayoutDirectory)package_root</debLayoutPackageRoot>
+      <debLayoutSamples>$(debLayoutDirectory)samples</debLayoutSamples>
+      <debLayoutDocs>$(debLayoutDirectory)docs</debLayoutDocs>
+    </PropertyGroup>
+
+    <RemoveDir Condition="Exists('$(debIntermediatesDir)')" Directories="$(debIntermediatesDir)" />
+    <MakeDir Directories="$(debIntermediatesDir)" />
+
+    <!-- Compute LIBSSL Version -->
+    <Exec Command="apt-cache search --names-only '^libssl[.0-9]+$' | cut -d' ' -f1" 
+          ConsoleToMSBuild="true"> 
+       <Output TaskParameter="ConsoleOutput" PropertyName="LibSSLPackageName" /> 
+    </Exec> 
+
+    <!-- Create empty debian layout -->
+    <RemoveDir Condition="Exists('$(debLayoutDirectory)')" Directories="$(debLayoutDirectory)" />
+    <MakeDir Directories="$(debLayoutDirectory)" />
+    <MakeDir Directories="$(debLayoutAbsolute)" />
+    <MakeDir Directories="$(debLayoutPackageRoot)" />
+    <MakeDir Directories="$(debLayoutSamples)" />
+    <MakeDir Directories="$(debLayoutDocs)" />
+
+    <!-- Replace config json variables -->
+    <ItemGroup>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%">
+        <ReplacementString>$(RuntimeDependenciesDebPkgName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
+        <ReplacementString>$(SharedFrameworkNugetVersion)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%LIBSSL_PACKAGE_NAME%">
+        <ReplacementString>$(LibSSLPackageName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%LIBICU_PACKAGE_NAME%"> 
+        <ReplacementString>$(LibIcuPackageName)</ReplacementString> 
+      </SharedFrameworkTokenValue> 
+
+    </ItemGroup>
+
+    <ReplaceFileContents InputFile="$(ConfigJsonFile)"
+                         DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
+                         ReplacementItems="@(SharedFrameworkTokenValue)" />
+
+    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(consumingProjectDirectory)" />
+
+    <!-- Copy package to output -->
+    <ItemGroup>
+      <GeneratedDebFiles Remove="@(GeneratedDebFiles)" />
+      <GeneratedDebFiles Include="$(debIntermediatesDir)/*.deb" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedDebFiles->Count()) .deb files generated." Condition="'@(GeneratedDebFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedDebFiles)"
+          DestinationFiles="$(DebFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
+  </Target>
 
   <Target Name="TestDebuild">
 
@@ -305,5 +375,13 @@
     <Message Condition=" '$(DebuildPresent)'  != 'true' "
              Text="Debuild Not found, Debian packages will not be built."
              Importance="High" />
+  </Target>
+
+  <!-- Compute LibIcu Package Name -->
+  <Target Name="GetLibIcuPackageName">
+    <Exec Command="apt-cache search --names-only '^libicu[0-9]+$' | cut -d' ' -f1" 
+          ConsoleToMSBuild="true"> 
+       <Output TaskParameter="ConsoleOutput" PropertyName="LibIcuPackageName" /> 
+    </Exec>
   </Target>
 </Project>
