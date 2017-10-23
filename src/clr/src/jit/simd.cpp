@@ -98,6 +98,8 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
         assert(size == 32);
         return 32;
     }
+#elif defined(_TARGET_ARM64_)
+    return 16;
 #else
     assert(!"getSIMDTypeAlignment() unimplemented on target arch");
     unreached();
