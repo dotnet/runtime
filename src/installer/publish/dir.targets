@@ -65,6 +65,9 @@
       <RepoIds Include="DebianId_ubuntu1610-x64">
         <Key>$(DebianId_ubuntu1610-x64)</Key>
       </RepoIds>
+      <RepoIds Include="DebianId_ubuntu1704-x64">
+        <Key>$(DebianId_ubuntu1704-x64)</Key>
+      </RepoIds>
     </ItemGroup>
     <PropertyGroup>
       <RidWithoutDots>$([System.String]::Copy($(OutputRid)).Replace('.', ''))</RidWithoutDots>

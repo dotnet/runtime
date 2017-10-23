@@ -32,7 +32,7 @@
         {
           "Name": "Core-Setup-Linux-Arm-BT",
           "Parameters": {
-            "PB_DockerTag": "centos-6-d485f41-20173404063424",
+            "PB_DockerTag": "centos-6-376e1a3-20174311014331",
             "PB_TargetArchitecture": "x64",
             "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols",
             "PB_AdditionalMSBuildArguments":"/p:OutputRid=rhel.6-x64",
