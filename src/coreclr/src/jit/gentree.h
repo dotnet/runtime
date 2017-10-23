@@ -2734,7 +2734,6 @@ struct GenTreeLngCon : public GenTreeIntConCommon
     INT32 HiVal()
     {
         return (INT32)(gtLconVal >> 32);
-        ;
     }
 
     GenTreeLngCon(INT64 val) : GenTreeIntConCommon(GT_CNS_NATIVELONG, TYP_LONG)
