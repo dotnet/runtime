@@ -17,14 +17,25 @@ namespace System.Net.Http
 {
     internal sealed partial class HttpConnection : IDisposable
     {
+        /// <summary>Default size of the read buffer used for the connection.</summary>
         private const int InitialReadBufferSize =
 #if DEBUG
             10;
 #else
             4096;
 #endif
+        /// <summary>Default size of the write buffer used for the connection.</summary>
         private const int InitialWriteBufferSize = InitialReadBufferSize;
+        /// <summary>
+        /// Delay after which we'll send the request payload for ExpectContinue if
+        /// the server hasn't yet responded.
+        /// </summary>
         private const int Expect100TimeoutMilliseconds = 1000;
+        /// <summary>
+        /// Size after which we'll close the connection rather than send the payload in response
+        /// to final error status code sent by the server when using Expect: 100-continue.
+        /// </summary>
+        private const int Expect100ErrorSendThreshold = 1024;
 
         private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
         private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.0\r\n");
@@ -186,7 +197,7 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            TaskCompletionSource<Expect100ContinueSignal> allowExpect100ToContinue = null;
+            TaskCompletionSource<bool> allowExpect100ToContinue = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             _currentRequest = request;
             try
@@ -287,10 +298,10 @@ namespace System.Net.Http
 
                         // Create a TCS we'll use to block the request content from being sent, and create a timer that's used
                         // as a fail-safe to unblock the request content if we don't hear back from the server in a timely manner.
-                        // Then kick off the request.
-                        allowExpect100ToContinue = new TaskCompletionSource<Expect100ContinueSignal>();
+                        // Then kick off the request.  The TCS' result indicates whether content should be sent or not.
+                        allowExpect100ToContinue = new TaskCompletionSource<bool>();
                         var expect100Timer = new Timer(
-                            s => ((TaskCompletionSource<Expect100ContinueSignal>)s).TrySetResult(Expect100ContinueSignal.Timeout),
+                            s => ((TaskCompletionSource<bool>)s).TrySetResult(true),
                             allowExpect100ToContinue, TimeSpan.FromMilliseconds(Expect100TimeoutMilliseconds), Timeout.InfiniteTimeSpan);
                         _sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(request, allowExpect100ToContinue.Task, stream, expect100Timer);
                     }
@@ -300,26 +311,39 @@ namespace System.Net.Http
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionContent(CancellationToken.None) };
                 ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
                 
+                // If we sent an Expect: 100-continue header, handle the response accordingly.
                 if (allowExpect100ToContinue != null)
                 {
-                    // We sent an Expect: 100-continue header.  Handle the response accordingly.
-                    if (response.StatusCode == HttpStatusCode.Continue)
+                    if ((int)response.StatusCode >= 300 &&
+                        (request.Content.Headers.ContentLength == null || request.Content.Headers.ContentLength.GetValueOrDefault() > Expect100ErrorSendThreshold))
                     {
-                        // We got our continue header.  Read the subsequent \r\n, and allow the request content to continue.
-                        if (!LineIsEmpty(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                        // For error final status codes, try to avoid sending the payload if its size is unknown or if it's known to be "big".
+                        // If we already sent a header detailing the size of the payload, if we then don't send that payload, the server may wait
+                        // for it and assume that the next request on the connection is actually this request's payload.  Thus we mark the connection
+                        // to be closed.  However, we may have also lost a race condition with the Expect: 100-continue timeout, so if it turns out
+                        // we've already started sending the payload (we weren't able to cancel it), then we don't need to force close the connection.
+                        allowExpect100ToContinue.TrySetResult(false);
+                        if (!allowExpect100ToContinue.Task.Result) // if Result is true, the timeout already expired and we started sending content
                         {
-                            ThrowInvalidHttpResponse();
+                            _connectionClose = true;
                         }
-                        allowExpect100ToContinue.TrySetResult(Expect100ContinueSignal.Received100StatusCode);
-
-                        // Then redo the status line read in order to read the real one.
-                        ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
                     }
                     else
                     {
-                        // For any response status code other than 100, we want to try to avoid sending the content
-                        // but otherwise just continue handling this request as we would any other.
-                        allowExpect100ToContinue.TrySetResult(Expect100ContinueSignal.ReceivedOtherStatusCode);
+                        // For any success or informational status codes (including 100 continue), send the payload.
+                        allowExpect100ToContinue.TrySetResult(true);
+
+                        // And if this was 100 continue, deal with the extra headers.
+                        if (response.StatusCode == HttpStatusCode.Continue)
+                        {
+                            // We got our continue header.  Read the subsequent \r\n and parse the additional status line.
+                            if (!LineIsEmpty(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                            {
+                                ThrowInvalidHttpResponse();
+                            }
+
+                            ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
+                        }
                     }
                 }
 
@@ -391,7 +415,7 @@ namespace System.Net.Http
             catch (Exception error)
             {
                 // Make sure to complete the allowExpect100ToContinue task if it exists.
-                allowExpect100ToContinue?.TrySetResult(Expect100ContinueSignal.Error);
+                allowExpect100ToContinue?.TrySetResult(false);
 
                 if (NetEventSource.IsEnabled) Trace($"Error sending request: {error}");
                 Dispose();
@@ -443,23 +467,24 @@ namespace System.Net.Http
         }
 
         private async Task SendRequestContentWithExpect100ContinueAsync(
-            HttpRequestMessage request, Task<Expect100ContinueSignal> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer)
+            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer)
         {
             // Wait until we receive a trigger notification that it's ok to continue sending content.
             // This will come either when the timer fires or when we receive a response status line from the server.
-            Expect100ContinueSignal signal = await allowExpect100ToContinueTask.ConfigureAwait(false);
-            if (NetEventSource.IsEnabled) Trace($"Received signal \"{signal}\" for Expect: 100-continue request content transfer.");
+            bool sendRequestContent = await allowExpect100ToContinueTask.ConfigureAwait(false);
 
             // Clean up the timer; it's no longer needed.
             expect100Timer.Dispose();
 
-            // If we received a 100 Continue status code or if we timeout waiting for one, send the request content. Otherwise, nothing more to do.
-            switch (signal)
+            // Send the content if we're supposed to.  Otherwise, we're done.
+            if (sendRequestContent)
             {
-                case Expect100ContinueSignal.Received100StatusCode:
-                case Expect100ContinueSignal.Timeout:
-                    await SendRequestContentAsync(request.Content.CopyToAsync(stream, _transportContext), stream).ConfigureAwait(false);
-                    break;
+                if (NetEventSource.IsEnabled) Trace($"Sending request content for Expect: 100-continue.");
+                await SendRequestContentAsync(request.Content.CopyToAsync(stream, _transportContext), stream).ConfigureAwait(false);
+            }
+            else
+            {
+                if (NetEventSource.IsEnabled) Trace($"Canceling request content for Expect: 100-continue.");
             }
         }
 
@@ -1172,17 +1197,5 @@ namespace System.Net.Http
                 _currentRequest?.GetHashCode() ?? 0,  // request ID
                 memberName,                   // method name
                 ToString() + ": " + message); // message
-
-        private enum Expect100ContinueSignal : byte
-        {
-            /// <summary>Signal to the request content that a 100 Continue status was received from the server.</summary>
-            Received100StatusCode,
-            /// <summary>Signal to the request content that it should send anyway due to not hearing back from the server within the timeout period.</summary>
-            Timeout,
-            /// <summary>Signal to the request content that a non-100 status was received from the server.</summary>
-            ReceivedOtherStatusCode,
-            /// <summary>Signal to the request content that an arbitrary failure occurred during request/response processing.</summary>
-            Error
-        }
     }
 }
