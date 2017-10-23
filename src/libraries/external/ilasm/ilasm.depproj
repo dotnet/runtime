@@ -9,13 +9,13 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>$(CoreClrPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.ILAsm">
-      <Version>$(CoreClrPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
