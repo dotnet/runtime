@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -13,13 +13,9 @@ using System.Threading.Tasks;
 
 namespace System.IO.Pipes
 {
-    /// <summary>
-    /// Named pipe server
-    /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
-        private Socket _socket;
-        private string _path;
+        private SharedServer _instance;
         private PipeDirection _direction;
         private PipeOptions _options;
         private int _inBufferSize;
@@ -43,34 +39,16 @@ namespace System.IO.Pipes
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_MessageTransmissionMode);
             }
 
-            // NOTE: We don't have a good way to enforce maxNumberOfServerInstances, and don't currently try.
-            // It's a Windows-specific concept.
+            // We don't have a good way to enforce maxNumberOfServerInstances across processes; we only factor it in
+            // for streams created in this process.  Between processes, we behave similarly to maxNumberOfServerInstances == 1,
+            // in that the second process to come along and create a stream will find the pipe already in existence and will fail.
+            _instance = SharedServer.Get(GetPipePath(".", pipeName), maxNumberOfServerInstances);
 
-            _path = GetPipePath(".", pipeName);
             _direction = direction;
             _options = options;
             _inBufferSize = inBufferSize;
             _outBufferSize = outBufferSize;
             _inheritability = inheritability;
-
-            // Binding to an existing path fails, so we need to remove anything left over at this location.
-            // There's of course a race condition here, where it could be recreated by someone else between this
-            // deletion and the bind below, in which case we'll simply let the bind fail and throw.
-            Interop.Sys.Unlink(_path); // ignore any failures
-
-            // Start listening for connections on the path.  They'll only be accepted in WaitForConnection{Async}.
-            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            try
-            {
-                socket.Bind(new UnixDomainSocketEndPoint(_path));
-                socket.Listen(int.MaxValue);
-            }
-            catch
-            {
-                socket.Dispose();
-                throw;
-            }
-            _socket = socket;
         }
 
         public void WaitForConnection()
@@ -81,7 +59,10 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
             }
 
-            HandleAcceptedSocket(_socket.Accept());
+            // Use and block on AcceptAsync() rather than using Accept() in order to provide
+            // behavior more akin to Windows if the Stream is closed while a connection is pending.
+            Socket accepted = _instance.ListeningSocket.AcceptAsync().GetAwaiter().GetResult();
+            HandleAcceptedSocket(accepted);
         }
 
         public Task WaitForConnectionAsync(CancellationToken cancellationToken)
@@ -97,7 +78,7 @@ namespace System.IO.Pipes
                 WaitForConnectionAsyncCore();
 
             async Task WaitForConnectionAsyncCore() =>
-               HandleAcceptedSocket(await _socket.AcceptAsync().ConfigureAwait(false));
+               HandleAcceptedSocket(await _instance.ListeningSocket.AcceptAsync().ConfigureAwait(false));
         }
 
         private void HandleAcceptedSocket(Socket acceptedSocket)
@@ -118,14 +99,8 @@ namespace System.IO.Pipes
             State = PipeState.Connected;
         }
 
-        internal override void DisposeCore(bool disposing)
-        {
-            Interop.Sys.Unlink(_path); // ignore any failures
-            if (disposing)
-            {
-                _socket?.Dispose();
-            }
-        }
+        internal override void DisposeCore(bool disposing) =>
+            Interlocked.Exchange(ref _instance, null)?.Dispose(disposing); // interlocked to avoid shared state problems from erroneous double/concurrent disposes
 
         [SecurityCritical]
         public void Disconnect()
@@ -224,7 +199,111 @@ namespace System.IO.Pipes
             Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
             return error.Error == Interop.Error.ENOTSUP ?
                 new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_OperatingSystemError, nameof(Interop.Error.ENOTSUP))) :
-                Interop.GetExceptionForIoErrno(error, _path);
+                Interop.GetExceptionForIoErrno(error, _instance?.PipeName);
+        }
+
+        /// <summary>Shared resources for NamedPipeServerStreams in the same process created for the same path.</summary>
+        private sealed class SharedServer
+        {
+            /// <summary>Path to shared instance mapping.</summary>
+            private static readonly Dictionary<string, SharedServer> s_servers = new Dictionary<string, SharedServer>();
+
+            /// <summary>The pipe name for this instance.</summary>
+            internal string PipeName { get; }
+            /// <summary>Gets the shared socket used to accept connections.</summary>
+            internal Socket ListeningSocket { get; }
+
+            /// <summary>The maximum number of server streams allowed to use this instance concurrently.</summary>
+            private readonly int _maxCount;
+            /// <summary>The concurrent number of concurrent streams using this instance.</summary>
+            private int _currentCount;
+
+            internal static SharedServer Get(string path, int maxCount)
+            {
+                Debug.Assert(!string.IsNullOrEmpty(path));
+                Debug.Assert(maxCount >= 1);
+
+                lock (s_servers)
+                {
+                    SharedServer server;
+                    if (s_servers.TryGetValue(path, out server))
+                    {
+                        // On Windows, if a subsequent server stream is created for the same pipe and with a different
+                        // max count, the subsequent count is largely ignored in that it doesn't change the number of
+                        // allowed concurrent instances, however that particular instance being created does take its
+                        // own into account, so if its creation would put it over either the original or its own limit,
+                        // it's an error that results in an exception.  We do the same for Unix here.
+                        if (server._currentCount == server._maxCount)
+                        {
+                            throw new IOException(SR.IO_AllPipeInstancesAreBusy);
+                        }
+                        else if (server._currentCount == maxCount)
+                        {
+                            throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
+                        }
+                    }
+                    else
+                    {
+                        // No instance exists yet for this path. Create one a new.
+                        server = new SharedServer(path, maxCount);
+                        s_servers.Add(path, server);
+                    }
+
+                    Debug.Assert(server._currentCount >= 0 && server._currentCount < server._maxCount);
+                    server._currentCount++;
+                    return server;
+                }
+            }
+
+            internal void Dispose(bool disposing)
+            {
+                lock (s_servers)
+                {
+                    Debug.Assert(_currentCount >= 1 && _currentCount <= _maxCount);
+
+                    if (_currentCount == 1)
+                    {
+                        bool removed = s_servers.Remove(PipeName);
+                        Debug.Assert(removed);
+
+                        Interop.Sys.Unlink(PipeName); // ignore any failures
+
+                        if (disposing)
+                        {
+                            ListeningSocket.Dispose();
+                        }
+                    }
+                    else
+                    {
+                        _currentCount--;
+                    }
+                }
+            }
+
+            private SharedServer(string path, int maxCount)
+            {
+                // Binding to an existing path fails, so we need to remove anything left over at this location.
+                // There's of course a race condition here, where it could be recreated by someone else between this
+                // deletion and the bind below, in which case we'll simply let the bind fail and throw.
+                Interop.Sys.Unlink(path); // ignore any failures
+
+                // Start listening for connections on the path.
+                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                try
+                {
+                    socket.Bind(new UnixDomainSocketEndPoint(path));
+                    socket.Listen(int.MaxValue);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
+
+                PipeName = path;
+                ListeningSocket = socket;
+                _maxCount = maxCount;
+            }
         }
     }
 }
