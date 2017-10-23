@@ -134,7 +134,7 @@ namespace System
 
         private const Int32 base64LineBreakPosition = 76;
 
-#if _DEBUG
+#if DEBUG
         private static bool TriggerAsserts = DoAsserts();
         private static bool DoAsserts()
         {

@@ -270,7 +270,7 @@ namespace System.Text
             info.AddValue(ThreadIDField, 0);
         }
 
-        [System.Diagnostics.Conditional("_DEBUG")]
+        [System.Diagnostics.Conditional("DEBUG")]
         private void AssertInvariants()
         {
             Debug.Assert(m_ChunkOffset + m_ChunkChars.Length >= m_ChunkOffset, "The length of the string is greater than int.MaxValue.");
