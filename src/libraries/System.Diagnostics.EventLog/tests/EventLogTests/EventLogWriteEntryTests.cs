@@ -26,29 +26,17 @@ namespace System.Diagnostics.Tests
                     if (data)
                     {
                         eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
-
-                        if (eventLog.Entries.Count == 0)
-                            return null;
-
-                        return eventLog.Entries[eventLog.Entries.Count - 1];
+                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
                     }
                     else if (category)
                     {
                         eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
-
-                        if (eventLog.Entries.Count == 0)
-                            return null;
-
-                        return eventLog.Entries[eventLog.Entries.Count - 1];
+                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
                     }
                     else
                     {
                         eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
-
-                        if (eventLog.Entries.Count == 0)
-                            return null;
-
-                        return eventLog.Entries[eventLog.Entries.Count - 1];
+                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
                     }
                 }
                 else if (type)
@@ -60,10 +48,7 @@ namespace System.Diagnostics.Tests
                     eventLog.WriteEntry(message);
                 }
 
-                if (eventLog.Entries.Count == 0)
-                    return null;
-
-                return eventLog.Entries[eventLog.Entries.Count - 1];
+                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
             }
         }
 
@@ -78,29 +63,17 @@ namespace System.Diagnostics.Tests
                     if (data)
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
-
-                        if (eventLog.Entries.Count == 0)
-                            return null;
-
-                        return eventLog.Entries[eventLog.Entries.Count - 1];
+                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
                     }
                     else if (category)
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
-
-                        if (eventLog.Entries.Count == 0)
-                            return null;
-
-                        return eventLog.Entries[eventLog.Entries.Count - 1];
+                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
                     }
                     else
                     {
                         EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
-
-                        if (eventLog.Entries.Count == 0)
-                            return null;
-
-                        return eventLog.Entries[eventLog.Entries.Count - 1];
+                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
                     }
                 }
                 else if (type)
@@ -112,10 +85,7 @@ namespace System.Diagnostics.Tests
                     EventLog.WriteEntry(source, message);
                 }
 
-                if (eventLog.Entries.Count == 0)
-                    return null;
-
-                return eventLog.Entries[eventLog.Entries.Count - 1];
+                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
             }
         }
 
@@ -129,11 +99,7 @@ namespace System.Diagnostics.Tests
             using (EventLog eventLog = new EventLog())
             {
                 eventLog.Source = source;
-
-                if (eventLog.Entries.Count == 0)
-                    return null;
-
-                return eventLog.Entries[eventLog.Entries.Count - 1];
+                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
             }
         }
 
@@ -148,10 +114,7 @@ namespace System.Diagnostics.Tests
                 else
                     eventLog.WriteEvent(eventInstance, insertStringsSingleton);
 
-                if (eventLog.Entries.Count == 0)
-                    return null;
-
-                return eventLog.Entries[eventLog.Entries.Count - 1];
+                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
             }
         }
 
@@ -424,6 +387,14 @@ namespace System.Diagnostics.Tests
         {
             string source = new string('s', 254);
             Assert.Throws<ArgumentException>(() => EventLog.WriteEntry(source, message));
+        }
+    }
+
+    internal static class EventLogEntryCollectionExtensions
+    {
+        internal static EventLogEntry LastOrDefault(this EventLogEntryCollection elec)
+        {
+            return elec.Count > 0 ? elec[elec.Count - 1] : null;
         }
     }
 }
