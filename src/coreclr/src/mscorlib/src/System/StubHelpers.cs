@@ -254,10 +254,10 @@ namespace System.StubHelpers
                 {
                     // If caller provided a buffer, construct the BSTR manually. The size
                     // of the buffer must be at least (lengthInBytes + 6) bytes.
-#if _DEBUG
+#if DEBUG
                     uint length = *((uint*)pNativeBuffer.ToPointer());
                     Debug.Assert(length >= lengthInBytes + 6, "BSTR localloc'ed buffer is too small");
-#endif // _DEBUG
+#endif
 
                     // set length
                     *((uint*)pNativeBuffer.ToPointer()) = lengthInBytes;

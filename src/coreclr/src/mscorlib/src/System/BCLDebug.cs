@@ -48,9 +48,6 @@ namespace System
     {
         internal static volatile bool m_registryChecked = false;
         internal static volatile bool m_loggingNotEnabled = false;
-#if _DEBUG
-        internal static volatile bool m_domainUnloadAdded;
-#endif
 
         private static readonly SwitchStructure[] switches = {
             new SwitchStructure("NLS",  0x00000001),
