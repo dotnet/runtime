@@ -651,14 +651,6 @@ namespace System.Net
             return _hashCode;
         }
 
-        // For security, we need to be able to take an IPAddress and make a copy that's immutable and not derived.
-        internal IPAddress Snapshot()
-        {
-            return IsIPv4 ?
-                new IPAddress(PrivateAddress) :
-                new IPAddress(_numbers, PrivateScopeId);
-        }
-
         // IPv4 192.168.1.1 maps as ::FFFF:192.168.1.1
         public IPAddress MapToIPv6()
         {

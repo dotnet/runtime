@@ -66,30 +66,30 @@ namespace System.Net
 
         private string m_domainKey = string.Empty; // Do not rename (binary serialization)
 
-/* 
+/*
     TODO: #13607
     VSO 449560
     Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
     block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens. 
+    public, this is a temporary workaround till that happens.
 */
-#if uap 
+#if uap
         public
-#else 
+#else
         internal
 #endif
         bool IsQuotedVersion = false;
 
-/* 
+/*
     TODO: #13607
     VSO 449560
     Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
     block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens. 
+    public, this is a temporary workaround till that happens.
 */
-#if uap 
+#if uap
         public
-#else 
+#else
         internal
 #endif
         bool IsQuotedDomain = false;
@@ -241,16 +241,16 @@ namespace System.Net
             }
         }
 
-/* 
+/*
     TODO: #13607
     VSO 449560
     Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
     block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens. 
+    public, this is a temporary workaround till that happens.
 */
-#if uap 
+#if uap
         public
-#else 
+#else
         internal
 #endif
         bool InternalSetName(string value)
@@ -285,16 +285,16 @@ namespace System.Net
             }
         }
 
-/* 
+/*
     TODO: #13607
     VSO 449560
     Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
     block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens. 
+    public, this is a temporary workaround till that happens.
 */
-#if uap 
+#if uap
         public
-#else 
+#else
         internal
 #endif
         Cookie Clone()
@@ -323,8 +323,8 @@ namespace System.Net
             clonedCookie.Version = m_version;
             clonedCookie.Secure = m_secure;
 
-            // The variant is set when we set properties like port/version. So, 
-            // we should copy over the variant from the original cookie after 
+            // The variant is set when we set properties like port/version. So,
+            // we should copy over the variant from the original cookie after
             // we set all other properties
             clonedCookie.m_cookieVariant = m_cookieVariant;
 
@@ -702,16 +702,16 @@ namespace System.Net
             }
         }
 
-/* 
+/*
     TODO: #13607
     VSO 449560
     Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
     block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens. 
+    public, this is a temporary workaround till that happens.
 */
-#if uap 
+#if uap
         public
-#else 
+#else
         internal
 #endif
         CookieVariant Variant
@@ -843,16 +843,16 @@ namespace System.Net
             }
         }
 
-/* 
+/*
     TODO: #13607
     VSO 449560
     Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
     block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens. 
+    public, this is a temporary workaround till that happens.
 */
-#if uap 
+#if uap
         public
-#else 
+#else
         internal
 #endif
         string ToServerString()
@@ -900,32 +900,5 @@ namespace System.Net
             }
             return result == EqualsLiteral ? null : result;
         }
-
-#if DEBUG
-        internal void Dump()
-        {
-            if (NetEventSource.IsEnabled)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, 
-                                  "Cookie: "        + ToString() + "->\n"
-                                + "\tComment    = " + Comment + "\n"
-                                + "\tCommentUri = " + CommentUri + "\n"
-                                + "\tDiscard    = " + Discard + "\n"
-                                + "\tDomain     = " + Domain + "\n"
-                                + "\tExpired    = " + Expired + "\n"
-                                + "\tExpires    = " + Expires + "\n"
-                                + "\tName       = " + Name + "\n"
-                                + "\tPath       = " + Path + "\n"
-                                + "\tPort       = " + Port + "\n"
-                                + "\tSecure     = " + Secure + "\n"
-                                + "\tTimeStamp  = " + TimeStamp + "\n"
-                                + "\tValue      = " + Value + "\n"
-                                + "\tVariant    = " + Variant + "\n"
-                                + "\tVersion    = " + Version + "\n"
-                                + "\tHttpOnly    = " + HttpOnly + "\n"
-                                );
-            }
-        }
-#endif
     }
 }
