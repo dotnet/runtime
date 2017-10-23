@@ -29,6 +29,10 @@ initTargetDistroRid()
         export __DistroRid="$__HostDistroRid"
     fi
 
+    if [ "$__BuildOS" == "OSX" ]; then
+        __PortableBuild=1
+    fi
+
     # Portable builds target the base RID
     if [ "$__PortableBuild" == 1 ]; then
         if [ "$__BuildOS" == "Linux" ]; then
@@ -41,6 +45,8 @@ initTargetDistroRid()
    if [ "$ID.$VERSION_ID" == "ubuntu.16.04" ]; then
      export __DistroRid="ubuntu.14.04-$__BuildArch"
    fi
+
+   echo "__DistroRid: " $__DistroRid
 }
 
 isMSBuildOnNETCoreSupported()
