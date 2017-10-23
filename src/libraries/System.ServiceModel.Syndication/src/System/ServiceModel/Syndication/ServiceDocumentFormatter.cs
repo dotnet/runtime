@@ -38,8 +38,15 @@ namespace System.ServiceModel.Syndication
         public abstract bool CanRead(XmlReader reader);
         public abstract void ReadFrom(System.Xml.XmlReader reader);
         public abstract void WriteTo(System.Xml.XmlWriter writer);
-        public abstract Task ReadFromAsync(XmlReader reader);
-        public abstract Task WriteToAsync(XmlWriter writer);
+        public virtual Task ReadFromAsync(XmlReader reader)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual Task WriteToAsync(XmlWriter writer)
+        {
+            throw new NotImplementedException();
+        }
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, CategoriesDocument categories)
         {
