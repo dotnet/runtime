@@ -1103,7 +1103,7 @@ namespace System.IO
                                 {
                                     if (readToUserBuffer)
                                     {
-                                        n = _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Slice(charsRead).Span, flush: false);
+                                        n = _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
                                         _charLen = 0;  // StreamReader's buffer is empty.
                                     }
                                     else
@@ -1167,7 +1167,7 @@ namespace System.IO
                         _charPos = 0;
                         if (readToUserBuffer)
                         {
-                            n += _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Slice(charsRead).Span, flush: false);
+                            n += _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
 
                             // Why did the bytes yield no chars?
                             Debug.Assert(n > 0);
@@ -1199,7 +1199,7 @@ namespace System.IO
 
                 if (!readToUserBuffer)
                 {
-                    new Span<char>(_charBuffer, _charPos, n).CopyTo(buffer.Slice(charsRead).Span);
+                    new Span<char>(_charBuffer, _charPos, n).CopyTo(buffer.Span.Slice(charsRead));
                     _charPos += n;
                 }
 
