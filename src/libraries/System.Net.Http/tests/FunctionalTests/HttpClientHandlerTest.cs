@@ -285,6 +285,49 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
+        {
+            var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer);
+            m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":123" : Configuration.Http.SecureHost;
+
+            using (HttpClient client = CreateHttpClient())
+            using (HttpResponseMessage response = await client.SendAsync(m))
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(responseContent);
+                TestHelper.VerifyResponseBody(
+                    responseContent,
+                    response.Content.Headers.ContentMD5,
+                    false,
+                    null);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
+        {
+            if (PlatformDetection.IsNetCore && !UseManagedHandler)
+            {
+                // [ActiveIssue(24862)]
+                // WinHttpHandler and CurlHandler do not use the Host header to influence the SSL auth.
+                // .NET Framework and ManagedHandler do.
+                return;
+            }
+
+            var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer);
+            m.Headers.Host = "hostheaderthatdoesnotmatch";
+
+            using (HttpClient client = CreateHttpClient())
+            {
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(m));
+            }
+        }
+
         [ActiveIssue(22158, TargetFrameworkMonikers.Uap)] 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
