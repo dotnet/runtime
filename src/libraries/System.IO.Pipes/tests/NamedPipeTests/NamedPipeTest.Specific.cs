@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
@@ -96,13 +97,13 @@ namespace System.IO.Pipes.Tests
                 while (clientConnects.Count > 0)
                 {
                     Task serverWait = server.WaitForConnectionAsync();
+                    Task clientWait = await Task.WhenAny(clientConnects);
+                    await WhenAllOrAnyFailed(serverWait, clientWait);
 
-                    int connectedIndex = clientConnects.IndexOf(await Task.WhenAny(clientConnects));
+                    int connectedIndex = clientConnects.IndexOf(clientWait);
                     NamedPipeClientStream client = clients[connectedIndex];
                     clientConnects.RemoveAt(connectedIndex);
                     clients.RemoveAt(connectedIndex);
-
-                    await serverWait;
 
                     Task writeAsync = client.WriteAsync(new byte[1], 0, 1);
                     Task<int> readAsync = server.ReadAsync(new byte[1], 0, 1);
@@ -117,6 +118,111 @@ namespace System.IO.Pipes.Tests
                     server.Disconnect();
                 }
             }
+        }
+
+        [Fact]
+        public void MaxNumberOfServerInstances_TooManyServers_Throws()
+        {
+            string name = GetUniquePipeName();
+
+            using (new NamedPipeServerStream(name, PipeDirection.InOut, 1))
+            {
+                // NPSS was created with max of 1, so creating another fails.
+                Assert.Throws<IOException>(() => new NamedPipeServerStream(name, PipeDirection.InOut, 1));
+            }
+
+            using (new NamedPipeServerStream(name, PipeDirection.InOut, 3))
+            {
+                // NPSS was created with max of 3, but NPSS not only validates against the original max but also
+                // against the max of the stream being created, so since there's already 1 and this specifies max == 1, it fails.
+                Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(name, PipeDirection.InOut, 1));
+
+                using (new NamedPipeServerStream(name, PipeDirection.InOut, 2)) // lower max ignored
+                using (new NamedPipeServerStream(name, PipeDirection.InOut, 4)) // higher max ignored
+                {
+                    // NPSS was created with a max of 3, and we're creating a 4th, so it fails.
+                    Assert.Throws<IOException>(() => new NamedPipeServerStream(name, PipeDirection.InOut, 3));
+                }
+
+                using (new NamedPipeServerStream(name, PipeDirection.InOut, 3))
+                using (new NamedPipeServerStream(name, PipeDirection.InOut, 3))
+                {
+                    // NPSS was created with a max of 3, and we've already created 3, so it fails,
+                    // even if the new stream tries to raise it.
+                    Assert.Throws<IOException>(() => new NamedPipeServerStream(name, PipeDirection.InOut, 4));
+                    Assert.Throws<IOException>(() => new NamedPipeServerStream(name, PipeDirection.InOut, 2));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        public async Task MultipleServers_ServeMultipleClientsConcurrently(int numServers)
+        {
+            string name = GetUniquePipeName();
+
+            var servers = new NamedPipeServerStream[numServers];
+            var clients = new NamedPipeClientStream[servers.Length];
+            try
+            {
+                for (int i = 0; i < servers.Length; i++)
+                {
+                    servers[i] = new NamedPipeServerStream(name, PipeDirection.InOut, numServers, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                }
+
+                for (int i = 0; i < clients.Length; i++)
+                {
+                    clients[i] = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous);
+                }
+
+                Task[] serverWaits = (from server in servers select server.WaitForConnectionAsync()).ToArray();
+                Task[] clientWaits = (from client in clients select client.ConnectAsync()).ToArray();
+                await WhenAllOrAnyFailed(serverWaits.Concat(clientWaits).ToArray());
+
+                Task[] serverSends = (from server in servers select server.WriteAsync(new byte[1], 0, 1)).ToArray();
+                Task<int>[] clientReceives = (from client in clients select client.ReadAsync(new byte[1], 0, 1)).ToArray();
+                await WhenAllOrAnyFailed(serverSends.Concat(clientReceives).ToArray());
+            }
+            finally
+            {
+                for (int i = 0; i < clients.Length; i++)
+                {
+                    clients[i]?.Dispose();
+                }
+
+                for (int i = 0; i < servers.Length; i++)
+                {
+                    servers[i]?.Dispose();
+                }
+            }
+        }
+
+        private static Task WhenAllOrAnyFailed(params Task[] tasks)
+        {
+            int remaining = tasks.Length;
+            var tcs = new TaskCompletionSource<bool>();
+            foreach (Task t in tasks)
+            {
+                t.ContinueWith(a =>
+                {
+                    if (a.IsFaulted)
+                    {
+                        tcs.TrySetException(a.Exception.InnerExceptions);
+                        Interlocked.Decrement(ref remaining);
+                    }
+                    else if (a.IsCanceled)
+                    {
+                        tcs.TrySetCanceled();
+                        Interlocked.Decrement(ref remaining);
+                    }
+                    else if (Interlocked.Decrement(ref remaining) == 0)
+                    {
+                        tcs.TrySetResult(true);
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            }
+            return tcs.Task;
         }
 
         [Theory]
