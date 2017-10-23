@@ -2,9 +2,13 @@
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows32Build)'==''">
     <ExcludeFromWindows32Build>false</ExcludeFromWindows32Build>
-    <ExcludeFromWindows64Build>false</ExcludeFromWindows64Build>
     <ExcludeFromWindows32Build Condition="'$(Platform)'=='Win32'">true</ExcludeFromWindows32Build>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows64Build)'==''">
+    <ExcludeFromWindows64Build>false</ExcludeFromWindows64Build>
     <ExcludeFromWindows64Build Condition="'$(Platform)'=='x64'">true</ExcludeFromWindows64Build>
   </PropertyGroup>
   <ItemGroup Label="arch_wasm_sources">

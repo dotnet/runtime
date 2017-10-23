@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="libmini-common.targets" />
-  <Import Project="libmini-win32.targets" />
-  <Import Project="libmini-posix.targets" />
-  <Import Project="libmini-arch.targets" />
-  <Import Project="libmini-interp.targets" />
-  <Import Project="libmini-llvm.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-common.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-win32.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-posix.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-arch.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-interp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-llvm.targets" />
 </Project>

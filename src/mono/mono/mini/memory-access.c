@@ -582,5 +582,7 @@ mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClas
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 	}
 }
+#else /* !DISABLE_JIT */
 
+MONO_EMPTY_SOURCE_FILE (memory_access);
 #endif

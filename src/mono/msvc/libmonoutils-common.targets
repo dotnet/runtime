@@ -51,7 +51,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-wait.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-coop-mutex.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-once.h" />
@@ -98,7 +100,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-uri.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-stdlib.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\valgrind.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mach-support.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\memcheck.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-context.c" />

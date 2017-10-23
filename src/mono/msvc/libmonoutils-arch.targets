@@ -2,10 +2,17 @@
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows32Build)'==''">
     <ExcludeFromWindows32Build>false</ExcludeFromWindows32Build>
-    <ExcludeFromWindows64Build>false</ExcludeFromWindows64Build>
     <ExcludeFromWindows32Build Condition="'$(Platform)'=='Win32'">true</ExcludeFromWindows32Build>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows64Build)'==''">
+    <ExcludeFromWindows64Build>false</ExcludeFromWindows64Build>
     <ExcludeFromWindows64Build Condition="'$(Platform)'=='x64'">true</ExcludeFromWindows64Build>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeMASMFromWindowsBuild)'==''">
+    <ExcludeMASMFromWindowsBuild>false</ExcludeMASMFromWindowsBuild>
   </PropertyGroup>
   <ItemGroup Label="arch_x86_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-x86.c">
@@ -17,7 +24,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-amd64.c">
       <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
-    <MASM Include="$(MonoSourceLocation)\mono\utils\win64.asm">
+    <MASM Include="$(MonoSourceLocation)\mono\utils\win64.asm" Condition="'$(ExcludeMASMFromWindowsBuild)'=='false'">
       <FileType>Document</FileType>
       <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
       <PreprocessorDefinitions>X64</PreprocessorDefinitions>
@@ -75,7 +82,7 @@
     </ClCompile>
   </ItemGroup>
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(MonoSourceLocation)\msvc\masm.fixed.props" />
+    <Import Project="$(MSBuildThisFileDirectory)masm.fixed.props" />
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

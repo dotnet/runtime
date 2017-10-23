@@ -14342,5 +14342,7 @@ NOTES
 - Instead of the to_end stuff in the old JIT, simply call the function handling
   the values on the stack before emitting the last instruction of the bb.
 */
+#else /* !DISABLE_JIT */
 
+MONO_EMPTY_SOURCE_FILE (method_to_ir);
 #endif /* !DISABLE_JIT */

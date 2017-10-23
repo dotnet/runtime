@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
   <ItemGroup Label="common_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\appdomain.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\domain.c" />
@@ -74,7 +77,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-perfcounters.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-perfcounters-def.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-ptr-array.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-route.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-route.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-route.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\monitor.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\normalization-tables.h" />
@@ -128,7 +133,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\custom-attrs-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sre-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\reflection-internals.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\file-mmap-posix.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\file-mmap-posix.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\file-mmap-windows.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\file-mmap.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\object-offsets.h" />
@@ -142,7 +149,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32semaphore.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32event.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32handle-namespace.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32handle-namespace.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32handle-namespace.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32handle.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32handle.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32error.h" />
@@ -164,7 +173,7 @@
   </ItemGroup>
   <ItemGroup Label="null_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\console-null.c">
-      <ExcludedFromBuild>true</ExcludedFromBuild>
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
   </ItemGroup>
   <ItemGroup Label="null_gc_sources">

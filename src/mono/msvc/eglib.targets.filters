@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="eglib-common.targets.filters" />
-  <Import Project="eglib-win32.targets.filters" />
-  <Import Project="eglib-posix.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)eglib-common.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)eglib-win32.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)eglib-posix.targets.filters" />
   <ItemGroup Condition="'$(EGLibFilterSubFolder)'!=''">
     <Filter Include="Source Files$(EGLibFilterSubFolder)">
       <UniqueIdentifier>{8B3E0DAF-48EA-4B5F-B573-4E8ED8525134}</UniqueIdentifier>

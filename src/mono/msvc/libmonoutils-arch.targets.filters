@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(ExcludeMASMFromWindowsBuild)'==''">
+    <ExcludeMASMFromWindowsBuild>false</ExcludeMASMFromWindowsBuild>
+  </PropertyGroup>
   <ItemGroup Label="arch_x86_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-x86.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\x86</Filter>
@@ -12,7 +15,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-amd64.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\amd64</Filter>
     </ClCompile>
-    <MASM Include="$(MonoSourceLocation)\mono\utils\win64.asm">
+    <MASM Include="$(MonoSourceLocation)\mono\utils\win64.asm" Condition="'$(ExcludeMASMFromWindowsBuild)'=='false'">
       <Filter>Resource Files$(MonoUtilsFilterSubFolder)\arch\amd64</Filter>
     </MASM>
   </ItemGroup>

@@ -8,6 +8,7 @@
  * (C) 2015 Xamarin
  */
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifdef ENABLE_CHECKED_BUILD
 
@@ -708,5 +709,7 @@ check_metadata_store_local (void *from, void *to)
 }
 
 #endif /* defined(ENABLE_CHECKED_BUILD_METADATA) */
+#else /* ENABLE_CHECKED_BUILD */
 
+MONO_EMPTY_SOURCE_FILE (checked_build);
 #endif /* ENABLE_CHECKED_BUILD */

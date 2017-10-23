@@ -71,6 +71,7 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 static gpointer
 get_win32_restore_stack (void)
 {
@@ -114,6 +115,14 @@ get_win32_restore_stack (void)
 
 	return start;
 }
+#else
+static gpointer
+get_win32_restore_stack (void)
+{
+	// _resetstkoflw unsupported on none desktop Windows platforms.
+	return NULL;
+}
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 /*
  * Unhandled Exception Filter
@@ -139,7 +148,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 
 	switch (er->ExceptionCode) {
 	case EXCEPTION_STACK_OVERFLOW:
-		if (!mono_aot_only) {
+		if (!mono_aot_only && restore_stack) {
 			if (mono_arch_handle_exception (ctx, domain->stack_overflow_ex)) {
 				/* need to restore stack protection once stack is unwound
 				 * restore_stack will restore stack protection and then
