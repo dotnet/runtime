@@ -200,7 +200,7 @@ namespace System.Diagnostics.Tracing
                     else if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
                         return "win:Binary";
 
-                    ManifestError(Resources.GetResourceString("EventSource_UnsupportedEventTypeInManifest", type.Name), true);
+                    ManifestError(SR.Format(SR.EventSource_UnsupportedEventTypeInManifest, type.Name), true);
                     return string.Empty;
             }
         }
