@@ -6231,8 +6231,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_str:
         case INS_ldr:
-            assert(isValidGeneralDatasize(size));
-            scale = (size == EA_8BYTE) ? 3 : 2;
+            assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
+            scale = genLog2(EA_SIZE_IN_BYTES(size));
             break;
 
         case INS_lea:
@@ -6253,7 +6253,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     base = emitComp->lvaFrameAddress(varx, &FPbased);
     disp = base + offs;
-    assert((scale >= 0) && (scale <= 3));
+    assert((scale >= 0) && (scale <= 4));
 
     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
     reg2           = encodingSPtoZR(reg2);
