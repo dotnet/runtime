@@ -2498,7 +2498,7 @@ namespace System.Threading.Tasks
                 actionWithState(m_stateObject);
                 return;
             }
-            Debug.Assert(false, "Invalid m_action in Task");
+            Debug.Fail("Invalid m_action in Task");
         }
 
         /// <summary>
@@ -6606,7 +6606,7 @@ namespace System.Threading.Tasks
                     Debug.Assert(result, "Expected TrySetFromTask from inner task to succeed");
                     break;
                 default:
-                    Debug.Assert(false, "UnwrapPromise in illegal state");
+                    Debug.Fail("UnwrapPromise in illegal state");
                     break;
             }
         }

@@ -56,7 +56,7 @@ namespace System
         {
             if (key == null || key.Length == 0)
             {
-                Debug.Assert(false, "SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
+                Debug.Fail("SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
                 return key;
             }
 

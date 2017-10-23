@@ -167,7 +167,7 @@ namespace System.Runtime.InteropServices
         // Migrating InheritanceDemands requires this default ctor, so we can mark it critical
         protected SafeHandle()
         {
-            Debug.Assert(false, "SafeHandle's protected default ctor should never be used!");
+            Debug.Fail("SafeHandle's protected default ctor should never be used!");
             throw new NotImplementedException();
         }
 

@@ -627,7 +627,7 @@ namespace System
                     return element.IsDefined(attributeType, false);
 
                 default:
-                    Debug.Assert(false, "Invalid type for ParameterInfo member in Attribute class");
+                    Debug.Fail("Invalid type for ParameterInfo member in Attribute class");
                     throw new ArgumentException(SR.Argument_InvalidParamInfo);
             }
         }

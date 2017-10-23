@@ -4025,7 +4025,7 @@ namespace System.Diagnostics.Tracing
                             goto default;
                         break;
                     default:
-                        /* Debug.Assert(false, "Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
+                        /* Debug.Fail("Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
                             " at " + idx + " in method " + method.Name); */
                         return -1;
                 }
@@ -4617,7 +4617,7 @@ namespace System.Diagnostics.Tracing
                             EventDispatcher cur = prev.m_Next;
                             if (cur == null)
                             {
-                                Debug.Assert(false, "EventSource did not have a registered EventListener!");
+                                Debug.Fail("EventSource did not have a registered EventListener!");
                                 break;
                             }
                             if (cur.m_Listener == listenerToRemove)
