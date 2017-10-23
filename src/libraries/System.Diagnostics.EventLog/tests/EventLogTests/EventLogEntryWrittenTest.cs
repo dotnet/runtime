@@ -39,6 +39,9 @@ namespace System.Diagnostics.Tests
                             eventLog.WriteEntry(message, EventLogEntryType.Information);
                             Assert.True(signal.WaitOne(6000));
                         }
+                        // The system responds to WriteEntry only if the last write event occurred at least six seconds previously.
+                        // This implies that the system will only receive one EntryWritten event notification within a six-second interval, even if more than one event log change occurs.
+                        // For more information https://msdn.microsoft.com/en-us/library/system.diagnostics.eventlog.entrywritten(v=vs.110).aspx
                     }
                 }
             }
