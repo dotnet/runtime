@@ -98,11 +98,6 @@ namespace System.Net
             }
         }
 
-        internal void SetContentLength(long value)
-        {
-            _contentLength = value;
-        }
-
         public override WebHeaderCollection Headers
         {
             get
