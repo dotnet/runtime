@@ -2,16 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: A representation of a 32 bit 2's complement 
-**          integer.
-**
-** 
-===========================================================*/
-
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
