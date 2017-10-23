@@ -285,7 +285,7 @@ namespace System.Runtime
                         break;
 
                     default:
-                        Debug.Assert(false, "Fell through switch statement!");
+                        Debug.Fail("Fell through switch statement!");
                         break;
                 }
             }
