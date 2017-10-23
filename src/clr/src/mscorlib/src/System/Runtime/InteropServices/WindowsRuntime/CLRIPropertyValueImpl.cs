@@ -439,7 +439,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
                 else
                 {
-                    Debug.Assert(false, "T in coersion function wasn't understood as a type that can be coerced - make sure that CoerceScalarValue and NumericScalarTypes are in sync");
+                    Debug.Fail("T in coersion function wasn't understood as a type that can be coerced - make sure that CoerceScalarValue and NumericScalarTypes are in sync");
                 }
             }
 

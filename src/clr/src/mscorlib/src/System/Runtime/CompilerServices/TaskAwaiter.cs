@@ -173,7 +173,7 @@ namespace System.Runtime.CompilerServices
                     if (oceEdi != null)
                     {
                         oceEdi.Throw();
-                        Debug.Assert(false, "Throw() should have thrown");
+                        Debug.Fail("Throw() should have thrown");
                     }
                     throw new TaskCanceledException(task);
 
@@ -184,12 +184,12 @@ namespace System.Runtime.CompilerServices
                     if (edis.Count > 0)
                     {
                         edis[0].Throw();
-                        Debug.Assert(false, "Throw() should have thrown");
+                        Debug.Fail("Throw() should have thrown");
                         break; // Necessary to compile: non-reachable, but compiler can't determine that
                     }
                     else
                     {
-                        Debug.Assert(false, "There should be exceptions if we're Faulted.");
+                        Debug.Fail("There should be exceptions if we're Faulted.");
                         throw task.Exception;
                     }
             }

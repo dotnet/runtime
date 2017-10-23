@@ -472,19 +472,19 @@ namespace System.StubHelpers
     {
         static internal IntPtr ConvertToNative(string strManaged)
         {
-            Debug.Assert(false, "NYI");
+            Debug.Fail("NYI");
             return IntPtr.Zero;
         }
 
         static internal unsafe string ConvertToManaged(IntPtr bstr)
         {
-            Debug.Assert(false, "NYI");
+            Debug.Fail("NYI");
             return null;
         }
 
         static internal void ClearNative(IntPtr pNative)
         {
-            Debug.Assert(false, "NYI");
+            Debug.Fail("NYI");
         }
     }  // class WSTRBufferMarshaler
 
