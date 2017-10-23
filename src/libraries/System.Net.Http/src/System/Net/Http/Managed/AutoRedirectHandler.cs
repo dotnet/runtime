@@ -72,7 +72,8 @@ namespace System.Net.Http
                 Uri location = response.Headers.Location;
                 if (location == null)
                 {
-                    throw new HttpRequestException(SR.net_http_headers_missing_location);
+                    // No location header. Nothing to redirect to.
+                    break;
                 }
 
                 if (!location.IsAbsoluteUri)
