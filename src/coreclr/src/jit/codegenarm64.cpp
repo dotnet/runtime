@@ -3689,7 +3689,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regTracker.rsTrashRegSet(killMask);
-    regTracker.rsTrashRegsForGCInterruptability();
 }
 
 /*****************************************************************************

@@ -8606,7 +8606,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     // clang-format on
 
     regTracker.rsTrashRegSet(killMask);
-    regTracker.rsTrashRegsForGCInterruptability();
 }
 
 #if !defined(_TARGET_64BIT_)
