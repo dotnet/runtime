@@ -732,9 +732,8 @@ namespace System.Net.Http
                 }
 
                 // Since libcurl adds an Expect header if it sees enough post data, we need to explicitly block
-                // it if caller specifically does not want to set the header
-                if (_requestMessage.Headers.ExpectContinue.HasValue &&
-                    !_requestMessage.Headers.ExpectContinue.Value)
+                // it unless the caller has explicitly opted-in to it.
+                if (!_requestMessage.Headers.ExpectContinue.GetValueOrDefault())
                 {
                     ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoExpect));
                 }
