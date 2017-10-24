@@ -3,9 +3,10 @@
     <TargetFramework>netcoreapp1.0</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Tools/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(ToolsDir)/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.BuildTools" Version="$(BuildToolsPackageVersion)" />
+    <PackageReference Include="$(FeedTasksPackage)" Version="$(FeedTasksPackageVersion)" />
   </ItemGroup>
 </Project>
