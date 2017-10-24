@@ -2,8 +2,8 @@
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner {
-	public class SourceAndRelativeDestinationPair {
+	public class SourceAndDestinationPair {
 		public NPath Source;
-		public string RelativeDestination;
+		public string DestinationFileName;
 	}
 }

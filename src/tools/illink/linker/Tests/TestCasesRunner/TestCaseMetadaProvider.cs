@@ -52,7 +52,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
-		public virtual IEnumerable<SourceAndRelativeDestinationPair> GetResources ()
+		public virtual IEnumerable<SourceAndDestinationPair> GetResources ()
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.Where (attr => attr.AttributeType.Name == nameof (SetupCompileResourceAttribute))
@@ -76,7 +76,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return false;
 		}
 
-		public virtual IEnumerable<SourceAndRelativeDestinationPair> AdditionalFilesToSandbox ()
+		public virtual IEnumerable<SourceAndDestinationPair> AdditionalFilesToSandbox ()
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.Where (attr => attr.AttributeType.Name == nameof (SandboxDependencyAttribute))
@@ -118,14 +118,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return defaultValue;
 		}
 
-		SourceAndRelativeDestinationPair GetSourceAndRelativeDestinationValue (CustomAttribute attribute)
+		SourceAndDestinationPair GetSourceAndRelativeDestinationValue (CustomAttribute attribute)
 		{
 			var relativeSource = (string) attribute.ConstructorArguments.First ().Value;
-			var relativeDestination = (string) attribute.ConstructorArguments [1].Value;
-			return new SourceAndRelativeDestinationPair
+			var destinationFileName = (string) attribute.ConstructorArguments [1].Value;
+			var fullSource = _testCase.SourceFile.Parent.Combine (relativeSource);
+			return new SourceAndDestinationPair
 			{
-				Source = _testCase.SourceFile.Parent.Combine (relativeSource),
-				RelativeDestination = string.IsNullOrEmpty (relativeDestination) ? relativeSource : relativeDestination
+				Source = fullSource,
+				DestinationFileName = string.IsNullOrEmpty (destinationFileName) ? fullSource.FileName : destinationFileName
 			};
 		}
 

@@ -67,11 +67,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			CopyToInputAndExpectations (GetExpectationsAssemblyPath ());
 
 			foreach (var dep in metadataProvider.AdditionalFilesToSandbox ()) {
-				dep.Source.FileMustExist ().Copy (_directory.Combine (dep.RelativeDestination));
+				dep.Source.FileMustExist ().Copy (_directory.Combine (dep.DestinationFileName));
 			}
 
 			foreach (var res in metadataProvider.GetResources ()) {
-				res.Source.FileMustExist ().Copy (ResourcesDirectory.Combine (res.RelativeDestination));
+				res.Source.FileMustExist ().Copy (ResourcesDirectory.Combine (res.DestinationFileName));
 			}
 
 			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ())
