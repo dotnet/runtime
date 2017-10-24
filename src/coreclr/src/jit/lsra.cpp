@@ -6194,7 +6194,8 @@ bool LinearScan::isSpillCandidate(Interval*     current,
 #endif
     {
         RefPosition* nextPhysRegPosition = physRegRecord->getNextRefPosition();
-        assert(nextPhysRegPosition->nodeLocation == refLocation && candidateBit != refPosition->registerAssignment);
+        assert((nextPhysRegPosition->nodeLocation == refLocation && candidateBit != refPosition->registerAssignment)
+                   ARM64_ONLY(|| (physRegRecord->regNum == REG_IP0) || (physRegRecord->regNum == REG_IP1)));
         return false;
     }
 
