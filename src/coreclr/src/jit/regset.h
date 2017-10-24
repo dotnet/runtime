@@ -30,6 +30,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
 *
 *  Keep track of the current state of each register. This is intended to be
@@ -45,6 +46,7 @@ enum regValKind
     RV_LCL_VAR_LNG_LO, // lower half of long local variable
     RV_LCL_VAR_LNG_HI,
 };
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************/
 
@@ -403,6 +405,7 @@ private:
 //  Only integer registers are tracked.
 //
 
+#ifdef LEGACY_BACKEND
 struct RegValDsc
 {
     regValKind rvdKind;
@@ -411,32 +414,44 @@ struct RegValDsc
         unsigned rvdLclVarNum; // for rvdKind == RV_LCL_VAR, RV_LCL_VAR_LNG_LO, RV_LCL_VAR_LNG_HI
     };
 };
+#endif // LEGACY_BACKEND
 
 class RegTracker
 {
     Compiler* compiler;
     RegSet*   regSet;
+#ifdef LEGACY_BACKEND
     RegValDsc rsRegValues[REG_COUNT];
+#endif
 
 public:
     void rsTrackInit(Compiler* comp, RegSet* rs)
     {
         compiler = comp;
         regSet   = rs;
+#ifdef LEGACY_BACKEND
         rsTrackRegClr();
+#endif
     }
 
+#ifdef LEGACY_BACKEND
     void rsTrackRegClr();
     void rsTrackRegClrPtr();
+#endif // LEGACY_BACKEND
     void rsTrackRegTrash(regNumber reg);
+#ifdef LEGACY_BACKEND
     void rsTrackRegMaskTrash(regMaskTP regMask);
     regMaskTP rsTrashRegsForGCInterruptability();
+#endif // LEGACY_BACKEND
     void rsTrackRegIntCns(regNumber reg, ssize_t val);
     void rsTrackRegLclVar(regNumber reg, unsigned var);
+#ifdef LEGACY_BACKEND
     void rsTrackRegLclVarLng(regNumber reg, unsigned var, bool low);
     bool rsTrackIsLclVarLng(regValKind rvKind);
     void rsTrackRegClsVar(regNumber reg, GenTreePtr clsVar);
+#endif // LEGACY_BACKEND
     void rsTrackRegCopy(regNumber reg1, regNumber reg2);
+#ifdef LEGACY_BACKEND
     void rsTrackRegSwap(regNumber reg1, regNumber reg2);
     void rsTrackRegAssign(GenTree* op1, GenTree* op2);
 
@@ -445,16 +460,14 @@ public:
     regNumber rsLclIsInReg(unsigned var);
     regPairNo rsLclIsInRegPair(unsigned var);
 
-//---------------------- Load suppression ---------------------------------
-
-#if REDUNDANT_LOAD
+    //---------------------- Load suppression ---------------------------------
 
     void rsTrashLclLong(unsigned var);
     void rsTrashLcl(unsigned var);
+#endif // LEGACY_BACKEND
     void rsTrashRegSet(regMaskTP regMask);
-
+#ifdef LEGACY_BACKEND
     regMaskTP rsUselessRegs();
-
-#endif // REDUNDANT_LOAD
+#endif // LEGACY_BACKEND
 };
 #endif // _REGSET_H

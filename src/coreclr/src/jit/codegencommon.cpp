@@ -1609,10 +1609,12 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
     label->bbEmitCookie =
         getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
 
+#ifdef LEGACY_BACKEND
     /* gcInfo.gcRegGCrefSetCur does not account for redundant load-suppression
        of GC vars, and the emitter will not know about */
 
     regTracker.rsTrackRegClrPtr();
+#endif
 }
 
 /*****************************************************************************

@@ -141,6 +141,7 @@ private:
     }
 #endif // REG_OPT_RSVD
 
+#ifdef LEGACY_BACKEND
     regNumber findStkLclInReg(unsigned lclNum)
     {
 #ifdef DEBUG
@@ -148,6 +149,7 @@ private:
 #endif
         return regTracker.rsLclIsInReg(lclNum);
     }
+#endif
 
     //-------------------------------------------------------------------------
 
@@ -817,7 +819,9 @@ protected:
 public:
     void instInit();
 
+#ifdef LEGACY_BACKEND
     regNumber genGetZeroRegister();
+#endif
 
     void instGen(instruction ins);
 #ifdef _TARGET_XARCH_
