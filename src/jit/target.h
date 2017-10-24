@@ -1248,6 +1248,8 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_CALLEE_TRASH_NOGC   RBM_CALLEE_TRASH
 #endif
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
+  #define REG_FASTTAILCALL_TARGET REG_R12   // Target register for fast tail call
+  #define RBM_FASTTAILCALL_TARGET RBM_R12
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
@@ -1527,6 +1529,11 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
   #define INITBLK_UNROLL_LIMIT     64      // Upper bound to let the code generator to loop unroll InitBlk.
 
+#ifdef FEATURE_SIMD
+  #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
+  #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
+#endif // FEATURE_SIMD
+
   #define FEATURE_WRITE_BARRIER    1       // Generate the proper WriteBarrier calls for GC    
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
@@ -1587,6 +1594,8 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
   #define RBM_CALLEE_TRASH_NOGC   (RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_IP1)
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
+  #define REG_FASTTAILCALL_TARGET REG_IP0   // Target register for fast tail call
+  #define RBM_FASTTAILCALL_TARGET RBM_IP0
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
@@ -1595,6 +1604,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_VAR_ORDER            REG_R9,REG_R10,REG_R11,REG_R12,REG_R13,REG_R14,REG_R15,\
                                    REG_R8,REG_R7,REG_R6,REG_R5,REG_R4,REG_R3,REG_R2,REG_R1,REG_R0,\
                                    REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,\
+                                   REG_IP0,REG_IP1,\
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
                                    REG_V20, REG_V21, REG_V22, REG_V23, \

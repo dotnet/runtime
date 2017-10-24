@@ -137,8 +137,12 @@ unsigned ReinterpretHexAsDecimal(unsigned);
 
 /*****************************************************************************/
 
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD)
+#if defined(_TARGET_XARCH_)
 const unsigned TEMP_MAX_SIZE = YMM_REGSIZE_BYTES;
+#elif defined(_TARGET_ARM64_)
+const unsigned TEMP_MAX_SIZE = FP_REGSIZE_BYTES;
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 #else  // !FEATURE_SIMD
 const unsigned TEMP_MAX_SIZE = sizeof(double);
 #endif // !FEATURE_SIMD
@@ -7669,6 +7673,8 @@ private:
             assert(canUseSSE2());
             return TYP_SIMD16;
         }
+#elif defined(_TARGET_ARM64_)
+        return TYP_SIMD16;
 #else
         assert(!"getSIMDVectorType() unimplemented on target arch");
         unreached();
@@ -7705,6 +7711,8 @@ private:
             assert(canUseSSE2());
             return XMM_REGSIZE_BYTES;
         }
+#elif defined(_TARGET_ARM64_)
+        return FP_REGSIZE_BYTES;
 #else
         assert(!"getSIMDVectorRegisterByteLength() unimplemented on target arch");
         unreached();

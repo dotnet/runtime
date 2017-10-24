@@ -98,6 +98,8 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
         assert(size == 32);
         return 32;
     }
+#elif defined(_TARGET_ARM64_)
+    return 16;
 #else
     assert(!"getSIMDTypeAlignment() unimplemented on target arch");
     unreached();
@@ -691,8 +693,8 @@ GenTreePtr Compiler::impSIMDPopStack(var_types type, bool expectAddr)
     }
     else if (tree->gtType == TYP_BYREF)
     {
-        assert(tree->IsLocal() || (tree->OperGet() == GT_RET_EXPR) ||
-               (tree->gtOper == GT_ADDR) && varTypeIsSIMD(tree->gtGetOp1()));
+        assert(tree->IsLocal() || (tree->OperGet() == GT_RET_EXPR) || (tree->OperGet() == GT_CALL) ||
+               ((tree->gtOper == GT_ADDR) && varTypeIsSIMD(tree->gtGetOp1())));
     }
 
     return tree;
@@ -1004,9 +1006,9 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
 
     assert(isRelOpSIMDIntrinsic(relOpIntrinsicId));
 
-#ifdef _TARGET_XARCH_
     SIMDIntrinsicID intrinsicID = relOpIntrinsicId;
-    var_types       baseType    = *inOutBaseType;
+#ifdef _TARGET_XARCH_
+    var_types baseType = *inOutBaseType;
 
     if (varTypeIsFloating(baseType))
     {
@@ -1140,12 +1142,26 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
             return impSIMDRelOp(intrinsicID, typeHnd, size, inOutBaseType, pOp1, pOp2);
         }
     }
+#elif defined(_TARGET_ARM64_)
+    // TODO-ARM64-CQ handle comparisons against zero
 
-    return intrinsicID;
+    // _TARGET_ARM64_ doesn't support < and <= on register register comparisons
+    // Therefore, we need to use > and >= with swapped operands.
+    if (intrinsicID == SIMDIntrinsicLessThan || intrinsicID == SIMDIntrinsicLessThanOrEqual)
+    {
+        GenTree* tmp = *pOp1;
+        *pOp1        = *pOp2;
+        *pOp2        = tmp;
+
+        intrinsicID =
+            (intrinsicID == SIMDIntrinsicLessThan) ? SIMDIntrinsicGreaterThan : SIMDIntrinsicGreaterThanOrEqual;
+    }
 #else  // !_TARGET_XARCH_
     assert(!"impSIMDRelOp() unimplemented on target arch");
     unreached();
 #endif // !_TARGET_XARCH_
+
+    return intrinsicID;
 }
 
 //-------------------------------------------------------------------------
@@ -1289,7 +1305,17 @@ GenTreePtr Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType
 
         retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
     }
-#else  // !_TARGET_XARCH_
+#elif defined(_TARGET_ARM64_)
+    if (varTypeIsUnsigned(baseType))
+    {
+        // Abs is a no-op on unsigned integer type vectors
+        retVal = op1;
+    }
+    else
+    {
+        retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
+    }
+#else  // !defined(_TARGET_XARCH)_ && !defined(_TARGET_ARM64_)
     assert(!"Abs intrinsic on non-xarch target not implemented");
 #endif // !_TARGET_XARCH_
 
@@ -1316,6 +1342,8 @@ GenTreePtr Compiler::impSIMDSelect(
     var_types simdType = op1->TypeGet();
     assert(op2->TypeGet() == simdType);
     assert(op3->TypeGet() == simdType);
+
+    // TODO-ARM64-CQ Support generating select instruction for SIMD
 
     // Select(BitVector vc, va, vb) = (va & vc) | (vb & !vc)
     // Select(op1, op2, op3)        = (op2 & op1) | (op3 & !op1)
@@ -1373,6 +1401,9 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
     var_types simdType = op1->TypeGet();
     assert(op2->TypeGet() == simdType);
 
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+    GenTree* simdTree = nullptr;
+
 #ifdef _TARGET_XARCH_
     // SSE2 has direct support for float/double/signed word/unsigned byte.
     // SSE4.1 has direct support for int32/uint32/signed byte/unsigned word.
@@ -1395,8 +1426,6 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
     //        op1 = op1 + 2^7  ; to make it unsigned
     //        result = SSE2 unsigned byte Min/Max(op1, op2)
     //        result = result - 2^15 ; readjust it back
-
-    GenTree* simdTree = nullptr;
 
     if (varTypeIsFloating(baseType) || baseType == TYP_SHORT || baseType == TYP_UBYTE ||
         (getSIMDInstructionSet() >= InstructionSet_SSE3_4 &&
@@ -1449,6 +1478,19 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         tmp      = gtNewLclvNode(tmp->AsLclVarCommon()->GetLclNum(), tmp->TypeGet());
         simdTree = gtNewSIMDNode(simdType, simdTree, tmp, adjustIntrinsic, baseType, size);
     }
+#elif defined(_TARGET_ARM64_)
+    // Arm64 has direct support for all types except int64/uint64
+    // For which we compute min/max as follows
+    //
+    // int64/uint64
+    //       compResult        = (op1 < op2) in case of Min
+    //                           (op1 > op2) in case of Max
+    //       Min/Max(op1, op2) = Select(compResult, op1, op2)
+    if (baseType != TYP_ULONG && baseType != TYP_LONG)
+    {
+        simdTree = gtNewSIMDNode(simdType, op1, op2, intrinsicId, baseType, size);
+    }
+#endif
     else
     {
         GenTree* dupOp1    = nullptr;
@@ -1515,10 +1557,10 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
 
     assert(simdTree != nullptr);
     return simdTree;
-#else  // !_TARGET_XARCH_
+#else  // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
     assert(!"impSIMDMinMax() unimplemented on target arch");
     unreached();
-#endif // !_TARGET_XARCH_
+#endif // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
 }
 
 //------------------------------------------------------------------------
@@ -2407,7 +2449,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicBitwiseXor:
         {
-#if defined(_TARGET_XARCH_) && defined(DEBUG)
+#if defined(DEBUG)
             // check for the cases where we don't support intrinsics.
             // This check should be done before we make modifications to type stack.
             // Note that this is more of a double safety check for robustness since
@@ -2418,6 +2460,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             {
                 if (simdIntrinsicID == SIMDIntrinsicMul)
                 {
+#if defined(_TARGET_XARCH_)
                     if ((baseType != TYP_INT) && (baseType != TYP_SHORT))
                     {
                         // TODO-CQ: implement mul on these integer vectors.
@@ -2425,8 +2468,18 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
                         assert(!"Mul not supported on long/ulong/uint/small int vectors\n");
                         return nullptr;
                     }
+#endif // _TARGET_XARCH_
+#if defined(_TARGET_ARM64_)
+                    if ((baseType == TYP_ULONG) && (baseType == TYP_LONG))
+                    {
+                        // TODO-CQ: implement mul on these integer vectors.
+                        // Note that ARM64 has no direct support for these vectors.
+                        assert(!"Mul not supported on long/ulong vectors\n");
+                        return nullptr;
+                    }
+#endif // _TARGET_ARM64_
                 }
-
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
                 // common to all integer type vectors
                 if (simdIntrinsicID == SIMDIntrinsicDiv)
                 {
@@ -2434,8 +2487,9 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
                     assert(!"Div not supported on integer type vectors\n");
                     return nullptr;
                 }
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
             }
-#endif // _TARGET_XARCH_ && DEBUG
+#endif // DEBUG
 
             // op1 is the first operand; if instance method, op1 is "this" arg
             // op2 is the second operand
@@ -2537,8 +2591,8 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicSqrt:
         {
-#if defined(_TARGET_XARCH_) && defined(DEBUG)
-            // SSE/AVX doesn't support sqrt on integer type vectors and hence
+#if (defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)) && defined(DEBUG)
+            // SSE/AVX/ARM64 doesn't support sqrt on integer type vectors and hence
             // should never be seen as an intrinsic here. See SIMDIntrinsicList.h
             // for supported base types for this intrinsic.
             if (!varTypeIsFloating(baseType))
@@ -2546,7 +2600,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 assert(!"Sqrt not supported on integer vectors\n");
                 return nullptr;
             }
-#endif // _TARGET_XARCH_ && DEBUG
+#endif // (defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)) && defined(DEBUG)
 
             op1 = impSIMDPopStack(simdType);
 
@@ -2623,7 +2677,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         case SIMDIntrinsicConvertToInt64:
         case SIMDIntrinsicConvertToUInt64:
         {
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_64BIT_
             op1 = impSIMDPopStack(simdType, instMethod);
 
             simdTree = gtNewSIMDNode(simdType, op1, nullptr, simdIntrinsicID, baseType, size);
@@ -2687,15 +2741,15 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             return nullptr;
     }
 
-#ifdef _TARGET_XARCH_
-    // XArch: also indicate that we use floating point registers.
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+    // XArch/Arm64: also indicate that we use floating point registers.
     // The need for setting this here is that a method may not have SIMD
     // type lclvars, but might be exercising SIMD intrinsics on fields of
     // SIMD type.
     //
     // e.g.  public Vector<float> ComplexVecFloat::sqabs() { return this.r * this.r + this.i * this.i; }
     compFloatingPointUsed = true;
-#endif // _TARGET_XARCH_
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 
     // At this point, we have a tree that we are going to store into a destination.
     // TODO-1stClassStructs: This should be a simple store or assignment, and should not require

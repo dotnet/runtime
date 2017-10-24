@@ -9406,14 +9406,14 @@ void CodeGen::genFnProlog()
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
-#if defined(_TARGET_ARM_)
+#if defined(_TARGET_ARMARCH_)
 
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
 #ifdef DEBUG
     if (verbose)
         printf("*************** In genFnEpilog()\n");
-#endif
+#endif // DEBUG
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
@@ -9437,10 +9437,11 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         getEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur);
         printf("\n");
     }
-#endif
+#endif // DEBUG
 
     bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
 
+#ifdef _TARGET_ARM_
     // We delay starting the unwind codes until we have an instruction which we know
     // needs an unwind code. In particular, for large stack frames in methods without
     // localloc, the sequence might look something like this:
@@ -9496,148 +9497,28 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         compiler->unwindAllocStack(preSpillRegArgSize);
     }
 
-    if (jmpEpilog)
-    {
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
-        noway_assert(block->bbTreeList);
-
-        // We better not have used a pop PC to return otherwise this will be unreachable code
-        noway_assert(!genUsedPopToReturn);
-
-        /* figure out what jump we have */
-
-        GenTree* jmpNode = block->lastNode();
-        noway_assert(jmpNode->gtOper == GT_JMP);
-
-        CORINFO_METHOD_HANDLE methHnd = (CORINFO_METHOD_HANDLE)jmpNode->gtVal.gtVal1;
-
-        CORINFO_CONST_LOOKUP  addrInfo;
-        void*                 addr;
-        regNumber             indCallReg;
-        emitter::EmitCallType callType;
-
-        compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
-        switch (addrInfo.accessType)
-        {
-            case IAT_VALUE:
-                if (arm_Valid_Imm_For_BL((ssize_t)addrInfo.addr))
-                {
-                    // Simple direct call
-                    callType   = emitter::EC_FUNC_TOKEN;
-                    addr       = addrInfo.addr;
-                    indCallReg = REG_NA;
-                    break;
-                }
-
-                // otherwise the target address doesn't fit in an immediate
-                // so we have to burn a register...
-                __fallthrough;
-
-            case IAT_PVALUE:
-                // Load the address into a register, load indirect and call  through a register
-                // We have to use R12 since we assume the argument registers are in use
-                callType   = emitter::EC_INDIR_R;
-                indCallReg = REG_R12;
-                addr       = NULL;
-                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
-                if (addrInfo.accessType == IAT_PVALUE)
-                {
-                    getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
-                    regTracker.rsTrackRegTrash(indCallReg);
-                }
-                break;
-
-            case IAT_PPVALUE:
-            default:
-                NO_WAY("Unsupported JMP indirection");
-        }
-
-        /* Simply emit a jump to the methodHnd. This is similar to a call so we can use
-         * the same descriptor with some minor adjustments.
-         */
-
-        // clang-format off
-        getEmitter()->emitIns_Call(callType,
-                                   methHnd,
-                                   INDEBUG_LDISASM_COMMA(nullptr)
-                                   addr,
-                                   0,          // argSize
-                                   EA_UNKNOWN, // retSize
-                                   gcInfo.gcVarPtrSetCur,
-                                   gcInfo.gcRegGCrefSetCur,
-                                   gcInfo.gcRegByrefSetCur,
-                                   BAD_IL_OFFSET, // IL offset
-                                   indCallReg,    // ireg
-                                   REG_NA,        // xreg
-                                   0,             // xmul
-                                   0,             // disp
-                                   true);         // isJump
-        // clang-format on
-    }
-    else
-    {
-        if (!genUsedPopToReturn)
-        {
-            // If we did not use a pop to return, then we did a "pop {..., lr}" instead of "pop {..., pc}",
-            // so we need a "bx lr" instruction to return from the function.
-            inst_RV(INS_bx, REG_LR, TYP_I_IMPL);
-            compiler->unwindBranch16();
-        }
-    }
-
-    compiler->unwindEndEpilog();
-}
-
-#elif defined(_TARGET_ARM64_)
-
-void CodeGen::genFnEpilog(BasicBlock* block)
-{
-#ifdef DEBUG
-    if (verbose)
-        printf("*************** In genFnEpilog()\n");
-#endif
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
-
-    VarSetOps::Assign(compiler, gcInfo.gcVarPtrSetCur, getEmitter()->emitInitGCrefVars);
-    gcInfo.gcRegGCrefSetCur = getEmitter()->emitInitGCrefRegs;
-    gcInfo.gcRegByrefSetCur = getEmitter()->emitInitByrefRegs;
-
-#ifdef DEBUG
-    if (compiler->opts.dspCode)
-        printf("\n__epilog:\n");
-
-    if (verbose)
-    {
-        printf("gcVarPtrSetCur=%s ", VarSetOps::ToString(compiler, gcInfo.gcVarPtrSetCur));
-        dumpConvertedVarSet(compiler, gcInfo.gcVarPtrSetCur);
-        printf(", gcRegGCrefSetCur=");
-        printRegMaskInt(gcInfo.gcRegGCrefSetCur);
-        getEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur);
-        printf(", gcRegByrefSetCur=");
-        printRegMaskInt(gcInfo.gcRegByrefSetCur);
-        getEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur);
-        printf("\n");
-    }
-#endif
-
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
-
+#else  // _TARGET_ARM64_
     compiler->unwindBegEpilog();
 
     genPopCalleeSavedRegistersAndFreeLclFrame(jmpEpilog);
+#endif // _TARGET_ARM64_
 
     if (jmpEpilog)
     {
         noway_assert(block->bbJumpKind == BBJ_RETURN);
         noway_assert(block->bbTreeList != nullptr);
 
-        // figure out what jump we have
+#ifdef _TARGET_ARM_
+        // We better not have used a pop PC to return otherwise this will be unreachable code
+        noway_assert(!genUsedPopToReturn);
+#endif // _TARGET_ARM_
+
+        /* figure out what jump we have */
         GenTree* jmpNode = block->lastNode();
 #if !FEATURE_FASTTAILCALL
         noway_assert(jmpNode->gtOper == GT_JMP);
-#else
-        // arm64
+#else  // FEATURE_FASTTAILCALL
+        // armarch
         // If jmpNode is GT_JMP then gtNext must be null.
         // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
         noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
@@ -9648,7 +9529,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
         // The next block is associated with this "if" stmt
         if (jmpNode->gtOper == GT_JMP)
-#endif
+#endif // FEATURE_FASTTAILCALL
         {
             // Simply emit a jump to the methodHnd. This is similar to a call so we can use
             // the same descriptor with some minor adjustments.
@@ -9656,6 +9537,70 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             CORINFO_CONST_LOOKUP addrInfo;
             compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
+
+#ifdef _TARGET_ARM_
+            emitter::EmitCallType callType;
+            void*                 addr;
+            regNumber             indCallReg;
+            switch (addrInfo.accessType)
+            {
+                case IAT_VALUE:
+                    if (arm_Valid_Imm_For_BL((ssize_t)addrInfo.addr))
+                    {
+                        // Simple direct call
+                        callType   = emitter::EC_FUNC_TOKEN;
+                        addr       = addrInfo.addr;
+                        indCallReg = REG_NA;
+                        break;
+                    }
+
+                    // otherwise the target address doesn't fit in an immediate
+                    // so we have to burn a register...
+                    __fallthrough;
+
+                case IAT_PVALUE:
+                    // Load the address into a register, load indirect and call  through a register
+                    // We have to use R12 since we assume the argument registers are in use
+                    callType   = emitter::EC_INDIR_R;
+                    indCallReg = REG_R12;
+                    addr       = NULL;
+                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
+                    if (addrInfo.accessType == IAT_PVALUE)
+                    {
+                        getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
+                        regTracker.rsTrackRegTrash(indCallReg);
+                    }
+                    break;
+
+                case IAT_PPVALUE:
+                default:
+                    NO_WAY("Unsupported JMP indirection");
+            }
+
+            /* Simply emit a jump to the methodHnd. This is similar to a call so we can use
+             * the same descriptor with some minor adjustments.
+             */
+
+            // clang-format off
+            getEmitter()->emitIns_Call(callType,
+                                       methHnd,
+                                       INDEBUG_LDISASM_COMMA(nullptr)
+                                       addr,
+                                       0,          // argSize
+                                       EA_UNKNOWN, // retSize
+                                       gcInfo.gcVarPtrSetCur,
+                                       gcInfo.gcRegGCrefSetCur,
+                                       gcInfo.gcRegByrefSetCur,
+                                       BAD_IL_OFFSET, // IL offset
+                                       indCallReg,    // ireg
+                                       REG_NA,        // xreg
+                                       0,             // xmul
+                                       0,             // disp
+                                       true);         // isJump
+            // clang-format on
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#else // _TARGET_ARM64_
             if (addrInfo.accessType != IAT_VALUE)
             {
                 NYI_ARM64("Unsupported JMP indirection");
@@ -9680,22 +9625,35 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0, /* iloffset, ireg, xreg, xmul, disp */
                                        true);                               /* isJump */
             // clang-format on
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#endif // _TARGET_ARM64_
         }
 #if FEATURE_FASTTAILCALL
         else
         {
             // Fast tail call.
-            // Call target = REG_IP0.
+            // Call target = REG_FASTTAILCALL_TARGET
             // https://github.com/dotnet/coreclr/issues/4827
             // Do we need a special encoding for stack walker like rex.w prefix for x64?
-            getEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_IP0);
+            getEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
         }
 #endif // FEATURE_FASTTAILCALL
     }
     else
     {
+#ifdef _TARGET_ARM_
+        if (!genUsedPopToReturn)
+        {
+            // If we did not use a pop to return, then we did a "pop {..., lr}" instead of "pop {..., pc}",
+            // so we need a "bx lr" instruction to return from the function.
+            inst_RV(INS_bx, REG_LR, TYP_I_IMPL);
+            compiler->unwindBranch16();
+        }
+#else  // _TARGET_ARM64_
         inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
         compiler->unwindReturn(REG_LR);
+#endif // _TARGET_ARM64_
     }
 
     compiler->unwindEndEpilog();
@@ -11373,7 +11331,7 @@ instruction CodeGen::genMapShiftInsToShiftByConstantIns(instruction ins, int shi
 
 #endif // _TARGET_XARCH_
 
-#if !defined(LEGACY_BACKEND) && (defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
+#if !defined(LEGACY_BACKEND)
 
 //------------------------------------------------------------------------------------------------ //
 // getFirstArgWithStackSlot - returns the first argument with stack slot on the caller's frame.
@@ -11385,13 +11343,13 @@ instruction CodeGen::genMapShiftInsToShiftByConstantIns(instruction ins, int shi
 //    On x64 Windows the caller always creates slots (homing space) in its frame for the
 //    first 4 arguments of a callee (register passed args). So, the the variable number
 //    (lclNum) for the first argument with a stack slot is always 0.
-//    For System V systems or arm64, there is no such calling convention requirement, and the code needs to find
+//    For System V systems or armarch, there is no such calling convention requirement, and the code needs to find
 //    the first stack passed argument from the caller. This is done by iterating over
 //    all the lvParam variables and finding the first with lvArgReg equals to REG_STK.
 //
 unsigned CodeGen::getFirstArgWithStackSlot()
 {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARMARCH_)
     unsigned baseVarNum = 0;
 #if defined(FEATURE_UNIX_AMR64_STRUCT_PASSING)
     baseVarNum = compiler->lvaFirstStackIncomingArgNum;
@@ -11429,14 +11387,14 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     return baseVarNum;
 #elif defined(_TARGET_AMD64_)
     return 0;
-#else
+#else  // _TARGET_X86
     // Not implemented for x86.
     NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
     return BAD_VAR_NUM;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING || _TARGET_ARM64_
+#endif // _TARGET_X86_
 }
 
-#endif // !LEGACY_BACKEND && (_TARGET_XARCH_ || _TARGET_ARM64_)
+#endif // !LEGACY_BACKEND
 
 //------------------------------------------------------------------------
 // genSinglePush: Report a change in stack level caused by a single word-sized push instruction
