@@ -64,8 +64,6 @@
 
 #include "nativeoverlapped.h"
 
-#include "compatibilityflags.h"
-
 #ifndef FEATURE_PAL
 #include "dwreport.h"
 #endif // !FEATURE_PAL
@@ -2061,8 +2059,6 @@ BOOL AppDomain::GetPreferComInsteadOfManagedRemoting()
 
     return (GetComOrRemotingFlag() == COMorRemoting_COM);
 }
-
-STDAPI GetXMLObjectEx(IXMLParser **ppv);
 
 COMorRemotingFlag AppDomain::GetPreferComInsteadOfManagedRemotingFromConfigFile()
 {
@@ -10937,22 +10933,6 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     CONSISTENCY_CHECK(pMT->IsInterface());
     return pMT;
 }
-
-#ifndef DACCESS_COMPILE
-
-
-//------------------------------------------------------------------------
-BOOL GetCompatibilityFlag(CompatibilityFlag flag)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
-    return FALSE;
-}
-#endif // !DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 // 
