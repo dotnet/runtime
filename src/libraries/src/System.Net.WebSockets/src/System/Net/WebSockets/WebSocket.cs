@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
@@ -30,6 +31,52 @@ namespace System.Net.WebSockets
             WebSocketMessageType messageType,
             bool endOfMessage,
             CancellationToken cancellationToken);
+
+        public virtual async ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (buffer.TryGetArray(out ArraySegment<byte> arraySegment))
+            {
+                WebSocketReceiveResult r = await ReceiveAsync(arraySegment, cancellationToken).ConfigureAwait(false);
+                return new ValueWebSocketReceiveResult(r.Count, r.MessageType, r.EndOfMessage);
+            }
+            else
+            {
+                byte[] array = ArrayPool<byte>.Shared.Rent(buffer.Length);
+                try
+                {
+                    WebSocketReceiveResult r = await ReceiveAsync(new ArraySegment<byte>(array, 0, buffer.Length), cancellationToken).ConfigureAwait(false);
+                    new Span<byte>(array, 0, r.Count).CopyTo(buffer.Span);
+                    return new ValueWebSocketReceiveResult(r.Count, r.MessageType, r.EndOfMessage);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(array);
+                }
+            }
+        }
+
+        public virtual Task SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
+            buffer.DangerousTryGetArray(out ArraySegment<byte> arraySegment) ?
+                SendAsync(arraySegment, messageType, endOfMessage, cancellationToken) :
+                SendWithArrayPoolAsync(buffer, messageType, endOfMessage, cancellationToken);
+
+        private async Task SendWithArrayPoolAsync(
+            ReadOnlyMemory<byte> buffer,
+            WebSocketMessageType messageType,
+            bool endOfMessage,
+            CancellationToken cancellationToken)
+        {
+            byte[] array = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            try
+            {
+                buffer.Span.CopyTo(array);
+                await SendAsync(new ArraySegment<byte>(array, 0, buffer.Length), messageType, endOfMessage, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(array);
+            }
+        }
 
         public static TimeSpan DefaultKeepAliveInterval
         {
