@@ -725,21 +725,8 @@ CONFIG_DWORD_INFO_EX(INTERNAL_NgenForceFailureCount, W("NgenForceFailureCount"),
 CONFIG_DWORD_INFO_EX(INTERNAL_NgenForceFailureKind, W("NgenForceFailureKind"), 1, "If set to 1, We will throw a TypeLoad exception; If set to 2, We will cause an A/V", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_NGenEnableCreatePdb, W("NGenEnableCreatePdb"), 0, "If set to >0 ngen.exe displays help on, recognizes createpdb in the command line")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenSimulateDiskFull, W("NGenSimulateDiskFull"), 0, "If set to 1, ngen will throw a Disk full exception in ZapWriter.cpp:Save()")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_NGenAssemblyUsageLog, W("NGenAssemblyUsageLog"), "Directory to store ngen usage logs in.")
-#ifdef FEATURE_APPX
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenAssemblyUsageLogRefreshInterval, W("NGenAssemblyUsageLogRefreshInterval"), 24 * 60 * 60, "Interval to update usage log timestamp (seconds)");
-#endif
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_AppLocalAutongenNGenDisabled, W("AppLocalAutongenNGenDisabled"), 0, "Autongen disable flag.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_PartialNGen, W("PartialNGen"), -1, "Generate partial NGen images")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_NgenAllowMscorlibSoftbind, W("NgenAllowMscorlibSoftbind"), 0, "Disable forced hard-binding to mscorlib")
-RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_RegistryRoot, W("RegistryRoot"), "Redirects all registry access under HKLM\Software to a specified alternative", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_AssemblyPath, W("AssemblyPath"), "Redirects v2 GAC access to a specified alternative path", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_AssemblyPath2, W("AssemblyPath2"), "Redirects v4 GAC access to a specified alternative path", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_NicPath, W("NicPath"), "Redirects NIC access to a specified alternative", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenTaskDelayStart, W("NGenTaskDelayStart"), 0, "Use NGen Task delay start trigger, instead of critical idle task")
-
-// Flag for cross-platform ngen: Removes all execution of managed or third-party code in the ngen compilation process.
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_Ningen, W("Ningen"), 1, "Enable no-impact ngen")
 
 CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run.")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NgenAllowOutput, W("NgenAllowOutput"), 0, "If set to 1, the NGEN worker will bind to the parent console, thus allowing stdout output to work", CLRConfig::REGUTIL_default)
