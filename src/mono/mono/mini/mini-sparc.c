@@ -1580,7 +1580,7 @@ emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer da
 		patch_info.data.target = data;
 
 		target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &patch_info, FALSE, &error);
-		mono_error_raise_exception (&error); /* FIXME: don't raise here */
+		mono_error_raise_exception_deprecated (&error); /* FIXME: don't raise here */
 
 		/* FIXME: Add optimizations if the target is close enough */
 		sparc_set (code, target, sparc_o7);

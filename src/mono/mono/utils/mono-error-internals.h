@@ -144,9 +144,6 @@ MonoException*
 mono_error_convert_to_exception (MonoError *error);
 
 void
-mono_error_raise_exception (MonoError *error);
-
-void
 mono_error_move (MonoError *dest, MonoError *src);
 
 MonoErrorBoxed*
