@@ -3029,7 +3029,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
  * structs will be returned, and some of the ilOffsets in this array
  * may be the values specified in CorDebugIlToNativeMappingTypes.
  ******************************************************************************/
-HRESULT Debugger::GetILToNativeMapping(MethodDesc *pMD, ULONG32 cMap,
+HRESULT Debugger::GetILToNativeMapping(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap,
                                        ULONG32 *pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[])
 {
     CONTRACTL
@@ -3058,7 +3058,7 @@ HRESULT Debugger::GetILToNativeMapping(MethodDesc *pMD, ULONG32 cMap,
     _ASSERTE(CORProfilerPresent());
 #endif // PROFILING_SUPPORTED
 
-    DebuggerJitInfo *pDJI = GetLatestJitInfoFromMethodDesc(pMD);
+    DebuggerJitInfo *pDJI = GetJitInfoFromAddr(pNativeCodeStartAddress);
 
     // Dunno what went wrong
     if (pDJI == NULL)
