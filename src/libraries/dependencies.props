@@ -43,6 +43,12 @@
     <TraceEventPackageVersion>1.0.3-alpha-experimental</TraceEventPackageVersion>
     <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02120-09</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
+  
+  <!-- Package versions used as toolsets -->
+  <PropertyGroup>
+    <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02121-01</FeedTasksPackageVersion>
+  </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
@@ -152,6 +158,11 @@
        <Path>$(MSBuildThisFileFullPath)</Path>
        <ElementName>XunitNetcoreExtensionsVersion</ElementName>
        <PackageId>Microsoft.xunit.netcore.extensions</PackageId>
+     </XmlUpdateStep>
+     <XmlUpdateStep Include="BuildTools">
+       <Path>$(MSBuildThisFileFullPath)</Path>
+       <ElementName>FeedTasksPackageVersion</ElementName>
+       <PackageId>$(FeedTasksPackage)</PackageId>
      </XmlUpdateStep>
   </ItemGroup>
 
