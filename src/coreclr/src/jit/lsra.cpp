@@ -3083,7 +3083,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             }
         }
 
-        if (killGCRefs(tree))
+        if (compiler->killGCRefs(tree))
         {
             RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree,
                                               (allRegs(TYP_REF) & ~RBM_ARG_REGS));
@@ -3091,35 +3091,6 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         return true;
     }
 
-    return false;
-}
-
-//------------------------------------------------------------------------
-// killGCRefs:
-// Given some tree node return does it need all GC refs to be spilled from
-// callee save registers.
-//
-// Arguments:
-//    tree       - the tree for which we ask about gc refs.
-//
-// Return Value:
-//    true       - tree kills GC refs on callee save registers
-//    false      - tree doesn't affect GC refs on callee save registers
-bool LinearScan::killGCRefs(GenTree* tree)
-{
-    if (tree->IsCall())
-    {
-        if ((tree->gtFlags & GTF_CALL_UNMANAGED) != 0)
-        {
-            return true;
-        }
-
-        if (tree->AsCall()->gtCallMethHnd == compiler->eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
-        {
-            assert(compiler->opts.ShouldUsePInvokeHelpers());
-            return true;
-        }
-    }
     return false;
 }
 
