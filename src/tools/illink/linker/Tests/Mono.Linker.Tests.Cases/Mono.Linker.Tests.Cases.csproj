@@ -69,6 +69,7 @@
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
     <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
+    <Compile Include="TestFramework\VerifyResourceInAssemblyAttributesBehavior.cs" />
     <Compile Include="TypeForwarding\Dependencies\ImplementationLibrary.cs" />
     <Compile Include="TypeForwarding\Dependencies\LibraryUsingForwarder.cs" />
     <Compile Include="TypeForwarding\Dependencies\ReferenceImplementationLibrary.cs" />
@@ -169,6 +170,7 @@
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
     <Content Include="Resources\Dependencies\NonLinkerEmbeddedResourceHasNoImpact.xml" />
+    <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">

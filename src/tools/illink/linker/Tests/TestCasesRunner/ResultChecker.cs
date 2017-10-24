@@ -133,6 +133,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
 							
 							break;
+						case nameof (KeptResourceInAssemblyAttribute):
+							VerifyKeptResourceInAssembly (checkAttrInAssembly);
+							break;
+						case nameof (RemovedResourceInAssemblyAttribute):
+							VerifyRemovedResourceInAssembly (checkAttrInAssembly);
+							break;
 						default:
 							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 							break;
@@ -218,6 +224,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
 			}
+		}
+
+		void VerifyKeptResourceInAssembly (CustomAttribute inAssemblyAttribute)
+		{
+			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments [0].Value.ToString ());
+			var resourceName = inAssemblyAttribute.ConstructorArguments [1].Value.ToString ();
+
+			Assert.That (assembly.MainModule.Resources.Select (r => r.Name), Has.Member (resourceName));
+		}
+
+		void VerifyRemovedResourceInAssembly (CustomAttribute inAssemblyAttribute)
+		{
+			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments [0].Value.ToString ());
+			var resourceName = inAssemblyAttribute.ConstructorArguments [1].Value.ToString ();
+
+			Assert.That (assembly.MainModule.Resources.Select (r => r.Name), Has.No.Member (resourceName));
 		}
 
 		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)

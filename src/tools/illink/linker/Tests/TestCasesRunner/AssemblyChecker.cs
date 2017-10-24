@@ -28,6 +28,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			VerifyCustomAttributes (linkedAssembly, originalAssembly);
 
+			VerifyResources (originalAssembly, linkedAssembly);
+
 			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
 				return s.FullName;
 			}), StringComparer.Ordinal);
@@ -296,6 +298,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name));
 			verifiedBackingFields.Add (srcField.FullName);
 			linkedMembers.Remove (srcField.FullName);
+		}
+
+		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
+		{
+			var expectedResources = original.MainModule.AllDefinedTypes ()
+				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptResourceAttribute)));
+
+			Assert.That (linked.MainModule.Resources.Select (r => r.Name), Is.EquivalentTo (expectedResources));
 		}
 
 		static void VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
