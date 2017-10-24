@@ -10,20 +10,20 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</CoreFxCurrentRef>
-    <CoreClrCurrentRef>de026dc82f4e2b2f18ecbc9b9e5c78dfe2d4ed11</CoreClrCurrentRef>
-    <StandardCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</StandardCurrentRef>
+    <CoreClrCurrentRef>a824411780a576b0648f301494ff6c4960b3fb1d</CoreClrCurrentRef>
+    <StandardCurrentRef>a824411780a576b0648f301494ff6c4960b3fb1d</StandardCurrentRef>
     <WCFCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</WCFCurrentRef>
-    <BuildToolsCurrentRef>de026dc82f4e2b2f18ecbc9b9e5c78dfe2d4ed11</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>a824411780a576b0648f301494ff6c4960b3fb1d</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25824-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25824-02</MicrosoftPrivateCoreFxUAPPackageVersion>
     <PlatformPackageVersion>2.1.0-preview1-25824-02</PlatformPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25822-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25824-51</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
-    <NETStandardVersion>2.1.0-preview1-25824-01</NETStandardVersion>
+    <NETStandardVersion>2.1.0-preview1-25824-03</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
     <WcfVersion>4.5.0-preview2-25824-01</WcfVersion>
   </PropertyGroup>
@@ -47,7 +47,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02121-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02124-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
