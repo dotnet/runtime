@@ -207,7 +207,7 @@ internal static partial class Interop
             {
                 using (MemoryHandle handle = input.Retain(pin: true))
                 {
-                    retVal = Ssl.SslWrite(context, (byte*)handle.PinnedPointer, input.Length);
+                    retVal = Ssl.SslWrite(context, (byte*)handle.Pointer, input.Length);
                 }
             }
 
