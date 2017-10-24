@@ -7,6 +7,8 @@
   <UsingTask TaskName="ListAzureBlobs" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
 
+  <Import Project="$(PackagesDir)/$(FeedTasksPackage)/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
+
   <Target Name="Build"
           DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishDebToolPackageToFeed;PublishFinalOutput" />
   
@@ -149,8 +151,8 @@
                    ForcePublish="true" />
   </Target>
 
-  <Target Name="PublishCoreHostPackagesToFeed"
-          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignSymbolPackages;DoPushCoreHostPackagesToFeed"
+  <Target Name="PublishCoreHostPackages"
+          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignSymbolPackages;DoPushCoreHostPackagesToFeed;DoPushCoreHostPackagesToAzure"
           Condition="'@(_MissingBlobNames)' == '' AND '$(NuGetFeedUrl)' != ''">
     <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
     <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
@@ -239,6 +241,48 @@
     <ExecWithRetriesForNuGetPush Condition="'@(_DownloadedSymbolsPackages)' != ''"
                                  Command="$(NuGetPushSymbolsCommand) %(_DownloadedSymbolsPackages.Identity)"
                                  IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
+  </Target>
+
+  <Target Name="DoPushCoreHostPackagesToAzure"
+          DependsOnTargets="PublishToAzureBlobFeed;PublishSymbolsToAzureBlobFeed"
+          Condition="'$(OfficialPublish)' == 'true'"/>
+
+  <Target Name="PublishToAzureBlobFeed">
+    <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
+    <Error Condition="'$(TransportFeedAccessToken)'==''" Text="Missing property TransportFeedAccessToken" />
+    <PropertyGroup>
+      <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
+      <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">false</PublishFlatContainer>
+    </PropertyGroup>
+    <ItemGroup>
+      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Include="@(_DownloadedStandardPackages)"/>
+    </ItemGroup>
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(TransportFeedAccessToken)"
+                    ItemsToPush="@(ItemsToPush)"
+                    PublishFlatContainer="$(PublishFlatContainer)"
+                    Overwrite="$(OverwriteOnPublish)" 
+                    IndexDirectory="$(ObjDir)"/>
+  </Target>
+
+  <Target Name="PublishSymbolsToAzureBlobFeed">
+    <Error Condition="'$(SymbolPackagesUrl)'==''" Text="Missing property SymbolPackagesUrl" />
+    <Error Condition="'$(TransportFeedAccessToken)'==''" Text="Missing property TransportFeedAccessToken" />
+    <PropertyGroup>
+      <ExpectedFeedUrl>$(SymbolPackagesUrl)</ExpectedFeedUrl>
+      <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">true</PublishFlatContainer>
+    </PropertyGroup>
+    <ItemGroup>
+      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Include="@(_DownloadedSymbolsPackages)"/>
+    </ItemGroup>
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(TransportFeedAccessToken)"
+                    ItemsToPush="@(ItemsToPush)"
+                    PublishFlatContainer="$(PublishFlatContainer)"
+                    Overwrite="$(OverwriteOnPublish)" 
+                    IndexDirectory="$(ObjDir)"/>
   </Target>
 
   <Target Name="PublishDebToolPackageToFeed"
