@@ -36,6 +36,12 @@
     <VCRuntimeVersion>1.2.0</VCRuntimeVersion>
   </PropertyGroup>
 
+  <!-- Package versions used as toolsets -->
+  <PropertyGroup>
+    <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02121-01</FeedTasksPackageVersion>
+  </PropertyGroup>
+
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
     <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
@@ -85,6 +91,11 @@
       <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
       <PackageId>Microsoft.DotNet.BuildTools</PackageId>
     </UpdateStep>
+    <XmlUpdateStep Include="BuildTools">
+       <Path>$(MSBuildThisFileFullPath)</Path>
+       <ElementName>FeedTasksPackageVersion</ElementName>
+       <PackageId>$(FeedTasksPackage)</PackageId>
+    </XmlUpdateStep>
     <XmlUpdateStep Include="PgoData">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>PgoDataPackageVersion</ElementName>
