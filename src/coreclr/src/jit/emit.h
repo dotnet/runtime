@@ -530,7 +530,7 @@ protected:
         int             amDisp : AM_DISP_BITS;
     };
 
-#if defined(DEBUG) || defined(LATE_DISASM) // LATE_DISASM needs the idMemCookie on calls to display the call target name
+#ifdef DEBUG // This information is used in DEBUG builds to display the method name for call instructions
 
     struct instrDesc;
 
@@ -539,8 +539,7 @@ protected:
         unsigned idNum;
         size_t   idSize;       // size of the instruction descriptor
         unsigned idVarRefOffs; // IL offset for LclVar reference
-        size_t   idMemCookie;  // for display of member names in addr modes
-        void*    idClsCookie;  // for display of member names in addr modes
+        size_t   idMemCookie;  // for display of method name  (also used by switch table)
 #ifdef TRANSLATE_PDB
         unsigned int idilStart; // instruction descriptor source information for PDB translation
 #endif
@@ -549,7 +548,7 @@ protected:
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
     };
 
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // DEBUG
 
 #ifdef _TARGET_ARM_
     unsigned insEncodeSetFlags(insFlags sf);
@@ -777,7 +776,7 @@ protected:
 
 #endif // !HAS_TINY_DESC
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#ifdef DEBUG
 
         instrDescDebugInfo* _idDebugOnlyInfo;
 
@@ -792,7 +791,7 @@ protected:
         }
 
     private:
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // DEBUG
 
         //
         // This is the end of the smallest instrDesc we can allocate for all
@@ -869,7 +868,7 @@ protected:
     emitter::emitAllocInstr() to clear them.
  */
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if DEBUG
 #define TINY_IDSC_DEBUG_EXTRA (sizeof(void*))
 #else
 #define TINY_IDSC_DEBUG_EXTRA (0)
