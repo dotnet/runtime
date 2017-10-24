@@ -1870,18 +1870,13 @@ AGAIN:
     }
 }
 
+#ifdef LEGACY_BACKEND
 regNumber CodeGen::genGetZeroRegister()
 {
-    regNumber zeroReg = REG_NA;
-
-#if REDUNDANT_LOAD
-
     // Is the constant already in some register?
 
-    zeroReg = regTracker.rsIconIsInReg(0);
-#endif
+    regNumber zeroReg = regTracker.rsIconIsInReg(0);
 
-#ifdef LEGACY_BACKEND
     if (zeroReg == REG_NA)
     {
         regMaskTP freeMask = regSet.rsRegMaskFree();
@@ -1906,7 +1901,6 @@ regNumber CodeGen::genGetZeroRegister()
             genSetRegToIcon(zeroReg, 0, TYP_INT);
         }
     }
-#endif // !LEGACY_BACKEND
 
     return zeroReg;
 }
@@ -1916,7 +1910,6 @@ regNumber CodeGen::genGetZeroRegister()
  *  Generate an instruction that has one operand given by a tree (which has
  *  been made addressable) and another that is an integer constant.
  */
-#ifdef LEGACY_BACKEND
 void CodeGen::inst_TT_IV(instruction ins, GenTreePtr tree, ssize_t val, unsigned offs, emitAttr size, insFlags flags)
 {
     bool sizeInferred = false;
@@ -2247,9 +2240,7 @@ AGAIN:
             assert(!"invalid address");
     }
 }
-#endif // LEGACY_BACKEND
 
-#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  *  Generate an instruction that has one operand given by a register and the

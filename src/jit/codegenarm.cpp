@@ -1720,7 +1720,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
 
     regTracker.rsTrashRegSet(RBM_CALLEE_TRASH);
-    regTracker.rsTrashRegsForGCInterruptability();
 }
 
 //------------------------------------------------------------------------
