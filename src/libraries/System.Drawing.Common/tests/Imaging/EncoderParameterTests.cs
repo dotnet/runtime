@@ -318,6 +318,9 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(int.MinValue)]
         public void Ctor_Encoder_NegativeNumberOfValues_Type_Value_OutOfMemoryException(int numberOfValues)
         {
+            if (numberOfValues == -1 && PlatformDetection.IsUbuntu1710) // [ActiveIssue(24274)]
+                return;
+
             IntPtr anyValue = IntPtr.Zero;
             EncoderParameterValueType anyTypw = EncoderParameterValueType.ValueTypeAscii;
             Assert.Throws<OutOfMemoryException>(() => new EncoderParameter(s_anyEncoder, numberOfValues, anyTypw, anyValue));
