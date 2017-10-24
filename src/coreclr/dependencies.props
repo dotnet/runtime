@@ -1,5 +1,14 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <!-- NuGet package restore sources. -->
+  <PropertyGroup>
+    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
+      https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
+      https://api.nuget.org/v3/index.json;
+      $(RestoreSources)
+    </RestoreSources>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">2.1.0</PackageVersion>
@@ -19,20 +28,16 @@
     <PgoDataCurrentRef>5b662e16887cd01cada59eb678ab0c1dd64438c4</PgoDataCurrentRef>
   </PropertyGroup>
 
-  <!-- Auto-upgraded properties for each build info dependency. -->
+  <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxPackageVersion>4.5.0-preview1-25830-02</CoreFxPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview1-25830-02</PlatformPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20171030-0047</PgoDataPackageVersion>
-  </PropertyGroup>
-
-  <!-- Full package version strings that are used in other parts of the build. -->
-  <PropertyGroup>
-    <CoreClrPackageVersion>2.1.0-preview1-25829-02</CoreClrPackageVersion>
+    <CoreFxPackageVersion>4.5.0-preview1-25824-02</CoreFxPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25824-02</PlatformPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20171025-1102</PgoDataPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview1-25824-51</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
-    <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
-    <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
-    <MicrosoftDiagnosticsTracingLibraryVersion>1.0.3-alpha-experimental</MicrosoftDiagnosticsTracingLibraryVersion>
+    <XunitConsoleNetcorePackageVersion>1.0.2-prerelease-00177</XunitConsoleNetcorePackageVersion>
+    <XunitPerformanceApiPackageVersion>1.0.0-beta-build0007</XunitPerformanceApiPackageVersion>
+    <MicrosoftDiagnosticsTracingTraceEventPackageVersion>1.0.3-alpha-experimental</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
     <VCRuntimeVersion>1.2.0</VCRuntimeVersion>
   </PropertyGroup>
 
@@ -73,17 +78,17 @@
 
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreFxPackageVersion</ElementName>
+      <ElementName>MicrosoftPrivateCoreFxNETCoreAppPackageVersion</ElementName>
       <PackageId>Microsoft.Private.CoreFx.NETCoreApp</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>PlatformPackageVersion</ElementName>
+      <ElementName>MicrosoftNETCorePlatformsPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Platforms</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreClr">
       <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreClrPackageVersion</ElementName>
+      <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
     </XmlUpdateStep>
     <UpdateStep Include="BuildTools">
@@ -131,11 +136,11 @@
     <XUnitPerformanceApiDependency Include="xunit.performance.execution" />
     <XUnitPerformanceApiDependency Include="xunit.performance.metrics" />
     <StaticDependency Include="@(XUnitPerformanceApiDependency)">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </StaticDependency>
 
     <StaticDependency Include="xunit.console.netcore">
-      <Version>$(XUnitConsoleNetCoreVersion)</Version>
+      <Version>$(XunitConsoleNetcorePackageVersion)</Version>
     </StaticDependency>
 
     <DependencyBuildInfo Include="@(StaticDependency)">
@@ -143,4 +148,17 @@
       <UpdateStableVersions>true</UpdateStableVersions>
     </DependencyBuildInfo>
   </ItemGroup>
+
+  <!-- Override isolated build dependency versions with versions from Repo API. -->
+  <Import Project="$(DotNetPackageVersionPropsPath)"
+          Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
+
+  <!--
+    Map PackageVersion properties that don't match the Repo API naming conventions. This must be
+    defined after the DotNetPackageVersionPropsPath Import so overrides apply correctly.
+  -->
+  <PropertyGroup>
+    <!-- A single property used to get all CoreCLR packages in various places. -->
+    <CoreClrPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</CoreClrPackageVersion>    
+  </PropertyGroup>
 </Project>
