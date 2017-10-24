@@ -131,7 +131,7 @@ namespace System.Net.Security
                     MemoryHandle memHandle = input.Retain(pin: true);
                     try
                     {
-                        PAL_TlsIo status = Interop.AppleCrypto.SslWrite(sslHandle, (byte*)memHandle.PinnedPointer, input.Length, out int written);
+                        PAL_TlsIo status = Interop.AppleCrypto.SslWrite(sslHandle, (byte*)memHandle.Pointer, input.Length, out int written);
 
                         if (status < 0)
                         {
