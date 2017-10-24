@@ -2207,7 +2207,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             {
                 MakeSrcContained(simdNode, op1);
             }
-            else if ((comp->getSIMDInstructionSet() == InstructionSet_AVX) &&
+            else if ((comp->getSIMDSupportLevel() == SIMD_AVX2_Supported) &&
                      ((simdNode->gtSIMDSize == 16) || (simdNode->gtSIMDSize == 32)))
             {
                 // Either op1 is a float or dbl constant or an addr
@@ -2231,7 +2231,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             // for integral vectors but not for floating-point for the reason
             // that we have +0.0 and -0.0 and +0.0 == -0.0
             op2 = simdNode->gtGetOp2();
-            if ((comp->getSIMDInstructionSet() >= InstructionSet_SSE3_4) && op2->IsIntegralConstVector(0))
+            if ((comp->getSIMDSupportLevel() >= SIMD_SSE4_Supported) && op2->IsIntegralConstVector(0))
             {
                 MakeSrcContained(simdNode, op2);
             }
