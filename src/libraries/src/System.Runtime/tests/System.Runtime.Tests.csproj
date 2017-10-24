@@ -180,6 +180,8 @@
     <Compile Include="System\ArraySegmentTests.netcoreapp.cs" />
     <Compile Include="System\BooleanTests.netcoreapp.cs" />
     <Compile Include="System\ByteTests.netcoreapp.cs" />
+    <Compile Include="System\DateTimeTests.netcoreapp.cs" />
+    <Compile Include="System\DateTimeOffsetTests.netcoreapp.cs" />
     <Compile Include="System\DecimalTests.netcoreapp.cs" />
     <Compile Include="System\EnumTests.netcoreapp.cs" />
     <Compile Include="System\GCTests.netcoreapp.cs" />
