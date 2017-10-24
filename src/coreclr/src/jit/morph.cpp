@@ -7295,7 +7295,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee)
 
     if (callee->HasRetBufArg()) // RetBuf
     {
-        ++calleeArgRegCount;
+        // We don't increment calleeArgRegCount here, since it is already in callee->gtCallArgs.
 
         // If callee has RetBuf param, caller too must have it.
         // Otherwise go the slow route.
