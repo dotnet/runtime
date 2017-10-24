@@ -2,12 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <PropertyGroup>
-    <FeedsDir Condition="'$(RunningOnCore)' != 'true'">$(ToolsDir)Microsoft.Dotnet.Build.Tasks.Feed/net46/</FeedsDir>
-    <FeedsDir Condition="'$(RunningOnCore)' == 'true'">$(ToolsDir)microsoft.dotnet.build.tasks.feed/netstandard1.5/</FeedsDir>
-  </PropertyGroup>
-
-  <UsingTask TaskName="PushToBlobFeed" AssemblyFile="$(FeedsDir)Microsoft.DotNet.Build.Tasks.Feed.dll"/>
+  <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
 
   <PropertyGroup>
     <PackagesPattern Condition="'$(PackagesPattern)' == ''">$(PackagesBinDir)pkg\*.nupkg</PackagesPattern>
