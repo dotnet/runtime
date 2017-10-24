@@ -153,7 +153,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/sync.sh -p -- /p:ArchGroup=$(PB_Architecture)",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/sync.sh $(PB_SyncArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -396,6 +396,10 @@
     "VsoPassword": {
       "value": null,
       "isSecret": true
+    },
+    "PB_SyncArguments": {
+      "value": "-p -- /p:ArchGroup=$(PB_Architecture)",
+      "allowOverride": true
     }
   },
   "demands": [
