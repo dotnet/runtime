@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for a <see cref="ValueTask{TResult}"/>.</summary>
-    public struct ValueTaskAwaiter<TResult> : ICriticalNotifyCompletion
+    public struct ValueTaskAwaiter<TResult> : ICriticalNotifyCompletion, IValueTaskAwaiter
     {
         /// <summary>The value being awaited.</summary>
         private ValueTask<TResult> _value; // Methods are called on this; avoid making it readonly so as to avoid unnecessary copies
@@ -38,5 +38,8 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Gets the task underlying <see cref="_value"/>.</summary>
         internal Task<TResult> AsTask() => _value.AsTask();
+
+        /// <summary>Gets the task underlying <see cref="_value"/>.</summary>
+        Task IValueTaskAwaiter.GetTask() => _value.AsTask();
     }
 }
