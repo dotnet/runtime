@@ -1170,7 +1170,11 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // DEBUG
 
     enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0) && compiler->lvaTrackedCount > 0;
-    availableIntRegs    = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
+#ifdef _TARGET_ARM64_
+    availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
+#else
+    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
+#endif
 
 #if ETW_EBP_FRAMED
     availableIntRegs &= ~RBM_FPBASE;
@@ -6357,7 +6361,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
             }
         }
         else
-#else
+#endif
         {
             recentAssignedRef = assignedInterval->recentRefPosition;
             if (!canSpillReg(physRegRecord, refLocation, &recentAssignedRefWeight))
@@ -6365,8 +6369,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
                 continue;
             }
         }
-#endif
-            if (recentAssignedRefWeight > farthestRefPosWeight)
+        if (recentAssignedRefWeight > farthestRefPosWeight)
         {
             continue;
         }
@@ -6949,8 +6952,10 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 {
     Interval* assignedInterval = regRec->assignedInterval;
     assert(assignedInterval != nullptr);
-
     regNumber thisRegNum = regRec->regNum;
+
+    // Is assignedInterval actually still assigned to this register?
+    bool intervalIsAssigned = (assignedInterval->physReg == thisRegNum);
 
 #ifdef _TARGET_ARM_
     RegRecord* anotherRegRec = nullptr;
@@ -6964,6 +6969,10 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 
         // Both two RegRecords should have been assigned to the same interval.
         assert(assignedInterval == anotherRegRec->assignedInterval);
+        if (!intervalIsAssigned && (assignedInterval->physReg == anotherRegRec->regNum))
+        {
+            intervalIsAssigned = true;
+        }
     }
 #endif // _TARGET_ARM_
 
@@ -6993,7 +7002,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         nextRefPosition = spillRefPosition->nextRefPosition;
     }
 
-    if (assignedInterval->physReg != REG_NA && assignedInterval->physReg != thisRegNum)
+    if (!intervalIsAssigned && assignedInterval->physReg != REG_NA)
     {
         // This must have been a temporary copy reg, but we can't assert that because there
         // may have been intervening RefPositions that were not copyRegs.
