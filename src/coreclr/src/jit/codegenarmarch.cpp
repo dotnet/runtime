@@ -69,12 +69,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     switch (treeNode->gtOper)
     {
-#ifdef _TARGET_ARM64_
-
         case GT_START_NONGC:
             getEmitter()->emitDisableGC();
             break;
 
+#ifdef _TARGET_ARM64_
         case GT_PROF_HOOK:
             // We should be seeing this only if profiler hook is needed
             noway_assert(compiler->compIsProfilerHookNeeded());
@@ -567,9 +566,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // All other calls - stk arg is setup in out-going arg area.
     if (treeNode->putInIncomingArgArea())
     {
-        NYI_ARM("genPutArgStk: fast tail call");
-
-#ifdef _TARGET_ARM64_
         varNumOut    = getFirstArgWithStackSlot();
         argOffsetMax = compiler->compArgSize;
 #if FEATURE_FASTTAILCALL
@@ -582,7 +578,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         LclVarDsc* varDsc = &(compiler->lvaTable[varNumOut]);
         assert(varDsc != nullptr);
 #endif // FEATURE_FASTTAILCALL
-#endif // _TARGET_ARM64_
     }
     else
     {
@@ -1968,7 +1963,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 // b) The size argument of the InitBlk is >= INITBLK_STOS_LIMIT bytes.
 void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 {
-    // Make sure we got the arguments of the initblk operation in the right registers
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
     GenTreePtr initVal = initBlkNode->Data();
@@ -1979,14 +1973,6 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    if (initBlkNode->gtOper == GT_STORE_DYN_BLK)
-    {
-        assert(initBlkNode->AsDynBlk()->gtDynamicSize->gtRegNum == REG_ARG_2);
-    }
-    else
-    {
-        assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
-    }
 
 #ifdef _TARGET_ARM64_
     if (size != 0)
@@ -2266,15 +2252,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         genConsumeReg(target);
 
-        NYI_ARM("fast tail call");
-
-#ifdef _TARGET_ARM64_
-        // Use IP0 as the call target register.
-        if (target->gtRegNum != REG_IP0)
+        // Use IP0 on ARM64 and R12 on ARM32 as the call target register.
+        if (target->gtRegNum != REG_FASTTAILCALL_TARGET)
         {
-            inst_RV_RV(INS_mov, REG_IP0, target->gtRegNum);
+            inst_RV_RV(INS_mov, REG_FASTTAILCALL_TARGET, target->gtRegNum);
         }
-#endif // _TARGET_ARM64_
 
         return;
     }
@@ -3668,9 +3650,6 @@ void CodeGen::genStructReturn(GenTreePtr treeNode)
     }
     else // op1 must be multi-reg GT_CALL
     {
-#ifdef _TARGET_ARM_
-        NYI_ARM("struct return from multi-reg GT_CALL");
-#endif
         assert(op1->IsMultiRegCall() || op1->IsCopyOrReloadOfMultiRegCall());
 
         genConsumeRegs(op1);

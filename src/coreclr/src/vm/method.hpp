@@ -1240,7 +1240,8 @@ public:
             !IsUnboxingStub() &&
             !IsInstantiatingStub() &&
             !IsDynamicMethod() &&
-            !CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
+            !CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits()) &&
+            !CORProfilerDisableTieredCompilation();
     }
 #endif
 

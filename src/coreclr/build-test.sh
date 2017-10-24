@@ -2,14 +2,29 @@
 
 initHostDistroRid()
 {
+    __HostDistroRid=""
     if [ "$__HostOS" == "Linux" ]; then
-        if [ ! -e /etc/os-release ]; then
-            echo "WARNING: Can not determine runtime id for current distro."
-            __HostDistroRid=""
-        else
+        if [ -e /etc/os-release ]; then
             source /etc/os-release
+            if [[ $ID == "alpine" ]]; then
+                # remove the last version digit
+                VERSION_ID=${VERSION_ID%.*}
+            fi
             __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
+        elif [ -e /etc/redhat-release ]; then
+            local redhatRelease=$(</etc/redhat-release)
+            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
+               __HostDistroRid="rhel.6-$__HostArch"
+            fi
         fi
+    fi
+    if [ "$__HostOS" == "FreeBSD" ]; then
+        __freebsd_version=`sysctl -n kern.osrelease | cut -f1 -d'.'`
+        __HostDistroRid="freebsd.$__freebsd_version-$__HostArch"
+    fi
+
+    if [ "$__HostDistroRid" == "" ]; then
+        echo "WARNING: Cannot determine runtime id for current distro."
     fi
 }
 
@@ -29,6 +44,10 @@ initTargetDistroRid()
         export __DistroRid="$__HostDistroRid"
     fi
 
+    if [ "$__BuildOS" == "OSX" ]; then
+        __PortableBuild=1
+    fi
+
     # Portable builds target the base RID
     if [ "$__PortableBuild" == 1 ]; then
         if [ "$__BuildOS" == "Linux" ]; then
@@ -41,6 +60,8 @@ initTargetDistroRid()
    if [ "$ID.$VERSION_ID" == "ubuntu.16.04" ]; then
      export __DistroRid="ubuntu.14.04-$__BuildArch"
    fi
+
+   echo "__DistroRid: " $__DistroRid
 }
 
 isMSBuildOnNETCoreSupported()

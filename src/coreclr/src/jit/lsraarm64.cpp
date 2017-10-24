@@ -287,7 +287,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
-            TreeNodeInfoInitSIMD(tree);
+            TreeNodeInfoInitSIMD(tree->AsSIMD());
             break;
 #endif // FEATURE_SIMD
 
@@ -769,6 +769,147 @@ void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
         tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(this, useCandidates);
     }
 }
+
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// TreeNodeInfoInitSIMD: Set the NodeInfo for a GT_SIMD tree.
+//
+// Arguments:
+//    tree       - The GT_SIMD node of interest
+//
+// Return Value:
+//    None.
+
+void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
+{
+    TreeNodeInfo* info = &(simdTree->gtLsraInfo);
+
+    // Only SIMDIntrinsicInit can be contained
+    if (simdTree->isContained())
+    {
+        assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicInit);
+    }
+    assert(info->dstCount == 1);
+
+    switch (simdTree->gtSIMDIntrinsicID)
+    {
+        GenTree* op1;
+        GenTree* op2;
+
+        case SIMDIntrinsicCast:
+        case SIMDIntrinsicInit:
+        case SIMDIntrinsicSqrt:
+        case SIMDIntrinsicAbs:
+        case SIMDIntrinsicConvertToSingle:
+        case SIMDIntrinsicConvertToInt32:
+        case SIMDIntrinsicConvertToUInt32:
+        case SIMDIntrinsicConvertToDouble:
+        case SIMDIntrinsicConvertToInt64:
+        case SIMDIntrinsicConvertToUInt64:
+        case SIMDIntrinsicWidenLo:
+        case SIMDIntrinsicWidenHi:
+            info->srcCount = 1;
+            break;
+
+        case SIMDIntrinsicGetItem:
+            info->srcCount = 1;
+            break;
+
+        case SIMDIntrinsicAdd:
+        case SIMDIntrinsicSub:
+        case SIMDIntrinsicMul:
+        case SIMDIntrinsicDiv:
+        case SIMDIntrinsicBitwiseAnd:
+        case SIMDIntrinsicBitwiseAndNot:
+        case SIMDIntrinsicBitwiseOr:
+        case SIMDIntrinsicBitwiseXor:
+        case SIMDIntrinsicMin:
+        case SIMDIntrinsicMax:
+        case SIMDIntrinsicSetX:
+        case SIMDIntrinsicSetY:
+        case SIMDIntrinsicSetZ:
+        case SIMDIntrinsicSetW:
+        case SIMDIntrinsicEqual:
+        case SIMDIntrinsicLessThan:
+        case SIMDIntrinsicGreaterThan:
+        case SIMDIntrinsicLessThanOrEqual:
+        case SIMDIntrinsicGreaterThanOrEqual:
+            info->srcCount = 2;
+            break;
+
+        case SIMDIntrinsicNarrow:
+            info->srcCount = 2;
+
+            // Op1 will write to dst before Op2 is free
+            simdTree->gtOp.gtOp2->gtLsraInfo.isDelayFree = true;
+            info->hasDelayFreeSrc                        = true;
+            break;
+
+        case SIMDIntrinsicInitN:
+        {
+            info->srcCount = (short)(simdTree->gtSIMDSize / genTypeSize(simdTree->gtSIMDBaseType));
+
+            if (varTypeIsFloating(simdTree->gtSIMDBaseType))
+            {
+                // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
+                info->setInternalCandidates(this, RBM_ALLFLOAT);
+                info->internalFloatCount = 1;
+            }
+            break;
+        }
+
+        case SIMDIntrinsicInitArray:
+            // We have an array and an index, which may be contained.
+            info->srcCount = simdTree->gtGetOp2()->isContained() ? 1 : 2;
+            break;
+
+        case SIMDIntrinsicOpEquality:
+        case SIMDIntrinsicOpInEquality:
+            info->srcCount = simdTree->gtGetOp2()->isContained() ? 1 : 2;
+            info->setInternalCandidates(this, RBM_ALLFLOAT);
+            info->internalFloatCount = 1;
+            break;
+
+        case SIMDIntrinsicDotProduct:
+            info->srcCount = 2;
+            info->setInternalCandidates(this, RBM_ALLFLOAT);
+            info->internalFloatCount = 1;
+            break;
+
+        case SIMDIntrinsicSelect:
+            // TODO-ARM64-CQ Allow lowering to see SIMDIntrinsicSelect so we can generate BSL VC, VA, VB
+            // bsl target register must be VC.  Reserve a temp in case we need to shuffle things
+            info->setInternalCandidates(this, RBM_ALLFLOAT);
+            info->internalFloatCount = 1;
+            info->srcCount           = 3;
+            break;
+
+        case SIMDIntrinsicInitArrayX:
+        case SIMDIntrinsicInitFixed:
+        case SIMDIntrinsicCopyToArray:
+        case SIMDIntrinsicCopyToArrayX:
+        case SIMDIntrinsicNone:
+        case SIMDIntrinsicGetCount:
+        case SIMDIntrinsicGetOne:
+        case SIMDIntrinsicGetZero:
+        case SIMDIntrinsicGetAllOnes:
+        case SIMDIntrinsicGetX:
+        case SIMDIntrinsicGetY:
+        case SIMDIntrinsicGetZ:
+        case SIMDIntrinsicGetW:
+        case SIMDIntrinsicInstEquals:
+        case SIMDIntrinsicHWAccel:
+        case SIMDIntrinsicWiden:
+        case SIMDIntrinsicInvalid:
+            assert(!"These intrinsics should not be seen during register allocation");
+            __fallthrough;
+
+        default:
+            noway_assert(!"Unimplemented SIMD node type.");
+            unreached();
+    }
+}
+#endif // FEATURE_SIMD
 
 #endif // _TARGET_ARM64_
 
