@@ -82,6 +82,40 @@ namespace System.Net.WebSockets
             return new ArraySegment<byte>(new byte[receiveBufferSize]);
         }
 
+        /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
+        /// <param name="stream">The <see cref="Stream"/> for the connection.</param>
+        /// <param name="isServer"><code>true</code> if this is the server-side of the connection; <code>false</code> if it's the client side.</param>
+        /// <param name="subProtocol">The agreed upon sub-protocol that was used when creating the connection.</param>
+        /// <param name="keepAliveInterval">The keep-alive interval to use, or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.</param>
+        /// <param name="buffer">A scratch buffer that may be used by the implementation for any purpose.</param>
+        /// <returns>The created <see cref="WebSocket"/>.</returns>
+        public static WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval, Memory<byte> buffer = default)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            if (!stream.CanRead || !stream.CanWrite)
+            {
+                throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
+            }
+
+            if (subProtocol != null)
+            {
+                WebSocketValidate.ValidateSubprotocol(subProtocol);
+            }
+
+            if (keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall,
+                    0));
+            }
+
+            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval, buffer);
+        }
+
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.")]
         public static bool IsApplicationTargeting45() => true;
@@ -129,13 +163,12 @@ namespace System.Net.WebSockets
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
             }
 
-            Memory<byte> internalMemoryBuffer =
-                internalBuffer.Array != null ? new Memory<byte>(internalBuffer.Array, internalBuffer.Offset, internalBuffer.Count) :
-                Memory<byte>.Empty;
+            Memory<byte> internalMemoryBuffer = 
+                internalBuffer.Count >= receiveBufferSize ? internalBuffer :
+                receiveBufferSize >= ManagedWebSocket.MaxMessageHeaderLength ? new byte[receiveBufferSize] :
+                Memory<byte>.Empty; // let ManagedWebSocket create it
 
-            return ManagedWebSocket.CreateFromConnectedStream(
-                innerStream, false, subProtocol, keepAliveInterval,
-                receiveBufferSize, internalMemoryBuffer);
+            return ManagedWebSocket.CreateFromConnectedStream(innerStream, false, subProtocol, keepAliveInterval, internalMemoryBuffer);
         }
     }
 }

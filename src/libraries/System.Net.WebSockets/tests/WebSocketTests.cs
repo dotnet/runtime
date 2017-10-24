@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
-    public sealed class WebSocketTests
+    public sealed partial class WebSocketTests
     {
         [Fact]
         public static void DefaultKeepAliveInterval_ValidValue()

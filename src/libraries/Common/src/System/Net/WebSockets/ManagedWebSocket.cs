@@ -37,9 +37,9 @@ namespace System.Net.WebSockets
         /// <param name="receiveBuffer">Optional buffer to use for receives.</param>
         /// <returns>The created <see cref="ManagedWebSocket"/> instance.</returns>
         public static ManagedWebSocket CreateFromConnectedStream(
-            Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, int receiveBufferSize, Memory<byte> buffer = default)
+            Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, Memory<byte> buffer)
         {
-            return new ManagedWebSocket(stream, isServer, subprotocol, keepAliveInterval, receiveBufferSize, buffer);
+            return new ManagedWebSocket(stream, isServer, subprotocol, keepAliveInterval, buffer);
         }
 
         /// <summary>Thread-safe random number generator used to generate masks for each send.</summary>
@@ -57,11 +57,13 @@ namespace System.Net.WebSockets
         private static readonly WebSocketState[] s_validCloseStates = { WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent };
 
         /// <summary>The maximum size in bytes of a message frame header that includes mask bytes.</summary>
-        private const int MaxMessageHeaderLength = 14;
+        internal const int MaxMessageHeaderLength = 14;
         /// <summary>The maximum size of a control message payload.</summary>
         private const int MaxControlPayloadLength = 125;
         /// <summary>Length of the mask XOR'd with the payload data.</summary>
         private const int MaskLength = 4;
+        /// <summary>Default length of a receive buffer to create when an invalid scratch buffer is provided.</summary>
+        private const int DefaultReceiveBufferSize = 0x1000;
 
         /// <summary>The stream used to communicate with the remote server.</summary>
         private readonly Stream _stream;
@@ -168,7 +170,7 @@ namespace System.Net.WebSockets
         /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
         /// <param name="receiveBufferSize">The buffer size to use for received data.</param>
         /// <param name="buffer">Optional buffer to use for receives</param>
-        private ManagedWebSocket(Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, int receiveBufferSize, Memory<byte> buffer)
+        private ManagedWebSocket(Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, Memory<byte> buffer)
         {
             Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
             Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
@@ -178,27 +180,19 @@ namespace System.Net.WebSockets
             Debug.Assert(stream.CanRead, $"Expected readable stream");
             Debug.Assert(stream.CanWrite, $"Expected writeable stream");
             Debug.Assert(keepAliveInterval == Timeout.InfiniteTimeSpan || keepAliveInterval >= TimeSpan.Zero, $"Invalid keepalive interval: {keepAliveInterval}");
-            Debug.Assert(receiveBufferSize >= MaxMessageHeaderLength, $"Receive buffer size {receiveBufferSize} is too small");
 
             _stream = stream;
             _isServer = isServer;
             _subprotocol = subprotocol;
 
-            // If we were provided with a buffer to use, use it, as long as it's big enough for our needs, and for simplicity
-            // as long as we're not supposed to use only a portion of it.  If it doesn't meet our criteria, just create a new one.
-            if (buffer.Length >= MaxMessageHeaderLength)
-            {
-                _receiveBuffer = buffer;
-            }
-            else
-            {
-                // Just allocate the array.  We avoid using the pool because often many web sockets will be used concurrently,
-                // and if each web socket rents a similarly sized buffer from the pool for its duration, we'll end up draining
-                // the pool, such that other web sockets will allocate anyway, as will anyone else in the process using the
-                // pool.  If someone wants to pool, they can do so by passing in the buffer they want to use, and they can
-                // get it from whatever pool they like.
-                _receiveBuffer = new byte[Math.Max(receiveBufferSize, MaxMessageHeaderLength)];
-            }
+            // If we were provided with a buffer to use, use it as long as it's big enough for our needs.
+            // If it doesn't meet our criteria, just create a new one. If we need to create a new one,
+            // we avoid using the pool because often many web sockets will be used concurrently, and if each web
+            // socket rents a similarly sized buffer from the pool for its duration, we'll end up draining
+            // the pool, such that other web sockets will allocate anyway, as will anyone else in the process using the
+            // pool.  If someone wants to pool, they can do so by passing in the buffer they want to use, and they can
+            // get it from whatever pool they like.
+            _receiveBuffer = buffer.Length >= MaxMessageHeaderLength ? buffer : new byte[DefaultReceiveBufferSize];
 
             // Set up the abort source so that if it's triggered, we transition the instance appropriately.
             _abortSource.Token.Register(s =>
