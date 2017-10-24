@@ -407,6 +407,7 @@ void RegSet::rsUnlockReg(regMaskTP regMask, regMaskTP usedMask)
 }
 #endif // LEGACY_BACKEND
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  *  Assume all registers contain garbage (called at start of codegen and when
@@ -419,6 +420,7 @@ void RegTracker::rsTrackRegClr()
     assert(RV_TRASH == 0);
     memset(rsRegValues, 0, sizeof(rsRegValues));
 }
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************
  *
@@ -432,11 +434,14 @@ void RegTracker::rsTrackRegTrash(regNumber reg)
 
     regSet->rsSetRegsModified(genRegMask(reg));
 
+#ifdef LEGACY_BACKEND
     /* Record the new value for the register */
 
     rsRegValues[reg].rvdKind = RV_TRASH;
+#endif // LEGACY_BACKEND
 }
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  *  calls rsTrackRegTrash on the set of registers in regmask
@@ -460,6 +465,7 @@ void RegTracker::rsTrackRegMaskTrash(regMaskTP regMask)
         }
     }
 }
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************/
 
@@ -472,12 +478,15 @@ void RegTracker::rsTrackRegIntCns(regNumber reg, ssize_t val)
 
     regSet->rsSetRegsModified(genRegMask(reg));
 
+#ifdef LEGACY_BACKEND
     /* Record the new value for the register */
 
     rsRegValues[reg].rvdKind      = RV_INT_CNS;
     rsRegValues[reg].rvdIntCnsVal = val;
+#endif
 }
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************/
 
 // inline
@@ -556,8 +565,6 @@ void RegTracker::rsTrackRegAssign(GenTree* op1, GenTree* op2)
             }
     }
 }
-
-#ifdef LEGACY_BACKEND
 
 /*****************************************************************************
  *
@@ -1371,9 +1378,11 @@ void RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
 #if CPU_HAS_FP_SUPPORT
     assert(varTypeIsFloating(varDsc->TypeGet()) == false);
 #endif
+#ifdef LEGACY_BACKEND
     // Kill the register before doing anything in case we take a
     // shortcut out of here
     rsRegValues[reg].rvdKind = RV_TRASH;
+#endif
 
     if (compiler->lvaTable[var].lvAddrExposed)
     {
@@ -1384,7 +1393,7 @@ void RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
 
     regSet->rsSetRegsModified(genRegMask(reg));
 
-#if REDUNDANT_LOAD
+#ifdef LEGACY_BACKEND
 
     /* Is the variable a pointer? */
 
@@ -1409,8 +1418,6 @@ void RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
         return;
     }
 
-#endif
-
 #ifdef DEBUG
     if (compiler->verbose)
     {
@@ -1431,10 +1438,12 @@ void RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
     }
 
     rsRegValues[reg].rvdLclVarNum = var;
+#endif // LEGACY_BACKEND
 }
 
 /*****************************************************************************/
 
+#ifdef LEGACY_BACKEND
 void RegTracker::rsTrackRegSwap(regNumber reg1, regNumber reg2)
 {
     RegValDsc tmp;
@@ -1443,6 +1452,7 @@ void RegTracker::rsTrackRegSwap(regNumber reg1, regNumber reg2)
     rsRegValues[reg1] = rsRegValues[reg2];
     rsRegValues[reg2] = tmp;
 }
+#endif // LEGACY_BACKEND
 
 void RegTracker::rsTrackRegCopy(regNumber reg1, regNumber reg2)
 {
@@ -1453,7 +1463,9 @@ void RegTracker::rsTrackRegCopy(regNumber reg1, regNumber reg2)
 
     regSet->rsSetRegsModified(genRegMask(reg1));
 
+#ifdef LEGACY_BACKEND
     rsRegValues[reg1] = rsRegValues[reg2];
+#endif // LEGACY_BACKEND
 }
 
 #ifdef LEGACY_BACKEND
@@ -2904,10 +2916,7 @@ var_types RegSet::rsRmvMultiReg(regNumber reg)
     SpillDsc::freeDsc(this, dsc);
     return type;
 }
-#endif // LEGACY_BACKEND
-
 /*****************************************************************************/
-#if REDUNDANT_LOAD
 /*****************************************************************************
  *
  *  Search for a register which contains the given constant value.
@@ -3173,6 +3182,7 @@ void RegTracker::rsTrashLcl(unsigned var)
         }
     }
 }
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************
  *
@@ -3197,6 +3207,7 @@ void RegTracker::rsTrashRegSet(regMaskTP regMask)
     }
 }
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  *  Return a mask of registers that hold no useful value.
@@ -3222,7 +3233,7 @@ regMaskTP RegTracker::rsUselessRegs()
 }
 
 /*****************************************************************************/
-#endif // REDUNDANT_LOAD
+#endif // LEGACY_BACKEND
 /*****************************************************************************/
 
 /*
@@ -3845,7 +3856,7 @@ void RegSet::rsSpillChk()
 #endif
 
 /*****************************************************************************/
-#if REDUNDANT_LOAD
+#ifdef LEGACY_BACKEND
 
 // inline
 bool RegTracker::rsIconIsInReg(ssize_t val, regNumber reg)
@@ -3862,5 +3873,5 @@ bool RegTracker::rsIconIsInReg(ssize_t val, regNumber reg)
     return false;
 }
 
-#endif // REDUNDANT_LOAD
+#endif // LEGACY_BACKEND
 /*****************************************************************************/
