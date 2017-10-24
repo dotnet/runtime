@@ -61,7 +61,7 @@ initHostDistroRid()
     if [ "$__HostOS" == "Linux" ]; then
         if [ -e /etc/os-release ]; then
             source /etc/os-release
-            if [[ $ID == "alpine" || $ID == "rhel"]]; then
+            if [[ $ID == "alpine" || $ID == "rhel" ]]; then
                 # remove the last version digit
                 VERSION_ID=${VERSION_ID%.*}
             fi
@@ -621,7 +621,7 @@ __IgnoreWarnings=0
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
 __SourceDir="$__ProjectDir/src"
-__PackagesDir="$__ProjectDir/packages"
+__PackagesDir="${DotNetRestorePackagesPath:-${__ProjectDir}/packages}"
 __RootBinDir="$__ProjectDir/bin"
 __UnprocessedBuildArgs=
 __RunArgs=
