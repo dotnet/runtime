@@ -164,18 +164,24 @@ namespace System.Net.WebSockets
                     }
                 }
 
+                // Get or create the buffer to use
+                const int MinBufferSize = 14; // from ManagedWebSocket.MaxMessageHeaderLength
+                ArraySegment<byte> optionsBuffer = options.Buffer.GetValueOrDefault();
+                Memory<byte> buffer =
+                    optionsBuffer.Count >= MinBufferSize ? optionsBuffer : // use the provided buffer if it's big enough
+                    options.ReceiveBufferSize >= MinBufferSize ? new byte[options.ReceiveBufferSize] : // or use the requested size if it's big enough
+                    Memory<byte>.Empty; // or let WebSocket.CreateFromStream use its default
+
                 // Get the response stream and wrap it in a web socket.
                 Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 Debug.Assert(connectedStream.CanWrite);
                 Debug.Assert(connectedStream.CanRead);
-                _webSocket = WebSocket.CreateClientWebSocket( // TODO https://github.com/dotnet/corefx/issues/21537: Use new API when available
+                _webSocket = WebSocket.CreateFromStream(
                     connectedStream,
+                    isServer: false,
                     subprotocol,
-                    options.ReceiveBufferSize,
-                    options.SendBufferSize,
                     options.KeepAliveInterval,
-                    useZeroMaskingKey: false,
-                    internalBuffer:options.Buffer.GetValueOrDefault());
+                    buffer);
             }
             catch (Exception exc)
             {
