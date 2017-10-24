@@ -393,7 +393,7 @@ namespace System.Runtime.CompilerServices
         {
             IAsyncStateMachineBox box = GetStateMachineBox(ref stateMachine);
 
-            // TThe null tests here ensure that the jit can optimize away the interface
+            // The null tests here ensure that the jit can optimize away the interface
             // tests when TAwaiter is is a ref type.
             if ((null != (object)default(TAwaiter)) && (awaiter is ITaskAwaiter))
             {
@@ -405,62 +405,27 @@ namespace System.Runtime.CompilerServices
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
             }
-
-            // Handle common {Configured}ValueTaskAwaiter<T> types.  Unfortunately these need to be special-cased
-            // individually, as we don't have good way to extract the task from a ValueTaskAwaiter<T> when we don't
-            // know what the T is; we could make ValueTaskAwaiter<T> implement an IValueTaskAwaiter interface, but
-            // calling a GetTask method on that would end up boxing the awaiter.  This hard-coded list here is
-            // somewhat arbitrary and is based on types currently in use with ValueTask<T> in coreclr/corefx.
-            else if (typeof(TAwaiter) == typeof(ValueTaskAwaiter<int>))
+            else if ((null != (object)default(TAwaiter)) && (awaiter is IValueTaskAwaiter))
             {
-                var vta = (ValueTaskAwaiter<int>)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, continueOnCapturedContext: true);
+                Task t = ((IValueTaskAwaiter)awaiter).GetTask();
+                TaskAwaiter.UnsafeOnCompletedInternal(t, box, continueOnCapturedContext: true);
             }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<int>.ConfiguredValueTaskAwaiter))
+            else if ((null != (object)default(TAwaiter)) && (awaiter is IConfiguredValueTaskAwaiter))
             {
-                var vta = (ConfiguredValueTaskAwaitable<int>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
+                (Task task, bool continueOnCapturedContext) t = ((IConfiguredValueTaskAwaiter)awaiter).GetTask();
+                TaskAwaiter.UnsafeOnCompletedInternal(t.task, box, t.continueOnCapturedContext);
             }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<System.IO.Stream>.ConfiguredValueTaskAwaiter))
-            {
-                var vta = (ConfiguredValueTaskAwaitable<System.IO.Stream>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
-            }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<ArraySegment<byte>>.ConfiguredValueTaskAwaiter))
-            {
-                var vta = (ConfiguredValueTaskAwaitable<ArraySegment<byte>>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
-            }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<object>.ConfiguredValueTaskAwaiter))
-            {
-                var vta = (ConfiguredValueTaskAwaitable<object>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
-            }
-
             // The awaiter isn't specially known. Fall back to doing a normal await.
             else
             {
-                // TODO https://github.com/dotnet/coreclr/issues/14177:
-                // Move the code back into this method once the JIT is able to
-                // elide it successfully when one of the previous branches is hit.
-                AwaitArbitraryAwaiterUnsafeOnCompleted(ref awaiter, box);
-            }
-        }
-
-        /// <summary>Schedules the specified state machine to be pushed forward when the specified awaiter completes.</summary>
-        /// <typeparam name="TAwaiter">Specifies the type of the awaiter.</typeparam>
-        /// <param name="awaiter">The awaiter.</param>
-        /// <param name="box">The state machine box.</param>
-        private static void AwaitArbitraryAwaiterUnsafeOnCompleted<TAwaiter>(ref TAwaiter awaiter, IAsyncStateMachineBox box)
-            where TAwaiter : ICriticalNotifyCompletion
-        {
-            try
-            {
-                awaiter.UnsafeOnCompleted(box.MoveNextAction);
-            }
-            catch (Exception e)
-            {
-                AsyncMethodBuilderCore.ThrowAsync(e, targetContext: null);
+                try
+                {
+                    awaiter.UnsafeOnCompleted(box.MoveNextAction);
+                }
+                catch (Exception e)
+                {
+                    AsyncMethodBuilderCore.ThrowAsync(e, targetContext: null);
+                }
             }
         }
 
