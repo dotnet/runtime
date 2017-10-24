@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class DateTimeTests
+    public static partial class DateTimeTests
     {
         [Fact]
         public static void MaxValue()
@@ -555,7 +555,7 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.Parse(null));
             AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.Parse(null, new MyFormatter()));
-            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.Parse(null, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.Parse((string)null, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
 
             Assert.Throws<FormatException>(() => DateTime.Parse(""));
             Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter()));
@@ -575,8 +575,8 @@ namespace System.Tests
         public static void ParseExact_InvalidArguments_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact(null, "d", new MyFormatter()));
-            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact(null, "d", new MyFormatter(), DateTimeStyles.None));
-            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact(null, new[] { "d" }, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact((string)null, "d", new MyFormatter(), DateTimeStyles.None));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => DateTime.ParseExact((string)null, new[] { "d" }, new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
 
             Assert.Throws<FormatException>(() => DateTime.ParseExact("", "d", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.ParseExact("", "d", new MyFormatter(), DateTimeStyles.None));
@@ -596,8 +596,8 @@ namespace System.Tests
         [Fact]
         public static void TryParseExact_InvalidArguments_ReturnsFalse()
         {
-            Assert.False(DateTime.TryParseExact(null, "d", new MyFormatter(), DateTimeStyles.None, out DateTime result));
-            Assert.False(DateTime.TryParseExact(null, new[] { "d" }, new MyFormatter(), DateTimeStyles.None, out result));
+            Assert.False(DateTime.TryParseExact((string)null, "d", new MyFormatter(), DateTimeStyles.None, out DateTime result));
+            Assert.False(DateTime.TryParseExact((string)null, new[] { "d" }, new MyFormatter(), DateTimeStyles.None, out result));
 
             Assert.False(DateTime.TryParseExact("", "d", new MyFormatter(), DateTimeStyles.None, out result));
             Assert.False(DateTime.TryParseExact("", new[] { "d" }, new MyFormatter(), DateTimeStyles.None, out result));
