@@ -9,7 +9,7 @@
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' != 'netcoreapp'">SR.PlatformNotSupported_PerfCounters</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_PerfCounters</GeneratePlatformNotSupportedAssemblyMessage>
     <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
