@@ -6,7 +6,6 @@
     <RootNamespace>System</RootNamespace>
     <AssemblyName>System.Diagnostics.Tools.Tests</AssemblyName>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>

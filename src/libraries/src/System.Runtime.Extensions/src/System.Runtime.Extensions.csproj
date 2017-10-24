@@ -8,9 +8,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants> 
+    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -94,7 +93,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Environment.Win32.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.GetUserNameExW.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\secur32\Interop.GetUserNameExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs">

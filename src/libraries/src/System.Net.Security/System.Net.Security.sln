@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26923.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Security.Tests", "tests\FunctionalTests\System.Net.Security.Tests.csproj", "{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -56,8 +56,5 @@ Global
 		{0D174EA9-9E61-4519-8D31-7BD2331A1982} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{89F37791-6254-4D60-AB96-ACD3CCA0E771} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{A7488FC0-9A8F-4EF9-BC3E-C5EBA47E13F8} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {72DFF69F-F9E9-4112-91E8-5FC8169B6F1F}
 	EndGlobalSection
 EndGlobal

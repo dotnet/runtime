@@ -5,7 +5,6 @@
     <ProjectGuid>{A30BBA60-647C-4565-A42F-BE60B2CA2E8E}</ProjectGuid>
     <RootNamespace>XmlMiscTests</RootNamespace>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

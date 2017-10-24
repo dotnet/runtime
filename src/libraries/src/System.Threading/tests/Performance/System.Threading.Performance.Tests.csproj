@@ -5,9 +5,8 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{7AB03FFA-7D4D-4248-9702-3D2785859C18}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.EventWaitHandle.cs" />
     <Compile Include="Perf.Interlocked.cs" />

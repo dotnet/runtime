@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{04C5492C-FA54-4F93-8698-44B8BB7C72E0}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

@@ -12,7 +12,6 @@
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <IncludeDefaultReferences Condition="'$(TargetGroup)'=='uapaot'">false</IncludeDefaultReferences>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
@@ -283,7 +282,7 @@
   </ItemGroup>
   <!-- DebuggerAttribute tests require internal framework Reflection and will not work on AoT platforms.
        The proper way to test these is via the debugger expression evaluator, not Reflection. -->
-  <ItemGroup  Condition="'$(TargetGroup)'!='uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
     <Compile Include="DebugViewTests.cs" />
     <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
     <Compile Include="Dynamic\BindingRestrictionsProxyTests.cs" />
