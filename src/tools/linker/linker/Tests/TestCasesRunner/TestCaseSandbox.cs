@@ -36,6 +36,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			InputDirectory = _directory.Combine ("input").EnsureDirectoryExists ();
 			OutputDirectory = _directory.Combine ("output").EnsureDirectoryExists ();
 			ExpectationsDirectory = _directory.Combine ("expectations").EnsureDirectoryExists ();
+			ResourcesDirectory = _directory.Combine ("resources").EnsureDirectoryExists ();
 		}
 
 		public NPath InputDirectory { get; }
@@ -44,6 +45,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public NPath ExpectationsDirectory { get; }
 
+		public NPath ResourcesDirectory { get; }
+
 		public IEnumerable<NPath> SourceFiles {
 			get { return _directory.Files ("*.cs"); }
 		}
@@ -51,6 +54,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public IEnumerable<NPath> LinkXmlFiles {
 			get { return InputDirectory.Files ("*.xml"); }
 		}
+
+		public IEnumerable<NPath> ResourceFiles => ResourcesDirectory.Files ();
 
 		public virtual void Populate (TestCaseMetadaProvider metadataProvider)
 		{
@@ -62,7 +67,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			CopyToInputAndExpectations (GetExpectationsAssemblyPath ());
 
 			foreach (var dep in metadataProvider.AdditionalFilesToSandbox ()) {
-				dep.FileMustExist ().Copy (_directory);
+				dep.Source.FileMustExist ().Copy (_directory.Combine (dep.RelativeDestination));
+			}
+
+			foreach (var res in metadataProvider.GetResources ()) {
+				res.Source.FileMustExist ().Copy (ResourcesDirectory.Combine (res.RelativeDestination));
 			}
 
 			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ())

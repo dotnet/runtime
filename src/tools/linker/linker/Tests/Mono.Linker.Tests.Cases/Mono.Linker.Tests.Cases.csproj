@@ -61,6 +61,11 @@
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessed.cs" />
+    <Compile Include="Resources\NonLinkerEmbeddedResourceHasNoImpact.cs" />
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
     <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
@@ -159,6 +164,11 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveMethodsHasFieldsRemoved.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
+    <Content Include="Resources\Dependencies\NonLinkerEmbeddedResourceHasNoImpact.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">

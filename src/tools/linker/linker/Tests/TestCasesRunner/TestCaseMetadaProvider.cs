@@ -52,6 +52,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
+		public virtual IEnumerable<SourceAndRelativeDestinationPair> GetResources ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (SetupCompileResourceAttribute))
+				.Select (GetSourceAndRelativeDestinationValue);
+		}
+
 		public virtual IEnumerable<NPath> GetExtraLinkerSearchDirectories ()
 		{
 			yield break;
@@ -69,15 +76,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return false;
 		}
 
-		public virtual IEnumerable<NPath> AdditionalFilesToSandbox ()
+		public virtual IEnumerable<SourceAndRelativeDestinationPair> AdditionalFilesToSandbox ()
 		{
-			foreach (var attr in _testCaseTypeDefinition.CustomAttributes) {
-				if (attr.AttributeType.Name != nameof (SandboxDependencyAttribute))
-					continue;
-
-				var relativeDepPath = ((string) attr.ConstructorArguments.First ().Value).ToNPath ();
-				yield return _testCase.SourceFile.Parent.Combine (relativeDepPath);
-			}
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (SandboxDependencyAttribute))
+				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
 		public virtual IEnumerable<SetupCompileInfo> GetSetupCompileAssembliesBefore ()
@@ -113,6 +116,17 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				return (T) attribute.ConstructorArguments.First ().Value;
 
 			return defaultValue;
+		}
+
+		SourceAndRelativeDestinationPair GetSourceAndRelativeDestinationValue (CustomAttribute attribute)
+		{
+			var relativeSource = (string) attribute.ConstructorArguments.First ().Value;
+			var relativeDestination = (string) attribute.ConstructorArguments [1].Value;
+			return new SourceAndRelativeDestinationPair
+			{
+				Source = _testCase.SourceFile.Parent.Combine (relativeSource),
+				RelativeDestination = string.IsNullOrEmpty (relativeDestination) ? relativeSource : relativeDestination
+			};
 		}
 
 		private SetupCompileInfo CreateSetupCompileAssemblyInfo (CustomAttribute attribute)

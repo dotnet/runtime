@@ -43,10 +43,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var assemblyName = metadataProvider.GetAssemblyName ();
 
 			var references = metadataProvider.GetReferencedAssemblies(sandbox.InputDirectory);
-			var inputAssemblyPath = compiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, references, null);
+			var resources = sandbox.ResourceFiles.ToArray ();
+			var inputAssemblyPath = compiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, references, null, resources);
 
 			references = metadataProvider.GetReferencedAssemblies(sandbox.ExpectationsDirectory);
-			var expectationsAssemblyPath = compiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, references, new [] { "INCLUDE_EXPECTATIONS" });
+			var expectationsAssemblyPath = compiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, references, new [] { "INCLUDE_EXPECTATIONS" }, resources);
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
 /*

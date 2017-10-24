@@ -54,6 +54,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesByPrefix("References.");
 		}
 
+		public static IEnumerable<TestCaseData> ResourcesTests ()
+		{
+			return NUnitCasesByPrefix ("Resources.");
+		}
+
 		public static IEnumerable<TestCaseData> TypeForwardingTests ()
 		{
 			return NUnitCasesByPrefix ("TypeForwarding.");
@@ -77,6 +82,7 @@ namespace Mono.Linker.Tests.TestCases
 					.Concat(StaticsTests())
 					.Concat(InteropTests())
 					.Concat(ReferencesTests ())
+					.Concat(ResourcesTests ())
 					.Concat(TypeForwardingTests ())
 					.Concat(TestFrameworkTests ())
 					.Select(c => ((TestCase)c.Arguments[0]).ReconstructedFullTypeName));
