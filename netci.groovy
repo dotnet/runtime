@@ -1136,8 +1136,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                         }
                         // Removing the regex will cause this to run on each PR.
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                        if (configuration == 'Release' || configuration == 'Debug') {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build")
+                        }
+                        else {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                        }
                     }
                     break
                 case 'Windows_NT':
