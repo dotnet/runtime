@@ -765,6 +765,11 @@ public:
         CORINFO_CONTEXT_HANDLE ownerType
         );
 
+    CORINFO_METHOD_HANDLE getUnboxedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        bool* requiresInstMethodTableArg
+    );
+
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
         CORINFO_CLASS_HANDLE elemType
         );

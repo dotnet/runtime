@@ -141,6 +141,12 @@ void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,      
     original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
+// Get the unboxed entry point for a method, if possible.
+CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
+{
+    return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
+}
+
 // Find the virtual method in implementingClass that overrides virtualMethod.
 // Return null if devirtualization is not possible.
 CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtualMethod,

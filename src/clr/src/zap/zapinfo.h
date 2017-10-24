@@ -675,12 +675,14 @@ public:
     CORINFO_METHOD_HANDLE resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,
         CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType
-        );
+        CORINFO_CONTEXT_HANDLE ownerType);
+
+    CORINFO_METHOD_HANDLE getUnboxedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        bool* requiresInstMethodTableArg);
 
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
-        CORINFO_CLASS_HANDLE elemType
-        );
+        CORINFO_CLASS_HANDLE elemType);
 
     void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,

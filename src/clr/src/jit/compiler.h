@@ -2283,7 +2283,8 @@ public:
         BR_REMOVE_AND_NARROW, // remove effects, minimize remaining work, return possibly narrowed source tree
         BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE, // remove effects and minimize remaining work, return type handle tree
         BR_REMOVE_BUT_NOT_NARROW,              // remove effects, return original source tree
-        BR_DONT_REMOVE                         // just check if removal is possible
+        BR_DONT_REMOVE,                        // just check if removal is possible
+        BR_MAKE_LOCAL_COPY                     // revise box to copy to temp local and return local's address
     };
 
     GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
