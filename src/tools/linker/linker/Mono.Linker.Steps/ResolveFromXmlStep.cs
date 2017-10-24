@@ -59,11 +59,26 @@ namespace Mono.Linker.Steps {
 
 		XPathDocument _document;
 		string _xmlDocumentLocation;
+		string _resourceName;
+		AssemblyDefinition _resourceAssembly;
 
 		public ResolveFromXmlStep (XPathDocument document, string xmlDocumentLocation = "<unspecified>")
 		{
 			_document = document;
 			_xmlDocumentLocation = xmlDocumentLocation;
+		}
+
+		public ResolveFromXmlStep (XPathDocument document, string resourceName, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
+			: this (document, xmlDocumentLocation)
+		{
+			if (string.IsNullOrEmpty (resourceName))
+				throw new ArgumentNullException (nameof (resourceName));
+
+			if (resourceAssembly == null)
+				throw new ArgumentNullException (nameof (resourceAssembly));
+
+			_resourceName = resourceName;
+			_resourceAssembly = resourceAssembly;
 		}
 
 		protected override void Process ()
@@ -77,6 +92,9 @@ namespace Mono.Linker.Steps {
 
 			try {
 				ProcessAssemblies (Context, nav.SelectChildren ("assembly", _ns));
+
+				if (!string.IsNullOrEmpty (_resourceName))
+					Context.Annotations.AddResourceToRemove (_resourceAssembly, _resourceName);
 			} catch (Exception ex) {
 				throw new XmlResolutionException (string.Format ("Failed to process XML description: {0}", _xmlDocumentLocation), ex);
 			}

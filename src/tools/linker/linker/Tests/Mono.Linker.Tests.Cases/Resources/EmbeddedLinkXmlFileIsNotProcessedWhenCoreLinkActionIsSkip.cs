@@ -11,6 +11,7 @@ namespace Mono.Linker.Tests.Cases.Resources {
 	// We need to rename the resource so that it matches the name of an assembly being processed.  This is a requriement of the black list step
 	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.xml", "test.xml")]
 	[SkipPeVerify]
+	[KeptResource ("test.xml")]
 	public class EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip {
 		public static void Main ()
 		{

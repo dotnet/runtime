@@ -96,9 +96,9 @@ namespace Mono.Linker.Steps {
 			return false;
 		}
 
-		static ResolveFromXmlStep GetExternalResolveStep (EmbeddedResource resource, AssemblyDefinition assembly)
+		protected virtual IStep GetExternalResolveStep (EmbeddedResource resource, AssemblyDefinition assembly)
 		{
-			return new ResolveFromXmlStep (GetExternalDescriptor (resource), "resource " + resource.Name + " in " + assembly.FullName);
+			return new ResolveFromXmlStep (GetExternalDescriptor (resource), resource.Name, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}
 
 		static ResolveFromXmlStep GetResolveStep (string descriptor)
@@ -106,7 +106,7 @@ namespace Mono.Linker.Steps {
 			return new ResolveFromXmlStep (GetDescriptor (descriptor), "descriptor " + descriptor + " from " + Assembly.GetExecutingAssembly ().FullName);
 		}
 
-		static XPathDocument GetExternalDescriptor (EmbeddedResource resource)
+		protected static XPathDocument GetExternalDescriptor (EmbeddedResource resource)
 		{
 			using (var sr = new StreamReader (resource.GetResourceStream ())) {
 				return new XPathDocument (new StringReader (sr.ReadToEnd ()));

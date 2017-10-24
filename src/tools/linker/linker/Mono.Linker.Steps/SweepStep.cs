@@ -101,6 +101,8 @@ namespace Mono.Linker.Steps {
 			assembly.MainModule.Types.Clear ();
 			foreach (TypeDefinition type in types)
 				assembly.MainModule.Types.Add (type);
+
+			SweepResources (assembly);
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)
@@ -113,6 +115,23 @@ namespace Mono.Linker.Steps {
 			Annotations.SetAction (assembly, AssemblyAction.Delete);
 
 			SweepReferences (assembly);
+		}
+
+		void SweepResources (AssemblyDefinition assembly)
+		{
+			var resourcesToRemove = Annotations.GetResourcesToRemove (assembly);
+			if (resourcesToRemove != null) {
+				var resources = assembly.MainModule.Resources;
+
+				for (int i = 0; i < resources.Count; i++) {
+					var resource = resources [i] as EmbeddedResource;
+					if (resource == null)
+						continue;
+
+					if (resourcesToRemove.Contains (resource.Name))
+						resources.RemoveAt (i--);
+				}
+			}
 		}
 
 		void SweepReferences (AssemblyDefinition target)

@@ -50,6 +50,7 @@ namespace Mono.Linker {
 		readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
+		readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
 
 		Stack<object> dependency_stack;
 		System.Xml.XmlWriter writer;
@@ -178,6 +179,25 @@ namespace Mono.Linker {
 				return preserve;
 
 			throw new NotSupportedException ();
+		}
+
+		public HashSet<string> GetResourcesToRemove (AssemblyDefinition assembly)
+		{
+			HashSet<string> resources;
+			if (resources_to_remove.TryGetValue (assembly, out resources))
+				return resources;
+
+			return null;
+		}
+
+		public void AddResourceToRemove (AssemblyDefinition assembly, string name)
+		{
+			HashSet<string> resources;
+			if (!resources_to_remove.TryGetValue (assembly, out resources)) {
+				resources = resources_to_remove [assembly] = new HashSet<string> ();
+			}
+
+			resources.Add (name);
 		}
 
 		public void SetPublic (IMetadataTokenProvider provider)

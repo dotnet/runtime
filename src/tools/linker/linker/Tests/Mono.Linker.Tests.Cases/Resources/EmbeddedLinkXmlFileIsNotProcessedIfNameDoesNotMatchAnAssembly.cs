@@ -7,6 +7,7 @@ namespace Mono.Linker.Tests.Cases.Resources {
 	[IncludeBlacklistStep (true)]
 	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.xml", "NotMatchingAnAssemblyName.xml")]
 	[SkipPeVerify]
+	[KeptResource ("NotMatchingAnAssemblyName.xml")]
 	public class EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly {
 		public static void Main ()
 		{
