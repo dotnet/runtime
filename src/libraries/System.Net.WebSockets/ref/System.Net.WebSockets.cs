@@ -8,6 +8,13 @@
 
 namespace System.Net.WebSockets
 {
+    public readonly partial struct ValueWebSocketReceiveResult
+    {
+        public ValueWebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage) { }
+        public int Count { get { throw null; } }
+        public bool EndOfMessage { get { throw null; } }
+        public System.Net.WebSockets.WebSocketMessageType MessageType { get { throw null; } }
+    }
     public abstract partial class WebSocket : System.IDisposable
     {
         protected WebSocket() { }
@@ -30,9 +37,11 @@ namespace System.Net.WebSockets
         public static bool IsApplicationTargeting45() { throw null; }
         protected static bool IsStateTerminal(System.Net.WebSockets.WebSocketState state) { throw null; }
         public abstract System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(System.ArraySegment<byte> buffer, System.Threading.CancellationToken cancellationToken);
+        public virtual System.Threading.Tasks.ValueTask<System.Net.WebSockets.ValueWebSocketReceiveResult> ReceiveAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static void RegisterPrefixes() { }
         public abstract System.Threading.Tasks.Task SendAsync(System.ArraySegment<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken);
+        public virtual System.Threading.Tasks.Task SendAsync(System.ReadOnlyMemory<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected static void ThrowOnInvalidState(System.Net.WebSockets.WebSocketState state, params System.Net.WebSockets.WebSocketState[] validStates) { }
     }
     public enum WebSocketCloseStatus
