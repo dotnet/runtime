@@ -24,7 +24,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_metadataProvider = metadataProvider;
 		}
 
-		public NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, IEnumerable<string> references, IEnumerable<string> defines)
+		public NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, IEnumerable<string> references, IEnumerable<string> defines, NPath[] resources)
 		{
 			var originalReferences = references.Select (r => r.ToNPath ()).ToArray ();
 			var originalDefines = defines?.ToArray () ?? new string [0];
@@ -38,7 +38,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				outputDirectory.Combine (outputName),
 				sourceFiles.Select (s => s.ToNPath ()).ToArray (),
 				allTestCaseReferences,
-				originalDefines);
+				originalDefines,
+				resources);
 			var testAssembly = CompileAssembly (options);
 				
 
@@ -55,14 +56,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 		}
 
-		protected virtual CompilerOptions CreateOptionsForTestCase (NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines)
+		protected virtual CompilerOptions CreateOptionsForTestCase (NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources)
 		{
 			return new CompilerOptions
 			{
 				OutputPath = outputPath,
 				SourceFiles = sourceFiles,
 				References = references,
-				Defines = defines.Concat (_metadataProvider.GetDefines ()).ToArray ()
+				Defines = defines.Concat (_metadataProvider.GetDefines ()).ToArray (),
+				Resources = resources
 			};
 		}
 
@@ -176,6 +178,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			compilerParameters.CompilerOptions = options.Defines?.Aggregate (string.Empty, (buff, arg) => $"{buff} /define:{arg}");
 
 			compilerParameters.ReferencedAssemblies.AddRange (options.References.Select (r => r.ToString ()).ToArray ());
+
+			if (options.Resources != null)
+				compilerParameters.EmbeddedResources.AddRange (options.Resources.Select (r => r.ToString ()).ToArray ());
 
 			return compilerParameters;
 		}
