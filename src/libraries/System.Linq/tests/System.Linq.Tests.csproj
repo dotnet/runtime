@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{7C70BB15-870B-4946-8098-625DACD645A6}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -81,7 +80,6 @@
       <Link>Common\System\Linq\SkipTakeData.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- DebuggerAttribute tests require internal framework Reflection and will not work on AoT platforms.
        The proper way to test these is via the debugger expression evaluator, not Reflection. -->
   <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
@@ -92,7 +90,6 @@
     <Compile Include="ToLookupTests.DebuggerAttributes.cs" />
     <Compile Include="EnumerableDebugViewTests.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>

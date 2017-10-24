@@ -5,7 +5,6 @@
     <ProjectGuid>{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}</ProjectGuid>
     <RootNamespace>System.Resources.Tests</RootNamespace>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>

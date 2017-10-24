@@ -5,7 +5,6 @@
     <ProjectGuid>{E28C7916-1BCE-434A-B045-9F755A00A7C4}</ProjectGuid>
     <AssemblyVersion>1.1.0.0</AssemblyVersion>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>

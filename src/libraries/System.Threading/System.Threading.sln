@@ -35,10 +35,10 @@ Global
 		{18EF66B3-51EE-46D8-B283-1CB6A1197813}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{18EF66B3-51EE-46D8-B283-1CB6A1197813}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{18EF66B3-51EE-46D8-B283-1CB6A1197813}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{7AB03FFA-7D4D-4248-9702-3D2785859C18}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{604027F5-1DFC-42F4-B4FE-61F8789BA647}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{604027F5-1DFC-42F4-B4FE-61F8789BA647}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{604027F5-1DFC-42F4-B4FE-61F8789BA647}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU

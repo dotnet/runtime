@@ -6,9 +6,8 @@
     <ProjectGuid>{3842BE38-1A99-41B2-81B5-186E64077B95}</ProjectGuid>
     <DisableTests Condition="'$(TargetGroup)' == 'uap' AND ('$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64')">true</DisableTests>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup Condition="'$(DisableTests)' != 'true'">
     <Compile Include="Perf.BigInteger.cs" />
     <Compile Include="Perf.BigInteger.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />

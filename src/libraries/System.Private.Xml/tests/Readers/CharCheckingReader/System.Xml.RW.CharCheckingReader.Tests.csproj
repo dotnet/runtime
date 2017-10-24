@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{6DC15D23-8213-4700-9815-AD8DEED1CE5F}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>..\..\..\..\..\bin\AnyOS.AnyCPU.Debug\System.Xml.RW.CharCheckingReader.Tests\</OutputPath>
   </PropertyGroup>

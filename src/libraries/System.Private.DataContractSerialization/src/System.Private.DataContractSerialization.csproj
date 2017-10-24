@@ -15,7 +15,6 @@
     <!-- We do not want to block reflection for this assembly -->
     <BlockReflectionAttribute Condition="'$(TargetGroup)'=='uapaot'">false</BlockReflectionAttribute>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />

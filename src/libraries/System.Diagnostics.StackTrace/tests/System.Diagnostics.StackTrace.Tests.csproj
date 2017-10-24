@@ -8,7 +8,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="StackTraceTests.cs" />
     <Compile Include="SymDocumentTypeTests.cs" />

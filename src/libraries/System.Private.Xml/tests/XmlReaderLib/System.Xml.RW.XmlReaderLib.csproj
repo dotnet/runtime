@@ -5,7 +5,6 @@
     <ProjectGuid>{F05DE950-CA99-42A8-B44D-E7DAA5C3C783}</ProjectGuid>
     <RootNamespace>XmlReaderTest.Common</RootNamespace>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

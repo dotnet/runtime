@@ -9,7 +9,6 @@
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'uapaot'">true</GenFacadesIgnoreMissingTypes>
     <NoWarn Condition="'$(TargetGroup)' == 'uapaot'">0436;3001</NoWarn>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -45,7 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj"/>
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ReferenceFromRuntime Include="System.Private.Interop" />

@@ -5,7 +5,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <ProjectGuid>{7517F1E9-EEB4-4676-A054-CE4A44A66B66}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <!-- .NET Framework has actual implementation, not stubs -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
