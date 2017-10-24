@@ -11391,3 +11391,33 @@ HelperCallProperties Compiler::s_helperCallProperties;
 
 /*****************************************************************************/
 /*****************************************************************************/
+
+//------------------------------------------------------------------------
+// killGCRefs:
+// Given some tree node return does it need all GC refs to be spilled from
+// callee save registers.
+//
+// Arguments:
+//    tree       - the tree for which we ask about gc refs.
+//
+// Return Value:
+//    true       - tree kills GC refs on callee save registers
+//    false      - tree doesn't affect GC refs on callee save registers
+bool Compiler::killGCRefs(GenTreePtr tree)
+{
+    if (tree->IsCall())
+    {
+        GenTreeCall* call = tree->AsCall();
+        if (call->IsUnmanaged())
+        {
+            return true;
+        }
+
+        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
+        {
+            assert(opts.ShouldUsePInvokeHelpers());
+            return true;
+        }
+    }
+    return false;
+}
