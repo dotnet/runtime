@@ -242,6 +242,21 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HAND
     return result;
 }
 
+// Get the unboxed entry point for a method, if possible.
+CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
+{
+    mc->cr->AddCall("getUnboxedEntry");
+    bool localRequiresInstMethodTableArg = false;
+    CORINFO_METHOD_HANDLE result =
+        original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
+    mc->recGetUnboxedEntry(ftn, &localRequiresInstMethodTableArg, result);
+    if (requiresInstMethodTableArg != nullptr)
+    {
+        *requiresInstMethodTableArg = localRequiresInstMethodTableArg;
+    }
+    return result;
+}
+
 // Given T, return the type of the default EqualityComparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)

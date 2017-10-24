@@ -121,6 +121,11 @@ CORINFO_METHOD_HANDLE resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtualMethod,
                                            CORINFO_CLASS_HANDLE   implementingClass,
                                            CORINFO_CONTEXT_HANDLE ownerType);
 
+// Get the unboxed entry point for a method, if possible.
+CORINFO_METHOD_HANDLE getUnboxedEntry(
+    CORINFO_METHOD_HANDLE ftn,
+    bool* requiresInstMethodTableArg /* OUT */);
+
 // Given T, return the type of the default EqualityComparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
