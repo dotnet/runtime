@@ -391,6 +391,22 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     internal interface IConfiguredTaskAwaiter { }
 
+    /// <summary>
+    /// Internal interface used to enable extract the Task from arbitrary ValueTask awaiters.
+    /// </summary>>
+    internal interface IValueTaskAwaiter
+    {
+        Task GetTask();
+    }
+
+    /// <summary>
+    /// Internal interface used to enable extract the Task from arbitrary configured ValueTask awaiters.
+    /// </summary>
+    internal interface IConfiguredValueTaskAwaiter
+    {
+        (Task task, bool continueOnCapturedContext) GetTask();
+    }
+
     /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
     public struct ConfiguredTaskAwaitable
