@@ -129,9 +129,13 @@ namespace System.Net.WebSockets
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
             }
 
+            Memory<byte> internalMemoryBuffer =
+                internalBuffer.Array != null ? new Memory<byte>(internalBuffer.Array, internalBuffer.Offset, internalBuffer.Count) :
+                Memory<byte>.Empty;
+
             return ManagedWebSocket.CreateFromConnectedStream(
                 innerStream, false, subProtocol, keepAliveInterval,
-                receiveBufferSize, internalBuffer);
+                receiveBufferSize, internalMemoryBuffer);
         }
     }
 }
