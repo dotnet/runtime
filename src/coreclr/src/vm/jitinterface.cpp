@@ -8816,6 +8816,45 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE method
     return result;
 }
 
+/*********************************************************************/
+CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
+    CORINFO_METHOD_HANDLE ftn,
+    bool* requiresInstMethodTableArg)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(ftn);
+    bool requiresInstMTArg = false;
+
+    if (pMD->IsUnboxingStub())
+    {
+        MethodTable* pMT = pMD->GetMethodTable();
+        MethodDesc* pUnboxedMD = pMT->GetUnboxedEntryPointMD(pMD);
+
+        result = (CORINFO_METHOD_HANDLE)pUnboxedMD;
+        requiresInstMTArg = !!pUnboxedMD->RequiresInstMethodTableArg();
+    }
+
+    if (requiresInstMethodTableArg != NULL)
+    {
+        *requiresInstMethodTableArg = requiresInstMTArg;
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
     CORINFO_GENERICHANDLE_RESULT *  pResult)

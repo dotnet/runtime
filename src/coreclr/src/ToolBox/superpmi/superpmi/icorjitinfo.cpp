@@ -185,6 +185,15 @@ CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtua
     return result;
 }
 
+// Get the unboxed entry point for a method, if possible.
+CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
+{
+    jitInstance->mc->cr->AddCall("getUnboxedEntry");
+    CORINFO_METHOD_HANDLE result =
+        jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
+    return result;
+}
+
 // Given T, return the type of the default EqualityComparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)

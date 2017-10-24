@@ -163,6 +163,13 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HAND
     return original_ICorJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
 }
 
+// Get the unboxed entry point for a method, if possible.
+CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
+{
+    mcs->AddCall("getUnboxedEntry");
+    return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
+}
+
 // Given T, return the type of the default EqualityComparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)

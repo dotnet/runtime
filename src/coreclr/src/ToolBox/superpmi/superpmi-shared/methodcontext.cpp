@@ -3018,6 +3018,55 @@ CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HAND
     return (CORINFO_METHOD_HANDLE)result;
 }
 
+void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
+                                       bool *requiresInstMethodTableArg,
+                                       CORINFO_METHOD_HANDLE result)
+{
+    if (GetUnboxedEntry == nullptr)
+    {
+        GetUnboxedEntry = new LightWeightMap<DWORDLONG, DLD>();
+    }
+
+    DWORDLONG key = (DWORDLONG) ftn;
+    DLD value;
+    value.A = (DWORDLONG) result;
+    if (requiresInstMethodTableArg != nullptr)
+    {
+        value.B = (DWORD) *requiresInstMethodTableArg ? 1 : 0;
+    }
+    else
+    {
+        value.B = 0;
+    }
+    GetUnboxedEntry->Add(key, value);
+    DEBUG_REC(dmpGetUnboxedEntry(key, value));
+}
+
+void MethodContext::dmpGetUnboxedEntry(DWORDLONG key, DLD value)
+{
+    printf("GetUnboxedEntry ftn-%016llX, result-%016llX, requires-inst-%u",
+        key, value.A, value.B);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
+                                                        bool* requiresInstMethodTableArg)
+{
+    DWORDLONG key = (DWORDLONG)ftn;
+
+    AssertCodeMsg(GetUnboxedEntry != nullptr, EXCEPTIONCODE_MC, "No GetUnboxedEntry map for %016llX", key);
+    AssertCodeMsg(GetUnboxedEntry->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", key);
+    DLD result = GetUnboxedEntry->Get(key);
+
+    DEBUG_REP(dmpGetUnboxedEntry(key, result));
+
+    if (requiresInstMethodTableArg != nullptr)
+    {
+        *requiresInstMethodTableArg = (result.B == 1);
+    }
+
+    return (CORINFO_METHOD_HANDLE)(result.A);
+}
+
 void MethodContext::recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetDefaultEqualityComparerClass == nullptr)
