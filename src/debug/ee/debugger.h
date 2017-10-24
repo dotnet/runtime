@@ -2025,7 +2025,7 @@ public:
     DebuggerJitInfo *GetLatestJitInfoFromMethodDesc(MethodDesc * pMethodDesc);
 
 
-    HRESULT GetILToNativeMapping(MethodDesc *pMD, ULONG32 cMap, ULONG32 *pcMap,
+    HRESULT GetILToNativeMapping(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap,
                                  COR_DEBUG_IL_TO_NATIVE_MAP map[]);
 
     HRESULT GetILToNativeMappingIntoArrays(
