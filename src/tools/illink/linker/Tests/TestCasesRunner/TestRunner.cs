@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				var sandbox = Sandbox (testCase, metadataProvider);
 				var compilationResult = Compile (sandbox, metadataProvider);
-//				PrepForLink (sandbox, compilationResult);
+				PrepForLink (sandbox, compilationResult);
 				return Link (testCase, sandbox, compilationResult, metadataProvider);
 			}
 		}
@@ -50,13 +50,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var expectationsAssemblyPath = compiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, references, new [] { "INCLUDE_EXPECTATIONS" }, resources);
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
-/*
-		private void PrepForLink (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult)
+
+		protected virtual void PrepForLink (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult)
 		{
-			var entryPointLinkXml = sandbox.InputDirectory.Combine ("entrypoint.xml");
-			LinkXmlHelpers.WriteXmlFileToPreserveEntryPoint (compilationResult.InputAssemblyPath, entryPointLinkXml);
 		}
-*/
+
 		private LinkedTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadaProvider metadataProvider)
 		{
 			var linker = _factory.CreateLinker ();
