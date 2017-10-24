@@ -1460,9 +1460,13 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
         // In the future this may be changing to XMM_REGSIZE_BYTES.
         // Note: MaxOffset is used below to declare a local array, and therefore must be a compile-time constant.
         CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD)
+#if defined(_TARGET_XARCH_)
         // This will allow promotion of 2 Vector<T> fields on AVX2, or 4 Vector<T> fields on SSE2.
         const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * XMM_REGSIZE_BYTES;
+#elif defined(_TARGET_ARM64_)
+        const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 #else  // !FEATURE_SIMD
         const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
 #endif // !FEATURE_SIMD
@@ -6150,8 +6154,8 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 #endif
                             ))
     {
-        // Note that stack offsets are negative
-        assert(stkOffs < 0);
+        // Note that stack offsets are negative or equal to zero
+        assert(stkOffs <= 0);
 
         // alignment padding
         unsigned pad = 0;

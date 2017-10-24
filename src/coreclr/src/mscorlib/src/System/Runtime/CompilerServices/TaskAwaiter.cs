@@ -103,6 +103,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
         /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+        [StackTraceHidden]
         public void GetResult()
         {
             ValidateEnd(m_task);
@@ -113,6 +114,7 @@ namespace System.Runtime.CompilerServices
         /// prior to completing the await.
         /// </summary>
         /// <param name="task">The awaited task.</param>
+        [StackTraceHidden]
         internal static void ValidateEnd(Task task)
         {
             // Fast checks that can be inlined.
@@ -129,6 +131,7 @@ namespace System.Runtime.CompilerServices
         /// the await on the task, and throws an exception if the task did not complete successfully.
         /// </summary>
         /// <param name="task">The awaited task.</param>
+        [StackTraceHidden]
         private static void HandleNonSuccessAndDebuggerNotification(Task task)
         {
             // NOTE: The JIT refuses to inline ValidateEnd when it contains the contents
@@ -152,6 +155,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Throws an exception to handle a task that completed in a state other than RanToCompletion.</summary>
+        [StackTraceHidden]
         private static void ThrowForNonSuccess(Task task)
         {
             Debug.Assert(task.IsCompleted, "Task must have been completed by now.");
@@ -365,6 +369,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
         /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+        [StackTraceHidden]
         public TResult GetResult()
         {
             TaskAwaiter.ValidateEnd(m_task);
@@ -469,6 +474,7 @@ namespace System.Runtime.CompilerServices
             /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
             /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+            [StackTraceHidden]
             public void GetResult()
             {
                 TaskAwaiter.ValidateEnd(m_task);
@@ -557,6 +563,7 @@ namespace System.Runtime.CompilerServices
             /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
             /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+            [StackTraceHidden]
             public TResult GetResult()
             {
                 TaskAwaiter.ValidateEnd(m_task);
