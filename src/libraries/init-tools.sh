@@ -68,7 +68,7 @@ if [ ! -e $__DOTNET_PATH ]; then
             Linux)
             __PKG_RID=linux
                 OS=Linux
-			
+
                 if [ -e /etc/os-release ]; then
                     source /etc/os-release
                     if [[ $ID == "alpine" ]]; then
@@ -86,7 +86,7 @@ if [ ! -e $__DOTNET_PATH ]; then
                 ;;
 
             *)
-                echo "Unsupported OS '$OSName' detected. Downloading linux-x64 tools."
+                echo "Unsupported OS '$OSName' detected. Downloading linux-$__PKG_ARCH tools."
                 OS=Linux
                 __PKG_RID=linux
                 ;;
@@ -97,7 +97,7 @@ if [ ! -e $__DOTNET_PATH ]; then
     mkdir -p "$__DOTNET_PATH"
 
     echo "Installing dotnet cli..."
-    __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
+    __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
     # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
     echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
     if command -v curl > /dev/null; then
@@ -115,9 +115,9 @@ if [ ! -e $__BUILD_TOOLS_PATH ]; then
     echo "Restoring BuildTools version $__BUILD_TOOLS_PACKAGE_VERSION..."
     echo "Running: $__DOTNET_CMD restore \"$__INIT_TOOLS_RESTORE_PROJECT\" --no-cache --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE /p:BuildToolsPackageVersion=$__BUILD_TOOLS_PACKAGE_VERSION" >> $__init_tools_log
     $__DOTNET_CMD restore "$__INIT_TOOLS_RESTORE_PROJECT" --no-cache --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE /p:BuildToolsPackageVersion=$__BUILD_TOOLS_PACKAGE_VERSION >> $__init_tools_log
-    if [ ! -e "$__BUILD_TOOLS_PATH/init-tools.sh" ]; then 
-        echo "ERROR: Could not restore build tools correctly."1>&2; 
-	display_error_message
+    if [ ! -e "$__BUILD_TOOLS_PATH/init-tools.sh" ]; then
+        echo "ERROR: Could not restore build tools correctly." 1>&2
+        display_error_message
     fi
 fi
 
@@ -128,7 +128,7 @@ echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__
 chmod +x $__BUILD_TOOLS_PATH/init-tools.sh
 $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR >> $__init_tools_log
 if [ "$?" != "0" ]; then
-    echo "ERROR: An error occured when trying to initialize the tools."1>&2
+    echo "ERROR: An error occurred when trying to initialize the tools." 1>&2
     display_error_message
     exit 1
 fi
