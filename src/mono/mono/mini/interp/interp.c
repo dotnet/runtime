@@ -255,6 +255,7 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 	return rtm;
 }
 
+#ifndef DISABLE_REMOTING
 gpointer
 mono_interp_get_remoting_invoke (gpointer imethod, MonoError *error)
 {
@@ -264,6 +265,7 @@ mono_interp_get_remoting_invoke (gpointer imethod, MonoError *error)
 
 	return mono_interp_get_imethod (mono_domain_get (), mono_marshal_get_remoting_invoke (imethod_cast->method), error);
 }
+#endif
 
 InterpMethod*
 mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error)
