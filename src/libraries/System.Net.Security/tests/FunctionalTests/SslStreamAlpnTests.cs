@@ -61,6 +61,60 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public void SslStream_StreamToStream_ClientCancellation_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new SslStream(clientStream))
+            using (var server = new SslStream(serverStream))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
+                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
+                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
+                serverOptions.ServerCertificate = certificate;
+                serverOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
+
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task clientTask = Assert.ThrowsAsync<TaskCanceledException>(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
+                Task serverTask = Assert.ThrowsAsync<TimeoutException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+
+                cts.Cancel();
+                Assert.True(Task.WaitAll(new[] { clientTask, serverTask }, TestConfiguration.PassingTestTimeoutMilliseconds));
+            }
+        }
+
+        [Fact]
+        public void SslStream_StreamToStream_ServerCancellation_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new SslStream(clientStream))
+            using (var server = new SslStream(serverStream))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
+                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
+                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
+                serverOptions.ServerCertificate = certificate;
+                serverOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
+
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task clientTask = Assert.ThrowsAsync<TimeoutException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+                Task serverTask = Assert.ThrowsAsync<TaskCanceledException>(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                cts.Cancel();
+                Assert.True(Task.WaitAll(new[] { clientTask, serverTask }, TestConfiguration.PassingTestTimeoutMilliseconds));
+            }
+        }
+
+        [Fact]
         public void SslStream_StreamToStream_DuplicateOptions_Throws()
         {
             RemoteCertificateValidationCallback rCallback = (sender, certificate, chain, errors) => { return true; };

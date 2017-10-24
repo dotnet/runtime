@@ -185,7 +185,7 @@ namespace System.Net.Security
             _sslState.ValidateCreateContext(sslClientAuthenticationOptions);
 
             LazyAsyncResult result = new LazyAsyncResult(_sslState, asyncState, asyncCallback);
-            _sslState.ProcessAuthentication(result);
+            _sslState.ProcessAuthentication(result, cancellationToken);
             return result;
         }
 
@@ -239,7 +239,7 @@ namespace System.Net.Security
             _sslState.ValidateCreateContext(sslServerAuthenticationOptions);
 
             LazyAsyncResult result = new LazyAsyncResult(_sslState, asyncState, asyncCallback);
-            _sslState.ProcessAuthentication(result);
+            _sslState.ProcessAuthentication(result, cancellationToken);
             return result;
         }
 
@@ -307,7 +307,7 @@ namespace System.Net.Security
             sslClientAuthenticationOptions._certSelectionDelegate = _certSelectionDelegate;
 
             _sslState.ValidateCreateContext(sslClientAuthenticationOptions);
-            _sslState.ProcessAuthentication(null);
+            _sslState.ProcessAuthentication(null, CancellationToken.None);
         }
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
@@ -343,7 +343,7 @@ namespace System.Net.Security
             sslServerAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
 
             _sslState.ValidateCreateContext(sslServerAuthenticationOptions);
-            _sslState.ProcessAuthentication(null);
+            _sslState.ProcessAuthentication(null, CancellationToken.None);
         }
         #endregion
 
