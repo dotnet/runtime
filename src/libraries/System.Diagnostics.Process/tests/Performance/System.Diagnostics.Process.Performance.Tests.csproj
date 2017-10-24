@@ -6,9 +6,8 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{4E05E43A-1DC9-47C7-8280-13CF4EF741EA}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="..\ProcessTestBase.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="..\ProcessTestBase.NonUap.cs" />

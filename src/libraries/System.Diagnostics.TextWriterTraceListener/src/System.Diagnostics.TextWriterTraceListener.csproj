@@ -6,7 +6,6 @@
     <AssemblyName>System.Diagnostics.TextWriterTraceListener</AssemblyName>
     <ProjectGuid>{315929D9-D76E-47E9-BE82-C787FB3A7876}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />

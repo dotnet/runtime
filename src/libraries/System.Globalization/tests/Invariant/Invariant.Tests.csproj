@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{9A8926D9-1D4C-4069-8965-A626F6CA8C29}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup>
@@ -14,12 +13,11 @@
     -->
     <SkipXunitRuntimeConfigCopying>true</SkipXunitRuntimeConfigCopying>
   </PropertyGroup>
-    
   <ItemGroup>
     <Compile Include="InvariantMode.cs" />
     <Content Include="xunit.console.netcore.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>    
+    </Content>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

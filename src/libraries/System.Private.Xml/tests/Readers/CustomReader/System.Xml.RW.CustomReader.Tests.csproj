@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{B51913C2-478E-46AA-A523-521BD4593651}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>..\..\..\..\..\bin\AnyOS.AnyCPU.Debug\System.Xml.RW.CustomReader2.Tests\</OutputPath>
   </PropertyGroup>

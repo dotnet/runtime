@@ -6,7 +6,6 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{7A8B72D7-FACD-4E96-8390-F2D2FE269687}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <!-- Compiled Source Files -->
