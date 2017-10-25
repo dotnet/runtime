@@ -54,6 +54,11 @@ namespace System.Threading.Channels
 
             public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled<bool>(cancellationToken);
+                }
+
                 UnbufferedChannel<T> parent = _parent;
                 lock (parent.SyncObj)
                 {
@@ -118,6 +123,11 @@ namespace System.Threading.Channels
 
             public override Task<bool> WaitToWriteAsync(CancellationToken cancellationToken)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled<bool>(cancellationToken);
+                }
+
                 UnbufferedChannel<T> parent = _parent;
 
                 // If we're done writing, fail.

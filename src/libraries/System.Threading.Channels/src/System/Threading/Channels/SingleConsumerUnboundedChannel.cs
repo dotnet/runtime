@@ -69,18 +69,13 @@ namespace System.Threading.Channels
             public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken)
             {
                 // Outside of the lock, check if there are any items waiting to be read.  If there are, we're done.
-                return !_parent._items.IsEmpty ?
-                    ChannelUtilities.s_trueTask :
+                return
+                    cancellationToken.IsCancellationRequested ? Task.FromCanceled<bool>(cancellationToken) :
+                    !_parent._items.IsEmpty ? ChannelUtilities.s_trueTask :
                     WaitToReadAsyncCore(cancellationToken);
 
                 Task<bool> WaitToReadAsyncCore(CancellationToken ct)
                 {
-                    // Now check for cancellation.
-                    if (ct.IsCancellationRequested)
-                    {
-                        return Task.FromCanceled<bool>(ct);
-                    }
-
                     SingleConsumerUnboundedChannel<T> parent = _parent;
                     ReaderInteractor<bool> oldWaiter = null, newWaiter;
                     lock (parent.SyncObj)
@@ -211,8 +206,8 @@ namespace System.Threading.Channels
             {
                 Exception doneWriting = _parent._doneWriting;
                 return
-                    doneWriting == null ? ChannelUtilities.s_trueTask :
                     cancellationToken.IsCancellationRequested ? Task.FromCanceled<bool>(cancellationToken) :
+                    doneWriting == null ? ChannelUtilities.s_trueTask :
                     doneWriting != ChannelUtilities.s_doneWritingSentinel ? Task.FromException<bool>(doneWriting) :
                     ChannelUtilities.s_falseTask;
             }
@@ -220,8 +215,8 @@ namespace System.Threading.Channels
             public override Task WriteAsync(T item, CancellationToken cancellationToken) =>
                 // Writing always succeeds (unless we've already completed writing or cancellation has been requested),
                 // so just TryWrite and return a completed task.
-                TryWrite(item) ? Task.CompletedTask :
                 cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                TryWrite(item) ? Task.CompletedTask :
                 Task.FromException(ChannelUtilities.CreateInvalidCompletionException(_parent._doneWriting));
         }
 

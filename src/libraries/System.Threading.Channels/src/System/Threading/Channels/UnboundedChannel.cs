@@ -184,15 +184,15 @@ namespace System.Threading.Channels
             {
                 Exception doneWriting = _parent._doneWriting;
                 return
-                    doneWriting == null ? ChannelUtilities.s_trueTask : // unbounded writing can always be done if we haven't completed
                     cancellationToken.IsCancellationRequested ? Task.FromCanceled<bool>(cancellationToken) :
+                    doneWriting == null ? ChannelUtilities.s_trueTask : // unbounded writing can always be done if we haven't completed
                     doneWriting != ChannelUtilities.s_doneWritingSentinel ? Task.FromException<bool>(doneWriting) :
                     ChannelUtilities.s_falseTask;
             }
 
             public override Task WriteAsync(T item, CancellationToken cancellationToken) =>
-                TryWrite(item) ? ChannelUtilities.s_trueTask :
                 cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                TryWrite(item) ? ChannelUtilities.s_trueTask :
                 Task.FromException(ChannelUtilities.CreateInvalidCompletionException(_parent._doneWriting));
         }
 
