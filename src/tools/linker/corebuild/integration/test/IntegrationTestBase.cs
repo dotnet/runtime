@@ -29,10 +29,11 @@ namespace ILLink.Tests
 
 		protected int Dotnet(string args, string workingDir, string additionalPath = null)
 		{
-			return RunCommand(context.DotnetToolPath, args, workingDir, additionalPath, out string commandOutput);
+			return RunCommand(Path.GetFullPath(context.DotnetToolPath), args,
+							  workingDir, additionalPath, out string commandOutput);
 		}
 
-		protected int RunCommand(string command, string args, int timeout = 60000)
+		protected int RunCommand(string command, string args, int timeout = Int32.MaxValue)
 		{
 			return RunCommand(command, args, null, null, out string commandOutput, timeout);
 		}
@@ -42,7 +43,7 @@ namespace ILLink.Tests
 			return RunCommand(command, args, workingDir, null, out string commandOutput);
 		}
 
-		protected int RunCommand(string command, string args, string workingDir, string additionalPath, out string commandOutput, int timeout = 60000)
+		protected int RunCommand(string command, string args, string workingDir, string additionalPath, out string commandOutput, int timeout = Int32.MaxValue)
 		{
 			output.WriteLine($"{command} {args}");
 			if (workingDir != null)
@@ -64,6 +65,14 @@ namespace ILLink.Tests
 			var process = new Process();
 			process.StartInfo = psi;
 
+			// dotnet sets some environment variables that
+			// may cause problems in the child process.
+			psi.Environment.Remove("MSBuildExtensionsPath");
+			psi.Environment.Remove("MSBuildLoadMicrosoftTargetsReadOnly");
+			psi.Environment.Remove("MSBuildSDKsPath");
+			psi.Environment.Remove("VbcToolExe");
+			psi.Environment.Remove("CscToolExe");
+
 			StringBuilder processOutput = new StringBuilder();
 			DataReceivedEventHandler handler = (sender, e) => {
 				processOutput.Append(e.Data);
@@ -80,6 +89,7 @@ namespace ILLink.Tests
 			process.BeginOutputReadLine();
 			process.BeginErrorReadLine();
 			if (!process.WaitForExit(timeout)) {
+				output.WriteLine($"killing process after {timeout} ms");
 				process.Kill();
 			}
 			// WaitForExit with timeout doesn't guarantee
@@ -101,18 +111,11 @@ namespace ILLink.Tests
 		///   linker task package.
 		///   Optionally takes a list of root descriptor files.
 		/// </summary>
-		public void BuildAndLink(string csproj, List<string> rootFiles = null)
+		public void BuildAndLink(string csproj, List<string> rootFiles = null, Dictionary<string, string> extraPublishArgs = null)
 		{
 			string rid = context.RuntimeIdentifier;
 			string config = context.Configuration;
 			string demoRoot = Path.GetDirectoryName(csproj);
-
-			int ret = Dotnet($"restore -r {rid}", demoRoot);
-			if (ret != 0) {
-				output.WriteLine("restore failed");
-				Assert.True(false);
-				return;
-			}
 
 			string publishArgs = $"publish -r {rid} -c {config} /v:n /p:ShowLinkerSizeComparison=true";
 			string rootFilesStr;
@@ -120,7 +123,13 @@ namespace ILLink.Tests
 				rootFilesStr = String.Join(";", rootFiles);
 				publishArgs += $" /p:LinkerRootDescriptors={rootFilesStr}";
 			}
-			ret = Dotnet(publishArgs, demoRoot);
+			if (extraPublishArgs != null) {
+                            foreach (var item in extraPublishArgs) {
+				publishArgs += $" /p:{item.Key}={item.Value}";
+                            }
+                        }
+			int ret = Dotnet(publishArgs, demoRoot);
+
 			if (ret != 0) {
 				output.WriteLine("publish failed, returning " + ret);
 				Assert.True(false);
@@ -128,11 +137,13 @@ namespace ILLink.Tests
 			}
 		}
 
- 		public int RunApp(string csproj, out string processOutput, int timeout = 60000)
+		public int RunApp(string csproj, out string processOutput, int timeout = Int32.MaxValue)
 		{
 			string demoRoot = Path.GetDirectoryName(csproj);
-			string executablePath = Path.Combine(
-				demoRoot, "bin", context.Configuration, "netcoreapp2.0",
+			// detect the target framework for which the app was published
+			string tfmDir = Path.Combine(demoRoot, "bin", context.Configuration);
+			string tfm = Directory.GetDirectories(tfmDir).Select(p => Path.GetFileName(p)).Single();
+			string executablePath = Path.Combine(tfmDir, tfm,
 				context.RuntimeIdentifier, "publish",
 				Path.GetFileNameWithoutExtension(csproj)
 			);
@@ -141,17 +152,9 @@ namespace ILLink.Tests
 			}
 			Assert.True(File.Exists(executablePath));
 
-			// work around bug in prerelease .NET Core,
-			// where the published host isn't executable
-			int ret;
-			if (!context.RuntimeIdentifier.Contains("win")) {
-				ret = RunCommand("chmod", "+x " + executablePath, 1000);
-				Assert.True(ret == 0);
-			}
-
-			ret = RunCommand(executablePath, null,
-					 Directory.GetParent(executablePath).FullName,
-					 null, out processOutput, timeout);
+			int ret = RunCommand(executablePath, null,
+				Directory.GetParent(executablePath).FullName,
+				null, out processOutput, timeout);
 			return ret;
 		}
 
