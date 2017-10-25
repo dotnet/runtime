@@ -42,10 +42,9 @@ This section is **in progress** here: [New contributor Docs - Contributing](http
 
 ### Useful Links
 
-* [CoreFX source index](https://source.dot.net)
+* [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
 * [API Reference docs](https://docs.microsoft.com/en-us/dotnet/core/api)
-* [.NET API Catalog (incl. APIs from daily builds and API usage info)](http://apisof.net) 
-* ["Full" .NET Framework source index](https://referencesource.microsoft.com)
+* [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
 
 ### Community
 
