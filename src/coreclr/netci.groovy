@@ -1126,7 +1126,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                     break
                 case 'Tizen':
-                    if (architecture == 'armlb') { // Ubuntu arm is only for armlb currently
+                    if (architecture == 'armlb') { // Tizen armel is only for armlb currently
                         architecture='armel'
                         job.with {
                             publishers {
@@ -1136,8 +1136,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                         }
                         // Removing the regex will cause this to run on each PR.
-                        if (configuration == 'Release' || configuration == 'Debug') {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build")
+                        if (configuration == 'Checked') {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
                         }
                         else {
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
