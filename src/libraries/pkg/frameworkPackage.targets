@@ -6,7 +6,7 @@
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
 
     <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
-    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
+    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
 
     <IncludeReferenceFiles Condition="'$(IncludeReferenceFiles)' == '' AND '$(PackageTargetRuntime)' == ''">true</IncludeReferenceFiles>
     <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>
@@ -30,7 +30,7 @@
     <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
 
     <Dependency Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
       <TargetFramework>$(TargetFramework)</TargetFramework>
     </Dependency>
 
@@ -173,8 +173,8 @@
     <Error Condition="'@(_NETStandardFile)' == ''"
            Text="Could not locate NETStandard package content at '$(NETStandardPackageRefPath)'" />
 
-    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardPackageId)' but missing from this package's $(_fileSet) files.  This error has been suppressed." />
-    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardPackageId)' but missing from this package's $(_fileSet) files." />
+    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardLibraryPackageId)' but missing from this package's $(_fileSet) files.  This error has been suppressed." />
+    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardLibraryPackageId)' but missing from this package's $(_fileSet) files." />
   </Target>
 
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
