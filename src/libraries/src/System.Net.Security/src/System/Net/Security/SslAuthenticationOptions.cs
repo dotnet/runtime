@@ -66,7 +66,6 @@ namespace System.Net.Security
         internal bool CheckCertName { get; set; }
         internal RemoteCertValidationCallback CertValidationDelegate { get; set; }
         internal LocalCertSelectionCallback CertSelectionDelegate { get; set; }
-        internal GCHandle AlpnProtocolsHandle { get; set; }
     }
 }
 
