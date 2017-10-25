@@ -13,17 +13,17 @@
   
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>87ef6cf85b25230f1c3764bc9fbd106ad6b8f7ae</CoreFxCurrentRef>
+    <CoreFxCurrentRef>36a82eaf3ebf7ce0357648cd8bd77a511ad3b814</CoreFxCurrentRef>
     <CoreClrCurrentRef>87ef6cf85b25230f1c3764bc9fbd106ad6b8f7ae</CoreClrCurrentRef>
     <BuildToolsCurrentRef>87ef6cf85b25230f1c3764bc9fbd106ad6b8f7ae</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>20937e8603d9d6ecd6952d7db3bee390137b338e</PgoDataCurrentRef>
+    <PgoDataCurrentRef>36a82eaf3ebf7ce0357648cd8bd77a511ad3b814</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxPackageVersion>4.5.0-preview1-25824-02</CoreFxPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview1-25824-02</PlatformPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20171012-0049</PgoDataPackageVersion>
+    <CoreFxPackageVersion>4.5.0-preview1-25825-08</CoreFxPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25825-08</PlatformPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20171025-1102</PgoDataPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
