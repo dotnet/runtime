@@ -1521,10 +1521,6 @@ void emitter::emitEndProlog()
 {
     assert(emitComp->compGeneratingProlog);
 
-    size_t prolSz;
-
-    insGroup* tempIG;
-
     emitNoGCIG = false;
 
     /* Save the prolog IG if non-empty or if only one block */
@@ -7194,7 +7190,6 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
     char*           retbuf;
 
     insGroup*      ig;
-    UNATIVE_OFFSET of;
     UNATIVE_OFFSET nextof = 0;
 
     for (ig = emitIGlist; ig != nullptr; ig = ig->igNext)

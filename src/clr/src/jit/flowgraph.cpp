@@ -21539,7 +21539,6 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, GenTree* node)
 
         if (tree->OperIsUnary() && tree->gtOp.gtOp1)
         {
-            GenTreePtr lclVarTree;
             expectedPrevTree = tree->gtOp.gtOp1;
         }
         else if (tree->OperIsBinary() && tree->gtOp.gtOp1)
