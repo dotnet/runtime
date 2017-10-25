@@ -49,13 +49,13 @@ if [ ! -e $__DOTNET_PATH ]; then
             echo "Warning: build not supported on 32 bit Unix"
         fi
 
-    __PKG_ARCH=x64
+        __PKG_ARCH=x64
 
         OSName=$(uname -s)
         case $OSName in
             Darwin)
                 OS=OSX
-            __PKG_RID=osx
+                __PKG_RID=osx
                 ulimit -n 2048
                 # Format x.y.z as single integer with three digits for each part
                 VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
@@ -66,7 +66,7 @@ if [ ! -e $__DOTNET_PATH ]; then
                 ;;
 
             Linux)
-            __PKG_RID=linux
+                __PKG_RID=linux
                 OS=Linux
 
                 if [ -e /etc/os-release ]; then
@@ -88,15 +88,15 @@ if [ ! -e $__DOTNET_PATH ]; then
             *)
             echo "Unsupported OS '$OSName' detected. Downloading linux-$__PKG_ARCH tools."
                 OS=Linux
-            __PKG_RID=linux
+                __PKG_RID=linux
                 ;;
       esac
-  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__PKG_ARCH
+    __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__PKG_ARCH
     fi
     mkdir -p "$__DOTNET_PATH"
 
     echo "Installing dotnet cli..."
-            __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
+    __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
     # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
     echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
     if command -v curl > /dev/null; then
