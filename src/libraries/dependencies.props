@@ -10,26 +10,26 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</CoreFxCurrentRef>
-    <CoreClrCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</CoreClrCurrentRef>
+    <CoreClrCurrentRef>bd37cedea957c312fb7d3d681f416d51227d4df1</CoreClrCurrentRef>
     <CoreSetupCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
-    <StandardCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</StandardCurrentRef>
-    <BuildToolsCurrentRef>ead5876eb142fd0e9050d3b3efb9ca7eacd2d32f</BuildToolsCurrentRef>
+    <StandardCurrentRef>bd37cedea957c312fb7d3d681f416d51227d4df1</StandardCurrentRef>
+    <BuildToolsCurrentRef>bd37cedea957c312fb7d3d681f416d51227d4df1</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <PlatformPackageVersion>2.1.0-preview1-25824-02</PlatformPackageVersion>
     <CoreFxExpectedPrerelease>preview1-25824-02</CoreFxExpectedPrerelease>
-    <CoreClrPackageVersion>2.1.0-preview1-25822-02</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview1-25824-51</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25627-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25824-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25824-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25824-00</ProjectNTfsTestILCPackageVersion>
-    <NETStandardPackageVersion>2.1.0-preview1-25824-01</NETStandardPackageVersion>
+    <NETStandardPackageVersion>2.1.0-preview1-25824-08</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25823-01</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
@@ -41,13 +41,13 @@
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0007</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>1.0.3-alpha-experimental</TraceEventPackageVersion>
-    <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02120-09</XunitNetcoreExtensionsVersion>
+    <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02124-02</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
   
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02121-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02124-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
