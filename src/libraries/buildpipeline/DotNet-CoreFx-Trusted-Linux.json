@@ -224,6 +224,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
+      "condition": "ne(variables['PB_EnableCloudTest'], 'false')",
       "timeoutInMinutes": 0,
       "refName": "Task11",
       "task": {
