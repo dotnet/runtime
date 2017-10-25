@@ -12,6 +12,7 @@ namespace System.Threading.Channels.Tests
     {
         protected override Channel<int> CreateChannel() => Channel.CreateUnbuffered<int>();
         protected override Channel<int> CreateFullChannel() => CreateChannel();
+        protected override bool BuffersItems => false;
 
         [Fact]
         public async Task Complete_BeforeEmpty_WaitingWriters_TriggersCompletion()

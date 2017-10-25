@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -43,20 +44,47 @@ namespace System.Threading.Channels.Tests
             Assert.False(co.AllowSynchronousContinuations);
         }
 
+        [Fact]
+        public void Create_ValidInputs_ProducesValidChannels()
+        {
+            Assert.NotNull(Channel.CreateBounded<int>(1));
+            Assert.NotNull(Channel.CreateBounded<int>(new BoundedChannelOptions(1)));
+
+            Assert.NotNull(Channel.CreateUnbuffered<int>());
+            Assert.NotNull(Channel.CreateUnbuffered<int>(new UnbufferedChannelOptions()));
+
+            Assert.NotNull(Channel.CreateUnbounded<int>());
+            Assert.NotNull(Channel.CreateUnbounded<int>(new UnboundedChannelOptions()));
+        }
+
+        [Fact]
+        public void Create_NullOptions_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("options", () => Channel.CreateUnbounded<int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("options", () => Channel.CreateUnbuffered<int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("options", () => Channel.CreateBounded<int>(null));
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(-2)]
         public void CreateBounded_InvalidBufferSizes_ThrowArgumentExceptions(int capacity)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => Channel.CreateBounded<int>(capacity));
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new BoundedChannelOptions(capacity));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => Channel.CreateBounded<int>(capacity));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new BoundedChannelOptions(capacity));
         }
 
         [Theory]
         [InlineData((BoundedChannelFullMode)(-1))]
         [InlineData((BoundedChannelFullMode)(4))]
         public void BoundedChannelOptions_InvalidModes_ThrowArgumentExceptions(BoundedChannelFullMode mode) =>
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new BoundedChannelOptions(1) { FullMode = mode });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new BoundedChannelOptions(1) { FullMode = mode });
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-2)]
+        public void BoundedChannelOptions_InvalidCapacity_ThrowArgumentExceptions(int capacity) =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new BoundedChannelOptions(1) { Capacity = capacity });
 
         [Theory]
         [InlineData(1)]
@@ -80,6 +108,22 @@ namespace System.Threading.Channels.Tests
             }
             catch (ChannelClosedException) { }
             Assert.Equal(11, count);
+        }
+
+        [Fact]
+        public void DefaultCompletion_NeverCompletes()
+        {
+            Task t = new TestChannelReader<int>(Enumerable.Empty<int>()).Completion;
+            Assert.False(t.IsCompleted);
+        }
+
+        [Fact]
+        public async Task DefaultWriteAsync_CatchesTryWriteExceptions()
+        {
+            var w = new TryWriteThrowingWriter<int>();
+            Task t = w.WriteAsync(42);
+            Assert.Equal(TaskStatus.Faulted, t.Status);
+            await Assert.ThrowsAsync<FormatException>(() => t);
         }
 
         private sealed class TestChannelWriter<T> : ChannelWriter<T>
@@ -135,6 +179,12 @@ namespace System.Threading.Channels.Tests
                 _closed ? Task.FromResult(false) :
                 _rand.Next(0, 2) == 0 ? Task.Delay(1).ContinueWith(_ => true) : // randomly introduce delays
                 Task.FromResult(true);
+        }
+
+        private sealed class TryWriteThrowingWriter<T> : ChannelWriter<T>
+        {
+            public override bool TryWrite(T item) => throw new FormatException();
+            public override Task<bool> WaitToWriteAsync(CancellationToken cancellationToken = default) => throw new InvalidDataException();
         }
 
         private sealed class CanReadFalseStream : MemoryStream
