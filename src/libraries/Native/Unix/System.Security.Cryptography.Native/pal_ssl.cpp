@@ -570,5 +570,10 @@ extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** proto
     {
         SSL_get0_alpn_selected(ssl, protocol, len);
     }
+    else
 #endif
+    {
+        *protocol = nullptr;
+        *len = 0;
+    }
 }
