@@ -194,8 +194,8 @@ namespace System.Net.Security.Tests
                     ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
                     ServerCertificate = certificate,
                 };
-                
-                Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+
+                Task t1 = Assert.ThrowsAsync<TimeoutException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
                 Task t2 = Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
 
                 Assert.True(Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds));
