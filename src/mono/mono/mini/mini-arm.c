@@ -2644,9 +2644,6 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 {
 	int i;
 
-	if (sig->hasthis + sig->param_count > PARAM_REGS + DYN_CALL_STACK_ARGS)
-		return FALSE;
-
 	switch (cinfo->ret.storage) {
 	case RegTypeNone:
 	case RegTypeGeneral:
@@ -2673,16 +2670,12 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 		case RegTypeFP:
 			break;
 		case RegTypeBase:
-			if (ainfo->offset >= (DYN_CALL_STACK_ARGS * sizeof (gpointer)))
-				return FALSE;
 			break;
 		case RegTypeStructByVal:
 			if (ainfo->size == 0)
 				last_slot = PARAM_REGS + (ainfo->offset / 4) + ainfo->vtsize;
 			else
 				last_slot = ainfo->reg + ainfo->size + ainfo->vtsize;
-			if (last_slot >= PARAM_REGS + DYN_CALL_STACK_ARGS)
-				return FALSE;
 			break;
 		default:
 			return FALSE;
@@ -2756,13 +2749,17 @@ mono_arch_dyn_call_free (MonoDynCallInfo *info)
 int
 mono_arch_dyn_call_get_buf_size (MonoDynCallInfo *info)
 {
-	return sizeof (DynCallArgs);
+	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
+
+	g_assert (ainfo->cinfo->stack_usage % MONO_ARCH_FRAME_ALIGNMENT == 0);
+	return sizeof (DynCallArgs) + ainfo->cinfo->stack_usage;
 }
 
 void
 mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf)
 {
 	ArchDynCallInfo *dinfo = (ArchDynCallInfo*)info;
+	CallInfo *cinfo = dinfo->cinfo;
 	DynCallArgs *p = (DynCallArgs*)buf;
 	int arg_index, greg, i, j, pindex;
 	MonoMethodSignature *sig = dinfo->sig;
@@ -2770,6 +2767,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	p->res = 0;
 	p->ret = ret;
 	p->has_fpregs = 0;
+	p->n_stackargs = cinfo->stack_usage / sizeof (mgreg_t);
 
 	arg_index = 0;
 	greg = 0;
@@ -5131,7 +5129,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_DYN_CALL: {
 			int i;
 			MonoInst *var = cfg->dyn_call_var;
-			guint8 *buf [16];
+			guint8 *labels [16];
 
 			g_assert (var->opcode == OP_REGOFFSET);
 			g_assert (arm_is_imm12 (var->inst_offset));
@@ -5144,30 +5142,50 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Save args buffer */
 			ARM_STR_IMM (code, ARMREG_LR, var->inst_basereg, var->inst_offset);
 
-			/* Set stack slots using R0 as scratch reg */
-			/* MONO_ARCH_DYN_CALL_PARAM_AREA gives the size of stack space available */
-			for (i = 0; i < DYN_CALL_STACK_ARGS; ++i) {
-				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, (PARAM_REGS + i) * sizeof (mgreg_t));
-				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, i * sizeof (mgreg_t));
-			}
-
 			/* Set fp argument registers */
 			if (IS_HARD_FLOAT) {
 				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, MONO_STRUCT_OFFSET (DynCallArgs, has_fpregs));
 				ARM_CMP_REG_IMM (code, ARMREG_R0, 0, 0);
-				buf [0] = code;
+				labels [0] = code;
 				ARM_B_COND (code, ARMCOND_EQ, 0);
 				for (i = 0; i < FP_PARAM_REGS; ++i) {
 					int offset = MONO_STRUCT_OFFSET (DynCallArgs, fpregs) + (i * sizeof (double));
 					g_assert (arm_is_fpimm8 (offset));
 					ARM_FLDD (code, i * 2, ARMREG_LR, offset);
 				}
-				arm_patch (buf [0], code);
+				arm_patch (labels [0], code);
 			}
+
+			/* Allocate callee area */
+			ARM_LDR_IMM (code, ARMREG_R1, ARMREG_LR, MONO_STRUCT_OFFSET (DynCallArgs, n_stackargs));
+			ARM_SHL_IMM (code, ARMREG_R1, ARMREG_R1, 2);
+			ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_R1);
+
+			/* Set stack args */
+			/* R1 = limit */
+			ARM_LDR_IMM (code, ARMREG_R1, ARMREG_LR, MONO_STRUCT_OFFSET (DynCallArgs, n_stackargs));
+			/* R2 = pointer into regs */
+			code = emit_big_add (code, ARMREG_R2, ARMREG_LR, MONO_STRUCT_OFFSET (DynCallArgs, regs) + (PARAM_REGS * sizeof (mgreg_t)));
+			/* R3 = pointer to stack */
+			ARM_MOV_REG_REG (code, ARMREG_R3, ARMREG_SP);
+			/* Loop */
+			labels [0] = code;
+			ARM_B_COND (code, ARMCOND_AL, 0);
+			labels [1] = code;
+			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R2, 0);
+			ARM_STR_IMM (code, ARMREG_R0, ARMREG_R3, 0);
+			ARM_ADD_REG_IMM (code, ARMREG_R2, ARMREG_R2, sizeof (mgreg_t), 0);
+			ARM_ADD_REG_IMM (code, ARMREG_R3, ARMREG_R3, sizeof (mgreg_t), 0);
+			ARM_SUB_REG_IMM (code, ARMREG_R1, ARMREG_R1, 1, 0);
+			arm_patch (labels [0], code);
+			ARM_CMP_REG_IMM (code, ARMREG_R1, 0, 0);
+			labels [2] = code;
+			ARM_B_COND (code, ARMCOND_GT, 0);
+			arm_patch (labels [2], labels [1]);
 
 			/* Set argument registers */
 			for (i = 0; i < PARAM_REGS; ++i)
-				ARM_LDR_IMM (code, i, ARMREG_LR, i * sizeof (mgreg_t));
+				ARM_LDR_IMM (code, i, ARMREG_LR, MONO_STRUCT_OFFSET (DynCallArgs, regs) + (i * sizeof (mgreg_t)));
 
 			/* Make the call */
 			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
@@ -7050,7 +7068,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	g_free (constant_pool_starts);
 
 	mono_arch_flush_icache ((guint8*)start, size);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
+	MONO_PROFILER_RAISE (jit_code_buffer, ((guint8*)start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 	UnlockedAdd (&mono_stats.imt_trampolines_size, code - start);
 
 	g_assert (DISTANCE (start, code) <= size);
@@ -7402,7 +7420,7 @@ mono_arch_get_get_tls_tramp (void)
 	return NULL;
 }
 
-static guint8*
+static G_GNUC_UNUSED guint8*
 emit_aotconst (MonoCompile *cfg, guint8 *code, int dreg, int patch_type, gpointer data)
 {
 	/* OP_AOTCONST */
