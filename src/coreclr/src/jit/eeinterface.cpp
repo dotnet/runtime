@@ -103,8 +103,6 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
     /* figure out the signature */
 
-    EXCEPTION_POINTERS exceptionPointers;
-
     PAL_TRY(FilterSuperPMIExceptionsParam_eeinterface*, pParam, &param)
     {
         unsigned i;

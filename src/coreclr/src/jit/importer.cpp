@@ -876,7 +876,6 @@ GenTreeArgList* Compiler::impPopList(unsigned count, CORINFO_SIG_INFO* sig, GenT
         CORINFO_CLASS_HANDLE    argClass;
         CORINFO_CLASS_HANDLE    argRealClass;
         GenTreeArgList*         args;
-        unsigned                sigSize;
 
         for (args = treeList, count = sig->numArgs; count > 0; args = args->Rest(), count--)
         {
@@ -5771,7 +5770,6 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     if (!opts.IsReadyToRun() || IsTargetAbi(CORINFO_CORERT_ABI))
     {
-        LclVarDsc* newObjArrayArgsVar;
 
         // Reuse the temp used to pass the array dimensions to avoid bloating
         // the stack frame in case there are multiple calls to multi-dim array
@@ -10354,7 +10352,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             int val;
 
             CORINFO_SIG_INFO     sig;
-            unsigned             flags;
             IL_OFFSET            jmpAddr;
             bool                 ovfl, unordered, callNode;
             bool                 ldstruct;
