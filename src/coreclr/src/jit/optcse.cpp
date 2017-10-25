@@ -871,9 +871,6 @@ void Compiler::optValnumCSE_InitDataFlow()
 {
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        GenTreePtr stmt;
-        GenTreePtr tree;
-
         /* Initialize the blocks's bbCseIn set */
 
         bool init_to_zero = false;
