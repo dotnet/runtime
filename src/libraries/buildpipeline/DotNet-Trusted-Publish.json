@@ -182,7 +182,7 @@
     },
     {
       "enabled": true,
-      "continueOnError": false,
+      "continueOnError": true,
       "alwaysRun": false,
       "displayName": "packages -> Azure Feed",
       "timeoutInMinutes": 0,
@@ -223,7 +223,7 @@
     },
     {
       "enabled": true,
-      "continueOnError": false,
+      "continueOnError": true,
       "alwaysRun": false,
       "displayName": "symbol packages -> Azure Feed",
       "timeoutInMinutes": 0,
