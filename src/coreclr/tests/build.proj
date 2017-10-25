@@ -40,7 +40,7 @@
     <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.depproj" />
   </Target>
 
-  <Target Name="BatchRestorePackages" DependsOnTargets="VerifyDependencies">
+  <Target Name="BatchRestorePackages">
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
     
     <!-- restore all csproj's with PackageReferences in one pass -->
