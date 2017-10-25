@@ -702,12 +702,21 @@ endif
 
 if ARM
 PLATFORM_DISABLED_TESTS += filter-stack.exe
-INTERP_DISABLED_TESTS_PLATFORM=finalizer-exception.exe main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe \
-	delegate-exit.exe delegate-exit.exe delegate-delegate-exit.exe delegate-async-exit.exe delegate3.exe delegate1.exe
+INTERP_PLATFORM_DISABLED_TESTS= \
+	assemblyresolve_event6.exe \
+	delegate-async-exit.exe \
+	delegate-delegate-exit.exe \
+	delegate-exit.exe \
+	delegate1.exe \
+	delegate3.exe \
+	finalizer-exception.exe \
+	monitor-abort.exe
 endif
 
 if ARM64
-INTERP_DISABLED_TESTS_PLATFORM=finalizer-exception.exe main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe
+INTERP_PLATFORM_DISABLED_TESTS= \
+	assemblyresolve_event6.exe \
+	finalizer-exception.exe
 endif
 
 if MIPS
@@ -940,40 +949,26 @@ DISABLED_TESTS = \
 	$(PROFILE_DISABLED_TESTS) \
 	$(if $(AOT),$(AOT_DISABLED_TESTS)) \
 	$(if $(CI),$(CI_DISABLED_TESTS)) \
-	$(if $(CI_PR),$CI_PR_DISABLED_TESTS) \
+	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
 	$(if $(LLVM),$(LLVM_DISABLED_TESTS))
 
 INTERP_DISABLED_TESTS = \
-	$(CI_PR_DISABLED_TESTS) \
-	$(CI_DISABLED_TESTS) \
 	$(KNOWN_FAILING_TESTS) \
-	$(INTERP_DISABLED_TESTS_PLATFORM) \
+	$(INTERP_PLATFORM_DISABLED_TESTS) \
+	$(COOP_DISABLED_TESTS) \
+	$(if $(CI),$(CI_DISABLED_TESTS)) \
+	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
 	abort-cctor.exe \
+	appdomain-thread-abort.exe \
 	array_load_exception.exe \
-	assembly_append_ordering.exe \
-	assemblyresolve_event4.exe \
-	assemblyresolve_event6.exe \
 	async-exc-compilation.exe \
 	async-with-cb-throws.exe \
-	async_read.exe \
-	bug-18026.exe \
-	bug-2907.exe \
-	bug-323114.exe \
 	bug-327438.2.exe \
 	bug-335131.2.exe \
 	bug-415577.exe \
 	bug-45841-fpstack-exceptions.exe \
-	bug-461867.exe \
-	bug-461941.exe \
-	bug-46661.exe \
-	bug-47295.exe \
-	bug-48015.exe \
-	bug-58782-plain-throw.exe \
 	bug-58782-capture-and-throw.exe \
-	bug-544446.exe \
-	bug-685908.exe \
-	bug-80307.exe \
-	bug-80392.2.exe \
+	bug-58782-plain-throw.exe \
 	bug-81673.exe \
 	bug-82022.exe \
 	bug445361.exe \
@@ -982,34 +977,22 @@ INTERP_DISABLED_TESTS = \
 	calliGenericTest.exe \
 	cominterop.exe \
 	context-static.exe \
-	cross-domain.exe \
 	delegate-with-null-target.exe \
 	delegate9.exe \
 	dynamic-method-stack-traces.exe \
 	even-odd.exe \
-	exception18.exe \
 	field-access.exe \
 	finally_block_ending_in_dead_bb.exe \
-	generic-array-exc.2.exe \
 	generic-marshalbyref.2.exe \
-	generic-mkrefany.2.exe \
-	generic-refanyval.2.exe \
-	generic-stack-traces2.2.exe \
-	generic-type-load-exception.2.exe \
-	generic-unloading.2.exe \
-	generics-invoke-byref.2.exe \
-	generics-sharing.2.exe \
 	handleref.exe \
 	invalid-token.exe \
 	invalid_generic_instantiation.exe \
 	ldfld_missing_class.exe \
 	ldfld_missing_field.exe \
 	ldftn-access.exe \
-	main-returns-background-change.exe \
 	marshal.exe \
 	marshal8.exe \
 	method-access.exe \
-	monitor.exe \
 	nullable_boxing.2.exe \
 	pinvoke-2.2.exe \
 	pinvoke-utf8.exe \
@@ -1022,31 +1005,19 @@ INTERP_DISABLED_TESTS = \
 	pinvoke_ppcf.exe \
 	pinvoke_ppci.exe \
 	pinvoke_ppcs.exe \
-	process-unref-race.exe \
-	reload-at-bb-end.exe \
 	safehandle.2.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
-	test-inline-call-stack.exe \
 	test-type-ctor.exe \
 	thread6.exe \
-	threadpool-exceptions1.exe \
 	threadpool-exceptions2.exe \
-	threadpool-exceptions3.exe \
 	threadpool-exceptions4.exe \
 	threadpool-exceptions5.exe \
-	threadpool-exceptions6.exe \
-	threadpool-exceptions7.exe \
-	threadpool.exe \
-	threadpool1.exe \
 	thunks.exe \
 	typeload-unaligned.exe \
-	unload-appdomain-on-shutdown.exe \
 	vararg.exe \
 	vararg2.exe \
-	vt-sync-method.exe \
-	winx64structs.exe \
-	appdomain-thread-abort.exe
+	winx64structs.exe
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))
