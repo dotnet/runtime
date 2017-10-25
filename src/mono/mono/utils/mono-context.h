@@ -31,6 +31,9 @@ typedef struct __darwin_xmm_reg MonoContextSimdReg;
 typedef struct __darwin_xmm_reg MonoContextSimdReg;
 #elif defined(__linux__) && defined(__GLIBC__)
 typedef struct _libc_xmmreg MonoContextSimdReg;
+#elif defined(HOST_WIN32)
+#include <emmintrin.h>
+typedef __m128d MonoContextSimdReg;
 #endif
 #elif defined(TARGET_ARM64)
 typedef __uint128_t MonoContextSimdReg;
@@ -247,7 +250,7 @@ typedef struct {
 
 typedef struct {
 	mgreg_t gregs [AMD64_NREG];
-#if defined(__APPLE__) || (defined(__linux__) && defined(__GLIBC__))
+#if defined(__APPLE__) || (defined(__linux__) && defined(__GLIBC__)) || defined(HOST_WIN32)
 	MonoContextSimdReg fregs [AMD64_XMM_NREG];
 #else
 	double fregs [AMD64_XMM_NREG];

@@ -105,6 +105,10 @@ typedef enum
 #define AMD64_ARGUMENT_REGS ((1<<AMD64_RDX) | (1<<AMD64_RCX) | (1<<AMD64_R8) | (1<<AMD64_R9))
 #define AMD64_IS_ARGUMENT_REG(reg) (AMD64_ARGUMENT_REGS & (1 << (reg)))
 
+/* xmm0-xmm3 for standard calling convention, additionally xmm4-xmm5 for __vectorcall (not currently used) */
+#define AMD64_ARGUMENT_XREGS ((1<<AMD64_XMM0) | (1<<AMD64_XMM1) | (1<<AMD64_XMM2) | (1<<AMD64_XMM3) | (1<<AMD64_XMM4) | (1<<AMD64_XMM5))
+#define AMD64_IS_ARGUMENT_XREG(reg) (AMD64_ARGUMENT_XREGS & (1 << (reg)))
+
 #define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RDI) | (1<<AMD64_RSI) | (1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15) | (1<<AMD64_RBP))
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
 #else
@@ -113,6 +117,9 @@ typedef enum
 
 #define AMD64_ARGUMENT_REGS ((1<<AMD64_RDI) | (1<<AMD64_RSI) | (1<<AMD64_RDX) | (1<<AMD64_RCX) | (1<<AMD64_R8) | (1<<AMD64_R9))
 #define AMD64_IS_ARGUMENT_REG(reg) (AMD64_ARGUMENT_REGS & (1 << (reg)))
+
+#define AMD64_ARGUMENT_XREGS ((1<<AMD64_XMM0) | (1<<AMD64_XMM1) | (1<<AMD64_XMM2) | (1<<AMD64_XMM3) | (1<<AMD64_XMM4) | (1<<AMD64_XMM5) | (1<<AMD64_XMM6) | (1<<AMD64_XMM7))
+#define AMD64_IS_ARGUMENT_XREG(reg) (AMD64_ARGUMENT_XREGS & (1 << (reg)))
 
 #define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15) | (1<<AMD64_RBP))
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
@@ -537,6 +544,17 @@ typedef union {
 		amd64_codegen_post(inst); \
 	} while (0)
 
+#define amd64_movdqu_reg_membase(inst,reg,basereg,disp)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		x86_prefix((inst), 0xf3); \
+		amd64_emit_rex(inst, 0, (reg), 0, (basereg)); \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x6f;	\
+		x86_membase_emit ((inst), (reg) & 0x7, (basereg) & 0x7, (disp));	\
+		amd64_codegen_post(inst); \
+	} while (0)
+
 #define amd64_movsd_reg_membase(inst,reg,basereg,disp)	\
 	do {	\
 		amd64_codegen_pre(inst); \
@@ -555,6 +573,17 @@ typedef union {
 		amd64_emit_rex(inst, 0, (reg), 0, (basereg)); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x10;	\
+		x86_membase_emit ((inst), (reg) & 0x7, (basereg) & 0x7, (disp));	\
+		amd64_codegen_post(inst); \
+	} while (0)
+
+#define amd64_movdqu_membase_reg(inst,basereg,disp,reg)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		x86_prefix((inst), 0xf3); \
+		amd64_emit_rex(inst, 0, (reg), 0, (basereg)); \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x7f;	\
 		x86_membase_emit ((inst), (reg) & 0x7, (basereg) & 0x7, (disp));	\
 		amd64_codegen_post(inst); \
 	} while (0)
