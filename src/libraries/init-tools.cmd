@@ -26,6 +26,20 @@ if exist "%BUILD_TOOLS_SEMAPHORE%" (
 
 if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
 
+if exist "%DotNetBuildToolsDir%" (
+  echo Using tools from '%DotNetBuildToolsDir%'.
+  mklink /j "%TOOLRUNTIME_DIR%" "%DotNetBuildToolsDir%"
+
+  if not exist "%DOTNET_CMD%" (
+    echo ERROR: Ensure that '%DotNetBuildToolsDir%' contains the .NET Core SDK at '%DOTNET_PATH%'
+    exit /b 1
+  )
+
+  echo Done initializing tools.
+  echo Using tools from '%DotNetBuildToolsDir%'. > "%BUILD_TOOLS_SEMAPHORE%"
+  exit /b 0
+)
+
 echo Running %0 > "%INIT_TOOLS_LOG%"
 
 set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
