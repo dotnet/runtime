@@ -11459,8 +11459,6 @@ void TreeNodeInfo::dump(LinearScan* lsra)
 
 void LinearScan::lsraDumpIntervals(const char* msg)
 {
-    Interval* interval;
-
     printf("\nLinear scan intervals %s:\n", msg);
     for (auto& interval : intervals)
     {
