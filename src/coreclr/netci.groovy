@@ -1505,7 +1505,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         (architecture != 'x86_arm_altjit') &&
                         (architecture != 'x64_arm64_altjit')) {
 
-                        buildOpts += ' enforcepgo'
+                        buildOpts += ' -enforcepgo'
                     }
 
                     // Set __TestIntermediateDir for pri1 test builds. 
