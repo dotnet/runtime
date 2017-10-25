@@ -81,13 +81,15 @@ namespace System.Net.Security.Tests
                 serverOptions.ServerCertificate = certificate;
                 serverOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
 
-                Assert.ThrowsAsync<InvalidOperationException>(() => { return client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None); });
-                Assert.ThrowsAsync<InvalidOperationException>(() => { return server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None); });
+                Task t1 = Assert.ThrowsAsync<InvalidOperationException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+                Task t2 = Assert.ThrowsAsync<InvalidOperationException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+
+                Assert.True(Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds));
             }
         }
 
         [Theory]
-        [ActiveIssue(24722, TestPlatforms.Linux)]
+        [ActiveIssue(24866, TestPlatforms.Linux)]
         [MemberData(nameof(Alpn_TestData))]
         public void SslStream_StreamToStream_Alpn_Success(List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
@@ -115,6 +117,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(24853)]
         [PlatformSpecific(~TestPlatforms.OSX)]
         public void SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail()
         {
@@ -137,9 +140,11 @@ namespace System.Net.Security.Tests
                     ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
                     ServerCertificate = certificate,
                 };
+                
+                Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+                Task t2 = Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
 
-                Assert.ThrowsAsync<AuthenticationException>(() => { return client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None); });
-                Assert.ThrowsAsync<AuthenticationException>(() => { return server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None); });
+                Assert.True(Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds));
             }
         }
 
