@@ -14,6 +14,8 @@ namespace ILLink.Tests
 
 		private static List<string> rootFiles = new List<string> { "MusicStoreReflection.xml" };
 
+		private string netcoreappVersion;
+
 		[Fact]
 		public void RunMusicStore()
 		{
@@ -32,10 +34,70 @@ namespace ILLink.Tests
 
 			AddLinkerReference(csproj);
 
-			BuildAndLink(csproj, rootFiles);
+			Dictionary<string, string> extraPublishArgs = new Dictionary<string, string>();
+			extraPublishArgs.Add("JITBENCH_FRAMEWORK_VERSION", netcoreappVersion);
+			BuildAndLink(csproj, rootFiles, extraPublishArgs);
+		}
 
-			int ret = RunApp(csproj, out string commandOutput);
-			Assert.True(ret == 0);
+		string ObtainSDK(string repoDir)
+		{
+			int ret;
+			string dotnetDirName = ".dotnet";
+			string dotnetInstall = Path.Combine(repoDir, "dotnet-install");
+			if (context.RuntimeIdentifier.Contains("win")) {
+				dotnetInstall += ".ps1";
+			} else {
+				dotnetInstall += ".sh";
+			}
+			if (!File.Exists(dotnetInstall)) {
+				output.WriteLine($"missing dotnet-install script at {dotnetInstall}");
+				Assert.True(false);
+			}
+
+			if (context.RuntimeIdentifier.Contains("win")) {
+				ret = RunCommand(dotnetInstall, $"-SharedRuntime -InstallDir {dotnetDirName} -Channel master -Architecture x64", repoDir);
+				if (ret != 0) {
+					output.WriteLine("failed to retrieve shared runtime");
+					Assert.True(false);
+				}
+				ret = RunCommand(dotnetInstall, $"-InstallDir {dotnetDirName} -Channel master -Architecture x64", repoDir);
+				if (ret != 0) {
+					output.WriteLine("failed to retrieve sdk");
+					Assert.True(false);
+				}
+			} else {
+				ret = RunCommand(dotnetInstall, $"-sharedruntime -runtimeid {context.RuntimeIdentifier} -installdir {dotnetDirName} -channel master -architecture x64", repoDir);
+				if (ret != 0) {
+					output.WriteLine("failed to retrieve shared runtime");
+					Assert.True(false);
+				}
+				ret = RunCommand(dotnetInstall, $"-installdir {dotnetDirName} -channel master -architecture x64", repoDir);
+				if (ret != 0) {
+					output.WriteLine("failed to retrieve sdk");
+					Assert.True(false);
+				}
+			}
+
+			string dotnetDir = Path.Combine(repoDir, dotnetDirName);
+			string dotnetToolName = Directory.GetFiles(dotnetDir)
+				.Select(p => Path.GetFileName(p))
+				.Where(p => p.Contains("dotnet"))
+				.Single();
+			string dotnetToolPath = Path.Combine(dotnetDir, dotnetToolName);
+			if (!File.Exists(dotnetToolPath)) {
+				output.WriteLine("repo-local dotnet tool does not exist.");
+				Assert.True(false);
+			}
+
+			string ncaDir = Path.Combine(dotnetDir, "shared", "Microsoft.NETCore.App");
+			netcoreappVersion = Directory.GetDirectories(ncaDir)
+				.Select(p => Path.GetFileName(p)).Max();
+			if (String.IsNullOrEmpty(netcoreappVersion)) {
+				output.WriteLine($"no netcoreapp version found in {ncaDir}");
+				Assert.True(false);
+			}
+
+			return dotnetToolPath;
 		}
 
 		// returns path to .csproj project file
@@ -44,7 +106,6 @@ namespace ILLink.Tests
 			string gitRepo = "http://github.com/aspnet/JitBench";
 			string repoName = "JitBench";
 			string gitBranch = "dev";
-			string demoRoot = Path.Combine("JitBench", Path.Combine("src", "MusicStore"));
 
 			int ret;
 			if (Directory.Exists(repoName)) {
@@ -57,6 +118,7 @@ namespace ILLink.Tests
 				Assert.True(false);
 			}
 
+			string demoRoot = Path.Combine("JitBench", Path.Combine("src", "MusicStore"));
 			if (!Directory.Exists(demoRoot)) {
 				output.WriteLine($"{demoRoot} does not exist");
 				Assert.True(false);
@@ -67,6 +129,11 @@ namespace ILLink.Tests
 				output.WriteLine($"problem checking out branch {gitBranch}");
 				Assert.True(false);
 			}
+
+			// MusicStore targets .NET Core 2.1, so it must be built
+			// using an SDK that can target 2.1. We obtain that SDK
+			// here.
+			context.DotnetToolPath = ObtainSDK(repoName);
 
 			string csproj = Path.Combine(demoRoot, "MusicStore.csproj");
 			return csproj;

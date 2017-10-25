@@ -29,7 +29,7 @@ namespace ILLink.Tests
 		///   The path to the dotnet tool to use to run the
 		///   integration tests.
 		/// </summary>
-		public string DotnetToolPath { get; private set; }
+		public string DotnetToolPath { get; set; }
 
 		/// <summary>
 		///   The RID to use when restoring, building, and linking the
@@ -87,6 +87,12 @@ namespace ILLink.Tests
 			context.DotnetToolPath = dotnetToolPath;
 			// This sets the RID to the RID of the currently-executing system.
 			context.RuntimeIdentifier = RuntimeEnvironment.GetRuntimeIdentifier();
+			// workaround: the osx.10.13-x64 RID doesn't exist yet.
+			// see https://github.com/dotnet/core-setup/issues/3301
+			if (context.RuntimeIdentifier == "osx.10.13-x64")
+			{
+				context.RuntimeIdentifier = "osx.10.12-x64";
+			}
 			// We want to build and link integration projects in the
 			// release configuration.
 			context.Configuration = "Release";

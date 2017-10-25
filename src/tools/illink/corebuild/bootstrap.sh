@@ -80,7 +80,7 @@ sharedFxVersion="<auto>"
 force=
 forcedCliLocalPath="<none>"
 architecture="<auto>"
-dotNetInstallBranch="rel/1.0.0"
+dotNetInstallBranch="release/2.0.0"
 
 while [ $# -ne 0 ]
 do

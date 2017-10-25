@@ -6,7 +6,7 @@ param
     [Parameter(Mandatory=$false)][string]$SharedFrameworkSymlinkPath = (Join-Path $ToolsLocalPath "dotnetcli\shared\Microsoft.NETCore.App\version"),
     [Parameter(Mandatory=$false)][string]$SharedFrameworkVersion = "<auto>",
     [Parameter(Mandatory=$false)][string]$Architecture = "<auto>",
-    [Parameter(Mandatory=$false)][string]$DotNetInstallBranch = "rel/1.0.0",
+    [Parameter(Mandatory=$false)][string]$DotNetInstallBranch = "release/2.0.0",
     [switch]$Force = $false
 )
 
