@@ -1889,6 +1889,14 @@
     ]
   },
   {
+    "Name": "System.Threading.Channels",
+    "Description": "Provides types for passing data between producers and consumers.",
+    "CommonTypes": [
+      "System.Threading.Channel",
+      "System.Threading.Channel<T>"
+    ]
+  },
+  {
     "Name": "System.Threading.ExecutionContext",
     "Description": "Provides types for managing the information relevant to a logic thread or task of execution.",
     "CommonTypes": [
