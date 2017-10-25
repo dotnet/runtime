@@ -375,12 +375,6 @@ Returns 1 if success and 0 in case of failure
 extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509);
 
 /*
-Shims the SSL_select_next_proto method.
-Returns 1 on success, 0 on failure.
-*/
-extern "C" int32_t CryptoNative_SslSelectNextProto(uint8_t** out, uint8_t* outlen, const uint8_t* server, uint32_t server_len, const uint8_t* client, uint32_t client_len);
-
-/*
 Shims the ssl_ctx_set_alpn_select_cb method.
 */
 extern "C" void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void *arg);

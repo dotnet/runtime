@@ -15,7 +15,7 @@ internal static partial class Interop
     {
         internal delegate int AppVerifyCallback(IntPtr storeCtx, IntPtr arg);
         internal delegate int ClientCertCallback(IntPtr ssl, out IntPtr x509, out IntPtr pkey);
-        internal delegate int SslCtxSetAlpnCallback(IntPtr ssl, out IntPtr outp, out byte outlen, IntPtr inp, uint inlen, IntPtr arg);
+        internal unsafe delegate int SslCtxSetAlpnCallback(IntPtr ssl, out byte* outp, out byte outlen, byte* inp, uint inlen, IntPtr arg);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCreate")]
         internal static extern SafeSslContextHandle SslCtxCreate(IntPtr method);

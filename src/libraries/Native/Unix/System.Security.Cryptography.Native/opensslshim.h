@@ -61,7 +61,6 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx, int (*cb) (SSL *ssl,
                                             unsigned int inlen,
                                             void *arg), void *arg);
 void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
-int32_t SSL_select_next_proto(unsigned char** out, unsigned char* outlen, const unsigned char* server, unsigned int server_len, const unsigned char* client, unsigned int client_len);
 #endif
 
 #define API_EXISTS(fn) (fn != nullptr)
@@ -292,7 +291,6 @@ int32_t SSL_select_next_proto(unsigned char** out, unsigned char* outlen, const 
     PER_FUNCTION_BLOCK(SSL_new, true) \
     PER_FUNCTION_BLOCK(SSL_read, true) \
     PER_FUNCTION_BLOCK(SSL_renegotiate_pending, true) \
-    PER_FUNCTION_BLOCK(SSL_select_next_proto, false) \
     PER_FUNCTION_BLOCK(SSL_set_accept_state, true) \
     PER_FUNCTION_BLOCK(SSL_set_bio, true) \
     PER_FUNCTION_BLOCK(SSL_set_connect_state, true) \
@@ -586,7 +584,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_new SSL_new_ptr
 #define SSL_read SSL_read_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
-#define SSL_select_next_proto SSL_select_next_proto_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
