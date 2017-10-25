@@ -429,21 +429,15 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public void Precancellation_Writing_ReturnsSuccessImmediately()
+        public void Precancellation_Writing_ReturnsImmediately()
         {
             Channel<int> c = CreateChannel();
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
 
-            Task writeTask = c.Writer.WriteAsync(42, cts.Token);
-            Assert.True(writeTask.Status == TaskStatus.Canceled || writeTask.Status == TaskStatus.RanToCompletion, $"Status == {writeTask.Status}");
+            Task writeTask = c.Writer.WriteAsync(42, new CancellationToken(true));
+            Assert.Equal(TaskStatus.Canceled, writeTask.Status);
 
-            Task<bool> waitTask = c.Writer.WaitToWriteAsync(cts.Token);
-            Assert.True(writeTask.Status == TaskStatus.Canceled || writeTask.Status == TaskStatus.RanToCompletion, $"Status == {writeTask.Status}");
-            if (waitTask.Status == TaskStatus.RanToCompletion)
-            {
-                Assert.True(waitTask.Result);
-            }
+            Task<bool> waitTask = c.Writer.WaitToWriteAsync(new CancellationToken(true));
+            Assert.Equal(TaskStatus.Canceled, waitTask.Status);
         }
 
         [Fact]
@@ -452,6 +446,15 @@ namespace System.Threading.Channels.Tests
             Channel<int> c = CreateChannel();
             c.Writer.WriteAsync(42);
             AssertSynchronousTrue(c.Reader.WaitToReadAsync());
+        }
+
+        [Fact]
+        public void Precancellation_WaitToReadAsync_ReturnsImmediately()
+        {
+            Channel<int> c = CreateChannel();
+
+            Task writeTask = c.Reader.WaitToReadAsync(new CancellationToken(true));
+            Assert.Equal(TaskStatus.Canceled, writeTask.Status);
         }
     }
 }
