@@ -44,22 +44,6 @@ namespace System.Threading.Channels
             }
         }
 
-        /// <summary>Gets a value task representing an error.</summary>
-        /// <typeparam name="T">Specifies the type of the value that would have been returned.</typeparam>
-        /// <param name="error">The error.  This may be <see cref="s_doneWritingSentinel"/>.</param>
-        /// <returns>The failed task.</returns>
-        internal static ValueTask<T> GetInvalidCompletionValueTask<T>(Exception error)
-        {
-            Debug.Assert(error != null);
-
-            Task<T> t =
-                error == s_doneWritingSentinel ? Task.FromException<T>(CreateInvalidCompletionException()) :
-                error is OperationCanceledException oce ? Task.FromCanceled<T>(oce.CancellationToken.IsCancellationRequested ? oce.CancellationToken : new CancellationToken(true)) :
-                Task.FromException<T>(CreateInvalidCompletionException(error));
-
-            return new ValueTask<T>(t);
-        }
-
         /// <summary>Wake up all of the waiters and null out the field.</summary>
         /// <param name="waiters">The waiters.</param>
         /// <param name="result">The value with which to complete each waiter.</param>
