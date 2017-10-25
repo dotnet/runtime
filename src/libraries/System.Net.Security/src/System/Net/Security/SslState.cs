@@ -655,7 +655,7 @@ namespace System.Net.Security
 
             // This will tell that we don't know the framing yet (what SSL version is)
             _Framing = Framing.Unknown;
-            
+
             try
             {
                 if (receiveFirst)
