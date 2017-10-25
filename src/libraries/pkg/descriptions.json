@@ -948,6 +948,15 @@
     ]
   },
   {
+    "Name": "System.Management",
+    "Description": "Provides access to a rich set of management information and management events about the system, devices, and applications instrumented to the Windows Management Instrumentation (WMI) infrastructure.",
+    "CommonTypes": [
+      "System.Management.ManagementClass",
+      "System.Management.ManagementObject",
+      "System.Management.SelectQuery"
+    ]
+  },
+  {
     "Name": "System.Memory",
     "Description": "Provides types for efficient low-allocation access to memory.",
     "CommonTypes": [
