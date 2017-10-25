@@ -1496,8 +1496,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "tests\\scripts\\build_illink.cmd clone ${arch}"
                     }
 
-                    buildOpts += " -priority=${priority}"
-
                     // If it is a release build for windows, ensure PGO is used, else fail the build
                     if ((lowerConfiguration == 'release') &&
                         (scenario in Constants.basicScenarios) &&
@@ -1506,6 +1504,14 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         (architecture != 'x64_arm64_altjit')) {
 
                         buildOpts += ' -enforcepgo'
+                    }
+
+                    if (enableCorefxTesting) {
+                        buildOpts += ' skiptests';
+                    } else {
+                        // Note: currently, build.cmd will pass through all arguments starting with an argument it doesn't recognize.
+                        // Since it doesn't process/recognize '-priority', make sure this is the last argument passed.
+                        buildOpts += " -priority=${priority}"
                     }
 
                     // Set __TestIntermediateDir for pri1 test builds. 
@@ -1523,7 +1529,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             scenario == 'ilrt' ||
                             scenario == 'illink' ||
                             Constants.r2rJitStressScenarios.indexOf(scenario) != -1) {
-                        buildOpts += enableCorefxTesting ? ' skiptests' : ''
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
                     }
                     else if (isLongGc(scenario)) {
