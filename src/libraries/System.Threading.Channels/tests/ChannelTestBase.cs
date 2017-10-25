@@ -14,6 +14,7 @@ namespace System.Threading.Channels.Tests
 
         protected virtual bool RequiresSingleReader => false;
         protected virtual bool RequiresSingleWriter => false;
+        protected virtual bool BuffersItems => true;
 
         [Fact]
         public void ValidateDebuggerAttributes()
@@ -288,6 +289,20 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        public void WaitToWriteAsync_EmptyChannel_SynchronouslyCompletes()
+        {
+            if (!BuffersItems)
+            {
+                return;
+            }
+
+            Channel<int> c = CreateChannel();
+            Task<bool> write = c.Writer.WaitToWriteAsync();
+            Assert.Equal(TaskStatus.RanToCompletion, write.Status);
+            Assert.True(write.Result);
+        }
+
+        [Fact]
         public void TryRead_DataAvailable_Success()
         {
             Channel<int> c = CreateChannel();
@@ -455,6 +470,34 @@ namespace System.Threading.Channels.Tests
 
             Task writeTask = c.Reader.WaitToReadAsync(new CancellationToken(true));
             Assert.Equal(TaskStatus.Canceled, writeTask.Status);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task WaitToReadAsync_DataWritten_CompletesSuccessfully(bool cancelable)
+        {
+            Channel<int> c = CreateChannel();
+            CancellationToken token = cancelable ? new CancellationTokenSource().Token : default;
+
+            Task<bool> read = c.Reader.WaitToReadAsync(token);
+            Assert.False(read.IsCompleted);
+
+            Task write = c.Writer.WriteAsync(42, token);
+
+            Assert.True(await read);
+        }
+
+        [Fact]
+        public async Task WaitToReadAsync_NoDataWritten_Canceled_CompletesAsCanceled()
+        {
+            Channel<int> c = CreateChannel();
+            var cts = new CancellationTokenSource();
+
+            Task<bool> read = c.Reader.WaitToReadAsync(cts.Token);
+            Assert.False(read.IsCompleted);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => read);
         }
     }
 }
