@@ -276,7 +276,7 @@ mono_lldiv (gint64 a, gint64 b)
 		return 0;
 	}
 	else if (b == -1 && a == (-9223372036854775807LL - 1LL)) {
-		mono_set_pending_exception (mono_get_exception_arithmetic ());
+		mono_set_pending_exception (mono_get_exception_overflow ());
 		return 0;
 	}
 #endif
@@ -292,7 +292,7 @@ mono_llrem (gint64 a, gint64 b)
 		return 0;
 	}
 	else if (b == -1 && a == (-9223372036854775807LL - 1LL)) {
-		mono_set_pending_exception (mono_get_exception_arithmetic ());
+		mono_set_pending_exception (mono_get_exception_overflow ());
 		return 0;
 	}
 #endif
