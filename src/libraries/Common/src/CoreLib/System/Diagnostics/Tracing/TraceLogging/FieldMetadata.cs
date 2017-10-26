@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Resources;
 using Encoding = System.Text.Encoding;
 
 #if ES_BUILD_STANDALONE
@@ -128,17 +129,17 @@ namespace System.Diagnostics.Tracing
             {
                 if (coreType == (int)TraceLoggingDataType.Nil)
                 {
-                    throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedArrayOfNil"));
+                    throw new NotSupportedException(SR.EventSource_NotSupportedArrayOfNil);
                 }
                 if (coreType == (int)TraceLoggingDataType.Binary)
                 {
-                    throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedArrayOfBinary"));
+                    throw new NotSupportedException(SR.EventSource_NotSupportedArrayOfBinary);
                 }
 #if !BROKEN_UNTIL_M3
                 if (coreType == (int)TraceLoggingDataType.Utf16String ||
                     coreType == (int)TraceLoggingDataType.MbcsString)
                 {
-                    throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedArrayOfNullTerminatedString"));
+                    throw new NotSupportedException(SR.EventSource_NotSupportedArrayOfNullTerminatedString);
                 }
 #endif
             }
@@ -160,7 +161,7 @@ namespace System.Diagnostics.Tracing
             this.outType++;
             if ((this.outType & Statics.OutTypeMask) == 0)
             {
-                throw new NotSupportedException(Resources.GetResourceString("EventSource_TooManyFields"));
+                throw new NotSupportedException(SR.EventSource_TooManyFields);
             }
         }
 
