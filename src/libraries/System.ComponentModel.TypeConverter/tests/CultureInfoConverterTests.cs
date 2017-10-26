@@ -56,8 +56,8 @@ namespace System.ComponentModel.Tests
             c = (CultureInfo)converter.ConvertFrom(null, CultureInfo.InvariantCulture,
                 "nl-BE");
             Assert.Equal(new CultureInfo("nl-BE"), c);
-            
-            try 
+
+            try
             {
                 // Linux can create such cultures
                 var cul = new CultureInfo("Dutch (Bel");
@@ -85,7 +85,7 @@ namespace System.ComponentModel.Tests
         {
             ArgumentException ex;
 
-            try 
+            try
             {
                 // Linux can create such cultures
                 var cul = new CultureInfo("(default)");
@@ -107,7 +107,7 @@ namespace System.ComponentModel.Tests
                 }
             }
 
-            try 
+            try
             {
                 // Linux can create such cultures
                 var cul = new CultureInfo(" ");
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Tests
                 }
             }
 
-            try 
+            try
             {
                 // Linux can create such cultures
                 var cul = new CultureInfo("\r\n");
