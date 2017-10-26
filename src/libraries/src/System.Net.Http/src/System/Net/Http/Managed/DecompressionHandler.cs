@@ -47,30 +47,22 @@ namespace System.Net.Http
 
             HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-            while (true)
+            ICollection<string> contentEncodings = response.Content.Headers.ContentEncoding;
+            if (contentEncodings.Count > 0)
             {
-                // Get first encoding
-                using (IEnumerator<string> e = response.Content.Headers.ContentEncoding.GetEnumerator())
+                string last = null;
+                foreach (string encoding in contentEncodings)
                 {
-                    if (!e.MoveNext())
-                    {
-                        break;
-                    }
+                    last = encoding;
+                }
 
-                    string encoding = e.Current;
-                    if (GZipEnabled && encoding == s_gzip)
-                    {
-                        response.Content = new GZipDecompressedContent(response.Content);
-                    }
-                    else if (DeflateEnabled && encoding == s_deflate)
-                    {
-                        response.Content = new DeflateDecompressedContent(response.Content);
-                    }
-                    else
-                    {
-                        // Unknown content encoding.  Stop processing.
-                        break;
-                    }
+                if (GZipEnabled && last == s_gzip)
+                {
+                    response.Content = new GZipDecompressedContent(response.Content);
+                }
+                else if (DeflateEnabled && last == s_deflate)
+                {
+                    response.Content = new DeflateDecompressedContent(response.Content);
                 }
             }
 
@@ -99,21 +91,18 @@ namespace System.Net.Http
 
                 // Copy original response headers, but with the following changes:
                 //   Content-Length is removed, since it no longer applies to the decompressed content
-                //   The first Content-Encoding is removed, since we are processing that here
+                //   The last Content-Encoding is removed, since we are processing that here.
                 Headers.AddHeaders(originalContent.Headers);
                 Headers.ContentLength = null;
                 Headers.ContentEncoding.Clear();
-                bool first = true;
-                foreach (var encoding in originalContent.Headers.ContentEncoding)
+                string prevEncoding = null;
+                foreach (string encoding in originalContent.Headers.ContentEncoding)
                 {
-                    if (first)
+                    if (prevEncoding != null)
                     {
-                        first = false;
+                        Headers.ContentEncoding.Add(prevEncoding);
                     }
-                    else
-                    {
-                        Headers.ContentEncoding.Add(encoding);
-                    }
+                    prevEncoding = encoding;
                 }
             }
 
