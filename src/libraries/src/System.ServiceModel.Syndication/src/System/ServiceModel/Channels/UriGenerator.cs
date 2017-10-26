@@ -6,7 +6,6 @@ namespace System.ServiceModel.Channels
 {
     using System.Threading;
     using System.Globalization;
-    using System.ServiceModel;
 
     internal class UriGenerator
     {

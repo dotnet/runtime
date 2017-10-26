@@ -8,7 +8,6 @@ namespace System.ServiceModel.Syndication
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
@@ -351,12 +350,12 @@ namespace System.ServiceModel.Syndication
         //// Custom Parsing
         public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter formatter, CancellationToken ct)
         {
-            return await LoadAsync(reader, formatter, new Atom10FeedFormatter(), ct);
+            return await LoadAsync(reader, formatter, new Atom10FeedFormatter(), ct).ConfigureAwait(false);
         }
 
         public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Atom10FeedFormatter formatter, CancellationToken ct)
         {
-            return await LoadAsync(reader, new Rss20FeedFormatter(), formatter, ct);
+            return await LoadAsync(reader, new Rss20FeedFormatter(), formatter, ct).ConfigureAwait(false);
         }
 
         public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter, CancellationToken ct)
@@ -371,13 +370,13 @@ namespace System.ServiceModel.Syndication
             Atom10FeedFormatter atomSerializer = Atomformatter;
             if (atomSerializer.CanRead(reader))
             {
-                await atomSerializer.ReadFromAsync(reader, new CancellationToken());
+                await atomSerializer.ReadFromAsync(reader, new CancellationToken()).ConfigureAwait(false);
                 return atomSerializer.Feed;
             }
             Rss20FeedFormatter rssSerializer = Rssformatter;
             if (rssSerializer.CanRead(reader))
             {
-                await rssSerializer.ReadFromAsync(reader, new CancellationToken());
+                await rssSerializer.ReadFromAsync(reader, new CancellationToken()).ConfigureAwait(false);
                 return rssSerializer.Feed;
             }
             throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
@@ -390,8 +389,7 @@ namespace System.ServiceModel.Syndication
             return Load<SyndicationFeed>(reader);
         }
 
-        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader)
-            where TSyndicationFeed : SyndicationFeed, new()
+        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader) where TSyndicationFeed : SyndicationFeed, new()
         {
             CancellationToken ct = new CancellationToken();
             return LoadAsync<TSyndicationFeed>(reader, ct).GetAwaiter().GetResult();
@@ -399,23 +397,22 @@ namespace System.ServiceModel.Syndication
 
         public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, CancellationToken ct)
         {
-            return await LoadAsync<SyndicationFeed>(reader, ct);
+            return await LoadAsync<SyndicationFeed>(reader, ct).ConfigureAwait(false);
         }
 
-        public static async Task<TSyndicationFeed> LoadAsync<TSyndicationFeed>(XmlReader reader, CancellationToken ct)
-            where TSyndicationFeed : SyndicationFeed, new()
+        public static async Task<TSyndicationFeed> LoadAsync<TSyndicationFeed>(XmlReader reader, CancellationToken ct) where TSyndicationFeed : SyndicationFeed, new()
         {
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
             {
-                await atomSerializer.ReadFromAsync(reader, ct);
+                await atomSerializer.ReadFromAsync(reader, ct).ConfigureAwait(false);
                 return atomSerializer.Feed as TSyndicationFeed;
             }
 
             Rss20FeedFormatter<TSyndicationFeed> rssSerializer = new Rss20FeedFormatter<TSyndicationFeed>();
             if (rssSerializer.CanRead(reader))
             {
-                await rssSerializer.ReadFromAsync(reader, ct);
+                await rssSerializer.ReadFromAsync(reader, ct).ConfigureAwait(false);
                 return rssSerializer.Feed as TSyndicationFeed;
             }
 

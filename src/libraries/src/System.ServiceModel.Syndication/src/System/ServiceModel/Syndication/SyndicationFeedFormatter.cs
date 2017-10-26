@@ -392,10 +392,10 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            await feed.WriteAttributeExtensionsAsync(writer, version);
+            await feed.WriteAttributeExtensionsAsync(writer, version).ConfigureAwait(false);
         }
 
-        internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
+        protected internal static Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
         {
             if (item == null)
             {
@@ -404,7 +404,7 @@ namespace System.ServiceModel.Syndication
             return item.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationCategory category, string version)
+        protected internal static Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationCategory category, string version)
         {
             if (category == null)
             {
@@ -413,7 +413,7 @@ namespace System.ServiceModel.Syndication
             return category.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationLink link, string version)
+        protected internal static Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationLink link, string version)
         {
             if (link == null)
             {
@@ -422,7 +422,7 @@ namespace System.ServiceModel.Syndication
             return link.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
+        protected internal static Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
         {
             if (person == null)
             {
@@ -431,7 +431,7 @@ namespace System.ServiceModel.Syndication
             return person.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationFeed feed, string version)
+        protected internal static Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationFeed feed, string version)
         {
             if (feed == null)
             {
@@ -440,7 +440,7 @@ namespace System.ServiceModel.Syndication
             return feed.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
+        protected internal static Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
         {
             if (item == null)
             {
@@ -449,7 +449,7 @@ namespace System.ServiceModel.Syndication
             return item.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationCategory category, string version)
+        protected internal static Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationCategory category, string version)
         {
             if (category == null)
             {
@@ -458,7 +458,7 @@ namespace System.ServiceModel.Syndication
             return category.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationLink link, string version)
+        protected internal static Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationLink link, string version)
         {
             if (link == null)
             {
@@ -467,7 +467,7 @@ namespace System.ServiceModel.Syndication
             return link.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
+        protected internal static Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
         {
             if (person == null)
             {
@@ -477,9 +477,10 @@ namespace System.ServiceModel.Syndication
             return person.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal protected virtual void SetFeed(SyndicationFeed feed)
+        protected internal virtual void SetFeed(SyndicationFeed feed)
         {
-            _feed = feed ?? throw new ArgumentNullException(nameof(feed));
+            _feed = feed ??
+            throw new ArgumentNullException(nameof(feed));
         }
 
         private static string DefaultStringParser(string value, string localName, string ns)
@@ -522,7 +523,7 @@ namespace System.ServiceModel.Syndication
             }
             else
             {
-                await extWriter.InternalWriteNodeAsync(reader, false);
+                await extWriter.InternalWriteNodeAsync(reader, false).ConfigureAwait(false);
             }
 
             return Tuple.Create(buffer, extWriter);
@@ -530,13 +531,13 @@ namespace System.ServiceModel.Syndication
 
         internal static SyndicationFeed CreateFeedInstance(Type feedType)
         {
-            if (feedType.Equals(typeof(SyndicationFeed)))
+            if (feedType.Equals(typeof (SyndicationFeed)))
             {
                 return new SyndicationFeed();
             }
             else
             {
-                return (SyndicationFeed)Activator.CreateInstance(feedType);
+                return (SyndicationFeed) Activator.CreateInstance(feedType);
             }
         }
 
@@ -596,7 +597,7 @@ namespace System.ServiceModel.Syndication
 
         internal static async Task MoveToStartElementAsync(XmlReader reader)
         {
-            if (!await reader.IsStartElementAsync())
+            if (!await reader.IsStartElementAsync().ConfigureAwait(false))
             {
                 XmlExceptionHelper.ThrowStartElementExpected(XmlDictionaryReader.CreateDictionaryReader(reader));
             }

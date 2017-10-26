@@ -7,7 +7,6 @@ namespace System.ServiceModel.Syndication
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
 
@@ -83,7 +82,7 @@ namespace System.ServiceModel.Syndication
             where TServiceDocument : ServiceDocument, new()
         {
             AtomPub10ServiceDocumentFormatter<TServiceDocument> formatter = new AtomPub10ServiceDocumentFormatter<TServiceDocument>();
-            await formatter.ReadFromAsync(reader);
+            await formatter.ReadFromAsync(reader).ConfigureAwait(false);
             return (TServiceDocument)(object)formatter.Document;
         }
 

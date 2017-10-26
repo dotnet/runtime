@@ -7,7 +7,6 @@ namespace System.ServiceModel.Syndication
     using System;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
-    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Xml;
@@ -125,7 +124,7 @@ namespace System.ServiceModel.Syndication
 
         public async Task<XmlReader> GetReaderAtElementExtensionsAsync()
         {
-            XmlBuffer extensionsBuffer = await GetOrCreateBufferOverExtensions();
+            XmlBuffer extensionsBuffer = await GetOrCreateBufferOverExtensions().ConfigureAwait(false);
             XmlReader reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
@@ -133,7 +132,7 @@ namespace System.ServiceModel.Syndication
 
         public Task<Collection<TExtension>> ReadElementExtensionsAsync<TExtension>(string extensionName, string extensionNamespace)
         {
-            return ReadElementExtensionsAsync<TExtension>(extensionName, extensionNamespace, new DataContractSerializer(typeof(TExtension)));
+            return ReadElementExtensionsAsync<TExtension>(extensionName, extensionNamespace, new DataContractSerializer(typeof (TExtension)));
         }
 
         public Task<Collection<TExtension>> ReadElementExtensionsAsync<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
@@ -163,7 +162,7 @@ namespace System.ServiceModel.Syndication
                     reader.ReadStartElement();
                     while (reader.IsStartElement())
                     {
-                        await writer.WriteNodeAsync(reader, false);
+                        await writer.WriteNodeAsync(reader, false).ConfigureAwait(false);
                     }
                 }
             }
@@ -171,7 +170,7 @@ namespace System.ServiceModel.Syndication
             {
                 for (int i = 0; i < Items.Count; ++i)
                 {
-                    await Items[i].WriteToAsync(writer);
+                    await Items[i].WriteToAsync(writer).ConfigureAwait(false);
                 }
             }
         }
@@ -236,7 +235,7 @@ namespace System.ServiceModel.Syndication
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
                 for (int i = 0; i < Count; ++i)
                 {
-                    await this[i].WriteToAsync(writer);
+                    await this[i].WriteToAsync(writer).ConfigureAwait(false);
                 }
                 writer.WriteEndElement();
             }
@@ -284,11 +283,11 @@ namespace System.ServiceModel.Syndication
 
                 if (dcSerializer != null)
                 {
-                    results.Add(await this[i].GetObjectAsync<TExtension>(dcSerializer));
+                    results.Add(await this[i].GetObjectAsync<TExtension>(dcSerializer).ConfigureAwait(false));
                 }
                 else
                 {
-                    results.Add(await this[i].GetObjectAsync<TExtension>(xmlSerializer));
+                    results.Add(await this[i].GetObjectAsync<TExtension>(xmlSerializer).ConfigureAwait(false));
                 }
             }
             return results;

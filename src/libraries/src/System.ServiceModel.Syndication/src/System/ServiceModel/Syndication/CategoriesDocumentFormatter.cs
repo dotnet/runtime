@@ -5,7 +5,6 @@
 namespace System.ServiceModel.Syndication
 {
     using System;
-    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Xml;

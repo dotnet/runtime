@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Xml;
@@ -102,37 +101,37 @@ namespace System.ServiceModel.Syndication
 
         public static async Task ReadStartElementAsync(this XmlReader reader)
         {
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element)
             {
                 throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
             }
 
-            await reader.ReadAsync();
+            await reader.ReadAsync().ConfigureAwait(false);
         }
 
         public static async Task<string> ReadElementStringAsync(this XmlReader reader)
         {
             string result = string.Empty;
 
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element)
             {
                 throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
             }
 
             if (!reader.IsEmptyElement)
             {
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
                 result = reader.ReadString();
                 if (reader.NodeType != XmlNodeType.EndElement)
                 {
                     throw CreateXmlException(SR.Format(SR.Xml_UnexpectedNodeInSimpleContent, reader.NodeType.ToString(), nameof(ReadElementStringAsync)), reader);
                 }
 
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
             else
             {
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
 
             return result;
@@ -151,7 +150,7 @@ namespace System.ServiceModel.Syndication
                 {
                     return string.Empty;
                 }
-                else if (!await reader.ReadAsync())
+                else if (!await reader.ReadAsync().ConfigureAwait(false))
                 {
                     throw new InvalidOperationException(SR.Xml_InvalidOperation);
                 }
@@ -165,8 +164,8 @@ namespace System.ServiceModel.Syndication
             string result = string.Empty;
             while (IsTextualNode(reader.NodeType))
             {
-                result += await reader.GetValueAsync();
-                if (!await reader.ReadAsync())
+                result += await reader.GetValueAsync().ConfigureAwait(false);
+                if (!await reader.ReadAsync().ConfigureAwait(false))
                 {
                     break;
                 }
@@ -175,53 +174,53 @@ namespace System.ServiceModel.Syndication
             return result;
         }
 
-        static internal bool IsTextualNode(XmlNodeType nodeType)
+        internal static bool IsTextualNode(XmlNodeType nodeType)
         {
 #if DEBUG
             // This code verifies IsTextualNodeBitmap mapping of XmlNodeType to a bool specifying
             // whether the node is 'textual' = Text, CDATA, Whitespace or SignificantWhitespace.
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.None)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Element)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Attribute)));
-            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Text)));
-            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int)XmlNodeType.CDATA)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.EntityReference)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Entity)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.ProcessingInstruction)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Comment)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Document)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.DocumentType)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.DocumentFragment)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Notation)));
-            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int)XmlNodeType.Whitespace)));
-            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int)XmlNodeType.SignificantWhitespace)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.EndElement)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.EndEntity)));
-            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int)XmlNodeType.XmlDeclaration)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.None)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Element)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Attribute)));
+            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Text)));
+            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int) XmlNodeType.CDATA)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.EntityReference)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Entity)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.ProcessingInstruction)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Comment)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Document)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.DocumentType)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.DocumentFragment)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Notation)));
+            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int) XmlNodeType.Whitespace)));
+            Debug.Assert(0 != (IsTextualNodeBitmap & (1 << (int) XmlNodeType.SignificantWhitespace)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.EndElement)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.EndEntity)));
+            Debug.Assert(0 == (IsTextualNodeBitmap & (1 << (int) XmlNodeType.XmlDeclaration)));
 #endif
-            return 0 != (IsTextualNodeBitmap & (1 << (int)nodeType));
+            return 0 != (IsTextualNodeBitmap & (1 << (int) nodeType));
         }
 
         public static async Task ReadEndElementAsync(this XmlReader reader)
         {
-            if (await reader.MoveToContentAsync() != XmlNodeType.EndElement)
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.EndElement)
             {
                 throw new XmlException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
                 throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
             }
 
-            await reader.ReadAsync();
+            await reader.ReadAsync().ConfigureAwait(false);
         }
 
         public static async Task ReadStartElementAsync(this XmlReader reader, string localname, string ns)
         {
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element)
             {
                 throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
             }
             if (reader.LocalName == localname && reader.NamespaceURI == ns)
             {
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
             else
             {
@@ -232,23 +231,23 @@ namespace System.ServiceModel.Syndication
 
         public static async Task<bool> IsStartElementAsync(this XmlReader reader)
         {
-            return await reader.MoveToContentAsync() == XmlNodeType.Element;
+            return await reader.MoveToContentAsync().ConfigureAwait(false) == XmlNodeType.Element;
         }
 
         public static async Task<bool> IsStartElementAsync(this XmlReader reader, string localname, string ns)
         {
-            return (await reader.MoveToContentAsync() == XmlNodeType.Element) && (reader.LocalName == localname && reader.NamespaceURI == ns);
+            return (await reader.MoveToContentAsync().ConfigureAwait(false) == XmlNodeType.Element) && (reader.LocalName == localname && reader.NamespaceURI == ns);
         }
 
         private static async Task ReadStartElementAsync(this XmlReader reader, string name)
         {
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element)
             {
                 throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
             }
             if (reader.Name == name)
             {
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
             else
             {
@@ -258,14 +257,14 @@ namespace System.ServiceModel.Syndication
 
         private static async Task<bool> IsStartElementAsync(this XmlReader reader, string name)
         {
-            return await reader.MoveToContentAsync() == XmlNodeType.Element && reader.Name == name;
+            return await reader.MoveToContentAsync().ConfigureAwait(false) == XmlNodeType.Element && reader.Name == name;
         }
 
         private static async Task<string> ReadElementStringAsync(this XmlReader reader, string name)
         {
             string result = string.Empty;
 
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element)
             {
                 throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
             }
@@ -277,17 +276,17 @@ namespace System.ServiceModel.Syndication
 
             if (!reader.IsEmptyElement)
             {
-                result = await ReadStringAsync(reader);
+                result = await ReadStringAsync(reader).ConfigureAwait(false);
                 if (reader.NodeType != XmlNodeType.EndElement)
                 {
                     throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
                 }
 
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
             else
             {
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
 
             return result;
@@ -297,7 +296,7 @@ namespace System.ServiceModel.Syndication
         {
             string result = string.Empty;
 
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element)
             {
                 throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
             }
@@ -309,18 +308,18 @@ namespace System.ServiceModel.Syndication
 
             if (!reader.IsEmptyElement)
             {
-                result = await ReadStringAsync(reader);
+                result = await ReadStringAsync(reader).ConfigureAwait(false);
 
                 if (reader.NodeType != XmlNodeType.EndElement)
                 {
                     throw CreateXmlException(SR.Format(SR.Xml_InvalidNodeType, reader.NodeType.ToString()), reader);
                 }
 
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
             else
             {
-                await reader.ReadAsync();
+                await reader.ReadAsync().ConfigureAwait(false);
             }
 
             return result;

@@ -5,7 +5,6 @@
 namespace System.ServiceModel.Syndication
 {
     using System;
-    using System.Runtime.CompilerServices;
     using System.Xml;
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
