@@ -43,6 +43,25 @@ display_error_message()
     cat "$__init_tools_log" 1>&2
 }
 
+# Executes a command and retries if it fails.
+execute() {
+    local count=0
+    until "$@"; do
+        local exit=$?
+        count=$(( $count + 1 ))
+        if [ $count -lt $retries ]; then
+            local wait=$(( waitFactor ** (( count - 1 )) ))
+            echo "Retry $count/$retries exited $exit, retrying in $wait seconds..."
+            sleep $wait
+        else    
+            say_err "Retry $count/$retries exited $exit, no more retries left."
+            return $exit
+        fi
+    done
+
+    return 0
+}
+
 if [ ! -e $__DOTNET_PATH ]; then
     if [ -z "$__DOTNET_PKG" ]; then
         if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
@@ -99,11 +118,9 @@ if [ ! -e $__DOTNET_PATH ]; then
     echo "Installing dotnet cli..."
     __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
     # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-    __retryCount=5
-    __retryWaitFactor=6 
-    __count=0
-    until [ $__count -ge $__retryCount ]
-    do
+    retries=5
+    waitFactor=6 
+    installDotNetCLI() {
         echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
         if command -v curl > /dev/null; then
             curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
@@ -111,18 +128,9 @@ if [ ! -e $__DOTNET_PATH ]; then
             wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
         fi
         cd $__DOTNET_PATH
-        if tar -xf $__DOTNET_PATH/dotnet.tar; then break; fi
-
-        # wait and retry if tar command fails
-        __waitTime=$(( __retryWaitFactor ** __count ))
-        __count=$(( __count + 1 ))
-        if [ $__count -ne $__retryCount ]; then
-            echo "Install failed.  Waiting for ${__waitTime} seconds and trying again" >> $__init_tools_log
-            sleep $__waitTime
-        else
-            echo "Max retries (${retryCount}) reached.  Giving up." >> $__init_tools_log
-        fi
-    done
+        tar -xf $__DOTNET_PATH/dotnet.tar
+    }
+    execute installDotNetCLI >> $__init_tools_log 2>&1
 
     cd $__scriptpath
 fi
