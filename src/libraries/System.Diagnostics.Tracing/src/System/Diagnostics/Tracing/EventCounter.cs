@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
@@ -361,7 +362,7 @@ namespace System.Diagnostics.Tracing
         {
             lock (s_eventCounterGroupsLock)
             {
-                int eventSourceIndex = EventListenerHelper.EventSourceIndex(eventSource);
+                int eventSourceIndex = EventListener.EventSourceIndex(eventSource);
                 EnsureEventSourceIndexAvailable(eventSourceIndex);
                 WeakReference<EventCounterGroup> weakRef = EventCounterGroup.s_eventCounterGroups[eventSourceIndex];
                 EventCounterGroup ret = null;
@@ -484,15 +485,6 @@ namespace System.Diagnostics.Tracing
 
         #endregion // Timer Processing
 
-    }
-
-    // This class a work-around because .NET V4.6.2 did not make EventSourceIndex public (it was only protected)
-    // We make this helper class to get around that protection.   We want V4.6.3 to make this public at which
-    // point this class is no longer needed and can be removed.
-    internal class EventListenerHelper : EventListener
-    {
-        public new static int EventSourceIndex(EventSource eventSource) { return EventListener.EventSourceIndex(eventSource); }
-        protected override void OnEventWritten(EventWrittenEventArgs eventData) { } // override abstract methods to keep compiler happy
     }
 
     #endregion // internal supporting classes
