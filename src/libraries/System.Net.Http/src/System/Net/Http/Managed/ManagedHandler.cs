@@ -269,14 +269,14 @@ namespace System.Net.Http
                 handler = new HttpProxyConnectionHandler(_settings, handler);
             }
 
-            if (_settings._credentials != null)
-            {
-                handler = new AuthenticationHandler(_settings._preAuthenticate, _settings._credentials, handler);
-            }
-
             if (_settings._useCookies)
             {
                 handler = new CookieHandler(CookieContainer, handler);
+            }
+
+            if (_settings._credentials != null)
+            {
+                handler = new AuthenticationHandler(_settings._preAuthenticate, _settings._credentials, handler);
             }
 
             if (_settings._allowAutoRedirect)

@@ -86,9 +86,11 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ActiveIssue(18784, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
-        public async Task ConnectAsync_AddHostHeader_Success(Uri server)
+        [ConditionalTheory(nameof(WebSocketsSupported))]
+        public async Task ConnectAsync_AddHostHeader_Success()
         {
+            Uri server = System.Net.Test.Common.Configuration.WebSockets.RemoteEchoServer;
+
             // Send via the physical address such as "corefx-net.cloudapp.net"
             // Set the Host header to logical address like "subdomain.corefx-net.cloudapp.net"
             // Verify the scenario works and the remote server received "Host: subdomain.corefx-net.cloudapp.net"
