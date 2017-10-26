@@ -2363,7 +2363,9 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 			case IP_PMTUDISC_DONT:
 			case IP_PMTUDISC_WANT:
 			case IP_PMTUDISC_DO:
+#ifdef IP_PMTUDISC_PROBE
 			case IP_PMTUDISC_PROBE:
+#endif
 #ifdef IP_PMTUDISC_INTERFACE
 			case IP_PMTUDISC_INTERFACE:
 #endif
