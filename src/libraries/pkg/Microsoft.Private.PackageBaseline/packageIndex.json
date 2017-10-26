@@ -4736,6 +4736,12 @@
         "4.0.3.0": "4.5.0"
       }
     },
+    "System.Threading.Channels": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "System.Threading.Overlapped": {
       "StableVersions": [
         "4.0.0",
