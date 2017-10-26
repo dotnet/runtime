@@ -2,7 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
+#if USE_MDT_EVENTSOURCE
+using Microsoft.Diagnostics.Tracing;
+#else
 using System.Diagnostics.Tracing;
+#endif
 #if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue https://github.com/dotnet/corefx/issues/4864 
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
