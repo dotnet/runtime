@@ -3269,7 +3269,7 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
     GenTreePtr dst = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
     GenTreePtr blk = gtNewBlockVal(dst, blkSize);
-    GenTreePtr src = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, true);
+    GenTreePtr src = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
 
     return gtNewBlkOpNode(blk,     // dst
                           src,     // src

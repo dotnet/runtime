@@ -6209,8 +6209,12 @@ GenTreePtr Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned ico
 
         // This indirection won't cause an exception.
         handleNode->gtFlags |= GTF_IND_NONFAULTING;
+#if 0
+        // It should also be invariant, but marking it as such leads to bad diffs.
+
         // This indirection also is invariant.
         handleNode->gtFlags |= GTF_IND_INVARIANT;
+#endif
     }
 
     iconNode->gtIntCon.gtCompileTimeHandle = (size_t)compileTimeHandle;
@@ -6227,7 +6231,7 @@ GenTreePtr Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     {
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
-            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, true);
+            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection

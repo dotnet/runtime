@@ -6673,7 +6673,7 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
             if (tree->gtField.gtFieldLookup.accessType == IAT_PVALUE)
             {
                 offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->gtField.gtFieldLookup.addr,
-                                                      GTF_ICON_FIELD_HDL, true);
+                                                      GTF_ICON_FIELD_HDL, false);
             }
             else
             {
