@@ -356,3 +356,18 @@ namespace System
     }    
 }
 #endif
+
+#if ES_BUILD_STANDALONE
+namespace Microsoft.Win32
+{
+    using System.Runtime.InteropServices;
+    using System.Security;
+
+    [SuppressUnmanagedCodeSecurityAttribute()]
+    internal static class Win32Native
+    {
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        internal static extern uint GetCurrentProcessId();
+    }
+}
+#endif

@@ -14,6 +14,12 @@ using System.Security.Permissions;
 using System.Threading;
 using System;
 
+#if !ES_BUILD_AGAINST_DOTNET_V35
+using Contract = System.Diagnostics.Contracts.Contract;
+#else
+using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
+#endif
+
 #if ES_BUILD_AGAINST_DOTNET_V35
 using Microsoft.Internal;       // for Tuple (can't define alias for open generic types so we "use" the whole namespace)
 #endif
@@ -628,6 +634,7 @@ namespace System.Diagnostics.Tracing
             if ((level <= m_level) ||
                 (m_level == 0))
             {
+
                 //
                 // Check if Keyword is enabled
                 //
