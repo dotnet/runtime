@@ -32,7 +32,6 @@ namespace System.Net.Security
         private SecureChannel _context;
 
         private bool _handshakeCompleted;
-        private bool _certValidationFailed;
         private bool _shutdown;
 
         private SecurityStatusPal _securityStatus;
@@ -230,19 +229,6 @@ namespace System.Net.Security
             }
         }
 
-        internal SecurityStatusPal LastSecurityStatus
-        {
-            get { return _securityStatus; }
-        }
-
-        internal bool IsCertValidationFailed
-        {
-            get
-            {
-                return _certValidationFailed;
-            }
-        }
-
         internal bool IsShutdown
         {
             get
@@ -404,14 +390,6 @@ namespace System.Net.Security
                 }
 
                 return _secureStream;
-            }
-        }
-
-        internal int HeaderSize
-        {
-            get
-            {
-                return Context.HeaderSize;
             }
         }
 
@@ -1041,14 +1019,12 @@ namespace System.Net.Security
             if (!Context.VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, ref alertToken))
             {
                 _handshakeCompleted = false;
-                _certValidationFailed = true;
 
                 if (NetEventSource.IsEnabled)
                     NetEventSource.Exit(this, false);
                 return false;
             }
 
-            _certValidationFailed = false;
             _handshakeCompleted = true;
 
             if (NetEventSource.IsEnabled)
