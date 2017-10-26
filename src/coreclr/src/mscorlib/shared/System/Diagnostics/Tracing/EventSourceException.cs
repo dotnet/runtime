@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Resources;
 using System.Runtime.Serialization;
 
 #if ES_BUILD_STANDALONE
@@ -27,7 +28,7 @@ namespace System.Diagnostics.Tracing
         /// Initializes a new instance of the EventSourceException class.
         /// </summary>
         public EventSourceException() :
-            base(Resources.GetResourceString("EventSource_ListenerWriteFailure")) { }
+            base(SR.EventSource_ListenerWriteFailure) { }
 
         /// <summary>
         /// Initializes a new instance of the EventSourceException class with a specified error message.
@@ -48,6 +49,6 @@ namespace System.Diagnostics.Tracing
 #endif
 
         internal EventSourceException(Exception innerException) :
-            base(Resources.GetResourceString("EventSource_ListenerWriteFailure"), innerException) { }
+            base(SR.EventSource_ListenerWriteFailure, innerException) { }
     }
 }

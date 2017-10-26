@@ -5,6 +5,12 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+#if !ES_BUILD_AGAINST_DOTNET_V35
+using Contract = System.Diagnostics.Contracts.Contract;
+#else
+using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
+#endif
+
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
@@ -37,6 +43,7 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal class ActivityTracker
     {
+
         /// <summary>
         /// Called on work item begins.  The activity name = providerName + activityName without 'Start' suffix.
         /// It updates CurrentActivityId to track.   
