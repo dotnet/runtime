@@ -2086,6 +2086,9 @@
   <data name="EventSource_AddScalarOutOfRange" xml:space="preserve">
     <value>Getting out of bounds during scalar addition.</value>
   </data>
+  <data name="EventSource_BadHexDigit" xml:space="preserve">
+    <value>Bad Hexidecimal digit "{0}".</value>
+  </data>
   <data name="EventSource_ChannelTypeDoesNotMatchEventChannelValue" xml:space="preserve">
     <value>Channel {0} does not match event channel value {1}.</value>
   </data>
@@ -2097,6 +2100,9 @@
   </data>
   <data name="EventSource_EnumKindMismatch" xml:space="preserve">
     <value>The type of {0} is not expected in {1}.</value>
+  </data>
+  <data name="EventSource_EvenHexDigits" xml:space="preserve">
+    <value>Must have an even number of Hexidecimal digits.</value>
   </data>
   <data name="EventSource_EventChannelOutOfRange" xml:space="preserve">
     <value>Channel {0} has a value of {1} which is outside the legal range (16-254).</value>
@@ -2122,6 +2128,9 @@
   <data name="EventSource_EventSourceGuidInUse" xml:space="preserve">
     <value>An instance of EventSource with Guid {0} already exists.</value>
   </data>
+  <data name="EventSource_EventTooBig" xml:space="preserve">
+    <value>The payload for a single event is too large.</value>
+  </data>
   <data name="EventSource_EventWithAdminChannelMustHaveMessage" xml:space="preserve">
     <value>Event {0} specifies an Admin channel {1}. It must specify a Message property.</value>
   </data>
@@ -2133,6 +2142,9 @@
   </data>
   <data name="EventSource_IllegalTaskValue" xml:space="preserve">
     <value>Task {0} has a value of {1} which is outside the legal range (1-65535).</value>
+  </data>
+  <data name="EventSource_IllegalValue" xml:space="preserve">
+    <value>Illegal value "{0}" (prefix strings with @ to indicate a literal string).</value>
   </data>
   <data name="EventSource_IncorrentlyAuthoredTypeInfo" xml:space="preserve">
     <value>Incorrectly-authored TypeInfo - a type should be serialized as one field or as one group</value>
@@ -2230,6 +2242,9 @@
   <data name="EventSource_ToString" xml:space="preserve">
     <value>EventSource({0}, {1})</value>
   </data>
+  <data name="EventSource_TraitEven" xml:space="preserve">
+    <value>There must be an even number of trait strings (they are key-value pairs).</value>
+  </data>
   <data name="EventSource_TypeMustBeSealedOrAbstract" xml:space="preserve">
     <value>Event source types must be sealed or abstract.</value>
   </data>
@@ -2244,6 +2259,9 @@
   </data>
   <data name="EventSource_UndefinedOpcode" xml:space="preserve">
     <value>Use of undefined opcode value {0} for event {1}.</value>
+  </data>
+  <data name="EventSource_UnknownEtwTrait" xml:space="preserve">
+    <value>Unknown ETW trait "{0}".</value>
   </data>
   <data name="EventSource_UnsupportedEventTypeInManifest" xml:space="preserve">
     <value>Unsupported type {0} in event source.</value>
