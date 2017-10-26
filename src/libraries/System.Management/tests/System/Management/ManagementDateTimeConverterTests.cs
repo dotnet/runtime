@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Management;
 using Xunit;
 
 namespace System.Management.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WMI not supported via UAP")]
     public class ManagementDateTimeConverterTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void DateTime_RoundTrip()
         {
             var date = new DateTime(2002, 4, 8, 14, 18, 35, 978, DateTimeKind.Utc);
@@ -24,7 +22,7 @@ namespace System.Management.Tests
             Assert.Equal(dmtfDate, convertedDmtfDate);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void TimeSpan_RoundTrip()
         {
             var timeSpan = new TimeSpan(10, 12, 25, 32, 123);
