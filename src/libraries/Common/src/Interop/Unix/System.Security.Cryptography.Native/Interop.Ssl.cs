@@ -280,7 +280,7 @@ namespace Microsoft.Win32.SafeHandles
                 _writeBio?.Dispose();
             }
 
-            if(_alpnHandle.IsAllocated)
+            if (_alpnHandle.IsAllocated)
             {
                 _alpnHandle.Free();
             }
