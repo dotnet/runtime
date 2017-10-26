@@ -246,4 +246,16 @@ inline void GCToEEInterface::FreeStringConfigValue(const char* value)
     g_theGCToCLR->FreeStringConfigValue(value);
 }
 
+inline bool GCToEEInterface::IsGCThread()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->IsGCThread();
+}
+
+inline bool GCToEEInterface::IsGCSpecialThread()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->IsGCSpecialThread();
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__
