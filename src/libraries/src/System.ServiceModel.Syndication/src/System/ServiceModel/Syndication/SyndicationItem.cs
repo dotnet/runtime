@@ -221,8 +221,14 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            Rss20ItemFormatter<TSyndicationItem> rssSerializer = new Rss20ItemFormatter<TSyndicationItem>();
+            Atom10ItemFormatter<TSyndicationItem> atomSerializer = new Atom10ItemFormatter<TSyndicationItem>();
+            if (atomSerializer.CanRead(reader))
+            {
+                atomSerializer.ReadFrom(reader);
+                return atomSerializer.Item as TSyndicationItem;
+            }
 
+            Rss20ItemFormatter<TSyndicationItem> rssSerializer = new Rss20ItemFormatter<TSyndicationItem>();
             if (rssSerializer.CanRead(reader))
             {
                 await rssSerializer.ReadFromAsync(reader);

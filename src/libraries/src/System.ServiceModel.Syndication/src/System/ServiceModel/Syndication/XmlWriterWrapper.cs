@@ -25,7 +25,7 @@ namespace System.ServiceModel.Syndication
         {
             _writer = writer ?? throw new ArgumentNullException(nameof(writer));
 
-            if (writer.Settings.Async)
+            if (writer.Settings != null && writer.Settings.Async)
             {
                 throw new ArgumentException("Async XmlWriter should not be wrapped", nameof(writer));
             }

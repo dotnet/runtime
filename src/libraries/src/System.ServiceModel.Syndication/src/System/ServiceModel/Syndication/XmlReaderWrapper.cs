@@ -27,7 +27,7 @@ namespace System.ServiceModel.Syndication
         {
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
 
-            if (_reader.Settings.Async)
+            if (_reader.Settings != null && _reader.Settings.Async)
             {
                 throw new ArgumentException("Async XmlReader should not be wrapped", nameof(reader));
             }

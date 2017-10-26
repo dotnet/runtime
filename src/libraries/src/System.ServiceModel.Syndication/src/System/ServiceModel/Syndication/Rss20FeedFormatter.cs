@@ -156,7 +156,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            WriteFeedAsync(writer).GetAwaiter().GetResult();
+            WriteFeedAsync(XmlWriterWrapper.CreateFromWriter(writer)).GetAwaiter().GetResult();
         }
 
 
