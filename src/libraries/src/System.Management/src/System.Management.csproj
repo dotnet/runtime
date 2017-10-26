@@ -10,8 +10,6 @@
     <UWPCompatible>false</UWPCompatible>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true' or '$(TargetGroup)' == 'uap'">SR.PlatformNotSupported_SystemManagement</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- When generating PNSE assembly disable CA1821 since finalizers are being generated empty -->
-    <NoWarn Condition="'$(TargetsWindows)' != 'true' or '$(TargetGroup)' == 'uap'">$(NoWarn);CA1821</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
