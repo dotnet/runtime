@@ -4,15 +4,13 @@
 
 using System.CodeDom;
 using System.IO;
-using System.Management;
 using Xunit;
 
 namespace System.Management.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WMI not supported via UAP")]
     public class ManagementClassTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -26,7 +24,7 @@ namespace System.Management.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         [InlineData(CodeLanguage.CSharp)]
         [InlineData(CodeLanguage.VB)]
         public void Get_SourceFile_For_Win32_Processor(CodeLanguage lang)
@@ -47,7 +45,7 @@ namespace System.Management.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void ClassMembers_For_Win32_LogicalDisk()
         {
             var managementClass = new ManagementClass(new ManagementPath("Win32_LogicalDisk"));
@@ -67,7 +65,7 @@ namespace System.Management.Tests
                 Assert.False(string.IsNullOrWhiteSpace(qualifier.Name));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void EnumerateInstances_For_Win32_LogicalDisk()
         {
             using (var managementClass = new ManagementClass(new ManagementPath("Win32_LogicalDisk")))
@@ -82,6 +80,27 @@ namespace System.Management.Tests
                     Assert.NotNull(clone);
                     Assert.False(ReferenceEquals(instance, clone));
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsElevatedAndSupportsWmi))]
+        public void Create_Delete_Namespace()
+        {
+            using (var rootNamespace = new ManagementClass("root:__namespace"))
+            using (ManagementObject newNamespace = rootNamespace.CreateInstance())
+            {
+                const string NewNamespace = "CoreFx_Create_Delete_Namespace_Test";
+                newNamespace["Name"] = NewNamespace;
+                newNamespace.Put();
+
+                ManagementObject targetNamespace = new ManagementObject($"root:__namespace.Name='{NewNamespace}'");
+                Assert.Equal(NewNamespace, targetNamespace["Name"]);
+
+                // If any of the steps below fail it is likely that the new namespace was not deleted, likely it will have to
+                // be deleted via a tool like wbemtest.
+                targetNamespace.Delete();
+                ManagementException managementException = Assert.Throws<ManagementException>(() => targetNamespace.Get());
+                Assert.Equal(ManagementStatus.NotFound, managementException.ErrorCode);
             }
         }
     }
