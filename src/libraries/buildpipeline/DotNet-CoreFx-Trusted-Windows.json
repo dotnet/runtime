@@ -169,6 +169,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run $(Build.SourcesDirectory)\\corefx\\build-tests.cmd",
+      "condition": "and(succeeded(), ne(variables['PB_DisableTestBuild'], 'true'))",
       "timeoutInMinutes": 0,
       "refName": "Task9",
       "task": {
@@ -189,6 +190,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
+      "condition": "and(ne(variables['PB_DisableTestBuild'], 'true'), ne(variables['PB_EnableCloudTest'], 'false'))",
       "timeoutInMinutes": 0,
       "refName": "Task10",
       "task": {
