@@ -7035,8 +7035,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     if (pmoduleID)
     {
         opModuleIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pmoduleID, GTF_ICON_MID_HDL, true);
-        // This indirection also is invariant.
-        opModuleIDArg->gtFlags |= GTF_IND_INVARIANT;
     }
     else
     {
@@ -7047,7 +7045,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         if (pclsID)
         {
-            opClassIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pclsID, GTF_ICON_CLASS_HDL, true);
+            opClassIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pclsID, GTF_ICON_CLASS_HDL, false);
         }
         else
         {
