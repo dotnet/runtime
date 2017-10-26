@@ -175,7 +175,7 @@ restore_optdata()
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
         local DotNetCli="$__ProjectRoot/Tools/dotnetcli/dotnet"
         if [ ! -f $DotNetCli ]; then
-            "$__ProjectRoot/init-tools.sh"
+            source "$__ProjectRoot/init-tools.sh"
             if [ $? != 0 ]; then
                 echo "Failed to restore buildtools."
                 exit 1
@@ -334,7 +334,7 @@ build_native()
         echo "Failed to generate $message build project!"
         exit 1
     fi
-    
+
     # Build
     if [ $__ConfigureOnly == 1 ]; then
         echo "Finish configuration & skipping $message build."
