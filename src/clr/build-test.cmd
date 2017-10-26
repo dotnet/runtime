@@ -87,7 +87,7 @@ if /i "%1" == "-help" goto Usage
 if /i "%1" == "x64"                   (set __BuildArch=x64&set __VCBuildArch=x86_amd64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "x86"                   (set __BuildArch=x86&set __VCBuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "arm"                   (set __BuildArch=arm&set __VCBuildArch=x86_arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm64"                 (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"                 (set __BuildArch=arm64&set __VCBuildArch=x86_arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                 (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"               (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -126,9 +126,11 @@ call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 
-rem arm64 builds currently use private toolset which has not been released yet
-REM TODO, remove once the toolset is open.
-if /i "%__BuildArch%" == "arm64" call :PrivateToolSet
+if defined __ToolsetDir (
+    rem arm64 builds currently use private toolset which has not been released yet
+    REM TODO, remove once the toolset is open.
+    call :PrivateToolSet
+)
 
 echo %__MsgPrefix%Commencing CoreCLR repo test build
 
@@ -185,8 +187,8 @@ REM ============================================================================
 echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%__BuildType%
 
 if defined __ToolsetDir (
- echo %__MsgPrefix%ToolsetDir is defined to be :%__ToolsetDir%
- goto GenVSSolution :: Private ToolSet is Defined
+    echo %__MsgPrefix%ToolsetDir is defined to be %__ToolsetDir%
+    goto GenVSSolution :: Private ToolSet is Defined
 )
 
 :: Set the environment for the native build
@@ -490,7 +492,7 @@ exit /b 1
 
 :PrivateToolSet
 
-echo %__MsgPrefix% Setting Up the usage of __ToolsetDir:%__ToolsetDir%
+echo %__MsgPrefix%Setting up the usage of __ToolsetDir:%__ToolsetDir%
 
 if /i "%__ToolsetDir%" == "" (
     echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
