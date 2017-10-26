@@ -1169,3 +1169,13 @@ void GCToEEInterface::FreeStringConfigValue(const char* value)
 {
     delete [] value;
 }
+
+bool GCToEEInterface::IsGCThread()
+{
+    return !!::IsGCThread();
+}
+
+bool GCToEEInterface::IsGCSpecialThread()
+{
+    return !!::IsGCSpecialThread();
+}

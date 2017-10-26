@@ -191,6 +191,17 @@ public:
 
     virtual
     void FreeStringConfigValue(const char* value) = 0;
+
+    // Asks the EE about whether or not the current thread is a GC thread:
+    // a server GC thread, background GC thread, or the thread that suspended
+    // the EE at the start of a GC.
+    virtual
+    bool IsGCThread() = 0;
+
+    // Asks the EE about whether or not the current thread is a GC "special"
+    // thread: a server GC thread or a background GC thread.
+    virtual
+    bool IsGCSpecialThread() = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_
