@@ -80,6 +80,8 @@ public:
     static bool GetIntConfigValue(const char* key, int64_t* value);
     static bool GetStringConfigValue(const char* key, const char** value);
     static void FreeStringConfigValue(const char* key);
+    static bool IsGCThread();
+    static bool IsGCSpecialThread();
 };
 
 #endif // __GCENV_EE_H__
