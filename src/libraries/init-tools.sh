@@ -129,6 +129,11 @@ if [ ! -e $__DOTNET_PATH ]; then
         fi
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
+        local tarResult=$?
+        if [ $tarResult -ne 0 ]; then
+            rm -f $__DOTNET_PATH/*
+        fi
+        return $tarResult
     }
     execute installDotNetCLI >> $__init_tools_log 2>&1
 
