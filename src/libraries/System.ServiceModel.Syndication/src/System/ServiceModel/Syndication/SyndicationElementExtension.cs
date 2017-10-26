@@ -7,7 +7,6 @@ namespace System.ServiceModel.Syndication
     using System;
     using System.Diagnostics;
     using System.IO;
-    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Xml;
@@ -166,9 +165,9 @@ namespace System.ServiceModel.Syndication
                 return (TExtension)_extensionData;
             }
 
-            using (XmlReader reader = await GetReaderAsync())
+            using (XmlReader reader = await GetReaderAsync().ConfigureAwait(false))
             {
-                return (TExtension)serializer.ReadObject(reader, false);
+                return (TExtension) serializer.ReadObject(reader, false);
             }
         }
 
@@ -178,20 +177,20 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
-            if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
+            if (_extensionData != null && typeof (TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
-                return (TExtension)_extensionData;
+                return (TExtension) _extensionData;
             }
 
-            using (XmlReader reader = await GetReaderAsync())
+            using (XmlReader reader = await GetReaderAsync().ConfigureAwait(false))
             {
-                return (TExtension)serializer.Deserialize(reader);
+                return (TExtension) serializer.Deserialize(reader);
             }
         }
 
         public async Task<XmlReader> GetReaderAsync()
         {
-            await EnsureBufferAsync();
+            await EnsureBufferAsync().ConfigureAwait(false);
             XmlReader reader = XmlReaderWrapper.CreateFromReader(_buffer.GetReader(0));
             int index = 0;
             reader.ReadStartElement(Rss20Constants.ExtensionWrapperTag);
@@ -203,7 +202,7 @@ namespace System.ServiceModel.Syndication
                 }
                 ++index;
 
-                await reader.SkipAsync();
+                await reader.SkipAsync().ConfigureAwait(false);
             }
 
             return reader;
@@ -222,9 +221,9 @@ namespace System.ServiceModel.Syndication
             else
             {
                 writer = XmlWriterWrapper.CreateFromWriter(writer);
-                using (XmlReader reader = await GetReaderAsync())
+                using (XmlReader reader = await GetReaderAsync().ConfigureAwait(false))
                 {
-                    await writer.WriteNodeAsync(reader, false);
+                    await writer.WriteNodeAsync(reader, false).ConfigureAwait(false);
                 }
             }
         }

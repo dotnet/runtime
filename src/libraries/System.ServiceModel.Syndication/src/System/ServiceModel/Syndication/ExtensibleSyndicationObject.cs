@@ -5,7 +5,6 @@
 namespace System.ServiceModel.Syndication
 {
     using System;
-    using System.Collections.ObjectModel;
     using System.Collections.Generic;
     using System.Xml;
     using System.Threading.Tasks;
@@ -126,7 +125,7 @@ namespace System.ServiceModel.Syndication
                 foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
                 {
                     string value = _attributeExtensions[qname];
-                    await writer.WriteAttributeStringAsync(qname.Name, qname.Namespace, value);
+                    await writer.WriteAttributeStringAsync(qname.Name, qname.Namespace, value).ConfigureAwait(false);
                 }
             }
         }
@@ -140,7 +139,7 @@ namespace System.ServiceModel.Syndication
 
             if (_elementExtensions != null)
             {
-                await _elementExtensions.WriteToAsync(writer);
+                await _elementExtensions.WriteToAsync(writer).ConfigureAwait(false);
             }
         }
 

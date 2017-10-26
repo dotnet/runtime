@@ -6,7 +6,6 @@ namespace System.ServiceModel.Syndication
 {
     using System;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Xml;
@@ -227,27 +226,27 @@ namespace System.ServiceModel.Syndication
 
         protected static async Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
         {
-            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, item, version);
+            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, item, version).ConfigureAwait(false);
         }
 
         protected static async Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationCategory category, string version)
         {
-            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, category, version);
+            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, category, version).ConfigureAwait(false);
         }
 
         protected static async Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationLink link, string version)
         {
-            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, link, version);
+            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, link, version).ConfigureAwait(false);
         }
 
         protected static async Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
         {
-            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, person, version);
+            await SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, person, version).ConfigureAwait(false);
         }
 
         protected static async Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
         {
-            await SyndicationFeedFormatter.WriteElementExtensionsAsync(writer, item, version);
+            await SyndicationFeedFormatter.WriteElementExtensionsAsync(writer, item, version).ConfigureAwait(false);
         }
 
         protected abstract SyndicationItem CreateItemInstance();

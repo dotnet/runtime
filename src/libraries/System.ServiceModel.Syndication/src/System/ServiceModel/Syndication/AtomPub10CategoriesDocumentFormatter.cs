@@ -6,7 +6,6 @@
 namespace System.ServiceModel.Syndication
 {
     using System;
-    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Schema;
@@ -142,7 +141,7 @@ namespace System.ServiceModel.Syndication
                 throw new XmlException(SR.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
 
-            await ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader));
+            await ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader)).ConfigureAwait(false);
         }
 
         public override async Task WriteToAsync(XmlWriter writer)
@@ -158,31 +157,31 @@ namespace System.ServiceModel.Syndication
             }
 
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
-            await WriteDocumentAsync(writer);
+            await WriteDocumentAsync(writer).ConfigureAwait(false);
             writer.WriteEndElement();
         }
 
         protected override InlineCategoriesDocument CreateInlineCategoriesDocument()
         {
-            if (_inlineDocumentType == typeof(InlineCategoriesDocument))
+            if (_inlineDocumentType == typeof (InlineCategoriesDocument))
             {
                 return new InlineCategoriesDocument();
             }
             else
             {
-                return (InlineCategoriesDocument)Activator.CreateInstance(_inlineDocumentType);
+                return (InlineCategoriesDocument) Activator.CreateInstance(_inlineDocumentType);
             }
         }
 
         protected override ReferencedCategoriesDocument CreateReferencedCategoriesDocument()
         {
-            if (_referencedDocumentType == typeof(ReferencedCategoriesDocument))
+            if (_referencedDocumentType == typeof (ReferencedCategoriesDocument))
             {
                 return new ReferencedCategoriesDocument();
             }
             else
             {
-                return (ReferencedCategoriesDocument)Activator.CreateInstance(_referencedDocumentType);
+                return (ReferencedCategoriesDocument) Activator.CreateInstance(_referencedDocumentType);
             }
         }
 
@@ -190,21 +189,8 @@ namespace System.ServiceModel.Syndication
         {
             try
             {
-                await SyndicationFeedFormatter.MoveToStartElementAsync(reader);
-                SetDocument(await AtomPub10ServiceDocumentFormatter.ReadCategories(reader, null,
-                    delegate ()
-                    {
-                        return CreateInlineCategoriesDocument();
-                    },
-
-                    delegate ()
-                    {
-                        return CreateReferencedCategoriesDocument();
-                    },
-                    Version,
-                    _preserveElementExtensions,
-                    _preserveAttributeExtensions,
-                    _maxExtensionSize));
+                await SyndicationFeedFormatter.MoveToStartElementAsync(reader).ConfigureAwait(false);
+                SetDocument(await AtomPub10ServiceDocumentFormatter.ReadCategories(reader, null, delegate() { return CreateInlineCategoriesDocument(); }, delegate() { return CreateReferencedCategoriesDocument(); }, Version, _preserveElementExtensions, _preserveAttributeExtensions, _maxExtensionSize).ConfigureAwait(false));
             }
             catch (FormatException e)
             {
