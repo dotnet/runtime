@@ -5,7 +5,6 @@
 namespace System.ServiceModel.Syndication
 {
     using System;
-    using System.Runtime.CompilerServices;
 
     public class ReferencedCategoriesDocument : CategoriesDocument
     {

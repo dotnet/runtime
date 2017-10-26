@@ -4,8 +4,6 @@
 
 namespace System.ServiceModel.Syndication
 {
-    using System.Runtime.CompilerServices;
-
     public enum TextSyndicationContentKind
     {
         Plaintext,

@@ -7,7 +7,6 @@ namespace System.ServiceModel.Syndication
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
 
@@ -77,7 +76,7 @@ namespace System.ServiceModel.Syndication
         public static async Task<CategoriesDocument> LoadAsync(XmlReader reader)
         {
             AtomPub10CategoriesDocumentFormatter formatter = new AtomPub10CategoriesDocumentFormatter();
-            await formatter.ReadFromAsync(reader);
+            await formatter.ReadFromAsync(reader).ConfigureAwait(false);
             return formatter.Document;
         }
 

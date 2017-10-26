@@ -6,7 +6,6 @@ namespace System.ServiceModel.Syndication
 {
     using System;
     using System.Diagnostics;
-    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Xml;
@@ -130,24 +129,24 @@ namespace System.ServiceModel.Syndication
 
         public async Task<XmlDictionaryReader> GetReaderAtContentAsync()
         {
-            await EnsureContentBufferAsync();
+            await EnsureContentBufferAsync().ConfigureAwait(false);
             return _contentBuffer.GetReader(0);
         }
 
         public Task<TContent> ReadContentAsync<TContent>()
         {
-            return ReadContentAsync<TContent>((DataContractSerializer)null);
+            return ReadContentAsync<TContent>((DataContractSerializer) null);
         }
 
         public async Task<TContent> ReadContentAsync<TContent>(XmlObjectSerializer dataContractSerializer)
         {
             if (dataContractSerializer == null)
             {
-                dataContractSerializer = new DataContractSerializer(typeof(TContent));
+                dataContractSerializer = new DataContractSerializer(typeof (TContent));
             }
             if (_extension != null)
             {
-                return await _extension.GetObjectAsync<TContent>(dataContractSerializer);
+                return await _extension.GetObjectAsync<TContent>(dataContractSerializer).ConfigureAwait(false);
             }
             else
             {
@@ -156,7 +155,7 @@ namespace System.ServiceModel.Syndication
                 {
                     // skip past the content element
                     reader.ReadStartElement();
-                    return (TContent)dataContractSerializer.ReadObject(reader, false);
+                    return (TContent) dataContractSerializer.ReadObject(reader, false);
                 }
             }
         }
@@ -165,7 +164,7 @@ namespace System.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                serializer = new XmlSerializer(typeof(TContent));
+                serializer = new XmlSerializer(typeof (TContent));
             }
             if (_extension != null)
             {
@@ -178,7 +177,7 @@ namespace System.ServiceModel.Syndication
                 {
                     // skip past the content element
                     reader.ReadStartElement();
-                    return Task.FromResult((TContent)serializer.Deserialize(reader));
+                    return Task.FromResult((TContent) serializer.Deserialize(reader));
                     //return (TContent)serializer.Deserialize(reader);
                 }
             }
@@ -219,7 +218,7 @@ namespace System.ServiceModel.Syndication
                 XmlBuffer tmp = new XmlBuffer(int.MaxValue);
                 using (XmlDictionaryWriter writer = tmp.OpenSection(XmlDictionaryReaderQuotas.Max))
                 {
-                    await WriteToAsync(writer, Atom10Constants.ContentTag, Atom10Constants.Atom10Namespace);
+                    await WriteToAsync(writer, Atom10Constants.ContentTag, Atom10Constants.Atom10Namespace).ConfigureAwait(false);
                 }
                 tmp.CloseSection();
                 tmp.Close();

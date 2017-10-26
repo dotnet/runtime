@@ -231,7 +231,7 @@ namespace System.ServiceModel.Syndication
             Rss20ItemFormatter<TSyndicationItem> rssSerializer = new Rss20ItemFormatter<TSyndicationItem>();
             if (rssSerializer.CanRead(reader))
             {
-                await rssSerializer.ReadFromAsync(reader);
+                await rssSerializer.ReadFromAsync(reader).ConfigureAwait(false);
                 return rssSerializer.Item as TSyndicationItem;
             }
 

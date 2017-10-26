@@ -197,24 +197,24 @@ namespace System.ServiceModel.Syndication
                                 writeNodeBuffer = new char[WriteNodeBufferSize];
                             }
                             int read;
-                            while ((read = await reader.ReadValueChunkAsync(writeNodeBuffer, 0, WriteNodeBufferSize)) > 0)
+                            while ((read = await reader.ReadValueChunkAsync(writeNodeBuffer, 0, WriteNodeBufferSize).ConfigureAwait(false)) > 0)
                             {
                                 writer.WriteChars(writeNodeBuffer, 0, read);
                             }
                         }
                         else
                         {
-                            writer.WriteString(await reader.GetValueAsync());
+                            writer.WriteString(await reader.GetValueAsync().ConfigureAwait(false));
                         }
                         break;
 
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        writer.WriteWhitespace(await reader.GetValueAsync());
+                        writer.WriteWhitespace(await reader.GetValueAsync().ConfigureAwait(false));
                         break;
 
                     case XmlNodeType.CDATA:
-                        writer.WriteCData(await reader.GetValueAsync());
+                        writer.WriteCData(await reader.GetValueAsync().ConfigureAwait(false));
                         break;
 
                     case XmlNodeType.EntityReference:
@@ -223,22 +223,22 @@ namespace System.ServiceModel.Syndication
 
                     case XmlNodeType.XmlDeclaration:
                     case XmlNodeType.ProcessingInstruction:
-                        writer.WriteProcessingInstruction(reader.Name, await reader.GetValueAsync());
+                        writer.WriteProcessingInstruction(reader.Name, await reader.GetValueAsync().ConfigureAwait(false));
                         break;
 
                     case XmlNodeType.DocumentType:
-                        writer.WriteDocType(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), await reader.GetValueAsync());
+                        writer.WriteDocType(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), await reader.GetValueAsync().ConfigureAwait(false));
                         break;
 
                     case XmlNodeType.Comment:
-                        writer.WriteComment(await reader.GetValueAsync());
+                        writer.WriteComment(await reader.GetValueAsync().ConfigureAwait(false));
                         break;
 
                     case XmlNodeType.EndElement:
                         writer.WriteFullEndElement();
                         break;
                 }
-            } while (await reader.ReadAsync() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
+            } while (await reader.ReadAsync().ConfigureAwait(false) && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
         }
     }
 }
