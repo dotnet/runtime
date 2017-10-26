@@ -117,11 +117,12 @@ if [ ! -e $__DOTNET_PATH ]; then
 
     echo "Installing dotnet cli..."
     __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
-    # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
     retries=5
     waitFactor=6 
     installDotNetCLI() {
         echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
+        rm -rf -- $__DOTNET_PATH/*
+        # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
         if command -v curl > /dev/null; then
             curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
         else
@@ -129,11 +130,6 @@ if [ ! -e $__DOTNET_PATH ]; then
         fi
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
-        local tarResult=$?
-        if [ $tarResult -ne 0 ]; then
-            rm -f $__DOTNET_PATH/*
-        fi
-        return $tarResult
     }
     execute installDotNetCLI >> $__init_tools_log 2>&1
 
