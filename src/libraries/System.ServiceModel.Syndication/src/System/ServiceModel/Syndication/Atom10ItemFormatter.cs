@@ -120,6 +120,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
             WriteItemAsync(writer).GetAwaiter().GetResult();
         }
 
