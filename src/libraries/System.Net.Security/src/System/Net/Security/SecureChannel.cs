@@ -15,7 +15,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    // SecureChannel - a wrapper on SSPI based functionality. 
+    // SecureChannel - a wrapper on SSPI based functionality.
     // Provides an additional abstraction layer over SSPI for SslStream.
     internal class SecureChannel
     {
@@ -119,14 +119,6 @@ namespace System.Net.Security
             get
             {
                 return _sslAuthenticationOptions.CertificateRevocationCheckMode;
-            }
-        }
-
-        internal int HeaderSize
-        {
-            get
-            {
-                return _headerSize;
             }
         }
 
@@ -938,7 +930,7 @@ namespace System.Net.Security
             }
 
             byte[] writeBuffer = output;
-                        
+
             SecurityStatusPal secStatus = SslStreamPal.EncryptMessage(
                 _securityContext,
                 buffer,
