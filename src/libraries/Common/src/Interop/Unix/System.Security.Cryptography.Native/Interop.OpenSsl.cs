@@ -96,6 +96,7 @@ internal static partial class Interop
                     //update the client CA list 
                     UpdateCAListFromRootStore(innerContext);
                 }
+
                 GCHandle alpnHandle = default;
                 try
                 {
@@ -144,6 +145,7 @@ internal static partial class Interop
                                 certHandle.DangerousRelease();
                         }
                     }
+
                     context.AlpnHandle = alpnHandle;
                 }
                 catch
