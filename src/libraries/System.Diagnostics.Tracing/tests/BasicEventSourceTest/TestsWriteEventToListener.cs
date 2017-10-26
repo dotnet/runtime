@@ -8,7 +8,11 @@ using System.Linq;
 using System.Text;
 using Xunit;
 using System.Threading;
+#if USE_MDT_EVENTSOURCE
+using Microsoft.Diagnostics.Tracing;
+#else
 using System.Diagnostics.Tracing;
+#endif
 using SdtEventSources;
 
 namespace BasicEventSourceTests
