@@ -14,6 +14,14 @@
     <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\*.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\AtomFeeds\*.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MsBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
