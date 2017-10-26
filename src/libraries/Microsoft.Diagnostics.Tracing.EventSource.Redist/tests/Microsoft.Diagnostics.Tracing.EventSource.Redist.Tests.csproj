@@ -17,7 +17,7 @@
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\FuzzyTests.cs" />
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\Harness\Listeners.cs" />
-    <!-- <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestEventCounter.cs" /> -->
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestEventCounter.cs" />
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestFilter.cs" />
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestShutdown.cs" />
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsEventSourceLifetime.cs" />
