@@ -13,6 +13,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/mini/jit.h>
 
 #define TESTPROG "callspec.exe"
 
@@ -159,6 +160,10 @@ main (void)
 	MonoImage *corlib = NULL;
 	MonoClass *prog_klass, *console_klass;
 	MonoMethod *meth;
+	MonoImageOpenStatus status;
+
+	//FIXME This is a fugly hack due to embedding simply not working from the tree
+	mono_set_assemblies_path ("../../mcs/class/lib/net_4_x");
 
 	test_methods = g_array_new (FALSE, TRUE, sizeof (MonoMethod *));
 	if (!test_methods) {
@@ -167,8 +172,8 @@ main (void)
 		goto out;
 	}
 
-	domain = mono_init_from_assembly (TESTPROG, TESTPROG);
-	assembly = mono_assembly_open_predicate (TESTPROG, FALSE, FALSE, NULL, NULL, NULL);
+	domain = mono_jit_init_version ("TEST RUNNER", "mobile");
+	assembly = mono_assembly_open (TESTPROG, &status);
 	if (!domain || !assembly) {
 		res = 1;
 		printf("FAILED LOADING TEST PROGRAM\n");
@@ -246,10 +251,5 @@ main (void)
 
 	res = test_all_callspecs ();
 out:
-	if (assembly)
-		mono_assembly_close(assembly);
-	if (domain)
-		mono_domain_free (domain, TRUE);
-
 	return res;
 }
