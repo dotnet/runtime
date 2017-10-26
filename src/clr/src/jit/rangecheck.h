@@ -419,6 +419,15 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
+
+#ifdef DEBUG
+    // TODO-Cleanup: This code has been kept around just to ensure that the SSA data is still
+    // valid when RangeCheck runs. It should be removed at some point (and perhaps replaced
+    // by a proper SSA validity checker).
+
     // Location information is used to map where the defs occur in the method.
     struct Location
     {
@@ -435,11 +444,7 @@ public:
         Location();
     };
 
-    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, bool>                                OverflowMap;
-    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, Range*>                              RangeMap;
-    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, BasicBlock*>                         SearchPath;
-    typedef JitHashTable<INT64, JitLargePrimitiveKeyFuncs<INT64>, Location*>                       VarToLocMap;
-    typedef JitHashTable<INT64, JitLargePrimitiveKeyFuncs<INT64>, JitExpandArrayStack<Location*>*> VarToLocArrayMap;
+    typedef JitHashTable<INT64, JitLargePrimitiveKeyFuncs<INT64>, Location*> VarToLocMap;
 
     // Generate a hashcode unique for this ssa var.
     UINT64 HashCode(unsigned lclNum, unsigned ssaNum);
@@ -453,6 +458,13 @@ public:
     Location* GetDef(GenTreeLclVarCommon* lcl);
     Location* GetDef(unsigned lclNum, unsigned ssaNum);
 
+    // Given a statement, check if it is a def and add its locations in a map.
+    void MapStmtDefs(const Location& loc);
+
+    // Given the CFG, check if it has defs and add their locations in a map.
+    void MapMethodDefs();
+#endif
+
     int GetArrLength(ValueNum vn);
 
     // Check whether the computed range is within lower and upper bounds. This function
@@ -460,12 +472,6 @@ public:
     // increasing loop.
     // TODO-CQ: This is not general enough.
     bool BetweenBounds(Range& range, int lower, GenTreePtr upper);
-
-    // Given a statement, check if it is a def and add its locations in a map.
-    void MapStmtDefs(const Location& loc);
-
-    // Given the CFG, check if it has defs and add their locations in a map.
-    void MapMethodDefs();
 
     // Entry point to optimize range checks in the block. Assumes value numbering
     // and assertion prop phases are completed.
@@ -540,6 +546,9 @@ public:
     bool IsOverBudget();
 
 private:
+    // Given a lclvar use, try to find the lclvar's defining assignment and its containing block.
+    GenTreeOp* GetSsaDefAsg(GenTreeLclVarCommon* lclUse, BasicBlock** asgBlock);
+
     GenTreeBoundsChk* m_pCurBndsChk;
 
     // Get the cached overflow values.
@@ -552,8 +561,11 @@ private:
 
     SearchPath* m_pSearchPath;
 
-    bool          m_fMappedDefs;
-    VarToLocMap*  m_pDefTable;
+#ifdef DEBUG
+    bool         m_fMappedDefs;
+    VarToLocMap* m_pDefTable;
+#endif
+
     Compiler*     m_pCompiler;
     CompAllocator m_alloc;
 
