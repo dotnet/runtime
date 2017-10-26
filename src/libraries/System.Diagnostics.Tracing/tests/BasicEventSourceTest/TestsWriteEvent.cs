@@ -11,7 +11,11 @@ using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
 
+#if USE_MDT_EVENTSOURCE
+using Microsoft.Diagnostics.Tracing;
+#else
 using System.Diagnostics.Tracing;
+#endif
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using SdtEventSources;
