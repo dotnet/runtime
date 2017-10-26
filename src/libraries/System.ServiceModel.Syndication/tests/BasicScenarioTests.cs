@@ -298,5 +298,208 @@ namespace System.ServiceModel.Syndication.Tests
             // *** ASSERT *** \\
             Assert.True(!res.LastUpdatedTime.Equals(new DateTimeOffset()));
         }
+
+        [Fact]
+        [ActiveIssue(24894)]
+        public static void AtomEntryPositiveTest()
+        {
+            string filePath = @"brief-entry-noerror.xml";
+            string serializeFilePath = Path.GetTempFileName();
+
+            try
+            {
+                SyndicationItem feedObjct = null;
+                using (XmlReader reader = XmlReader.Create(filePath))
+                {
+                    feedObjct = SyndicationItem.Load(reader);
+                    reader.Close();
+                }
+
+                using (XmlWriter writer = XmlWriter.Create(serializeFilePath))
+                {
+                    Atom10ItemFormatter atomformatter = new Atom10ItemFormatter(feedObjct);
+                    atomformatter.WriteTo(writer);
+                    writer.Close();
+                }
+                // compare file filePath and serializeFilePath
+                XmlDiff diff = new XmlDiff()
+                {
+                    Option = XmlDiffOption.IgnoreComments | XmlDiffOption.IgnorePrefix | XmlDiffOption.IgnoreWhitespace | XmlDiffOption.IgnoreChildOrder | XmlDiffOption.IgnoreAttributeOrder
+                };
+                Assert.True(diff.Compare(filePath, serializeFilePath));
+            }
+            finally
+            {
+                File.Delete(serializeFilePath);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue(24894)]
+        public static void AtomEntryPositiveTest_write()
+        {
+            string filePath = @"AtomEntryTest.xml";
+            string serializeFilePath = Path.GetTempFileName();
+
+            SyndicationItem item = new SyndicationItem("SyndicationFeed released for .net Core", "A lot of text describing the release of .net core feature", new Uri("http://contoso.com/news/path"));
+            item.Id = "uuid:43481a10-d881-40d1-adf2-99b438c57e21;id=1";
+            item.LastUpdatedTime = new DateTimeOffset(Convert.ToDateTime("2017-10-11T11:25:55Z"));
+
+            try
+            {
+                using (XmlWriter writer = XmlWriter.Create(serializeFilePath))
+                {
+                    Atom10ItemFormatter f = new Atom10ItemFormatter(item);
+                    f.WriteTo(writer);
+                    writer.Close();
+                }
+
+                XmlDiff diff = new XmlDiff()
+                {
+                    Option = XmlDiffOption.IgnoreComments | XmlDiffOption.IgnorePrefix | XmlDiffOption.IgnoreWhitespace | XmlDiffOption.IgnoreChildOrder | XmlDiffOption.IgnoreAttributeOrder
+                };
+                Assert.True(diff.Compare(filePath, serializeFilePath));
+            }
+            finally
+            {
+                File.Delete(serializeFilePath);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue(24894)]
+        public static void AtomFeedPositiveTest()
+        {
+            string dataFile = @"atom_feeds.dat";
+            List<string> fileList = GetTestFilesForFeedTest(dataFile);
+
+            foreach (string file in fileList)
+            {
+                string serializeFilePath = Path.GetTempFileName();
+                try
+                {
+                    SyndicationFeed feedObjct;
+
+                    using (XmlReader reader = XmlReader.Create(file))
+                    {
+                        feedObjct = SyndicationFeed.Load(reader);
+                        reader.Close();
+                    }
+
+                    using (XmlWriter writer = XmlWriter.Create(serializeFilePath))
+                    {
+                        Atom10FeedFormatter f = new Atom10FeedFormatter(feedObjct);
+                        f.WriteTo(writer);
+                        writer.Close();
+                    }
+
+                    CompareHelper ch = new CompareHelper
+                    {
+                        Diff = new XmlDiff()
+                        {
+                            Option = XmlDiffOption.IgnoreComments | XmlDiffOption.IgnorePrefix | XmlDiffOption.IgnoreWhitespace | XmlDiffOption.IgnoreChildOrder | XmlDiffOption.IgnoreAttributeOrder
+                        },
+                        AllowableDifferences = GetAtomFeedPositiveTestAllowableDifferences()
+                    };
+                    Assert.True(ch.Compare(file, serializeFilePath), $"Failed File Name:{file}");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("------------------------------");
+                    Console.WriteLine($"Failed File Name:{file}");
+                    throw e;
+                }
+                finally
+                {
+                    File.Delete(serializeFilePath);
+                }
+            }
+        }
+
+        private static List<AllowableDifference> GetAtomFeedPositiveTestAllowableDifferences()
+        {
+            return new List<AllowableDifference>(new AllowableDifference[]
+            {
+                new AllowableDifference("<content xmlns=\"http://www.w3.org/2005/Atom\" />","<content type=\"text\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<content>","<content type=\"text\">"),
+                new AllowableDifference("<content src=\"http://example.org/2003/12/13/atom03\" xmlns=\"http://www.w3.org/2005/Atom\" />","<content src=\"http://example.org/2003/12/13/atom03\" type=\"text\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<content src=\"  http://www.example.com/doc.pdf\" type=\"application/pdf\" xmlns=\"http://www.w3.org/2005/Atom\" />","<content src=\"http://www.example.com/doc.pdf\" type=\"application/pdf\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("2003-12-13T08:29:29-04:00","2003-12-13T12:29:29Z"),
+                new AllowableDifference("2003-12-13T18:30:02+01:00","2003-12-13T17:30:02Z"),
+                new AllowableDifference("2002-12-31T19:20:30+01:00","2002-12-31T18:20:30Z"),
+                new AllowableDifference("2004-12-27T11:12:01-05:00","2004-12-27T16:12:01Z"),
+                new AllowableDifference("<title>","<title type=\"text\">"),
+                new AllowableDifference("<subtitle>","<subtitle type=\"text\">"),
+                new AllowableDifference("<subtitle xmlns=\"http://www.w3.org/2005/Atom\" />","<subtitle type=\"text\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<title xmlns=\"http://www.w3.org/2005/Atom\" />","<title type=\"text\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<title />","<title type=\"text\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<atom:title>","<title type=\"text\">"),
+                new AllowableDifference("<summary>","<summary type=\"text\">"),
+                new AllowableDifference("<atom:summary>","<summary type=\"text\">"),
+                new AllowableDifference("<generator uri=\"http://www.example.com/\" version=\"1.0\">", "<generator>"),
+                new AllowableDifference("<generator uri=\"/generator\" xmlns=\"http://www.w3.org/2005/Atom\" />", "<generator xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<generator uri=\"/generator\">", "<generator>"),
+                new AllowableDifference("<generator uri=\"misc/Colophon\">", "<generator>"),
+                new AllowableDifference("<generator uri=\"http://www.example.com/ \" version=\"1.0\">", "<generator>"),
+                new AllowableDifference("<rights>","<rights type=\"text\">"),
+                new AllowableDifference("<link href=\"http://example.com\" xmlns=\"http://www.w3.org/2005/Atom\" />","<link href=\"http://example.com/\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<link href=\"  http://example.org/  \" xmlns=\"http://www.w3.org/2005/Atom\" />","<link href=\"http://example.org/\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<feed xml:lang=\"\" xmlns=\"http://www.w3.org/2005/Atom\">","<feed xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<entry xmlns:xh=\"http://www.w3.org/1999/xhtml\">","<entry>"),
+                new AllowableDifference("<xh:div>","<xh:div xmlns:xh=\"http://www.w3.org/1999/xhtml\">"),
+                new AllowableDifference("<summary type=\"xhtml\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">","<summary type=\"xhtml\">"),
+                new AllowableDifference("<xhtml:a href=\"http://example.com/\">","<xhtml:a href=\"http://example.com/\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">"),
+                new AllowableDifference("<feed xmlns:trackback=\"http://madskills.com/public/xml/rss/module/trackback/\" xmlns=\"http://www.w3.org/2005/Atom\">","<feed xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<trackback:ping>", "<trackback:ping xmlns:trackback=\"http://madskills.com/public/xml/rss/module/trackback/\">"),
+                new AllowableDifference("<feed xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:foaf=\"http://xmlns.com/foaf/0.1/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" xmlns=\"http://www.w3.org/2005/Atom\">", "<feed xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<author rdf:parseType=\"Resource\">", "<author xmlns:a=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" a:parseType=\"Resource\">"),
+                new AllowableDifference("<foaf:homepage rdf:resource=\"http://jondoe.example.org/\">", "<foaf:homepage xmlns:foaf=\"http://xmlns.com/foaf/0.1/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" rdf:resource=\"http://jondoe.example.org/\">"),
+                new AllowableDifference("<foaf:weblog rdf:resource=\"http://jondoe.example.org/blog/\">", "<foaf:weblog xmlns:foaf=\"http://xmlns.com/foaf/0.1/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" rdf:resource=\"http://jondoe.example.org/blog/\">"),
+                new AllowableDifference("<foaf:workplaceHomepage rdf:resource=\"http://DoeCorp.example.com/\">", "<foaf:workplaceHomepage xmlns:foaf=\"http://xmlns.com/foaf/0.1/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" rdf:resource=\"http://DoeCorp.example.com/\">"),
+                new AllowableDifference("<dc:description>", "<dc:description xmlns:dc=\"http://purl.org/dc/elements/1.1/\">"),
+                new AllowableDifference("<entry rdf:parseType=\"Resource\">", "<entry xmlns:a=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" a:parseType=\"Resource\">"),
+                new AllowableDifference("<foaf:primaryTopic rdf:parseType=\"Resource\">", "<foaf:primaryTopic xmlns:foaf=\"http://xmlns.com/foaf/0.1/\" rdf:parseType=\"Resource\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"),
+                new AllowableDifference("<link href=\"http://example.org/\" rdf:resource=\"http://example.org/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" xmlns=\"http://www.w3.org/2005/Atom\" />", "<link xmlns:a=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" href=\"http://example.org/\" a:resource=\"http://example.org/\" xmlns=\"http://www.w3.org/2005/Atom\" />"),
+                new AllowableDifference("<feed xmlns:creativeCommons=\"http://backend.userland.com/creativeCommonsRssModule\" xmlns=\"http://www.w3.org/2005/Atom\">", "<feed xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<creativeCommons:license>", "<creativeCommons:license xmlns:creativeCommons=\"http://backend.userland.com/creativeCommonsRssModule\">"),
+                new AllowableDifference("<feed xmlns:a=\"http://www.example.com/extension-a\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns=\"http://www.w3.org/2005/Atom\">", "<feed xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<a:simple-value>", "<a:simple-value xmlns:a=\"http://www.example.com/extension-a\">"),
+                new AllowableDifference("<a:structured-xml>", "<a:structured-xml xmlns:a=\"http://www.example.com/extension-a\">"),
+                new AllowableDifference("<dc:title>", "<dc:title xmlns:dc=\"http://purl.org/dc/elements/1.1/\">"),
+                new AllowableDifference("<simple-value>", "<simple-value xmlns=\"\">"),
+                new AllowableDifference("<feed xmlns:xhtml=\"http://www.w3.org/1999/xhtml\" xmlns=\"http://www.w3.org/2005/Atom\">", "<feed xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<feed xmlns:trackback=\"http://madskills.com/public/xml/rss/module/trackback/\" xmlns=\"http://www.w3.org/2005/Atom\">", "<feed xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<trackback:about>", "<trackback:about xmlns:trackback=\"http://madskills.com/public/xml/rss/module/trackback/\">"),
+                new AllowableDifference("<xhtml:img src=\"http://example.com/image.jpg\">", "<xhtml:img src=\"http://example.com/image.jpg\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">"),
+                new AllowableDifference("<feed xml:base=\"http://example.org\" xmlns=\"http://www.w3.org/2005/Atom\">", "<feed xml:base=\"http://example.org/\" xmlns=\"http://www.w3.org/2005/Atom\">"),
+                new AllowableDifference("<link href=\"http://creativecommons.org/licenses/by-nc/2.5/\" xmlns:lic=\"http://web.resource.org/cc/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" rel=\"http://www.snellspace.com/atom/extensions/proposed/license\" rdf:resource=\"http://creativecommons.org/licenses/by-nc/2.5/\" type=\"text/html\" rdf:type=\"http://web.resource.org/cc/license\">", "<link xmlns:a=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" href=\"http://creativecommons.org/licenses/by-nc/2.5/\" rel=\"http://www.snellspace.com/atom/extensions/proposed/license\" a:resource=\"http://creativecommons.org/licenses/by-nc/2.5/\" type=\"text/html\" a:type=\"http://web.resource.org/cc/license\">"),
+            });
+        }
+
+        private static List<string> GetTestFilesForFeedTest(string dataFile)
+        {
+            List<string> fileList = new List<string>();
+
+            string file;
+            using (StreamReader sr = new StreamReader(dataFile))
+            {
+                while(!string.IsNullOrEmpty(file = sr.ReadLine()))
+                {
+                    if (!file.StartsWith("#"))
+                    {
+                        if (File.Exists(file))
+                        {
+                            fileList.Add(Path.GetFullPath(file));
+                        }
+                        else
+                        {
+                            throw new FileNotFoundException("File not found!",file);
+                        }
+                    }
+                }
+            }
+            return fileList;
+        }
     }
 }
