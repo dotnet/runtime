@@ -122,6 +122,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
             WriteFeedAsync(writer).GetAwaiter().GetResult();
         }
 
@@ -489,6 +490,7 @@ namespace System.ServiceModel.Syndication
 
         internal Task WriteItemContentsAsync(XmlWriter dictWriter, SyndicationItem item)
         {
+            dictWriter = XmlWriterWrapper.CreateFromWriter(dictWriter);
             return WriteItemContentsAsync(dictWriter, item, null);
         }
 
