@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(BuildTestTargets)" />
-  
+
   <Target Name="DetermineTestOutputDirectory">
     <GetTargetMachineInfo>
       <Output TaskParameter="RuntimeIdentifier" PropertyName="_HostRid" />
@@ -37,7 +37,7 @@
     <ItemGroup>
       <DirsToClean Include="$(TestDir)\**\bin" />
       <DirsToClean Include="$(TestDir)\**\obj" />
-      <DirsToClean Include="$(TempFolderRoot)$(TargetArchitecture)" />  
+      <DirsToClean Include="$(TempFolderRoot)$(TargetArchitecture)" />
     </ItemGroup>
 
     <RemoveDir Directories="@(DirsToClean)" />
@@ -79,9 +79,9 @@
       <TestWorkingDirectory>$([System.IO.Path]::GetDirectoryName($(TestProject)))</TestWorkingDirectory>
       <DirectorySeparatorChar>$([System.IO.Path]::DirectorySeparatorChar)</DirectorySeparatorChar>
       <!-- The tests use the TEST_ARTIFACTS env variable to determine the artifacts folder and then later compare that path to its expected path.
-           So, the TEST_ARTIFACTS variable has to have system specific path separators or the string compoarison will fail. -->   
-      <SystemPathTestsOutputDir>$([System.String]::Copy('$(TestsOutputDir)').Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>   
-      <SystemPathTestsOutputDir>$([System.String]::Copy('$(SystemPathTestsOutputDir)').Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>   
+           So, the TEST_ARTIFACTS variable has to have system specific path separators or the string compoarison will fail. -->
+      <SystemPathTestsOutputDir>$([System.String]::Copy('$(TestsOutputDir)').Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
+      <SystemPathTestsOutputDir>$([System.String]::Copy('$(SystemPathTestsOutputDir)').Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
     </PropertyGroup>
     <PropertyGroup>
       <TestArgs>--no-restore $(MSBuildPassThroughPropertyList)</TestArgs>
@@ -114,7 +114,7 @@
       </FailedTests>
     </ItemGroup>
     <Message Importance="High" Condition="'@(FailedTests)' != ''" Text="Failed test summary" />
-    <Message Importance="High" Condition="'@(FailedTests)' != ''" Text="  %(FailedTests.Identity) failed with exit code %(FailedTests.ExitCode), see %(FailedTests.ResultsXml)" />      
+    <Message Importance="High" Condition="'@(FailedTests)' != ''" Text="  %(FailedTests.Identity) failed with exit code %(FailedTests.ExitCode), see %(FailedTests.ResultsXml)" />
     <Error Condition="'@(FailedTests)' != ''" Text="One or more test runs failed." />
   </Target>
 

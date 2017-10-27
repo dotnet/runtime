@@ -2,6 +2,7 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -162,9 +163,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 try
                 {
+                    StringBuilder propsFile = new StringBuilder();
+
+                    propsFile.AppendLine("<Project>");
+                    propsFile.AppendLine("  <Import Project=\"$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.props))\\TestProjects.props\" />");
+                    propsFile.AppendLine("</Project>");
+
                     // write an empty Directory.Build.props to ensure that msbuild doesn't pick up
                     // the repo's root Directory.Build.props.
-                    File.WriteAllText(directoryBuildPropsPath, "<Project></Project>");
+                    File.WriteAllText(directoryBuildPropsPath, propsFile.ToString());
                 }
                 catch (IOException)
                 {}
