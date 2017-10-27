@@ -940,7 +940,7 @@ SIMDIntrinsicID Compiler::impSIMDIntegralRelOpGreaterThanOrEqual(
 
     // This routine should be used only for integer base type vectors
     assert(varTypeIsIntegral(baseType));
-    if ((getSIMDInstructionSet() == InstructionSet_SSE2) && ((baseType == TYP_LONG) || baseType == TYP_UBYTE))
+    if ((getSIMDSupportLevel() == SIMD_SSE2_Supported) && ((baseType == TYP_LONG) || baseType == TYP_UBYTE))
     {
         return impSIMDLongRelOpGreaterThanOrEqual(typeHnd, size, pOp1, pOp2);
     }
@@ -1038,7 +1038,7 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
                                                                       : SIMDIntrinsicGreaterThanOrEqual;
         }
 
-        if ((getSIMDInstructionSet() == InstructionSet_SSE2) && baseType == TYP_LONG)
+        if ((getSIMDSupportLevel() == SIMD_SSE2_Supported) && baseType == TYP_LONG)
         {
             // There is no direct SSE2 support for comparing TYP_LONG vectors.
             // These have to be implemented interms of TYP_INT vector comparison operations.
@@ -1187,7 +1187,7 @@ GenTreePtr Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType
     //     result = ConditionalSelect(BitVector, vector.Zero - v, v)
 
     bool useConditionalSelect = false;
-    if (getSIMDInstructionSet() == InstructionSet_SSE2)
+    if (getSIMDSupportLevel() == SIMD_SSE2_Supported)
     {
         // SSE2 doesn't support abs on signed integer type vectors.
         if (baseType == TYP_LONG || baseType == TYP_INT || baseType == TYP_SHORT || baseType == TYP_BYTE)
@@ -1197,7 +1197,7 @@ GenTreePtr Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType
     }
     else
     {
-        assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+        assert(getSIMDSupportLevel() >= SIMD_SSE4_Supported);
         if (baseType == TYP_LONG)
         {
             // SSE3_4/AVX2 don't support abs on long type vector.
@@ -1300,7 +1300,7 @@ GenTreePtr Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType
     }
     else
     {
-        assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+        assert(getSIMDSupportLevel() >= SIMD_SSE4_Supported);
         assert(baseType != TYP_LONG);
 
         retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
@@ -1428,7 +1428,7 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
     //        result = result - 2^15 ; readjust it back
 
     if (varTypeIsFloating(baseType) || baseType == TYP_SHORT || baseType == TYP_UBYTE ||
-        (getSIMDInstructionSet() >= InstructionSet_SSE3_4 &&
+        (getSIMDSupportLevel() >= SIMD_SSE4_Supported &&
          (baseType == TYP_BYTE || baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_CHAR)))
     {
         // SSE2 or SSE4.1 has direct support
@@ -1436,7 +1436,7 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
     }
     else if (baseType == TYP_CHAR || baseType == TYP_BYTE)
     {
-        assert(getSIMDInstructionSet() == InstructionSet_SSE2);
+        assert(getSIMDSupportLevel() == SIMD_SSE2_Supported);
         int             constVal;
         SIMDIntrinsicID operIntrinsic;
         SIMDIntrinsicID adjustIntrinsic;
@@ -2568,8 +2568,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 #if defined(_TARGET_XARCH_)
             // Right now dot product is supported only for float/double vectors and
             // int vectors on SSE4/AVX.
-            if (!varTypeIsFloating(baseType) &&
-                !(baseType == TYP_INT && getSIMDInstructionSet() >= InstructionSet_SSE3_4))
+            if (!varTypeIsFloating(baseType) && !(baseType == TYP_INT && getSIMDSupportLevel() >= SIMD_SSE4_Supported))
             {
                 return nullptr;
             }
