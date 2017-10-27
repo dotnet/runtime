@@ -50,7 +50,6 @@ usage()
     echo "-ignorewarnings - do not treat warnings as errors"
     echo "-cmakeargs - user-settable additional arguments passed to CMake."
     echo "-bindir - output directory (defaults to $__ProjectRoot/bin)"
-    echo "-buildstandalonegc - builds the GC in a standalone mode. Can't be used with \"cmakeargs\"."
     echo "-msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
     echo "-numproc - set the number of build processes."
     exit 1
@@ -858,9 +857,6 @@ while :; do
                 echo "ERROR: 'bindir' requires a non-empty option argument"
                 exit 1
             fi
-            ;;
-        buildstandalonegc|-buildstandalonegc)
-            __cmakeargs="$__cmakeargs -DFEATURE_STANDALONE_GC=1 -DFEATURE_STANDALONE_GC_ONLY=1"
             ;;
         msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
             __msbuildonunsupportedplatform=1

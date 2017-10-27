@@ -93,8 +93,6 @@ set __BuildArchArm64=0
 set __BuildTypeDebug=0
 set __BuildTypeChecked=0
 set __BuildTypeRelease=0
-set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=0"
-set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=0"
 
 set __PgoInstrument=0
 set __PgoOptimize=1
@@ -177,12 +175,6 @@ if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!proc
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-buildstandalonegc"   (
-    set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"
-    set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=1"
-    set processedArgs=!processedArgs! %1
-    shift&goto Arg_Loop
-)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -205,12 +197,6 @@ if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!proc
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "buildstandalonegc"   (
-    set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"
-    set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=1"
-    set processedArgs=!processedArgs! %1
-    shift&goto Arg_Loop
-)
 
 @REM The following can be deleted once the CI system that passes it is updated to not pass it.
 if /i "%1" == "altjitcrossgen"      (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -405,7 +391,7 @@ if %__BuildNative% EQU 1 (
 
     pushd "%__IntermediatesDir%"
     set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
-    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildStandaloneGC% %__BuildStandaloneGCOnly% !__ExtraCmakeArgs!
+    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     @if defined _echo @echo on
     popd
 
@@ -805,7 +791,6 @@ echo -skipnative: skip building native components ^(default: native components a
 echo -skiptests: skip building tests ^(default: tests are built^).
 echo -skipbuildpackages: skip building nuget packages ^(default: packages are built^).
 echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
-echo -buildstandalonegc: builds the GC in a standalone mode.
 echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
 echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.

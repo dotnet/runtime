@@ -335,8 +335,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCNumaAware, W("GCNumaAware"), 1, "Specifie
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if to enable GC to support CPU groups")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCHeapCount, W("GCHeapCount"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCNoAffinitize, W("GCNoAffinitize"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCUseStandalone, W("GCUseStandalone"), 0, "")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCStandaloneLocation, W("GCStandaloneLocation"), "")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
 
 //
 // IBC
