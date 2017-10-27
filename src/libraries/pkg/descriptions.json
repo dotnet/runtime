@@ -566,6 +566,13 @@
     ]
   },
   {
+    "Name": "System.Diagnostics.PerformanceCounter",
+    "Description": "Provides the System.Diagnostics.PerformanceCounter class, which allows access to Windows performance counters.",
+    "CommonTypes": [
+      "System.Diagnostics.PerformanceCounter"
+    ]
+  },
+  {
     "Name": "System.Diagnostics.Process",
     "Description": "Provides the System.Diagnostics.Process class, which allows interaction with local and remote processes.",
     "CommonTypes": [
