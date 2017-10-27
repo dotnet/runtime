@@ -437,11 +437,11 @@
   "processParameters": {},
   "quality": "definition",
   "queue": {
-    "id": 330,
-    "name": "DotNetCore-Build",
+    "id": 36,
+    "name": "DotNet-Build",
     "pool": {
-      "id": 97,
-      "name": "DotNetCore-Build"
+      "id": 39,
+      "name": "DotNet-Build"
     }
   },
   "id": 6057,
