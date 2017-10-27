@@ -197,6 +197,14 @@ wasm_invoke_iiiiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_iiiiiii (void *target_func, InterpMethodArguments *margs)
+{
+	int (*func)(gpointer a, gpointer b, gpointer c, gpointer d, gpointer e, gpointer f) = target_func;
+	int res = func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3], margs->iargs [4], margs->iargs [5]);
+	*(int*)margs->retval = res;
+}
+
+static void
 wasm_invoke_iiiiiiiii (void *target_func, InterpMethodArguments *margs)
 {
 	int (*func)(gpointer a, gpointer b, gpointer c, gpointer d, gpointer e, gpointer f, gpointer g, gpointer h) = target_func;
@@ -372,6 +380,8 @@ wasm_enter_icall_trampoline (void *target_func, InterpMethodArguments *margs)
 		wasm_invoke_iiiii (target_func, margs);
 	else if (!strcmp ("IIIIII", cookie))
 		wasm_invoke_iiiiii (target_func, margs);
+	else if (!strcmp ("IIIIIII", cookie))
+		wasm_invoke_iiiiiii (target_func, margs);
 	else if (!strcmp ("IIIIIIIII", cookie))
 		wasm_invoke_iiiiiiiii (target_func, margs);
 	else if (!strcmp ("L", cookie))
