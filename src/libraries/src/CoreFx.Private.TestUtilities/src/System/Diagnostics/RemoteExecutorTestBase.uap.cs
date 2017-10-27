@@ -27,9 +27,9 @@ namespace System.Diagnostics
         {
             options = options ?? new RemoteInvokeOptions();
 
-            // Verify the specified method is and that it returns an int (the exit code),
+            // Verify the specified method returns an int (the exit code) or nothing,
             // and that if it accepts any arguments, they're all strings.
-            Assert.True(method.ReturnType == typeof(int) || method.ReturnType == typeof(Task<int>));
+            Assert.True(method.ReturnType == typeof(void) || method.ReturnType == typeof(int) || method.ReturnType == typeof(Task<int>));
             Assert.All(method.GetParameters(), pi => Assert.Equal(typeof(string), pi.ParameterType));
 
             // And make sure it's in this assembly.  This isn't critical, but it helps with deployment to know
@@ -66,7 +66,7 @@ namespace System.Diagnostics
 
                 Assert.True(response.Status == AppServiceResponseStatus.Success, $"response.Status = {response.Status}");
                 int res = (int)response.Message["Results"];
-                Assert.True(res == options.ExpectedExitCode, (string)response.Message["Log"] + Environment.NewLine + $"Returned Error code: {res}");
+                Assert.True(!options.CheckExitCode || res == options.ExpectedExitCode, (string)response.Message["Log"] + Environment.NewLine + $"Returned Error code: {res}");
             }
 
             // RemoteInvokeHandle is not really needed in the UAP scenario but we use it just to have consistent interface as non UAP
