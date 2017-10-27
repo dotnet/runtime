@@ -6,6 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System.Data
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class DBConcurrencyException : SystemException
     {
         private DataRow[] _dataRows;
@@ -29,9 +31,13 @@ namespace System.Data
             _dataRows = dataRows;
         }
 
-        public override void GetObjectData(SerializationInfo si, StreamingContext context)
+        private DBConcurrencyException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {            
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            base.GetObjectData(si, context);
+            base.GetObjectData(info, context);
         }
 
         public DataRow Row

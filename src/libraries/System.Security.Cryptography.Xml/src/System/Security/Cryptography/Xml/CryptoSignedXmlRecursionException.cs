@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Runtime.Serialization;
 using System.Xml;
 
 namespace System.Security.Cryptography.Xml
@@ -13,17 +13,13 @@ namespace System.Security.Cryptography.Xml
     /// hash. ComputeHash can throw different kind of exceptions.
     /// This unique exception helps catch the recursion limit issue.
     /// </summary>
-    internal class CryptoSignedXmlRecursionException : XmlException
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Security, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    public class CryptoSignedXmlRecursionException : XmlException
     {
         public CryptoSignedXmlRecursionException() : base() { }
         public CryptoSignedXmlRecursionException(string message) : base(message) { }
-        public CryptoSignedXmlRecursionException(string message, System.Exception inner) : base(message, inner) { }
-        // A constructor is needed for serialization when an 
-        // exception propagates from a remoting server to the client.  
-        protected CryptoSignedXmlRecursionException(System.Runtime.Serialization.SerializationInfo info,
-        System.Runtime.Serialization.StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        public CryptoSignedXmlRecursionException(string message, Exception inner) : base(message, inner) { }
+        protected CryptoSignedXmlRecursionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -4,22 +4,82 @@
 
 using System.Runtime.Serialization;
 using System.Security.Permissions;
+using System.Text;
 
 namespace System.Security
 {
-    public partial class HostProtectionException : System.SystemException
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public partial class HostProtectionException : SystemException
     {
-        public HostProtectionException() { }
-        protected HostProtectionException(SerializationInfo info, StreamingContext context)
+        private const string ProtectedResourcesName = "ProtectedResources";
+        private const string DemandedResourcesName = "DemandedResources";
+        private const int E_HostProtection = -2146232768;
+
+        public HostProtectionException() : base()
         {
-            throw new PlatformNotSupportedException();
+            ProtectedResources = HostProtectionResource.None;
+            DemandedResources = HostProtectionResource.None;
         }
 
-        public HostProtectionException(string message) { }
-        public HostProtectionException(string message, Exception e) { }
-        public HostProtectionException(string message, HostProtectionResource protectedResources, HostProtectionResource demandedResources) { }
-        public HostProtectionResource DemandedResources { get { return default(HostProtectionResource); } }
-        public HostProtectionResource ProtectedResources { get { return default(HostProtectionResource); } }
-        public override string ToString() => base.ToString();
+        public HostProtectionException(string message) : base(message)
+        {
+            ProtectedResources = HostProtectionResource.None;
+            DemandedResources = HostProtectionResource.None;
+        }
+
+        public HostProtectionException(string message, Exception e) : base(message, e)
+        {
+            ProtectedResources = HostProtectionResource.None;
+            DemandedResources = HostProtectionResource.None;
+        }
+
+        public HostProtectionException(string message, HostProtectionResource protectedResources, HostProtectionResource demandedResources)
+            : base(message)
+        {
+            HResult = E_HostProtection;
+            ProtectedResources = protectedResources;
+            DemandedResources = demandedResources;
+        }
+
+        protected HostProtectionException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            ProtectedResources = (HostProtectionResource)info.GetValue(ProtectedResourcesName, typeof(HostProtectionResource));
+            DemandedResources = (HostProtectionResource)info.GetValue(DemandedResourcesName, typeof(HostProtectionResource));
+        }
+
+        public HostProtectionResource DemandedResources { get; } = default;
+
+        public HostProtectionResource ProtectedResources { get; } = default;
+
+        private void AppendResourceString(string resourceString, object attr, StringBuilder sb)
+        {
+            if (attr == null)
+                return;
+
+            sb.Append(Environment.NewLine);
+            sb.Append(Environment.NewLine);
+            sb.Append(resourceString);
+            sb.Append(Environment.NewLine);
+            sb.Append(attr);
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append(base.ToString());
+            AppendResourceString(SR.HostProtection_ProtectedResources, ProtectedResources, sb);
+            AppendResourceString(SR.HostProtection_DemandedResources, DemandedResources, sb);
+
+            return sb.ToString();
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue(ProtectedResourcesName, ProtectedResources, typeof(HostProtectionResource));
+            info.AddValue(DemandedResourcesName, DemandedResources, typeof(HostProtectionResource));
+        }
     }
 }

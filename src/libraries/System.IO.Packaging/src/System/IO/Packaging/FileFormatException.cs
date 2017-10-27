@@ -2,12 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if FEATURE_SERIALIZATION
+using System.Runtime.Serialization;
+#endif
+
 namespace System.IO
 {
     /// <summary>
     /// The FileFormatException class is thrown when an input file or a data stream that is supposed to conform
     /// to a certain file format specification is malformed.
     /// </summary>
+#if FEATURE_SERIALIZATION
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
+#endif
     public class FileFormatException : FormatException
     {
         /// <summary>
@@ -66,7 +74,7 @@ namespace System.IO
         /// </summary>
         /// <param name="sourceUri">The Uri of a file that caused this error.</param>
         /// <param name="message">The message that describes the error.</param>
-        public FileFormatException(Uri sourceUri, String message)
+        public FileFormatException(Uri sourceUri, string message)
             : base(message)
         {
             _sourceUri = sourceUri;
@@ -103,11 +111,31 @@ namespace System.IO
         /// <param name="sourceUri">The Uri of a file that caused this error.</param>
         /// <param name="message">The message that describes the error.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        public FileFormatException(Uri sourceUri, String message, Exception innerException)
+        public FileFormatException(Uri sourceUri, string message, Exception innerException)
             : base(message, innerException)
         {
             _sourceUri = sourceUri;
         }
+
+#if FEATURE_SERIALIZATION
+        protected FileFormatException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            string sourceUriString = info.GetString("SourceUri");
+            if (sourceUriString != null)
+                _sourceUri = new Uri(sourceUriString, UriKind.RelativeOrAbsolute);
+        }
+
+        /// <summary>
+        /// Sets the SerializationInfo object with the file name and additional exception information. 
+        /// </summary>
+        /// <param name="info">The object that holds the serialized object data.</param>
+        /// <param name="context">The contextual information about the source or destination.</param>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("SourceUri", SourceUri?.GetComponents(UriComponents.SerializationInfoString, UriFormat.SafeUnescaped), typeof(string));
+        }
+#endif
 
         /// <summary>
         /// Returns the name of a file that caused this exception. This property may be equal to an empty string

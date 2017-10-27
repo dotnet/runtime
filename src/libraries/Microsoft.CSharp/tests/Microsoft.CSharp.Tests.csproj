@@ -7,9 +7,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
     <Compile Include="ArrayHandling.cs" />
     <Compile Include="BindingErrors.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />

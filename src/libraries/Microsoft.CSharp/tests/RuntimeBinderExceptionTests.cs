@@ -3,10 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
@@ -111,12 +108,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             );
             Func<CallSite, object, object> targ = site.Target;
             AssertExtensions.Throws<ArgumentException>("Type Argument", () => targ.Invoke(site, 23));
-        }
-
-        [Fact]
-        public void AssertExceptionDeserializationFails()
-        {
-            BinaryFormatterHelpers.AssertExceptionDeserializationFails<RuntimeBinderException>();
         }
     }
 }
