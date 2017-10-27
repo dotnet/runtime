@@ -6503,7 +6503,6 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     BasicBlock* head = pLoopDsc->lpHead;
     BasicBlock* tail = pLoopDsc->lpBottom;
     BasicBlock* lbeg = pLoopDsc->lpEntry;
-    BasicBlock* block;
 
     // We must have a do-while loop
     if ((pLoopDsc->lpFlags & LPFLG_DO_WHILE) == 0)

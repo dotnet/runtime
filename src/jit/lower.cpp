@@ -5296,7 +5296,6 @@ bool Lowering::IndirsAreEquivalent(GenTreePtr candidate, GenTreePtr storeInd)
     pTreeB = pTreeB->gtSkipReloadOrCopy();
 
     genTreeOps oper;
-    unsigned   kind;
 
     if (pTreeA->OperGet() != pTreeB->OperGet())
     {

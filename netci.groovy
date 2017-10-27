@@ -721,13 +721,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
     }
 
      def arm64Users = [
-        'adiaaida',
         'AndyAyersMS',
         'briansull',
         'BruceForstall',
         'CarolEidt',
         'cmckinsey',
         'erozenfeld',
+        'janvorli',
         'jashook',
         'JosephTremoulet',
         'pgodeq',
@@ -1126,7 +1126,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                     break
                 case 'Tizen':
-                    if (architecture == 'armlb') { // Ubuntu arm is only for armlb currently
+                    if (architecture == 'armlb') { // Tizen armel is only for armlb currently
                         architecture='armel'
                         job.with {
                             publishers {
@@ -1136,8 +1136,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                         }
                         // Removing the regex will cause this to run on each PR.
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                        if (configuration == 'Checked') {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
+                        }
+                        else {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                        }
                     }
                     break
                 case 'Windows_NT':
@@ -1496,8 +1501,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "tests\\scripts\\build_illink.cmd clone ${arch}"
                     }
 
-                    buildOpts += " -priority=${priority}"
-
                     // If it is a release build for windows, ensure PGO is used, else fail the build
                     if ((lowerConfiguration == 'release') &&
                         (scenario in Constants.basicScenarios) &&
@@ -1505,7 +1508,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         (architecture != 'x86_arm_altjit') &&
                         (architecture != 'x64_arm64_altjit')) {
 
-                        buildOpts += ' enforcepgo'
+                        buildOpts += ' -enforcepgo'
+                    }
+
+                    if (enableCorefxTesting) {
+                        buildOpts += ' skiptests';
+                    } else {
+                        // Note: currently, build.cmd will pass through all arguments starting with an argument it doesn't recognize.
+                        // Since it doesn't process/recognize '-priority', make sure this is the last argument passed.
+                        buildOpts += " -priority=${priority}"
                     }
 
                     // Set __TestIntermediateDir for pri1 test builds. 
@@ -1523,7 +1534,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             scenario == 'ilrt' ||
                             scenario == 'illink' ||
                             Constants.r2rJitStressScenarios.indexOf(scenario) != -1) {
-                        buildOpts += enableCorefxTesting ? ' skiptests' : ''
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
                     }
                     else if (isLongGc(scenario)) {

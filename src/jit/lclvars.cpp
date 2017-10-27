@@ -7331,11 +7331,10 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTreePtr* pTree, fgWalkData
             /* Change addr(lclVar) to addr(lclVar)+padding */
 
             noway_assert(oper == GT_ADDR);
-            GenTreePtr newAddr = new (pComp, GT_NONE) GenTreeOp(*tree->AsOp());
+            GenTreePtr paddingTree = pComp->gtNewIconNode(padding);
+            GenTreePtr newAddr     = pComp->gtNewOperNode(GT_ADD, tree->gtType, tree, paddingTree);
 
-            tree->ChangeOper(GT_ADD);
-            tree->gtOp.gtOp1 = newAddr;
-            tree->gtOp.gtOp2 = pComp->gtNewIconNode(padding);
+            *pTree = newAddr;
 
             lcl->gtType = TYP_BLK;
         }

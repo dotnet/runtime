@@ -193,7 +193,7 @@ namespace System.IO
                             // if we're already returning an error, don't throw another one. 
                             if (!error)
                             {
-                                Debug.Assert(false, "File::FillAttributeInfo - FindClose failed!");
+                                Debug.Fail("File::FillAttributeInfo - FindClose failed!");
                                 throw Win32Marshal.GetExceptionForLastWin32Error();
                             }
                         }
