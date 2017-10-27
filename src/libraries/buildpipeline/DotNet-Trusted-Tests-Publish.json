@@ -243,11 +243,11 @@
   "defaultBranch": "refs/heads/master",
   "queue": {
     "pool": {
-      "id": 97,
-      "name": "DotNetCore-Build"
+      "id": 39,
+      "name": "DotNet-Build"
     },
-    "id": 330,
-    "name": "DotNetCore-Build"
+    "id": 36,
+    "name": "DotNet-Build"
   },
   "path": "\\",
   "type": "build",
