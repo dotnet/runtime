@@ -107,7 +107,7 @@ void WriteBarrier(Object ** dst, Object * ref)
     ErectWriteBarrier(dst, ref);
 }
 
-extern "C" bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
+extern "C" HRESULT GC_Initialize(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
 
 int __cdecl main(int argc, char* argv[])
 {
@@ -133,7 +133,7 @@ int __cdecl main(int argc, char* argv[])
     GcDacVars dacVars;
     IGCHeap *pGCHeap;
     IGCHandleManager *pGCHandleManager;
-    if (!InitializeGarbageCollector(nullptr, &pGCHeap, &pGCHandleManager, &dacVars))
+    if (GC_Initialize(nullptr, &pGCHeap, &pGCHandleManager, &dacVars) != S_OK)
     {
         return -1;
     }
