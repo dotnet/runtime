@@ -24,6 +24,8 @@ namespace System.Data.SqlTypes
         UnmanagedBuffer = 2
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SqlTypeException : SystemException
     {
         public SqlTypeException() : this(SR.SqlMisc_SqlTypeMessage, null)
@@ -40,11 +42,8 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlType;
         }
 
-        // runtime will call even if private...
-        // <fxcop ignore=SerializableTypesMustHaveMagicConstructorWithAdequateSecurity />
         protected SqlTypeException(SerializationInfo si, StreamingContext sc) : base(SqlTypeExceptionSerialization(si, sc), sc)
         {
-            throw new PlatformNotSupportedException();
         }
 
         private static SerializationInfo SqlTypeExceptionSerialization(SerializationInfo si, StreamingContext sc)
@@ -57,8 +56,10 @@ namespace System.Data.SqlTypes
             }
             return si;
         }
-    } // SqlTypeException
+    }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class SqlNullValueException : SqlTypeException
     {
         // Creates a new SqlNullValueException with its message string set to the common string.
@@ -76,6 +77,10 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlNullValue;
         }
 
+        private SqlNullValueException(SerializationInfo si, StreamingContext sc) : base(SqlNullValueExceptionSerialization(si, sc), sc)
+        {
+        }
+
         private static SerializationInfo SqlNullValueExceptionSerialization(SerializationInfo si, StreamingContext sc)
         {
             if ((null != si) && (1 == si.MemberCount))
@@ -86,8 +91,10 @@ namespace System.Data.SqlTypes
             }
             return si;
         }
-    } // NullValueException
+    }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class SqlTruncateException : SqlTypeException
     {
         // Creates a new SqlTruncateException with its message string set to the empty string.
@@ -105,6 +112,10 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlTruncate;
         }
 
+        private SqlTruncateException(SerializationInfo si, StreamingContext sc) : base(SqlTruncateExceptionSerialization(si, sc), sc)
+        {
+        }
+
         private static SerializationInfo SqlTruncateExceptionSerialization(SerializationInfo si, StreamingContext sc)
         {
             if ((null != si) && (1 == si.MemberCount))
@@ -115,8 +126,10 @@ namespace System.Data.SqlTypes
             }
             return si;
         }
-    } // SqlTruncateException
+    }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class SqlNotFilledException : SqlTypeException
     {
         // Creates a new SqlNotFilledException with its message string set to the common string.
@@ -133,8 +146,14 @@ namespace System.Data.SqlTypes
         {
             HResult = HResults.SqlNullValue;
         }
-    } // SqlNotFilledException
 
+        private SqlNotFilledException(SerializationInfo si, StreamingContext sc) : base(si, sc)
+        {
+        }
+    }
+
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class SqlAlreadyFilledException : SqlTypeException
     {
         // Creates a new SqlNotFilledException with its message string set to the common string.
@@ -151,5 +170,9 @@ namespace System.Data.SqlTypes
         {
             HResult = HResults.SqlNullValue;
         }
-    } // SqlNotFilledException
+
+        private SqlAlreadyFilledException(SerializationInfo si, StreamingContext sc) : base(si, sc)
+        {
+        }
+    }
 }

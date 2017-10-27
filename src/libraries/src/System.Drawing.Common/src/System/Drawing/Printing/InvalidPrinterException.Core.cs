@@ -4,20 +4,25 @@
 
 using System.Runtime.Serialization;
 
+/*
+ * This file is not intended to be used by Mono.
+ * Instead InvalidPrinterException.Serializable.cs should be used.
+ */
+
 namespace System.Drawing.Printing
 {
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     partial class InvalidPrinterException
     {
         protected InvalidPrinterException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _settings = (PrinterSettings)info.GetValue("settings", typeof(PrinterSettings));
+            // Ignoring not deserializable input
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("settings", _settings);
+            info.AddValue("settings", null);
         }
     }
 }
-

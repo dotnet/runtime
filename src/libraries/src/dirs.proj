@@ -15,6 +15,30 @@
     <Project Include="shims\ApiCompat.proj" />
   </ItemGroup>
 
+  <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <!-- After we build all the source libraries we need to generate a deps.json file for the shared test framework -->
+  <Target Name="GenerateTestSharedFrameworkDepsFile" AfterTargets="BuildAllProjects" Condition="'$(BinplaceTestSharedFramework)' == 'true'">
+
+    <ItemGroup>
+      <!-- This is for HostPolicy, CoreCLR and Jit dependencies to continue to remain inside of the dep.json -->
+      <ExceptionForDepsJson Include="microsoft.netcore.app" />
+
+      <!-- TODO: We should see about generating this from scratch instead of relying on a previous deps file as a template -->
+      <_sharedFrameworkDepsJson Include="$(ToolsDir)dotnetcli\shared\Microsoft.NETCore.App\*\Microsoft.NETCore.App.deps.json" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_OriginalDepsJsonPath>%(_sharedFrameworkDepsJson.FullPath)</_OriginalDepsJsonPath>
+      <_OutputTestSharedFrameworkDepsPath>$(NETCoreAppTestSharedFrameworkPath)\Microsoft.NETCore.App.deps.json</_OutputTestSharedFrameworkDepsPath>
+    </PropertyGroup>
+
+    <GenerateDepsJson DepsJsonPath="$(_OriginalDepsJsonPath)"
+                      GenerateNewDepsJson="true"
+                      RuntimeDirectory="$(NETCoreAppTestSharedFrameworkPath)"
+                      DepsExceptions="@(ExceptionForDepsJson)"
+                      OutputPath="$(_OutputTestSharedFrameworkDepsPath)"/>
+  </Target>
+
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
     <Project Include="$(DirectoryToBuild)/**/*.csproj" />
   </ItemGroup>

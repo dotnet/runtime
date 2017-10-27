@@ -4,6 +4,7 @@
 
 namespace System.Net.WebSockets
 {
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public enum WebSocketError
     {
         Success = 0,
