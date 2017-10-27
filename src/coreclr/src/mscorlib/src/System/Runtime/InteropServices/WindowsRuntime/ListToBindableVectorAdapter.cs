@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private ListToBindableVectorAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // object GetAt(uint index)

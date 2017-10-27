@@ -25,7 +25,7 @@ namespace System.StubHelpers
         unsafe static internal byte[] DoAnsiConversion(string str, bool fBestFit, bool fThrowOnUnmappableChar, out int cbLength)
         {
             byte[] buffer = new byte[(str.Length + 1) * Marshal.SystemMaxDBCSCharSize];
-            BCLDebug.Assert(buffer.Length != 0);
+            Debug.Assert(buffer.Length != 0);
             fixed (byte* bufferPtr = &buffer[0])
             {
                 cbLength = str.ConvertToAnsi(bufferPtr, buffer.Length, fBestFit, fThrowOnUnmappableChar);
@@ -40,7 +40,7 @@ namespace System.StubHelpers
 
             int cbLength = managedChar.ToString().ConvertToAnsi(bufferPtr, cbAllocLength, fBestFit, fThrowOnUnmappableChar);
 
-            BCLDebug.Assert(cbLength > 0, "Zero bytes returned from DoAnsiConversion in AnsiCharMarshaler.ConvertToNative");
+            Debug.Assert(cbLength > 0, "Zero bytes returned from DoAnsiConversion in AnsiCharMarshaler.ConvertToNative");
             return bufferPtr[0];
         }
 
@@ -254,10 +254,10 @@ namespace System.StubHelpers
                 {
                     // If caller provided a buffer, construct the BSTR manually. The size
                     // of the buffer must be at least (lengthInBytes + 6) bytes.
-#if _DEBUG
+#if DEBUG
                     uint length = *((uint*)pNativeBuffer.ToPointer());
-                    BCLDebug.Assert(length >= lengthInBytes + 6, "BSTR localloc'ed buffer is too small");
-#endif // _DEBUG
+                    Debug.Assert(length >= lengthInBytes + 6, "BSTR localloc'ed buffer is too small");
+#endif
 
                     // set length
                     *((uint*)pNativeBuffer.ToPointer()) = lengthInBytes;
@@ -385,7 +385,7 @@ namespace System.StubHelpers
                 int nbytesused;
                 byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, fBestFit, fThrowOnUnmappableChar, out nbytesused);
 
-                BCLDebug.Assert(nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
+                Debug.Assert(nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
                 Buffer.Memcpy(pNative, 0, bytes, 0, nbytesused);
 
                 pNative[nbytesused] = 0;
@@ -472,19 +472,19 @@ namespace System.StubHelpers
     {
         static internal IntPtr ConvertToNative(string strManaged)
         {
-            Debug.Assert(false, "NYI");
+            Debug.Fail("NYI");
             return IntPtr.Zero;
         }
 
         static internal unsafe string ConvertToManaged(IntPtr bstr)
         {
-            Debug.Assert(false, "NYI");
+            Debug.Fail("NYI");
             return null;
         }
 
         static internal void ClearNative(IntPtr pNative)
         {
-            Debug.Assert(false, "NYI");
+            Debug.Fail("NYI");
         }
     }  // class WSTRBufferMarshaler
 
@@ -978,7 +978,7 @@ namespace System.StubHelpers
         internal AsAnyMarshaler(IntPtr pvArrayMarshaler)
         {
             // we need this in case the value being marshaled turns out to be array
-            BCLDebug.Assert(pvArrayMarshaler != IntPtr.Zero, "pvArrayMarshaler must not be null");
+            Debug.Assert(pvArrayMarshaler != IntPtr.Zero, "pvArrayMarshaler must not be null");
 
             this.pvArrayMarshaler = pvArrayMarshaler;
             backPropAction = BackPropAction.None;
@@ -1533,7 +1533,7 @@ namespace System.StubHelpers
 
         public void Add(CleanupWorkListElement elem)
         {
-            BCLDebug.Assert(elem.m_owned == false, "m_owned is supposed to be false and set later by DangerousAddRef");
+            Debug.Assert(elem.m_owned == false, "m_owned is supposed to be false and set later by DangerousAddRef");
             m_list.Add(elem);
         }
 

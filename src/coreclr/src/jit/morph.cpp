@@ -4735,8 +4735,6 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
 //
 void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 {
-    GenTreePtr   args;
-    GenTreePtr   argx;
     bool         foundStructArg = false;
     unsigned     initialFlags   = call->gtFlags;
     unsigned     flagsSummary   = 0;
@@ -4757,7 +4755,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 #endif // !UNIX_AMD64_ABI
 #endif
 
-    for (args = call->gtCallArgs; args != nullptr; args = args->gtOp.gtOp2)
+    for (GenTreePtr args = call->gtCallArgs; args != nullptr; args = args->gtOp.gtOp2)
     {
         // For late arguments the arg tree that is overridden is in the gtCallLateArgs list.
         // For such late args the gtCallArgList contains the setup arg node (evaluating the arg.)
@@ -7295,7 +7293,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee)
 
     if (callee->HasRetBufArg()) // RetBuf
     {
-        ++calleeArgRegCount;
+        // We don't increment calleeArgRegCount here, since it is already in callee->gtCallArgs.
 
         // If callee has RetBuf param, caller too must have it.
         // Otherwise go the slow route.
@@ -12471,14 +12469,11 @@ DONE_MORPHING_CHILDREN:
      * Perform the required oper-specific postorder morphing
      */
 
-    GenTreePtr           temp;
-    GenTreePtr           cns1, cns2;
-    GenTreePtr           thenNode;
-    GenTreePtr           elseNode;
-    size_t               ival1, ival2;
-    GenTreePtr           lclVarTree;
-    GenTreeLclVarCommon* lclVarCmnTree;
-    FieldSeqNode*        fieldSeq = nullptr;
+    GenTreePtr    temp;
+    GenTreePtr    cns1, cns2;
+    size_t        ival1, ival2;
+    GenTreePtr    lclVarTree;
+    FieldSeqNode* fieldSeq = nullptr;
 
     switch (oper)
     {
@@ -13080,7 +13075,7 @@ DONE_MORPHING_CHILDREN:
 
 #ifdef LEGACY_BACKEND
         case GT_QMARK:
-
+        {
             /* If op1 is a comma throw node then we won't be keeping op2 */
             if (fgIsCommaThrow(op1))
             {
@@ -13090,8 +13085,8 @@ DONE_MORPHING_CHILDREN:
             /* Get hold of the two branches */
 
             noway_assert(op2->OperGet() == GT_COLON);
-            elseNode = op2->AsColon()->ElseNode();
-            thenNode = op2->AsColon()->ThenNode();
+            GenTreePtr thenNode = op2->AsColon()->ThenNode();
+            GenTreePtr elseNode = op2->AsColon()->ElseNode();
 
             /* Try to hoist assignments out of qmark colon constructs.
                ie. replace (cond?(x=a):(x=b)) with (x=(cond?a:b)). */
@@ -13197,9 +13192,9 @@ DONE_MORPHING_CHILDREN:
                 }
             }
 #endif // !_TARGET_ARM_
-
-            break; // end case GT_QMARK
-#endif             // LEGACY_BACKEND
+        }
+        break; // end case GT_QMARK
+#endif         // LEGACY_BACKEND
 
         case GT_MUL:
 
@@ -16698,9 +16693,7 @@ void Compiler::fgMorphBlocks()
         }
 #endif
 
-        /* Process all statement trees in the basic block */
-
-        GenTreePtr tree;
+/* Process all statement trees in the basic block */
 
 #ifndef LEGACY_BACKEND
         fgMorphStmts(block, &lnot, &loadw);
@@ -16709,7 +16702,7 @@ void Compiler::fgMorphBlocks()
 
         if (mult && (opts.compFlags & CLFLG_TREETRANS) && !opts.compDbgCode && !opts.MinOpts())
         {
-            for (tree = block->bbTreeList; tree; tree = tree->gtNext)
+            for (GenTreePtr tree = block->bbTreeList; tree; tree = tree->gtNext)
             {
                 assert(tree->gtOper == GT_STMT);
                 GenTreePtr last = tree->gtStmt.gtStmtExpr;
@@ -19581,7 +19574,6 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTreePtr 
         setLclRelatedToSIMDIntrinsic(localDst);
     }
 
-    GenTree* simdStructAddr;
     if (simdStructNode->TypeGet() == TYP_BYREF)
     {
         assert(simdStructNode->OperIsLocal());

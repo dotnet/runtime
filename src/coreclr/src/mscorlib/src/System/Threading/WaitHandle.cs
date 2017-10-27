@@ -273,7 +273,7 @@ namespace System.Threading
 
                 internalWaitHandles[i] = waitHandle;
             }
-#if _DEBUG
+#if DEBUG
             // make sure we do not use waitHandles any more.
             waitHandles = null;
 #endif
@@ -362,7 +362,7 @@ namespace System.Threading
 
                 internalWaitHandles[i] = waitHandle;
             }
-#if _DEBUG
+#if DEBUG
             // make sure we do not use waitHandles any more.
             waitHandles = null;
 #endif

@@ -106,16 +106,11 @@ namespace System.Resources
         // Version number of .resources file, for compatibility
         private int _version;
 
-#if RESOURCE_FILE_FORMAT_DEBUG
-        private bool _debug;   // Whether this file has debugging stuff in it.
-#endif
-
 
         public ResourceReader(String fileName)
         {
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
             _store = new BinaryReader(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.RandomAccess), Encoding.UTF8);
-            BCLDebug.Log("RESMGRFILEFORMAT", "ResourceReader .ctor(String).  UnmanagedMemoryStream: " + (_ums != null));
 
             try
             {
@@ -140,7 +135,6 @@ namespace System.Resources
             // We have a faster code path for reading resource files from an assembly.
             _ums = stream as UnmanagedMemoryStream;
 
-            BCLDebug.Log("RESMGRFILEFORMAT", "ResourceReader .ctor(Stream).  UnmanagedMemoryStream: " + (_ums != null));
             ReadResources();
         }
 
@@ -159,7 +153,6 @@ namespace System.Resources
 
             _ums = stream as UnmanagedMemoryStream;
 
-            BCLDebug.Log("RESMGRFILEFORMAT", "ResourceReader .ctor(Stream, Hashtable).  UnmanagedMemoryStream: " + (_ums != null));
             ReadResources();
         }
 
@@ -268,7 +261,7 @@ namespace System.Resources
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             int hash = FastResourceComparer.HashFunction(name);
-            BCLDebug.Log("RESMGRFILEFORMAT", "FindPosForResource for " + name + "  hash: " + hash.ToString("x", CultureInfo.InvariantCulture));
+
             // Binary search over the hashes.  Use the _namePositions array to 
             // determine where they exist in the underlying stream.
             int lo = 0;
@@ -288,7 +281,7 @@ namespace System.Resources
                     c = -1;
                 else
                     c = 1;
-                //BCLDebug.Log("RESMGRFILEFORMAT", "  Probing index "+index+"  lo: "+lo+"  hi: "+hi+"  c: "+c);
+
                 if (c == 0)
                 {
                     success = true;
@@ -301,14 +294,6 @@ namespace System.Resources
             }
             if (!success)
             {
-#if RESOURCE_FILE_FORMAT_DEBUG
-                String lastReadString;
-                lock(this) {
-                    _store.BaseStream.Seek(_nameSectionOffset + GetNamePosition(index), SeekOrigin.Begin);
-                    lastReadString = _store.ReadString();
-                }
-                BCLDebug.Log("RESMGRFILEFORMAT", LogLevel.Status, "FindPosForResource for ", name, " failed.  i: ", index, "  lo: ", lo, "  hi: ", hi, "  last read string: \"", lastReadString, '\'');
-#endif
                 return -1;
             }
 
@@ -346,7 +331,6 @@ namespace System.Resources
                     }
                 }
             }
-            BCLDebug.Log("RESMGRFILEFORMAT", "FindPosForResource for " + name + ": Found a hash collision, HOWEVER, neither of these collided values equaled the given string.");
             return -1;
         }
 
@@ -463,13 +447,13 @@ namespace System.Resources
             {
                 _store.BaseStream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
                 SkipString();
-                //BCLDebug.Log("RESMGRFILEFORMAT", "GetValueForNameIndex for index: "+index+"  skip (name length): "+skip);
+
                 int dataPos = _store.ReadInt32();
                 if (dataPos < 0 || dataPos >= _store.BaseStream.Length - _dataSectionOffset)
                 {
                     throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataPos));
                 }
-                BCLDebug.Log("RESMGRFILEFORMAT", "GetValueForNameIndex: dataPos: " + dataPos);
+
                 ResourceTypeCode junk;
                 if (_version == 1)
                     return LoadObjectV1(dataPos);
@@ -511,7 +495,7 @@ namespace System.Resources
                 if (typeCode == ResourceTypeCode.String) // ignore Null
                     s = _store.ReadString();
             }
-            BCLDebug.Log("RESMGRFILEFORMAT", "LoadString(" + pos.ToString("x", CultureInfo.InvariantCulture) + " returned " + (s == null ? "[a null string]" : s));
+
             return s;
         }
 
@@ -567,7 +551,6 @@ namespace System.Resources
             if (typeIndex == -1)
                 return null;
             RuntimeType type = FindType(typeIndex);
-            BCLDebug.Log("RESMGRFILEFORMAT", "LoadObject type: " + type.Name + "  pos: 0x" + _store.BaseStream.Position.ToString("x", CultureInfo.InvariantCulture));
             // Consider putting in logic to see if this type is a 
             // primitive or a value type first, so we can reach the 
             // deserialization code faster for arbitrary objects.
@@ -640,8 +623,6 @@ namespace System.Resources
         {
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
             typeCode = (ResourceTypeCode)_store.Read7BitEncodedInt();
-
-            BCLDebug.Log("RESMGRFILEFORMAT", "LoadObjectV2 type: " + typeCode + "  pos: 0x" + _store.BaseStream.Position.ToString("x", CultureInfo.InvariantCulture));
 
             switch (typeCode)
             {
@@ -812,12 +793,10 @@ namespace System.Resources
             }
             if (resMgrHeaderVersion > 1)
             {
-                BCLDebug.Log("RESMGRFILEFORMAT", LogLevel.Status, "ReadResources: Unexpected ResMgr header version: {0}  Skipping ahead {1} bytes.", resMgrHeaderVersion, numBytesToSkip);
                 _store.BaseStream.Seek(numBytesToSkip, SeekOrigin.Current);
             }
             else
             {
-                BCLDebug.Log("RESMGRFILEFORMAT", "ReadResources: Parsing ResMgr header v1.");
                 // We don't care about numBytesToSkip; read the rest of the header
 
                 // Read in type name for a suitable ResourceReader
@@ -840,36 +819,11 @@ namespace System.Resources
                 throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, RuntimeResourceSet.Version, version));
             _version = version;
 
-#if RESOURCE_FILE_FORMAT_DEBUG
-            // Look for ***DEBUG*** to see if this is a debuggable file.
-            long oldPos = _store.BaseStream.Position;
-            _debug = false;
-            try {
-                String debugString = _store.ReadString();
-                _debug = String.Equals("***DEBUG***", debugString);
-            }
-            catch(IOException) {
-            }
-            catch(OutOfMemoryException) {
-            }
-            if (_debug) {
-                Console.WriteLine("ResourceReader is looking at a debuggable .resources file, version {0}", _version);
-            }
-            else {
-                _store.BaseStream.Position = oldPos;
-            }
-#endif
-
             _numResources = _store.ReadInt32();
             if (_numResources < 0)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
-            BCLDebug.Log("RESMGRFILEFORMAT", "ReadResources: Expecting " + _numResources + " resources.");
-#if RESOURCE_FILE_FORMAT_DEBUG
-            if (ResourceManager.DEBUG >= 4)
-                Console.WriteLine("ResourceReader::ReadResources - Reading in "+_numResources+" resources");
-#endif
 
             // Read type positions into type positions array.
             // But delay initialize the type table.
@@ -888,11 +842,6 @@ namespace System.Resources
                 SkipString();
             }
 
-#if RESOURCE_FILE_FORMAT_DEBUG
-                if (ResourceManager.DEBUG >= 5)
-                    Console.WriteLine("ResourceReader::ReadResources - Reading in "+numTypes+" type table entries");
-#endif
-
             // Prepare to read in the array of name hashes
             //  Note that the name hashes array is aligned to 8 bytes so 
             //  we can use pointers into it on 64 bit machines. (4 bytes 
@@ -910,13 +859,6 @@ namespace System.Resources
             }
 
             // Read in the array of name hashes
-#if RESOURCE_FILE_FORMAT_DEBUG
-                //  Skip over "HASHES->"
-                if (_debug) {
-                    _store.BaseStream.Position += 8;
-                }
-#endif
-
             if (_ums == null)
             {
                 _nameHashes = new int[_numResources];
@@ -943,12 +885,6 @@ namespace System.Resources
             }
 
             // Read in the array of relative positions for all the names.
-#if RESOURCE_FILE_FORMAT_DEBUG
-            // Skip over "POS---->"
-            if (_debug) {
-                _store.BaseStream.Position += 8;
-            }
-#endif
             if (_ums == null)
             {
                 _namePositions = new int[_numResources];
@@ -995,8 +931,6 @@ namespace System.Resources
             {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
-
-            BCLDebug.Log("RESMGRFILEFORMAT", String.Format(CultureInfo.InvariantCulture, "ReadResources: _nameOffset = 0x{0:x}  _dataOffset = 0x{1:x}", _nameSectionOffset, _dataSectionOffset));
         }
 
         // This allows us to delay-initialize the Type[].  This might be a 

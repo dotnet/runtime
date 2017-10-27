@@ -84,7 +84,7 @@ namespace System
                     break;
 
                 default:
-                    Debug.Assert(false, "internal constructor, this should never occur");
+                    Debug.Fail("internal constructor, this should never occur");
                     break;
             }
 
@@ -119,7 +119,7 @@ namespace System
                     return LazyThreadSafetyMode.ExecutionAndPublication;
 
                 default:
-                    Debug.Assert(false, "Invalid logic; State should always have a valid value");
+                    Debug.Fail("Invalid logic; State should always have a valid value");
                     return default(LazyThreadSafetyMode);
             }
         }

@@ -3462,8 +3462,7 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
             {
                 // We have a config key, InsecurelyTreatAVsAsNullReference, that ensures we always translate to
                 // NullReferenceException instead of doing the new AV translation logic.
-                if ((g_pConfig != NULL) && !g_pConfig->LegacyNullReferenceExceptionPolicy() &&
-                    !GetCompatibilityFlag(compatNullReferenceExceptionOnAV) )
+                if ((g_pConfig != NULL) && !g_pConfig->LegacyNullReferenceExceptionPolicy())
                 {
 #if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
                     // If we got the exception on a redirect function it means the original exception happened in managed code:

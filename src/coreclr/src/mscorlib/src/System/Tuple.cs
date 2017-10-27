@@ -1195,7 +1195,7 @@ namespace System
                 case 7:
                     return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1), comparer.GetHashCode(m_Item2), comparer.GetHashCode(m_Item3), comparer.GetHashCode(m_Item4), comparer.GetHashCode(m_Item5), comparer.GetHashCode(m_Item6), comparer.GetHashCode(m_Item7), t.GetHashCode(comparer));
             }
-            Debug.Assert(false, "Missed all cases for computing Tuple hash code");
+            Debug.Fail("Missed all cases for computing Tuple hash code");
             return -1;
         }
 

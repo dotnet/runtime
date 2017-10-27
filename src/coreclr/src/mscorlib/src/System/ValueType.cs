@@ -24,7 +24,6 @@ namespace System
     {
         public override bool Equals(Object obj)
         {
-            BCLDebug.Perf(false, "ValueType::Equals is not fast.  " + this.GetType().FullName + " should override Equals(Object)");
             if (null == obj)
             {
                 return false;

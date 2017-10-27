@@ -137,9 +137,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     SetContainsAVXFlags(varTypeIsFloating(tree->TypeGet()));
     switch (tree->OperGet())
     {
-        GenTree* op1;
-        GenTree* op2;
-
         default:
             TreeNodeInfoInitSimple(tree);
             break;
@@ -456,10 +453,12 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_LOCKADD:
-            op2            = tree->gtOp.gtOp2;
+        {
+            GenTreePtr op2 = tree->gtOp.gtOp2;
             info->srcCount = op2->isContained() ? 1 : 2;
             assert(info->dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
-            break;
+        }
+        break;
 
         case GT_PUTARG_REG:
             TreeNodeInfoInitPutArgReg(tree->AsUnOp());

@@ -134,7 +134,7 @@ namespace System
 
         private const Int32 base64LineBreakPosition = 76;
 
-#if _DEBUG
+#if DEBUG
         private static bool TriggerAsserts = DoAsserts();
         private static bool DoAsserts()
         {
@@ -2902,7 +2902,7 @@ namespace System
             }  // unchecked while
 
         // 'd be nice to have an assert that we never get here, but CS0162: Unreachable code detected.
-        // Debug.Assert(false, "We only leave the above loop by jumping; should never get here.");
+        // Debug.Fail("We only leave the above loop by jumping; should never get here.");
 
         // We jump here out of the loop if we hit an '=':
         _EqualityCharEncountered:

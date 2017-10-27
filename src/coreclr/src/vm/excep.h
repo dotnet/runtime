@@ -55,8 +55,7 @@ BOOL IsWin32IOError(SCODE scode);
 inline bool SwallowUnhandledExceptions()
 {
     return (eHostDeterminedPolicy == GetEEPolicy()->GetUnhandledExceptionPolicy()) ||
-           g_pConfig->LegacyUnhandledExceptionPolicy() ||
-           GetCompatibilityFlag(compatSwallowUnhandledExceptions);
+           g_pConfig->LegacyUnhandledExceptionPolicy();
 }
 
 // Enums

@@ -4229,8 +4229,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *  The following adds instructions referencing address modes.
  */
 
-void emitter::emitIns_I_AR(
-    instruction ins, emitAttr attr, int val, regNumber reg, int disp, int memCookie, void* clsCookie)
+void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int disp)
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
@@ -4273,13 +4272,6 @@ void emitter::emitIns_I_AR(
     instrDesc*     id = emitNewInstrAmdCns(attr, disp, val);
     id->idIns(ins);
     id->idInsFmt(fmt);
-
-    assert((memCookie == NULL) == (clsCookie == nullptr));
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = memCookie;
-    id->idDebugOnlyInfo()->idClsCookie = clsCookie;
-#endif
 
     id->idAddr()->iiaAddrMode.amBaseReg = reg;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
@@ -4349,8 +4341,7 @@ void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_AR(
-    instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp, int memCookie, void* clsCookie)
+void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp)
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_32BYTE) && (ireg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
@@ -4373,13 +4364,6 @@ void emitter::emitIns_R_AR(
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
-
-    assert((memCookie == NULL) == (clsCookie == nullptr));
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = memCookie;
-    id->idDebugOnlyInfo()->idClsCookie = clsCookie;
-#endif
 
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
@@ -4418,8 +4402,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(
-    instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp, int memCookie, void* clsCookie)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -4445,13 +4428,6 @@ void emitter::emitIns_AR_R(
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-
-    assert((memCookie == NULL) == (clsCookie == nullptr));
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = memCookie;
-    id->idDebugOnlyInfo()->idClsCookie = clsCookie;
-#endif
 
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
@@ -5662,20 +5638,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
         }
     }
-#endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idClsCookie = nullptr;
     id->idDebugOnlyInfo()->idCallSig   = sigInfo;
-#endif
+#endif // DEBUG
 
-#if defined(LATE_DISASM)
+#ifdef LATE_DISASM
     if (addr != nullptr)
     {
         codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
     }
-#endif // defined(LATE_DISASM)
+#endif // LATE_DISASM
 
     id->idCodeSize(sz);
 
@@ -6434,19 +6407,8 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 
     printf("]");
 
-    if (id->idDebugOnlyInfo()->idClsCookie)
-    {
-        if (id->idIns() == INS_call)
-        {
-            printf("%s", emitFncName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie));
-        }
-        else
-        {
-            printf("%s", emitFldName((CORINFO_FIELD_HANDLE)id->idDebugOnlyInfo()->idMemCookie));
-        }
-    }
     // pretty print string if it looks like one
-    else if (id->idGCref() == GCT_GCREF && id->idIns() == INS_mov && id->idAddr()->iiaAddrMode.amBaseReg == REG_NA)
+    if ((id->idGCref() == GCT_GCREF) && (id->idIns() == INS_mov) && (id->idAddr()->iiaAddrMode.amBaseReg == REG_NA))
     {
         const wchar_t* str = emitComp->eeGetCPString(disp);
         if (str != nullptr)
