@@ -9686,9 +9686,9 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                         chars += printf("[ICON_FTN_ADDR]");
                         break;
 
-                    case GTF_ICON_MID_HDL:
+                    case GTF_ICON_CIDMID_HDL:
 
-                        chars += printf("[ICON_MID_HDL]");
+                        chars += printf("[ICON_CIDMID_HDL]");
                         break;
 
                     case GTF_ICON_BBC_PTR:
@@ -10417,7 +10417,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
                 chars += printf("FTN(?)");
                 break;
 
-            case GTF_ICON_MID_HDL:
+            case GTF_ICON_CIDMID_HDL:
 
                 chars += printf("CIDMID(?)");
                 break;
