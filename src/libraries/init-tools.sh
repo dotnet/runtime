@@ -44,7 +44,7 @@ display_error_message()
 }
 
 # Executes a command and retries if it fails.
-execute() {
+executeWithRetry() {
     local count=0
     local retries=${retries:-5}
     local waitFactor=${waitFactor:-6} 
@@ -132,7 +132,7 @@ if [ ! -e $__DOTNET_PATH ]; then
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
     }
-    execute installDotNetCLI >> "$__init_tools_log" 2>&1
+    executeWithRetry installDotNetCLI >> "$__init_tools_log" 2>&1
 
     cd $__scriptpath
 fi
