@@ -922,6 +922,7 @@ AC_ARG_WITH(testing_aot_full,    [  --with-testing_aot_full=yes,no      If you w
 AC_ARG_WITH(winaot,              [  --with-winaot=yes,no                If you want to build the Windows friendly AOT assemblies (defaults to no)], [], [with_winaot=default])
 AC_ARG_WITH(orbis,               [  --with-orbis=yes,no                 If you want to build the Orbis assemblies (defaults to no)], [], [with_orbis=default])
 AC_ARG_WITH(unreal,              [  --with-unreal=yes,no                If you want to build the Unreal assemblies (defaults to no)], [], [with_unreal=default])
+AC_ARG_WITH(wasm,                [  --with-wasm=yes,no                  If you want to build the WebAssembly (defaults to no)], [], [with_wasm=default])
 
 
 AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode,unreal   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
@@ -943,6 +944,7 @@ with_testing_aot_full_default=no
 with_winaot_default=no
 with_orbis_default=no
 with_unreal_default=no
+with_wasm_default=no
 
 with_bitcode_default=no
 with_cooperative_gc_default=no
@@ -963,6 +965,7 @@ elif test x$with_runtime_preset = xall; then
    with_winaot_default=yes
    with_orbis_default=yes
    with_unreal_default=yes
+   with_wasm_default=yes
 elif test x$with_runtime_preset = xfullaot; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_full_default=yes
@@ -1044,6 +1047,19 @@ elif test x$with_runtime_preset = xunreal; then
 
    AOT_BUILD_FLAGS="--runtime=mobile --aot=hybrid,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--runtime=mobile --hybrid-aot"
+elif test x$with_runtime_preset = xwasm; then
+   DISABLE_MCS_DOCS_default=yes
+   with_wasm_default=yes
+   TEST_PROFILE=wasm
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_reflection_emit='yes'
+   mono_feature_disable_appdomains='yes'
+
+   AOT_BUILD_FLAGS="--runtime=mobile --aot=full,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--runtime=mobile --full-aot"
 else
    with_profile4_x_default=yes
 fi
@@ -1093,6 +1109,9 @@ fi
 if test "x$with_unreal" = "xdefault"; then
    with_unreal=$with_unreal_default
 fi
+if test "x$with_wasm" = "xdefault"; then
+   with_wasm=$with_wasm_default
+fi
 
 
 AM_CONDITIONAL(INSTALL_4_x, [test "x$with_profile4_x" = "xyes"])
@@ -1107,7 +1126,8 @@ AM_CONDITIONAL(INSTALL_TESTING_AOT_FULL, [test "x$with_testing_aot_full" != "xno
 AM_CONDITIONAL(INSTALL_WINAOT, [test "x$with_winaot" != "xno"])
 AM_CONDITIONAL(INSTALL_ORBIS, [test "x$with_orbis" != "xno"])
 AM_CONDITIONAL(INSTALL_UNREAL, [test "x$with_unreal" != "xno"])
-AM_CONDITIONAL(FULL_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full"] || [test "x$TEST_PROFILE" = "xwinaot"] || [test "x$TEST_PROFILE" = "xorbis"])
+AM_CONDITIONAL(INSTALL_WASM, [test "x$with_wasm" != "xno"])
+AM_CONDITIONAL(FULL_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full"] || [test "x$TEST_PROFILE" = "xwinaot"] || [test "x$TEST_PROFILE" = "xorbis"] || [test "x$TEST_PROFILE" = "xwasm"])
 AM_CONDITIONAL(HYBRID_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_hybrid"] || [test "x$TEST_PROFILE" = "xunreal"])
 
 default_profile=net_4_x
@@ -1134,6 +1154,9 @@ if test -z "$INSTALL_ORBIS_TRUE"; then :
 fi
 if test -z "$INSTALL_UNREAL_TRUE"; then :
    default_profile=unreal
+fi
+if test -z "$INSTALL_WASM_TRUE"; then :
+   default_profile=wasm
 fi
 if test -z "$INSTALL_4_x_TRUE"; then :
    default_profile=net_4_x
@@ -4883,6 +4906,7 @@ echo "
 	Windows AOT:     $with_winaot
 	Orbis:           $with_orbis
 	Unreal:          $with_unreal
+	WebAssembly:     $with_wasm
 	Test profiles:   AOT Full ($with_testing_aot_full), AOT Hybrid ($with_testing_aot_hybrid)
 	JNI support:     $jdk_headers_found
 	libgdiplus:      $libgdiplus_msg
