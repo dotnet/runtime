@@ -8,6 +8,9 @@ namespace System.Management.Tests
 {
     public class ManagementObjectTests
     {
+        // Need a specific condition for the test requiring notepad since not all windows versions that support WMI have it
+        public static bool IsWmiSupportedAndHasNotepad => WmiTestHelper.IsWmiSupported && PlatformDetection.IsNotWindowsServerCore;
+
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void Get_Win32_LogicalDisk()
         {
@@ -48,7 +51,7 @@ namespace System.Management.Tests
             }
         }
 
-        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ConditionalFact(nameof(IsWmiSupportedAndHasNotepad))]
         [OuterLoop]
         public void Invoke_Instance_And_Static_Method_Win32_Process()
         {
