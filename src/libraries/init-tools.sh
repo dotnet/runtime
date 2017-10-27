@@ -44,7 +44,7 @@ display_error_message()
 }
 
 # Executes a command and retries if it fails.
-executeWithRetry() {
+execute_with_retry() {
     local count=0
     local retries=${retries:-5}
     local waitFactor=${waitFactor:-6} 
@@ -120,7 +120,7 @@ if [ ! -e $__DOTNET_PATH ]; then
     echo "Installing dotnet cli..."
     __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
 
-    installDotNetCLI() {
+    install_dotnet_cli() {
         echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> "$__init_tools_log"
         rm -rf -- "$__DOTNET_PATH/*"
         # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
@@ -132,7 +132,7 @@ if [ ! -e $__DOTNET_PATH ]; then
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
     }
-    executeWithRetry installDotNetCLI >> "$__init_tools_log" 2>&1
+    execute_with_retry install_dotnet_cli >> "$__init_tools_log" 2>&1
 
     cd $__scriptpath
 fi
