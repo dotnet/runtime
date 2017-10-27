@@ -7,6 +7,10 @@ set __BuildType=Debug
 set __BuildOS=Windows_NT
 set __MSBuildBuildArch=x64
 
+:: Define a prefix for most output progress messages that come from this script. That makes
+:: it easier to see where these are coming from. Note that there is a trailing space here.
+set "__MsgPrefix=RUNTEST: "
+
 :: Default to highest Visual Studio version available
 ::
 :: For VS2015 (and prior), only a single instance is allowed to be installed on a box
@@ -22,15 +26,18 @@ set __MSBuildBuildArch=x64
 :: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
 :: toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
-if defined VisualStudioVersion goto :Run
+if defined VisualStudioVersion ( 
+    if not defined __VSVersion echo %__MsgPrefix%Detected Visual Studio %VisualStudioVersion% developer command ^prompt environment
+    goto Run
+)
 
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
-  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" (
-  echo Error: Visual Studio 2015 or 2017 required.
+  echo %__MsgPrefix%Error: Visual Studio 2015 or 2017 required.
   echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
   exit /b 1
 )
@@ -43,10 +50,6 @@ set __VSVersion=vs2017
 
 if defined VS140COMNTOOLS set __VSVersion=vs2015
 if defined VS150COMNTOOLS set __VSVersion=vs2017
-
-:: Define a prefix for most output progress messages that come from this script. That makes
-:: it easier to see where these are coming from. Note that there is a trailing space here.
-set __MsgPrefix=RUNTEST: 
 
 set __ProjectDir=%~dp0
 :: remove trailing slash
@@ -154,11 +157,7 @@ if not exist "%__VCToolsRoot%\vcvarsall.bat"          goto NoVS
 if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
 
 :: Does MSBuild really exist?
-if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
-
-:: Set the environment for the  build- VS cmd prompt
-echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
-call                                 "%__VSToolsRoot%\VsDevCmd.bat"
+if not exist %_msbuildexe% echo %__MsgPrefix%Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
 
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
@@ -280,11 +279,11 @@ echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting the test run ...  
 
 set __BuildLogRootName=PerfTestRunResults  
-echo Running perf tests  
+echo %__MsgPrefix%Running perf tests  
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /t:RunPerfTests /clp:showcommandline  
 
 if errorlevel 1 (  
-   echo Test Run failed. Refer to the following:  
+   echo %__MsgPrefix%Test Run failed. Refer to the following:  
    echo     Html report: %__TestRunHtmlLog%  
 )  
 
@@ -328,7 +327,7 @@ if %__exitCode% neq 0 (
     exit /b 0
 )
     
-echo Successfully precompiled %2
+echo %__MsgPrefix%Successfully precompiled %2
 exit /b 0
 
 :jitdisasm
@@ -349,7 +348,7 @@ if %__exitCode% neq 0 (
     exit /b 0
 )
 
-echo Successfully precompiled and generated dasm for %2
+echo %__MsgPrefix%Successfully precompiled and generated dasm for %2
 exit /b 0
 
 :PrecompileFX
@@ -382,7 +381,7 @@ set __msbuildLogArgs=^
 set __msbuildArgs=%* %__msbuildCommonArgs% %__msbuildLogArgs%
 
 @REM The next line will overwrite the existing log file, if any.
-echo %_msbuildexe% %__msbuildArgs%
+echo %__MsgPrefix%%_msbuildexe% %__msbuildArgs%
 echo Invoking: %_msbuildexe% %__msbuildArgs% > "%__BuildLog%"
 
 %_msbuildexe% %__msbuildArgs%
@@ -407,7 +406,7 @@ if "%CORE_ROOT%" == "" (
 :: they often bump up against the default 10 minute timeout.
 :: 20 minutes is more than enough time for a test to complete successfully.
 if defined __LongGCTests (
-    echo Running Long GC tests, extending timeout to 20 minutes
+    echo %__MsgPrefix%Running Long GC tests, extending timeout to 20 minutes
     set __TestTimeout=1200000
     set RunningLongGCTests=1
 )
@@ -415,30 +414,30 @@ if defined __LongGCTests (
 :: GCSimulator tests can take up to an hour to complete. They are run twice a week in the
 :: CI, so it's fine if they take a long time.
 if defined __GCSimulatorTests (
-    echo Running GCSimulator tests, extending timeout to one hour
+    echo %__MsgPrefix%Running GCSimulator tests, extending timeout to one hour
     set __TestTimeout=3600000
     set RunningGCSimulatorTests=1
 )
 
 if defined __JitDisasm (
     if defined __DoCrossgen (
-        echo Running jit disasm on framework and test assemblies
+        echo %__MsgPrefix%Running jit disasm on framework and test assemblies
     )
     if not defined __DoCrossgen (
-       echo Running jit disasm on test assemblies only
+       echo %__MsgPrefix%Running jit disasm on test assemblies only
     )
     set RunningJitDisasm=1
 )
 
 if defined __IlasmRoundTrip (
-    echo Running Ilasm round trip
+    echo %__MsgPrefix%Running Ilasm round trip
     set RunningIlasmRoundTrip=1
 )
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
 if errorlevel 1 (
-    echo Test Dependency Resolution Failed
+    echo %__MsgPrefix%Test Dependency Resolution Failed
     exit /b 1
 )
 echo %__MsgPrefix%Created the runtime layout with all dependencies in %CORE_ROOT%

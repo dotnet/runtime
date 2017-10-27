@@ -7,6 +7,10 @@ set __VCBuildArch=x86_amd64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
 
+:: Define a prefix for most output progress messages that come from this script. That makes
+:: it easier to see where these are coming from. Note that there is a trailing space here.
+set "__MsgPrefix=BUILDTEST: "
+
 :: Default to highest Visual Studio version available
 ::
 :: For VS2015 (and prior), only a single instance is allowed to be installed on a box
@@ -22,15 +26,18 @@ set __BuildOS=Windows_NT
 :: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
 :: toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
-if defined VisualStudioVersion goto :Run
+if defined VisualStudioVersion ( 
+    if not defined __VSVersion echo %__MsgPrefix%Detected Visual Studio %VisualStudioVersion% developer command ^prompt environment
+    goto Run
+)
 
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
-  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" (
-  echo Error: Visual Studio 2015 or 2017 required.
+  echo %__MsgPrefix%Error: Visual Studio 2015 or 2017 required.
   echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
   exit /b 1
 )
@@ -48,10 +55,6 @@ if defined VS150COMNTOOLS (
   set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
   set __VSVersion=vs2015
 )
-
-:: Define a prefix for most output progress messages that come from this script. That makes
-:: it easier to see where these are coming from. Note that there is a trailing space here.
-set __MsgPrefix=BUILDTEST: 
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -120,8 +123,6 @@ if defined __BuildAgainstPackagesArg (
     )
 )
 
-echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
-call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 @if defined _echo @echo on
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
