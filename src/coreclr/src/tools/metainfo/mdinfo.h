@@ -164,7 +164,6 @@ public:
     void DumpRawCol(ULONG ixTbl, ULONG ixCol, ULONG rid, bool bStats);
     ULONG DumpRawColStats(ULONG ixTbl, ULONG ixCol, ULONG cRows);
     const char *DumpRawNameOfType(ULONG ulType);
-    void SetVEHandlerReporter(__int64 VEHandlerReporterPtr) { m_VEHandlerReporterPtr = VEHandlerReporterPtr; };
 
     static void Error(const char *szError, HRESULT hr = S_OK);
 private:
@@ -186,7 +185,6 @@ private:
     IMetaDataImport2 *m_pImport;
     IMetaDataAssemblyImport *m_pAssemblyImport;
     strPassBackFn m_pbFn;
-    __int64 m_VEHandlerReporterPtr;
     IMetaDataTables *m_pTables;
     IMetaDataTables2 *m_pTables2;
 

@@ -67,7 +67,6 @@ RegMeta::RegMeta() :
     m_trLanguageType(0),
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
-    m_pVEHandler(0),
     m_bKeepKnownCa(false),
     m_pCorProfileData(NULL),
     m_ReorderingOptions(NoReordering)
@@ -155,9 +154,6 @@ RegMeta::~RegMeta()
         m_pStgdbFreeList = m_pStgdbFreeList->m_pNextStgdb;
         delete pCur;
     }
-
-    if (m_pVEHandler)
-        m_pVEHandler->Release();
 
     // If This RegMeta spun up the runtime (probably to process security 
     //  attributes), shut it down now.

@@ -46,7 +46,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "comtoclrcall.h"
-#include "sxshelpers.h"
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
 #include "olevariant.h"
