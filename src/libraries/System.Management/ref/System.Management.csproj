@@ -3,14 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{CA17270B-079F-4D52-97E8-C0C2E8B9D7DB}</ProjectGuid>
-    <!-- UAPvNext is not yet mapped to netstandard2.0, manually duplicate this ref -->
-    <PackageTargetFramework>netcoreapp2.0;$(UAPvNextTFM)</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Management.cs" />
-    <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.CodeDom\ref\System.CodeDom.csproj" />
