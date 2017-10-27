@@ -220,7 +220,6 @@ typedef interface ICLRAppDomainResourceMonitor ICLRAppDomainResourceMonitor;
 /* header files for imported files */
 #include "unknwn.h"
 #include "gchost.h"
-#include "ivalidator.h"
 
 #ifdef __cplusplus
 extern "C"{

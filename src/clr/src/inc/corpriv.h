@@ -390,8 +390,6 @@ DECLARE_INTERFACE_(ICeeGenInternal, IUnknown)
 #ifdef FEATURE_PREJIT
 // ===========================================================================
 
-#define CLR_OPTIMIZATION_SERVICE_DLL_NAME W("mscorsvc.dll")
-#define CLR_OPT_SVC_ENTRY_POINT "CorGetSvc"
 
 // Use the default JIT compiler
 #define DEFAULT_NGEN_COMPILER_DLL_NAME W("clrjit.dll")
@@ -473,12 +471,6 @@ typedef GUID CORCOMPILE_NGEN_SIGNATURE;
 //**********************************************************************
 // Internal versions of shim functions for use by the CLR.
 
-STDAPI LoadLibraryShimInternal(
-    LPCWSTR szDllName,
-    LPCWSTR szVersion,
-    LPVOID pvReserved,
-    HMODULE *phModDll);
-
 STDAPI GetCORSystemDirectoryInternaL(
     SString& pBuffer
       );
@@ -494,18 +486,6 @@ STDAPI GetCORVersionInternal(
     __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer, 
                                   DWORD  cchBuffer,
     __out                         DWORD *pdwLength);
-
-STDAPI GetRequestedRuntimeInfoInternal(LPCWSTR pExe, 
-                               LPCWSTR pwszVersion,
-                               LPCWSTR pConfigurationFile, 
-                               DWORD startupFlags,
-                               DWORD runtimeInfoFlags, 
-                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory,
-                               DWORD dwDirectory, 
-                               __out_opt DWORD *pdwDirectoryLength, 
-                               __out_ecount_opt(cchBuffer) LPWSTR pVersion, 
-                               DWORD cchBuffer, 
-                               __out_opt DWORD* pdwLength);
 
 
 #ifdef FEATURE_PREJIT
