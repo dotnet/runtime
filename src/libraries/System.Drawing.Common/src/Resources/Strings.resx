@@ -348,6 +348,9 @@
   <data name="PDOCqueryPageSettingsDescr" xml:space="preserve">
     <value>Occurs before each page is printed.  Useful for changing PageSettings for a particular page.</value>
   </data>
+  <data name="PlatformNotSupported_Drawing" xml:space="preserve">
+    <value>System.Drawing is not supported on this platform.</value>
+  </data>
   <data name="PrintDocumentDesc" xml:space="preserve">
     <value>Defines an object that sends output to a printer.</value>
   </data>
