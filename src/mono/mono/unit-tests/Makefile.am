@@ -21,6 +21,13 @@ if HOST_DARWIN
 test_ldflags = -framework CoreFoundation -framework Foundation
 endif
 
+monodir=$(top_builddir)
+sgen_libs = \
+	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
+	$(monodir)/mono/sgen/libmonosgen.la	\
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS) $(LIBICONV)
+
 if !CROSS_COMPILE
 if !HOST_WIN32
 if SUPPORT_BOEHM
@@ -57,7 +64,7 @@ test_mono_handle_LDFLAGS = $(test_ldflags)
 
 test_mono_callspec_SOURCES = test-mono-callspec.c
 test_mono_callspec_CFLAGS = $(AM_CFLAGS)
-test_mono_callspec_LDADD = $(test_ldadd) ../mini/libmini.la
+test_mono_callspec_LDADD = $(test_ldadd) ../mini/libmini.la $(sgen_libs)
 test_mono_callspec_LDFLAGS = $(test_ldflags)
 test_mono_callspec_DEPENDENCIES = callspec.exe
 
