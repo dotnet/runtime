@@ -33,7 +33,7 @@ if defined VisualStudioVersion (
 
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
-  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" (
@@ -158,10 +158,6 @@ if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
 
 :: Does MSBuild really exist?
 if not exist %_msbuildexe% echo %__MsgPrefix%Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
-
-:: Set the environment for the  build- VS cmd prompt
-:: echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
-:: call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
@@ -331,7 +327,7 @@ if %__exitCode% neq 0 (
     exit /b 0
 )
     
-echo Successfully precompiled %2
+echo %__MsgPrefix%Successfully precompiled %2
 exit /b 0
 
 :jitdisasm
@@ -385,7 +381,7 @@ set __msbuildLogArgs=^
 set __msbuildArgs=%* %__msbuildCommonArgs% %__msbuildLogArgs%
 
 @REM The next line will overwrite the existing log file, if any.
-echo %_msbuildexe% %__msbuildArgs%
+echo %__MsgPrefix%%_msbuildexe% %__msbuildArgs%
 echo Invoking: %_msbuildexe% %__msbuildArgs% > "%__BuildLog%"
 
 %_msbuildexe% %__msbuildArgs%

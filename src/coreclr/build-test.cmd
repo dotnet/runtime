@@ -9,7 +9,7 @@ set __BuildOS=Windows_NT
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
-set __MsgPrefix=BUILDTEST: 
+set "__MsgPrefix=BUILDTEST: "
 
 :: Default to highest Visual Studio version available
 ::
@@ -33,7 +33,7 @@ if defined VisualStudioVersion (
 
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
-  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" (
@@ -123,8 +123,6 @@ if defined __BuildAgainstPackagesArg (
     )
 )
 
-:: echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
-:: call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 @if defined _echo @echo on
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
