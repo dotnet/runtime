@@ -5,12 +5,6 @@
 
 #include "common.h"
 
-
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
-#include "metahost.h"
-#endif
-
-
 #include "coregen.h"
 
 #include "clr/fs/dir.h"
@@ -443,15 +437,6 @@ Zapper::Zapper(ZapperOptions *pOptions)
 {
     Init(pOptions);
 }
-
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
-
-//
-// Pointer to the activated CLR interface provided by the shim.
-//
-extern ICLRRuntimeInfo *g_pCLRRuntime;
-
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
 
 void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
 {
