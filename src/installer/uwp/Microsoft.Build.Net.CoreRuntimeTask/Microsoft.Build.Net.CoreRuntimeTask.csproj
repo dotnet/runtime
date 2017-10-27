@@ -5,7 +5,7 @@
     <AllowCrossTargeting>true</AllowCrossTargeting>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <ProjectGuid>{49082C55-62B7-4DEC-BC9E-3F57945AC37E}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -18,7 +18,7 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
-    
+
     <!-- turn off CLS compliant check to make it work with CCI code -->
     <AssemblyAttributeClsCompliant>false</AssemblyAttributeClsCompliant>
 
@@ -35,6 +35,7 @@
     <RestoreOutputPath>obj</RestoreOutputPath>
     <AssemblyKey>MSFT</AssemblyKey>
     <RestorePackages>true</RestorePackages>
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -57,7 +58,7 @@
     <Compile Include="MergePriConfigTask.cs" />
     <Compile Include="MergeResWFilesTask.cs" />
     <Compile Include="ResourceHandlingTask.cs" />
-  </ItemGroup>  
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Cci">

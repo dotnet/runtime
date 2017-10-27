@@ -71,6 +71,7 @@
     </PackageReference>
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Dynamic.Runtime" />
     <TargetingPackReference Include="System.IO" />
     <TargetingPackReference Include="System.Linq" />
     <TargetingPackReference Include="System.Net.Http" />
