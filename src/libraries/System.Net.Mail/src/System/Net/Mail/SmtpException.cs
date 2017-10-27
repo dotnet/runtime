@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System.Net.Mail
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SmtpException : Exception, ISerializable
     {
         private SmtpStatusCode _statusCode = SmtpStatusCode.GeneralFailure;
@@ -95,7 +95,7 @@ namespace System.Net.Mail
 
         protected SmtpException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
-            throw new PlatformNotSupportedException();
+            _statusCode = (SmtpStatusCode)serializationInfo.GetInt32("Status");
         }
 
         internal SmtpException(SmtpStatusCode statusCode, string serverMessage, bool serverResponse) : base(GetMessageForStatus(statusCode, serverMessage))
@@ -109,12 +109,13 @@ namespace System.Net.Mail
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            base.GetObjectData(serializationInfo, streamingContext);
+            GetObjectData(serializationInfo, streamingContext);
         }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
+            serializationInfo.AddValue("Status", (int)_statusCode, typeof(int));
         }
 
         public SmtpStatusCode StatusCode

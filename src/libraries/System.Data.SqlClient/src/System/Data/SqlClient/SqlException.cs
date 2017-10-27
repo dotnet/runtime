@@ -16,6 +16,8 @@ using System.Text; // StringBuilder
 
 namespace System.Data.SqlClient
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class SqlException : System.Data.Common.DbException
     {
         private const string OriginalClientConnectionIdKey = "OriginalClientConnectionId";
@@ -32,9 +34,35 @@ namespace System.Data.SqlClient
             _clientConnectionId = conId;
         }
 
+        private SqlException(SerializationInfo si, StreamingContext sc) : base(si, sc) 
+        {
+            HResult = SqlExceptionHResult;
+            foreach (SerializationEntry siEntry in si)
+            {
+                if ("ClientConnectionId" == siEntry.Name) 
+                {
+                    _clientConnectionId = (Guid)siEntry.Value;
+                    break;
+                }
+            }
+        }
+
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
             base.GetObjectData(si, context);
+            si.AddValue("Errors", null); // Not specifying type to enable serialization of null value of non-serializable type
+            si.AddValue("ClientConnectionId", _clientConnectionId, typeof(Guid));
+
+            // Writing sqlerrors to base exception data table
+            for (int i = 0; i < Errors.Count; i++)
+            {
+                string key = "SqlError " + (i + 1);
+                if (Data.Contains(key))
+                {
+                    Data.Remove(key);
+                }
+                Data.Add(key, Errors[i].ToString());
+            }
         }
 
         // runtime will call even if private...
@@ -61,37 +89,37 @@ namespace System.Data.SqlClient
 
         public byte Class
         {
-            get { return this.Errors[0].Class; }
+            get { return Errors.Count > 0 ? this.Errors[0].Class : default; }
         }
 
         public int LineNumber
         {
-            get { return this.Errors[0].LineNumber; }
+            get { return Errors.Count > 0 ? Errors[0].LineNumber : default; }
         }
 
         public int Number
         {
-            get { return this.Errors[0].Number; }
+            get { return Errors.Count > 0 ? Errors[0].Number : default; }
         }
 
         public string Procedure
         {
-            get { return this.Errors[0].Procedure; }
+            get { return Errors.Count > 0 ? Errors[0].Procedure : default; }
         }
 
         public string Server
         {
-            get { return this.Errors[0].Server; }
+            get { return Errors.Count > 0 ? Errors[0].Server : default; }
         }
 
         public byte State
         {
-            get { return this.Errors[0].State; }
+            get { return Errors.Count > 0 ? Errors[0].State : default; }
         }
 
         override public string Source
         {
-            get { return this.Errors[0].Source; }
+            get { return Errors.Count > 0 ? Errors[0].Source : default; }
         }
 
         public override string ToString()
@@ -101,7 +129,7 @@ namespace System.Data.SqlClient
             sb.AppendFormat(SQLMessage.ExClientConnectionId(), _clientConnectionId);
 
             // Append the error number, state and class if the server provided it
-            if (Number != 0)
+            if (Errors.Count > 0 && Number != 0)
             {
                 sb.AppendLine();
                 sb.AppendFormat(SQLMessage.ExErrorNumberStateClass(), Number, State, Class);

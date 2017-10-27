@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
@@ -41,12 +40,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Exception inner = new Exception("This is a test exception");
             RuntimeBinderInternalCompilerException rbe = new RuntimeBinderInternalCompilerException(message, inner);
             Assert.Same(inner, rbe.InnerException);
-        }
-
-        [Fact]
-        public void AssertExceptionDeserializationFails()
-        {
-            BinaryFormatterHelpers.AssertExceptionDeserializationFails<RuntimeBinderInternalCompilerException>();
         }
     }
 }

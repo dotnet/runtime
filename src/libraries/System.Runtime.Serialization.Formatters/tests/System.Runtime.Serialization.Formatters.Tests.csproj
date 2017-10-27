@@ -29,6 +29,10 @@
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <!-- Work-around issue where we are bin-placing the netstandard ref for System.Security.Permissions for netfx. Issue #24517 -->
+    <TargetingPackExclusions Include="System.Security.Permissions" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
