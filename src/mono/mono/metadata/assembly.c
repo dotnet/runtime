@@ -2043,6 +2043,8 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		MonoCustomAttrEntry *attr = &attrs->attrs [i];
 		MonoAssemblyName *aname;
 		const gchar *data;
+		uint32_t data_length;
+		gchar *data_with_terminator;
 		/* Do some sanity checking */
 		if (!attr->ctor || attr->ctor->klass != mono_class_try_get_internals_visible_class ())
 			continue;
@@ -2052,14 +2054,17 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		/* 0xFF means null string, see custom attr format */
 		if (data [0] != 1 || data [1] != 0 || (data [2] & 0xFF) == 0xFF)
 			continue;
-		mono_metadata_decode_value (data + 2, &data);
+		data_length = mono_metadata_decode_value (data + 2, &data);
+		data_with_terminator = (char *)g_memdup (data, data_length + 1);
+		data_with_terminator[data_length] = 0;
 		aname = g_new0 (MonoAssemblyName, 1);
 		/*g_print ("friend ass: %s\n", data);*/
-		if (mono_assembly_name_parse_full (data, aname, TRUE, NULL, NULL)) {
+		if (mono_assembly_name_parse_full (data_with_terminator, aname, TRUE, NULL, NULL)) {
 			list = g_slist_prepend (list, aname);
 		} else {
 			g_free (aname);
 		}
+		g_free (data_with_terminator);
 	}
 	mono_custom_attrs_free (attrs);
 
