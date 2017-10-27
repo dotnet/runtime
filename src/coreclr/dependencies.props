@@ -3,6 +3,7 @@
   <!-- NuGet package restore sources. -->
   <PropertyGroup>
     <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
+      https://dotnetfeed.blob.core.windows.net/dotnet-core/packages/index.json;
       https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
       $(RestoreSources)
