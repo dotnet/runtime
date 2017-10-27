@@ -98,11 +98,5 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(expected: "Unknown error (0x23)", actual: ex.Message);
             }
         }
-
-        [Fact]
-        public static void Deserialize_NetCore_ThrowsPlatformNotSupportedException()
-        {
-            BinaryFormatterHelpers.AssertExceptionDeserializationFails<Win32Exception>();
-        }
     }
 }

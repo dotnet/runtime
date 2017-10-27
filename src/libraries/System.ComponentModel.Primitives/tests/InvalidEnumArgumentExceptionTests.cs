@@ -88,21 +88,6 @@ namespace System.ComponentModel.Tests
             Assert.Throws<NullReferenceException>(() => new InvalidEnumArgumentException("argumentName", 1, null));
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21214", TargetFrameworkMonikers.UapAot)]
-        public void Deserialize_ThrowsPlatformNotSupportedException()
-        {
-            var binaryFormatter = new BinaryFormatter();
-            using (var stream = new MemoryStream())
-            {
-                binaryFormatter.Serialize(stream, new SubException());
-                stream.Position = 0;
-                Exception ex = Assert.Throws<TargetInvocationException>(() => binaryFormatter.Deserialize(stream));
-                Assert.IsType<PlatformNotSupportedException>(ex.InnerException);
-            }
-        }
-
         [Serializable]
         public class SubException : InvalidEnumArgumentException
         {

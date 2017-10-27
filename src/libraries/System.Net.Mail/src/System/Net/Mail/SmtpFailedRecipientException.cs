@@ -8,11 +8,12 @@ using System.Runtime.Serialization;
 
 namespace System.Net.Mail
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SmtpFailedRecipientException : SmtpException, ISerializable
     {
         private string _failedRecipient;
         internal bool fatal;
-
 
         public SmtpFailedRecipientException() : base() { }
 
@@ -22,7 +23,7 @@ namespace System.Net.Mail
 
         protected SmtpFailedRecipientException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            _failedRecipient = info.GetString("failedRecipient");
         }
 
         public SmtpFailedRecipientException(SmtpStatusCode statusCode, string failedRecipient) : base(statusCode)
@@ -51,12 +52,13 @@ namespace System.Net.Mail
         [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            base.GetObjectData(serializationInfo, streamingContext);
+            GetObjectData(serializationInfo, streamingContext);
         }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
+            serializationInfo.AddValue("failedRecipient", _failedRecipient, typeof(string));
         }
     }
 }

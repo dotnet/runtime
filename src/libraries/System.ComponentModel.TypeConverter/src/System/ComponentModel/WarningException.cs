@@ -14,6 +14,8 @@ namespace System.ComponentModel
     /// <summary>
     ///    <para>Specifies an exception that is handled as a warning instead of an error.</para>
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class WarningException : SystemException
     {
         /// <summary>
@@ -66,7 +68,8 @@ namespace System.ComponentModel
         /// </summary>
         protected WarningException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            HelpUrl = (string)info.GetValue("helpUrl", typeof(string));
+            HelpTopic = (string)info.GetValue("helpTopic", typeof(string));
         }
 
         /// <summary>
@@ -81,12 +84,11 @@ namespace System.ComponentModel
         /// </summary>
         public string HelpTopic { get; }
 
-        /// <summary>
-        ///     Need this since Exception implements ISerializable.
-        /// </summary>
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("helpUrl", HelpUrl);
+            info.AddValue("helpTopic", HelpTopic);
         }
     }
 }

@@ -200,6 +200,14 @@ namespace System.Buffers
         public abstract void Retain();
         protected internal abstract bool TryGetArray(out ArraySegment<T> arraySegment);
     }
+
+    public enum OperationStatus
+    {
+        Done,
+        DestinationTooSmall,
+        NeedMoreData,
+        InvalidData,
+    }
 }
 
 namespace System.Buffers.Binary
@@ -276,5 +284,18 @@ namespace System.Buffers.Binary
         public static bool TryWriteUInt16BigEndian(Span<byte> buffer, ushort value) { throw null; }
         public static bool TryWriteUInt32BigEndian(Span<byte> buffer, uint value) { throw null; }
         public static bool TryWriteUInt64BigEndian(Span<byte> buffer, ulong value) { throw null; }
+    }
+}
+
+namespace System.Buffers.Text
+{
+    public static class Base64
+    {
+        public static OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int consumed, out int written, bool isFinalBlock = true) { throw null; }
+        public static OperationStatus EncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int written) { throw null; }
+        public static int GetMaxEncodedToUtf8Length(int length) { throw null; }
+        public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int consumed, out int written, bool isFinalBlock = true) { throw null; }
+        public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int written) { throw null; }
+        public static int GetMaxDecodedFromUtf8Length(int length) { throw null; }
     }
 }

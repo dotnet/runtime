@@ -10,6 +10,8 @@ namespace System.ComponentModel
     /// <summary>
     /// The exception that is thrown for a Win32 error code.
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class Win32Exception : ExternalException, ISerializable
     {
         private const int E_FAIL = unchecked((int)0x80004005);
@@ -53,7 +55,16 @@ namespace System.ComponentModel
             NativeErrorCode = Marshal.GetLastWin32Error();
         }
 
-        protected Win32Exception(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected Win32Exception(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            NativeErrorCode = info.GetInt32(nameof(NativeErrorCode));
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue(nameof(NativeErrorCode), NativeErrorCode);
+        }
 
         /// <summary>
         /// Represents the Win32 error code associated with this exception. This field is read-only.

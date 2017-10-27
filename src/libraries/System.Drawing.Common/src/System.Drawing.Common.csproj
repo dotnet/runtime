@@ -157,7 +157,7 @@
     <Compile Include="System\Drawing\PropertyItemInternal.cs" />
     <Compile Include="System\Drawing\Printing\Duplex.cs" />
     <Compile Include="System\Drawing\Printing\InvalidPrinterException.cs" />
-    <Compile Include="System\Drawing\Printing\InvalidPrinterException.NotSerializable.cs" />
+    <Compile Include="System\Drawing\Printing\InvalidPrinterException.Core.cs" />
     <Compile Include="System\Drawing\Printing\Margins.cs" />
     <Compile Include="System\Drawing\Printing\PaperKinds.cs" />
     <Compile Include="System\Drawing\Printing\PaperSize.cs" />

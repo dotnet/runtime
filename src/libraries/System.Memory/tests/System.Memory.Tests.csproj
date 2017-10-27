@@ -104,6 +104,11 @@
     <Compile Include="Binary\BinaryWriterUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Base64\Base64DecoderUnitTests.cs" />
+    <Compile Include="Base64\Base64EncoderUnitTests.cs" />
+    <Compile Include="Base64\Base64TestHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -4,22 +4,30 @@
 
 using System;
 
-
 namespace System.Runtime.Serialization
 {
-    public class InvalidDataContractException : Exception
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public partial class InvalidDataContractException : Exception
     {
-        public InvalidDataContractException() : base()
+        public InvalidDataContractException()
+            : base()
         {
         }
 
-        public InvalidDataContractException(String message) : base(message)
+        public InvalidDataContractException(String message)
+            : base(message)
         {
         }
 
-        public InvalidDataContractException(String message, Exception innerException) : base(message, innerException)
+        public InvalidDataContractException(String message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+        protected InvalidDataContractException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }
 }
-
