@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    To enable the tests marked with [ConditionalFact(nameof(IsLdapConfigurationExist))], need to setup LDAP server and provide the needed server info here.
+    The easiest way to get LDAP server is to download and install OpenDJ https://backstage.forgerock.com/downloads/OpenDJ/Directory%20Services/5.0.0#browse.
+
+    Download "DS zip" file then extract it. you can set it up by running a command like that following:
+    /setup directory-server --sampleData 2 --rootUserDN "cn=Directory Manager" --rootUserPassword password --hostname localhost.localdomain --ldapPort 1389 --ldapsPort 1636 --httpPort 8080 --httpsPort 8443 --adminConnectorPort 4444 --baseDN dc=example,dc=com --acceptLicense –enableStartTls
+
+    After that delete this comment and have the following contents in this Xml file:
+
+<Configuration>
+    <ServerName>server machine name</ServerName>
+    <Domain>DC=example,DC=com</Domain>
+    <Port>1389</Port>
+    <User>cn=Directory Manager</User>
+    <Password>password</Password>
+    <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+</Configuration>
+-->
