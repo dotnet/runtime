@@ -752,9 +752,6 @@ End
 Crst PinnedByrefValidation
 End
 
-Crst AssemblyUsageLog
-End
-
 Crst VSDIndirectionCellLock
     AcquiredBefore LoaderHeap
 End

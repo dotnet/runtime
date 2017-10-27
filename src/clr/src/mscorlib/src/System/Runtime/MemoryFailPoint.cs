@@ -261,7 +261,7 @@ namespace System.Runtime
                         if (needPageFile || needAddressSpace)
                         {
                             InsufficientMemoryException e = new InsufficientMemoryException(SR.InsufficientMemory_MemFailPoint);
-#if _DEBUG
+#if DEBUG
                             e.Data["MemFailPointState"] = new MemoryFailPointState(sizeInMegabytes, segmentSize,
                                  needPageFile, needAddressSpace, needContiguousVASpace,
                                  availPageFile >> 20, totalAddressSpaceFree >> 20,
@@ -273,7 +273,7 @@ namespace System.Runtime
                         if (needContiguousVASpace)
                         {
                             InsufficientMemoryException e = new InsufficientMemoryException(SR.InsufficientMemory_MemFailPoint_VAFrag);
-#if _DEBUG
+#if DEBUG
                             e.Data["MemFailPointState"] = new MemoryFailPointState(sizeInMegabytes, segmentSize,
                                  needPageFile, needAddressSpace, needContiguousVASpace,
                                  availPageFile >> 20, totalAddressSpaceFree >> 20,
@@ -285,7 +285,7 @@ namespace System.Runtime
                         break;
 
                     default:
-                        Debug.Assert(false, "Fell through switch statement!");
+                        Debug.Fail("Fell through switch statement!");
                         break;
                 }
             }
@@ -422,7 +422,7 @@ namespace System.Runtime
             */
         }
 
-#if _DEBUG
+#if DEBUG
         [Serializable]
         internal sealed class MemoryFailPointState
         {

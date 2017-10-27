@@ -420,12 +420,6 @@ typedef PTR_PTR_Object PTR_UNCHECKED_OBJECTREF;
 
 class Thread;
 
-inline bool IsGCSpecialThread()
-{
-    // [LOCALGC TODO] this is not correct
-    return false;
-}
-
 inline bool dbgOnly_IsSpecialEEThread()
 {
     return false;
@@ -453,12 +447,6 @@ namespace ETW
         GC_ROOT_OVERFLOW = 5
     } GC_ROOT_KIND;
 };
-
-inline bool IsGCThread()
-{
-    // [LOCALGC TODO] this is not correct
-    return false;
-}
 
 inline bool FitsInU1(uint64_t val)
 {

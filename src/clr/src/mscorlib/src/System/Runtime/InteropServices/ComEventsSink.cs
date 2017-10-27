@@ -73,8 +73,8 @@ namespace System.Runtime.InteropServices
 
         internal static ComEventsSink Remove(ComEventsSink sinks, ComEventsSink sink)
         {
-            BCLDebug.Assert(sinks != null, "removing event sink from empty sinks collection");
-            BCLDebug.Assert(sink != null, "specify event sink is null");
+            Debug.Assert(sinks != null, "removing event sink from empty sinks collection");
+            Debug.Assert(sink != null, "specify event sink is null");
 
             if (sink == sinks)
             {
@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices
 
         private void Advise(object rcw)
         {
-            BCLDebug.Assert(_connectionPoint == null, "comevent sink is already advised");
+            Debug.Assert(_connectionPoint == null, "comevent sink is already advised");
 
             ComTypes.IConnectionPointContainer cpc = (ComTypes.IConnectionPointContainer)rcw;
             ComTypes.IConnectionPoint cp;
@@ -160,7 +160,7 @@ namespace System.Runtime.InteropServices
 
         private void Unadvise()
         {
-            BCLDebug.Assert(_connectionPoint != null, "can not unadvise from empty connection point");
+            Debug.Assert(_connectionPoint != null, "can not unadvise from empty connection point");
 
             try
             {

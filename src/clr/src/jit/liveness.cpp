@@ -1935,7 +1935,6 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     GenTreePtr tree;
-    unsigned   lclNum;
 
     // Don't kill vars in scope
     VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));

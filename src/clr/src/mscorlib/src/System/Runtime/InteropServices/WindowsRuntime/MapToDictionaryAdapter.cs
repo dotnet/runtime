@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private MapToDictionaryAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // V this[K key] { get }

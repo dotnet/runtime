@@ -4,10 +4,9 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <BaseIntermediateOutputPath>$(ToolsDir)/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
-    <FeedTasksVersion>1.0.0-prerelease-02111-01</FeedTasksVersion>
-    <FeedTasksPackage>microsoft.dotnet.build.tasks.feed</FeedTasksPackage>
     <PackageTargetFallback>$(PackageTargetFallback);netframework</PackageTargetFallback>
   </PropertyGroup>
+  <Import Project="dependencies.props" />
   <ItemGroup>
     <PackageReference Include="microsoft.dotnet.buildtools">
       <Version>$(BuildToolsPackageVersion)</Version>
@@ -16,17 +15,7 @@
       <Version>1.0.4-prerelease</Version>
     </PackageReference>
     <PackageReference Include="$(FeedTasksPackage)">
-      <Version>$(FeedTasksVersion)</Version>
+      <Version>$(FeedTasksPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
-
-  <Target Name="CopyFeedTasks" AfterTargets="Restore" >
-    <ItemGroup>  
-      <FilesToCopy Include="$(MSBuildThisFileDirectory)\packages\$(FeedTasksPackage)\$(FeedTasksVersion)\lib\**\*.*"/>  
-    </ItemGroup>  
-
-    <Copy SourceFiles="@(FilesToCopy)"
-          DestinationFiles="@(FilesToCopy->'$(ToolsDir)\$(FeedTasksPackage)\%(RecursiveDir)%(Filename)%(Extension)')"
-    />
-  </Target>
 </Project>

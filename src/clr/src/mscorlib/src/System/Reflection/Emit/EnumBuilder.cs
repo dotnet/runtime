@@ -33,8 +33,6 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineLiteral(String literalName, Object literalValue)
         {
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: EnumBuilder.DefineLiteral( " + literalName + " )");
-
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set. 
             FieldBuilder fieldBuilder = m_typeBuilder.DefineField(
                 literalName,
@@ -46,14 +44,12 @@ namespace System.Reflection.Emit
 
         public TypeInfo CreateTypeInfo()
         {
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: EnumBuilder.CreateType() ");
             return m_typeBuilder.CreateTypeInfo();
         }
 
         // CreateType cause EnumBuilder to be baked.
         public Type CreateType()
         {
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: EnumBuilder.CreateType() ");
             return m_typeBuilder.CreateType();
         }
 

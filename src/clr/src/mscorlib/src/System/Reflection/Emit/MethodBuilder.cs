@@ -352,7 +352,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Debug.Assert(false, "We should never get here!");
+                Debug.Fail("We should never get here!");
                 return null;
             }
         }

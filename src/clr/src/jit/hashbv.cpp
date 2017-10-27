@@ -549,7 +549,6 @@ void hashBv::Resize(int newSize)
 
     int oldSizeLog2  = log2_hashSize;
     int log2_newSize = genLog2((unsigned)newSize);
-    int size;
 
     hashBvNode** newNodes = this->getNewVector(newSize);
 
