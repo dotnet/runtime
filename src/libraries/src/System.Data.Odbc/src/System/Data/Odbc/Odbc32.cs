@@ -123,8 +123,9 @@ namespace System.Data.Odbc
         }
     }
 
-
-    internal static class ODBC32
+    // Class needs to be public to support serialization with type forwarding from Desktop to Core.
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public static class ODBC32
     {
         internal enum SQL_HANDLE : short
         {
@@ -136,6 +137,7 @@ namespace System.Data.Odbc
 
         // from .\public\sdk\inc\sqlext.h: and .\public\sdk\inc\sql.h
         // must be public because it is serialized by OdbcException
+        [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         public enum RETCODE : int
         { // must be int instead of short for Everett OdbcException Serializablity.
             SUCCESS = 0,

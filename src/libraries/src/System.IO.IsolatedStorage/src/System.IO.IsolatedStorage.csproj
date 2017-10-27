@@ -23,7 +23,6 @@
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.Serialization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32Unix.cs" />

@@ -7,6 +7,8 @@ using System.Runtime.Serialization;
 
 namespace System.Security.Cryptography
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class CryptographicUnexpectedOperationException : CryptographicException
     {
         public CryptographicUnexpectedOperationException()
@@ -32,7 +34,6 @@ namespace System.Security.Cryptography
         protected CryptographicUnexpectedOperationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 }

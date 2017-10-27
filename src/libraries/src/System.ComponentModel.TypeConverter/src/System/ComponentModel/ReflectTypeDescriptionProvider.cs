@@ -6,9 +6,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Drawing;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -118,6 +119,7 @@ namespace System.ComponentModel
             [typeof(UInt64)] = typeof(UInt64Converter),
             [typeof(object)] = typeof(TypeConverter),
             [typeof(void)] = typeof(TypeConverter),
+            [typeof(CultureInfo)] = typeof(CultureInfoConverter),
             [typeof(DateTime)] = typeof(DateTimeConverter),
             [typeof(DateTimeOffset)] = typeof(DateTimeOffsetConverter),
             [typeof(Decimal)] = typeof(DecimalConverter),
@@ -135,7 +137,7 @@ namespace System.ComponentModel
             [typeof(ICollection)] = typeof(CollectionConverter),
             [typeof(Enum)] = typeof(EnumConverter),
             [s_intrinsicNullableKey] = typeof(NullableConverter),
-        });    
+        });
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
 

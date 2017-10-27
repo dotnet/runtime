@@ -152,7 +152,7 @@
 
   <Target Name="GenerateTestSharedFrameworkDepsFile" DependsOnTargets="ReplaceTestingSharedFrameworkWithRestoredPackages">
     <MSBuild Targets="GenerateTestSharedFrameworkDepsFile"
-             Projects="$(MSBuildThisFileDirectory)\..\src.builds"
+             Projects="$(MSBuildThisFileDirectory)\..\dirs.proj"
              ContinueOnError="ErrorAndStop" />
   </Target>
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Globalization;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -255,7 +256,8 @@ namespace System.ComponentModel.Tests
             new Tuple<Type, Type> (typeof(IDerived), typeof(IBaseConverter)),
             new Tuple<Type, Type> (typeof(ClassIBase), typeof(IBaseConverter)),
             new Tuple<Type, Type> (typeof(ClassIDerived), typeof(IBaseConverter)),
-            new Tuple<Type, Type> (typeof(Uri), typeof(UriTypeConverter))
+            new Tuple<Type, Type> (typeof(Uri), typeof(UriTypeConverter)),
+            new Tuple<Type, Type> (typeof(CultureInfo), typeof(CultureInfoConverter))
         };
     }
 }
