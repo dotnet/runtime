@@ -6669,15 +6669,19 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
 #ifdef FEATURE_READYTORUN_COMPILER
         if (tree->gtField.gtFieldLookup.addr != nullptr)
         {
-            GenTreePtr baseOffset = gtNewIconEmbHndNode(tree->gtField.gtFieldLookup.addr, nullptr, GTF_ICON_FIELD_HDL);
-
+            GenTree* offsetNode = nullptr;
             if (tree->gtField.gtFieldLookup.accessType == IAT_PVALUE)
             {
-                baseOffset = gtNewOperNode(GT_IND, TYP_I_IMPL, baseOffset);
+                offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->gtField.gtFieldLookup.addr,
+                                                      GTF_ICON_FIELD_HDL, false);
+            }
+            else
+            {
+                noway_assert(!"unexpected accessType for R2R field access");
             }
 
-            addr =
-                gtNewOperNode(GT_ADD, (var_types)(objRefType == TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF), addr, baseOffset);
+            var_types addType = (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
+            addr              = gtNewOperNode(GT_ADD, addType, addr, offsetNode);
         }
 #endif
         if (fldOffset != 0)
@@ -6769,12 +6773,9 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
             }
             else
             {
-                dllRef = gtNewIconHandleNode((size_t)pIdAddr, GTF_ICON_STATIC_HDL);
-                dllRef = gtNewOperNode(GT_IND, TYP_I_IMPL, dllRef);
-                dllRef->gtFlags |= GTF_IND_INVARIANT;
+                dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_STATIC_HDL, true);
 
-                /* Multiply by 4 */
-
+                // Next we multiply by 4
                 dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(4, TYP_I_IMPL));
             }
 

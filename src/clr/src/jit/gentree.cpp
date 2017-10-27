@@ -6126,6 +6126,50 @@ unsigned Compiler::gtTokenToIconFlags(unsigned token)
     return flags;
 }
 
+//-----------------------------------------------------------------------------------------
+// gtNewIndOfIconHandleNode: Creates an indirection GenTree node of a constant handle
+//
+// Arguments:
+//    indType     - The type returned by the indirection node
+//    addr        - The constant address to read from
+//    iconFlags   - The GTF_ICON flag value that specifies the kind of handle that we have
+//    isInvariant - The indNode should also be marked as invariant
+//
+// Return Value:
+//    Returns a GT_IND node representing value at the address provided by 'value'
+//
+// Notes:
+//    The GT_IND node is marked as non-faulting
+//    If the indType is GT_REF we also mark the indNode as GTF_GLOB_REF
+//
+
+GenTreePtr Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsigned iconFlags, bool isInvariant)
+{
+    GenTreePtr addrNode = gtNewIconHandleNode(addr, iconFlags);
+    GenTreePtr indNode  = gtNewOperNode(GT_IND, indType, addrNode);
+
+    // This indirection won't cause an exception.
+    //
+    indNode->gtFlags |= GTF_IND_NONFAULTING;
+
+    // String Literal handles are indirections that return a TYP_REF.
+    // They are pointers into the GC heap and they are not invariant
+    // as the address is a reportable GC-root and as such it can be
+    // modified during a GC collection
+    //
+    if (indType == TYP_REF)
+    {
+        // This indirection points into the gloabal heap
+        indNode->gtFlags |= GTF_GLOB_REF;
+    }
+    if (isInvariant)
+    {
+        // This indirection also is invariant.
+        indNode->gtFlags |= GTF_IND_INVARIANT;
+    }
+    return indNode;
+}
+
 /*****************************************************************************
  *
  *  Allocates a integer constant entry that represents a HANDLE to something.
@@ -6134,29 +6178,48 @@ unsigned Compiler::gtTokenToIconFlags(unsigned token)
  *  If the handle needs to be accessed via an indirection, pValue points to it.
  */
 
-GenTreePtr Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned flags, void* compileTimeHandle)
+GenTreePtr Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned iconFlags, void* compileTimeHandle)
 {
-    GenTreePtr node;
+    GenTreePtr iconNode;
+    GenTreePtr handleNode;
 
-    assert((!value) != (!pValue));
-
-    if (value)
+    if (value != nullptr)
     {
-        node = gtNewIconHandleNode((size_t)value, flags, /*fieldSeq*/ FieldSeqStore::NotAField());
-        node->gtIntCon.gtCompileTimeHandle = (size_t)compileTimeHandle;
+        // When 'value' is non-null, pValue is required to be null
+        assert(pValue == nullptr);
+
+        // use 'value' to construct an integer constant node
+        iconNode = gtNewIconHandleNode((size_t)value, iconFlags);
+
+        // 'value' is the handle
+        handleNode = iconNode;
     }
     else
     {
-        node = gtNewIconHandleNode((size_t)pValue, flags, /*fieldSeq*/ FieldSeqStore::NotAField());
-        node->gtIntCon.gtCompileTimeHandle = (size_t)compileTimeHandle;
-        node                               = gtNewOperNode(GT_IND, TYP_I_IMPL, node);
+        // When 'value' is null, pValue is required to be non-null
+        assert(pValue != nullptr);
 
-        // This indirection won't cause an exception.  It should also
-        // be invariant, but marking it as such leads to bad diffs.
-        node->gtFlags |= GTF_IND_NONFAULTING;
+        // use 'pValue' to construct an integer constant node
+        iconNode = gtNewIconHandleNode((size_t)pValue, iconFlags);
+
+        // 'pValue' is an address of a location that contains the handle
+
+        // construct the indirection of 'pValue'
+        handleNode = gtNewOperNode(GT_IND, TYP_I_IMPL, iconNode);
+
+        // This indirection won't cause an exception.
+        handleNode->gtFlags |= GTF_IND_NONFAULTING;
+#if 0
+        // It should also be invariant, but marking it as such leads to bad diffs.
+
+        // This indirection also is invariant.
+        handleNode->gtFlags |= GTF_IND_INVARIANT;
+#endif
     }
 
-    return node;
+    iconNode->gtIntCon.gtCompileTimeHandle = (size_t)compileTimeHandle;
+
+    return handleNode;
 }
 
 /*****************************************************************************/
@@ -6166,30 +6229,25 @@ GenTreePtr Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
     switch (iat)
     {
-        case IAT_VALUE: // The info value is directly available
-            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL);
-            tree->gtType = TYP_REF;
-            tree         = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
-            break;
-
-        case IAT_PVALUE: // The value needs to be accessed via an       indirection
-            tree = gtNewIconHandleNode((size_t)pValue, GTF_ICON_STR_HDL);
-            // An indirection of a string handle can't cause an exception so don't set GTF_EXCEPT
-            tree = gtNewOperNode(GT_IND, TYP_REF, tree);
-            tree->gtFlags |= GTF_GLOB_REF;
+        case IAT_PVALUE: // The value needs to be accessed via an indirection
+            // Create an indirection
+            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
-            tree = gtNewIconHandleNode((size_t)pValue, GTF_ICON_PSTR_HDL);
-            tree = gtNewOperNode(GT_IND, TYP_I_IMPL, tree);
-            tree->gtFlags |= GTF_IND_INVARIANT;
-            // An indirection of a string handle can't cause an exception so don't set GTF_EXCEPT
+            // Create the first indirection
+            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
+
+            // Create the second indirection
             tree = gtNewOperNode(GT_IND, TYP_REF, tree);
+            // This indirection won't cause an exception.
+            tree->gtFlags |= GTF_IND_NONFAULTING;
+            // This indirection points into the gloabal heap (it is String Object)
             tree->gtFlags |= GTF_GLOB_REF;
             break;
 
         default:
-            assert(!"Unexpected InfoAccessType");
+            noway_assert(!"Unexpected InfoAccessType");
     }
 
     return tree;
@@ -10610,7 +10668,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" ftn");
                             break;
                         case GTF_ICON_CIDMID_HDL:
-                            printf(" cid");
+                            printf(" cid/mid");
                             break;
                         case GTF_ICON_BBC_PTR:
                             printf(" bbc");
