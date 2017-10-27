@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -366,7 +367,7 @@ internal static partial class Interop
                         Span<byte> clientProto = clientList.Slice(1, length);
                         if (clientProto.SequenceEqual(protocolList[i].Protocol.Span))
                         {
-                            outp = inp + (int)inlen - clientList.Length + 1;
+                            outp = (byte*)Unsafe.AsPointer(ref clientProto.DangerousGetPinnableReference());
                             outlen = length;
                             return Ssl.SSL_TLSEXT_ERR_OK;
                         }
