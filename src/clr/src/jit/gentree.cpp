@@ -10667,8 +10667,8 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_FTN_ADDR:
                             printf(" ftn");
                             break;
-                        case GTF_ICON_MID_HDL:
-                            printf(" module");
+                        case GTF_ICON_CIDMID_HDL:
+                            printf(" cid/mid");
                             break;
                         case GTF_ICON_BBC_PTR:
                             printf(" bbc");
