@@ -6,7 +6,7 @@
     <!-- Directory.Build.props imports this .props file, so ensure it isn't imported again -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
   </PropertyGroup>
-  
+
   <!-- Define vNext UAP Moniker -->
   <PropertyGroup>
     <UAPvNextVersion>10.0.15138</UAPvNextVersion>
@@ -24,7 +24,7 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)BranchInfo.props" />
-  
+
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>
@@ -51,7 +51,7 @@
       https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json;
     </RestoreSources>
   </PropertyGroup>
-  
+
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
@@ -116,7 +116,7 @@
   <ItemGroup>
     <DotnetSourceList Include="$(RestoreSources)" />
   </ItemGroup>
-  
+
   <!-- list of projects to perform batch restore -->
   <ItemGroup>
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\pkg\deps\deps.csproj" />
@@ -284,7 +284,7 @@
     <SharedHostInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
     <HostFxrInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
     <SharedFrameworkInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
-        
+
   </PropertyGroup>
 
   <!-- Set up handling of build warnings -->
@@ -418,7 +418,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Never use the NuGet fallback folder that comes with the SDK we use to build. 
+    <!-- Never use the NuGet fallback folder that comes with the SDK we use to build.
          The NuGet fallback folder can/will contain packages we are building in this repo, and we
          want to ensure we use the correct packages.
     -->
@@ -426,14 +426,14 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- These properties should be passed through to new msbuild instances (like 'dotnet build') 
+    <!-- These properties should be passed through to new msbuild instances (like 'dotnet build')
          in order to get the correct output directories in the child project.
     -->
     <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
     <MSBuildPassThroughPropertyList Condition="'$(OutputRid)' != ''">$(MSBuildPassThroughPropertyList) /p:OutputRid=$(OutputRid)</MSBuildPassThroughPropertyList>
   </PropertyGroup>
 
-  <!-- Use Roslyn Compilers to build, if we are not using the .NET SDK to build --> 
-  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 
-  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" /> 
+  <!-- Use Roslyn Compilers to build, if we are not using the .NET SDK to build -->
+  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" />
 </Project>
