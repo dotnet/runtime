@@ -53,7 +53,7 @@ namespace System.Memory.Tests
                 {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        index |= byteSpan.IndexOf(53);        // '5' = 53
+                        index |= byteSpan.IndexOf<byte>(53);        // '5' = 53
                     }
                 }
             }
