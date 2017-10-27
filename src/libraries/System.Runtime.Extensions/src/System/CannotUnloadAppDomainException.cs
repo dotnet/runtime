@@ -6,6 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class CannotUnloadAppDomainException : SystemException
     {
         internal const int COR_E_CANNOTUNLOADAPPDOMAIN = unchecked((int)0x80131015); // corresponds to __HResults.COR_E_CANNOTUNLOADAPPDOMAIN in corelib
@@ -27,12 +29,8 @@ namespace System
             HResult = COR_E_CANNOTUNLOADAPPDOMAIN;
         }
 
-        //
-        //This constructor is required for serialization.
-        //
         protected CannotUnloadAppDomainException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 }

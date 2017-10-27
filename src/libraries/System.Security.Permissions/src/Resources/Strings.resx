@@ -70,6 +70,12 @@
   <data name="Argument_WrongType" xml:space="preserve">
     <value>Operation on type '{0}' attempted with target of incorrect type.</value>
   </data>
+  <data name="HostProtection_ProtectedResources" xml:space="preserve">
+    <value>The protected resources (only available with full trust) were:</value>
+  </data>
+  <data name="HostProtection_DemandedResources" xml:space="preserve">
+    <value>The demanded resources were:</value>
+  </data>
   <data name="Security_PrincipalPermission" xml:space="preserve">
     <value>Request for principal permission failed.</value>
   </data>

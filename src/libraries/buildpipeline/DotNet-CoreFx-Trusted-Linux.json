@@ -204,6 +204,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build tests",
+      "condition": "and(succeeded(), ne(variables['PB_DisableTestBuild'], 'true'))",
       "timeoutInMinutes": 0,
       "refName": "Task10",
       "task": {
@@ -224,7 +225,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
-      "condition": "ne(variables['PB_EnableCloudTest'], 'false')",
+      "condition": "and(ne(variables['PB_DisableTestBuild'], 'true'), ne(variables['PB_EnableCloudTest'], 'false'))",
       "timeoutInMinutes": 0,
       "refName": "Task11",
       "task": {
@@ -518,11 +519,11 @@
   "processParameters": {},
   "quality": "definition",
   "queue": {
-    "id": 36,
-    "name": "DotNet-Build",
+    "id": 330,
+    "name": "DotNetCore-Build",
     "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+      "id": 97,
+      "name": "DotNetCore-Build"
     }
   },
   "id": 5008,

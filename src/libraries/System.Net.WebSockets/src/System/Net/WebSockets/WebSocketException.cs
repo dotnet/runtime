@@ -9,6 +9,8 @@ using System.Runtime.Serialization;
 
 namespace System.Net.WebSockets
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class WebSocketException : Win32Exception
     {
         private readonly WebSocketError _webSocketErrorCode;
@@ -122,9 +124,15 @@ namespace System.Net.WebSockets
         {
         }
 
+        private WebSocketException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        {
+        }
+
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue(nameof(WebSocketErrorCode), _webSocketErrorCode);
         }
 
         public override int ErrorCode

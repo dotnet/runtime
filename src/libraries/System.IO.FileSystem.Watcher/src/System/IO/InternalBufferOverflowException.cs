@@ -9,6 +9,8 @@ namespace System.IO
     /// <devdoc>
     ///    The exception that is thrown when the internal buffer overflows.
     /// </devdoc>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InternalBufferOverflowException : SystemException
     {
         /// <devdoc>
@@ -39,7 +41,6 @@ namespace System.IO
         protected InternalBufferOverflowException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 }

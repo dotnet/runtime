@@ -14,7 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <!-- <Compile Include="..\..\System.Diagnostics.Tracing\src\System\Diagnostics\Tracing\EventCounter.cs" /> -->
+    <Compile Include="..\..\System.Diagnostics.Tracing\src\System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="*.cs" />
     <Compile Include="..\shared\*.cs" />
     <Compile Include="..\shared\TraceLogging\*.cs" />

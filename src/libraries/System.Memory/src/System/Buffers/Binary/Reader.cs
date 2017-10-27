@@ -106,12 +106,12 @@ namespace System.Buffers.Binary
 #else
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, typeof(T)));
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
             }
 #endif
             if (Unsafe.SizeOf<T>() > buffer.Length)
             {
-                throw new ArgumentOutOfRangeException();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
             return Unsafe.ReadUnaligned<T>(ref buffer.DangerousGetPinnableReference());
         }
@@ -132,7 +132,7 @@ namespace System.Buffers.Binary
 #else
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, typeof(T)));
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
             }
 #endif
             if (Unsafe.SizeOf<T>() > (uint)buffer.Length)
