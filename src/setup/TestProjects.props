@@ -1,0 +1,3 @@
+<Project>
+  <Import Project="BranchInfo.props" />
+</Project>

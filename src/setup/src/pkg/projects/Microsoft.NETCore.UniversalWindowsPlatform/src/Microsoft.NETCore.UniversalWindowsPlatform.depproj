@@ -27,25 +27,25 @@
       <Version>$(MicrosoftPrivateCoreFxUAPPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="NETStandard.Library">
-      <Version>$(NETStandardVersion)</Version>
+      <Version>$(NETStandardLibraryPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ServiceModel.Duplex">
-      <Version>$(WcfVersion)</Version>
+      <Version>$(SystemServiceModelDuplexPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ServiceModel.Http">
-      <Version>$(WcfVersion)</Version>
+      <Version>$(SystemServiceModelHttpPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ServiceModel.NetTcp">
-      <Version>$(WcfVersion)</Version>
+      <Version>$(SystemServiceModelNetTcpPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ServiceModel.Primitives">
-      <Version>$(WcfVersion)</Version>
+      <Version>$(SystemServiceModelPrimitivesPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ServiceModel.Security">
-      <Version>$(WcfVersion)</Version>
+      <Version>$(SystemServiceModelSecurityPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
 

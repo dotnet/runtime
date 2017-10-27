@@ -7,6 +7,8 @@
     <PackageTargetFallback>$(PackageTargetFallback);dotnet5.4;portable-net451+win8</PackageTargetFallback>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <DisableImplicitAssetTargetFallback>true</DisableImplicitAssetTargetFallback>
+    <NoWarn>NU1603;NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
