@@ -86,8 +86,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // locate the sdkDir from which we can get the files contained in the version folder
             string sdkBaseDir = Path.Combine(fixture.SdkDotnet.BinPath, "sdk");
 
-            var sdkVersionDirs = Directory.EnumerateDirectories(sdkBaseDir);
+            var sdkVersionDirs = Directory.EnumerateDirectories(sdkBaseDir)
+                .Select(p => Path.GetFileName(p));
+
             string greatestVersionSdk = sdkVersionDirs
+                .Where(p => !string.Equals(p, "NuGetFallbackFolder", StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(p => p.ToLower())
                 .First();
 

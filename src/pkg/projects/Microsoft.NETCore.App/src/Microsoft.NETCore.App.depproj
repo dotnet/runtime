@@ -29,13 +29,13 @@
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.DiaSymReader.Native">
-      <Version>$(DiaSymReaderNativeVersion)</Version>
+      <Version>$(MicrosoftDiaSymReaderNativePackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="NETStandard.Library">
-      <Version>$(NETStandardVersion)</Version>
+      <Version>$(NETStandardLibraryPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
 

@@ -2,6 +2,7 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -162,9 +163,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 try
                 {
+                    StringBuilder propsFile = new StringBuilder();
+
+                    propsFile.AppendLine("<Project>");
+                    propsFile.AppendLine("  <Import Project=\"$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.props))\\TestProjects.props\" />");
+                    propsFile.AppendLine("</Project>");
+
                     // write an empty Directory.Build.props to ensure that msbuild doesn't pick up
                     // the repo's root Directory.Build.props.
-                    File.WriteAllText(directoryBuildPropsPath, "<Project></Project>");
+                    File.WriteAllText(directoryBuildPropsPath, propsFile.ToString());
                 }
                 catch (IOException)
                 {}
@@ -210,6 +217,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _framework = framework;
 
             var buildArgs = new List<string>();
+            buildArgs.Add("--no-restore");
+
             if (runtime != null)
             {
                 buildArgs.Add("--runtime");
@@ -288,6 +297,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             storeArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
 
+            // Ensure the project's OutputType isn't 'Exe', since that causes issues with 'dotnet store'
+            storeArgs.Add("/p:OutputType=Library");
+
             dotnet.Store(storeArgs.ToArray())
                 .WorkingDirectory(_testProject.ProjectDirectory)
                 .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
@@ -314,6 +326,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _framework = framework;
 
             var publishArgs = new List<string>();
+            publishArgs.Add("--no-restore");
+
             if (runtime != null)
             {
                 publishArgs.Add("--runtime");
