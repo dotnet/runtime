@@ -1591,7 +1591,14 @@
       }
     },
     "System.Drawing.Common": {
-      "InboxOn": {},
+      "InboxOn": {
+        "monoandroid10": "Any",
+        "monotouch10": "Any",
+        "xamarinios10": "Any",
+        "xamarinmac20": "Any",
+        "xamarintvos10": "Any",
+        "xamarinwatchos10": "Any"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0"
       }
