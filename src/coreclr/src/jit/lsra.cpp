@@ -3083,7 +3083,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             }
         }
 
-        if (killGCRefs(tree))
+        if (compiler->killGCRefs(tree))
         {
             RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree,
                                               (allRegs(TYP_REF) & ~RBM_ARG_REGS));
@@ -3091,35 +3091,6 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         return true;
     }
 
-    return false;
-}
-
-//------------------------------------------------------------------------
-// killGCRefs:
-// Given some tree node return does it need all GC refs to be spilled from
-// callee save registers.
-//
-// Arguments:
-//    tree       - the tree for which we ask about gc refs.
-//
-// Return Value:
-//    true       - tree kills GC refs on callee save registers
-//    false      - tree doesn't affect GC refs on callee save registers
-bool LinearScan::killGCRefs(GenTree* tree)
-{
-    if (tree->IsCall())
-    {
-        if ((tree->gtFlags & GTF_CALL_UNMANAGED) != 0)
-        {
-            return true;
-        }
-
-        if (tree->AsCall()->gtCallMethHnd == compiler->eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
-        {
-            assert(compiler->opts.ShouldUsePInvokeHelpers());
-            return true;
-        }
-    }
     return false;
 }
 
@@ -10038,7 +10009,21 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
     VarToRegMap toVarToRegMap   = getInVarToRegMap(toBlock->bbNum);
 
+#ifdef _TARGET_ARM_
+    regMaskTP freeRegs;
+    if (type == TYP_DOUBLE)
+    {
+        // We have to consider all float registers for TYP_DOUBLE
+        freeRegs = allRegs(TYP_FLOAT);
+    }
+    else
+    {
+        freeRegs = allRegs(type);
+    }
+#else  // !_TARGET_ARM_
     regMaskTP freeRegs = allRegs(type);
+#endif // !_TARGET_ARM_
+
 #ifdef DEBUG
     if (getStressLimitRegs() == LSRA_LIMIT_SMALL_SET)
     {
@@ -10057,13 +10042,22 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
         assert(fromReg != REG_NA && toReg != REG_NA);
         if (fromReg != REG_STK)
         {
-            freeRegs &= ~genRegMask(fromReg);
+            freeRegs &= ~genRegMask(fromReg, getIntervalForLocalVar(varIndex)->registerType);
         }
         if (toReg != REG_STK)
         {
-            freeRegs &= ~genRegMask(toReg);
+            freeRegs &= ~genRegMask(toReg, getIntervalForLocalVar(varIndex)->registerType);
         }
     }
+
+#ifdef _TARGET_ARM_
+    if (type == TYP_DOUBLE)
+    {
+        // Exclude any doubles for which the odd half isn't in freeRegs.
+        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE);
+    }
+#endif
+
     if (freeRegs == RBM_NONE)
     {
         return REG_NA;
@@ -10683,7 +10677,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
         }
 #else
-        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
+        tempRegFlt     = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
 #endif
     }
 
@@ -11488,8 +11482,6 @@ void TreeNodeInfo::dump(LinearScan* lsra)
 
 void LinearScan::lsraDumpIntervals(const char* msg)
 {
-    Interval* interval;
-
     printf("\nLinear scan intervals %s:\n", msg);
     for (auto& interval : intervals)
     {

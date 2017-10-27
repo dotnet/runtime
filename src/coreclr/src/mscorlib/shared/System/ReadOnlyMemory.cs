@@ -14,7 +14,7 @@ namespace System
 {
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [DebuggerTypeProxy(typeof(MemoryDebugView<>))]
-    public struct ReadOnlyMemory<T>
+    public readonly struct ReadOnlyMemory<T>
     {
         // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
         // as code uses Unsafe.As to cast between them.

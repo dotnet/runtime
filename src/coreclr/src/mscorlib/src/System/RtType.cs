@@ -46,7 +46,7 @@ namespace System
         FormatAssembly = 0x00000004, // Include assembly display name in type names
         FormatSignature = 0x00000008, // Include signature in method names
         FormatNoVersion = 0x00000010, // Suppress version and culture information in all assembly names
-#if _DEBUG
+#if DEBUG
         FormatDebug = 0x00000020, // For debug printing of types only
 #endif
         FormatAngleBrackets = 0x00000040, // Whether generic types are C<T> or C[T]
@@ -389,7 +389,7 @@ namespace System
                             list = PopulateInterfaces(filter);
                             break;
                         default:
-                            BCLDebug.Assert(false, "Invalid CacheType");
+                            Debug.Fail("Invalid CacheType");
                             break;
                     }
 

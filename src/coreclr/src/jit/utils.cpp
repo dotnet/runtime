@@ -2113,7 +2113,6 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  q2;
     UT  t;
     T   result_magic;
-    int result_shift;
     int iters = 0;
 
     absDenom = abs(denom);

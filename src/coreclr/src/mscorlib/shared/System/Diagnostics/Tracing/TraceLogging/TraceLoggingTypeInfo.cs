@@ -5,6 +5,12 @@
 using System;
 using System.Collections.Generic;
 
+#if !ES_BUILD_AGAINST_DOTNET_V35
+using Contract = System.Diagnostics.Contracts.Contract;
+#else
+using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
+#endif
+
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
@@ -33,7 +39,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(dataType));
             }
 
-
             this.name = dataType.Name;
             this.dataType = dataType;
             this.propertyValueFactory = PropertyValue.GetFactory(dataType);
@@ -56,7 +61,6 @@ namespace System.Diagnostics.Tracing
             {
                 throw new ArgumentNullException(nameof(name));
             }
-
 
             Statics.CheckName(name);
 
