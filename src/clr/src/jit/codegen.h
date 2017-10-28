@@ -281,11 +281,9 @@ protected:
 
     void genExitCode(BasicBlock* block);
 
-    //-------------------------------------------------------------------------
-
+#ifdef LEGACY_BACKEND
     GenTreePtr genMakeConst(const void* cnsAddr, var_types cnsType, GenTreePtr cnsTree, bool dblAlign);
-
-    //-------------------------------------------------------------------------
+#endif
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, GenTreePtr failBlk = nullptr);
 
