@@ -48,6 +48,7 @@
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
+    <PrereleaseLibraryPackage Include="System.ServiceModel.Syndication" />
   </ItemGroup>
 
   <ItemGroup>
