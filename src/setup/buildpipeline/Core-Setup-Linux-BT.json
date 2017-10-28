@@ -489,6 +489,106 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Initialize docker - Ubuntu17.10",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1511",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Ubuntu1710)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Ubuntu17.10",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1622",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1710) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies -Ubuntu 17.10",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1733",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1710) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Ubuntu 17.10",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1844",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1710) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Ubuntu 17.10",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1955",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1710) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Initialize docker - Ubuntu16.10",
       "timeoutInMinutes": 0,
       "refName": "Task20",
@@ -1126,7 +1226,7 @@
       "value": "/p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) $(PB_DebianKeys)"
     },
     "PB_DebianKeys": {
-      "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_debian9-x64=$(PB_DebianId_debian9-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64) /p:DebianId_ubuntu1704-x64=$(PB_DebianId_ubuntu1704-x64)"
+      "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_debian9-x64=$(PB_DebianId_debian9-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64) /p:DebianId_ubuntu1704-x64=$(PB_DebianId_ubuntu1704-x64) /p:DebianId_ubuntu1710-x64=$(PB_DebianId_ubuntu1710-x64)"
     },
     "DockerTag_Ubuntu1404": {
       "value": "ubuntu-14.04-debpkg-e5cf912-20175003025046"
@@ -1204,6 +1304,19 @@
     "PB_DebianId_ubuntu1704-x64": {
       "value": null,
       "isSecret": true
+    },
+    "DockerCommonRunArgs_Ubuntu1710": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1710) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1710)"
+    },
+    "DockerImageName_Ubuntu1710": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Ubuntu1710)"
+    },
+    "DockerTag_Ubuntu1710": {
+      "value": "ubuntu-17.10-debpkg-8feab42-20175925105910"
+    },
+    "PB_DebianId_ubuntu1710-x64": {
+      "value": null,
+      "isSecret": true
     }
   },
   "demands": [
@@ -1271,7 +1384,7 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418098235,
+    "revision": 418098259,
     "visibility": "organization"
   }
 }
