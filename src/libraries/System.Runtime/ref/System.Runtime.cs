@@ -6894,6 +6894,11 @@ namespace System.Runtime.InteropServices
         Sequential = 0,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
+    public sealed partial class InAttribute : System.Attribute
+    {
+        public InAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
     public sealed partial class OutAttribute : System.Attribute
     {
         public OutAttribute() { }

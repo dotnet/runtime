@@ -5,10 +5,11 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-// Types moved down into System.Runtime.Handles
+// Types moved down into System.Runtime
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.CriticalHandle))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.GCHandle))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.GCHandleType))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.InAttribute))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.SafeHandle))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.Missing))]
 
@@ -448,11 +449,6 @@ namespace System.Runtime.InteropServices
     {
         public ImportedFromTypeLibAttribute(String tlbFile) { }
         public String Value { get { throw null; } }
-    }         
-    [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
-    public sealed partial class InAttribute : System.Attribute
-    {
-        public InAttribute() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1024), Inherited = false)]
     public sealed partial class InterfaceTypeAttribute : System.Attribute
