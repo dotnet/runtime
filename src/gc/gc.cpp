@@ -5401,15 +5401,19 @@ void gc_heap::gc_thread_function ()
                 proceed_with_gc_p = FALSE;
             }
             else
+            {
                 settings.init_mechanisms();
+                gc_start_event.Set();
+            }
             dprintf (3, ("%d gc thread waiting...", heap_number));
-            gc_start_event.Set();
         }
         else
         {
             gc_start_event.Wait(INFINITE, FALSE);
             dprintf (3, ("%d gc thread waiting... Done", heap_number));
         }
+
+        assert ((heap_number == 0) || proceed_with_gc_p);
 
         if (proceed_with_gc_p)
             garbage_collect (GCHeap::GcCondemnedGeneration);
@@ -5447,7 +5451,18 @@ void gc_heap::gc_thread_function ()
 
             gc_heap::internal_gc_done = true;
 
-            set_gc_done();
+            if (proceed_with_gc_p)
+                set_gc_done();
+            else
+            {
+                // If we didn't actually do a GC, it means we didn't wait up the other threads,
+                // we still need to set the gc_done_event for those threads.
+                for (int i = 0; i < gc_heap::n_heaps; i++)
+                {
+                    gc_heap* hp = gc_heap::g_heaps[i];
+                    hp->set_gc_done();
+                }
+            }
         }
         else
         {
