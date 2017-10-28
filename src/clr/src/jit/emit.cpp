@@ -5367,21 +5367,13 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
 // Generates a float or double data section constant and returns field handle representing
 // the data offset to access the constant.  This is called by emitInsBinary() in case
 // of contained float of double constants.
-CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(GenTreeDblCon* tree, emitAttr attr /*=EA_UNKNOWN*/)
+CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr)
 {
-    if (attr == EA_UNKNOWN)
-    {
-        attr = emitTypeSize(tree->TypeGet());
-    }
-    else
-    {
-        assert(emitTypeSize(tree->TypeGet()) == attr);
-    }
+    assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 
-    double constValue = tree->gtDblCon.gtDconVal;
-    void*  cnsAddr;
-    float  f;
-    bool   dblAlign;
+    void* cnsAddr;
+    float f;
+    bool  dblAlign;
 
     if (attr == EA_4BYTE)
     {

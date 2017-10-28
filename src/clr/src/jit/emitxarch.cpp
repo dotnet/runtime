@@ -2908,7 +2908,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         else if (dblConst != nullptr)
         {
             // Emit a data section constant for float or double constant.
-            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblConst);
+            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblConst->AsDblCon()->gtDconVal, emitTypeSize(dblConst));
 
             emitIns_R_C(ins, attr, dst->gtRegNum, hnd, 0);
         }
