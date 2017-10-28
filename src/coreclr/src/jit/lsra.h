@@ -630,6 +630,11 @@ private:
         return getLsraRegOptionalControl() == LSRA_REG_OPTIONAL_NO_ALLOC;
     }
 
+    bool candidatesAreStressLimited()
+    {
+        return ((lsraStressMask & (LSRA_LIMIT_MASK | LSRA_SELECT_MASK)) != 0);
+    }
+
     // Dump support
     void lsraDumpIntervals(const char* msg);
     void dumpRefPositions(const char* msg);
@@ -663,6 +668,10 @@ private:
         return true;
     }
     bool getLsraExtendLifeTimes()
+    {
+        return false;
+    }
+    bool candidatesAreStressLimited()
     {
         return false;
     }
