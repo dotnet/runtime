@@ -5364,6 +5364,13 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
 }
 
 #ifndef LEGACY_BACKEND
+
+CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign)
+{
+    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, dblAlign);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+
 // Generates a float or double data section constant and returns field handle representing
 // the data offset to access the constant.  This is called by emitInsBinary() in case
 // of contained float of double constants.
