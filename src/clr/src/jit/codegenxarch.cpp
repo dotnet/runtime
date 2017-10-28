@@ -440,7 +440,6 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
  */
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTreePtr tree)
 {
-
     switch (tree->gtOper)
     {
         case GT_CNS_INT:
@@ -464,28 +463,20 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
         case GT_CNS_DBL:
         {
-            double constValue = tree->gtDblCon.gtDconVal;
+            emitter* emit       = getEmitter();
+            emitAttr size       = emitTypeSize(targetType);
+            double   constValue = tree->gtDblCon.gtDconVal;
 
             // Make sure we use "xorps reg, reg" only for +ve zero constant (0.0) and not for -ve zero (-0.0)
             if (*(__int64*)&constValue == 0)
             {
                 // A faster/smaller way to generate 0
-                inst_RV_RV(INS_xorps, targetReg, targetReg, targetType);
+                emit->emitIns_R_R(INS_xorps, size, targetReg, targetReg);
             }
             else
             {
-                GenTreePtr cns;
-                if (targetType == TYP_FLOAT)
-                {
-                    float f = forceCastToFloat(constValue);
-                    cns     = genMakeConst(&f, targetType, tree, false);
-                }
-                else
-                {
-                    cns = genMakeConst(&constValue, targetType, tree, true);
-                }
-
-                inst_RV_TT(ins_Load(targetType), targetReg, cns);
+                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
+                emit->emitIns_R_C(ins_Load(targetType), size, targetReg, hnd, 0);
             }
         }
         break;
