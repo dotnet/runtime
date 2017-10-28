@@ -6168,16 +6168,19 @@ bool LinearScan::isSpillCandidate(Interval*     current,
 
     if (refPosition->isFixedRefOfRegMask(candidateBit))
     {
-        // Either there is a fixed reference due to this node, or one associated with a
-        // fixed use fed by a def at this node.
-        // In either case, we must use this register as it's the only candidate
+        // Either:
+        // - there is a fixed reference due to this node, OR
+        // - or there is a fixed use fed by a def at this node, OR
+        // - or we have restricted the set of registers for stress.
+        // In any case, we must use this register as it's the only candidate
         // TODO-CQ: At the time we allocate a register to a fixed-reg def, if it's not going
         // to remain live until the use, we should set the candidates to allRegs(regType)
         // to avoid a spill - codegen can then insert the copy.
         // If this is marked as allocateIfProfitable, the caller will compare the weights
         // of this RefPosition and the RefPosition to which it is currently assigned.
         assert(refPosition->isFixedRegRef ||
-               (refPosition->nextRefPosition != nullptr && refPosition->nextRefPosition->isFixedRegRef));
+               (refPosition->nextRefPosition != nullptr && refPosition->nextRefPosition->isFixedRegRef) ||
+               candidatesAreStressLimited());
         return true;
     }
 
