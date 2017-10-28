@@ -6921,16 +6921,16 @@ void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
         // Adjust the result
         // result = result + 0x43f00000 00000000
         // addsd resultReg,  0x43f00000 00000000
-        GenTreePtr* cns = &u8ToDblBitmask;
+        CORINFO_FIELD_HANDLE* cns = &u8ToDblBitmask;
         if (*cns == nullptr)
         {
             double d;
             static_assert_no_msg(sizeof(double) == sizeof(__int64));
             *((__int64*)&d) = 0x43f0000000000000LL;
 
-            *cns = genMakeConst(&d, dstType, treeNode, true);
+            *cns = getEmitter()->emitFltOrDblConst(d, EA_8BYTE);
         }
-        inst_RV_TT(INS_addsd, treeNode->gtRegNum, *cns);
+        getEmitter()->emitIns_R_C(INS_addsd, EA_8BYTE, treeNode->gtRegNum, *cns, 0);
 
         genDefineTempLabel(label);
     }
