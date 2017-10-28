@@ -2801,12 +2801,6 @@ void emitter::emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommo
     codeGen->genUpdateLife(varNode);
 }
 
-CORINFO_FIELD_HANDLE emitter::emitLiteralConst(ssize_t cnsValIn, emitAttr attr /*= EA_8BYTE*/)
-{
-    NYI("emitLiteralConst");
-    return nullptr;
-}
-
 // Generates a float or double data section constant and returns field handle representing
 // the data offset to access the constant.  This is called by emitInsBinary() in case
 // of contained float of double constants.
