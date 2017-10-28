@@ -3491,7 +3491,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it. This minimizes precision loss.
 
-    if (IsVNConstant(arg0VN) && Compiler::IsTargetIntrinsic(gtMathFN))
+    if (IsVNConstant(arg0VN) && m_pComp->IsTargetIntrinsic(gtMathFN))
     {
         assert(varTypeIsFloating(TypeOfVN(arg0VN)));
 
