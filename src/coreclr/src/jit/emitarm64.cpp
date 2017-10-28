@@ -11510,35 +11510,6 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     }
 }
 
-// Generates an integer data section constant and returns a field handle representing
-// the data offset to access the constant via a load instruction.
-// This is called during ngen for any relocatable constants
-//
-CORINFO_FIELD_HANDLE emitter::emitLiteralConst(ssize_t cnsValIn, emitAttr attr /*=EA_8BYTE*/)
-{
-    ssize_t constValue = cnsValIn;
-    void*   cnsAddr    = &constValue;
-    bool    dblAlign;
-
-    if (attr == EA_4BYTE)
-    {
-        dblAlign = false;
-    }
-    else
-    {
-        assert(attr == EA_8BYTE);
-        dblAlign = true;
-    }
-
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-
-    UNATIVE_OFFSET cnsSize = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnum    = emitDataConst(cnsAddr, cnsSize, dblAlign);
-    return emitComp->eeFindJitDataOffs(cnum);
-}
-
 // Generates a float or double data section constant and returns field handle representing
 // the data offset to access the constant.  This is called by emitInsBinary() in case
 // of contained float of double constants.
