@@ -7263,12 +7263,12 @@ void CodeGen::genSSE2BitwiseOp(GenTreePtr treeNode)
     var_types targetType = treeNode->TypeGet();
     assert(varTypeIsFloating(targetType));
 
-    float       f;
-    double      d;
-    GenTreePtr* bitMask  = nullptr;
-    instruction ins      = INS_invalid;
-    void*       cnsAddr  = nullptr;
-    bool        dblAlign = false;
+    float                 f;
+    double                d;
+    CORINFO_FIELD_HANDLE* bitMask  = nullptr;
+    instruction           ins      = INS_invalid;
+    void*                 cnsAddr  = nullptr;
+    bool                  dblAlign = false;
 
     switch (treeNode->OperGet())
     {
@@ -7331,7 +7331,7 @@ void CodeGen::genSSE2BitwiseOp(GenTreePtr treeNode)
     if (*bitMask == nullptr)
     {
         assert(cnsAddr != nullptr);
-        *bitMask = genMakeConst(cnsAddr, targetType, treeNode, dblAlign);
+        *bitMask = compiler->eeFindJitDataOffs(getEmitter()->emitDataConst(cnsAddr, genTypeSize(targetType), dblAlign));
     }
 
     // We need an additional register for bitmask.
@@ -7352,7 +7352,7 @@ void CodeGen::genSSE2BitwiseOp(GenTreePtr treeNode)
         operandReg = tmpReg;
     }
 
-    inst_RV_TT(ins_Load(targetType, false), tmpReg, *bitMask);
+    getEmitter()->emitIns_R_C(ins_Load(targetType, false), emitTypeSize(targetType), tmpReg, *bitMask, 0);
     assert(ins != INS_invalid);
     inst_RV_RV(ins, targetReg, operandReg, targetType);
 }
