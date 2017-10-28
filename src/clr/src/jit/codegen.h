@@ -51,15 +51,14 @@ public:
 private:
 #if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
     // Bit masks used in negating a float or double number.
-    // The below gentrees encapsulate the data offset to the bitmasks as GT_CLS_VAR nodes.
     // This is to avoid creating more than one data constant for these bitmasks when a
     // method has more than one GT_NEG operation on floating point values.
-    GenTreePtr negBitmaskFlt;
-    GenTreePtr negBitmaskDbl;
+    CORINFO_FIELD_HANDLE negBitmaskFlt;
+    CORINFO_FIELD_HANDLE negBitmaskDbl;
 
     // Bit masks used in computing Math.Abs() of a float or double number.
-    GenTreePtr absBitmaskFlt;
-    GenTreePtr absBitmaskDbl;
+    CORINFO_FIELD_HANDLE absBitmaskFlt;
+    CORINFO_FIELD_HANDLE absBitmaskDbl;
 
     // Bit mask used in U8 -> double conversion to adjust the result.
     CORINFO_FIELD_HANDLE u8ToDblBitmask;
