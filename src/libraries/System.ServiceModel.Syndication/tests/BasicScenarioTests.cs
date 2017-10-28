@@ -300,7 +300,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(24894)]
         public static void AtomEntryPositiveTest()
         {
             string filePath = @"brief-entry-noerror.xml";
@@ -335,7 +334,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(24894)]
         public static void AtomEntryPositiveTest_write()
         {
             string filePath = @"AtomEntryTest.xml";
@@ -343,7 +341,7 @@ namespace System.ServiceModel.Syndication.Tests
 
             SyndicationItem item = new SyndicationItem("SyndicationFeed released for .net Core", "A lot of text describing the release of .net core feature", new Uri("http://contoso.com/news/path"));
             item.Id = "uuid:43481a10-d881-40d1-adf2-99b438c57e21;id=1";
-            item.LastUpdatedTime = new DateTimeOffset(Convert.ToDateTime("2017-10-11T11:25:55Z"));
+            item.LastUpdatedTime = new DateTimeOffset(Convert.ToDateTime("2017-10-11T11:25:55Z")).UtcDateTime;
 
             try
             {
@@ -367,7 +365,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(24894)]
         public static void AtomFeedPositiveTest()
         {
             string dataFile = @"atom_feeds.dat";
@@ -488,13 +485,14 @@ namespace System.ServiceModel.Syndication.Tests
                 {
                     if (!file.StartsWith("#"))
                     {
+                        file = file.Trim();
                         if (File.Exists(file))
                         {
                             fileList.Add(Path.GetFullPath(file));
                         }
                         else
                         {
-                            throw new FileNotFoundException("File not found!",file);
+                            throw new FileNotFoundException($"File `{file}` was not found!");
                         }
                     }
                 }
