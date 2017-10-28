@@ -62,7 +62,7 @@ private:
     GenTreePtr absBitmaskDbl;
 
     // Bit mask used in U8 -> double conversion to adjust the result.
-    GenTreePtr u8ToDblBitmask;
+    CORINFO_FIELD_HANDLE u8ToDblBitmask;
 
     // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
     void genSSE2BitwiseOp(GenTreePtr treeNode);
