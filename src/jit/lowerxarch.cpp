@@ -2167,7 +2167,11 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
 {
     assert(node->OperIs(GT_INTRINSIC));
-    if (node->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Sqrt)
+
+    CorInfoIntrinsics intrinsicId = node->gtIntrinsic.gtIntrinsicId;
+
+    if (intrinsicId == CORINFO_INTRINSIC_Sqrt || intrinsicId == CORINFO_INTRINSIC_Round ||
+        intrinsicId == CORINFO_INTRINSIC_Ceiling || intrinsicId == CORINFO_INTRINSIC_Floor)
     {
         GenTree* op1 = node->gtGetOp1();
         if (IsContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())
