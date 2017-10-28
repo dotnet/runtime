@@ -9,6 +9,8 @@ namespace System.ServiceModel.Syndication
 {
     internal static class DateTimeHelper
     {
+        private const string Rfc3339DateTimeFormat = "yyyy-MM-ddTHH:mm:ssK";
+
         public static Func<string, string, string, DateTimeOffset> CreateRss20DateTimeParser()
         {
             return (dateTimeString, localName, ns) =>
@@ -42,21 +44,36 @@ namespace System.ServiceModel.Syndication
         {
             return (dateTimeString, localName, ns) =>
             {
-                DateTimeOffset dto;
-                if (Rfc3339DateTimeParser(dateTimeString, out dto))
+                if (Rfc3339DateTimeParser(dateTimeString, out DateTimeOffset dto))
                 {
                     return dto;
                 }
 
-                // Unable to parse - using a default date;
-                return new DateTimeOffset();
+                throw new FormatException(SR.ErrorParsingDateTime);
             };
         }
 
         private static bool Rfc3339DateTimeParser(string dateTimeString, out DateTimeOffset dto)
         {
-            // RFC3339 uses the W3C Profile of ISO 8601 so using the date time format string "O" will achieve this.
-            return DateTimeOffset.TryParseExact(dateTimeString, "O", null as IFormatProvider, DateTimeStyles.AllowWhiteSpaces, out dto);
+            dateTimeString = dateTimeString.Trim();
+            if (dateTimeString.Length < 20)
+            {
+                return false;
+            }
+
+            if (dateTimeString[19] == '.')
+            {
+                // remove any fractional seconds, we choose to ignore them
+                int i = 20;
+                while (dateTimeString.Length > i && char.IsDigit(dateTimeString[i]))
+                {
+                    ++i;
+                }
+
+                dateTimeString = dateTimeString.Substring(0, 19) + dateTimeString.Substring(i);
+            }
+
+            return DateTimeOffset.TryParseExact(dateTimeString, Rfc3339DateTimeFormat,CultureInfo.InvariantCulture.DateTimeFormat,DateTimeStyles.None, out dto);
         }
 
         private static bool Rfc822DateTimeParser(string dateTimeString, out DateTimeOffset dto)
