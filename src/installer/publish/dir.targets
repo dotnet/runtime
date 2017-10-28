@@ -50,14 +50,14 @@
           Condition="('$(TargetsUbuntu)' == 'true' or '$(TargetsDebian)' == 'true') and '$(TargetArchitecture)' == 'x64'">
           
     <ItemGroup>
-      <RepoIds Include="DebianId_ubuntu1404-x64">
-        <Key>$(DebianId_ubuntu1404-x64)</Key>
-      </RepoIds>
       <RepoIds Include="DebianId_debian8-x64">
         <Key>$(DebianId_debian8-x64)</Key>
       </RepoIds>
       <RepoIds Include="DebianId_debian9-x64">
         <Key>$(DebianId_debian9-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_ubuntu1404-x64">
+        <Key>$(DebianId_ubuntu1404-x64)</Key>
       </RepoIds>
       <RepoIds Include="DebianId_ubuntu1604-x64">
         <Key>$(DebianId_ubuntu1604-x64)</Key>
@@ -67,6 +67,9 @@
       </RepoIds>
       <RepoIds Include="DebianId_ubuntu1704-x64">
         <Key>$(DebianId_ubuntu1704-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_ubuntu1710-x64">
+        <Key>$(DebianId_ubuntu1710-x64)</Key>
       </RepoIds>
     </ItemGroup>
     <PropertyGroup>
