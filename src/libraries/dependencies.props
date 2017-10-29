@@ -16,13 +16,13 @@
     <ProjectNTfsCurrentRef>ce241fa99a5fabe348a2035fe1e246c91124d2c8</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>ce241fa99a5fabe348a2035fe1e246c91124d2c8</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
-    <StandardCurrentRef>b8acd8cda87a0724c435b99f31fbe6ce4edd32f4</StandardCurrentRef>
-    <BuildToolsCurrentRef>14de09320b6065e72f5aa58676970f6d21781d84</BuildToolsCurrentRef>
+    <StandardCurrentRef>97eb85d6b89ea4907f9d7110777c85fc808e85e7</StandardCurrentRef>
+    <BuildToolsCurrentRef>97eb85d6b89ea4907f9d7110777c85fc808e85e7</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
   <PropertyGroup>
-    <NETStandardLibraryPackageVersion>2.1.0-preview1-25825-02</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-preview1-25827-06</NETStandardLibraryPackageVersion>
     <NETStandardLibraryPackageId>NETStandard.Library</NETStandardLibraryPackageId>
 
     <!-- SNI runtime package -->
@@ -47,13 +47,13 @@
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0007</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>1.0.3-alpha-experimental</TraceEventPackageVersion>
-    <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02126-05</XunitNetcoreExtensionsVersion>
+    <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02127-10</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
   
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02126-05</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02127-10</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
