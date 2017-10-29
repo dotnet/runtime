@@ -6447,11 +6447,11 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
 
         if (farthestLocation == refLocation)
         {
-            // This must be a RefPosition that is constrained to use a snigle register, either directly,
+            // This must be a RefPosition that is constrained to use a single register, either directly,
             // or at the use, or by stress.
-            bool isConstrained = (refPosition->isFixedRegRef ||
-                                 (refPosition->nextRefPosition != nullptr && refPosition->nextRefPosition->isFixedRegRef) ||
-                                 candidatesAreStressLimited());
+            bool isConstrained = (refPosition->isFixedRegRef || (refPosition->nextRefPosition != nullptr &&
+                                                                 refPosition->nextRefPosition->isFixedRegRef) ||
+                                  candidatesAreStressLimited());
             if (!isConstrained)
             {
 #ifdef _TARGET_ARM_
