@@ -475,7 +475,7 @@ namespace System.Collections
                     //        (3) compare the key, if equal, go to step 4. Otherwise end.
                     //        (4) return the value contained in the bucket.
                     //     After step 3 and before step 4. A writer can kick in a remove the old item and add a new one 
-                    //     in the same bukcet. So in the reader we need to check if the hash table is modified during above steps.
+                    //     in the same bucket. So in the reader we need to check if the hash table is modified during above steps.
                     //
                     // Writers (Insert, Remove, Clear) will set 'isWriterInProgress' flag before it starts modifying 
                     // the hashtable and will ckear the flag when it is done.  When the flag is cleared, the 'version'
