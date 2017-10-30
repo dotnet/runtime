@@ -777,7 +777,10 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             op2 = simdNode->gtOp.gtOp2;
 
             // If the index is a constant, mark it as contained.
-            CheckImmedAndMakeContained(simdNode, op2);
+            if (op2->IsCnsIntOrI())
+            {
+                MakeSrcContained(simdNode, op2);
+            }
             break;
         }
 
