@@ -3089,6 +3089,9 @@ sgen_gc_collect (int generation)
 	if (generation > 1)
 		generation = 1;
 	sgen_perform_collection (0, generation, "user request", TRUE, TRUE);
+	/* Make sure we don't exceed heap size allowance by promoting */
+	if (generation == GENERATION_NURSERY && sgen_need_major_collection (0))
+		sgen_perform_collection (0, GENERATION_OLD, "Minor allowance", FALSE, TRUE);
 	UNLOCK_GC;
 }
 
