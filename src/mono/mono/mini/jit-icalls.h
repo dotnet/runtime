@@ -228,6 +228,4 @@ void mono_throw_method_access (MonoMethod *caller, MonoMethod *callee);
 
 void mono_dummy_jit_icall (void);
 
-void mono_interruption_checkpoint_from_trampoline_deprecated (void);
-
 #endif /* __MONO_JIT_ICALLS_H__ */
