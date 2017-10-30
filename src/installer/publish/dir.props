@@ -21,24 +21,24 @@
       <ConditionalErrorMessage>Pushing took too long</ConditionalErrorMessage>
     </IgnorableErrorMessages>
   </ItemGroup>
-  
+
   <ItemGroup>
-    <CompressedFile Include="$(PackagesOutDir)**/*$(CompressedFileExtension)">
+    <CompressedFile Include="$(PackageOutputPath)**/*$(CompressedFileExtension)">
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </CompressedFile>
-    <RuntimePackageFile Include="$(PackagesOutDir)**/runtime.*.nupkg" >
+    <RuntimePackageFile Include="$(PackageOutputPath)**/runtime.*.nupkg" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RuntimePackageFile>
     <UWPArtifactsToUpload Include="$(MicrosoftNetCoreRuntimeAppxOutputPath)" Condition="Exists('$(MicrosoftNetCoreRuntimeAppxOutputPath)')" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </UWPArtifactsToUpload>
-    <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
+    <RidAgnosticPackageFile Include="$(PackageOutputPath)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RidAgnosticPackageFile>
-    <InstallerFile Include="$(PackagesOutDir)**/*$(InstallerExtension)" Condition="'$(InstallerExtension)' != ''" >
+    <InstallerFile Include="$(PackageOutputPath)**/*$(InstallerExtension)" Condition="'$(InstallerExtension)' != ''" >
       <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
     </InstallerFile>
-    <InstallerFile Include="$(PackagesOutDir)**/*$(CombinedInstallerExtension)" Condition="'$(CombinedInstallerExtension)' != ''">
+    <InstallerFile Include="$(PackageOutputPath)**/*$(CombinedInstallerExtension)" Condition="'$(CombinedInstallerExtension)' != ''">
       <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
     </InstallerFile>
   </ItemGroup>
