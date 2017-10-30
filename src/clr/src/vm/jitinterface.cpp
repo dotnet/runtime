@@ -8897,17 +8897,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
         switch(normType)
         {
             case ELEMENT_TYPE_I1:
-            {
-                targetClass = MscorlibBinder::GetClass(CLASS__SBYTE_ENUM_EQUALITYCOMPARER);
-                break;
-            }
-
             case ELEMENT_TYPE_I2:
-            {
-                targetClass = MscorlibBinder::GetClass(CLASS__SHORT_ENUM_EQUALITYCOMPARER);
-                break;
-            }
-
             case ELEMENT_TYPE_U1:
             case ELEMENT_TYPE_U2:
             case ELEMENT_TYPE_I4:
