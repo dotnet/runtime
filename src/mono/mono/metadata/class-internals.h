@@ -717,7 +717,6 @@ typedef struct {
 	MonoMethodSignature *sig;
 	const char *c_symbol;
 	MonoMethod *wrapper_method;
-	gboolean no_raise;
 } MonoJitICallInfo;
 
 void
@@ -1234,7 +1233,7 @@ MonoJitICallInfo *
 mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
 
 MonoJitICallInfo *
-mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save, gboolean no_raise, const char *c_symbol);
+mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
 
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);

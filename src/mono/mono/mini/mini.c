@@ -1715,7 +1715,7 @@ mono_find_jit_opcode_emulation (int opcode)
 }
 
 void
-mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw)
+mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
 {
 	MonoJitICallInfo *info;
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
@@ -1723,8 +1723,7 @@ mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	/* Opcode emulation functions are assumed to don't call mono_raise_exception () */
-	info = mono_register_jit_icall_full (func, name, sig, no_throw, TRUE, symbol);
+	info = mono_register_jit_icall_full (func, name, sig, no_wrapper, symbol);
 
 	if (emul_opcode_num >= emul_opcode_alloced) {
 		int incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;

@@ -2711,14 +2711,10 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *
 {
 	/*
 	 * Call the jit icall without a wrapper if possible.
-	 * The wrapper is needed for the following reasons:
-	 * - to handle exceptions thrown using mono_raise_exceptions () from the
-	 *   icall function. The EH code needs the lmf frame pushed by the
-	 *   wrapper to be able to unwind back to managed code.
-	 * - to be able to do stack walks for asynchronously suspended
-	 *   threads when debugging.
+	 * The wrapper is needed to be able to do stack walks for asynchronously suspended
+	 * threads when debugging.
 	 */
-	if (info->no_raise && direct_icalls_enabled (cfg)) {
+	if (direct_icalls_enabled (cfg)) {
 		char *name;
 		int costs;
 
@@ -3854,38 +3850,6 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, alloc->dreg, sizeof (MonoObject), val->dreg);
 		return alloc;
 	}
-}
-
-static GHashTable* direct_icall_type_hash;
-
-static gboolean
-icall_is_direct_callable (MonoCompile *cfg, MonoMethod *cmethod)
-{
-	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
-	if (!direct_icalls_enabled (cfg))
-		return FALSE;
-
-	/*
-	 * An icall is directly callable if it doesn't directly or indirectly call mono_raise_exception ().
-	 * Whitelist a few icalls for now.
-	 */
-	if (!direct_icall_type_hash) {
-		GHashTable *h = g_hash_table_new (g_str_hash, g_str_equal);
-
-		g_hash_table_insert (h, (char*)"Decimal", GUINT_TO_POINTER (1));
-		g_hash_table_insert (h, (char*)"Number", GUINT_TO_POINTER (1));
-		g_hash_table_insert (h, (char*)"Buffer", GUINT_TO_POINTER (1));
-		g_hash_table_insert (h, (char*)"Monitor", GUINT_TO_POINTER (1));
-		mono_memory_barrier ();
-		direct_icall_type_hash = h;
-	}
-
-	if (cmethod->klass == mono_defaults.math_class)
-		return TRUE;
-	/* No locking needed */
-	if (cmethod->klass->image == mono_defaults.corlib && g_hash_table_lookup (direct_icall_type_hash, cmethod->klass->name))
-		return TRUE;
-	return FALSE;
 }
 
 static gboolean
@@ -8416,7 +8380,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
 				mini_class_is_system_array (cmethod->klass)) {
 				array_rank = cmethod->klass->rank;
-			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && icall_is_direct_callable (cfg, cmethod)) {
+			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && direct_icalls_enabled (cfg)) {
 				direct_icall = TRUE;
 			} else if (fsig->pinvoke) {
 				MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);

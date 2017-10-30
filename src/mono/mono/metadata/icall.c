@@ -8651,15 +8651,11 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 	mono_icall_unlock ();
 }
 
-/*
- * If NO_RAISE is set, that means the icall is not calling mono_raise_exception () directly or indirectly. The JIT might be able to call these
- * icalls without wrappers in some cases.
- */
 MonoJitICallInfo *
-mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save, gboolean no_raise, const char *c_symbol)
+mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
 {
 	MonoJitICallInfo *info;
-	
+
 	g_assert (func);
 	g_assert (name);
 
@@ -8681,9 +8677,8 @@ mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSi
 	info->func = func;
 	info->sig = sig;
 	info->c_symbol = c_symbol;
-	info->no_raise = no_raise;
 
-	if (is_save) {
+	if (avoid_wrapper) {
 		info->wrapper = func;
 	} else {
 		info->wrapper = NULL;
@@ -8697,8 +8692,8 @@ mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSi
 }
 
 MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
+mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
 {
-	return mono_register_jit_icall_full (func, name, sig, is_save, FALSE, NULL);
+	return mono_register_jit_icall_full (func, name, sig, no_wrapper, NULL);
 }
 

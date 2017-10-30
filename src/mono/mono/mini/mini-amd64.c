@@ -6510,10 +6510,10 @@ mono_arch_register_lowlevel_calls (void)
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 #if _MSC_VER
 	extern void __chkstk (void);
-	mono_register_jit_icall_full (__chkstk, "mono_chkstk_win64", NULL, TRUE, FALSE, "__chkstk");
+	mono_register_jit_icall_full (__chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
 #else
 	extern void ___chkstk_ms (void);
-	mono_register_jit_icall_full (___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, FALSE, "___chkstk_ms");
+	mono_register_jit_icall_full (___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
 #endif
 #endif
 }

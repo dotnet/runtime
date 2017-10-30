@@ -659,18 +659,17 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 }
 
 static void
-register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw)
+register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
 {
 #ifndef DISABLE_JIT
-	mini_register_opcode_emulation (opcode, name, sigstr, func, symbol, no_throw);
+	mini_register_opcode_emulation (opcode, name, sigstr, func, symbol, no_wrapper);
 #else
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	/* Opcode emulation functions are assumed to don't call mono_raise_exception () */
-	mono_register_jit_icall_full (func, name, sig, no_throw, TRUE, symbol);
+	mono_register_jit_icall_full (func, name, sig, no_wrapper, symbol);
 #endif
 }
 
@@ -690,7 +689,7 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean av
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, avoid_wrapper, FALSE, avoid_wrapper ? name : NULL);
+	mono_register_jit_icall_full (func, name, sig, avoid_wrapper, avoid_wrapper ? name : NULL);
 }
 
 static void
@@ -703,7 +702,7 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, TRUE, FALSE, name);
+	mono_register_jit_icall_full (func, name, sig, TRUE, name);
 }
 
 static void
@@ -716,7 +715,7 @@ register_icall_with_wrapper (gpointer func, const char *name, const char *sigstr
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, FALSE, FALSE, NULL);
+	mono_register_jit_icall_full (func, name, sig, FALSE, NULL);
 }
 
 static void
