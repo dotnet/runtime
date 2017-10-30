@@ -10,7 +10,7 @@
     <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
-    <IncludeDefaultReferences Condition="'$(TargetGroup)'=='uapaot'">false</IncludeDefaultReferences>
+    <IncludeDefaultReferences>false</IncludeDefaultReferences>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -22,7 +22,7 @@
     <TargetingPackExclusions Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <ReferenceFromRuntime Include="CoreFx.Private.TestUtilities" />
     <ReferenceFromRuntime Include="xunit.core" />
@@ -48,7 +48,7 @@
     <ReferenceFromRuntime Include="System.IO.FileSystem" />
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
     <ReferenceFromRuntime Include="System.Runtime.InteropServices" />
-    <ReferenceFromRuntime Include="System.Private.Interop" />
+    <ReferenceFromRuntime Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uapaot'" />
     <ReferenceFromRuntime Include="netstandard" />
   </ItemGroup>
   <ItemGroup>
