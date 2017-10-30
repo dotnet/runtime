@@ -157,7 +157,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --privileged --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=Linux /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) /p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64)",
+        "arguments": "run --privileged --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=Linux",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -589,106 +589,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Initialize docker - Ubuntu16.10",
-      "timeoutInMinutes": 0,
-      "refName": "Task20",
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
-        "arguments": "$(DockerImageName_Ubuntu1610)",
-        "workingFolder": "$(PB_DockerHost_Sandbox)",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Init tools - Ubuntu16.10",
-      "timeoutInMinutes": 0,
-      "refName": "Task21",
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Build traversal build dependencies - Ubuntu 16.10",
-      "timeoutInMinutes": 0,
-      "refName": "Task22",
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies $(DistroSpecificMSBuildArguments)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Package - Ubuntu 16.10",
-      "timeoutInMinutes": 0,
-      "refName": "Task23",
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) $(DistroSpecificMSBuildArguments)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Publish - Ubuntu 16.10",
-      "timeoutInMinutes": 0,
-      "refName": "Task24",
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Initialize docker - Debian 8",
       "timeoutInMinutes": 0,
       "refName": "Task25",
@@ -1110,10 +1010,6 @@
       "value": null,
       "isSecret": true
     },
-    "PB_DebianId_ubuntu1610-x64": {
-      "value": null,
-      "isSecret": true
-    },
     "PB_ChecksumAzureAccountName": {
       "value": "dotnetclichecksums"
     },
@@ -1226,7 +1122,7 @@
       "value": "/p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) $(PB_DebianKeys)"
     },
     "PB_DebianKeys": {
-      "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_debian9-x64=$(PB_DebianId_debian9-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64) /p:DebianId_ubuntu1704-x64=$(PB_DebianId_ubuntu1704-x64) /p:DebianId_ubuntu1710-x64=$(PB_DebianId_ubuntu1710-x64)"
+      "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_debian9-x64=$(PB_DebianId_debian9-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1704-x64=$(PB_DebianId_ubuntu1704-x64) /p:DebianId_ubuntu1710-x64=$(PB_DebianId_ubuntu1710-x64)"
     },
     "DockerTag_Ubuntu1404": {
       "value": "ubuntu-14.04-debpkg-e5cf912-20175003025046"
@@ -1245,15 +1141,6 @@
     },
     "DockerCommonRunArgs_Ubuntu1604": {
       "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1604) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1604)"
-    },
-    "DockerTag_Ubuntu1610": {
-      "value": "ubuntu-16.10-debpkg-ec863bb-20170003030028"
-    },
-    "DockerImageName_Ubuntu1610": {
-      "value": "$(PB_DockerRepository):$(DockerTag_Ubuntu1610)"
-    },
-    "DockerCommonRunArgs_Ubuntu1610": {
-      "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1610) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1610)"
     },
     "DockerTag_Debian8": {
       "value": "debian-8.2-debpkg-9f87c3c-20173003023006"
