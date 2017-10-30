@@ -5205,19 +5205,11 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
         if (et == ELEMENT_TYPE_I4 ||
             et == ELEMENT_TYPE_U4 ||
             et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_U1)
+            et == ELEMENT_TYPE_I2 ||
+            et == ELEMENT_TYPE_U1 ||
+            et == ELEMENT_TYPE_I1)
         {
             ss.Set(W("System.Collections.Generic.EnumEqualityComparer`1"));
-            return;
-        }
-        else if (et == ELEMENT_TYPE_I2)
-        {
-            ss.Set(W("System.Collections.Generic.ShortEnumEqualityComparer`1"));
-            return;
-        }
-        else if (et == ELEMENT_TYPE_I1)
-        {
-            ss.Set(W("System.Collections.Generic.SByteEnumEqualityComparer`1"));
             return;
         }
         else if (et == ELEMENT_TYPE_I8 ||
