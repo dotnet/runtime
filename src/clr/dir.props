@@ -64,8 +64,9 @@
     <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">coreclr</GitHubRepositoryName>
 
-    <PackagesDir>$(__PackagesDir)\</PackagesDir>
-    <PackagesDir Condition="'$(__PackagesDir)'==''">$(ProjectDir)packages\</PackagesDir>
+    <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
+    <PackagesDir Condition="'$(PackagesDir)'=='' and '$(__PackagesDir)'!=''">$(__PackagesDir)\</PackagesDir>
+    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages\</PackagesDir>
 
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
@@ -165,8 +166,8 @@
     <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm64'">x64</CrossTargetComponentFolder>
     <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm'">x86</CrossTargetComponentFolder>
 
-    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
-    <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
+    <PackageOutputPath Condition="'$(PackageOutputPath)' == ''">$(PackagesBinDir)/pkg/</PackageOutputPath>
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)' == ''">$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
     <PackageIndexFile>$(MSBuildThisFileDirectory)/src/.nuget/packageIndex.json</PackageIndexFile>
 
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
