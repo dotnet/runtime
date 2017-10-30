@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="src\dir.props" />
-  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(BuildWrappers)' == 'true'" /> 
-  <Import Project="helixperftasks.targets" Condition="'$(Performance)'=='true'"/> 
+  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(BuildWrappers)' == 'true'" />
+  <Import Project="helixperftasks.targets" Condition="'$(Performance)'=='true'"/>
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
@@ -20,7 +20,7 @@
 
   <Target Name="FindCmdDirectories" DependsOnTargets="GetListOfTestCmds">
 
-    <Error Condition="!Exists('$(XunitTestBinBase)')" 
+    <Error Condition="!Exists('$(XunitTestBinBase)')"
            Text="$(XunitTestBinBase) does not exist. Please run buildtest.cmd from the (repo root)\tests at least once to get the tests built." />
 
     <ItemGroup>
@@ -48,7 +48,7 @@
 
   </Target>
 
-  <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" /> 
+  <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" />
   <PropertyGroup>
     <HaveExcludes>False</HaveExcludes>
     <HaveExcludes Condition="'$(__Exclude)' != ''">True</HaveExcludes>
@@ -59,7 +59,7 @@
     <PropertyGroup>
       <_XunitWrapperGen >
         <![CDATA[
-        
+
 $(_XunitProlog)
 @(AllXUnitFacts)
 $(_XunitEpilog)
@@ -70,7 +70,7 @@ $(_XunitEpilog)
         <![CDATA[
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    
+
   <Import Project="$(SourceDir)dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '%24(Configuration)' == '' ">Debug</Configuration>
@@ -110,7 +110,7 @@ $(_XunitEpilog)
       <Name>coreclr</Name>
     </ProjectReference>
   </ItemGroup>
- 
+
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Runtime" />
@@ -142,7 +142,7 @@ $(_XunitEpilog)
       Lines="$(XunitWrapperGenCsProj)"
       Overwrite="true" />
   </Target>
-  
+
   <Target Name="BuildXunitWrapper">
     <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"/>
   </Target>
@@ -333,13 +333,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <VersionToRestore Condition="'$(StableVersion)' != ''">$(StableVersion)</VersionToRestore>
     <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionToRestore>
     <DesiredPackageVersionArg>$(VersionToRestore)</DesiredPackageVersionArg>
-  </PropertyGroup> 
+  </PropertyGroup>
 
   <Import Project="tests.targets" />
   <Import Project="publishdependency.targets" />
 
   <PropertyGroup>
-    <DesiredPackageVersionArg Condition="'$(DesiredPackageVersionArg)' == ''">$(CoreClrPackageVersion)</DesiredPackageVersionArg>
+    <DesiredPackageVersionArg Condition="'$(DesiredPackageVersionArg)' == ''">$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</DesiredPackageVersionArg>
   </PropertyGroup>
 
   <Target Name="CreateTestOverlay">
@@ -364,19 +364,19 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
   </Target>
 
-  <Target Name="RunPerfTests" Condition="'$(Performance)'=='true'">  
-    <Message Text="Executing steps for perf tests" Importance="High"/>  
-    
-    <!-- generate project.json for runtime dependency -->  
-    <MSBuild Projects="$(MSBuildProjectFile)"  
-             Targets="CreateTestRuntimeJsonFile"/>  
-     
+  <Target Name="RunPerfTests" Condition="'$(Performance)'=='true'">
+    <Message Text="Executing steps for perf tests" Importance="High"/>
+
+    <!-- generate project.json for runtime dependency -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CreateTestRuntimeJsonFile"/>
+
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="src\Common\test_dependencies\test_dependencies.csproj"/>
-    
-    <!-- Package each perf test, upload it and trigger event to execute the tests -->  
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="UploadPerfAssemblies" />  
-  </Target>  
+
+    <!-- Package each perf test, upload it and trigger event to execute the tests -->
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="UploadPerfAssemblies" />
+  </Target>
 
 
   <Target Name="Build">
@@ -402,6 +402,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="Clean">
-    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" /> 
+    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>
