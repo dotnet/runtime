@@ -138,7 +138,11 @@ namespace System.Net.WebSockets
                 }
 
                 // Issue the request.  The response must be status code 101.
-                HttpResponseMessage response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response;
+                using (var externalAndAbortCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _abortSource.Token))
+                {
+                    response = await handler.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
+                }
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
                     throw new WebSocketException(SR.net_webstatus_ConnectFailure);
