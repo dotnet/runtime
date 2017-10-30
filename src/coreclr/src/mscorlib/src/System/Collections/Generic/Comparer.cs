@@ -133,7 +133,6 @@ namespace System.Collections.Generic
     // since we want to serialize as ObjectComparer for
     // back-compat reasons (see below).
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class Int32EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public Int32EnumComparer()
@@ -169,7 +168,6 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class UInt32EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public UInt32EnumComparer()
@@ -201,7 +199,6 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class Int64EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public Int64EnumComparer()
@@ -230,7 +227,6 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class UInt64EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public UInt64EnumComparer()

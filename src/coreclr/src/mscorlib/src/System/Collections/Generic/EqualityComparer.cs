@@ -363,7 +363,7 @@ namespace System.Collections.Generic
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    internal class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
+    internal sealed class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T x, T y)
@@ -376,8 +376,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode(T obj)
         {
-            int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(obj);
-            return x_final.GetHashCode();
+            return obj.GetHashCode();
         }
 
         public EnumEqualityComparer() { }
@@ -426,41 +425,6 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    internal sealed class SByteEnumEqualityComparer<T> : EnumEqualityComparer<T> where T : struct
-    {
-        public SByteEnumEqualityComparer() { }
-
-        // This is used by the serialization engine.
-        public SByteEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode(T obj)
-        {
-            int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(obj);
-            return ((sbyte)x_final).GetHashCode();
-        }
-    }
-
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    internal sealed class ShortEnumEqualityComparer<T> : EnumEqualityComparer<T>, ISerializable where T : struct
-    {
-        public ShortEnumEqualityComparer() { }
-
-        // This is used by the serialization engine.
-        public ShortEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode(T obj)
-        {
-            int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(obj);
-            return ((short)x_final).GetHashCode();
-        }
-    }
-
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -474,8 +438,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode(T obj)
         {
-            long x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCastLong(obj);
-            return x_final.GetHashCode();
+            return obj.GetHashCode();
         }
 
         // Equals method for the comparer itself.
