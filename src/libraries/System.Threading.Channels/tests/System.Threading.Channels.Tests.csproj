@@ -11,11 +11,13 @@
     <Compile Include="ChannelClosedExceptionTests.cs" />
     <Compile Include="ChannelTestBase.cs" />
     <Compile Include="ChannelTests.cs" />
-    <Compile Include="DebuggerAttributes.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="TestExtensions.cs" />
     <Compile Include="UnboundedChannelTests.cs" />
     <Compile Include="UnbufferedChannelTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
