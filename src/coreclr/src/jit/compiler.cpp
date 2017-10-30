@@ -2510,12 +2510,13 @@ void Compiler::compSetProcessor()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_XARCH_
-    opts.compCanUseSSE3_4 = false;
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3_4))
+    opts.compCanUseSSE4 = false;
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) &&
+        jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
     {
         if (JitConfig.EnableSSE3_4() != 0)
         {
-            opts.compCanUseSSE3_4 = true;
+            opts.compCanUseSSE4 = true;
         }
     }
 
@@ -2538,9 +2539,9 @@ void Compiler::compSetProcessor()
             codeGen->getEmitter()->SetContainsAVX(false);
             codeGen->getEmitter()->SetContains256bitAVX(false);
         }
-        else if (opts.compCanUseSSE3_4)
+        else if (opts.compCanUseSSE4)
         {
-            codeGen->getEmitter()->SetUseSSE3_4(true);
+            codeGen->getEmitter()->SetUseSSE4(true);
         }
     }
 #endif // _TARGET_XARCH_

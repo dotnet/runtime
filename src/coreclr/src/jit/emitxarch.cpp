@@ -136,10 +136,10 @@ bool emitter::Is4ByteAVXInstruction(instruction ins)
 bool emitter::Is4ByteSSE4Instruction(instruction ins)
 {
 #ifdef LEGACY_BACKEND
-    // On legacy backend SSE3_4 is not enabled.
+    // On legacy backend SSE4 is not enabled.
     return false;
 #else
-    return UseSSE3_4() && IsSSE4Instruction(ins) && EncodedBySSE38orSSE3A(ins);
+    return UseSSE4() && IsSSE4Instruction(ins) && EncodedBySSE38orSSE3A(ins);
 #endif
 }
 
@@ -3813,7 +3813,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
         // AVX: 3 byte VEX prefix + 1 byte opcode + 1 byte ModR/M + 1 byte immediate
         // SSE4: 4 byte opcode + 1 byte ModR/M + 1 byte immediate
         // SSE2: 3 byte opcode + 1 byte ModR/M + 1 byte immediate
-        sz = (UseAVX() || UseSSE3_4()) ? 6 : 5;
+        sz = (UseAVX() || UseSSE4()) ? 6 : 5;
     }
 
 #ifdef _TARGET_AMD64_
