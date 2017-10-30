@@ -2679,8 +2679,16 @@ namespace System.Diagnostics.Tracing
                 else
                 {
                     // We can't do the command, simply remember it and we do it when we are fully constructed.  
-                    commandArgs.nextCommand = m_deferredCommands;
-                    m_deferredCommands = commandArgs;
+                    if (m_deferredCommands == null)
+                        m_deferredCommands = commandArgs;       // create the first entry
+                    else
+                    {
+                        // We have one or more etries, find the last one and add it to that.  
+                        EventCommandEventArgs lastCommand = m_deferredCommands;
+                        while (lastCommand.nextCommand != null)
+                            lastCommand = lastCommand.nextCommand;
+                        lastCommand.nextCommand = commandArgs;
+                    }
                 }
             }
         }
@@ -3190,7 +3198,7 @@ namespace System.Diagnostics.Tracing
 
             Debug.Assert(!SelfDescribingEvents);
 
-#if FEATURE_MANAGED_ETW
+#if FEATURE_MANAGED_ETW 
             fixed (byte* dataPtr = rawManifest)
             {
                 // we don't want the manifest to show up in the event log channels so we specify as keywords 
