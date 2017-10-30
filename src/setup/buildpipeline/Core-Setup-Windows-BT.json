@@ -668,11 +668,7 @@
       "value": "true"
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild)"
-    },
-    "PB_DistroRid": {
-      "value": "win-$(PB_TargetArchitecture)",
-      "allowOverride": true
+      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild)"
     },
     "PB_PortableBuild": {
       "value": "true",
