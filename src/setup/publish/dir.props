@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <CompressedFile Include="$(PackageOutputPath)**/*$(CompressedFileExtension)">
+    <CompressedFile Include="$(AssetOutputPath)**/*$(CompressedFileExtension)">
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </CompressedFile>
     <RuntimePackageFile Include="$(PackageOutputPath)**/runtime.*.nupkg" >
@@ -35,10 +35,10 @@
     <RidAgnosticPackageFile Include="$(PackageOutputPath)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RidAgnosticPackageFile>
-    <InstallerFile Include="$(PackageOutputPath)**/*$(InstallerExtension)" Condition="'$(InstallerExtension)' != ''" >
+    <InstallerFile Include="$(AssetOutputPath)**/*$(InstallerExtension)" Condition="'$(InstallerExtension)' != ''" >
       <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
     </InstallerFile>
-    <InstallerFile Include="$(PackageOutputPath)**/*$(CombinedInstallerExtension)" Condition="'$(CombinedInstallerExtension)' != ''">
+    <InstallerFile Include="$(AssetOutputPath)**/*$(CombinedInstallerExtension)" Condition="'$(CombinedInstallerExtension)' != ''">
       <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
     </InstallerFile>
   </ItemGroup>
