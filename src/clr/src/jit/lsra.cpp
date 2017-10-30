@@ -6444,42 +6444,50 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
     {
         // Must have found a spill candidate.
         assert(farthestRefPhysRegRecord != nullptr);
-        if ((farthestLocation == refLocation) && !refPosition->isFixedRegRef)
+
+        if (farthestLocation == refLocation)
         {
-#ifdef _TARGET_ARM_
-            Interval* assignedInterval =
-                (farthestRefPhysRegRecord == nullptr) ? nullptr : farthestRefPhysRegRecord->assignedInterval;
-            Interval* assignedInterval2 =
-                (farthestRefPhysRegRecord2 == nullptr) ? nullptr : farthestRefPhysRegRecord2->assignedInterval;
-            RefPosition* nextRefPosition =
-                (assignedInterval == nullptr) ? nullptr : assignedInterval->getNextRefPosition();
-            RefPosition* nextRefPosition2 =
-                (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->getNextRefPosition();
-            if (nextRefPosition != nullptr)
+            // This must be a RefPosition that is constrained to use a single register, either directly,
+            // or at the use, or by stress.
+            bool isConstrained = (refPosition->isFixedRegRef || (refPosition->nextRefPosition != nullptr &&
+                                                                 refPosition->nextRefPosition->isFixedRegRef) ||
+                                  candidatesAreStressLimited());
+            if (!isConstrained)
             {
-                if (nextRefPosition2 != nullptr)
+#ifdef _TARGET_ARM_
+                Interval* assignedInterval =
+                    (farthestRefPhysRegRecord == nullptr) ? nullptr : farthestRefPhysRegRecord->assignedInterval;
+                Interval* assignedInterval2 =
+                    (farthestRefPhysRegRecord2 == nullptr) ? nullptr : farthestRefPhysRegRecord2->assignedInterval;
+                RefPosition* nextRefPosition =
+                    (assignedInterval == nullptr) ? nullptr : assignedInterval->getNextRefPosition();
+                RefPosition* nextRefPosition2 =
+                    (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->getNextRefPosition();
+                if (nextRefPosition != nullptr)
                 {
-                    assert(!nextRefPosition->RequiresRegister() || !nextRefPosition2->RequiresRegister());
+                    if (nextRefPosition2 != nullptr)
+                    {
+                        assert(!nextRefPosition->RequiresRegister() || !nextRefPosition2->RequiresRegister());
+                    }
+                    else
+                    {
+                        assert(!nextRefPosition->RequiresRegister());
+                    }
                 }
                 else
                 {
-                    assert(!nextRefPosition->RequiresRegister());
+                    assert(nextRefPosition2 != nullptr && !nextRefPosition2->RequiresRegister());
                 }
-            }
-            else
-            {
-                assert(nextRefPosition2 != nullptr && !nextRefPosition2->RequiresRegister());
-            }
 #else  // !_TARGET_ARM_
-            Interval*    assignedInterval = farthestRefPhysRegRecord->assignedInterval;
-            RefPosition* nextRefPosition  = assignedInterval->getNextRefPosition();
-            assert(!nextRefPosition->RequiresRegister());
+                Interval*    assignedInterval = farthestRefPhysRegRecord->assignedInterval;
+                RefPosition* nextRefPosition  = assignedInterval->getNextRefPosition();
+                assert(!nextRefPosition->RequiresRegister());
 #endif // !_TARGET_ARM_
+            }
         }
         else
         {
-            assert(farthestLocation > refLocation || refPosition->isFixedRegRef ||
-                   (refPosition->nextRefPosition != nullptr && refPosition->nextRefPosition->isFixedRegRef));
+            assert(farthestLocation > refLocation);
         }
     }
 #endif // DEBUG
