@@ -3866,7 +3866,8 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 #endif
 #if defined (ENABLE_INTERPRETER) && !defined (DISABLE_REMOTING)
-	callbacks.interp_get_remoting_invoke = mono_interp_get_remoting_invoke;
+	if (mono_use_interpreter)
+		callbacks.interp_get_remoting_invoke = mono_interp_get_remoting_invoke;
 #endif
 
 	mono_install_callbacks (&callbacks);
