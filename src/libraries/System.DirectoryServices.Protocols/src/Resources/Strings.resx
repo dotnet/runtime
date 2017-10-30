@@ -489,4 +489,7 @@
   <data name="InvliadRequestType" xml:space="preserve">
     <value>The specified request is not supported.</value>
   </data>
+  <data name="DirectoryServicesProtocols_PlatformNotSupported" xml:space="preserve">
+    <value>System.DirectoryServices.Protocols is not supported on this platform.</value>
+  </data>
 </root>
