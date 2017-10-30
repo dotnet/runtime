@@ -6236,6 +6236,12 @@ GenTreePtr Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
     switch (iat)
     {
+        case IAT_VALUE: // constructStringLiteral in CoreRT case can return IAT_VALUE
+            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
+            tree->gtType = TYP_REF;
+            tree         = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
+            break;
+
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
