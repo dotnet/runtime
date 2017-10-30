@@ -141,10 +141,10 @@
     <Exec Command="tar -C $(SharedFrameworkPublishSymbolsDir) -czf $(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(CombinedCompressedFile)" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(HostFxrCompressedFile)" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(SharedFrameworkCompressedFile)" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(SharedFrameworkSymbolsCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(CombinedCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(HostFxrCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>
 
   <Import Project="windows\package.targets" />
