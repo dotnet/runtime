@@ -131,7 +131,7 @@ namespace System.Net.Sockets
         }
 
         // NOTE: this property is mutually exclusive with Buffer.
-        // Setting this property with an existing non-null Buffer will throw.    
+        // Setting this property with an existing non-null Buffer will throw.
         public IList<ArraySegment<byte>> BufferList
         {
             get { return _bufferList; }
@@ -172,7 +172,7 @@ namespace System.Net.Sockets
                     {
                         _bufferListInternal?.Clear();
                     }
-                    
+
                     _bufferList = value;
 
                     SetupMultipleBuffers();
@@ -329,7 +329,7 @@ namespace System.Net.Sockets
                         throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(BufferList)));
                     }
 
-                    // Offset and count can't be negative and the 
+                    // Offset and count can't be negative and the
                     // combination must be in bounds of the array.
                     if (offset < 0 || offset > buffer.Length)
                     {
@@ -393,14 +393,14 @@ namespace System.Net.Sockets
         }
 
         // Marks this object as no longer "in-use". Will also execute a Dispose deferred
-        // because I/O was in progress.  
+        // because I/O was in progress.
         internal void Complete()
         {
             // Mark as not in-use.
             _operating = Free;
 
             // Check for deferred Dispose().
-            // The deferred Dispose is not guaranteed if Dispose is called while an operation is in progress. 
+            // The deferred Dispose is not guaranteed if Dispose is called while an operation is in progress.
             // The _disposeCalled variable is not managed in a thread-safe manner on purpose for performance.
             if (_disposeCalled)
             {
@@ -499,7 +499,7 @@ namespace System.Net.Sockets
 
             // If our caller specified a buffer (willing to get received data with the Accept) then
             // it needs to be large enough for the two special sockaddr buffers that AcceptEx requires.
-            // Throw if that buffer is not large enough.  
+            // Throw if that buffer is not large enough.
             bool userSuppliedBuffer = _buffer != null;
             if (userSuppliedBuffer)
             {
@@ -612,26 +612,6 @@ namespace System.Net.Sockets
             InnerStartOperationSendTo();
         }
 
-        internal void UpdatePerfCounters(int size, bool sendOp)
-        {
-            if (sendOp)
-            {
-                SocketPerfCounter.Instance.Increment(SocketPerfCounterName.SocketBytesSent, size);
-                if (_currentSocket.Transport == TransportType.Udp)
-                {
-                    SocketPerfCounter.Instance.Increment(SocketPerfCounterName.SocketDatagramsSent);
-                }
-            }
-            else
-            {
-                SocketPerfCounter.Instance.Increment(SocketPerfCounterName.SocketBytesReceived, size);
-                if (_currentSocket.Transport == TransportType.Udp)
-                {
-                    SocketPerfCounter.Instance.Increment(SocketPerfCounterName.SocketDatagramsReceived);
-                }
-            }
-        }
-
         internal void FinishOperationSyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
             SetResults(socketError, bytesTransferred, flags);
@@ -710,7 +690,7 @@ namespace System.Net.Sockets
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
 
-            if (NetEventSource.IsEnabled || Socket.s_perfCountersEnabled)
+            if (NetEventSource.IsEnabled)
             {
                 LogBytesTransferred(bytesTransferred, _completedOperation);
             }
@@ -809,21 +789,6 @@ namespace System.Net.Sockets
                 if (NetEventSource.IsEnabled)
                 {
                     LogBuffer(bytesTransferred);
-                }
-
-                if (Socket.s_perfCountersEnabled)
-                {
-                    bool sendOp = false;
-                    switch (operation)
-                    {
-                        case SocketAsyncOperation.Connect:
-                        case SocketAsyncOperation.Send:
-                        case SocketAsyncOperation.SendPackets:
-                        case SocketAsyncOperation.SendTo:
-                            sendOp = true;
-                            break;
-                    }
-                    UpdatePerfCounters(bytesTransferred, sendOp);
                 }
             }
         }

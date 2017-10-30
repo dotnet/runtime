@@ -30,7 +30,6 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <!-- CoreCLR (All Operating Systems), .NET Native -->
     <Compile Include="System\Net\Sockets\SocketTaskExtensions.cs" />
-    <Compile Include="System\Net\SocketPerfCounters.cs" />
     <Compile Include="System\Net\Sockets\IOControlCode.cs" />
     <Compile Include="System\Net\Sockets\IPPacketInformation.cs" />
     <Compile Include="System\Net\Sockets\IPProtectionLevel.cs" />
