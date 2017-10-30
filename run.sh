@@ -3,7 +3,7 @@
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "Running init-tools.sh"
-$working_tree_root/init-tools.sh
+source $working_tree_root/init-tools.sh
 
 toolRuntime=$working_tree_root/Tools
 dotnet=$toolRuntime/dotnetcli/dotnet
