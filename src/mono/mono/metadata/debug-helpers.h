@@ -38,6 +38,7 @@ MONO_API MonoMethodDesc* mono_method_desc_new (const char *name, mono_bool inclu
 MONO_API MonoMethodDesc* mono_method_desc_from_method (MonoMethod *method);
 MONO_API void            mono_method_desc_free (MonoMethodDesc *desc);
 MONO_API mono_bool       mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method);
+MONO_API mono_bool       mono_method_desc_is_full (MonoMethodDesc *desc);
 MONO_API mono_bool       mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method);
 MONO_API MonoMethod*     mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClass *klass);
 MONO_API MonoMethod*     mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image);

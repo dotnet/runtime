@@ -10,3 +10,4 @@
 /test-sgen-qsort
 /test-conc-hashtable
 /test-mono-handle
+/test-mono-callspec

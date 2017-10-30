@@ -62,6 +62,8 @@ gboolean mono_callspec_eval (MonoMethod *method, const MonoCallSpec *spec)
 
 	for (i = 0; i < spec->len; i++) {
 		MonoTraceOperation *op = &spec->ops[i];
+		MonoMethodDesc *mdesc;
+		gboolean is_full;
 		int inc = 0;
 
 		switch (op->op) {
@@ -82,8 +84,12 @@ gboolean mono_callspec_eval (MonoMethod *method, const MonoCallSpec *spec)
 				inc = 1;
 			break;
 		case MONO_TRACEOP_METHOD:
-			if (mono_method_desc_full_match (
-				(MonoMethodDesc *)op->data, method))
+			mdesc = op->data;
+			is_full = mono_method_desc_is_full (mdesc);
+			if (is_full &&
+			    mono_method_desc_full_match (mdesc, method))
+				inc = 1;
+			if (!is_full && mono_method_desc_match (mdesc, method))
 				inc = 1;
 			break;
 		case MONO_TRACEOP_CLASS:
