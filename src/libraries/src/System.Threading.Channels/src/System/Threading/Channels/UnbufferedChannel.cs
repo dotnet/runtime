@@ -39,7 +39,7 @@ namespace System.Threading.Channels
                     while (!parent._blockedWriters.IsEmpty)
                     {
                         WriterInteractor<T> w = parent._blockedWriters.DequeueHead();
-                        if (w.Success(default(VoidResult)))
+                        if (w.Success(default))
                         {
                             item = w.Item;
                             return true;
@@ -77,7 +77,7 @@ namespace System.Threading.Channels
                     }
 
                     // Otherwise, queue the waiter.
-                    return ChannelUtilities.GetOrCreateWaiter(ref parent._waitingReaders, true, cancellationToken);
+                    return ChannelUtilities.GetOrCreateWaiter(ref parent._waitingReaders, runContinuationsAsynchronously: true, cancellationToken);
                 }
             }
         }
@@ -157,7 +157,7 @@ namespace System.Threading.Channels
                     if (parent._completion.Task.IsCompleted)
                     {
                         return
-                            parent._completion.Task.IsCanceled ? Task.FromCanceled<T>(new CancellationToken(true)) :
+                            parent._completion.Task.IsCanceled ? Task.FromCanceled<T>(new CancellationToken(canceled: true)) :
                             Task.FromException<T>(
                                 parent._completion.Task.IsFaulted ?
                                 ChannelUtilities.CreateInvalidCompletionException(parent._completion.Task.Exception.InnerException) :
@@ -165,7 +165,7 @@ namespace System.Threading.Channels
                     }
 
                     // Queue the writer.
-                    var w = WriterInteractor<T>.Create(true, cancellationToken, item);
+                    var w = WriterInteractor<T>.Create(runContinuationsAsynchronously: true, item, cancellationToken);
                     parent._blockedWriters.EnqueueTail(w);
 
                     // And let any waiting readers know it's their lucky day.
