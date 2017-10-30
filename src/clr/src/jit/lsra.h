@@ -1265,6 +1265,10 @@ private:
     void TreeNodeInfoInitSIMD(GenTreeSIMD* tree);
 #endif // FEATURE_SIMD
 
+#if FEATURE_HW_INTRINSICS
+    void TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
+#endif // FEATURE_HW_INTRINSICS
+
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode);
 #ifdef _TARGET_ARM_
     void TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* tree);

@@ -7,6 +7,8 @@ remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 remove_definitions(-DFEATURE_SIMD)
 
+remove_definitions(-DFEATURE_HW_INTRINSICS)
+
 if(FEATURE_READYTORUN)
   add_definitions(-DFEATURE_READYTORUN_COMPILER)
 endif(FEATURE_READYTORUN)
