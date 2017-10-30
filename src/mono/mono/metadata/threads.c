@@ -4756,8 +4756,7 @@ self_interrupt_thread (void *_unused)
 
 	info = mono_thread_info_current ();
 
-	/* We must use _with_context since we didn't trampoline into the runtime */
-	mono_raise_exception_with_context_deprecated (exc, &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx); /* FIXME using thread_saved_state [ASYNC_SUSPEND_STATE_INDEX] can race with another suspend coming in. */
+	mono_raise_exception_with_context (exc, &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx); /* FIXME using thread_saved_state [ASYNC_SUSPEND_STATE_INDEX] can race with another suspend coming in. */
 }
 
 static gboolean

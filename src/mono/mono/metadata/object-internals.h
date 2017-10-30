@@ -708,7 +708,7 @@ void
 mono_reraise_exception_deprecated (MonoException *ex);
 
 void
-mono_raise_exception_with_context_deprecated (MonoException *ex, MonoContext *ctx);
+mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx);
 
 void
 mono_type_initialization_init (void);

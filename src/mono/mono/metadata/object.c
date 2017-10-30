@@ -7347,10 +7347,10 @@ mono_reraise_exception_deprecated (MonoException *ex)
 }
 
 /*
- * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
+ * CTX must point to managed code.
  */
 void
-mono_raise_exception_with_context_deprecated (MonoException *ex, MonoContext *ctx) 
+mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
