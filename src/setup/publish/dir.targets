@@ -27,7 +27,7 @@
 
   <Target Name="GatherPublishToAzureChecksums" DependsOnTargets="CreateChecksums" >
     <ItemGroup>
-      <ChecksumItems Include="$(PackageOutputPath)**/*$(ChecksumExtension)" />
+      <ChecksumItems Include="$(AssetOutputPath)**/*$(ChecksumExtension)" />
       <Project Include="publish.proj">
         <PublishTarget>UploadChecksumsToAzure</PublishTarget>
         <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(ChecksumItems);RelativeBlobPath=$(ChecksumsRelativePath)</AdditionalProperties>
@@ -91,7 +91,7 @@
       </DebInstallerFile>
 
       <DebInstallerFile>
-        <UploadJsonFilename>$(PackageOutputPath)%(PackageName)_package_upload.json</UploadJsonFilename>
+        <UploadJsonFilename>$(AssetOutputPath)%(PackageName)_package_upload.json</UploadJsonFilename>
       </DebInstallerFile>
     </ItemGroup>
 
