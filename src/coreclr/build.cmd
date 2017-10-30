@@ -357,10 +357,10 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set nativePlatfromArgs=-platform=%__BuildArch%
-    if /i "%__BuildArch%" == "arm64" ( set nativePlatfromArgs=-useEnv )
+    set __NativePlatformArgs=-platform=%__BuildArch%
+    if not "%__ToolsetDir%" == "" ( set __NativePlatformArgs=-useEnv )
 
-    if /i "%__BuildArch%" == "arm64" (
+    if not "%__ToolsetDir%" == "" (
         rem arm64 builds currently use private toolset which has not been released yet
         REM TODO, remove once the toolset is open.
         call :PrivateToolSet
@@ -372,6 +372,12 @@ if %__BuildNative% EQU 1 (
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
+
+        REM Make CMake pick the highest installed version in the 10.0.* range
+        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
+    )
+    if /i "%__BuildArch%" == "arm64" (
+        set __VCBuildArch=x86_arm64
 
         REM Make CMake pick the highest installed version in the 10.0.* range
         set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
@@ -414,7 +420,7 @@ if %__BuildNative% EQU 1 (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %nativePlatfromArgs% %__RunArgs% -ExtraParameters="/p:ForceImportBeforeCppTargets=%__ProjectDir%/clr.nativebuild.props /m:2" %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %__NativePlatformArgs% %__RunArgs% -ExtraParameters="/p:ForceImportBeforeCppTargets=%__ProjectDir%/clr.nativebuild.props /m:2" %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
@@ -654,7 +660,7 @@ if %__BuildTests% EQU 1 (
 
     rem arm64 builds currently use private toolset which has not been released yet
     REM TODO, remove once the toolset is open.
-    if /i "%__BuildArch%" == "arm64" call :PrivateToolSet
+    if not "%__ToolsetDir%" == "" call :PrivateToolSet
 
     set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
@@ -827,7 +833,7 @@ exit /b 1
 
 :PrivateToolSet
 
-echo %__MsgPrefix% Setting Up the usage of __ToolsetDir:%__ToolsetDir%
+echo %__MsgPrefix%Setting up the usage of __ToolsetDir:%__ToolsetDir%
 
 if /i "%__ToolsetDir%" == "" (
     echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
