@@ -14,8 +14,22 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class SendReceiveTest : ClientWebSocketTestBase
+    public sealed class ArraySegmentSendReceiveTest : SendReceiveTest
     {
+        public ArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken) =>
+            ws.ReceiveAsync(arraySegment, cancellationToken);
+
+        protected override Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
+            ws.SendAsync(arraySegment, messageType, endOfMessage, cancellationToken);
+    }
+
+    public abstract class SendReceiveTest : ClientWebSocketTestBase
+    {
+        protected abstract Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken);
+        protected abstract Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken);
+
         public static bool PartialMessagesSupported => PlatformDetection.ClientWebSocketPartialMessagesSupported;
 
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
@@ -40,16 +54,16 @@ namespace System.Net.WebSockets.Client.Tests
                 // as we read them until we read the complete message payload.
                 for (int i = 0; i < 63; i++)
                 {
-                    await cws.SendAsync(sendSegment, WebSocketMessageType.Binary, false, ctsDefault.Token);
+                    await SendAsync(cws, sendSegment, WebSocketMessageType.Binary, false, ctsDefault.Token);
                 }
-                await cws.SendAsync(sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
+                await SendAsync(cws, sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
 
-                WebSocketReceiveResult recvResult = await cws.ReceiveAsync(receiveSegment, ctsDefault.Token);
+                WebSocketReceiveResult recvResult = await ReceiveAsync(cws, receiveSegment, ctsDefault.Token);
                 Assert.Equal(false, recvResult.EndOfMessage);
 
                 while (recvResult.EndOfMessage == false)
                 {
-                    recvResult = await cws.ReceiveAsync(receiveSegment, ctsDefault.Token);
+                    recvResult = await ReceiveAsync(cws, receiveSegment, ctsDefault.Token);
                 }
 
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "PartialMessageDueToSmallReceiveBufferTest", ctsDefault.Token);
@@ -75,13 +89,14 @@ namespace System.Net.WebSockets.Client.Tests
 
                 // Send data to the server; the server will reply back with one or more partial messages. We should be
                 // able to consume that data as it arrives, without having to wait for "end of message" to be signaled.
-                await cws.SendAsync(sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
+                await SendAsync(cws, sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
 
                 int totalBytesReceived = 0;
                 var receiveBuffer = new byte[sendBuffer.Length];
                 while (totalBytesReceived < receiveBuffer.Length)
                 {
-                    WebSocketReceiveResult recvResult = await cws.ReceiveAsync(
+                    WebSocketReceiveResult recvResult = await ReceiveAsync(
+                        cws,
                         new ArraySegment<byte>(receiveBuffer, totalBytesReceived, receiveBuffer.Length - totalBytesReceived),
                         ctsDefault.Token);
 
@@ -118,7 +133,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 AssertExtensions.Throws<ArgumentException>("messageType", () =>
                 {
-                    Task t = cws.SendAsync(new ArraySegment<byte>(), WebSocketMessageType.Close, true, cts.Token);
+                    Task t = SendAsync(cws, new ArraySegment<byte>(), WebSocketMessageType.Close, true, cts.Token);
                 });
 
                 Assert.Equal(WebSocketState.Open, cws.State);
@@ -139,7 +154,8 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     for (int i = 0; i < tasks.Length; i++)
                     {
-                        tasks[i] = cws.SendAsync(
+                        tasks[i] = SendAsync(
+                            cws,
                             WebSocketData.GetBufferFromText("hello"),
                             WebSocketMessageType.Text,
                             true,
@@ -193,7 +209,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Task[] tasks = new Task[2];
 
-                await cws.SendAsync(
+                await SendAsync(
+                    cws,
                     WebSocketData.GetBufferFromText(".delay5sec"),
                     WebSocketMessageType.Text,
                     true,
@@ -206,7 +223,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     for (int i = 0; i < tasks.Length; i++)
                     {
-                        tasks[i] = cws.ReceiveAsync(recvSegment, cts.Token);
+                        tasks[i] = ReceiveAsync(cws, recvSegment, cts.Token);
                     }
 
                     Task.WaitAll(tasks);
@@ -257,21 +274,24 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 string message = "hello";
-                await cws.SendAsync(
-                            WebSocketData.GetBufferFromText(message),
-                            WebSocketMessageType.Text,
-                            false,
-                            cts.Token);
+                await SendAsync(
+                    cws,
+                    WebSocketData.GetBufferFromText(message),
+                    WebSocketMessageType.Text,
+                    false,
+                    cts.Token);
                 Assert.Equal(WebSocketState.Open, cws.State);
-                await cws.SendAsync(new ArraySegment<byte>(new byte[0]),
-                            WebSocketMessageType.Text,
-                            true,
-                            cts.Token);
+                await SendAsync(
+                    cws,
+                    new ArraySegment<byte>(new byte[0]),
+                    WebSocketMessageType.Text,
+                    true,
+                    cts.Token);
                 Assert.Equal(WebSocketState.Open, cws.State);
 
                 var recvBuffer = new byte[100];
                 var receiveSegment = new ArraySegment<byte>(recvBuffer);
-                WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cts.Token);
+                WebSocketReceiveResult recvRet = await ReceiveAsync(cws, receiveSegment, cts.Token);
 
                 Assert.Equal(WebSocketState.Open, cws.State);
                 Assert.Equal(message.Length, recvRet.Count);
@@ -301,13 +321,14 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     byte[] sendBuffer = new byte[bufferSize];
                     rand.NextBytes(sendBuffer);
-                    await cws.SendAsync(new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Binary, true, ctsDefault.Token);
+                    await SendAsync(cws, new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Binary, true, ctsDefault.Token);
 
                     byte[] receiveBuffer = new byte[bufferSize];
                     int totalReceived = 0;
                     while (true)
                     {
-                        WebSocketReceiveResult recvResult = await cws.ReceiveAsync(
+                        WebSocketReceiveResult recvResult = await ReceiveAsync(
+                            cws,
                             new ArraySegment<byte>(receiveBuffer, totalReceived, receiveBuffer.Length - totalReceived),
                             ctsDefault.Token);
 
@@ -342,8 +363,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 for (int i = 0; i < sendBuffer.Length; i++)
                 {
-                    Task<WebSocketReceiveResult> receive = cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer, receiveBuffer.Length - i - 1, 1), ctsDefault.Token);
-                    Task send = cws.SendAsync(new ArraySegment<byte>(sendBuffer, i, 1), WebSocketMessageType.Binary, true, ctsDefault.Token);
+                    Task<WebSocketReceiveResult> receive = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer, receiveBuffer.Length - i - 1, 1), ctsDefault.Token);
+                    Task send = SendAsync(cws, new ArraySegment<byte>(sendBuffer, i, 1), WebSocketMessageType.Binary, true, ctsDefault.Token);
                     await Task.WhenAll(receive, send);
                     Assert.Equal(1, receive.Result.Count);
                 }
@@ -387,7 +408,7 @@ namespace System.Net.WebSockets.Client.Tests
                 // Post a pending ReceiveAsync before the TCP connection is torn down.
                 var recvBuffer = new byte[100];
                 var recvSegment = new ArraySegment<byte>(recvBuffer);
-                Task pendingReceiveAsync = clientSocket.ReceiveAsync(recvSegment, cts.Token);
+                Task pendingReceiveAsync = ReceiveAsync(clientSocket, recvSegment, cts.Token);
                 pendingReceiveAsyncPosted.Set();
 
                 // Wait for the server to close the underlying connection.
@@ -402,7 +423,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
 
                     WebSocketException newReceiveException =
-                        await Assert.ThrowsAsync<WebSocketException>(() => clientSocket.ReceiveAsync(recvSegment, cts.Token));
+                        await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
                     Assert.Equal(WebSocketError.ConnectionClosedPrematurely, newReceiveException.WebSocketErrorCode);
 
                     Assert.Equal(WebSocketState.Open, clientSocket.State);
@@ -416,7 +437,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
 
                     WebSocketException newReceiveException =
-                        await Assert.ThrowsAsync<WebSocketException>(() => clientSocket.ReceiveAsync(recvSegment, cts.Token));
+                        await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
                     Assert.Equal(WebSocketError.Success, newReceiveException.WebSocketErrorCode);
                     Assert.Equal(
                         ResourceHelper.GetExceptionMessage("net_WebSockets_InvalidState", "Aborted", "Open, CloseSent"),
@@ -437,7 +458,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WININET_E_CONNECTION_ABORTED, (uint)pendingReceiveException.InnerException.HResult);
 
                     WebSocketException newReceiveException =
-                        await Assert.ThrowsAsync<WebSocketException>(() => clientSocket.ReceiveAsync(recvSegment, cts.Token));
+                        await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
                     Assert.Equal(WebSocketError.Success, newReceiveException.WebSocketErrorCode);
                     Assert.Equal(
                         ResourceHelper.GetExceptionMessage("net_WebSockets_InvalidState", "Aborted", "Open, CloseSent"),
@@ -456,7 +477,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WININET_E_CONNECTION_RESET, (uint)pendingReceiveException.HResult);
 
                     Win32Exception newReceiveException =
-                        await Assert.ThrowsAnyAsync<Win32Exception>(() => clientSocket.ReceiveAsync(recvSegment, cts.Token));
+                        await Assert.ThrowsAnyAsync<Win32Exception>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
                     Assert.Equal(WININET_E_CONNECTION_RESET, (uint)newReceiveException.HResult);
 
                     Assert.Equal(WebSocketState.Open, clientSocket.State);
