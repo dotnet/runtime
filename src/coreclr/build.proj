@@ -25,8 +25,13 @@
   </Target>
 
   <Target Name="RestoreOptData">
-    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj"
-          StandardOutputImportance="Low" />
+    <PropertyGroup>
+      <OptDataRestoreCommand>"$(DotnetToolCommand)"</OptDataRestoreCommand>
+      <OptDataRestoreCommand>$(OptDataRestoreCommand) restore</OptDataRestoreCommand>
+      <OptDataRestoreCommand>$(OptDataRestoreCommand) --packages "$(PackagesDir.TrimEnd('/').TrimEnd('\'))"</OptDataRestoreCommand>
+    </PropertyGroup>
+    <Exec Command="$(OptDataRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj" 
+	  StandardOutputImportance="Low" />
   </Target>
 
   <!--
