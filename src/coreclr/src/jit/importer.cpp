@@ -3852,12 +3852,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     {
         assert(retNode == nullptr);
         const NamedIntrinsic ni = lookupNamedIntrinsic(method);
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if FEATURE_HW_INTRINSICS
         if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
         {
-            retNode = impX86HWIntrinsic(ni, method, sig);
+            return impX86HWIntrinsic(ni, method, sig);
         }
-#endif
+#endif // FEATURE_HW_INTRINSICS
         switch (ni)
         {
             case NI_System_Enum_HasFlag:
@@ -4080,13 +4080,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if FEATURE_HW_INTRINSICS
     if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
     {
         InstructionSet isa = lookupHWIntrinsicISA(className);
         result             = lookupHWIntrinsic(methodName, isa);
     }
-#endif
+#endif // FEATURE_HW_INTRINSICS
     return result;
 }
 

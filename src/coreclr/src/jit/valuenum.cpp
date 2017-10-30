@@ -5603,6 +5603,15 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
     }
 #endif
 
+#if FEATURE_HW_INTRINSICS
+    if (oper == GT_HWIntrinsic)
+    {
+        // TODO-CQ: For now hardware intrinsics are not handled by value numbering to be amenable for CSE'ing.
+        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
