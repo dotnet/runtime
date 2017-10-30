@@ -141,10 +141,10 @@
     <Exec Command="tar -C $(SharedFrameworkPublishSymbolsDir) -czf $(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(CombinedCompressedFile)" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(HostFxrCompressedFile)" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkCompressedFile)" />
-    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(CombinedCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(HostFxrCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(SharedFrameworkCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackageOutputPath)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>
 
   <Import Project="windows\package.targets" />
@@ -171,7 +171,7 @@
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
-    
+
     <ItemGroup Condition="'$(BuildAllPackages)' == 'true'">
       <!-- The list of packages we are not servicing -->
     </ItemGroup>
