@@ -65,7 +65,7 @@ namespace System.Net.Http
                 throw new NotImplementedException("no support for SSL tunneling through proxy");
             }
 
-            HttpConnection connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);
+            HttpConnection connection = await GetOrCreateConnection(request, proxyUri, cancellationToken).ConfigureAwait(false);
 
             HttpResponseMessage response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -88,7 +88,7 @@ namespace System.Net.Http
                             request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(AuthenticationHelper.Basic,
                                 AuthenticationHelper.GetBasicTokenForCredential(credential));
 
-                            connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);
+                            connection = await GetOrCreateConnection(request, proxyUri, cancellationToken).ConfigureAwait(false);
                             response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
                         }
 
@@ -140,15 +140,15 @@ namespace System.Net.Http
             return response;
         }
 
-        private ValueTask<HttpConnection> GetOrCreateConnection(HttpRequestMessage request, Uri proxyUri)
+        private ValueTask<HttpConnection> GetOrCreateConnection(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)
         {
             var key = new HttpConnectionKey(proxyUri);
             HttpConnectionPool pool = _connectionPools.GetOrAddPool(key);
-            return pool.GetConnectionAsync(async state =>
+            return pool.GetConnectionAsync(async (state, ct) =>
             {
-                Stream stream = await ConnectHelper.ConnectAsync(state.proxyUri.IdnHost, state.proxyUri.Port).ConfigureAwait(false);
+                Stream stream = await ConnectHelper.ConnectAsync(state.proxyUri.IdnHost, state.proxyUri.Port, ct).ConfigureAwait(false);
                 return new HttpConnection(state.pool, state.key, null, stream, null, true);
-            }, (pool: pool, key: key, request: request, proxyUri: proxyUri));
+            }, (pool: pool, key: key, request: request, proxyUri: proxyUri), cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

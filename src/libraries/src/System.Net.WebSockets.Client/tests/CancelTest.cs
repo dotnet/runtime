@@ -14,7 +14,6 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public CancelTest(ITestOutputHelper output) : base(output) { }
 
-        [ActiveIssue(23151, TestPlatforms.AnyUnix)] // connection opening currently can't be canceled on ManagedHandler
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Cancel_ThrowsWebSocketExceptionWithMessage(Uri server)
