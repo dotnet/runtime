@@ -1265,8 +1265,6 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
 #endif // defined(_TARGET_X86_)
 #endif // defined(FEATURE_SIMD)
 
-    GenTreePtr putArg;
-
     // If we hit this we are probably double-lowering.
     assert(!arg->OperIsPutArg());
 
@@ -1284,7 +1282,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
             // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
             (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-            putArg = NewPutArg(call, fieldList, info, type);
+            GenTreePtr putArg = NewPutArg(call, fieldList, info, type);
 
             BlockRange().InsertBefore(arg, putArg);
             BlockRange().Remove(arg);
@@ -1303,8 +1301,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
             // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
             (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-            putArg           = NewPutArg(call, fieldList, info, type);
-            putArg->gtRegNum = info->regNum;
+            GenTreePtr putArg = NewPutArg(call, fieldList, info, type);
+            putArg->gtRegNum  = info->regNum;
 
             // We can't call ReplaceArgWithPutArgOrCopy here because it presumes that we are keeping the original arg.
             BlockRange().InsertBefore(arg, fieldList, putArg);
@@ -1352,7 +1350,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         }
 #endif // _TARGET_ARMARCH_
 
-        putArg = NewPutArg(call, arg, info, type);
+        GenTreePtr putArg = NewPutArg(call, arg, info, type);
 
         // In the case of register passable struct (in one or two registers)
         // the NewPutArg returns a new node (GT_PUTARG_REG or a GT_FIELD_LIST with two GT_PUTARG_REGs.)
@@ -1389,21 +1387,17 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
 }
 
 // helper that create a node representing a relocatable physical address computation
-// (optionally specifying the register to place it in)
-GenTree* Lowering::AddrGen(ssize_t addr, regNumber reg)
+GenTree* Lowering::AddrGen(ssize_t addr)
 {
     // this should end up in codegen as : instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, reg, addr)
     GenTree* result = comp->gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
-
-    result->gtRegNum = reg;
-
     return result;
 }
 
 // variant that takes a void*
-GenTree* Lowering::AddrGen(void* addr, regNumber reg)
+GenTree* Lowering::AddrGen(void* addr)
 {
-    return AddrGen((ssize_t)addr, reg);
+    return AddrGen((ssize_t)addr);
 }
 
 // do lowering steps for a call
