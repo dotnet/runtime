@@ -2683,7 +2683,7 @@ namespace System.Diagnostics.Tracing
                         m_deferredCommands = commandArgs;       // create the first entry
                     else
                     {
-                        // We have one or more etries, find the last one and add it to that.  
+                        // We have one or more entries, find the last one and add it to that.  
                         EventCommandEventArgs lastCommand = m_deferredCommands;
                         while (lastCommand.nextCommand != null)
                             lastCommand = lastCommand.nextCommand;
