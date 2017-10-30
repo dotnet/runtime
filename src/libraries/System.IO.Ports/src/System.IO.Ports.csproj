@@ -112,9 +112,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FileTypes.cs">
       <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernelbase\Interop.OpenCommPort.cs">
-      <Link>Common\Interop\Windows\kernelbase\Interop.OpenCommPort.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
@@ -137,6 +134,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenCommPort.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.OpenCommPort.cs</Link>
+    </Compile>
     <Compile Include="System\IO\Ports\SerialPort.Uap.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Uap.cs" />
   </ItemGroup>

@@ -10,7 +10,7 @@ namespace System.IO.Ports
     {
         public SafeFileHandle OpenPort(uint portNumber)
         {
-            return Interop.KernelBase.OpenCommPort(
+            return Interop.mincore.OpenCommPort(
                 portNumber,
                 Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 NativeMethods.FILE_FLAG_OVERLAPPED);

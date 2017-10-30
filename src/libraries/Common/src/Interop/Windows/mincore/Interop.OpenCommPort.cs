@@ -9,9 +9,9 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class KernelBase
+    internal partial class mincore
     {
-        [DllImport(Libraries.KernelBase, SetLastError = true)]
+        [DllImport(Libraries.CoreComm_L1_1_1, SetLastError = true)]
         internal static extern SafeFileHandle OpenCommPort(
              uint uPortNumber,
              int dwDesiredAccess,
