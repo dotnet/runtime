@@ -11,7 +11,7 @@
 
   <Target Name="Build"
           DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishDebToolPackageToFeed;PublishFinalOutput" />
-  
+
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
           DependsOnTargets="PublishCoreHostPackages;FinalizeBuildInAzure;UpdateVersionsRepo" />
@@ -42,7 +42,7 @@
              Properties="%(Project.AdditionalProperties)"
              BuildInParallel="true" />
   </Target>
-  
+
   <Target Name="EnsureUniqueItemsToUpload">
     <ItemGroup>
       <DedupItems Include="@(ItemsToPublish->Distinct())" />
@@ -73,10 +73,10 @@
     <UploadToAzure AccountName="$(AzureAccountName)"
                    AccountKey="$(AzureAccessToken)"
                    ContainerName="$(ContainerName)"
-                   Items="@(ItemsToPublish)" 
+                   Items="@(ItemsToPublish)"
                    Overwrite="false" />
   </Target>
-  
+
   <Target Name="UploadChecksumsToAzure"
           Condition="'$(ItemsToPublish)' != ''">
     <Error Condition="'$(ChecksumAzureAccessToken)' == ''" Text="Missing required property 'ChecksumAzureAccessToken'" />
@@ -93,7 +93,7 @@
     <UploadToAzure AccountName="$(ChecksumAzureAccountName)"
                    AccountKey="$(ChecksumAzureAccessToken)"
                    ContainerName="$(ChecksumContainerName)"
-                   Items="@(ItemsToPublish)" 
+                   Items="@(ItemsToPublish)"
                    Overwrite="false" />
   </Target>
 
@@ -115,7 +115,7 @@
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
     <Error Condition="'$(LatestCommit)' == ''" Text="Missing required property 'LatestCommit'" />
     <Error Condition="'@(PublishRid)' == ''" Text="Missing required item 'PublishRid'" />
-          
+
     <Message Importance="High" Text="Finalizing Build" />
     <!-- Ensure all publish pieces are present and then publish to Azure Latest container -->
     <FinalizeBuild AccountName="$(AzureAccountName)"
@@ -190,7 +190,7 @@
                            DownloadDirectory="$(DownloadDirectory)" />
     <ItemGroup>
       <_DownloadedPackages Include="@(_CoreHostPackages->'$(PublishDirectory)%(Filename)%(Extension)')" />
-      <_DownloadedSymbolsPackages Include="%(_DownloadedPackages.Identity)" 
+      <_DownloadedSymbolsPackages Include="%(_DownloadedPackages.Identity)"
                                  Condition="$([System.String]::new('%(_DownloadedPackages.Identity)').EndsWith('.symbols.nupkg'))" />
       <_DownloadedStandardPackages Include="@(_DownloadedPackages)"
                                   Exclude="@(_DownloadedSymbolsPackages)" />
@@ -262,7 +262,7 @@
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
                     PublishFlatContainer="$(PublishFlatContainer)"
-                    Overwrite="$(OverwriteOnPublish)" 
+                    Overwrite="$(OverwriteOnPublish)"
                     IndexDirectory="$(ObjDir)"/>
   </Target>
 
@@ -281,7 +281,7 @@
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
                     PublishFlatContainer="$(PublishFlatContainer)"
-                    Overwrite="$(OverwriteOnPublish)" 
+                    Overwrite="$(OverwriteOnPublish)"
                     IndexDirectory="$(ObjDir)"/>
   </Target>
 
@@ -289,7 +289,7 @@
           Condition="'$(PublishDebToolToFeed)' == 'true' AND '$(CliNuGetFeedUrl)' != ''">
     <Error Condition="'$(CliNuGetApiKey)' == ''" Text="Missing required property CliNuGetApiKey" />
     <ItemGroup>
-      <DebToolPackages Include="$(PackagesOutDir)/dotnet-deb-tool.*.nupkg" />
+      <DebToolPackages Include="$(PackageOutputPath)/dotnet-deb-tool.*.nupkg" />
     </ItemGroup>
     <PropertyGroup>
       <NuGetPushCommand>$(DotnetToolCommand) nuget push --source $(CliNuGetFeedUrl) --api-key $(CliNuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
@@ -297,7 +297,7 @@
     <ExecWithRetriesForNuGetPush Command="$(NuGetPushCommand) %(DebToolPackages.Identity)"
                                  IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
   </Target>
-  
+
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
