@@ -1869,6 +1869,12 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 #endif // FEATURE_SIMD
 
+#if FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            genHWIntrinsic(treeNode->AsHWIntrinsic());
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
         case GT_CKFINITE:
             genCkfinite(treeNode);
             break;

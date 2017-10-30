@@ -7,6 +7,8 @@ remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 remove_definitions(-DFEATURE_SIMD)
 
+remove_definitions(-DFEATURE_HW_INTRINSICS)
+
 add_definitions(-DLEGACY_BACKEND)
 
 remove_definitions(-D_TARGET_X86_=1)

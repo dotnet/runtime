@@ -10,7 +10,7 @@
 
 // clang-format off
 
-#ifdef _TARGET_XARCH_
+#if FEATURE_HW_INTRINSICS
 //                  Intrinsic ID                   Function name                ISA   
 //  SSE Intrinsics          
 HARDWARE_INTRINSIC(SSE_IsSupported,             "get_IsSupported",              SSE)
@@ -29,6 +29,7 @@ HARDWARE_INTRINSIC(SSE41_IsSupported,           "get_IsSupported",              
 
 //  SSE42 Intrinsics 
 HARDWARE_INTRINSIC(SSE42_IsSupported,           "get_IsSupported",              SSE42)
+HARDWARE_INTRINSIC(SSE42_Crc32,                 "Crc32",                        SSE42)
 
 //  AVX Intrinsics 
 HARDWARE_INTRINSIC(AVX_IsSupported,             "get_IsSupported",              AVX)
@@ -50,13 +51,15 @@ HARDWARE_INTRINSIC(FMA_IsSupported,             "get_IsSupported",              
 
 //  LZCNT Intrinsics 
 HARDWARE_INTRINSIC(LZCNT_IsSupported,           "get_IsSupported",              LZCNT)
+HARDWARE_INTRINSIC(LZCNT_LeadingZeroCount,      "LeadingZeroCount",             LZCNT)
 
 //  PCLMULQDQ Intrinsics 
 HARDWARE_INTRINSIC(PCLMULQDQ_IsSupported,       "get_IsSupported",              PCLMULQDQ)
 
 //  POPCNT Intrinsics 
 HARDWARE_INTRINSIC(POPCNT_IsSupported,          "get_IsSupported",              POPCNT)
-#endif
+HARDWARE_INTRINSIC(POPCNT_PopCount,              "PopCount",                    POPCNT)
+#endif // FEATURE_HW_INTRINSICS
 
 #undef HARDWARE_INTRINSIC
 
