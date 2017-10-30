@@ -7038,6 +7038,12 @@ void emitter::emitDispIns(
                 // INS_bt operands are reversed. Display them in the normal order.
                 printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
             }
+#if FEATURE_HW_INTRINSICS
+            else if (ins == INS_crc32 && attr != EA_8BYTE)
+            {
+                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+            }
+#endif // FEATURE_HW_INTRINSICS
             else
             {
                 printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
@@ -9147,6 +9153,26 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
 #endif // _TARGET_AMD64_
     }
+#if FEATURE_HW_INTRINSICS
+    else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt))
+    {
+        code = insEncodeRMreg(ins, code);
+        if ((ins == INS_crc32) && (size > EA_1BYTE))
+        {
+            code |= 0x0100;
+        }
+
+        if (size == EA_2BYTE)
+        {
+            assert(ins == INS_crc32);
+            dst += emitOutputByte(dst, 0x66);
+        }
+        else if (size == EA_8BYTE)
+        {
+            code = AddRexWPrefix(ins, code);
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
     else
     {
         code = insEncodeMRreg(ins, insCodeMR(ins));

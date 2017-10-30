@@ -6838,7 +6838,8 @@ bool Compiler::fgIsThrow(GenTreePtr tree)
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW)) ||
-        (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)))
+        (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)) ||
+        (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED)))
     {
         noway_assert(tree->gtFlags & GTF_CALL);
         noway_assert(tree->gtFlags & GTF_EXCEPT);

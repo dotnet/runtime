@@ -10,6 +10,9 @@ remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 # No SIMD in legacy back-end.
 remove_definitions(-DFEATURE_SIMD)
 
+# No hardware intrinsic in legacy back-end.
+remove_definitions(-DFEATURE_HW_INTRINSICS)
+
 if(WIN32)
   add_definitions(-DFX_VER_INTERNALNAME_STR=legacyjit.dll)
 endif(WIN32)
