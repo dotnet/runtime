@@ -1604,7 +1604,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_VAR_ORDER            REG_R9,REG_R10,REG_R11,REG_R12,REG_R13,REG_R14,REG_R15,\
                                    REG_R8,REG_R7,REG_R6,REG_R5,REG_R4,REG_R3,REG_R2,REG_R1,REG_R0,\
                                    REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,\
-                                   REG_IP0,REG_IP1,\
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
                                    REG_V20, REG_V21, REG_V22, REG_V23, \
