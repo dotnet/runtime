@@ -131,7 +131,7 @@ namespace System.Threading.Channels
                 while (!parent._blockedWriters.IsEmpty)
                 {
                     WriterInteractor<T> w = parent._blockedWriters.DequeueHead();
-                    if (w.Success(default(VoidResult)))
+                    if (w.Success(default))
                     {
                         parent._items.EnqueueTail(w.Item);
                         return item;
@@ -294,7 +294,7 @@ namespace System.Threading.Channels
                     }
 
                     // We're still allowed to write, but there's no space, so ensure a waiter is queued and return it.
-                    return ChannelUtilities.GetOrCreateWaiter(ref parent._waitingWriters, true, cancellationToken);
+                    return ChannelUtilities.GetOrCreateWaiter(ref parent._waitingWriters, runContinuationsAsynchronously: true, cancellationToken);
                 }
             }
 
@@ -346,7 +346,7 @@ namespace System.Threading.Channels
                     {
                         // The channel is full and we're in a wait mode.
                         // Queue the writer.
-                        var writer = WriterInteractor<T>.Create(true, cancellationToken, item);
+                        var writer = WriterInteractor<T>.Create(runContinuationsAsynchronously: true, item, cancellationToken);
                         parent._blockedWriters.EnqueueTail(writer);
                         return writer.Task;
                     }

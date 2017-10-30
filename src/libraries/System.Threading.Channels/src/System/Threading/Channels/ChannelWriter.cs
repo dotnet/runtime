@@ -31,13 +31,13 @@ namespace System.Threading.Channels
         /// A <see cref="Task{Boolean}"/> that will complete with a <c>true</c> result when space is available to write an item
         /// or with a <c>false</c> result when no further writing will be permitted.
         /// </returns>
-        public abstract Task<bool> WaitToWriteAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<bool> WaitToWriteAsync(CancellationToken cancellationToken = default);
 
         /// <summary>Asynchronously writes an item to the channel.</summary>
         /// <param name="item">The value to write to the channel.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the write operation.</param>
         /// <returns>A <see cref="Task"/> that represents the asynchronous write operation.</returns>
-        public virtual Task WriteAsync(T item, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual Task WriteAsync(T item, CancellationToken cancellationToken = default)
         {
             try
             {
