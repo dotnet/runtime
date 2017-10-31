@@ -10,18 +10,18 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>a87a61a80f95252a94f30c69d569fd3647c5b593</CoreFxCurrentRef>
-    <CoreClrCurrentRef>5b662e16887cd01cada59eb678ab0c1dd64438c4</CoreClrCurrentRef>
-    <StandardCurrentRef>5b662e16887cd01cada59eb678ab0c1dd64438c4</StandardCurrentRef>
+    <CoreClrCurrentRef>0f1cd56f9a1f1e5fcc4a54869f46e4467caf4037</CoreClrCurrentRef>
+    <StandardCurrentRef>0f1cd56f9a1f1e5fcc4a54869f46e4467caf4037</StandardCurrentRef>
     <WCFCurrentRef>896615845b599d8d2419cc90d3cc71625960c72f</WCFCurrentRef>
-    <BuildToolsCurrentRef>896615845b599d8d2419cc90d3cc71625960c72f</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>0f1cd56f9a1f1e5fcc4a54869f46e4467caf4037</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25831-01</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25831-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25831-01</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25829-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <NETStandardLibraryPackageVersion>2.1.0-preview1-25830-01</NETStandardLibraryPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25831-04</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-preview1-25831-01</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
     <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25830-02</SystemServiceModelDuplexPackageVersion>
@@ -50,7 +50,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02130-03</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02131-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
