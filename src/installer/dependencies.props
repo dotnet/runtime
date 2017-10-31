@@ -9,7 +9,7 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>5b662e16887cd01cada59eb678ab0c1dd64438c4</CoreFxCurrentRef>
+    <CoreFxCurrentRef>a87a61a80f95252a94f30c69d569fd3647c5b593</CoreFxCurrentRef>
     <CoreClrCurrentRef>5b662e16887cd01cada59eb678ab0c1dd64438c4</CoreClrCurrentRef>
     <StandardCurrentRef>5b662e16887cd01cada59eb678ab0c1dd64438c4</StandardCurrentRef>
     <WCFCurrentRef>896615845b599d8d2419cc90d3cc71625960c72f</WCFCurrentRef>
@@ -17,9 +17,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25830-02</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25830-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25830-02</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25831-01</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25831-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25831-01</MicrosoftPrivateCoreFxUAPPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25829-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.1.0-preview1-25830-01</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
