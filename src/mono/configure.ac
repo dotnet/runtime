@@ -2643,6 +2643,12 @@ if test x$host_win32 = xno; then
 	 #endif
 	])
 	AC_CHECK_HEADERS([termios.h])
+
+	dnl *********************************
+	dnl *** Checks for random         ***
+	dnl *********************************
+	AC_CHECK_HEADERS(sys/random.h)
+	AC_CHECK_FUNCS(getrandom getentropy)
 else
 	dnl *********************************
 	dnl *** Checks for Windows compilation ***
