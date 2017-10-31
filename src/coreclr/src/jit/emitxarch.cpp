@@ -1494,8 +1494,12 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
         return true;
     }
 
-    if ((ins != INS_movsx) && // These two instructions support high register
-        (ins != INS_movzx))   // encodings for reg1
+    if ((ins != INS_movsx) && // These three instructions support high register
+        (ins != INS_movzx)    // encodings for reg1
+#if FEATURE_HW_INTRINSICS
+        && (ins != INS_crc32)
+#endif
+            )
     {
         // reg1 must be a byte-able register
         if ((genRegMask(reg1) & RBM_BYTE_REGS) == 0)

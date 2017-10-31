@@ -300,11 +300,11 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
             }
 #endif
             argLst  = info.compCompHnd->getArgNext(argLst);                        // the second argument
-            corType = strip(info.compCompHnd->getArgType(sig, argLst, &argClass)); // type of the secnod argument
+            corType = strip(info.compCompHnd->getArgType(sig, argLst, &argClass)); // type of the second argument
 
             retNode = gtNewScalarHWIntrinsicNode(callType, op1, op2, NI_SSE42_Crc32);
 
-            // TODO - currently we use the BaseType to bring the type of the secnod argument
+            // TODO - currently we use the BaseType to bring the type of the second argument
             // to the code generator. May encode the overload info in other way.
             retNode->gtHWIntrinsic.gtSIMDBaseType = JITtype2varType(corType);
             break;
