@@ -11221,10 +11221,7 @@ bool Compiler::IsHfa(GenTreePtr tree)
 var_types Compiler::GetHfaType(GenTreePtr tree)
 {
 #ifdef FEATURE_HFA
-    if (tree->TypeGet() == TYP_STRUCT)
-    {
-        return GetHfaType(gtGetStructHandleIfPresent(tree));
-    }
+    return GetHfaType(gtGetStructHandleIfPresent(tree));
 #endif
     return TYP_UNDEF;
 }
