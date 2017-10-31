@@ -12,8 +12,8 @@
     <CoreFxCurrentRef>a87a61a80f95252a94f30c69d569fd3647c5b593</CoreFxCurrentRef>
     <CoreClrCurrentRef>0f1cd56f9a1f1e5fcc4a54869f46e4467caf4037</CoreClrCurrentRef>
     <StandardCurrentRef>0f1cd56f9a1f1e5fcc4a54869f46e4467caf4037</StandardCurrentRef>
-    <WCFCurrentRef>896615845b599d8d2419cc90d3cc71625960c72f</WCFCurrentRef>
-    <BuildToolsCurrentRef>0f1cd56f9a1f1e5fcc4a54869f46e4467caf4037</BuildToolsCurrentRef>
+    <WCFCurrentRef>e038b5c2daec85be4855d29287ac548c07f41bd1</WCFCurrentRef>
+    <BuildToolsCurrentRef>e038b5c2daec85be4855d29287ac548c07f41bd1</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -24,7 +24,7 @@
     <NETStandardLibraryPackageVersion>2.1.0-preview1-25831-01</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
-    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25830-02</SystemServiceModelDuplexPackageVersion>
+    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25831-02</SystemServiceModelDuplexPackageVersion>
     <SystemServiceModelHttpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelHttpPackageVersion>
     <SystemServiceModelNetTcpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelNetTcpPackageVersion>
     <SystemServiceModelPrimitivesPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelPrimitivesPackageVersion>
@@ -50,7 +50,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02131-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02131-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
