@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
@@ -39,7 +38,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets the task underlying <see cref="_value"/>.</summary>
         internal Task<TResult> AsTask() => _value.AsTask();
 
-        /// <summary>Gets the task underlying <see cref="_value"/>.</summary>
-        Task IValueTaskAwaiter.GetTask() => _value.AsTask();
+        /// <summary>Gets the task underlying the incomplete <see cref="_value"/>.</summary>
+        /// <remarks>This method is used when awaiting and IsCompleted returned false; thus we expect the value task to be wrapping a non-null task.</remarks>
+        Task IValueTaskAwaiter.GetTask() => _value.AsTaskExpectNonNull();
     }
 }
