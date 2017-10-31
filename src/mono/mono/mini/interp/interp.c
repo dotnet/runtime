@@ -3524,8 +3524,13 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				if (newobj_class != mono_defaults.string_class) {
 					o = mono_object_new_checked (rtm->domain, newobj_class, &error);
 					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-					if (*mono_thread_interruption_request_flag ())
-						mono_thread_interruption_checkpoint ();
+					if (*mono_thread_interruption_request_flag ()) {
+						MonoException *exc = mono_thread_interruption_checkpoint ();
+						if (exc) {
+							frame->ex = exc;
+							context->search_for_handler = 1;
+						}
+					}
 					sp->data.p = o;
 #ifndef DISABLE_REMOTING
 					if (mono_object_is_transparent_proxy (o)) {
