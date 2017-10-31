@@ -1122,7 +1122,7 @@ no_intrinsic:
 		return;
 	}
 
-	g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C);
+	g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C || csignature->call_convention == MONO_CALL_STDCALL);
 	td->sp -= csignature->param_count + !!csignature->hasthis;
 	for (i = 0; i < csignature->param_count; ++i) {
 		if (td->sp [i + !!csignature->hasthis].type == STACK_TYPE_VT) {
