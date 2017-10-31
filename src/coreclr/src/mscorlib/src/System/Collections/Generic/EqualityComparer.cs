@@ -365,6 +365,19 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
+        internal EnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        private EnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // For back-compat we need to serialize the comparers for enums with underlying types other than int as ObjectEqualityComparer 
+            if (Type.GetTypeCode(Enum.GetUnderlyingType(typeof(T))) != TypeCode.Int32) {
+                info.SetType(typeof(ObjectEqualityComparer<T>));
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T x, T y)
         {
@@ -378,11 +391,6 @@ namespace System.Collections.Generic
         {
             return obj.GetHashCode();
         }
-
-        public EnumEqualityComparer() { }
-
-        // This is used by the serialization engine.
-        protected EnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
         // Equals method for the comparer itself.
         public override bool Equals(Object obj) =>
@@ -414,19 +422,23 @@ namespace System.Collections.Generic
             }
             return -1;
         }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            // For back-compat we need to serialize the comparers for enums with underlying types other than int as ObjectEqualityComparer 
-            if (Type.GetTypeCode(Enum.GetUnderlyingType(typeof(T))) != TypeCode.Int32) {
-                info.SetType(typeof(ObjectEqualityComparer<T>));
-            }
-        }
     }
 
     [Serializable]
     internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
+        internal LongEnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        private LongEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // The LongEnumEqualityComparer does not exist on 4.0 so we need to serialize this comparer as ObjectEqualityComparer
+            // to allow for roundtrip between 4.0 and 4.5.
+            info.SetType(typeof(ObjectEqualityComparer<T>));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T x, T y)
         {
@@ -448,8 +460,6 @@ namespace System.Collections.Generic
         public override int GetHashCode() =>
             GetType().GetHashCode();
 
-        public LongEnumEqualityComparer() { }
-
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
         {
             long toFind = JitHelpers.UnsafeEnumCastLong(value);
@@ -472,16 +482,6 @@ namespace System.Collections.Generic
                 if (toFind == current) return i;
             }
             return -1;
-        }
-
-        // This is used by the serialization engine.
-        public LongEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            // The LongEnumEqualityComparer does not exist on 4.0 so we need to serialize this comparer as ObjectEqualityComparer
-            // to allow for roundtrip between 4.0 and 4.5.
-            info.SetType(typeof(ObjectEqualityComparer<T>));
         }
     }
 }
