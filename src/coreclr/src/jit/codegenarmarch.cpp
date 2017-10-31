@@ -541,7 +541,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
     GenTreePtr source     = treeNode->gtOp1;
-    var_types  targetType = source->TypeGet();
+    var_types  targetType = genActualType(source->TypeGet());
     emitter*   emit       = getEmitter();
 
     // This is the varNum for our store operations,
