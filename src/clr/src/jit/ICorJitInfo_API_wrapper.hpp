@@ -1620,6 +1620,17 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::resolveVirtualMethod(
     return result;
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
+    CORINFO_METHOD_HANDLE       ftn,          /* IN */
+    bool* requiresInstMethodTableArg          /* OUT */
+)
+{
+    API_ENTER(getUnboxedEntry);
+    CORINFO_METHOD_HANDLE result = wrapHnd->getUnboxedEntry(ftn, requiresInstMethodTableArg);
+    API_LEAVE(getUnboxedEntry);
+    return result;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
     CORINFO_CLASS_HANDLE elemType)
 {

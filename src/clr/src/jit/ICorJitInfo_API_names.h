@@ -169,5 +169,6 @@ DEF_CLR_API(getExpectedTargetArchitecture)
 DEF_CLR_API(resolveVirtualMethod)
 DEF_CLR_API(expandRawHandleIntrinsic)
 DEF_CLR_API(getDefaultEqualityComparerClass)
+DEF_CLR_API(getUnboxedEntry)
 
 #undef DEF_CLR_API
