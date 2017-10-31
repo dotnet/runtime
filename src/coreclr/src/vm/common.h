@@ -313,6 +313,7 @@ namespace Loader
 #include "pedecoder.h"
 #include "sstring.h"
 #include "slist.h"
+#include "yieldprocessornormalized.h"
 
 #include "eeconfig.h"
 
