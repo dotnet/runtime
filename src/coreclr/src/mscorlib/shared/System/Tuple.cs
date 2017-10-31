@@ -170,7 +170,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
@@ -279,7 +279,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
@@ -401,7 +401,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
@@ -534,7 +534,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
@@ -678,7 +678,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
@@ -833,7 +833,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
@@ -999,7 +999,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
@@ -1205,7 +1205,7 @@ namespace System
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             return ((ITupleInternal)this).ToString(sb);
         }
 
