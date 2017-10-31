@@ -464,9 +464,9 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             if (!varTypeIsStruct(putArgChild) && !putArgChild->OperIs(GT_FIELD_LIST))
             {
 #ifdef _TARGET_ARM_
-                // The `double` types have been transformed to `long` on arm, while the actual longs
+                // The `double` types could been transformed to `long` on arm, while the actual longs
                 // have been decomposed.
-                const bool isDouble = putArgChild->TypeGet() == TYP_LONG;
+                const bool isDouble = (putArgChild->TypeGet() == TYP_LONG || putArgChild->TypeGet() == TYP_DOUBLE);
                 if (isDouble)
                 {
                     argNode->gtLsraInfo.srcCount = 2;
