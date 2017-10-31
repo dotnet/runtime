@@ -4423,6 +4423,13 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     // Vector multiply
     getEmitter()->emitIns_R_R_R(ins, attr, tmpReg, op1Reg, op2Reg, opt);
 
+    if ((simdNode->gtFlags & GTF_SIMD12_OP) != 0)
+    {
+        // For 12Byte vectors we must zero upper bits to get correct dot product
+        // We do not assume upper bits are zero.
+        getEmitter()->emitIns_R_R_I(INS_ins, EA_4BYTE, tmpReg, REG_ZR, 3);
+    }
+
     // Vector add horizontal
     if (varTypeIsFloating(baseType))
     {
@@ -4432,11 +4439,11 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
             {
                 getEmitter()->emitIns_R_R_R(INS_faddp, attr, tmpReg, tmpReg, tmpReg, INS_OPTS_4S);
             }
-            getEmitter()->emitIns_R_R(INS_faddp, EA_8BYTE, targetReg, tmpReg, INS_OPTS_2S);
+            getEmitter()->emitIns_R_R(INS_faddp, EA_4BYTE, targetReg, tmpReg);
         }
         else
         {
-            getEmitter()->emitIns_R_R(INS_faddp, EA_16BYTE, targetReg, tmpReg, INS_OPTS_2D);
+            getEmitter()->emitIns_R_R(INS_faddp, EA_8BYTE, targetReg, tmpReg);
         }
     }
     else
