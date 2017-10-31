@@ -877,11 +877,13 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		case MONO_TYPE_GENERICINST:
 #if SIZEOF_VOID_P == 8
 		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
 #endif
 			margs->ilen++;
 			break;
 #if SIZEOF_VOID_P == 4
 		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
 #ifdef TARGET_ARM
 			/* pairs begin at even registers */
 			if (i8_align == 8 && margs->ilen & 1)
@@ -949,6 +951,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		case MONO_TYPE_GENERICINST:
 #if SIZEOF_VOID_P == 8
 		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
 #endif
 			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
@@ -957,7 +960,8 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 			int_i++;
 			break;
 #if SIZEOF_VOID_P == 4
-		case MONO_TYPE_I8: {
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8: {
 			stackval *sarg = &frame->stack_args [i];
 #ifdef TARGET_ARM
 			/* pairs begin at even registers */
@@ -1011,6 +1015,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			margs->retval = &(frame->retval->data.p);
