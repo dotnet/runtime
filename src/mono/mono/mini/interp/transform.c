@@ -2832,12 +2832,13 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			--td->sp;
 			generating_code = 0;
 			break;
-		case CEE_LDFLDA:
+		case CEE_LDFLDA: {
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
 			return_if_nok (error);
-			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+			MonoType *ftype = mono_field_get_type (field);
+			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 			if (is_static) {
 				ADD_CODE (td, MINT_POP);
@@ -2856,15 +2857,17 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			td->ip += 5;
 			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_MP);
 			break;
+		}
 		case CEE_LDFLD: {
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
 			return_if_nok (error);
-			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+			MonoType *ftype = mono_field_get_type (field);
+			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 
-			MonoClass *field_klass = mono_class_from_mono_type (field->type);
+			MonoClass *field_klass = mono_class_from_mono_type (ftype);
 			mt = mint_type (&field_klass->byval_arg);
 #ifndef DISABLE_REMOTING
 			if (klass->marshalbyref) {
@@ -2908,9 +2911,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
 			return_if_nok (error);
-			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+			MonoType *ftype = mono_field_get_type (field);
+			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
-			mt = mint_type(field->type);
+			mt = mint_type (ftype);
 
 			BARRIER_IF_VOLATILE (td);
 
@@ -2935,7 +2939,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				}
 			}
 			if (mt == MINT_TYPE_VT) {
-				MonoClass *klass = mono_class_from_mono_type (field->type);
+				MonoClass *klass = mono_class_from_mono_type (ftype);
 				int size = mono_class_value_size (klass, NULL);
 				POP_VT (td, size);
 			}
@@ -2943,46 +2947,51 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			td->sp -= 2;
 			break;
 		}
-		case CEE_LDSFLDA:
+		case CEE_LDSFLDA: {
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
 			return_if_nok (error);
+			mono_field_get_type (field);
 			ADD_CODE(td, MINT_LDSFLDA);
 			ADD_CODE(td, get_data_item_index (td, field));
 			td->ip += 5;
 			PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 			break;
-		case CEE_LDSFLD:
+		}
+		case CEE_LDSFLD: {
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
 			return_if_nok (error);
-			mt = mint_type(field->type);
+			MonoType *ftype = mono_field_get_type (field);
+			mt = mint_type (ftype);
 			ADD_CODE(td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
 			ADD_CODE(td, get_data_item_index (td, field));
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
-				MonoClass *klass = mono_class_from_mono_type (field->type);
+				MonoClass *klass = mono_class_from_mono_type (ftype);
 				int size = mono_class_value_size (klass, NULL);
 				PUSH_VT(td, size);
 				WRITE32(td, &size);
-				klass = field->type->data.klass;
+				klass = ftype->data.klass;
 			} else {
 				if (mt == MINT_TYPE_O) 
-					klass = mono_class_from_mono_type (field->type);
+					klass = mono_class_from_mono_type (ftype);
 			}
 			td->ip += 5;
 			PUSH_TYPE(td, stack_type [mt], klass);
 			break;
+		}
 		case CEE_STSFLD:
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
 			return_if_nok (error);
-			mt = mint_type(field->type);
+			MonoType *ftype = mono_field_get_type (field);
+			mt = mint_type (ftype);
 			ADD_CODE(td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 			ADD_CODE(td, get_data_item_index (td, field));
 			if (mt == MINT_TYPE_VT) {
-				MonoClass *klass = mono_class_from_mono_type (field->type);
+				MonoClass *klass = mono_class_from_mono_type (ftype);
 				int size = mono_class_value_size (klass, NULL);
 				POP_VT (td, size);
 			}
