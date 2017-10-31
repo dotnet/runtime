@@ -120,7 +120,9 @@ $ dotnet publish
 $ bin\Debug\netcoreapp2.1\win7-x64\publish\App.exe
 ```
 
-## Alternative Advanced Scenario - Using your local CoreFx build
+## More Advanced Scenario - Using your local CoreFx build
+
+If you built corefx locally with `build -allconfigurations` after building binaries it will build NuGet packages containing them. You can use those in your projects.
 
 To use your local built corefx packages you will need to be a self-contained application and so you will
 need to follow the "Self-contained" steps from above. Once you can successfully restore, build, publish,
@@ -130,11 +132,11 @@ and run a self-contained application you need the following steps to consume you
 
 Look for a package named `Microsoft.Private.CoreFx.NETCoreApp.<version>.nupkg` under `corefx\bin\packages\Debug` (or Release if you built a release version of corefx).
 
-Once you find the version number (for this example assume it is `4.4.0-beta-25102-0`) you need to add the following line to your project file:
+Once you find the version number (for this example assume it is `4.5.0-preview1-25830-0`) you need to add the following line to your project file:
 
 ```
   <ItemGroup>
-    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="4.4.0-beta-25102-0" />
+    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="4.5.0-preview1-25830-0" />
   </ItemGroup>
 ```
 
@@ -149,25 +151,26 @@ you need to tell the tooling to use the assets from your local package. To do th
 
 Replacing the RID in `runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp` with the RID of your current build.
 
+Note these instructions above were only about updates to the binaries that are part of Microsoft.NETCore.App, if you want to test a package for library that ships in its own nuget package you can follow the same steps above but instead add a package reference to that package instead of "Microsoft.Private.CoreFx.NETCoreApp".
+
 #### 2 - Add your bin directory to the Nuget feed list
 
 By default the dogfooding dotnet SDK will create a Nuget.Config file next to your project, if it doesn't
 you can create one. Your config file will need a source for your local corefx package directory as well
-as a reference to our nightly dotnet-core feed on myget:
+as a reference to our nightly dotnet-core feed on myget. The Nuget.Config file content should be:
 
 ```xml
 <configuration>
   <packageSources>
-    <add key="local coreclr" value="D:\git\corefx\bin\packages\Debug" />
+    <add key="local coreclr" value="D:\git\corefx\bin\packages\Debug" /> <!-- Change this to your own output path -->
     <add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
   </packageSources>
 </configuration>
-
 ```
-Obviously **you need to update the path in the XML to be the path to output directory for your build**.
+Be sure to correct the path to your build output above.
 
-On Windows you also have the alternative of modifying the Nuget.Config
-at `%HOMEPATH%\AppData\Roaming\Nuget\Nuget.Config` (`~/.nuget/NuGet/NuGet.Config` on Linux) with the new location.
+You also have the alternative of modifying the Nuget.Config
+at `%HOMEPATH%\AppData\Roaming\Nuget\Nuget.Config` (Windows) or `~/.nuget/NuGet/NuGet.Config` (Linux) with the new location.
 This will allow your new runtime to be used on any 'dotnet restore' run by the current user.
 Alternatively you can skip creating this file and pass the path to your package directory using
 the -s SOURCE qualifer on the dotnet restore command below. The important part is that somehow
@@ -181,9 +184,15 @@ dotnet publish
 ```
 Now your publication directory should contain your local built CoreFx binaries.
 
-#### 3 - Consuming updated packages
+#### 3 - Consuming subsequent code changes by overwriting the binary (Alternative 1)
 
-One possible problem with the technique above is that Nuget assumes that distinct builds have distinct version numbers.
+To apply changes you subsequently make in your source tree, it's usually easiest to just overwrite the binary in the publish folder. Build the assembly containing your change as normal, then overwrite the assembly in your publish folder and running the app will pick up that binary. This relies on the fact that all the other binaries still match what is in your bin folder so everything works together.
+
+#### 3 - Consuming subsequent code changes by rebuilding the package (Alternative 2)
+
+This is more cumbersome than just overwriting the binaries, but is more correct.
+
+First note that Nuget assumes that distinct builds have distinct version numbers.
 Thus if you modify the source and create a new NuGet package you must give it a new version number and use that in your
 application's project. Otherwise the dotnet.exe tool will assume that the existing version is fine and you
 won't get the updated bits. This is what the Minor Build number is all about. By default it is 0, but you can
@@ -191,17 +200,13 @@ give it a value by setting the BuildNumberMinor environment variable.
 ```bat
     set BuildNumberMinor=3
 ```
-before packaging. You should see this number show up in the version number (e.g. 4.4.0-beta-25102-03).
+before packaging. You should see this number show up in the version number (e.g. 4.5.0-preview1-25830-03).
 
-As an alternative you can delete the existing copy of the package from the Nuget cache. For example on
+Alternatively just delete the existing copy of the package from the Nuget cache. For example on
 windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
 ```bat
-     %HOMEPATH%\.nuget\packages\Microsoft.Private.CoreFx.NETCoreApp\4.4.0-beta-25102-0
+     %HOMEPATH%\.nuget\packages\Microsoft.Private.CoreFx.NETCoreApp\4.5.0-preview1-25830-0
+     %HOMEPATH%\.nuget\packages\runtime.win-x64.microsoft.private.corefx.netcoreapp\4.5.0-preview1-25830-0
 ```
-which should make things work (but is fragile, confirm file timestamps that you are getting the version you expect)
+which should make `dotnet restore` now pick up the new copy.
 
-### Consuming individual library packages
-
-The instructions above were only about updates to the binaries that are part of Microsoft.NETCore.App, if you want to test a package
-for library that ships in its own nuget package you can follow the same steps above but instead add a package reference to the
-individual library package from your `bin\packages\Debug` folder.
