@@ -837,15 +837,21 @@ struct ScanContext
     bool concurrent; //TRUE: concurrent scanning 
 #if CHECK_APP_DOMAIN_LEAKS || defined (FEATURE_APPDOMAIN_RESOURCE_MONITORING) || defined (DACCESS_COMPILE)
     AppDomain *pCurrentDomain;
+#else
+    void* _unused1;
 #endif //CHECK_APP_DOMAIN_LEAKS || FEATURE_APPDOMAIN_RESOURCE_MONITORING || DACCESS_COMPILE
 
 #ifndef FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined (DACCESS_COMPILE)
     MethodDesc *pMD;
+#else
+    void* _unused2;
 #endif //GC_PROFILING || DACCESS_COMPILE
 #endif // FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     EtwGCRootKind dwEtwRootKind;
+#else
+    int _unused3;
 #endif // GC_PROFILING || FEATURE_EVENT_TRACE
     
     ScanContext()
