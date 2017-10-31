@@ -4788,7 +4788,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
         GenTreePtr arg = argx;
 
-        if (arg->TypeGet() == TYP_STRUCT)
+        if (varTypeIsStruct(arg->TypeGet()))
         {
             foundStructArg = true;
 
@@ -4843,7 +4843,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 //
 GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr fgEntryPtr)
 {
-    assert(arg->TypeGet() == TYP_STRUCT);
+    assert(varTypeIsStruct(arg->TypeGet()));
 
 #ifndef _TARGET_ARMARCH_
     NYI("fgMorphMultiregStructArg requires implementation for this target");
@@ -4990,7 +4990,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
         }
     }
     // We should still have a TYP_STRUCT
-    assert(argValue->TypeGet() == TYP_STRUCT);
+    assert(varTypeIsStruct(argValue->TypeGet()));
 
     GenTreeFieldList* newArg = nullptr;
 
