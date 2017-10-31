@@ -967,6 +967,7 @@ INTERP_DISABLED_TESTS = \
 	bug-335131.2.exe \
 	bug-415577.exe \
 	bug-45841-fpstack-exceptions.exe \
+	bug-48015.exe \
 	bug-58782-capture-and-throw.exe \
 	bug-58782-plain-throw.exe \
 	bug-81673.exe \
@@ -981,6 +982,7 @@ INTERP_DISABLED_TESTS = \
 	delegate9.exe \
 	dynamic-method-stack-traces.exe \
 	even-odd.exe \
+	exception18.exe \
 	field-access.exe \
 	finally_block_ending_in_dead_bb.exe \
 	generic-marshalbyref.2.exe \
