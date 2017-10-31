@@ -116,6 +116,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     versionresilienthashcode.cpp
     virtualcallstub.cpp
     win32threadpool.cpp
+    yieldprocessornormalized.cpp
     zapsig.cpp
 )
 
