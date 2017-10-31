@@ -725,8 +725,7 @@ private:
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
-    bool isIntervalActiveHelper(Interval* interval, LsraLocation refLocation);
-    bool isIntervalActive(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType);
+    bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
     bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
     bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 

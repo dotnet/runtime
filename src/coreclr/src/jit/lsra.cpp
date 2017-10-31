@@ -5830,6 +5830,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
     return foundReg;
 }
+
 //------------------------------------------------------------------------
 // canSpillReg: Determine whether we can spill physRegRecord
 //
@@ -5852,17 +5853,9 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation,
 
     if (recentAssignedRef != nullptr)
     {
-        if (recentAssignedRef->nodeLocation == refLocation)
+        if (isRefPositionActive(recentAssignedRef, refLocation))
         {
-            // We can't spill a register that's being used at the current location
-            return false;
-        }
-
-        // If the current position has the candidate register marked to be delayed,
-        // check if the previous location is using this register, if that's the case we have to skip
-        // since we can't spill this register.
-        if (recentAssignedRef->delayRegFree && (refLocation == recentAssignedRef->nodeLocation + 1))
-        {
+            // We can't spill a register that's active at the current location
             return false;
         }
 
@@ -5922,108 +5915,16 @@ bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
 }
 #endif
 
-//----------------------------------------------------------------------------
-// isIntervalActiveHelper: Test activness of an interval
-//                          and check assertions if the interval is not active
+#ifdef _TARGET_ARM_
+//------------------------------------------------------------------------
+// unassignDoubleReg:
 //
 // Arguments:
-//    interval    - An interval to be tested
-//    refLocation - Location where the interval is being tested
+//    doubleRegRecord - reg to unassign
 //
-// Return Value:
-//    True - iff the interval is active
-//    False - otherwise
+// Note:
+//    The given RegRecord must be a valid (even numbered) double register.
 //
-// Note: This helper is designed to be used only from isIntervalActive()
-//
-bool LinearScan::isIntervalActiveHelper(Interval* interval, LsraLocation refLocation)
-{
-    if (interval->isActive)
-    {
-        return true;
-    }
-    else
-    {
-        RefPosition* recentAssignedRef = interval->recentRefPosition;
-        // Note that we may or may not have actually handled the reference yet, so it could either
-        // be recentAssignedRef, or the next reference.
-        assert(recentAssignedRef != nullptr);
-        if (recentAssignedRef->nodeLocation != refLocation)
-        {
-            if (recentAssignedRef->nodeLocation + 1 == refLocation)
-            {
-                assert(recentAssignedRef->delayRegFree);
-            }
-            else
-            {
-                RefPosition* nextAssignedRef = recentAssignedRef->nextRefPosition;
-#ifdef _TARGET_ARM_
-                // This function is invoked only from allocateBusyReg() through checkActiveIntervals().
-                //
-                // For ARM32, when we try to allocate a double register which consists of two float registers,
-                // tryAllocateFreeReg() may fail to allocate a double register even if one of two float
-                // reigsters is assigned to a inactive constant interval.
-                // https://github.com/dotnet/coreclr/pull/14080
-                //
-                // Therefore an inactive constant interval may be encountered here.
-                assert(nextAssignedRef != nullptr || interval->isConstant);
-                if (nextAssignedRef != nullptr)
-                    assert(nextAssignedRef->nodeLocation == refLocation ||
-                           (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
-#else  // !_TARGET_ARM_
-                assert(nextAssignedRef != nullptr);
-                assert(nextAssignedRef->nodeLocation == refLocation ||
-                       (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
-#endif // !_TARGET_ARM_
-            }
-        }
-        return false;
-    }
-}
-
-//----------------------------------------------------------------------------------------
-// isIntervalActive: Determine if an Interval is active
-//
-// Arguments:
-//    physRegRecord - A register
-//    refLocation   - Location where intervsl is being tested
-//    registerType  - Type of regsiter
-//
-// Return Value:
-//    True - iff the all intervals are active
-//    False - otherwise
-//
-// Notes:
-//    This method checks assertions if the interval is not active.
-//    For a double register on ARM32, we check both of its floating point registers.
-//    This helper is designed to be used only from allocateBusyReg().
-//
-bool LinearScan::isIntervalActive(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType)
-{
-    Interval* assignedInterval = physRegRecord->assignedInterval;
-
-#ifdef _TARGET_ARM_
-    // Check two intervals for a double register in ARM32
-    Interval* assignedInterval2 = nullptr;
-    if (registerType == TYP_DOUBLE)
-        assignedInterval2 = findAnotherHalfRegRec(physRegRecord)->assignedInterval;
-
-    // Both intervals should not be nullptr at the same time, becasue we already handle this case before.
-    assert(!(assignedInterval == nullptr && assignedInterval2 == nullptr));
-
-    if (assignedInterval != nullptr && !isIntervalActiveHelper(assignedInterval, refLocation))
-        return false;
-
-    if (assignedInterval2 != nullptr && !isIntervalActiveHelper(assignedInterval2, refLocation))
-        return false;
-
-    return true;
-#else
-    return isIntervalActiveHelper(assignedInterval, refLocation);
-#endif
-}
-
-#ifdef _TARGET_ARM_
 void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 {
     assert(genIsValidDoubleReg(doubleRegRecord->regNum));
@@ -6070,16 +5971,33 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 
 #endif // _TARGET_ARM_
 
+//------------------------------------------------------------------------
+// isRefPositionActive: Determine whether a given RefPosition is active at the given location
+//
+// Arguments:
+//    refPosition - the RefPosition of interest
+//    refLocation - the LsraLocation at which we want to know if it is active
+//
+// Return Value:
+//    True  - if this RefPosition occurs at the given location, OR
+//            if it occurs at the previous location and is marked delayRegFree.
+//    False - otherwise
+//
+bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation)
+{
+    return (refPosition->nodeLocation == refLocation ||
+            ((refPosition->nodeLocation + 1 == refLocation) && refPosition->delayRegFree));
+}
+
 //----------------------------------------------------------------------------------------
 // isRegInUse: Test whether regRec is being used at the refPosition
 //
 // Arguments:
 //    regRec - A register to be tested
 //    refPosition - RefPosition where regRec is tested
-//    nextLocation - next RefPosition of interval assigned to regRec
 //
 // Return Value:
-//    True - if regRec is beding used
+//    True - if regRec is being used
 //    False - otherwise
 //
 // Notes:
@@ -6093,6 +6011,29 @@ bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
     Interval* assignedInterval = regRec->assignedInterval;
     if (assignedInterval != nullptr)
     {
+        if (!assignedInterval->isActive)
+        {
+// This can only happen if we have a recentRefPosition active at this location that hasn't yet been freed
+// (Or, in the case of ARM, the other half of a double is either active or has an active recentRefPosition).
+#ifdef _TARGET_ARM_
+            if (refPosition->getInterval()->registerType == TYP_DOUBLE)
+            {
+                if (!isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation))
+                {
+                    RegRecord* otherHalfRegRec = findAnotherHalfRegRec(regRec);
+                    assert(otherHalfRegRec->assignedInterval->isActive ||
+                           isRefPositionActive(otherHalfRegRec->assignedInterval->recentRefPosition,
+                                               refPosition->nodeLocation));
+                }
+            }
+            else
+#else
+            {
+                assert(isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation));
+            }
+#endif
+                return true;
+        }
         RefPosition* nextAssignedRef = assignedInterval->getNextRefPosition();
 
         // We should never spill a register that's occupied by an Interval with its next use at the current
@@ -6100,7 +6041,7 @@ bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
         // Normally this won't occur (unless we actually had more uses in a single node than there are registers),
         // because we'll always find something with a later nextLocation, but it can happen in stress when
         // we have LSRA_SELECT_NEAREST.
-        if ((nextAssignedRef != nullptr) && (nextAssignedRef->nodeLocation == refPosition->nodeLocation) &&
+        if ((nextAssignedRef != nullptr) && isRefPositionActive(nextAssignedRef, refPosition->nodeLocation) &&
             nextAssignedRef->RequiresRegister())
         {
             return true;
@@ -6199,11 +6140,6 @@ bool LinearScan::isSpillCandidate(Interval*     current,
         RefPosition* nextPhysRegPosition = physRegRecord->getNextRefPosition();
         assert((nextPhysRegPosition->nodeLocation == refLocation && candidateBit != refPosition->registerAssignment)
                    ARM64_ONLY(|| (physRegRecord->regNum == REG_IP0) || (physRegRecord->regNum == REG_IP1)));
-        return false;
-    }
-
-    if (!isIntervalActive(physRegRecord, refLocation, current->registerType))
-    {
         return false;
     }
 
