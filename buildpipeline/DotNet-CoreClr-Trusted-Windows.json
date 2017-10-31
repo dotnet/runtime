@@ -87,7 +87,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) toolset_dir C:\\tools\\clr -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -- /p:SignType=$(PB_SignType) /flp:\"v=diag\"",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) $(ToolsetArgs) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -- /p:SignType=$(PB_SignType) /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -279,6 +279,10 @@
     },
     "Architecture": {
       "value": "x64",
+      "allowOverride": true
+    },
+    "ToolsetArgs": {
+      "value": "",
       "allowOverride": true
     },
     "Priority": {

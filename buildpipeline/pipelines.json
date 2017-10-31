@@ -80,7 +80,8 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
-            "Architecture": "arm64"
+            "Architecture": "arm64",
+            "ToolsetArgs": "toolset_dir C:\\tools\\clr"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
