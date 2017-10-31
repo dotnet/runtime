@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 //
 // Note: F# compiler depends on the exact tuple hashing algorithm. Do not ever change it.
@@ -148,7 +147,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             return comparer.Compare(m_Item1, objTuple.m_Item1);
@@ -178,7 +177,7 @@ namespace System
         string ITupleInternal.ToString(StringBuilder sb)
         {
             sb.Append(m_Item1);
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -251,7 +250,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -289,7 +288,7 @@ namespace System
             sb.Append(m_Item1);
             sb.Append(", ");
             sb.Append(m_Item2);
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -369,7 +368,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -413,7 +412,7 @@ namespace System
             sb.Append(m_Item2);
             sb.Append(", ");
             sb.Append(m_Item3);
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -498,7 +497,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -548,7 +547,7 @@ namespace System
             sb.Append(m_Item3);
             sb.Append(", ");
             sb.Append(m_Item4);
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -638,7 +637,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -694,7 +693,7 @@ namespace System
             sb.Append(m_Item4);
             sb.Append(", ");
             sb.Append(m_Item5);
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -789,7 +788,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -851,7 +850,7 @@ namespace System
             sb.Append(m_Item5);
             sb.Append(", ");
             sb.Append(m_Item6);
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -951,7 +950,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -1019,7 +1018,7 @@ namespace System
             sb.Append(m_Item6);
             sb.Append(", ");
             sb.Append(m_Item7);
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -1129,7 +1128,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;

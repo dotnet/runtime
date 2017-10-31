@@ -315,7 +315,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArraySegment.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Tuple.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.Comparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.Manipulation.cs" />
