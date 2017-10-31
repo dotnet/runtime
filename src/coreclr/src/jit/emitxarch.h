@@ -94,14 +94,14 @@ code_t AddRexXPrefix(instruction ins, code_t code);
 code_t AddRexBPrefix(instruction ins, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
 
-bool useSSE3_4Encodings;
-bool UseSSE3_4()
+bool useSSE4Encodings;
+bool UseSSE4()
 {
-    return useSSE3_4Encodings;
+    return useSSE4Encodings;
 }
-void SetUseSSE3_4(bool value)
+void SetUseSSE4(bool value)
 {
-    useSSE3_4Encodings = value;
+    useSSE4Encodings = value;
 }
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSE4Instruction(instruction ins);
