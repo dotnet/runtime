@@ -91,15 +91,18 @@ namespace System.IO
             get;
         }
 
-        // Returns the line terminator string used by this TextWriter. The default line
-        // terminator string is a carriage return followed by a line feed ("\r\n").
-        //
-        // Sets the line terminator string for this TextWriter. The line terminator
-        // string is written to the text stream whenever one of the
-        // WriteLine methods are called. In order for text written by
-        // the TextWriter to be readable by a TextReader, only one of the following line
-        // terminator strings should be used: "\r", "\n", or "\r\n".
-        // 
+        /// <summary>
+        /// Returns the line terminator string used by this TextWriter. The default line
+        /// terminator string is Environment.NewLine, which is platform specific. 
+        /// On Windows this is a carriage return followed by a line feed ("\r\n").
+        /// On OSX and Linux this is a line feed ("\n").
+        /// </summary>
+        /// <remarks>
+        /// The line terminator string is written to the text stream whenever one of the
+        /// WriteLine methods are called. In order for text written by
+        /// the TextWriter to be readable by a TextReader, only one of the following line
+        /// terminator strings should be used: "\r", "\n", or "\r\n".
+        /// </remarks>
         public virtual string NewLine
         {
             get { return CoreNewLineStr; }
