@@ -1200,7 +1200,7 @@ GenTreePtr Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType
         assert(getSIMDSupportLevel() >= SIMD_SSE4_Supported);
         if (baseType == TYP_LONG)
         {
-            // SSE3_4/AVX2 don't support abs on long type vector.
+            // SSE4/AVX2 don't support abs on long type vector.
             useConditionalSelect = true;
         }
     }
@@ -1410,7 +1410,7 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
     // For other integer types we compute min/max as follows
     //
     // int32/uint32 (SSE2)
-    // int64/uint64 (SSE2&SSE3_4):
+    // int64/uint64 (SSE2&SSE4):
     //       compResult        = (op1 < op2) in case of Min
     //                           (op1 > op2) in case of Max
     //       Min/Max(op1, op2) = Select(compResult, op1, op2)

@@ -427,7 +427,7 @@ public:
 #endif // DEBUG
 
 #ifdef _TARGET_XARCH_
-        SetUseSSE3_4(false);
+        SetUseSSE4(false);
         SetUseAVX(false);
 #endif // _TARGET_XARCH_
     }
