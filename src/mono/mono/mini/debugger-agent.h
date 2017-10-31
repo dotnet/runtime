@@ -6,6 +6,7 @@
 #define __MONO_DEBUGGER_AGENT_H__
 
 #include "mini.h"
+#include <mono/utils/mono-stack-unwinding.h>
 
 MONO_API void
 mono_debugger_agent_parse_options (char *options);
@@ -34,7 +35,8 @@ mono_debugger_agent_unhandled_exception (MonoException *exc);
 #endif
 
 void
-mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *throw_ctx, MonoContext *catch_ctx);
+mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
+									  MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 
 void
 mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx);
