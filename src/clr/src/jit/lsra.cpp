@@ -5917,7 +5917,7 @@ bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
 
 #ifdef _TARGET_ARM_
 //------------------------------------------------------------------------
-// unassignDoubleReg:
+// unassignDoublePhysReg: unassign a double register (pair)
 //
 // Arguments:
 //    doubleRegRecord - reg to unassign
@@ -6013,8 +6013,10 @@ bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
     {
         if (!assignedInterval->isActive)
         {
-// This can only happen if we have a recentRefPosition active at this location that hasn't yet been freed
-// (Or, in the case of ARM, the other half of a double is either active or has an active recentRefPosition).
+            // This can only happen if we have a recentRefPosition active at this location that hasn't yet been freed
+            // (Or, in the case of ARM, the other half of a double is either active or has an active recentRefPosition).
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef _TARGET_ARM_
             if (refPosition->getInterval()->registerType == TYP_DOUBLE)
             {
@@ -6027,12 +6029,11 @@ bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
                 }
             }
             else
-#else
+#endif
             {
                 assert(isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation));
             }
-#endif
-                return true;
+            return true;
         }
         RefPosition* nextAssignedRef = assignedInterval->getNextRefPosition();
 
