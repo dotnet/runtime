@@ -205,34 +205,3 @@ which should make things work (but is fragile, confirm file timestamps that you 
 The instructions above were only about updates to the binaries that are part of Microsoft.NETCore.App, if you want to test a package
 for library that ships in its own nuget package you can follow the same steps above but instead add a package reference to the
 individual library package from your `bin\packages\Debug` folder.
-
-## Consuming non-NetStandard assets in a .NET Core 2.0 application
-
-Currently if you reference a NuGet package that does not have a NETStandard asset in your .NET Core 2.0 application, you will hit package
-incompatibility errors when trying to restore packages. You can resolve this issue by adding `PackageTargetFallback` property
-(MSBuild equivalent of `imports`) to your .csproj:
-
-```XML
-  <PackageTargetFallback>$(PackageTargetFallback);net45</PackageTargetFallback>
-```
-
-Note that this can fix the problem if the package is actually compatible with netcoreapp2.x (meaning it does not use types/APIs
-that are not available in netcoreapp2.x)
-
-For final release, we are considering modifying NuGet behavior to automatically consume the non-netstandard asset if there is no netstandard available.
-
-## Finding specific builds
-
-The URL scheme for the runtime is as follows:
-
-```
-https://dotnetcli.azureedge.net/dotnet/master/Installers/$version$/dotnet-$os$-$arch$.$version$.exe
-https://dotnetcli.azureedge.net/dotnet/master/Installers/2.0.0-preview1-001915-00/dotnet-win-x64.2.0.0-preview1-001915-00.exe
-```
-
-The URL scheme for the SDK & CLI is as follows:
-
-```
-https://dotnetcli.azureedge.net/dotnet/Sdk/$version$/dotnet-dev-$os$-$arch.$version$.exe
-https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0-preview1-005791/dotnet-dev-win-x86.2.0.0-preview1-005791.exe
-```
