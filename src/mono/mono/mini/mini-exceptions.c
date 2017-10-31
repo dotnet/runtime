@@ -385,6 +385,45 @@ get_unwind_backtrace (void)
 
 #endif
 
+static gboolean
+arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
+				   MonoJitInfo *ji, MonoContext *ctx,
+				   MonoContext *new_ctx, MonoLMF **lmf,
+				   mgreg_t **save_locations,
+				   StackFrameInfo *frame)
+{
+	if (!ji && *lmf) {
+		if (((guint64)(*lmf)->previous_lmf) & 2) {
+			MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
+
+			memset (frame, 0, sizeof (StackFrameInfo));
+			frame->ji = ji;
+
+			*new_ctx = *ctx;
+
+			if (ext->debugger_invoke) {
+				/*
+				 * This LMF entry is created by the soft debug code to mark transitions to
+				 * managed code done during invokes.
+				 */
+				frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
+				memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
+			} else if (ext->interp_exit) {
+				frame->type = FRAME_TYPE_INTERP_TO_MANAGED;
+				frame->interp_exit_data = ext->interp_exit_data;
+			} else {
+				g_assert_not_reached ();
+			}
+
+			*lmf = (MonoLMF *)(((guint64)(*lmf)->previous_lmf) & ~3);
+
+			return TRUE;
+		}
+	}
+
+	return mono_arch_unwind_frame (domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
+}
+
 /*
  * find_jit_info:
  *
@@ -408,7 +447,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (managed)
 		*managed = FALSE;
 
-	err = mono_arch_unwind_frame (domain, jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
+	err = arch_unwind_frame (domain, jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
 	if (!err)
 		return (MonoJitInfo *)-1;
 
@@ -570,7 +609,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (save_locations)
 		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (mgreg_t*));
 
-	err = mono_arch_unwind_frame (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
+	err = arch_unwind_frame (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 	if (!err)
 		return FALSE;
 

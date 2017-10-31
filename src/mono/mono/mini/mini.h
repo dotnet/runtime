@@ -2830,10 +2830,6 @@ void     mono_arch_skip_single_step             (MonoContext *ctx);
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code);
 #endif
 
-#ifdef MONO_ARCH_HAVE_INIT_LMF_EXT
-void     mono_arch_init_lmf_ext                 (MonoLMFExt *ext, gpointer prev_lmf);
-#endif
-
 gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *ji, MonoContext *ctx, 

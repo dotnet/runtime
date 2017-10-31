@@ -6,8 +6,6 @@
 
 #define MONO_ARCH_CPU_SPEC mono_wasm_desc
 
-#define MONO_ARCH_HAVE_INIT_LMF_EXT 1
-
 #define MONO_MAX_IREGS 1
 #define MONO_MAX_FREGS 1
 

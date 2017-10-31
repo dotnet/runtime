@@ -7201,18 +7201,12 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	 */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	if (invoke->has_ctx) {
-		MonoLMF **lmf_addr;
-
-		lmf_addr = mono_get_lmf_addr ();
-
 		/* Setup our lmf */
 		memset (&ext, 0, sizeof (ext));
-		mono_arch_init_lmf_ext (&ext, *lmf_addr);
-
 		ext.debugger_invoke = TRUE;
 		memcpy (&ext.ctx, &invoke->ctx, sizeof (MonoContext));
 
-		mono_set_lmf ((MonoLMF*)&ext);
+		mono_push_lmf (&ext);
 	}
 #endif
 
@@ -7286,7 +7280,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	if (invoke->has_ctx)
-		mono_set_lmf ((MonoLMF *)(((gssize)ext.lmf.previous_lmf) & ~3));
+		mono_pop_lmf ((MonoLMF*)&ext);
 #endif
 
 	*endp = p;

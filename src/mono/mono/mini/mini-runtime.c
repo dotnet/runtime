@@ -798,21 +798,19 @@ mono_set_lmf_addr (gpointer lmf_addr)
 void
 mono_push_lmf (MonoLMFExt *ext)
 {
-#ifdef MONO_ARCH_HAVE_INIT_LMF_EXT
 	MonoLMF **lmf_addr;
 
 	lmf_addr = mono_get_lmf_addr ();
 
-	mono_arch_init_lmf_ext (ext, *lmf_addr);
+	ext->lmf.previous_lmf = *lmf_addr;
+	/* Mark that this is a MonoLMFExt */
+	ext->lmf.previous_lmf = (gpointer)(((gssize)ext->lmf.previous_lmf) | 2);
 
 	mono_set_lmf ((MonoLMF*)ext);
-#else
-	NOT_IMPLEMENTED;
-#endif
 }
 
 /*
- * mono_push_lmf:
+ * mono_pop_lmf:
  *
  *   Pop the last frame from the LMF stack.
  */
