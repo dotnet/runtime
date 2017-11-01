@@ -463,22 +463,22 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             GenTree* putArgChild = argNode->gtGetOp1();
             if (!varTypeIsStruct(putArgChild) && !putArgChild->OperIs(GT_FIELD_LIST))
             {
+                unsigned expectedSlots = 1;
 #ifdef _TARGET_ARM_
-                // The `double` types have been transformed to `long` on arm, while the actual longs
+                // The `double` types could been transformed to `long` on arm, while the actual longs
                 // have been decomposed.
-                const bool isDouble = putArgChild->TypeGet() == TYP_LONG;
-                if (isDouble)
+                if (putArgChild->TypeGet() == TYP_LONG)
                 {
                     argNode->gtLsraInfo.srcCount = 2;
+                    expectedSlots                = 2;
                 }
-
-                // We must not have a multi-reg struct; double uses 2 slots and isn't a multi-reg struct
-                assert((curArgTabEntry->numSlots == 1) || isDouble);
-#else  // !_TARGET_ARM_
-                // Validate the slot count for this arg.
-                // We must not have a multi-reg struct
-                assert(curArgTabEntry->numSlots == 1);
+                else if (putArgChild->TypeGet() == TYP_DOUBLE)
+                {
+                    expectedSlots = 2;
+                }
 #endif // !_TARGET_ARM_
+                // Validate the slot count for this arg.
+                assert(curArgTabEntry->numSlots == expectedSlots);
             }
             continue;
         }
