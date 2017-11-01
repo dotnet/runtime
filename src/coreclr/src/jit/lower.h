@@ -151,9 +151,14 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
-    void ReplaceArgWithPutArgOrCopy(GenTreePtr* ppChild, GenTreePtr newNode);
+    void ReplaceArgWithPutArgOrBitcast(GenTreePtr* ppChild, GenTreePtr newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr info, var_types type);
     void LowerArg(GenTreeCall* call, GenTreePtr* ppTree);
+#ifdef _TARGET_ARMARCH_
+    GenTree* LowerFloatArg(GenTree* arg, fgArgTabEntry* info);
+    GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
+#endif
+
     void InsertPInvokeCallProlog(GenTreeCall* call);
     void InsertPInvokeCallEpilog(GenTreeCall* call);
     void InsertPInvokeMethodProlog();
