@@ -7674,10 +7674,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if ((code & 0x00800000) && !exclusive) // Is this a sign-extending opcode? (i.e. ldrsw, ldrsh, ldrsb)
     {
-        assert((size == EA_4BYTE) || (size == EA_8BYTE));
         if ((code & 0x80000000) == 0) // Is it a ldrsh or ldrsb and not ldrsw ?
         {
-            if (size == EA_4BYTE) // Do we need to encode the 32-bit Rt size bit?
+            if (EA_SIZE(size) != EA_8BYTE) // Do we need to encode the 32-bit Rt size bit?
             {
                 return 0x00400000; // set the bit at location 22
             }
@@ -7685,8 +7684,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
     else if (code & 0x80000000) // Is this a ldr/str/ldur/stur opcode?
     {
-        assert((size == EA_4BYTE) || (size == EA_8BYTE));
-        if (size == EA_8BYTE) // Do we need to encode the 64-bit size bit?
+        if (EA_SIZE(size) == EA_8BYTE) // Do we need to encode the 64-bit size bit?
         {
             return 0x40000000; // set the bit at location 30
         }
