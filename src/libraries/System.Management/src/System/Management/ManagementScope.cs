@@ -16,7 +16,7 @@ namespace System.Management
 {
     internal static class CompatSwitches
     {
-        private const string DotNetVersion = "v4.0.30319";
+        internal const string DotNetVersion = "v4.0.30319";
         private const string RegKeyLocation =@"SOFTWARE\Microsoft\.NETFramework\" + DotNetVersion;
  
         private static readonly object s_syncLock = new object();
@@ -297,13 +297,75 @@ namespace System.Management
 
         static WmiNetUtilsHelper()
         {
+            RegistryKey netFrameworkSubKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\");
+            string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue("InstallRoot");
+
+            if (netFrameworkInstallRoot == null)
+            {
+                // In some Windows versions, like Nano Server, the .Net Framework is not installed by default.
+                // It is possible that general failure to access the registry get to this code branch but it is
+                // very unlikely.
+                // Load PNSE delegates. This way it will throw PNSE when methods are used not when type is loaded.
+                ResetSecurity_f = (_) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                SetSecurity_f = (ref bool _, ref IntPtr __) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                BlessIWbemServices_f = (_, __, ___, ____, _____, ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                BlessIWbemServicesObject_f = (_, __, ___, ____, _____, ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetPropertyHandle_f27 = (int _, IntPtr __, string ___, out int ____, out int _____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                WritePropertyValue_f28 = (_, __, ___, ____, _____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                Clone_f12 = (int _, IntPtr __, out IntPtr ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                VerifyClientKey_f = () => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetQualifierSet_f = (int _, IntPtr __, out IntPtr ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                Get_f = (int _, IntPtr __, string ___, int ____, ref object _____, ref int ______, ref int _______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                Put_f = (int _, IntPtr __, string ___, int ____, ref object _____, int ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                Delete_f = (_, __, ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetNames_f = (int _, IntPtr __, string ___, int ____, ref object _____, out string[] ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                BeginEnumeration_f = (_, __, ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                Next_f = (int _, IntPtr __, int ___, ref string ____, ref object _____, ref int ______, ref int _______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                EndEnumeration_f = (_, __) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetPropertyQualifierSet_f = (int _, IntPtr __, string ___, out IntPtr ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                Clone_f = (int _, IntPtr __, out IntPtr ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetObjectText_f = (int _, IntPtr __, int ___, out string ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                SpawnDerivedClass_f = (int _, IntPtr __, int ___, out IntPtr ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                SpawnInstance_f = (int _, IntPtr __, int ___, out IntPtr ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                CompareTo_f = (_, __, ___, ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetPropertyOrigin_f = (int _, IntPtr __, string ___, out string ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                InheritsFrom_f = (int _, IntPtr __, string ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetMethod_f = (int _, IntPtr __, string ___, int ____, out IntPtr _____, out IntPtr ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                PutMethod_f = (_, __, ___, ____, _____, ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                DeleteMethod_f = (_, __, ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                BeginMethodEnumeration_f = (_, __, ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                NextMethod_f = (int _, IntPtr __, int ___, out string ____, out IntPtr _____, out IntPtr ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                EndMethodEnumeration_f = (_, __) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetMethodQualifierSet_f = (int _, IntPtr __, string ___, out IntPtr ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetMethodOrigin_f = (int _, IntPtr __, string ___, out string ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                QualifierGet_f = (int _, IntPtr __, string ___, int ____, ref object _____, ref int ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                QualifierPut_f = (int _, IntPtr __, string ___, ref object ____, int _____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                QualifierDelete_f = (_, __, ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                QualifierGetNames_f = (int _, IntPtr __, int ___, out string[] ____) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                QualifierBeginEnumeration_f = (_, __, ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                QualifierNext_f = (int _, IntPtr __, int ___, out string ____, out object _____, out int ______) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                QualifierEndEnumeration_f = (_, __) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetCurrentApartmentType_f = (int _, IntPtr __, out APTTYPE ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetDemultiplexedStub_f = (object _, bool __, out object ___) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                CreateInstanceEnumWmi_f = (string _, int __, IWbemContext ___, out IEnumWbemClassObject ____, int _____, int ______, IWbemServices _______, string ________, IntPtr _________, string __________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                CreateClassEnumWmi_f = (string _, int __, IWbemContext ___, out IEnumWbemClassObject ____, int _____, int ______, IWbemServices _______, string ________, IntPtr _________, string __________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                ExecQueryWmi_f = (string _, string __, int ___, IWbemContext ____, out IEnumWbemClassObject _____, int ______, int _______, IWbemServices ________, string _________, IntPtr __________, string ___________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                ExecNotificationQueryWmi_f = (string _, string __, int ___, IWbemContext ____, out IEnumWbemClassObject _____, int ______, int _______, IWbemServices ________, string _________, IntPtr __________, string ___________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                PutInstanceWmi_f = (_, __, ___, ____, _____, ______, _______, ________, _________, __________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                PutClassWmi_f = (_, __, ___, ____, _____, ______, _______, ________, _________, __________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                CloneEnumWbemClassObject_f = (out IEnumWbemClassObject _, int __, int ____, IEnumWbemClassObject _____, string ______, IntPtr _______, string ________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                ConnectServerWmi_f = (string _, string __, IntPtr ___, string ____, int _____, string ______, IWbemContext _______, out IWbemServices ________, int _________, int __________) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                GetErrorInfo_f = () => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+                Initialize_f = (_) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_FullFrameworkRequired);
+
+                return;
+            }
+
             IntPtr procAddr = IntPtr.Zero;
             IntPtr loadLibrary = IntPtr.Zero;
             string wminet_utilsPath = Path.Combine(
-                Environment.GetEnvironmentVariable("SystemRoot"),
-                "Microsoft.NET",
-                Environment.Is64BitProcess ? "Framework64" : "Framework",
-                "v4.0.30319",
+                netFrameworkInstallRoot,
+                CompatSwitches.DotNetVersion, // The same value is hard coded on Environment.Version and quirks for WMI
                 "wminet_utils.dll");
 
             loadLibrary =  Interop.Kernel32.LoadLibrary(wminet_utilsPath);
