@@ -7,6 +7,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ProcessOptions.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.ProcessOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OpenProcess.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.OpenProcess.cs</Link>
+    </Compile>
     <Compile Include="MofHelpers\MofCollection.cs" />
     <Compile Include="MofHelpers\MofFixture.cs" />
     <Compile Include="System\Management\ManagementClassTestsMofRequired.cs" />
