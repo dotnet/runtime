@@ -434,15 +434,6 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
 
 def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def bidailyCrossList) {
 
-    // Only PR triggers for altjit jobs.
-    switch (architecture) {
-        case 'x86_arm_altjit':
-        case 'x64_arm64_altjit':
-            return
-        default:
-            break
-    }
-
     // Check scenario.
     switch (scenario) {
         case 'default':
@@ -459,6 +450,8 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     break
                 case 'arm':
                 case 'armlb':
+                case 'x86_arm_altjit':
+                case 'x64_arm64_altjit':
                     Utilities.addGithubPushTrigger(job)
                     break
                 case 'arm64':
