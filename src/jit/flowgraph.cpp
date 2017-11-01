@@ -7109,6 +7109,7 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 
 bool Compiler::fgAddrCouldBeNull(GenTreePtr addr)
 {
+    addr = addr->gtEffectiveVal();
     if ((addr->gtOper == GT_CNS_INT) && addr->IsIconHandle())
     {
         return false;
