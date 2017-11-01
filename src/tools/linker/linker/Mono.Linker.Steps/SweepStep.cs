@@ -255,6 +255,9 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasNestedTypes)
 				SweepNestedTypes (type);
+
+			if (type.HasInterfaces)
+				SweepInterfaces (type);
 		}
 
 		protected void SweepNestedTypes (TypeDefinition type)
@@ -267,6 +270,17 @@ namespace Mono.Linker.Steps {
 					ElementRemoved (type.NestedTypes [i]);
 					type.NestedTypes.RemoveAt (i--);
 				}
+			}
+		}
+
+		protected void SweepInterfaces (TypeDefinition type)
+		{
+			for (int i = type.Interfaces.Count - 1; i >= 0; i--) {
+				var iface = type.Interfaces [i];
+				if (Annotations.IsMarked (iface.InterfaceType.Resolve ()))
+					continue;
+				InterfaceRemoved (type, iface);
+				type.Interfaces.RemoveAt (i);
 			}
 		}
 
@@ -350,6 +364,10 @@ namespace Mono.Linker.Steps {
 		}
 
 		protected virtual void ReferenceRemoved (AssemblyDefinition assembly, AssemblyNameReference reference)
+		{
+		}
+
+		protected virtual void InterfaceRemoved (TypeDefinition type, InterfaceImplementation iface)
 		{
 		}
 	}
