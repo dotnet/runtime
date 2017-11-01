@@ -123,6 +123,12 @@ set __BuildPackages=1
 set __BuildNativeCoreLib=1
 set __RestoreOptData=1
 
+@REM CMD has a nasty habit of eating "=" on the argument list, so passing:
+@REM    -priority=1
+@REM appears to CMD parsing as "-priority 1". Handle -priority specially to avoid problems,
+@REM and allow the "-priority=1" syntax.
+set __Priority=
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 
@@ -153,6 +159,8 @@ if /i "%1" == "arm64"               (set __BuildArchArm64=1&set processedArgs=!p
 if /i "%1" == "debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "-priority"           (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
@@ -217,6 +225,16 @@ if [!processedArgs!]==[] (
 )
 
 :ArgsDone
+
+@REM Special handling for -priority=N argument.
+if defined __Priority (
+    if defined __PassThroughArgs (
+        set __PassThroughArgs=%__PassThroughArgs% -priority=%__Priority%
+    ) else (
+        set __PassThroughArgs=-priority=%__Priority%
+    )
+    set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! -priority=%__Priority%
+)
 
 if %__PgoOptimize%==0 set __RestoreOptData=0
 
