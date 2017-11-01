@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Management.Tests
 {
     public class ManagementObjectTests
     {
-        // Need a specific condition for the test requiring notepad since not all windows versions that support WMI have it
-        public static bool IsWmiSupportedAndHasNotepad => WmiTestHelper.IsWmiSupported && PlatformDetection.IsNotWindowsServerCore;
-
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void Get_Win32_LogicalDisk()
         {
@@ -51,7 +50,7 @@ namespace System.Management.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsWmiSupportedAndHasNotepad))]
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         [OuterLoop]
         public void Invoke_Instance_And_Static_Method_Win32_Process()
         {
@@ -66,13 +65,24 @@ namespace System.Management.Tests
             var processId = (uint)methodArgs[3];
             Assert.True(0u != processId, $"Unexpected process ID: {processId}");
 
-            var process = new ManagementObject($"Win32_Process.Handle=\"{processId}\"");
-            resultObj = process.InvokeMethod("Terminate", new object[]{ 0 });
-            resultCode = (uint)resultObj;
-            Assert.Equal(0u, resultCode);
+            // Before terminating the process open a handle to it so the processId cannot be re-used until
+            // it is disposed. This ensures that the processId is not re-used right after the call to Terminate
+            // and the expected exception is always thrown.
+            using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, false, (int)processId))
+            using (Process targetProcess = Process.GetProcessById((int)processId))
+            using (var process = new ManagementObject($"Win32_Process.Handle=\"{processId}\""))
+            {
+                Assert.False(targetProcess.HasExited);
 
-            ManagementException managementException = Assert.Throws<ManagementException>(() => process.Get());
-            Assert.Equal(ManagementStatus.NotFound, managementException.ErrorCode);
+                resultObj = process.InvokeMethod("Terminate", new object[] { 0 });
+                resultCode = (uint)resultObj;
+                Assert.Equal(0u, resultCode);
+
+                Assert.True(targetProcess.HasExited);
+
+                ManagementException managementException = Assert.Throws<ManagementException>(() => process.Get());
+                Assert.Equal(ManagementStatus.NotFound, managementException.ErrorCode);
+            }
         }
     }
 }
