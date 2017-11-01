@@ -579,19 +579,11 @@ parallel(
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
             ['ryujit'].each { jit ->
-
-                if (arch == 'x64' && jit == 'legacy_backend') {
-                    return
-                }
-
-                ['full_opt', 'min_opt'].each { opt_level ->
+                ['full_opt', 'min_opt', 'tiered'].each { opt_level ->
                     def architecture = arch
                     def newJob = job(Utilities.getFullJobName(project, "perf_scenarios_${os}_${arch}_${opt_level}_${jit}", isPR)) {
 
                         def testEnv = ""
-                        if (jit == 'legacy_backend') {
-                            testEnv = '-testEnv %WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd'
-                        }
 
                         // Set the label.
                         label('windows_server_2016_clr_perf')
@@ -637,9 +629,15 @@ parallel(
 
                             def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -scenarioTest"
 
-                            // Scenario: JitBench
+                            // Profile=Off
                             batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios")
-                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\JitBench\\")
+                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\JitBench\\Off\\")
+
+                            // Profile=On
+                            if (opt_level != 'min_opt') {
+                                batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios -collectionFlags BranchMispredictions+CacheMisses+InstructionRetired")
+                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\JitBench\\On\\")
+                            }
                         }
                     }
 
@@ -828,7 +826,7 @@ parallel(
 
                             // Scenario: ILLink
                             batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -group ILLink -nowarmup")
-                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\LinkBench\\")
+                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\LinkBench\\")
                         }
                     }
 
