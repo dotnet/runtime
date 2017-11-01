@@ -2437,6 +2437,21 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         info->srcCount += GetOperandSourceCount(intrinsicTree->gtOp.gtOp2);
     }
     info->srcCount += GetOperandSourceCount(intrinsicTree->gtOp.gtOp1);
+
+#ifdef _TARGET_X86_
+    if (intrinsicTree->gtHWIntrinsicId == NI_SSE42_Crc32)
+    {
+        // CRC32 may operate over "byte" but on x86 only RBM_BYTE_REGS can be used as byte registers.
+        //
+        // TODO - currently we use the BaseType to bring the type of the second argument
+        // to the code generator. May encode the overload info in other way.
+        var_types srcType = intrinsicTree->gtSIMDBaseType;
+        if (varTypeIsByte(srcType))
+        {
+            intrinsicTree->gtOp.gtOp2->gtLsraInfo.setSrcCandidates(this, RBM_BYTE_REGS);
+        }
+    }
+#endif
 }
 #endif
 
