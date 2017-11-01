@@ -647,8 +647,7 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasInterfaces) {
 				foreach (var iface in type.Interfaces) {
-					MarkCustomAttributes (iface);
-					MarkType (iface.InterfaceType);
+					MarkInterfaceImplementation (type, iface);
 				}
 			}
 
@@ -1567,6 +1566,12 @@ namespace Mono.Linker.Steps {
 			if (!_context.IgnoreUnresolved) {
 				throw new ResolutionException (reference);
 			}
+		}
+
+		protected virtual void MarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+		{
+			MarkCustomAttributes (iface);
+			MarkType (iface.InterfaceType);
 		}
 	}
 }
