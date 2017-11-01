@@ -578,13 +578,13 @@ protected:
     struct instrDesc
     {
     private:
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if (defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)) && !defined(LEGACY_BACKEND)
         // The assembly instruction
         instruction _idIns : 9;
-#else  // !defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
+#else  // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)) || defined(LEGACY_BACKEND)
         // The assembly instruction
         instruction _idIns : 8;
-#endif // !defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
+#endif // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)) || defined(LEGACY_BACKEND)
         // The format for the instruction
         insFormat _idInsFmt : 8;
 
@@ -630,7 +630,7 @@ protected:
         // x86:   16 bits
         // amd64: 17 bits
         // arm:   16 bits
-        // arm64: 16 bits
+        // arm64: 17 bits
 
     private:
 #ifdef _TARGET_XARCH_
@@ -669,7 +669,7 @@ protected:
         // x86:   30 bits
         // amd64: 38 bits
         // arm:   32 bits
-        // arm64: 30 bits
+        // arm64: 31 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if HAS_TINY_DESC
@@ -719,8 +719,8 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (16)
 
 #elif defined(_TARGET_ARM64_)
-// For Arm64, we have used 16 bits from the second DWORD.
-#define ID_EXTRA_BITFIELD_BITS (16)
+// For Arm64, we have used 17 bits from the second DWORD.
+#define ID_EXTRA_BITFIELD_BITS (17)
 #elif defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
 // For xarch !LEGACY_BACKEND, we have used 14 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (14)
@@ -736,7 +736,7 @@ protected:
         // x86:   38 bits  // if HAS_TINY_DESC is not defined (which it is)
         // amd64: 46 bits
         // arm:   48 bits
-        // arm64: 48 bits
+        // arm64: 49 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
@@ -749,7 +749,7 @@ protected:
         // x86:   40 bits
         // amd64: 48 bits
         // arm:   50 bits
-        // arm64: 50 bits
+        // arm64: 51 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS)
@@ -765,7 +765,7 @@ protected:
         // x86:   24 bits
         // amd64: 16 bits
         // arm:   14 bits
-        // arm64: 14 bits
+        // arm64: 13 bits
 
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
 
