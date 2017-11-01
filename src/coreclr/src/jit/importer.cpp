@@ -14874,7 +14874,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     impResolveToken(codeAddr + (sz + 1), &unboxResolvedToken, CORINFO_TOKENKIND_Class);
 
-                    // See if token types a equal.
+                    // See if the resolved tokens describe types that are equal.
                     const TypeCompareState compare =
                         info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass);
 
@@ -14885,10 +14885,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Skip the next unbox.any instruction
                         sz += sizeof(mdToken) + 1;
                         break;
-                    }
-                    else
-                    {
-                        assert(unboxResolvedToken.hClass != resolvedToken.hClass);
                     }
                 }
 
