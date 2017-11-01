@@ -10,6 +10,14 @@ namespace System.Management.Tests
 {
     public class ManagementObjectTests
     {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
+        public void PlatformNotSupportedException_On_Nano()
+        {
+            // The underlying delegate usage can cause some cases to have the PNSE as the inner exception but there is a best effort
+            // to throw PNSE for such case.
+            Assert.Throws<PlatformNotSupportedException>(() => new ManagementObject($"Win32_LogicalDisk.DeviceID=\"{WmiTestHelper.SystemDriveId}\""));
+        }
+
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void Get_Win32_LogicalDisk()
         {
