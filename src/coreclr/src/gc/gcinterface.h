@@ -841,13 +841,11 @@ struct ScanContext
     void* _unused1;
 #endif //CHECK_APP_DOMAIN_LEAKS || FEATURE_APPDOMAIN_RESOURCE_MONITORING || DACCESS_COMPILE
 
-#ifndef FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined (DACCESS_COMPILE)
     MethodDesc *pMD;
 #else
     void* _unused2;
 #endif //GC_PROFILING || DACCESS_COMPILE
-#endif // FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     EtwGCRootKind dwEtwRootKind;
 #else
