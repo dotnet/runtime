@@ -8272,7 +8272,7 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
         {
             szFailReason = "Needs security check";
         }
-        else if (compLocallocUsed)
+        else if (compLocallocUsed || compLocallocOptimized)
         {
             szFailReason = "Localloc used";
         }

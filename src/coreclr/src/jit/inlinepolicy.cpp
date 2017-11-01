@@ -384,9 +384,18 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
             }
 
             case InlineObservation::CALLEE_HAS_PINNED_LOCALS:
+            case InlineObservation::CALLEE_HAS_LOCALLOC:
                 // The legacy policy is to never inline methods with
-                // pinned locals.
+                // pinned locals or localloc.
                 SetNever(obs);
+                break;
+
+            case InlineObservation::CALLSITE_IN_TRY_REGION:
+                m_CallsiteIsInTryRegion = true;
+                break;
+
+            case InlineObservation::CALLSITE_IN_LOOP:
+                m_CallsiteIsInLoop = true;
                 break;
 
             default:
@@ -898,6 +907,11 @@ void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 SetFailure(InlineObservation::CALLSITE_PIN_IN_TRY_REGION);
                 return;
             }
+            break;
+
+        case InlineObservation::CALLEE_HAS_LOCALLOC:
+            // We see this during the IL prescan. Ignore for now, we will
+            // bail out, if necessary, during importation
             break;
 
         default:
