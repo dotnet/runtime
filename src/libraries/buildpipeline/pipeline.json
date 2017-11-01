@@ -53,7 +53,7 @@
           "Parameters": {
             "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
             "PB_BuildArguments": "-buildArch=x64 -Release -BuildTests=false -stripSymbols -RuntimeOS=alpine.3.6 -- /p:PortableBuild=false",
-            "PB_DisableTestBuild" : "true",
+            "PB_SkipTests" : "true",
             "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -Outerloop -RuntimeOS=alpine.3.6 -- /p:ArchiveTests=false /p:EnableDumpling=true /p:PortableBuild=false",
             "PB_SyncArguments": "-p -BuildTests=false -RuntimeOS=alpine.3.6 -- /p:ArchGroup=x64 /p:PortableBuild=false /p:OverridePackageSource=$(PB_AzureFeedUrl)",
             "PB_TargetQueue": "Alpine.36.Amd64",
@@ -400,7 +400,7 @@
           "Parameters": {
             "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
             "PB_BuildArguments": "-buildArch=x64 -Debug -BuildTests=false -RuntimeOS=alpine.3.6 -- /p:PortableBuild=false",
-            "PB_DisableTestBuild" : "true",
+            "PB_SkipTests" : "true",
             "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -Outerloop -RuntimeOS=alpine.3.6 -- /p:ArchiveTests=false /p:EnableDumpling=true /p:PortableBuild=false",
             "PB_SyncArguments": "-p -BuildTests=false -RuntimeOS=alpine.3.6 -- /p:ArchGroup=x64 /p:PortableBuild=false /p:OverridePackageSource=$(PB_AzureFeedUrl)",
             "PB_TargetQueue": "Alpine.36.Amd64",

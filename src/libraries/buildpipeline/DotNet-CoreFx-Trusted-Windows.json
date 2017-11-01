@@ -169,7 +169,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run $(Build.SourcesDirectory)\\corefx\\build-tests.cmd",
-      "condition": "and(succeeded(), ne(variables['PB_DisableTestBuild'], 'true'))",
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'))",
       "timeoutInMinutes": 0,
       "refName": "Task9",
       "task": {
@@ -190,7 +190,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
-      "condition": "and(ne(variables['PB_DisableTestBuild'], 'true'), ne(variables['PB_EnableCloudTest'], 'false'))",
+      "condition": "and(ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
       "timeoutInMinutes": 0,
       "refName": "Task10",
       "task": {
@@ -504,6 +504,10 @@
     },
     "PB_SignType": {
       "value": "real",
+      "allowOverride": true
+    },
+    "PB_SkipTests": {
+      "value": "false",
       "allowOverride": true
     }
   },
