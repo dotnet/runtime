@@ -4333,6 +4333,18 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
         compInlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
+        // Determine if call site is within a try.
+        if (isInlining && impInlineInfo->iciBlock->hasTryIndex())
+        {
+            compInlineResult->Note(InlineObservation::CALLSITE_IN_TRY_REGION);
+        }
+
+        // Determine if the call site is in a loop.
+        if (isInlining && ((impInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) != 0))
+        {
+            compInlineResult->Note(InlineObservation::CALLSITE_IN_LOOP);
+        }
+
 #ifdef DEBUG
 
         // If inlining, this method should still be a candidate.
@@ -4807,8 +4819,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 // the list of other opcodes (for all platforms).
 
                 __fallthrough;
-
-            case CEE_LOCALLOC:
             case CEE_MKREFANY:
             case CEE_RETHROW:
                 if (makeInlineObservations)
@@ -4821,6 +4831,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                     if (isInlining)
                     {
                         assert(compInlineResult->IsFailure());
+                        return;
+                    }
+                }
+                break;
+
+            case CEE_LOCALLOC:
+
+                // We now allow localloc callees to become candidates in some cases.
+                if (makeInlineObservations)
+                {
+                    compInlineResult->Note(InlineObservation::CALLEE_HAS_LOCALLOC);
+                    if (isInlining && compInlineResult->IsFailure())
+                    {
                         return;
                     }
                 }
@@ -4913,12 +4936,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 // Mark the call node as "no return" as it can impact caller's code quality.
                 impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
             }
-        }
-
-        // Determine if call site is within a try.
-        if (isInlining && impInlineInfo->iciBlock->hasTryIndex())
-        {
-            compInlineResult->Note(InlineObservation::CALLSITE_IN_TRY_REGION);
         }
 
         // If the inline is viable and discretionary, do the
@@ -22959,6 +22976,7 @@ _Done:
     compLongUsed |= InlineeCompiler->compLongUsed;
     compFloatingPointUsed |= InlineeCompiler->compFloatingPointUsed;
     compLocallocUsed |= InlineeCompiler->compLocallocUsed;
+    compLocallocOptimized |= InlineeCompiler->compLocallocOptimized;
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compUnsafeCastUsed |= InlineeCompiler->compUnsafeCastUsed;
     compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;

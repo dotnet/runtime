@@ -1997,6 +1997,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compLongUsed          = false;
     compTailCallUsed      = false;
     compLocallocUsed      = false;
+    compLocallocOptimized = false;
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
