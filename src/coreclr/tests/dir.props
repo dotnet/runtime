@@ -89,8 +89,8 @@
       https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json;
       $(RestoreSources)
     </RestoreSources>
-    <RestoreSources Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
-      $(PackagesDir)AzureTransfer\;
+    <RestoreSources Condition="'$(IntermediateAzureFeed)' != ''">
+      $(IntermediateAzureFeed);
       $(RestoreSources)
     </RestoreSources>
   </PropertyGroup>
