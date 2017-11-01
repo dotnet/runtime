@@ -1,17 +1,12 @@
-using Microsoft.Xunit.Performance;
-using Microsoft.Xunit.Performance.Api;
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Runtime.Loader;
-using System.Text;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Runtime.Loader;
 using System.Xml.Linq;
-using Xunit;
-using Xunit.Abstractions;
+using Microsoft.Xunit.Performance.Api;
 
 namespace LinkBench
 {
@@ -234,7 +229,6 @@ namespace LinkBench
 
     public class LinkBench
     {
-        private static ScenarioConfiguration scenarioConfiguration = new ScenarioConfiguration(new TimeSpan(2000000));
         private static MetricModel SizeMetric = new MetricModel { Name = "Size", DisplayName = "File Size", Unit = "MB" };
         private static MetricModel PercMetric = new MetricModel { Name = "Ratio", DisplayName = "Reduction", Unit = "Linked/Unlinked" };
         public static string Workspace;
@@ -472,7 +466,8 @@ namespace LinkBench
                 };
                 using (var h = new XunitPerformanceHarness(scriptArgs))
                 {
-                    h.RunScenario(emptyCmd, null, null, PostRun, scenarioConfiguration);
+                    var configuration = new ScenarioConfiguration(new TimeSpan(2000000), emptyCmd);
+                    h.RunScenario(configuration, PostRun);
                 }
             }
 
