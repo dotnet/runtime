@@ -78,6 +78,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [ActiveIssue(24994, TestPlatforms.OSX)]
         [Theory]
         [InlineData(1)]
         [InlineData(3)]
@@ -120,6 +121,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [ActiveIssue(24994, TestPlatforms.OSX)]
         [Fact]
         public void MaxNumberOfServerInstances_TooManyServers_Throws()
         {
@@ -155,6 +157,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [ActiveIssue(24994, TestPlatforms.OSX)]
         [Theory]
         [InlineData(1)]
         [InlineData(4)]
