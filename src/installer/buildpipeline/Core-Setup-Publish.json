@@ -393,10 +393,10 @@
       "isSecret": true
     },
     "PB_PackagesUrl": {
-      "value": "https://$(PB_TransportFeedAccountName).blob.core.windows.net/$(PB_TransportFeedContainerName)/packages/index.json"
+      "value": "https://$(PB_TransportFeedAccountName).blob.core.windows.net/$(PB_TransportFeedContainerName)/index.json"
     },
     "PB_SymbolPackagesUrl": {
-      "value": "https://$(PB_TransportFeedAccountName).blob.core.windows.net/$(PB_TransportFeedContainerName)/symbols/index.json"
+      "value": "https://$(PB_TransportFeedAccountName).blob.core.windows.net/$(PB_TransportFeedContainerName)/index.json"
     },
     "PB_ChecksumAzureAccountName": {
       "value": "dotnetclichecksums"
