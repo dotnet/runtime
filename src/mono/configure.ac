@@ -1064,6 +1064,13 @@ else
    with_profile4_x_default=yes
 fi
 
+if test "x$AOT_BUILD_FLAGS" != "x"; then :
+   AC_SUBST(AOT_BUILD_FLAGS)
+   AC_SUBST(AOT_RUN_FLAGS)
+   # For llvmonlycheck + fullaotcheck
+   AC_SUBST(INVARIANT_AOT_OPTIONS)
+fi
+
 AC_SUBST(TEST_PROFILE)
 
 if test "x$with_profile4_x" = "xdefault"; then
@@ -3034,11 +3041,6 @@ if test "x$enable_llvm" = "xyes"; then
       fi
    fi
 
-   if test x$with_runtime_preset != xbitcode; then
-      AOT_BUILD_FLAGS="$AOT_BUILD_FLAGS,llvm"
-      AOT_RUN_FLAGS="$AOT_RUN_FLAGS --llvm"
-   fi
-
    llvm_codegen="x86codegen"
    case "$target" in
    arm*)
@@ -3154,13 +3156,6 @@ if test "x$enable_llvm_runtime" = "xyes"; then
    AC_DEFINE(ENABLE_LLVM_RUNTIME, 1, [Runtime support code for llvm enabled])
 fi
 AM_CONDITIONAL(ENABLE_LLVM_RUNTIME, [test x$enable_llvm_runtime = xyes])
-
-if test "x$AOT_BUILD_FLAGS" != "x"; then :
-   AC_SUBST(AOT_BUILD_FLAGS)
-   AC_SUBST(AOT_RUN_FLAGS)
-   # For llvmonlycheck + fullaotcheck
-   AC_SUBST(INVARIANT_AOT_OPTIONS)
-fi
 
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
