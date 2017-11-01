@@ -22,7 +22,7 @@
 
   <!-- Product dependency versions. -->
   <PropertyGroup>
-    <NETStandardLibraryPackageVersion>2.1.0-preview1-25901-01</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.0.1</NETStandardLibraryPackageVersion>
     <NETStandardLibraryPackageId>NETStandard.Library</NETStandardLibraryPackageId>
 
     <!-- SNI runtime package -->
@@ -49,7 +49,7 @@
     <TraceEventPackageVersion>1.0.3-alpha-experimental</TraceEventPackageVersion>
     <XunitNetcoreExtensionsVersion>1.0.1-prerelease-02201-02</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
-  
+
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
@@ -85,7 +85,7 @@
       <CurrentRef>$(SniCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="Standard">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/$(DependencyBranch)</BuildInfoPath>
+      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/release/2.0.0</BuildInfoPath>
       <CurrentRef>$(StandardCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="ProjectNTfs">
