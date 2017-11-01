@@ -175,21 +175,8 @@ namespace System.Net.Security
             _refreshCredentialNeeded = true;
         }
 
-        ~SecureChannel()
-        {
-            if (_sslAuthenticationOptions.AlpnProtocolsHandle.IsAllocated)
-            {
-                _sslAuthenticationOptions.AlpnProtocolsHandle.Free();
-            }
-        }
-
         internal void Close()
         {
-            if (_sslAuthenticationOptions.AlpnProtocolsHandle.IsAllocated)
-            {
-                _sslAuthenticationOptions.AlpnProtocolsHandle.Free();
-            }
-
             if (_securityContext != null)
             {
                 _securityContext.Dispose();

@@ -47,10 +47,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         private static extern IntPtr SslGetVersion(SafeSslHandle ssl);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSelectNextProto")]
-        internal static extern int SslSelectNextProto(out IntPtr outp, out byte outlen, IntPtr server, uint serverlen, IntPtr client, uint clientlen);
-
+                
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static extern void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
@@ -198,6 +195,9 @@ namespace Microsoft.Win32.SafeHandles
         private SafeBioHandle _writeBio;
         private bool _isServer;
         private bool _handshakeCompleted = false;
+        private GCHandle _alpnHandle;
+
+        public GCHandle AlpnHandle { set => _alpnHandle = value; }
 
         public bool IsServer
         {
@@ -279,6 +279,12 @@ namespace Microsoft.Win32.SafeHandles
                 _readBio?.Dispose();
                 _writeBio?.Dispose();
             }
+
+            if (_alpnHandle.IsAllocated)
+            {
+                _alpnHandle.Free();
+            }
+
             base.Dispose(disposing);
         }
 
