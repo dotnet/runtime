@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tests
                         signal.Set();
                     });
                     eventLog.EnableRaisingEvents = waitOnEvent;
-                    eventLog.WriteEntry(message, EventLogEntryType.Information);
+                    Helpers.RetryOnWin7(() => eventLog.WriteEntry(message, EventLogEntryType.Information));
                     if (waitOnEvent)
                     {
                         if (!signal.WaitOne(6000))
@@ -48,7 +48,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
