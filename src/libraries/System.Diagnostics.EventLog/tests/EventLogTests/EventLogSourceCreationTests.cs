@@ -21,7 +21,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
 
             Assert.False(EventLog.SourceExists(source));
@@ -96,7 +96,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
