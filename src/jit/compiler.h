@@ -7917,6 +7917,7 @@ public:
     bool compFloatingPointUsed;    // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;         // Does the method do a tailcall
     bool compLocallocUsed;         // Does the method use localloc.
+    bool compLocallocOptimized;    // Does the method have an optimized localloc
     bool compQmarkUsed;            // Does the method use GT_QMARK/GT_COLON
     bool compQmarkRationalized;    // Is it allowed to use a GT_QMARK/GT_COLON node.
     bool compUnsafeCastUsed;       // Does the method use LDIND/STIND to cast between scalar/refernce types
@@ -9294,6 +9295,8 @@ public:
                                     // This can be overwritten by setting complus_JITInlineSize env variable.
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
+
+#define DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE 32 // fixed locallocs of this size or smaller will convert to local buffers
 
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
