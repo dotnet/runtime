@@ -89,7 +89,6 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [ActiveIssue(24866, TestPlatforms.Linux)]
         [MemberData(nameof(Alpn_TestData))]
         public void SslStream_StreamToStream_Alpn_Success(List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
@@ -164,7 +163,7 @@ namespace System.Net.Security.Tests
             {
                 // Works on linux distros with openssl 1.0.2, CI machines Ubuntu14.04 and Debian 87 don't have openssl 1.0.2
                 // Works on Windows OSes > 7.0
-                bool featureWorks = (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !(PlatformDetection.IsUbuntu1404 || PlatformDetection.IsDebian)) ||
+                bool featureWorks = (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !(PlatformDetection.IsUbuntu1404 || PlatformDetection.IsDebian8)) ||
                                     (PlatformDetection.IsWindows && !PlatformDetection.IsWindows7);
 
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, featureWorks ? SslApplicationProtocol.Http2 : default };
