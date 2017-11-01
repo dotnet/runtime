@@ -22,33 +22,33 @@ namespace System.Diagnostics.Tests
                 eventLog.Source = source;
                 if (instance)
                 {
-                    EventLog.WriteEvent(source, eventInstance);
+                    Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, eventInstance));
                     if (data)
                     {
-                        eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
-                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                        Helpers.RetryOnWin7(() => eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData));
+                        return eventLog.Entries.LastOrDefault();
                     }
                     else if (category)
                     {
-                        eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
-                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                        Helpers.RetryOnWin7(() => eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId));
+                        return eventLog.Entries.LastOrDefault();
                     }
                     else
                     {
-                        eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
-                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                        Helpers.RetryOnWin7(() => eventLog.WriteEntry(message, EventLogEntryType.Warning, (int)eventInstance.InstanceId));
+                        return eventLog.Entries.LastOrDefault();
                     }
                 }
                 else if (type)
                 {
-                    eventLog.WriteEntry(message, EventLogEntryType.Warning);
+                    Helpers.RetryOnWin7(() => eventLog.WriteEntry(message, EventLogEntryType.Warning));
                 }
                 else
                 {
-                    eventLog.WriteEntry(message);
+                    Helpers.RetryOnWin7(() => eventLog.WriteEntry(message));
                 }
 
-                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                return eventLog.Entries.LastOrDefault();
             }
         }
 
@@ -59,47 +59,50 @@ namespace System.Diagnostics.Tests
                 eventLog.Source = source;
                 if (instance)
                 {
-                    EventLog.WriteEvent(source, eventInstance);
+                    Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, eventInstance));
                     if (data)
                     {
-                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData);
-                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                        Helpers.RetryOnWin7(() => EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId, rawData));
+                        return eventLog.Entries.LastOrDefault();
                     }
                     else if (category)
                     {
-                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId);
-                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                        Helpers.RetryOnWin7(() => EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId, (short)eventInstance.CategoryId));
+                        return eventLog.Entries.LastOrDefault();
                     }
                     else
                     {
-                        EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId);
-                        return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                        Helpers.RetryOnWin7(() => EventLog.WriteEntry(source, message, EventLogEntryType.Warning, (int)eventInstance.InstanceId));
+                        return eventLog.Entries.LastOrDefault();
                     }
                 }
                 else if (type)
                 {
-                    EventLog.WriteEntry(source, message, EventLogEntryType.Warning);
+                    Helpers.RetryOnWin7(() => EventLog.WriteEntry(source, message, EventLogEntryType.Warning));
                 }
                 else
                 {
-                    EventLog.WriteEntry(source, message);
+                    Helpers.RetryOnWin7(() => EventLog.WriteEntry(source, message));
                 }
 
-                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                return eventLog.Entries.LastOrDefault();
             }
         }
 
         private EventLogEntry WriteLogEntryEventSource(string source, bool data = false)
         {
             if (data)
-                EventLog.WriteEvent(source, eventInstance, rawData, insertStrings);
+            {
+                Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, eventInstance, rawData, insertStrings));
+            }
             else
-                EventLog.WriteEvent(source, eventInstance, insertStrings);
-
+            {
+                Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, eventInstance, insertStrings));
+            }
             using (EventLog eventLog = new EventLog())
             {
                 eventLog.Source = source;
-                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                return eventLog.Entries.LastOrDefault();
             }
         }
 
@@ -110,11 +113,11 @@ namespace System.Diagnostics.Tests
                 string[] insertStringsSingleton = { "ExtraText" };
                 eventLog.Source = source;
                 if (data)
-                    eventLog.WriteEvent(eventInstance, rawData, insertStringsSingleton);
+                    Helpers.RetryOnWin7(() => eventLog.WriteEvent(eventInstance, rawData, insertStringsSingleton));
                 else
-                    eventLog.WriteEvent(eventInstance, insertStringsSingleton);
+                    Helpers.RetryOnWin7(() => eventLog.WriteEvent(eventInstance, insertStringsSingleton));
 
-                return EventLogEntryCollectionExtensions.LastOrDefault(eventLog.Entries);
+                return eventLog.Entries.LastOrDefault();
             }
         }
 
@@ -129,6 +132,7 @@ namespace System.Diagnostics.Tests
             {
                 EventLog.CreateEventSource(source, log);
                 EventLogEntry eventLogEntry;
+
                 if (sourceFlag)
                     eventLogEntry = WriteLogEntry(source);
                 else
@@ -145,7 +149,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
@@ -174,7 +178,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
@@ -203,7 +207,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
@@ -238,7 +242,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
@@ -267,7 +271,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
@@ -316,12 +320,11 @@ namespace System.Diagnostics.Tests
 
                 if (eventLogEntry != null)
                     Assert.All(insertStrings, message => eventLogEntry.Message.Contains(message));
-
             }
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
@@ -336,6 +339,7 @@ namespace System.Diagnostics.Tests
             {
                 EventLog.CreateEventSource(source, log);
                 EventLogEntry eventLogEntry;
+
                 if (SourceFlag)
                     eventLogEntry = WriteLogEntryEventSource(source, data: true);
                 else
@@ -347,7 +351,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                EventLog.Delete(log);
+                Helpers.RetryOnWin7(() => EventLog.Delete(log));
             }
         }
 
@@ -394,7 +398,8 @@ namespace System.Diagnostics.Tests
     {
         internal static EventLogEntry LastOrDefault(this EventLogEntryCollection elec)
         {
-            return elec.Count > 0 ? elec[elec.Count - 1] : null;
+            return Helpers.RetryOnWin7(() => elec.Count > 0 ? elec[elec.Count - 1] : null);
         }
     }
+
 }
