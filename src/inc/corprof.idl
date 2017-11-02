@@ -623,6 +623,8 @@ typedef enum
 
     COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS   = 0x00000004,
 
+    COR_PRF_HIGH_DISABLE_TIERED_COMPILATION         = 0x00000008,
+
     COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE              = 0,
 
     COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS,
@@ -630,7 +632,7 @@ typedef enum
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
     // failed HRESULT.
-    COR_PRF_HIGH_MONITOR_IMMUTABLE                  = 0,
+    COR_PRF_HIGH_MONITOR_IMMUTABLE                  = COR_PRF_HIGH_DISABLE_TIERED_COMPILATION,
 
 } COR_PRF_HIGH_MONITOR;
 
@@ -3888,6 +3890,24 @@ interface ICorProfilerInfo8 : ICorProfilerInfo7
                                     [out] ULONG                   *pcchName,
                                     [out] WCHAR                    wszName[]);
 };
+
+[
+    object,
+    uuid(008170DB-F8CC-4796-9A51-DC8AA0B47012),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo9 : ICorProfilerInfo8
+{
+    //Given functionId + rejitId, enumerate the native code start address of all jitted versions of this code that currently exist
+    HRESULT GetNativeCodeStartAddresses(FunctionID functionID, ReJITID reJitId, ULONG32 cCodeStartAddresses, ULONG32 *pcCodeStartAddresses, UINT_PTR codeStartAddresses[]);
+
+    //Given the native code start address, return the native->IL mapping information for this jitted version of the code
+    HRESULT GetILToNativeMapping3(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[]);
+
+    //Given the native code start address, return the the blocks of virtual memory that store this code (method code is not necessarily stored in a single contiguous memory region)
+    HRESULT GetCodeInfo4(UINT_PTR pNativeCodeStartAddress, ULONG32 cCodeInfos, ULONG32* pcCodeInfos, COR_PRF_CODE_INFO codeInfos[]);
+}
 
 /*
 * This interface lets you iterate over methods in the runtime.

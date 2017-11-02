@@ -2,11 +2,6 @@
 ; The .NET Foundation licenses this file to you under the MIT license.
 ; See the LICENSE file in the project root for more information.
 
-; ==++==
-; 
-
-; 
-; ==--==
 ; ***********************************************************************
 ; File: JIThelp.asm
 ;
@@ -70,13 +65,11 @@ endif
 EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
 EXTERN _s_gsCookie:DWORD
+EXTERN _GetThread@0:PROC
 EXTERN @JITutil_IsInstanceOfInterface@8:PROC
 EXTERN @JITutil_ChkCastInterface@8:PROC
 EXTERN @JITutil_IsInstanceOfAny@8:PROC
 EXTERN @JITutil_ChkCastAny@8:PROC
-ifdef FEATURE_IMPLICIT_TLS
-EXTERN _GetThread@0:PROC
-endif
 
 ifdef WRITE_BARRIER_CHECK 
 ; Those global variables are always defined, but should be 0 for Server GC
@@ -963,12 +956,14 @@ NewArgs         equ 20
 ; extra space is incremented as we push things on the stack along the way
 ExtraSpace      = 0
 
-        call    _GetThread@0; eax = Thread*
-        push    eax         ; Thread*
+        push    0           ; Thread*
 
         ; save ArgumentRegisters
         push    ecx
         push    edx
+
+        call    _GetThread@0; eax = Thread*
+        mov     [esp + 8], eax
 
 ExtraSpace      = 12    ; pThread, ecx, edx
 
@@ -1247,43 +1242,7 @@ _JIT_PatchedCodeStart@0 proc public
 ret
 _JIT_PatchedCodeStart@0 endp
 
-;
-; Optimized TLS getters
-;
-
             ALIGN 4
-            
-ifndef FEATURE_IMPLICIT_TLS
-_GetThread@0 proc public
-            ; This will be overwritten at runtime with optimized GetThread implementation
-            jmp short _GetTLSDummy@0
-            ; Just allocate space that will be filled in at runtime
-            db (TLS_GETTER_MAX_SIZE_ASM - 2) DUP (0CCh)
-_GetThread@0 endp
-
-            ALIGN 4
-
-_GetAppDomain@0 proc public
-            ; This will be overwritten at runtime with optimized GetAppDomain implementation
-            jmp short _GetTLSDummy@0
-            ; Just allocate space that will be filled in at runtime
-            db (TLS_GETTER_MAX_SIZE_ASM - 2) DUP (0CCh)
-_GetAppDomain@0 endp
-
-_GetTLSDummy@0 proc public
-            xor eax,eax
-            ret
-_GetTLSDummy@0 endp
-
-            ALIGN 4
-
-_ClrFlsGetBlock@0 proc public
-            ; This will be overwritten at runtime with optimized ClrFlsGetBlock implementation
-            jmp short _GetTLSDummy@0
-            ; Just allocate space that will be filled in at runtime
-            db (TLS_GETTER_MAX_SIZE_ASM - 2) DUP (0CCh)
-_ClrFlsGetBlock@0 endp
-endif
 
 ;**********************************************************************
 ; Write barriers generated at runtime

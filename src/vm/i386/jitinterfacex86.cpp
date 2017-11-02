@@ -539,7 +539,7 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
                  && "EAX should contain size for allocation and it doesnt!!!");
 
         // Fetch current thread into EDX, preserving EAX and ECX
-        psl->X86EmitCurrentThreadFetch(kEDX, (1<<kEAX)|(1<<kECX));
+        psl->X86EmitCurrentThreadFetch(kEDX, (1 << kEAX) | (1 << kECX));
 
         // Try the allocation.
 
@@ -1253,7 +1253,7 @@ FastPrimitiveArrayAllocatorFuncPtr fastPrimitiveArrayAllocator = UnframedAllocat
 
 // "init" should be the address of a routine which takes an argument of
 // the module domain ID, the class domain ID, and returns the static base pointer
-void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck, bool bGCStatic, bool bSingleAppDomain)
+void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck, bool bGCStatic)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1266,35 +1266,6 @@ void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCto
     // mov eax, ecx
     psl->Emit8(0x89);
     psl->Emit8(0xc8);
-
-    if(!bSingleAppDomain)
-    {
-        // Check tag
-        CodeLabel *cctorCheck = psl->NewCodeLabel();
-
-
-        // test eax, 1
-        psl->Emit8(0xa9);
-        psl->Emit32(1);
-
-        // jz cctorCheck
-        psl->X86EmitCondJump(cctorCheck, X86CondCode::kJZ);
-
-        // mov eax GetAppDomain()
-        psl->X86EmitCurrentAppDomainFetch(kEAX, (1<<kECX)|(1<<kEDX));
-
-        // mov eax [eax->m_sDomainLocalBlock.m_pModuleSlots]
-        psl->X86EmitIndexRegLoad(kEAX, kEAX, (__int32) AppDomain::GetOffsetOfModuleSlotsPointer());
-
-        // Note: weird address arithmetic effectively does:
-        // shift over 1 to remove tag bit (which is always 1), then multiply by 4.
-        // mov eax [eax + ecx*2 - 2]
-        psl->X86EmitOp(0x8b, kEAX, kEAX, -2, kECX, 2);
-
-        // cctorCheck:
-        psl->EmitLabel(cctorCheck);
-
-    }
 
     if (bCCtorCheck)
     {
@@ -1356,7 +1327,7 @@ void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCto
 
 }
 
-void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic, bool bSingleAppDomain)
+void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1372,7 +1343,7 @@ void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic, bool bSingleA
         init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedNonGCStaticBase);
     }
 
-    EmitFastGetSharedStaticBase(&sl, init, bCheckCCtor, bGCStatic, bSingleAppDomain);
+    EmitFastGetSharedStaticBase(&sl, init, bCheckCCtor, bGCStatic);
 
     Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 
@@ -1521,16 +1492,14 @@ void InitJITHelpers1()
         //UnframedAllocateString;
     }
 
-    bool bSingleAppDomain = IsSingleAppDomain();
-
     // Replace static helpers with faster assembly versions
-    pMethodAddresses[6] = GenFastGetSharedStaticBase(true, true, bSingleAppDomain);
+    pMethodAddresses[6] = GenFastGetSharedStaticBase(true, true);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE, pMethodAddresses[6]);
-    pMethodAddresses[7] = GenFastGetSharedStaticBase(true, false, bSingleAppDomain);
+    pMethodAddresses[7] = GenFastGetSharedStaticBase(true, false);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE, pMethodAddresses[7]);
-    pMethodAddresses[8] = GenFastGetSharedStaticBase(false, true, bSingleAppDomain);
+    pMethodAddresses[8] = GenFastGetSharedStaticBase(false, true);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR, pMethodAddresses[8]);
-    pMethodAddresses[9] = GenFastGetSharedStaticBase(false, false, bSingleAppDomain);
+    pMethodAddresses[9] = GenFastGetSharedStaticBase(false, false);
     SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR, pMethodAddresses[9]);
 
     ETW::MethodLog::StubsInitialized(pMethodAddresses, (PVOID *)pHelperNames, ETW_NUM_JIT_HELPERS);
@@ -1675,20 +1644,20 @@ void ValidateWriteBarrierHelpers()
 // When a GC happens, the upper and lower bounds of the ephemeral
 // generation change.  This routine updates the WriteBarrier thunks
 // with the new values.
-void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
+int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+    int stompWBCompleteActions = SWB_PASS;
+
 #ifdef WRITE_BARRIER_CHECK 
         // Don't do the fancy optimization if we are checking write barrier
     if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
-        return;
+        return stompWBCompleteActions;
 #endif // WRITE_BARRIER_CHECK
-
-    BOOL flushICache = FALSE;
 
     // Update the lower bound.
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
@@ -1703,7 +1672,7 @@ void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
         //avoid trivial self modifying code
         if (*pfunc != (size_t) g_ephemeral_low)
         {
-            flushICache = TRUE;
+            stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             *pfunc = (size_t) g_ephemeral_low;
         }
         if (!WriteBarrierIsPreGrow())
@@ -1716,15 +1685,13 @@ void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
             //avoid trivial self modifying code
             if (*pfunc != (size_t) g_ephemeral_high)
             {
-                flushICache = TRUE;
+                stompWBCompleteActions |= SWB_ICACHE_FLUSH;
                 *pfunc = (size_t) g_ephemeral_high;
             }
         }
     }
 
-    if (flushICache)
-        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
-            (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
+    return stompWBCompleteActions;
 }
 
 /*********************************************************************/
@@ -1733,23 +1700,23 @@ void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 // to the PostGrow thunk that checks both upper and lower bounds.
 // regardless we need to update the thunk with the
 // card_table - lowest_address.
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     CONTRACTL {
         NOTHROW;
         if (GetThread()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
     } CONTRACTL_END;
 
+    int stompWBCompleteActions = SWB_PASS;
+
 #ifdef WRITE_BARRIER_CHECK 
         // Don't do the fancy optimization if we are checking write barrier
     if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
-        return;
+        return stompWBCompleteActions;
 #endif // WRITE_BARRIER_CHECK
 
     bool bWriteBarrierIsPreGrow = WriteBarrierIsPreGrow();
     bool bStompWriteBarrierEphemeral = false;
-
-    BOOL bEESuspendedHere = FALSE;
 
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
     {
@@ -1765,9 +1732,9 @@ void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
             if (bReqUpperBoundsCheck)
             {
                 GCX_MAYBE_COOP_NO_THREAD_BROKEN((GetThread()!=NULL));
-                if( !isRuntimeSuspended && !bEESuspendedHere) {
+                if( !isRuntimeSuspended && !(stompWBCompleteActions & SWB_EE_RESTART) ) {
                     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_GC_PREP);
-                    bEESuspendedHere = TRUE;
+                    stompWBCompleteActions |= SWB_EE_RESTART;
                 }
 
                 pfunc = (size_t *) JIT_WriteBarrierReg_PostGrow;
@@ -1855,16 +1822,15 @@ void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
     if (bStompWriteBarrierEphemeral)
     {
-        _ASSERTE(isRuntimeSuspended || bEESuspendedHere);
-        StompWriteBarrierEphemeral(true);
+        _ASSERTE(isRuntimeSuspended || (stompWBCompleteActions & SWB_EE_RESTART));
+        stompWBCompleteActions |= StompWriteBarrierEphemeral(true);
     }
-    else
-    {
-        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
-            (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
-    }
+    return stompWBCompleteActions;
+}
 
-    if(bEESuspendedHere)
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+void FlushWriteBarrierInstructionCache()
+{
+    FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
+        (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
 }
 

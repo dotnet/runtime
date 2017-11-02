@@ -48,9 +48,9 @@ VOID STDMETHODCALLTYPE MyIEE::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FU
 LPVOID* STDMETHODCALLTYPE MyIEE::TLS_GetDataBlock()
 {
     // We were previously allocating a TlsIndex with
-     //the master slot index set to a nullptr
-     //so in the new version we just return nullptr
-     //and it seems to be working for now
+    // the master slot index set to a nullptr
+    // so in the new version we just return nullptr
+    // and it seems to be working for now
     return nullptr;
 }
 

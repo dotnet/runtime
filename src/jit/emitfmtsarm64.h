@@ -58,6 +58,8 @@ IF_DEF(EN4D, IS_NONE, NONE) // Instruction has 4 possible encoding types, type D
 IF_DEF(EN4E, IS_NONE, NONE) // Instruction has 4 possible encoding types, type E
 IF_DEF(EN4F, IS_NONE, NONE) // Instruction has 4 possible encoding types, type F
 IF_DEF(EN4G, IS_NONE, NONE) // Instruction has 4 possible encoding types, type G
+IF_DEF(EN4H, IS_NONE, NONE) // Instruction has 4 possible encoding types, type H
+IF_DEF(EN4I, IS_NONE, NONE) // Instruction has 4 possible encoding types, type I
 IF_DEF(EN3A, IS_NONE, NONE) // Instruction has 3 possible encoding types, type A
 IF_DEF(EN3B, IS_NONE, NONE) // Instruction has 3 possible encoding types, type B
 IF_DEF(EN3C, IS_NONE, NONE) // Instruction has 3 possible encoding types, type C
@@ -81,6 +83,8 @@ IF_DEF(EN2K, IS_NONE, NONE) // Instruction has 2 possible encoding types, type K
 IF_DEF(EN2L, IS_NONE, NONE) // Instruction has 2 possible encoding types, type L
 IF_DEF(EN2M, IS_NONE, NONE) // Instruction has 2 possible encoding types, type M
 IF_DEF(EN2N, IS_NONE, NONE) // Instruction has 2 possible encoding types, type N
+IF_DEF(EN2O, IS_NONE, NONE) // Instruction has 2 possible encoding types, type O
+IF_DEF(EN2P, IS_NONE, NONE) // Instruction has 2 possible encoding types, type P
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -130,6 +134,7 @@ IF_DEF(LS_2C, IS_NONE, NONE) // LS_2C   .X.......X.iiiii iiiiP.nnnnnttttt      R
 IF_DEF(LS_3A, IS_NONE, NONE) // LS_3A   .X.......X.mmmmm xxxS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
 IF_DEF(LS_3B, IS_NONE, NONE) // LS_3B   X............... .aaaaannnnnddddd      Rd Ra Rn
 IF_DEF(LS_3C, IS_NONE, NONE) // LS_3C   X.........iiiiii iaaaaannnnnddddd      Rd Ra Rn imm(im7,sh)
+IF_DEF(LS_3D, IS_NONE, NONE) // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
 
 IF_DEF(DI_1A, IS_NONE, NONE) // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
 IF_DEF(DI_1B, IS_NONE, NONE) // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)

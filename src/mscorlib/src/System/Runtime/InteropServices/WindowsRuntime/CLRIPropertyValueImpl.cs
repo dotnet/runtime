@@ -315,7 +315,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             // Array types are 1024 larger than their equivilent scalar counterpart
-            BCLDebug.Assert((int)Type > 1024, "Unexpected array PropertyType value");
+            Debug.Assert((int)Type > 1024, "Unexpected array PropertyType value");
             PropertyType scalarType = Type - 1024;
 
             // If we do not have the correct array type, then we need to convert the array element-by-element
@@ -439,7 +439,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
                 else
                 {
-                    BCLDebug.Assert(false, "T in coersion function wasn't understood as a type that can be coerced - make sure that CoerceScalarValue and NumericScalarTypes are in sync");
+                    Debug.Fail("T in coersion function wasn't understood as a type that can be coerced - make sure that CoerceScalarValue and NumericScalarTypes are in sync");
                 }
             }
 

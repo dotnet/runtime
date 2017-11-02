@@ -535,22 +535,9 @@ ASMCONSTANTS_C_ASSERT(MethodDescClassification__mdcClassification == mdcClassifi
 ASMCONSTANTS_C_ASSERT(MethodDescClassification__mcInstantiated == mcInstantiated);
 
 #ifndef FEATURE_PAL
-
-#define OFFSET__TEB__TlsSlots 0x1480
-ASMCONSTANTS_C_ASSERT(OFFSET__TEB__TlsSlots == offsetof(TEB, TlsSlots));
-
-#define OFFSETOF__TEB__LastErrorValue 0x68
-ASMCONSTANTS_C_ASSERT(OFFSETOF__TEB__LastErrorValue == offsetof(TEB, LastErrorValue));
-
-#endif // !FEATURE_PAL
-
-#ifdef _DEBUG
-#define TLS_GETTER_MAX_SIZE_ASM 0x30
-#else
-#define TLS_GETTER_MAX_SIZE_ASM 0x18
+#define OFFSET__TEB__ThreadLocalStoragePointer 0x58
+ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, ThreadLocalStoragePointer));
 #endif
-ASMCONSTANTS_C_ASSERT(TLS_GETTER_MAX_SIZE_ASM == TLS_GETTER_MAX_SIZE)
-
 
 // If you change these constants, you need to update code in
 // RedirectHandledJITCase.asm and ExcepAMD64.cpp.

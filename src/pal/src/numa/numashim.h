@@ -13,6 +13,8 @@
 #include <numa.h>
 #include <numaif.h>
 
+#define numa_free_cpumask numa_bitmask_free
+
 // List of all functions from the numa library that are used
 #define FOR_ALL_NUMA_FUNCTIONS \
     PER_FUNCTION_BLOCK(numa_available) \

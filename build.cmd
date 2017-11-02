@@ -1,8 +1,13 @@
 @if not defined _echo @echo off
 setlocal EnableDelayedExpansion EnableExtensions
 
-echo Starting Build at %TIME%
+:: Define a prefix for most output progress messages that come from this script. That makes
+:: it easier to see where these are coming from. Note that there is a trailing space here.
+set "__MsgPrefix=BUILD: "
+
+echo %__MsgPrefix%Starting Build at %TIME%
 set __ThisScriptFull="%~f0"
+set __ThisScriptDir="%~dp0"
 
 :: Default to highest Visual Studio version available
 ::
@@ -19,6 +24,28 @@ set __ThisScriptFull="%~f0"
 :: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
 :: toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
+
+if defined VisualStudioVersion (
+    if not defined __VSVersion echo %__MsgPrefix%Detected Visual Studio %VisualStudioVersion% developer command ^prompt environment
+    goto :Run
+) 
+
+echo %__MsgPrefix%"Searching for Visual Studio 2017 or 2015 installation"
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+)
+if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
+if not exist "%_VSCOMNTOOLS%" (
+    echo %__MsgPrefix%Error: Visual Studio 2015 or 2017 required.
+    echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+    exit /b 1
+)
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+
+:Run
+
 if defined VS150COMNTOOLS (
   set "__VSToolsRoot=%VS150COMNTOOLS%"
   set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
@@ -49,17 +76,14 @@ set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
 
-:: Define a prefix for most output progress messages that come from this script. That makes
-:: it easier to see where these are coming from. Note that there is a trailing space here.
-set "__MsgPrefix=BUILD: "
-
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
-set "__PackagesDir=%__ProjectDir%\packages"
+set "__PackagesDir=%DotNetRestorePackagesPath%"
+if [%__PackagesDir%]==[] set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set "__PgoOptDataVersion="
@@ -75,8 +99,6 @@ set __BuildArchArm64=0
 set __BuildTypeDebug=0
 set __BuildTypeChecked=0
 set __BuildTypeRelease=0
-set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=0"
-set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=0"
 
 set __PgoInstrument=0
 set __PgoOptimize=1
@@ -94,11 +116,18 @@ set __UnprocessedBuildArgs=
 set __RunArgs=
 
 set __BuildCoreLib=1
+set __BuildSOS=1
 set __BuildNative=1
 set __BuildTests=1
 set __BuildPackages=1
 set __BuildNativeCoreLib=1
 set __RestoreOptData=1
+
+@REM CMD has a nasty habit of eating "=" on the argument list, so passing:
+@REM    -priority=1
+@REM appears to CMD parsing as "-priority 1". Handle -priority specially to avoid problems,
+@REM and allow the "-priority=1" syntax.
+set __Priority=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -131,6 +160,8 @@ if /i "%1" == "debug"               (set __BuildTypeDebug=1&set processedArgs=!p
 if /i "%1" == "checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
+if /i "%1" == "-priority"           (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
+
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
 if [!__PassThroughArgs!]==[] (
@@ -139,11 +170,11 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
-if /i "%1" == "-freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-netbsdmscorlib"      (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-osxmscorlib"         (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=OSX&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-windowsmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Windows_NT&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-freebsdmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-linuxmscorlib"       (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-netbsdmscorlib"      (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-osxmscorlib"         (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=OSX&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-windowsmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Windows_NT&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -158,20 +189,14 @@ if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!proc
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-buildstandalonegc"   (
-    set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"
-    set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=1"
-    set processedArgs=!processedArgs! %1
-    shift&goto Arg_Loop
-)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
-if /i "%1" == "freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "netbsdmscorlib"      (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "osxmscorlib"         (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=OSX&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "windowsmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Windows_NT&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "freebsdmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "linuxmscorlib"       (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "netbsdmscorlib"      (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "osxmscorlib"         (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=OSX&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "windowsmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Windows_NT&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -186,12 +211,6 @@ if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!proc
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "buildstandalonegc"   (
-    set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"
-    set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=1"
-    set processedArgs=!processedArgs! %1
-    shift&goto Arg_Loop
-)
 
 @REM The following can be deleted once the CI system that passes it is updated to not pass it.
 if /i "%1" == "altjitcrossgen"      (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -206,6 +225,16 @@ if [!processedArgs!]==[] (
 )
 
 :ArgsDone
+
+@REM Special handling for -priority=N argument.
+if defined __Priority (
+    if defined __PassThroughArgs (
+        set __PassThroughArgs=%__PassThroughArgs% -priority=%__Priority%
+    ) else (
+        set __PassThroughArgs=-priority=%__Priority%
+    )
+    set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! -priority=%__Priority%
+)
 
 if %__PgoOptimize%==0 set __RestoreOptData=0
 
@@ -286,14 +315,22 @@ echo %__MsgPrefix%Checking prerequisites
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
 
+REM NumberOfEnabledCore is an WMI property providing number of enabled cores on machine
+REM processor(s) and later is used to set optimal level of CL parallelism during native build step
+if not defined NumberOfCores (
+REM Determine number of physical processor cores available on machine
+for /f "tokens=*" %%I in (
+    'wmic cpu get NumberOfCores /value ^| find "=" 2^>NUL'
+    ) do set %%I
+)
+echo %__MsgPrefix%Number of processor cores %NumberOfCores%
+
 REM =========================================================================================
 REM ===
 REM === Start the build steps
 REM ===
 REM =========================================================================================
 
-echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
-call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 @if defined _echo @echo on
 
 @call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs%
@@ -339,10 +376,10 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set nativePlatfromArgs=-platform=%__BuildArch%
-    if /i "%__BuildArch%" == "arm64" ( set nativePlatfromArgs=-useEnv )
+    set __NativePlatformArgs=-platform=%__BuildArch%
+    if not "%__ToolsetDir%" == "" ( set __NativePlatformArgs=-useEnv )
 
-    if /i "%__BuildArch%" == "arm64" (
+    if not "%__ToolsetDir%" == "" (
         rem arm64 builds currently use private toolset which has not been released yet
         REM TODO, remove once the toolset is open.
         call :PrivateToolSet
@@ -354,6 +391,12 @@ if %__BuildNative% EQU 1 (
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
+
+        REM Make CMake pick the highest installed version in the 10.0.* range
+        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
+    )
+    if /i "%__BuildArch%" == "arm64" (
+        set __VCBuildArch=x86_arm64
 
         REM Make CMake pick the highest installed version in the 10.0.* range
         set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
@@ -376,7 +419,7 @@ if %__BuildNative% EQU 1 (
 
     pushd "%__IntermediatesDir%"
     set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
-    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildStandaloneGC% %__BuildStandaloneGCOnly% !__ExtraCmakeArgs!
+    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     @if defined _echo @echo on
     popd
 
@@ -396,7 +439,7 @@ if %__BuildNative% EQU 1 (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %nativePlatfromArgs% %__RunArgs% %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %__NativePlatformArgs% %__RunArgs% -ExtraParameters="/p:ForceImportBeforeCppTargets=%__ProjectDir%/clr.nativebuild.props /m:2" %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
@@ -445,7 +488,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     pushd "%__CrossCompIntermediatesDir%"
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
+    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0"
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
     @if defined _echo @echo on
     popd
@@ -466,9 +509,9 @@ if /i "%__DoCrossArchBuild%"=="1" (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% -ExtraParameters="/p:ForceImportBeforeCppTargets=%__ProjectDir%/clr.nativebuild.props /m:2" %__UnprocessedBuildArgs%
 
-    if not !errorlevel! == 0 (
+        if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:
         echo     !__BuildLog!
         echo     !__BuildWrn!
@@ -499,6 +542,10 @@ if %__BuildCoreLib% EQU 1 (
     if not defined __IbcTuning (
       set __ExtraBuildArgs=!__ExtraBuildArgs! -OptimizationDataDir="%__PackagesDir%/optimization.%__BuildOS%-%__BuildArch%.IBC.CoreCLR/%__IbcOptDataVersion%/data/"
       set __ExtraBuildArgs=!__ExtraBuildArgs! -EnableProfileGuidedOptimization=true
+    )
+
+    if "%__BuildSOS%" == "0" (
+        set __ExtraBuildArgs=!__ExtraBuildArgs! -SkipSOS=true
     )
 
     if /i "%__BuildArch%" == "arm64" (
@@ -632,7 +679,7 @@ if %__BuildTests% EQU 1 (
 
     rem arm64 builds currently use private toolset which has not been released yet
     REM TODO, remove once the toolset is open.
-    if /i "%__BuildArch%" == "arm64" call :PrivateToolSet
+    if not "%__ToolsetDir%" == "" call :PrivateToolSet
 
     set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
@@ -772,7 +819,6 @@ echo -skipnative: skip building native components ^(default: native components a
 echo -skiptests: skip building tests ^(default: tests are built^).
 echo -skipbuildpackages: skip building nuget packages ^(default: packages are built^).
 echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
-echo -buildstandalonegc: builds the GC in a standalone mode.
 echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
 echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
@@ -806,7 +852,7 @@ exit /b 1
 
 :PrivateToolSet
 
-echo %__MsgPrefix% Setting Up the usage of __ToolsetDir:%__ToolsetDir%
+echo %__MsgPrefix%Setting up the usage of __ToolsetDir:%__ToolsetDir%
 
 if /i "%__ToolsetDir%" == "" (
     echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.

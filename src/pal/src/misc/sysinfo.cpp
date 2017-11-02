@@ -81,6 +81,7 @@ Revision History:
 
 #include "pal/dbgmsg.h"
 
+#include <algorithm>
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
@@ -437,16 +438,16 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     size_t cacheSize = 0;
 
 #ifdef _SC_LEVEL1_DCACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
+    cacheSize = std::max(cacheSize, (size_t)sysconf(_SC_LEVEL1_DCACHE_SIZE));
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));
+    cacheSize = std::max(cacheSize, (size_t)sysconf(_SC_LEVEL2_CACHE_SIZE));
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL3_CACHE_SIZE));
+    cacheSize = std::max(cacheSize, (size_t)sysconf(_SC_LEVEL3_CACHE_SIZE));
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
+    cacheSize = std::max(cacheSize, (size_t)sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
 #if defined(_ARM64_)
@@ -455,15 +456,15 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         size_t size;
 
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
-            cacheSize = max(cacheSize, size);
+            cacheSize = std::max(cacheSize, size);
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index1/size", &size))
-            cacheSize = max(cacheSize, size);
+            cacheSize = std::max(cacheSize, size);
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index2/size", &size))
-            cacheSize = max(cacheSize, size);
+            cacheSize = std::max(cacheSize, size);
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index3/size", &size))
-            cacheSize = max(cacheSize, size);
+            cacheSize = std::max(cacheSize, size);
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
-            cacheSize = max(cacheSize, size);
+            cacheSize = std::max(cacheSize, size);
     }
 
     if(cacheSize == 0)
@@ -488,7 +489,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
         DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
 
-        cacheSize = logicalCPUs*min(1536, max(256, logicalCPUs*128))*1024;
+        cacheSize = logicalCPUs*std::min(1536, std::max(256, (int)logicalCPUs*128))*1024;
     }
 #endif
 

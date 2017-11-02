@@ -30,7 +30,7 @@ namespace System
         // Migrating InheritanceDemands requires this default ctor, so we can mark it SafeCritical
         protected WeakReference()
         {
-            Debug.Assert(false, "WeakReference's protected default ctor should never be used!");
+            Debug.Fail("WeakReference's protected default ctor should never be used!");
             throw new NotImplementedException();
         }
 

@@ -51,7 +51,6 @@
 
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
-#ifdef FEATURE_IMPLICIT_TLS
 #ifndef __llvm__
 EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 #else // !__llvm__
@@ -62,11 +61,6 @@ EXTERN_C UINT32 _tls_index;
 #else // FEATURE_PAL
 UINT32 _tls_index = 0;
 #endif // FEATURE_PAL
-SVAL_IMPL_INIT(DWORD, CExecutionEngine, TlsIndex, _tls_index);
-#else
-SVAL_IMPL_INIT(DWORD, CExecutionEngine, TlsIndex, TLS_OUT_OF_INDEXES);
-#endif
-
 
 #if defined(FEATURE_WINDOWSPHONE)
 SVAL_IMPL_INIT(ECustomDumpFlavor, CCLRErrorReportingManager, g_ECustomDumpFlavor, DUMP_FLAVOR_Default);
@@ -570,13 +564,6 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
         return HOST_E_CLRNOTAVAILABLE;
     }       
 
-    if(!(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
-    {
-        // Ensure that code is not loaded in the Default AppDomain
-        if (dwAppDomainId == DefaultADID)
-           return HOST_E_INVALIDOPERATION;
-    }
-
     // Moved this here since no point validating the pointer
     // if the basic checks [above] fail
     if( pCallback == NULL)
@@ -632,7 +619,7 @@ HRESULT CorHost2::_CreateAppDomain(
     HRESULT hr=S_OK;
 
     //cannot call the function more than once when single appDomain is allowed
-    if (m_fAppDomainCreated && (m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
+    if (m_fAppDomainCreated)
     {
         return HOST_E_INVALIDOPERATION;
     }
@@ -661,15 +648,7 @@ HRESULT CorHost2::_CreateAppDomain(
 
     AppDomainCreationHolder<AppDomain> pDomain;
 
-    // If StartupFlag specifies single appDomain then return the default domain instead of creating new one
-    if(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN)
-    {
-        pDomain.Assign(SystemDomain::System()->DefaultDomain());
-    }
-    else
-    {
-        AppDomain::CreateUnmanagedObject(pDomain);
-    }
+    pDomain.Assign(SystemDomain::System()->DefaultDomain());
 
     ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
 
@@ -744,11 +723,7 @@ HRESULT CorHost2::_CreateAppDomain(
 
         *pAppDomainID=pDomain->GetId().m_dwId;
 
-        // If StartupFlag specifies single appDomain then set the flag that appdomain has already been created
-        if(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN)
-        {
-            m_fAppDomainCreated = TRUE;
-        }
+        m_fAppDomainCreated = TRUE;
     }
 #ifdef PROFILING_SUPPORTED
     EX_HOOK
@@ -821,13 +796,6 @@ HRESULT CorHost2::_CreateDelegate(
     if (!m_fStarted)
         return HOST_E_INVALIDOPERATION;
 
-    if(!(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
-    {
-        // Ensure that code is not loaded in the Default AppDomain
-        if (appDomainID == DefaultADID)
-            return HOST_E_INVALIDOPERATION;
-    }
-
     BEGIN_ENTRYPOINT_NOTHROW;
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
@@ -868,10 +836,6 @@ HRESULT CorHost2::_CreateDelegate(
 
     if (pMD==NULL || !pMD->IsStatic() || pMD->ContainsGenericVariables()) 
         ThrowHR(COR_E_MISSINGMETHOD);
-
-    // the target method must be decorated with AllowReversePInvokeCallsAttribute
-    if (!COMDelegate::IsMethodAllowedToSinkReversePInvoke(pMD))
-        ThrowHR(COR_E_SECURITY);
 
     UMEntryThunk *pUMEntryThunk = GetAppDomain()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
     *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
@@ -1190,57 +1154,52 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
     if (!m_fStarted)
         return HOST_E_INVALIDOPERATION;
 
-    if(m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN)
+    if (!g_fEEStarted)
     {
-        if (!g_fEEStarted)
-        {
-            return HOST_E_CLRNOTAVAILABLE;
-        }
+        return HOST_E_CLRNOTAVAILABLE;
+    }
 
-        if(!m_fAppDomainCreated)
-        {
-            return HOST_E_INVALIDOPERATION;
-        }
+    if(!m_fAppDomainCreated)
+    {
+        return HOST_E_INVALIDOPERATION;
+    }
 
-        HRESULT hr=S_OK;
-        BEGIN_ENTRYPOINT_NOTHROW;
+    HRESULT hr=S_OK;
+    BEGIN_ENTRYPOINT_NOTHROW;
     
-        if (!m_fFirstToLoadCLR)
+    if (!m_fFirstToLoadCLR)
+    {
+        _ASSERTE(!"Not reachable");
+        hr = HOST_E_CLRNOTAVAILABLE;
+    }
+    else
+    {
+        LONG refCount = m_RefCount;
+        if (refCount == 0)
         {
-            _ASSERTE(!"Not reachable");
             hr = HOST_E_CLRNOTAVAILABLE;
         }
         else
+        if (1 == refCount)
         {
-            LONG refCount = m_RefCount;
-            if (refCount == 0)
-            {
-                hr = HOST_E_CLRNOTAVAILABLE;
-            }
-            else
-            if (1 == refCount)
-            {
-                // Stop coreclr on unload.
-                m_fStarted = FALSE;
-                EEShutDown(FALSE);
-            }
-            else
-            {
-                _ASSERTE(!"Not reachable");
-                hr = S_FALSE;
-            }
+            // Stop coreclr on unload.
+            m_fStarted = FALSE;
+            EEShutDown(FALSE);
         }
-        END_ENTRYPOINT_NOTHROW;
-
-        if (pLatchedExitCode)
+        else
         {
-            *pLatchedExitCode = GetLatchedExitCode();
+            _ASSERTE(!"Not reachable");
+            hr = S_FALSE;
         }
+    }
+    END_ENTRYPOINT_NOTHROW;
 
-        return hr;
+    if (pLatchedExitCode)
+    {
+        *pLatchedExitCode = GetLatchedExitCode();
     }
 
-    return CorRuntimeHostBase::UnloadAppDomain2(dwDomainId, fWaitUntilDone, pLatchedExitCode);
+    return hr;
 }
 
 HRESULT CorRuntimeHostBase::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
@@ -3172,7 +3131,6 @@ VOID WINAPI FlsCallback(
 #endif // HAS_FLS_SUPPORT
 
 
-#ifdef FEATURE_IMPLICIT_TLS
 void** CExecutionEngine::GetTlsData()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3187,28 +3145,6 @@ BOOL CExecutionEngine::SetTlsData (void** ppTlsInfo)
     gCurrentThreadInfo.m_EETlsData = ppTlsInfo;
     return TRUE;
 }
-#else 
-void** CExecutionEngine::GetTlsData()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
-        return NULL;
-
-    void **ppTlsData = (void **)UnsafeTlsGetValue(TlsIndex);
-    return ppTlsData;
-}
-BOOL CExecutionEngine::SetTlsData (void** ppTlsInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
-        return FALSE;
-
-    return UnsafeTlsSetValue(TlsIndex, ppTlsInfo);
-}
-
-#endif // FEATURE_IMPLICIT_TLS
 
 //---------------------------------------------------------------------------------------
 //
@@ -3298,25 +3234,6 @@ void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
         }
     }
 #endif // HAS_FLS_SUPPORT
-
-#ifndef FEATURE_IMPLICIT_TLS
-    // Ensure we have a TLS Index
-    if (TlsIndex == TLS_OUT_OF_INDEXES)
-    {
-        DWORD tryTlsIndex = UnsafeTlsAlloc();
-        if (tryTlsIndex != TLS_OUT_OF_INDEXES)
-        {
-            if (FastInterlockCompareExchange((LONG*)&TlsIndex, tryTlsIndex, TLS_OUT_OF_INDEXES) != (LONG)TLS_OUT_OF_INDEXES)
-            {
-                UnsafeTlsFree(tryTlsIndex);
-            }
-        }
-        if (TlsIndex == TLS_OUT_OF_INDEXES)
-        {
-            COMPlusThrowOM();
-        }
-    }
-#endif // FEATURE_IMPLICIT_TLS
 
     void** pTlsData = CExecutionEngine::GetTlsData();
     BOOL fInTls = (pTlsData != NULL);

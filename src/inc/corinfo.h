@@ -213,12 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-// {CFEC7B89-D5FF-4A67-823A-EF99FE0286F4}
-SELECTANY const GUID JITEEVersionIdentifier = { 
-    0xcfec7b89, 
-    0xd5ff, 
-    0x4a67, 
-    { 0x82, 0x3a, 0xef, 0x99, 0xfe, 0x2, 0x86, 0xf4 } 
+SELECTANY const GUID JITEEVersionIdentifier = { /* b6af83a1-ca48-46c6-b7b0-5d7d6a79a5c5 */
+    0xb6af83a1,
+    0xca48,
+    0x46c6,
+    {0xb7, 0xb0, 0x5d, 0x7d, 0x6a, 0x79, 0xa5, 0xc5}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -643,6 +642,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
     CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
+    CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -1955,6 +1955,14 @@ typedef SIZE_T GSCookie;
 
 const int MAX_EnC_HANDLER_NESTING_LEVEL = 6;
 
+// Results from type comparison queries
+enum class TypeCompareState
+{
+    MustNot = -1, // types are not equal
+    May = 0,      // types may be equal (must test at runtime)
+    Must = 1,     // type are equal
+};
+
 //
 // This interface is logically split into sections for each class of information 
 // (ICorMethodInfo, ICorModuleInfo, etc.). This split used to exist physically as well
@@ -2085,6 +2093,12 @@ public:
             CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
             CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
             ) = 0;
+
+    // Get the unboxed entry point for a method, if possible.
+    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        bool* requiresInstMethodTableArg = NULL /* OUT */
+        ) = 0;
 
     // Given T, return the type of the default EqualityComparer<T>.
     // Returns null if the type can't be determined exactly.
@@ -2488,6 +2502,20 @@ public:
 
     // TRUE if cls1 and cls2 are considered equivalent types.
     virtual BOOL areTypesEquivalent(
+            CORINFO_CLASS_HANDLE        cls1,
+            CORINFO_CLASS_HANDLE        cls2
+            ) = 0;
+
+    // See if a cast from fromClass to toClass will succeed, fail, or needs
+    // to be resolved at runtime.
+    virtual TypeCompareState compareTypesForCast(
+            CORINFO_CLASS_HANDLE        fromClass,
+            CORINFO_CLASS_HANDLE        toClass
+            ) = 0;
+
+    // See if types represented by cls1 and cls2 compare equal, not
+    // equal, or the comparison needs to be resolved at runtime.
+    virtual TypeCompareState compareTypesForEquality(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;

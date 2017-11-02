@@ -45,7 +45,6 @@ public:
         JIT_FLAG_USE_AVX                 = 14,
         JIT_FLAG_USE_AVX2                = 15,
         JIT_FLAG_USE_AVX_512             = 16,
-        JIT_FLAG_FEATURE_SIMD            = 17,
 
     #else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
@@ -53,9 +52,14 @@ public:
         JIT_FLAG_UNUSED7                 = 14,
         JIT_FLAG_UNUSED8                 = 15,
         JIT_FLAG_UNUSED9                 = 16,
-        JIT_FLAG_UNUSED10                = 17,
 
     #endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+
+    #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+        JIT_FLAG_FEATURE_SIMD            = 17,
+    #else
+        JIT_FLAG_UNUSED10                = 17,
+    #endif // !(defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
 
         JIT_FLAG_MAKEFINALCODE           = 18, // Use the final code generator, i.e., not the interpreter.
         JIT_FLAG_READYTORUN              = 19, // Use version-resilient code generation
@@ -203,6 +207,11 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, JIT_FLAG_USE_AVX);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, JIT_FLAG_USE_AVX2);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX_512, JIT_FLAG_USE_AVX_512);
+
+#endif
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD, JIT_FLAG_FEATURE_SIMD);
 
 #endif

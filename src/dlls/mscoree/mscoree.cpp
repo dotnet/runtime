@@ -518,60 +518,6 @@ STDAPI LoadStringRCEx(
 #endif // CROSSGEN_COMPILE
 
 
-
-
-// Note that there are currently two callers of this function: code:CCompRC.LoadLibrary
-// and code:CorLaunchApplication.
-STDAPI GetRequestedRuntimeInfoInternal(LPCWSTR pExe, 
-                               LPCWSTR pwszVersion,
-                               LPCWSTR pConfigurationFile, 
-                               DWORD startupFlags,
-                               DWORD runtimeInfoFlags, 
-                                __out_ecount_opt(dwDirectory) LPWSTR pDirectory,
-                               DWORD dwDirectory, 
-                               __out_opt DWORD *pdwDirectoryLength, 
-                               __out_ecount_opt(cchBuffer) LPWSTR pVersion, 
-                               DWORD cchBuffer, 
-                               __out_opt DWORD* pdwLength)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-        PRECONDITION( pVersion != NULL && cchBuffer > 0);
-    } CONTRACTL_END;
-
-    // for simplicity we will cheat and return the entire system directory in pDirectory
-    pVersion[0] = 0;
-    if (pdwLength != NULL)
-        *pdwLength = 0;
-    HRESULT hr;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return COR_E_STACKOVERFLOW;)
-    EX_TRY
-    {
-
-        PathString pDirectoryPath;
-
-        hr = GetCORSystemDirectoryInternaL(pDirectoryPath);
-        *pdwLength = pDirectoryPath.GetCount() + 1;
-        if (dwDirectory >= *pdwLength)
-        {
-            wcscpy_s(pDirectory, pDirectoryPath.GetCount() + 1, pDirectoryPath);
-        }
-        else
-        {
-            hr = E_FAIL;
-        }
-        
-    }
-    EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
-
-    return hr;
-}
-
 // Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
 // Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
 HRESULT 

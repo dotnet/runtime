@@ -95,8 +95,8 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
                      (*pParam->mc)->methodSize);
 
             // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
-             //We will add this MC to the diffMCList if one is requested
-             //Otherwise this will end up in failingMCList
+            // We will add this MC to the diffMCList if one is requested
+            // Otherwise this will end up in failingMCList
             if ((*pParam->o).diffMCLFilename != nullptr)
                 (*pParam->diffMCL).AddMethodToMCL((*pParam->reader)->GetMethodContextIndex());
             else if ((*pParam->o).mclFilename != nullptr)
@@ -107,8 +107,8 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
     {
         SpmiException e(&param.exceptionPointers);
 
-        LogError("main method %d of size %d failed to load and compile correctly.",
-                 (*reader)->GetMethodContextIndex(), (*mc)->methodSize);
+        LogError("main method %d of size %d failed to load and compile correctly.", (*reader)->GetMethodContextIndex(),
+                 (*mc)->methodSize);
         e.ShowAndDeleteMessage();
         if ((*o).mclFilename != nullptr)
             (*failingMCL).AddMethodToMCL((*reader)->GetMethodContextIndex());
@@ -296,7 +296,8 @@ int __cdecl main(int argc, char* argv[])
 
             if (o.nameOfJit2 != nullptr)
             {
-                jit2 = JitInstance::InitJit(o.nameOfJit2, o.breakOnAssert, &stInitJit, mc, o.forceJit2Options, o.jit2Options);
+                jit2 = JitInstance::InitJit(o.nameOfJit2, o.breakOnAssert, &stInitJit, mc, o.forceJit2Options,
+                                            o.jit2Options);
                 if (jit2 == nullptr)
                 {
                     // InitJit already printed a failure message

@@ -6,6 +6,7 @@
 
 setlocal ENABLEDELAYEDEXPANSION
   set ERRORLEVEL=
+  set DOTNET_MULTILEVEL_LOOKUP=0
   set BENCHVIEW_RUN_TYPE=local
   set CORECLR_REPO=%CD%
   set LV_SANDBOX_DIR=%CORECLR_REPO%\bin\sandbox
@@ -24,10 +25,13 @@ setlocal ENABLEDELAYEDEXPANSION
   set BENCHVIEW_GROUP=CoreCLR
   set HAS_WARMUP_RUN=--drop-first-value
   set BETTER=desc
+  set OPT_LEVEL=full_opt
+  set VALID_OPTLEVELS=min_opt full_opt tiered
 
   call :parse_command_line_arguments %*
   if defined USAGE_DISPLAYED exit /b %ERRORLEVEL%
 
+  call :is_valid_optlevel       || exit /b 1
   call :set_test_architecture   || exit /b 1
   call :set_collection_config   || exit /b 1
   call :verify_benchview_tools  || exit /b 1
@@ -46,12 +50,11 @@ setlocal ENABLEDELAYEDEXPANSION
     )
   )
 
-  if not defined OPT_LEVEL (
-    set OPT_LEVEL=full_opt
-  )
-
   if not defined JIT_NAME (
     set JIT_NAME=ryujit
+  )
+  if not defined PGO_OPTIMIZED (
+    set PGO_OPTIMIZED=pgo
   )
 
   rem optionally upload results to benchview
@@ -88,12 +91,7 @@ setlocal
     )
   )
 
-  rem setup optimisation level
-  if DEFINED OPT_LEVEL (
-    if /I "%OPT_LEVEL%" == "min_opt" (
-        set COMPlus_JITMinOpts=1
-    )
-  )
+  call :setup_optimization_level
 
   rem CORE_ROOT environment variable is used by some benchmarks such as Roslyn / CscBench.
   set CORE_ROOT=%LV_SANDBOX_DIR%
@@ -108,7 +106,7 @@ setlocal
 
   set LV_CMD=
   if defined IS_SCENARIO_TEST (
-    set "LV_CMD=corerun.exe "%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARKS_OUTPUT_DIR%" --perf:runid "%LV_RUNID%" --target-architecture "%TEST_ARCHITECTURE%""
+    set "LV_CMD=%STABILITY_PREFIX% corerun.exe "%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARKS_OUTPUT_DIR%" --perf:runid "%LV_RUNID%" --target-architecture "%TEST_ARCHITECTURE%" --perf:collect %COLLECTION_FLAGS%"
   ) else (
     set "LV_CMD=%STABILITY_PREFIX% corerun.exe PerfHarness.dll "%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARKS_OUTPUT_DIR%" --perf:runid "%LV_RUNID%" --perf:collect %COLLECTION_FLAGS%"
   )
@@ -210,6 +208,11 @@ rem ****************************************************************************
   IF /I [%~1] == [-jitName] (
     set JIT_NAME=%~2
     shift
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-nopgo] (
+    set PGO_OPTIMIZED=nopgo
     shift
     goto :parse_command_line_arguments
   )
@@ -365,7 +368,7 @@ rem ****************************************************************************
   rem   files on the current working directory.
   set LV_PATTERN="%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.xml"
   rem The first pattern is the general case, the second is used by IlLink
-  if defined IS_SCENARIO_TEST set LV_PATTERN="%LV_RUNID%-%BENCHNAME%.xml" "%LV_RUNID%-*-%BENCHNAME%.xml"
+  if defined IS_SCENARIO_TEST set LV_PATTERN="%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.xml" "%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-*-%BENCHNAME%.xml"
 
   for %%f in (%LV_PATTERN%) do (
     if exist "%%~f" (
@@ -383,6 +386,11 @@ rem ****************************************************************************
 rem   Generates BenchView's submission data and upload it
 rem ****************************************************************************
 setlocal
+  if not exist measurement.json (
+    call :print_error measurement.json does not exist. There is no data to be uploaded.
+    exit /b 1
+  )
+
   set LV_SUBMISSION_ARGS=
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --build "%CORECLR_REPO%\build.json"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machine-data "%CORECLR_REPO%\machinedata.json"
@@ -395,6 +403,7 @@ setlocal
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Profile "%ETW_COLLECTION%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OptLevel "%OPT_LEVEL%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config JitName  "%JIT_NAME%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config PGO  "%PGO_OPTIMIZED%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --architecture "%TEST_ARCHITECTURE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
 
@@ -419,7 +428,7 @@ rem ****************************************************************************
 rem   Script's usage.
 rem ****************************************************************************
   set USAGE_DISPLAYED=1
-  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-warmup] [-better] ^<asc ^| desc^> [-group] ^<group^> [-runtype] ^<rolling^|private^> [-scenarioTest] [-collectionFlags] ^<default^+CacheMisses^+InstructionRetired^+BranchMispredictions^+gcapi^> [-outputdir] ^<outputdir^>
+  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-warmup] [-better] ^<asc ^| desc^> [-group] ^<group^> [-runtype] ^<rolling^|private^> [-scenarioTest] [-collectionFlags] ^<default^+CacheMisses^+InstructionRetired^+BranchMispredictions^+gcapi^> [-outputdir] ^<outputdir^> [-optLevel] ^<%VALID_OPTLEVELS: =^|%^>
   echo/
   echo For the path to the tests you can pass a parent directory and the script will grovel for
   echo all tests in subdirectories and run them.
@@ -436,6 +445,7 @@ rem ****************************************************************************
   echo -scenarioTest should be included if you are running a scenario benchmark.
   echo -outputdir Specifies the directory where the generated performance output will be saved.
   echo -collectionFlags This is used to specify what collectoin flags get passed to the performance
+  echo -optLevel Specifies the optimization level to be used by the jit.
   echo harness that is doing the test running.  If this is not specified we only use stopwatch.
   echo Other flags are "default", which is the whatever the test being run specified, "CacheMisses",
   echo "BranchMispredictions", and "InstructionsRetired".
@@ -458,6 +468,47 @@ rem ****************************************************************************
   echo/%USERNAME%@%COMPUTERNAME% "%CD%"
   echo/[%DATE%][%TIME:~0,-3%] %*
   exit /b %ERRORLEVEL%
+
+:is_valid_optlevel
+rem ****************************************************************************
+rem   Validates the optlevel flag set by the user.
+rem ****************************************************************************
+setlocal
+  if not defined OPT_LEVEL (
+    call :print_error OPT_LEVEL is undefined.
+    exit /b 1
+  )
+
+  set "LV_IS_VALID_OPTLEVEL="
+  for %%i in (%VALID_OPTLEVELS%) do (
+    if /i "%%~i" == "%OPT_LEVEL%" (
+      set "LV_IS_VALID_OPTLEVEL=1"
+    )
+  )
+
+  if not defined LV_IS_VALID_OPTLEVEL (
+    call :print_error Unknown OPT_LEVEL=%OPT_LEVEL%
+    exit /b 1
+  )
+endlocal& exit /b 0
+
+:setup_optimization_level
+rem ****************************************************************************
+rem   Setup the appropriate environment variables needed for the selected
+rem   optlevel.
+rem ****************************************************************************
+  set "COMPlus_JITMinOpts="
+  set "COMPLUS_EXPERIMENTAL_TieredCompilation="
+
+  if /I "%OPT_LEVEL%" == "min_opt" (
+    set COMPlus_JITMinOpts=1
+    exit /b 0
+  )
+  if /I "%OPT_LEVEL%" == "tiered" (
+    set COMPLUS_EXPERIMENTAL_TieredCompilation=1
+    exit /b 0
+  )
+exit /b 0
 
 :run_cmd
 rem ****************************************************************************

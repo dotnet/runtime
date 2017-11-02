@@ -99,6 +99,7 @@ public:
         , m_LooksLikeWrapperMethod(false)
         , m_MethodIsMostlyLoadStore(false)
         , m_CallsiteIsInTryRegion(false)
+        , m_CallsiteIsInLoop(false)
     {
         // empty
     }
@@ -167,10 +168,11 @@ protected:
     bool                    m_LooksLikeWrapperMethod : 1;
     bool                    m_MethodIsMostlyLoadStore : 1;
     bool                    m_CallsiteIsInTryRegion : 1;
+    bool                    m_CallsiteIsInLoop : 1;
 };
 
-// EnhancedLegacyPolicy extends the legacy policy by rejecting
-// inlining of methods that never return because they throw.
+// EnhancedLegacyPolicy extends the legacy policy by
+// relaxing various restrictions.
 
 class EnhancedLegacyPolicy : public LegacyPolicy
 {

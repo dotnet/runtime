@@ -10,3 +10,8 @@ JIT/Methodical/xxobj/sizeof/_il_relsizeof32/_il_relsizeof32.sh
 JIT/Methodical/xxobj/sizeof/_il_relsizeof64/_il_relsizeof64.sh
 JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/DevDiv_902271.sh
 JIT/jit64/opt/cse/HugeArray1/HugeArray1.sh
+JIT/jit64/opt/cse/hugeSimpleExpr1/hugeSimpleExpr1.sh
+GC/Features/HeapExpansion/pluggaps/pluggaps.sh
+GC/Regressions/v2.0-beta2/460373/460373/460373.sh
+GC/Regressions/v2.0-beta1/149926/149926/149926.sh
+GC/Regressions/v2.0-rtm/494226/494226/494226.sh

@@ -985,7 +985,7 @@ void MethodContext::recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname
     else
         value.A = (DWORD)-1;
 
-    if (moduleName != nullptr)
+    if ((moduleName != nullptr) && (*moduleName != nullptr))
         value.B = GetMethodName->AddBuffer((unsigned char*)*moduleName, (DWORD)strlen(*moduleName) + 1);
     else
         value.B = (DWORD)-1;
@@ -1029,9 +1029,10 @@ const char* MethodContext::repGetMethodName(CORINFO_METHOD_HANDLE ftn, const cha
     return result;
 }
 
-
-void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, 
-    char* methodName, const char** className, const char **namespaceName)
+void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                                 char*                 methodName,
+                                                 const char**          className,
+                                                 const char**          namespaceName)
 {
     if (GetMethodNameFromMetadata == nullptr)
         GetMethodNameFromMetadata = new LightWeightMap<DLDD, DDD>();
@@ -1046,13 +1047,14 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
     else
         value.A = (DWORD)-1;
 
-    if (className != nullptr)
+    if ((className != nullptr) && (*className != nullptr))
         value.B = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*className, (DWORD)strlen(*className) + 1);
     else
         value.B = (DWORD)-1;
 
-    if (namespaceName != nullptr)
-        value.C = GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
+    if ((namespaceName != nullptr) && (*namespaceName != nullptr))
+        value.C =
+            GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
     else
         value.C = (DWORD)-1;
 
@@ -1062,15 +1064,18 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
 void MethodContext::dmpGetMethodNameFromMetadata(DLDD key, DDD value)
 {
-    unsigned char* methodName = (unsigned char*)GetMethodName->GetBuffer(value.A);
-    unsigned char* className = (unsigned char*)GetMethodName->GetBuffer(value.B);
+    unsigned char* methodName    = (unsigned char*)GetMethodName->GetBuffer(value.A);
+    unsigned char* className     = (unsigned char*)GetMethodName->GetBuffer(value.B);
     unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.C);
-    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u, value meth-'%s', class-'%s', namespace-'%s'", 
-        key.A, key.B, key.C, methodName, className, namespaceName);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u, value meth-'%s', "
+           "class-'%s', namespace-'%s'",
+           key.A, key.B, key.C, methodName, className, namespaceName);
     GetMethodNameFromMetadata->Unlock();
 }
 
-const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** moduleName, const char** namespaceName)
+const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                                        const char**          moduleName,
+                                                        const char**          namespaceName)
 {
     const char* result = nullptr;
     DDD         value;
@@ -1091,16 +1096,16 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
     }
     else
     {
-        value = GetMethodNameFromMetadata->Get(key);
+        value  = GetMethodNameFromMetadata->Get(key);
         result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.A);
 
         if (moduleName != nullptr)
-        {            
+        {
             *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.B);
         }
 
         if (namespaceName != nullptr)
-        {            
+        {
             *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.C);
         }
     }
@@ -1464,7 +1469,8 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->stubLookup.runtimeLookup.testForNull         = value.stubLookup.runtimeLookup.testForNull != 0;
         pResult->stubLookup.runtimeLookup.testForFixup        = value.stubLookup.runtimeLookup.testForFixup != 0;
         pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
-        pResult->stubLookup.runtimeLookup.indirectSecondOffset = value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
+        pResult->stubLookup.runtimeLookup.indirectSecondOffset =
+            value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
         for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
     }
@@ -3012,6 +3018,55 @@ CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HAND
     return (CORINFO_METHOD_HANDLE)result;
 }
 
+void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
+                                       bool *requiresInstMethodTableArg,
+                                       CORINFO_METHOD_HANDLE result)
+{
+    if (GetUnboxedEntry == nullptr)
+    {
+        GetUnboxedEntry = new LightWeightMap<DWORDLONG, DLD>();
+    }
+
+    DWORDLONG key = (DWORDLONG) ftn;
+    DLD value;
+    value.A = (DWORDLONG) result;
+    if (requiresInstMethodTableArg != nullptr)
+    {
+        value.B = (DWORD) *requiresInstMethodTableArg ? 1 : 0;
+    }
+    else
+    {
+        value.B = 0;
+    }
+    GetUnboxedEntry->Add(key, value);
+    DEBUG_REC(dmpGetUnboxedEntry(key, value));
+}
+
+void MethodContext::dmpGetUnboxedEntry(DWORDLONG key, DLD value)
+{
+    printf("GetUnboxedEntry ftn-%016llX, result-%016llX, requires-inst-%u",
+        key, value.A, value.B);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
+                                                        bool* requiresInstMethodTableArg)
+{
+    DWORDLONG key = (DWORDLONG)ftn;
+
+    AssertCodeMsg(GetUnboxedEntry != nullptr, EXCEPTIONCODE_MC, "No GetUnboxedEntry map for %016llX", key);
+    AssertCodeMsg(GetUnboxedEntry->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", key);
+    DLD result = GetUnboxedEntry->Get(key);
+
+    DEBUG_REP(dmpGetUnboxedEntry(key, result));
+
+    if (requiresInstMethodTableArg != nullptr)
+    {
+        *requiresInstMethodTableArg = (result.B == 1);
+    }
+
+    return (CORINFO_METHOD_HANDLE)(result.A);
+}
+
 void MethodContext::recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetDefaultEqualityComparerClass == nullptr)
@@ -4197,7 +4252,7 @@ void MethodContext::recGetFieldName(CORINFO_FIELD_HANDLE ftn, const char** modul
     else
         value.A = (DWORD)-1;
 
-    if (moduleName != nullptr) // protect strlen
+    if ((moduleName != nullptr) && (*moduleName != nullptr)) // protect strlen
         value.B = (DWORD)GetFieldName->AddBuffer((unsigned char*)*moduleName, (DWORD)strlen(*moduleName) + 1);
     else
         value.B = (DWORD)-1;
@@ -5288,6 +5343,76 @@ BOOL MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return value;
 }
 
+void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
+                                           CORINFO_CLASS_HANDLE toClass,
+                                           TypeCompareState     result)
+{
+    if (CompareTypesForCast == nullptr)
+        CompareTypesForCast = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)fromClass;
+    key.B = (DWORDLONG)toClass;
+
+    CompareTypesForCast->Add(key, (DWORD)result);
+}
+void MethodContext::dmpCompareTypesForCast(DLDL key, DWORD value)
+{
+    printf("CompareTypesForCast key fromClas=%016llX, toClass=%016llx, result=%d", key.A, key.B, value);
+}
+TypeCompareState MethodContext::repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)fromClass;
+    key.B = (DWORDLONG)toClass;
+
+    AssertCodeMsg(CompareTypesForCast->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX",
+                  (DWORDLONG)fromClass, (DWORDLONG)toClass);
+    TypeCompareState value = (TypeCompareState)CompareTypesForCast->Get(key);
+    return value;
+}
+
+void MethodContext::recCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1,
+                                               CORINFO_CLASS_HANDLE cls2,
+                                               TypeCompareState     result)
+{
+    if (CompareTypesForEquality == nullptr)
+        CompareTypesForEquality = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)cls1;
+    key.B = (DWORDLONG)cls2;
+
+    CompareTypesForEquality->Add(key, (DWORD)result);
+}
+void MethodContext::dmpCompareTypesForEquality(DLDL key, DWORD value)
+{
+    printf("CompareTypesForEquality key cls1=%016llX, cls2=%016llx, result=%d", key.A, key.B, value);
+}
+TypeCompareState MethodContext::repCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)cls1;
+    key.B = (DWORDLONG)cls2;
+
+    AssertCodeMsg(CompareTypesForEquality->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX",
+                  (DWORDLONG)cls1, (DWORDLONG)cls2);
+    TypeCompareState value = (TypeCompareState)CompareTypesForEquality->Get(key);
+    return value;
+}
+
 void MethodContext::recFindNameOfToken(
     CORINFO_MODULE_HANDLE module, mdToken metaTOK, char* szFQName, size_t FQNameCapacity, size_t result)
 {
@@ -6008,12 +6133,12 @@ bool MethodContext::wasEnviromentChanged()
         for (unsigned int i = 0; i < Environment->GetCount(); i++)
         {
             Agnostic_Environment currEnvValue = Environment->Get(i);
-            LPCSTR currKey = (LPCSTR)Environment->GetBuffer(currEnvValue.name_index);
-            LPCSTR currVal = (LPCSTR)Environment->GetBuffer(currEnvValue.val_index);
+            LPCSTR               currKey      = (LPCSTR)Environment->GetBuffer(currEnvValue.name_index);
+            LPCSTR               currVal      = (LPCSTR)Environment->GetBuffer(currEnvValue.val_index);
 
             Agnostic_Environment prevEnvValue = prevEnviroment->Get(i);
-            LPCSTR prevKey = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.name_index);
-            LPCSTR prevVal = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.val_index);
+            LPCSTR               prevKey      = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.name_index);
+            LPCSTR               prevVal      = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.val_index);
             if (strcmp(currKey, prevKey) != 0 || strcmp(currVal, prevVal) != 0)
             {
                 changed = true;

@@ -92,15 +92,8 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
 {
     TreeNodeInfo* info = &(tree->gtLsraInfo);
 
+    assert((info->dstCount == 1) || (tree->TypeGet() == TYP_VOID));
     info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
-    if (info->isNoRegCompare)
-    {
-        info->dstCount = 0;
-    }
-    else
-    {
-        assert((info->dstCount == 1) || tree->OperIs(GT_CMP, GT_TEST_EQ, GT_TEST_NE));
-    }
 }
 
 void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
@@ -293,7 +286,8 @@ void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
 
     // Set the register requirements for the node.
     regMaskTP argMask = genRegMask(argReg);
-#ifdef ARM_SOFTFP
+
+#ifdef _TARGET_ARM_
     // If type of node is `long` then it is actually `double`.
     // The actual `long` types must have been transformed as a field list with two fields.
     if (node->TypeGet() == TYP_LONG)
@@ -303,7 +297,8 @@ void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
         assert(genRegArgNext(argReg) == REG_NEXT(argReg));
         argMask |= genRegMask(REG_NEXT(argReg));
     }
-#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
+
     node->gtLsraInfo.setDstCandidates(this, argMask);
     node->gtLsraInfo.setSrcCandidates(this, argMask);
 
@@ -400,15 +395,9 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
         // computed into a register.
         if (call->IsFastTailCall())
         {
-#ifdef _TARGET_ARM64_
-            // Fast tail call - make sure that call target is always computed in IP0
-            // so that epilog sequence can generate "br xip0" to achieve fast tail call.
-            ctrlExpr->gtLsraInfo.setSrcCandidates(this, genRegMask(REG_IP0));
-#else  // !_TARGET_ARM64_
-            // Fast tail call - make sure that call target is always computed in r12
-            // so that epilog sequence can generate "br r12" to achieve fast tail call.
-            ctrlExpr->gtLsraInfo.setSrcCandidates(this, RBM_R12);
-#endif // !_TARGET_ARM64_
+            // Fast tail call - make sure that call target is always computed in R12(ARM32)/IP0(ARM64)
+            // so that epilog sequence can generate "br xip0/r12" to achieve fast tail call.
+            ctrlExpr->gtLsraInfo.setSrcCandidates(this, RBM_FASTTAILCALL_TARGET);
         }
     }
 #ifdef _TARGET_ARM_
@@ -474,31 +463,22 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             GenTree* putArgChild = argNode->gtGetOp1();
             if (!varTypeIsStruct(putArgChild) && !putArgChild->OperIs(GT_FIELD_LIST))
             {
-#ifdef ARM_SOFTFP
-                // The `double` types have been transformed to `long` on armel, while the actual longs
+                unsigned expectedSlots = 1;
+#ifdef _TARGET_ARM_
+                // The `double` types could been transformed to `long` on arm, while the actual longs
                 // have been decomposed.
-                const bool isDouble = putArgChild->TypeGet() == TYP_LONG;
-                if (isDouble)
+                if (putArgChild->TypeGet() == TYP_LONG)
                 {
                     argNode->gtLsraInfo.srcCount = 2;
+                    expectedSlots                = 2;
                 }
-#endif // ARM_SOFT_FP
-
-#ifdef DEBUG
-// Validate the slot count for this arg.
-#ifdef _TARGET_ARM_
-#ifndef ARM_SOFTFP
-                const bool isDouble = (curArgTabEntry->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE);
-#endif // !ARM_SOFTFP
-
-                // We must not have a multi-reg struct; double uses 2 slots and isn't a multi-reg struct
-                assert((curArgTabEntry->numSlots == 1) || isDouble);
-
-#else  // !_TARGET_ARM_
-                // We must not have a multi-reg struct
-                assert(curArgTabEntry->numSlots == 1);
+                else if (putArgChild->TypeGet() == TYP_DOUBLE)
+                {
+                    expectedSlots = 2;
+                }
 #endif // !_TARGET_ARM_
-#endif
+                // Validate the slot count for this arg.
+                assert(curArgTabEntry->numSlots == expectedSlots);
             }
             continue;
         }
@@ -541,14 +521,15 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             assert(argNode->gtRegNum == argReg);
             HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
             info->srcCount++;
-#ifdef ARM_SOFTFP
-            // The `double` types have been transformed to `long` on armel,
+
+#ifdef _TARGET_ARM_
+            // The `double` types have been transformed to `long` on arm,
             // while the actual long types have been decomposed.
             if (argNode->TypeGet() == TYP_LONG)
             {
                 info->srcCount++;
             }
-#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
         }
     }
 
@@ -679,7 +660,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
     }
     else
     {
-#if defined(_TARGET_ARM_) && defined(ARM_SOFTFP)
+#if defined(_TARGET_ARM_)
         // The `double` types have been transformed to `long` on armel,
         // while the actual long types have been decomposed.
         const bool isDouble = (putArgChild->TypeGet() == TYP_LONG);
@@ -688,7 +669,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
             argNode->gtLsraInfo.srcCount = 2;
         }
         else
-#endif // defined(_TARGET_ARM_) && defined(ARM_SOFTFP)
+#endif // defined(_TARGET_ARM_)
         {
             argNode->gtLsraInfo.srcCount = 1;
         }

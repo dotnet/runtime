@@ -153,6 +153,11 @@ function_name() to call the system's implementation
 #define _ENABLE_DEBUG_MESSAGES_ 0
 #endif
 
+/* Include type_traits before including the pal.h. On newer glibcxx versions,
+   the type_traits fail to compile if we redefine the wchar_t before including 
+   the header */
+#include <type_traits>
+
 #ifdef PAL_PERF
 #include "pal_perf.h"
 #endif
@@ -533,6 +538,9 @@ function_name() to call the system's implementation
 #endif // _AMD64_
 
 #undef ctime
+
+#undef min
+#undef max
 
 #undef SCHAR_MIN
 #undef SCHAR_MAX

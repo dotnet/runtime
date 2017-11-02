@@ -661,15 +661,57 @@ void __attribute__((noinline)) __jit_debug_register_code() { __asm__(""); };
 /* Make sure to specify the version statically, because the
    debugger may check the version before we can set it.  */
 struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
+static CrstStatic g_jitDescriptorCrst;
 
 // END of GDB JIT interface
 
-/* Static data for .debug_str section */
-const char* DebugStrings[] = {
-  "CoreCLR", "" /* module name */, "" /* module path */
-};
+class DebugStringsCU
+{
+public:
+    DebugStringsCU(const char *module, const char *path)
+        : m_producerName("CoreCLR"),
+          m_moduleName(module),
+          m_moduleDir(path),
+          m_producerOffset(0),
+          m_moduleNameOffset(0),
+          m_moduleDirOffset(0)
+    {
+    }
 
-const int DebugStringCount = sizeof(DebugStrings) / sizeof(DebugStrings[0]);
+    int GetProducerOffset() const   { return m_producerOffset; }
+    int GetModuleNameOffset() const { return m_moduleNameOffset; }
+    int GetModuleDirOffset() const  { return m_moduleDirOffset; }
+
+    void DumpStrings(char *ptr, int &offset)
+    {
+        m_producerOffset = offset;
+        DumpString(m_producerName, ptr, offset);
+
+        m_moduleNameOffset = offset;
+        DumpString(m_moduleName, ptr, offset);
+
+        m_moduleDirOffset = offset;
+        DumpString(m_moduleDir, ptr, offset);
+    }
+
+private:
+    const char* m_producerName;
+    const char* m_moduleName;
+    const char* m_moduleDir;
+
+    int m_producerOffset;
+    int m_moduleNameOffset;
+    int m_moduleDirOffset;
+
+    static void DumpString(const char *str, char *ptr, int &offset)
+    {
+        if (ptr != nullptr)
+        {
+            strcpy(ptr + offset, str);
+        }
+        offset += strlen(str) + 1;
+    }
+};
 
 /* Static data for .debug_abbrev */
 const unsigned char AbbrevTable[] = {
@@ -1785,48 +1827,23 @@ static int getNextPrologueIndex(int from, T &arr, int n)
     return -1;
 }
 
+static NewArrayHolder<WCHAR> g_wszModuleNames;
+static DWORD g_cBytesNeeded;
+
 static inline bool isListedModule(const WCHAR *wszModuleFile)
 {
-    static NewArrayHolder<WCHAR> wszModuleNames = nullptr;
-    static DWORD cBytesNeeded = 0;
-
-    // Get names of interesting modules from environment
-    if (wszModuleNames == nullptr && cBytesNeeded == 0)
-    {
-        DWORD cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
-
-        if (cCharsNeeded == 0)
-        {
-            cBytesNeeded = 0xffffffff;
-            return false;
-        }
-
-        WCHAR *wszModuleNamesBuf = new WCHAR[cCharsNeeded+1];
-
-        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNamesBuf, cCharsNeeded);
-
-        if (cCharsNeeded == 0)
-        {
-            delete[] wszModuleNamesBuf;
-            cBytesNeeded = 0xffffffff;
-            return false;
-        }
-
-        wszModuleNames = wszModuleNamesBuf;
-        cBytesNeeded = cCharsNeeded + 1;
-    }
-    else if (wszModuleNames == nullptr)
+    if (g_wszModuleNames == nullptr)
     {
         return false;
     }
 
-    _ASSERTE(wszModuleNames != nullptr && cBytesNeeded > 0);
+    _ASSERTE(g_cBytesNeeded > 0);
 
     BOOL isUserDebug = FALSE;
 
-    NewArrayHolder<WCHAR> wszModuleName = new WCHAR[cBytesNeeded];
-    LPWSTR pComma = wcsstr(wszModuleNames, W(","));
-    LPWSTR tmp = wszModuleNames;
+    NewArrayHolder<WCHAR> wszModuleName = new WCHAR[g_cBytesNeeded];
+    LPWSTR pComma = wcsstr(g_wszModuleNames, W(","));
+    LPWSTR tmp = g_wszModuleNames;
 
     while (pComma != NULL)
     {
@@ -1854,7 +1871,8 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     return isUserDebug;
 }
 
-static NotifyGdb::AddrSet codeAddrs;
+static NotifyGdb::AddrSet g_codeAddrs;
+static CrstStatic g_codeAddrsCrst;
 
 class Elf_SectionTracker
 {
@@ -2440,6 +2458,38 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
 }
 #endif // FEATURE_GDBJIT_FRAME
 
+void NotifyGdb::Initialize()
+{
+    g_jitDescriptorCrst.Init(CrstNotifyGdb);
+    g_codeAddrsCrst.Init(CrstNotifyGdb);
+
+    // Get names of interesting modules from environment
+    if (g_wszModuleNames == nullptr && g_cBytesNeeded == 0)
+    {
+        DWORD cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
+
+        if (cCharsNeeded == 0)
+        {
+            g_cBytesNeeded = 0xffffffff;
+            return;
+        }
+
+        WCHAR *wszModuleNamesBuf = new WCHAR[cCharsNeeded+1];
+
+        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNamesBuf, cCharsNeeded);
+
+        if (cCharsNeeded == 0)
+        {
+            delete[] wszModuleNamesBuf;
+            g_cBytesNeeded = 0xffffffff;
+            return;
+        }
+
+        g_wszModuleNames = wszModuleNamesBuf;
+        g_cBytesNeeded = cCharsNeeded + 1;
+    }
+}
+
 /* Create ELF/DWARF debug info for jitted method */
 void NotifyGdb::MethodPrepared(MethodDesc* methodDescPtr)
 {
@@ -2547,21 +2597,25 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
     jit_symbols->symfile_addr = symfile_addr;
     jit_symbols->symfile_size = symfile_size;
 
-    /* Link into list */
-    jit_code_entry *head = __jit_debug_descriptor.first_entry;
-    __jit_debug_descriptor.first_entry = jit_symbols;
-    if (head != 0)
     {
-        jit_symbols->next_entry = head;
-        head->prev_entry = jit_symbols;
+        CrstHolder crst(&g_jitDescriptorCrst);
+
+        /* Link into list */
+        jit_code_entry *head = __jit_debug_descriptor.first_entry;
+        __jit_debug_descriptor.first_entry = jit_symbols;
+        if (head != 0)
+        {
+            jit_symbols->next_entry = head;
+            head->prev_entry = jit_symbols;
+        }
+
+        jit_symbols.SuppressRelease();
+
+        /* Notify the debugger */
+        __jit_debug_descriptor.relevant_entry = jit_symbols;
+        __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
+        __jit_debug_register_code();
     }
-
-    jit_symbols.SuppressRelease();
-
-    /* Notify the debugger */
-    __jit_debug_descriptor.relevant_entry = jit_symbols;
-    __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
-    __jit_debug_register_code();
 }
 
 #ifdef FEATURE_GDBJIT_FRAME
@@ -2764,26 +2818,23 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
     if (dirLen != 0)
     {
         dirPath = new char[dirLen];
-        memcpy(dirPath, DebugStrings[1], dirLen - 1);
+        memcpy(dirPath, cuPath, dirLen - 1);
         dirPath[dirLen - 1] = '\0';
     }
-    DebugStrings[1] = fileName;
-    DebugStrings[2] = dirPath ? (const char *)dirPath : "";
+
+    DebugStringsCU debugStringsCU(fileName, dirPath ? (const char *)dirPath : "");
 
     /* Build .debug_str section */
-    if (!BuildDebugStrings(dbgStr, pTypeMap, method))
+    if (!BuildDebugStrings(dbgStr, pTypeMap, method, debugStringsCU))
     {
         return false;
     }
 
     /* Build .debug_info section */
-    if (!BuildDebugInfo(dbgInfo, pTypeMap, method))
+    if (!BuildDebugInfo(dbgInfo, pTypeMap, method, debugStringsCU))
     {
         return false;
     }
-
-    DebugStrings[1] = "";
-    DebugStrings[2] = "";
 
     for (int i = 0; i < method.GetCount(); ++i)
     {
@@ -2876,6 +2927,8 @@ void NotifyGdb::MethodPitched(MethodDesc* methodDescPtr)
 
     if (pCode == NULL)
         return;
+
+    CrstHolder crst(&g_jitDescriptorCrst);
 
     /* Find relevant entry */
     for (jit_code_entry* jit_symbols = __jit_debug_descriptor.first_entry; jit_symbols != 0; jit_symbols = jit_symbols->next_entry)
@@ -3197,7 +3250,7 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
 /* Build program for DWARF source line section */
 bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines)
 {
-    static char cnv_buf[16];
+    char cnv_buf[16];
 
     /* reserve memory assuming worst case: set address, advance line command, set proglogue/epilogue and copy for each line */
     buf.MemSize =
@@ -3266,15 +3319,15 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
 }
 
 /* Build the DWARF .debug_str section */
-bool NotifyGdb::BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method)
+bool NotifyGdb::BuildDebugStrings(MemBuf& buf,
+                                  PTK_TypeInfoMap pTypeMap,
+                                  FunctionMemberPtrArrayHolder &method,
+                                  DebugStringsCU &debugStringsCU)
 {
     int totalLength = 0;
 
     /* calculate total section size */
-    for (int i = 0; i < DebugStringCount; ++i)
-    {
-        totalLength += strlen(DebugStrings[i]) + 1;
-    }
+    debugStringsCU.DumpStrings(nullptr, totalLength);
 
     for (int i = 0; i < method.GetCount(); ++i)
     {
@@ -3297,11 +3350,8 @@ bool NotifyGdb::BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, Functio
     /* copy strings */
     char* bufPtr = buf.MemPtr;
     int offset = 0;
-    for (int i = 0; i < DebugStringCount; ++i)
-    {
-        strcpy(bufPtr + offset, DebugStrings[i]);
-        offset += strlen(DebugStrings[i]) + 1;
-    }
+
+    debugStringsCU.DumpStrings(bufPtr, offset);
 
     for (int i = 0; i < method.GetCount(); ++i)
     {
@@ -3332,7 +3382,10 @@ bool NotifyGdb::BuildDebugAbbrev(MemBuf& buf)
 }
 
 /* Build tge DWARF .debug_info section */
-bool NotifyGdb::BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method)
+bool NotifyGdb::BuildDebugInfo(MemBuf& buf,
+                               PTK_TypeInfoMap pTypeMap,
+                               FunctionMemberPtrArrayHolder &method,
+                               DebugStringsCU &debugStringsCU)
 {
     int totalTypeVarSubSize = 0;
     {
@@ -3366,9 +3419,9 @@ bool NotifyGdb::BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMe
        reinterpret_cast<DebugInfoCU*>(buf.MemPtr + offset);
     memcpy(buf.MemPtr + offset, &debugInfoCU, sizeof(DebugInfoCU));
     offset += sizeof(DebugInfoCU);
-    diCU->m_prod_off = 0;
-    diCU->m_cu_name = strlen(DebugStrings[0]) + 1;
-    diCU->m_cu_dir = diCU->m_cu_name + strlen(DebugStrings[1]) + 1;
+    diCU->m_prod_off = debugStringsCU.GetProducerOffset();
+    diCU->m_cu_name  = debugStringsCU.GetModuleNameOffset();
+    diCU->m_cu_dir   = debugStringsCU.GetModuleDirOffset();
     {
         auto iter = pTypeMap->Begin();
         while (iter != pTypeMap->End())
@@ -3422,8 +3475,10 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods,
 {
     AddrSet tmpCodeAddrs;
 
-    if (!codeAddrs.Contains(nativeCode))
-        codeAddrs.Add(nativeCode);
+    CrstHolder crst(&g_codeAddrsCrst);
+
+    if (!g_codeAddrs.Contains(nativeCode))
+        g_codeAddrs.Add(nativeCode);
 
     CalledMethod* pList = pCalledMethods;
 
@@ -3431,7 +3486,7 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods,
     while (pList != NULL)
     {
         TADDR callAddr = (TADDR)pList->GetCallAddr();
-        if (!tmpCodeAddrs.Contains(callAddr) && !codeAddrs.Contains(callAddr)) {
+        if (!tmpCodeAddrs.Contains(callAddr) && !g_codeAddrs.Contains(callAddr)) {
             tmpCodeAddrs.Add(callAddr);
         }
         pList = pList->GetNext();
@@ -3445,7 +3500,7 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods,
     while (i < symbolCount && pList != NULL)
     {
         TADDR callAddr = (TADDR)pList->GetCallAddr();
-        if (!codeAddrs.Contains(callAddr))
+        if (!g_codeAddrs.Contains(callAddr))
         {
             MethodDesc* pMD = pList->GetMethodDesc();
             LPCUTF8 methodName = pMD->GetName();
@@ -3455,7 +3510,7 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods,
             sprintf_s((char*)symbolNames[i].m_name, symbolNameLength, "__thunk_%s", methodName);
             symbolNames[i].m_value = callAddr;
             ++i;
-            codeAddrs.Add(callAddr);
+            g_codeAddrs.Add(callAddr);
         }
         pList = pList->GetNext();
     }

@@ -137,12 +137,12 @@ unsigned ReinterpretHexAsDecimal(unsigned);
 
 /*****************************************************************************/
 
-#ifdef FEATURE_SIMD
-#ifdef FEATURE_AVX_SUPPORT
+#if defined(FEATURE_SIMD)
+#if defined(_TARGET_XARCH_)
 const unsigned TEMP_MAX_SIZE = YMM_REGSIZE_BYTES;
-#else  // !FEATURE_AVX_SUPPORT
-const unsigned TEMP_MAX_SIZE = XMM_REGSIZE_BYTES;
-#endif // !FEATURE_AVX_SUPPORT
+#elif defined(_TARGET_ARM64_)
+const unsigned TEMP_MAX_SIZE = FP_REGSIZE_BYTES;
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 #else  // !FEATURE_SIMD
 const unsigned TEMP_MAX_SIZE = sizeof(double);
 #endif // !FEATURE_SIMD
@@ -1170,9 +1170,14 @@ struct FuncInfoDsc
     BYTE     unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF * sizeof(UNWIND_CODE))];
     unsigned unwindCodeSlot;
 
-#ifdef UNIX_AMD64_ABI
-    jitstd::vector<CFI_CODE>* cfiCodes;
-#endif // UNIX_AMD64_ABI
+#elif defined(_TARGET_X86_)
+
+#if defined(_TARGET_UNIX_)
+    emitLocation* startLoc;
+    emitLocation* endLoc;
+    emitLocation* coldStartLoc; // locations for the cold section, if there is one.
+    emitLocation* coldEndLoc;
+#endif // _TARGET_UNIX_
 
 #elif defined(_TARGET_ARMARCH_)
 
@@ -1184,7 +1189,18 @@ struct FuncInfoDsc
                          //   Note 2: we currently don't support hot/cold splitting in functions
                          //   with EH, so uwiCold will be NULL for all funclets.
 
+#if defined(_TARGET_UNIX_)
+    emitLocation* startLoc;
+    emitLocation* endLoc;
+    emitLocation* coldStartLoc; // locations for the cold section, if there is one.
+    emitLocation* coldEndLoc;
+#endif // _TARGET_UNIX_
+
 #endif // _TARGET_ARMARCH_
+
+#if defined(_TARGET_UNIX_)
+    jitstd::vector<CFI_CODE>* cfiCodes;
+#endif // _TARGET_UNIX_
 
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
@@ -1992,22 +2008,19 @@ public:
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
 
     GenTreePtr gtNewJmpTableNode();
-    GenTreePtr gtNewIconHandleNode(
-        size_t value, unsigned flags, FieldSeqNode* fields = nullptr, unsigned handle1 = 0, void* handle2 = nullptr);
+
+    GenTreePtr gtNewIndOfIconHandleNode(var_types indType, size_t value, unsigned iconFlags, bool isInvariant);
+
+    GenTreePtr gtNewIconHandleNode(size_t value, unsigned flags, FieldSeqNode* fields = nullptr);
 
     unsigned gtTokenToIconFlags(unsigned token);
 
-    GenTreePtr gtNewIconEmbHndNode(void*    value,
-                                   void*    pValue,
-                                   unsigned flags,
-                                   unsigned handle1           = 0,
-                                   void*    handle2           = nullptr,
-                                   void*    compileTimeHandle = nullptr);
+    GenTreePtr gtNewIconEmbHndNode(void* value, void* pValue, unsigned flags, void* compileTimeHandle);
 
-    GenTreePtr gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd, unsigned hnd1 = 0, void* hnd2 = nullptr);
-    GenTreePtr gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd, unsigned hnd1 = 0, void* hnd2 = nullptr);
-    GenTreePtr gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd, unsigned hnd1 = 0, void* hnd2 = nullptr);
-    GenTreePtr gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd, unsigned hnd1 = 0, void* hnd2 = nullptr);
+    GenTreePtr gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
+    GenTreePtr gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd);
+    GenTreePtr gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd);
+    GenTreePtr gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
 
     GenTreePtr gtNewStringLiteralNode(InfoAccessType iat, void* pValue);
 
@@ -2075,6 +2088,19 @@ public:
     void SetOpLclRelatedToSIMDIntrinsic(GenTreePtr op);
 #endif
 
+#if FEATURE_HW_INTRINSICS
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(
+        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size);
+    GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
+    GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
+                                                   GenTree*       op1,
+                                                   GenTree*       op2,
+                                                   NamedIntrinsic hwIntrinsicID);
+    GenTree* gtNewMustThrowException(unsigned helper, var_types type);
+#endif // FEATURE_HW_INTRINSICS
+
     GenTreePtr gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs = BAD_IL_OFFSET);
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTreePtr gtNewInlineCandidateReturnExpr(GenTreePtr inlineCandidate, var_types type);
@@ -2122,6 +2148,8 @@ public:
     GenTreePtr gtNewCastNodeL(var_types typ, GenTreePtr op1, var_types castType);
 
     GenTreePtr gtNewAllocObjNode(unsigned int helper, CORINFO_CLASS_HANDLE clsHnd, var_types type, GenTreePtr op1);
+
+    GenTree* gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* lookupTree);
 
     //------------------------------------------------------------------------
     // Other GenTree functions
@@ -2230,8 +2258,8 @@ public:
 
     //-------------------------------------------------------------------------
 
-    GenTreePtr gtFoldExpr(GenTreePtr tree);
-    GenTreePtr
+    GenTree* gtFoldExpr(GenTree* tree);
+    GenTree*
 #ifdef __clang__
         // TODO-Amd64-Unix: Remove this when the clang optimizer is fixed and/or the method implementation is
         // refactored in a simpler code. This is a workaround for a bug in the clang-3.5 optimizer. The issue is that in
@@ -2242,9 +2270,12 @@ public:
         // optimizations for now.
         __attribute__((optnone))
 #endif // __clang__
-        gtFoldExprConst(GenTreePtr tree);
-    GenTreePtr gtFoldExprSpecial(GenTreePtr tree);
-    GenTreePtr gtFoldExprCompare(GenTreePtr tree);
+        gtFoldExprConst(GenTree* tree);
+    GenTree* gtFoldExprSpecial(GenTree* tree);
+    GenTree* gtFoldExprCompare(GenTree* tree);
+    GenTree* gtFoldExprCall(GenTreeCall* call);
+    GenTree* gtFoldTypeCompare(GenTree* tree);
+    GenTree* gtFoldTypeEqualityCall(CorInfoIntrinsics methodID, GenTree* op1, GenTree* op2);
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -2252,7 +2283,8 @@ public:
         BR_REMOVE_AND_NARROW, // remove effects, minimize remaining work, return possibly narrowed source tree
         BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE, // remove effects and minimize remaining work, return type handle tree
         BR_REMOVE_BUT_NOT_NARROW,              // remove effects, return original source tree
-        BR_DONT_REMOVE                         // just check if removal is possible
+        BR_DONT_REMOVE,                        // just check if removal is possible
+        BR_MAKE_LOCAL_COPY                     // revise box to copy to temp local and return local's address
     };
 
     GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
@@ -3000,16 +3032,18 @@ protected:
 
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
-    GenTreePtr impIntrinsic(GenTreePtr            newobjThis,
-                            CORINFO_CLASS_HANDLE  clsHnd,
-                            CORINFO_METHOD_HANDLE method,
-                            CORINFO_SIG_INFO*     sig,
-                            int                   memberRef,
-                            bool                  readonlyCall,
-                            bool                  tailCall,
-                            bool                  isJitIntrinsic,
-                            CorInfoIntrinsics*    pIntrinsicID,
-                            bool*                 isSpecialIntrinsic = nullptr);
+    GenTree* impIntrinsic(GenTree*                newobjThis,
+                          CORINFO_CLASS_HANDLE    clsHnd,
+                          CORINFO_METHOD_HANDLE   method,
+                          CORINFO_SIG_INFO*       sig,
+                          unsigned                methodFlags,
+                          int                     memberRef,
+                          bool                    readonlyCall,
+                          bool                    tailCall,
+                          CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
+                          CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
+                          CorInfoIntrinsics*      pIntrinsicID,
+                          bool*                   isSpecialIntrinsic = nullptr);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
@@ -3017,7 +3051,7 @@ protected:
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
 
-#ifdef _TARGET_XARCH_
+#if FEATURE_HW_INTRINSICS
     InstructionSet lookupHWIntrinsicISA(const char* className);
     NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
     InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
@@ -3037,7 +3071,7 @@ protected:
     GenTree* impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
-#endif
+#endif // FEATURE_HW_INTRINSICS
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,
                                        int                  memberRef,
@@ -3056,13 +3090,13 @@ protected:
     GenTreePtr impTreeList; // Trees for the BB being imported
     GenTreePtr impTreeLast; // The last tree for the current BB
 
+public:
     enum
     {
         CHECK_SPILL_ALL  = -1,
         CHECK_SPILL_NONE = -2
     };
 
-public:
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, GenTreePtr firstStmt, GenTreePtr lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -3152,6 +3186,8 @@ public:
                                           GenTreePtr              op2,
                                           CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                           bool                    isCastClass);
+
+    GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
     bool VarTypeIsMultiByteAndCanEnreg(var_types            type,
                                        CORINFO_CLASS_HANDLE typeClass,
@@ -3663,7 +3699,7 @@ public:
 
     // The following are boolean flags that keep track of the state of internal data structures
 
-    bool                 fgStmtListThreaded;
+    bool                 fgStmtListThreaded;       // true if the node list is now threaded
     bool                 fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
     bool                 fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
     bool                 fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
@@ -3752,7 +3788,11 @@ public:
 
     bool fgFoldConditional(BasicBlock* block);
 
+#ifdef LEGACY_BACKEND
     void fgMorphStmts(BasicBlock* block, bool* mult, bool* lnot, bool* loadw);
+#else
+    void fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw);
+#endif
     void fgMorphBlocks();
 
     bool fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(const char* msg));
@@ -3791,7 +3831,9 @@ public:
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     void fgSimpleLowering();
 
+#ifdef LEGACY_BACKEND
     bool fgShouldCreateAssignOp(GenTreePtr tree, bool* bReverse);
+#endif
 
     GenTreePtr fgInitThisClass();
 
@@ -4536,7 +4578,10 @@ public:
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
     void fgDebugCheckBlockLinks();
     void fgDebugCheckLinks(bool morphTrees = false);
+    void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, GenTreePtr stmt);
+    void fgDebugCheckNodesUniqueness();
+
     void fgDebugCheckFlags(GenTreePtr tree);
     void fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsigned chkFlags);
     void fgDebugCheckTryFinallyExits();
@@ -4997,7 +5042,17 @@ private:
     void fgLclFldAssign(unsigned lclNum);
 
     static fgWalkPreFn gtHasLocalsWithAddrOpCB;
-    bool gtCanOptimizeTypeEquality(GenTreePtr tree);
+
+    enum TypeProducerKind
+    {
+        TPK_Unknown = 0, // May not be a RuntimeType
+        TPK_Handle  = 1, // RuntimeType via handle
+        TPK_GetType = 2, // RuntimeType via Object.get_Type()
+        TPK_Null    = 3, // Tree value is null
+        TPK_Other   = 4  // RuntimeType via other means
+    };
+
+    TypeProducerKind gtGetTypeProducerKind(GenTree* tree);
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsActiveCSE_Candidate(GenTreePtr tree);
 
@@ -5784,11 +5839,7 @@ public:
         optMethodFlags &= ~OMF_HAS_FATPOINTER;
     }
 
-    void addFatPointerCandidate(GenTreeCall* call)
-    {
-        setMethodHasFatPointer();
-        call->SetFatPointerCandidate();
-    }
+    void addFatPointerCandidate(GenTreeCall* call);
 
     unsigned optMethodFlags;
 
@@ -5809,7 +5860,7 @@ public:
     GenTreePtr getObjectHandleNodeFromAllocation(GenTreePtr tree);
     GenTreePtr optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTreePtr optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
-    bool optEarlyPropRewriteTree(GenTreePtr tree);
+    GenTreePtr optEarlyPropRewriteTree(GenTreePtr tree);
     bool optDoEarlyPropForBlock(BasicBlock* block);
     bool optDoEarlyPropForFunc();
     void optEarlyProp();
@@ -6812,7 +6863,7 @@ public:
 
     inline bool generateCFIUnwindCodes()
     {
-#ifdef UNIX_AMD64_ABI
+#if defined(_TARGET_UNIX_)
         return IsTargetAbi(CORINFO_CORERT_ABI);
 #else
         return false;
@@ -7261,9 +7312,9 @@ private:
 
 #endif // _TARGET_AMD64_ || (_TARGET_X86_ && FEATURE_EH_FUNCLETS)
 
-#if defined(_TARGET_AMD64_)
-
     UNATIVE_OFFSET unwindGetCurrentOffset(FuncInfoDsc* func);
+
+#if defined(_TARGET_AMD64_)
 
     void unwindBegPrologWindows();
     void unwindPushWindows(regNumber reg);
@@ -7272,13 +7323,7 @@ private:
     void unwindSaveRegWindows(regNumber reg, unsigned offset);
 
 #ifdef UNIX_AMD64_ABI
-    void unwindBegPrologCFI();
-    void unwindPushCFI(regNumber reg);
-    void unwindAllocStackCFI(unsigned size);
-    void unwindSetFrameRegCFI(regNumber reg, unsigned offset);
     void unwindSaveRegCFI(regNumber reg, unsigned offset);
-    int mapRegNumToDwarfReg(regNumber reg);
-    void createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR opcode, USHORT dwarfReg, INT offset = 0);
 #endif // UNIX_AMD64_ABI
 #elif defined(_TARGET_ARM_)
 
@@ -7287,6 +7332,25 @@ private:
     void unwindSplit(FuncInfoDsc* func);
 
 #endif // _TARGET_ARM_
+
+#if defined(_TARGET_UNIX_)
+    int mapRegNumToDwarfReg(regNumber reg);
+    void createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR opcode, USHORT dwarfReg, INT offset = 0);
+    void unwindPushCFI(regNumber reg);
+    void unwindBegPrologCFI();
+    void unwindPushMaskCFI(regMaskTP regMask, bool isFloat);
+    void unwindAllocStackCFI(unsigned size);
+    void unwindSetFrameRegCFI(regNumber reg, unsigned offset);
+    void unwindEmitFuncCFI(FuncInfoDsc* func, void* pHotCode, void* pColdCode);
+#ifdef DEBUG
+    void DumpCfiInfo(bool                  isHotCode,
+                     UNATIVE_OFFSET        startOffset,
+                     UNATIVE_OFFSET        endOffset,
+                     DWORD                 cfiCodeBytes,
+                     const CFI_CODE* const pCfiCode);
+#endif
+
+#endif // _TARGET_UNIX_
 
 #if !defined(__GNUC__)
 #pragma endregion // Note: region is NOT under !defined(__GNUC__)
@@ -7305,39 +7369,39 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
-    // Get highest available instruction set for floating point codegen
-    InstructionSet getFloatingPointInstructionSet()
+    // Get highest available level for floating point codegen
+    SIMDLevel getFloatingPointCodegenLevel()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
         if (canUseAVX())
         {
-            return InstructionSet_AVX;
+            return SIMD_AVX2_Supported;
         }
 
-        if (CanUseSSE3_4())
+        if (CanUseSSE4())
         {
-            return InstructionSet_SSE3_4;
+            return SIMD_SSE4_Supported;
         }
 
         // min bar is SSE2
         assert(canUseSSE2());
-        return InstructionSet_SSE2;
+        return SIMD_SSE2_Supported;
 #else
         assert(!"getFPInstructionSet() is not implemented for target arch");
         unreached();
-        return InstructionSet_NONE;
+        return SIMD_Not_Supported;
 #endif
     }
 
-    // Get highest available instruction set for SIMD codegen
-    InstructionSet getSIMDInstructionSet()
+    // Get highest available level for SIMD codegen
+    SIMDLevel getSIMDSupportLevel()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        return getFloatingPointInstructionSet();
+        return getFloatingPointCodegenLevel();
 #else
         assert(!"Available instruction set(s) for SIMD codegen is not defined for target arch");
         unreached();
-        return InstructionSet_NONE;
+        return SIMD_Not_Supported;
 #endif
     }
 
@@ -7626,6 +7690,8 @@ private:
             assert(canUseSSE2());
             return TYP_SIMD16;
         }
+#elif defined(_TARGET_ARM64_)
+        return TYP_SIMD16;
 #else
         assert(!"getSIMDVectorType() unimplemented on target arch");
         unreached();
@@ -7662,6 +7728,8 @@ private:
             assert(canUseSSE2());
             return XMM_REGSIZE_BYTES;
         }
+#elif defined(_TARGET_ARM64_)
+        return FP_REGSIZE_BYTES;
 #else
         assert(!"getSIMDVectorRegisterByteLength() unimplemented on target arch");
         unreached();
@@ -7677,13 +7745,6 @@ private:
     {
         return emitTypeSize(TYP_SIMD8);
     }
-
-#ifdef FEATURE_AVX_SUPPORT
-    // (maxPossibleSIMDStructBytes is for use in a context that requires a compile-time constant.)
-    static const unsigned maxPossibleSIMDStructBytes = 32;
-#else  // !FEATURE_AVX_SUPPORT
-    static const unsigned maxPossibleSIMDStructBytes = 16;
-#endif // !FEATURE_AVX_SUPPORT
 
     // Returns the codegen type for a given SIMD size.
     var_types getSIMDTypeForSize(unsigned size)
@@ -7701,12 +7762,10 @@ private:
         {
             simdType = TYP_SIMD16;
         }
-#ifdef FEATURE_AVX_SUPPORT
         else if (size == 32)
         {
             simdType = TYP_SIMD32;
         }
-#endif // FEATURE_AVX_SUPPORT
         else
         {
             noway_assert(!"Unexpected size for SIMD type");
@@ -7806,10 +7865,10 @@ private:
     }
 
     // Whether SSE3, SSE3, SSE4.1 and SSE4.2 is available
-    bool CanUseSSE3_4() const
+    bool CanUseSSE4() const
     {
 #ifdef _TARGET_XARCH_
-        return opts.compCanUseSSE3_4;
+        return opts.compCanUseSSE4;
 #else
         return false;
 #endif
@@ -7817,7 +7876,7 @@ private:
 
     bool canUseAVX() const
     {
-#ifdef FEATURE_AVX_SUPPORT
+#ifdef _TARGET_XARCH_
         return opts.compCanUseAVX;
 #else
         return false;
@@ -7827,7 +7886,7 @@ private:
     bool compSupports(InstructionSet isa)
     {
 #ifdef _TARGET_XARCH_
-        return (opts.compSupportsISA & (1 << isa)) != 0;
+        return (opts.compSupportsISA & (1ULL << isa)) != 0;
 #else
         return false;
 #endif
@@ -7858,6 +7917,7 @@ public:
     bool compFloatingPointUsed;    // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;         // Does the method do a tailcall
     bool compLocallocUsed;         // Does the method use localloc.
+    bool compLocallocOptimized;    // Does the method have an optimized localloc
     bool compQmarkUsed;            // Does the method use GT_QMARK/GT_COLON
     bool compQmarkRationalized;    // Is it allowed to use a GT_QMARK/GT_COLON node.
     bool compUnsafeCastUsed;       // Does the method use LDIND/STIND to cast between scalar/refernce types
@@ -7938,19 +7998,16 @@ public:
         bool compUseFCOMI;
         bool compUseCMOV;
 #ifdef _TARGET_XARCH_
-        bool compCanUseSSE2;   // Allow CodeGen to use "movq XMM" instructions
-        bool compCanUseSSE3_4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
-
-#ifdef FEATURE_AVX_SUPPORT
-        bool compCanUseAVX; // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
-#endif                      // FEATURE_AVX_SUPPORT
-#endif                      // _TARGET_XARCH_
+        bool compCanUseSSE2; // Allow CodeGen to use "movq XMM" instructions
+        bool compCanUseSSE4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
+        bool compCanUseAVX;  // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
+#endif                       // _TARGET_XARCH_
 
 #ifdef _TARGET_XARCH_
         uint64_t compSupportsISA;
         void setSupportedISA(InstructionSet isa)
         {
-            compSupportsISA |= 1 << isa;
+            compSupportsISA |= 1ULL << isa;
         }
 #endif
 
@@ -8088,7 +8145,7 @@ public:
         // which gets reported as a GC root to stackwalker.
         // (See also ICodeManager::GetAddrOfSecurityObject.)
 
-        bool compReloc;
+        bool compReloc; // Generate relocs for pointers in code, true for all ngen/prejit codegen
 
 #ifdef DEBUG
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
@@ -9239,6 +9296,8 @@ public:
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
 
+#define DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE 32 // fixed locallocs of this size or smaller will convert to local buffers
+
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
     JitTimer*                  pCompJitTimer;         // Timer data structure (by phases) for current compilation.
@@ -9525,6 +9584,8 @@ public:
     void fgMorphMultiregStructArgs(GenTreeCall* call);
     GenTreePtr fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr fgEntryPtr);
 
+    bool killGCRefs(GenTreePtr tree);
+
 }; // end of class Compiler
 
 // Inline methods of CompAllocator.
@@ -9772,6 +9833,7 @@ public:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_PHI:
+            case GT_RUNTIMELOOKUP:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)
