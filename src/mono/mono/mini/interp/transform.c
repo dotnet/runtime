@@ -4245,7 +4245,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	register const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
 	MonoMethod *m;
-	MonoClass *class;
+	MonoClass *klass;
 	unsigned char *is_bb_start;
 	int in;
 	MonoVTable *method_class_vt;
@@ -4379,13 +4379,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			break;
 		case MonoInlineType:
 			if (method->wrapper_type == MONO_WRAPPER_NONE) {
-				class = mini_get_class (method, read32 (ip + 1), generic_context);
-				mono_class_init (class);
+				klass = mini_get_class (method, read32 (ip + 1), generic_context);
+				mono_class_init (klass);
 				/* quick fix to not do this for the fake ptr classes - probably should not be getting the vtable at all here */
 #if 0
-				g_error ("FIXME: interface method lookup: %s (in method %s)", class->name, method->name);
-				if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE) && class->interface_offsets != NULL)
-					mono_class_vtable (domain, class);
+				g_error ("FIXME: interface method lookup: %s (in method %s)", klass->name, method->name);
+				if (!(klass->flags & TYPE_ATTRIBUTE_INTERFACE) && klass->interface_offsets != NULL)
+					mono_class_vtable (domain, klass);
 #endif
 			}
 			ip += 5;
