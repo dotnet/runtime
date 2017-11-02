@@ -505,9 +505,9 @@
       "allowOverride": true
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalBuildArguments)"
+      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalMSBuildArguments)"
     },
-    "PB_AdditionalBuildArguments": {
+    "PB_AdditionalMSBuildArguments": {
       "value": ""
     },
     "OfficialBuildId": {
