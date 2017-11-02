@@ -23,14 +23,6 @@ namespace Internal.Cryptography
             }
         }
 
-        public bool IsKeyGenerated
-        {
-            get
-            {
-                return (_lazyKey != null);
-            }
-        }
-
         public bool IsKeyGeneratedNamedCurve()
         {
             return (_lazyKey != null && _lazyKey.IsECNamedCurve());
