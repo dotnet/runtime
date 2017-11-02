@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private EnumerableToIterableAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // This method is invoked when First is called on a managed implementation of IIterable<T>.
@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private EnumerableToBindableIterableAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         internal sealed class NonGenericToGenericEnumerator : IEnumerator<object>

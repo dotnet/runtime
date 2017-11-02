@@ -110,9 +110,8 @@ MethodContextReader::MethodContextReader(
         this->tocFile.LoadToc(tocFileName.c_str());
 
     // we'll get here even if we don't have a valid index file
-    this->fileHandle =
-        OpenFile(mchFile.c_str(),
-                 (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL : FILE_FLAG_SEQUENTIAL_SCAN);
+    this->fileHandle = OpenFile(mchFile.c_str(), (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL
+                                                                                      : FILE_FLAG_SEQUENTIAL_SCAN);
     if (this->fileHandle != INVALID_HANDLE_VALUE)
     {
         GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER) & this->fileSize);
@@ -308,7 +307,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
     if (this->hasTOC())
     {
         // We have a TOC so lets go through the TOCElements
-         //one-by-one till we find a matching hash
+        // one-by-one till we find a matching hash
         for (; curTOCIndex < (int)this->tocFile.GetTocCount(); curTOCIndex++)
         {
             if (_strnicmp(this->Hash, this->tocFile.GetElementPtr(curTOCIndex)->Hash, MD5_HASH_BUFFER_SIZE) == 0)
@@ -324,7 +323,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
     else
     {
         // Keep reading all MCs until we hit a match
-         //or we reach the end or hit an error
+        // or we reach the end or hit an error
         while (true)
         {
             // Read a method context
@@ -336,7 +335,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
             char mcHash[MD5_HASH_BUFFER_SIZE];
 
             // Create a temporary copy of mcb.buff plus ending 2-byte canary
-             //this will get freed up by MethodContext constructor
+            // this will get freed up by MethodContext constructor
             unsigned char* buff = new unsigned char[mcb.size + 2];
             memcpy(buff, mcb.buff, mcb.size + 2);
 
@@ -466,7 +465,7 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
         MethodContextBuffer mcb = this->ReadMethodContext(false);
 
         // The curMCIndex value updated by ReadMethodContext() is incorrect
-         //since we are repositioning the file pointer we need to update it
+        // since we are repositioning the file pointer we need to update it
         curMCIndex = methodNumber;
 
         return mcb;

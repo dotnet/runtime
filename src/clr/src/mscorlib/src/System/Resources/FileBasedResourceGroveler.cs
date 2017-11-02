@@ -89,26 +89,12 @@ namespace System.Resources
             // qualified name, append path to that.
             if (_mediator.ModuleDir != null)
             {
-#if _DEBUG
-                if (ResourceManager.DEBUG >= 3)
-                    BCLDebug.Log("FindResourceFile: checking module dir: \"" + _mediator.ModuleDir + '\"');
-#endif
-
                 String path = Path.Combine(_mediator.ModuleDir, fileName);
                 if (File.Exists(path))
                 {
-#if _DEBUG
-                    if (ResourceManager.DEBUG >= 3)
-                        BCLDebug.Log("Found resource file in module dir!  " + path);
-#endif
                     return path;
                 }
             }
-
-#if _DEBUG
-            if (ResourceManager.DEBUG >= 3)
-                BCLDebug.Log("Couldn't find resource file in module dir, checking .\\" + fileName);
-#endif
 
             // look in .
             if (File.Exists(fileName))

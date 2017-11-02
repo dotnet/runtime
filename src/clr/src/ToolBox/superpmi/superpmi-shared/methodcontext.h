@@ -617,9 +617,14 @@ public:
     void dmpGetMethodName(DLD key, DD value);
     const char* repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char** moduleName);
 
-    void recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName, const char** namespaceName);
+    void recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                      char*                 methodname,
+                                      const char**          moduleName,
+                                      const char**          namespaceName);
     void dmpGetMethodNameFromMetadata(DLDD key, DDD value);
-    const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName);
+    const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
+                                             const char**          className,
+                                             const char**          namespaceName);
 
     void recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result);
     void dmpGetJitFlags(DWORD key, DD value);
@@ -872,10 +877,16 @@ public:
                                                   CORINFO_CLASS_HANDLE   implClass,
                                                   CORINFO_CONTEXT_HANDLE ownerType);
 
+    void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
+                            bool* requiresInstMethodTableArg,
+                            CORINFO_METHOD_HANDLE result);
+    void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
+    CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
+                                             bool* requiresInstMethodTableArg);
+
     void recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls);
-
 
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result);
     void dmpGetTokenTypeAsHandle(const GetTokenTypeAsHandleValue& key, DWORDLONG value);
@@ -1176,6 +1187,14 @@ public:
     void dmpAreTypesEquivalent(DLDL key, DWORD value);
     BOOL repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
+    void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
+    void dmpCompareTypesForCast(DLDL key, DWORD value);
+    TypeCompareState repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
+
+    void recCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, TypeCompareState result);
+    void dmpCompareTypesForEquality(DLDL key, DWORD value);
+    TypeCompareState repCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+
     void recFindNameOfToken(
         CORINFO_MODULE_HANDLE module, mdToken metaTOK, char* szFQName, size_t FQNameCapacity, size_t result);
     void dmpFindNameOfToken(DLD key, DLD value);
@@ -1243,7 +1262,7 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const wchar_t* repGetStringConfigValue(const wchar_t* name);
 
-    bool wasEnviromentChanged();
+    bool                                              wasEnviromentChanged();
     static DenseLightWeightMap<Agnostic_Environment>* prevEnviroment;
 
     CompileResult* cr;
@@ -1257,7 +1276,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 162
+// Highest packet number: 165
 // *************************************************************************************
 enum mcPackets
 {
@@ -1279,6 +1298,8 @@ enum mcPackets
     Packet_CheckMethodModifier                           = 142, // retired as 13 on 2013/07/04
     Retired3                                             = 14,
     Retired5                                             = 141, // retired as 14 on 2013/07/03
+    Packet_CompareTypesForCast                           = 163, // Added 10/4/17
+    Packet_CompareTypesForEquality                       = 164, // Added 10/4/17
     Packet_CompileMethod                                 = 143, // retired as 141 on 2013/07/09
     Packet_ConstructStringLiteral                        = 15,
     Packet_EmbedClassHandle                              = 16,
@@ -1353,7 +1374,7 @@ enum mcPackets
     Packet_GetMethodHash                                 = 73,
     Packet_GetMethodInfo                                 = 74,
     Packet_GetMethodName                                 = 75,
-    Packet_GetMethodNameFromMetadata                     = 161,  // Added 9/6/17
+    Packet_GetMethodNameFromMetadata                     = 161, // Added 9/6/17
     Packet_GetMethodSig                                  = 76,
     Packet_GetMethodSync                                 = 77,
     Packet_GetMethodVTableOffset                         = 78,
@@ -1370,6 +1391,7 @@ enum mcPackets
     Packet_GetTokenTypeAsHandle                          = 89,
     Packet_GetTypeForBox                                 = 90,
     Packet_GetTypeForPrimitiveValueClass                 = 91,
+    Packet_GetUnboxedEntry                               = 165, // Added 10/26/17
     Packet_GetUnBoxHelper                                = 92,
     Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014
     Packet_GetReadyToRunDelegateCtorHelper               = 157, // Added 3/30/2016

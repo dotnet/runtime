@@ -2670,6 +2670,10 @@ void Debugger::JITComplete(MethodDesc* fd, TADDR newAddress)
     }
     CONTRACTL_END;
 
+    LOG((LF_CORDB, LL_INFO100000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x.\n",
+        fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
+        newAddress));
+
 #ifdef _TARGET_ARM_
     newAddress = newAddress|THUMB_CODE;
 #endif
@@ -2690,7 +2694,24 @@ void Debugger::JITComplete(MethodDesc* fd, TADDR newAddress)
         {
             goto Exit;
         }
-        DebuggerJitInfo * ji = dmi->CreateInitAndAddJitInfo(fd, newAddress);
+        BOOL jiWasCreated = FALSE;
+        DebuggerJitInfo * ji = dmi->CreateInitAndAddJitInfo(fd, newAddress, &jiWasCreated);
+        if (!jiWasCreated)
+        {
+            // we've already been notified about this code, no work remains.
+            // The JIT is occasionally asked to generate code for the same
+            // method on two threads. When this occurs both threads will
+            // return the same code pointer and this callback is invoked
+            // multiple times.
+            LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Already created\n",
+                fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
+                newAddress));
+            goto Exit;
+        }
+
+        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%x (%s::%s), address:0x%x. Created ji:0x%x\n",
+            fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
+            newAddress, ji));
 
         // Bind any IL patches to the newly jitted native code.
         HRESULT hr;
@@ -3008,7 +3029,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
  * structs will be returned, and some of the ilOffsets in this array
  * may be the values specified in CorDebugIlToNativeMappingTypes.
  ******************************************************************************/
-HRESULT Debugger::GetILToNativeMapping(MethodDesc *pMD, ULONG32 cMap,
+HRESULT Debugger::GetILToNativeMapping(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap,
                                        ULONG32 *pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[])
 {
     CONTRACTL
@@ -3037,7 +3058,7 @@ HRESULT Debugger::GetILToNativeMapping(MethodDesc *pMD, ULONG32 cMap,
     _ASSERTE(CORProfilerPresent());
 #endif // PROFILING_SUPPORTED
 
-    DebuggerJitInfo *pDJI = GetLatestJitInfoFromMethodDesc(pMD);
+    DebuggerJitInfo *pDJI = GetJitInfoFromAddr(pNativeCodeStartAddress);
 
     // Dunno what went wrong
     if (pDJI == NULL)
@@ -4951,6 +4972,15 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
                 LOG((LF_CORDB, LL_INFO10000, "Patch not in this method\n"));
                 continue;
             }
+
+            // If the patch only applies in certain generic instances, don't bind it
+            // elsewhere.
+            if(dcp->pMethodDescFilter != NULL && dcp->pMethodDescFilter != djiNew->m_fd)
+            {
+                LOG((LF_CORDB, LL_INFO10000, "Patch not in this generic instance\n"));
+                continue;
+            }
+
 
             // Do not copy over slave breakpoint patches.  Instead place a new slave
             // based off the master.
@@ -9685,7 +9715,7 @@ void Debugger::LoadModuleFinished(Module * pRuntimeModule, AppDomain * pAppDomai
             // Found a relevant IL master patch. Now bind all corresponding slave patches
             // that belong to this Module
             DebuggerMethodInfo::DJIIterator it;
-            dmi->IterateAllDJIs(pAppDomain, pRuntimeModule, &it);
+            dmi->IterateAllDJIs(pAppDomain, pRuntimeModule, pMasterPatchCur->pMethodDescFilter, &it);
             for (; !it.IsAtEnd(); it.Next())
             {
                 DebuggerJitInfo *dji = it.Current();
@@ -12565,7 +12595,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
         CONTEXT ctx;
         ZeroMemory(&rd, sizeof(rd));
         ZeroMemory(&ctx, sizeof(ctx));
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
         rd.ControlPC = ctx.Eip;
         rd.PCTAddr = (TADDR)&(ctx.Eip);
 #else

@@ -1460,9 +1460,13 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
         // In the future this may be changing to XMM_REGSIZE_BYTES.
         // Note: MaxOffset is used below to declare a local array, and therefore must be a compile-time constant.
         CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD)
+#if defined(_TARGET_XARCH_)
         // This will allow promotion of 2 Vector<T> fields on AVX2, or 4 Vector<T> fields on SSE2.
         const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * XMM_REGSIZE_BYTES;
+#elif defined(_TARGET_ARM64_)
+        const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 #else  // !FEATURE_SIMD
         const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
 #endif // !FEATURE_SIMD
@@ -3610,7 +3614,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
 
     /* Is this an assigment? */
 
-    if (tree->OperKind() & GTK_ASGOP)
+    if (tree->OperIsAssignment())
     {
         GenTreePtr op1 = tree->gtOp.gtOp1;
         GenTreePtr op2 = tree->gtOp.gtOp2;
@@ -3622,6 +3626,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
             unsigned   lclNum;
             LclVarDsc* varDsc = nullptr;
 
+#ifdef LEGACY_BACKEND
             /* GT_CHS is special it doesn't have a valid op2 */
             if (tree->gtOper == GT_CHS)
             {
@@ -3633,6 +3638,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
                 }
             }
             else
+#endif
             {
                 if (op2->gtOper == GT_LCL_VAR)
                 {
@@ -6148,8 +6154,8 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 #endif
                             ))
     {
-        // Note that stack offsets are negative
-        assert(stkOffs < 0);
+        // Note that stack offsets are negative or equal to zero
+        assert(stkOffs <= 0);
 
         // alignment padding
         unsigned pad = 0;
@@ -7325,11 +7331,10 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTreePtr* pTree, fgWalkData
             /* Change addr(lclVar) to addr(lclVar)+padding */
 
             noway_assert(oper == GT_ADDR);
-            GenTreePtr newAddr = new (pComp, GT_NONE) GenTreeOp(*tree->AsOp());
+            GenTreePtr paddingTree = pComp->gtNewIconNode(padding);
+            GenTreePtr newAddr     = pComp->gtNewOperNode(GT_ADD, tree->gtType, tree, paddingTree);
 
-            tree->ChangeOper(GT_ADD);
-            tree->gtOp.gtOp1 = newAddr;
-            tree->gtOp.gtOp2 = pComp->gtNewIconNode(padding);
+            *pTree = newAddr;
 
             lcl->gtType = TYP_BLK;
         }

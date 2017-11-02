@@ -3107,6 +3107,16 @@ BOOL ZapInfo::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE
     return m_pEEJitInfo->areTypesEquivalent(cls1, cls2);
 }
 
+TypeCompareState ZapInfo::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+{
+    return m_pEEJitInfo->compareTypesForCast(fromClass, toClass);
+}
+
+TypeCompareState ZapInfo::compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    return m_pEEJitInfo->compareTypesForEquality(cls1, cls2);
+}
+
 CORINFO_CLASS_HANDLE ZapInfo::mergeClasses(
                                 CORINFO_CLASS_HANDLE cls1,
                                 CORINFO_CLASS_HANDLE cls2)
@@ -3698,10 +3708,16 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
 CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,
         CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType
-        )
+        CORINFO_CONTEXT_HANDLE ownerType)
 {
     return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+}
+
+CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(
+    CORINFO_METHOD_HANDLE ftn,
+    bool* requiresInstMethodTableArg)
+{
+    return m_pEEJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
 CORINFO_CLASS_HANDLE ZapInfo::getDefaultEqualityComparerClass(

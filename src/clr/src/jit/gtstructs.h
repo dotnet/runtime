@@ -104,14 +104,14 @@ GTSTRUCT_1(PhysReg     , GT_PHYSREG)
 #ifdef FEATURE_SIMD
 GTSTRUCT_1(SIMD        , GT_SIMD) 
 #endif // FEATURE_SIMD
+#if FEATURE_HW_INTRINSICS
+GTSTRUCT_1(HWIntrinsic , GT_HWIntrinsic) 
+#endif // FEATURE_HW_INTRINSICS
 GTSTRUCT_1(AllocObj    , GT_ALLOCOBJ)
+GTSTRUCT_1(RuntimeLookup, GT_RUNTIMELOOKUP)
 GTSTRUCT_2(CC          , GT_JCC, GT_SETCC)
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-#ifdef ARM_SOFTFP
 GTSTRUCT_3(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG, GT_BITCAST)
-#else
-GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
-#endif
 #endif
 /*****************************************************************************/
 #undef  GTSTRUCT_0

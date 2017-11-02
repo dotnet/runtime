@@ -6,11 +6,8 @@ set( CORGUIDS_IDL_SOURCES
   xclrdata.idl
   corprof.idl
   corpub.idl
-  ivalidator.idl
-  ivehandler.idl
   gchost.idl
   mscorsvc.idl
-  tlbimpexp.idl
   clrprivappxhosting.idl
   clrprivbinding.idl
   clrprivhosting.idl

@@ -219,13 +219,13 @@ namespace System
             }
         }
 
-        private unsafe static int CompareOrdinalHelper(String strA, String strB)
+        private static unsafe int CompareOrdinalHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
 
             // NOTE: This may be subject to change if eliminating the check
-            // in the callers makes them small enough to be inlined by the JIT
+            // in the callers makes them small enough to be inlined
             Debug.Assert(strA._firstChar == strB._firstChar,
                 "For performance reasons, callers of this method should " +
                 "check/short-circuit beforehand if the first char is the same.");
@@ -637,6 +637,24 @@ namespace System
             return CompareOrdinalHelper(strA, strB);
         }
 
+        // TODO https://github.com/dotnet/corefx/issues/21395: Expose this publicly?
+        internal static int CompareOrdinal(ReadOnlySpan<char> strA, ReadOnlySpan<char> strB)
+        {
+            // TODO: This needs to be optimized / unrolled.  It can't just use CompareOrdinalHelper(str, str)
+            // (changed to accept spans) because its implementation is based on a string layout,
+            // in a way that doesn't work when there isn't guaranteed to be a null terminator.
+
+            int minLength = Math.Min(strA.Length, strB.Length);
+            for (int i = 0; i < minLength; i++)
+            {
+                if (strA[i] != strB[i])
+                {
+                    return strA[i] - strB[i];
+                }
+            }
+
+            return strA.Length - strB.Length;
+        }
 
         // Compares strA and strB using an ordinal (code-point) comparison.
         //

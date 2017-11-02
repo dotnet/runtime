@@ -97,7 +97,6 @@ namespace System.Reflection.Emit
         // Helper to ensure the type name is unique underneath assemblyBuilder
         internal void CheckTypeNameConflict(String strTypeName, TypeBuilder enclosingType)
         {
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilderData.CheckTypeNameConflict( " + strTypeName + " )");
             for (int i = 0; i < m_moduleBuilderList.Count; i++)
             {
                 ModuleBuilder curModule = m_moduleBuilderList[i];

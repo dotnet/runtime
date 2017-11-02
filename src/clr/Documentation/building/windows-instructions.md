@@ -56,7 +56,7 @@ Visual Studio Express is not supported.
 
 ## CMake
 
-The CoreCLR repo build has been validated using CMake 3.7.2 
+The CoreCLR repo build has been validated using CMake 3.9.3.
 
 - Install [CMake](http://www.cmake.org/download) for Windows.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.  

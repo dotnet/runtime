@@ -84,7 +84,7 @@ namespace System.Reflection
             }
             else if (pattern.IsGenericMethodParameter)
             {
-                if (!(actual.IsGenericParameter && actual.DeclaringMethod != null))
+                if (!actual.IsGenericMethodParameter)
                     return false;
                 if (pattern.GenericParameterPosition != actual.GenericParameterPosition)
                     return false;

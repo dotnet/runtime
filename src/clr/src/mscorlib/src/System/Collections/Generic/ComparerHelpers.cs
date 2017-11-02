@@ -187,17 +187,13 @@ namespace System.Collections.Generic
             TypeCode underlyingTypeCode = Type.GetTypeCode(Enum.GetUnderlyingType(enumType));
 
             // Depending on the enum type, we need to special case the comparers so that we avoid boxing.
-            // Note: We have different comparers for short and sbyte, since for those types GetHashCode does not simply return the value.
-            // We need to preserve what they would return.
             switch (underlyingTypeCode)
             {
-                case TypeCode.Int16:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ShortEnumEqualityComparer<short>), enumType);
-                case TypeCode.SByte:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(SByteEnumEqualityComparer<sbyte>), enumType);
                 case TypeCode.Int32:
                 case TypeCode.UInt32:
+                case TypeCode.SByte:
                 case TypeCode.Byte:
+                case TypeCode.Int16:
                 case TypeCode.UInt16:
                     return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<int>), enumType);
                 case TypeCode.Int64:

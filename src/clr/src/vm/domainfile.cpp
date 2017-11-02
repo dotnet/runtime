@@ -1786,10 +1786,8 @@ void DomainAssembly::FindNativeImage()
             ExternalLog(LL_ERROR, "Rejecting native image because mscorlib does not have native image");
             GetFile()->ClearNativeImage();
 
-#ifdef FEATURE_WINDOWSPHONE
-            // On Phone, always through exceptions when we throw the NI out
+            // Always throw exceptions when we throw the NI out
             ThrowHR(CLR_E_BIND_SYS_ASM_NI_MISSING);
-#endif
         }
         else
         if (!CheckZapSecurity(pNativeImage))
@@ -1802,11 +1800,8 @@ void DomainAssembly::FindNativeImage()
 
             GetFile()->ClearNativeImage();
 
-#ifdef FEATURE_WINDOWSPHONE
-            // On Phone, always through exceptions when we throw the NI out
+            // Always throw exceptions when we throw the NI out
             ThrowHR(CLR_E_BIND_NI_SECURITY_FAILURE);
-#endif
-
         }
         else if (!CheckZapDependencyIdentities(pNativeImage))
         {
@@ -1818,11 +1813,8 @@ void DomainAssembly::FindNativeImage()
 
             GetFile()->ClearNativeImage();
 
-#ifdef FEATURE_WINDOWSPHONE
-            // On Phone, always through exceptions when we throw the NI out
+            // Always throw exceptions when we throw the NI out
             ThrowHR(CLR_E_BIND_NI_DEP_IDENTITY_MISMATCH);
-#endif
-
         }
         else
         {

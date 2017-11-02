@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private VectorViewToReadOnlyCollectionAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // int Count { get }

@@ -196,6 +196,11 @@ public:
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
+#ifndef DACCESS_COMPILE
+    // Loads (if using a standalone GC) and initializes the GC.
+    static HRESULT LoadAndInitialize();
+#endif // DACCESS_COMPILE
+
 private:
     // This class should never be instantiated.
     GCHeapUtilities() = delete;

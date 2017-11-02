@@ -16,6 +16,8 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SafeArrayRankMismatchException : SystemException
     {
         public SafeArrayRankMismatchException()
@@ -38,7 +40,6 @@ namespace System.Runtime.InteropServices
 
         protected SafeArrayRankMismatchException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 }

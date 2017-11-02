@@ -11,19 +11,16 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
-      <Version>$(CoreFxPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
-      <Version>$(CoreFxPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>$(CoreFxPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Security.Permissions">
-      <Version>$(CoreFxPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.Intrinsics.X86">
-      <Version>$(CoreFxPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>

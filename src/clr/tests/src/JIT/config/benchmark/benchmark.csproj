@@ -8,22 +8,22 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="xunit.performance.api">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.core">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.execution">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.metrics">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-      <Version>$(MicrosoftDiagnosticsTracingLibraryVersion)</Version>
+      <Version>$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>2.0.0-preview2-25302-03</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Collections.NonGeneric">
       <Version>4.4.0-beta-24913-02</Version>
@@ -44,10 +44,10 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
-      <Version>4.5.0-preview2-25504-02</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors">
-      <Version>4.4.0-preview2-25302-03</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection">
       <Version>4.4.0-beta-24913-02</Version>
@@ -56,13 +56,13 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.TypeExtensions">
-      <Version>4.4.0-preview2-25302-03</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime">
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>4.4.0-preview2-25302-03</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Extensions">
       <Version>4.4.0-beta-24913-02</Version>
@@ -95,7 +95,7 @@
       <Version>$(XunitPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.console.netcore">
-      <Version>$(XUnitConsoleNetCoreVersion)</Version>
+      <Version>$(XunitConsoleNetcorePackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.runner.utility">
       <Version>$(XunitPackageVersion)</Version>

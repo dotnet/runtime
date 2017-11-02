@@ -205,6 +205,12 @@ private:
             return data;
         }
 
+        Counts operator -() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return -(INT64)data;
+        }
+
         Counts &operator =(UINT64 data)
         {
             LIMITED_METHOD_CONTRACT;
@@ -213,16 +219,16 @@ private:
             return *this;
         }
 
-        Counts VolatileLoad() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return ::VolatileLoad(&data);
-        }
-
         Counts CompareExchange(Counts toCounts, Counts fromCounts)
         {
             LIMITED_METHOD_CONTRACT;
             return (UINT64)InterlockedCompareExchange64((LONG64 *)&data, (LONG64)toCounts, (LONG64)fromCounts);
+        }
+
+        Counts ExchangeAdd(Counts toAdd)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (UINT64)InterlockedExchangeAdd64((LONG64 *)&data, (LONG64)toAdd);
         }
     };
 

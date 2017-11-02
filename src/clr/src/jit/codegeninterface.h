@@ -105,10 +105,12 @@ public:
     RegTracker regTracker;
 
 public:
+#ifdef LEGACY_BACKEND
     void trashReg(regNumber reg)
     {
         regTracker.rsTrackRegTrash(reg);
     }
+#endif
 
 protected:
     Compiler* compiler;

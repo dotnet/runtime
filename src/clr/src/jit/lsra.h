@@ -445,6 +445,15 @@ public:
         InsertAtBottom
     };
 
+#ifdef _TARGET_ARM_
+    void addResolutionForDouble(BasicBlock*     block,
+                                GenTreePtr      insertionPoint,
+                                Interval**      sourceIntervals,
+                                regNumberSmall* location,
+                                regNumber       toReg,
+                                regNumber       fromReg,
+                                ResolveType     resolveType);
+#endif
     void addResolution(
         BasicBlock* block, GenTreePtr insertionPoint, Interval* interval, regNumber outReg, regNumber inReg);
 
@@ -630,6 +639,11 @@ private:
         return getLsraRegOptionalControl() == LSRA_REG_OPTIONAL_NO_ALLOC;
     }
 
+    bool candidatesAreStressLimited()
+    {
+        return ((lsraStressMask & (LSRA_LIMIT_MASK | LSRA_SELECT_MASK)) != 0);
+    }
+
     // Dump support
     void lsraDumpIntervals(const char* msg);
     void dumpRefPositions(const char* msg);
@@ -666,6 +680,10 @@ private:
     {
         return false;
     }
+    bool candidatesAreStressLimited()
+    {
+        return false;
+    }
 #endif // !DEBUG
 
 public:
@@ -690,6 +708,7 @@ private:
     void setFrameType();
 
     // Update allocations at start/end of block
+    void unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap);
     void processBlockEndAllocation(BasicBlock* current);
 
     // Record variable locations at start/end of block
@@ -699,23 +718,16 @@ private:
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
-    bool canSpillDoubleReg(RegRecord*   physRegRecord,
-                           LsraLocation refLocation,
-                           unsigned*    recentAssignedRefWeight,
-                           unsigned     farthestRefPosWeight);
+    bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
-    bool checkActiveInterval(Interval* interval, LsraLocation refLocation);
-    bool checkActiveIntervals(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType);
-    bool canSpillReg(RegRecord*   physRegRecord,
-                     LsraLocation refLocation,
-                     unsigned*    recentAssignedRefWeight,
-                     unsigned     farthestRefPosWeight);
-    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLocation* nextLocation);
+    bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
+    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
+    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
@@ -776,8 +788,6 @@ private:
 
     // Given some tree node add refpositions for all the registers this node kills
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc);
-
-    bool killGCRefs(GenTree* tree);
 
     regMaskTP allRegs(RegisterType rt);
     regMaskTP allRegs(GenTree* tree);
@@ -888,13 +898,14 @@ private:
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
     regNumber tryAllocateFreeReg(Interval* current, RefPosition* refPosition);
-    RegRecord* findBestPhysicalReg(RegisterType regType,
-                                   LsraLocation endLocation,
-                                   regMaskTP    candidates,
-                                   regMaskTP    preferences);
     regNumber allocateBusyReg(Interval* current, RefPosition* refPosition, bool allocateIfProfitable);
     regNumber assignCopyReg(RefPosition* refPosition);
 
+    bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
+    bool isSpillCandidate(Interval*     current,
+                          RefPosition*  refPosition,
+                          RegRecord*    physRegRecord,
+                          LsraLocation& nextLocation);
     void checkAndAssignInterval(RegRecord* regRec, Interval* interval);
     void assignPhysReg(RegRecord* regRec, Interval* interval);
     void assignPhysReg(regNumber reg, Interval* interval)
@@ -1225,7 +1236,7 @@ private:
 
     void TreeNodeInfoInitCheckByteable(GenTree* tree);
 
-    void SetDelayFree(GenTree* delayUseSrc);
+    bool CheckAndSetDelayFree(GenTree* delayUseSrc);
 
     void TreeNodeInfoInitSimple(GenTree* tree);
     int GetOperandSourceCount(GenTree* node);
@@ -1261,6 +1272,10 @@ private:
 #ifdef FEATURE_SIMD
     void TreeNodeInfoInitSIMD(GenTreeSIMD* tree);
 #endif // FEATURE_SIMD
+
+#if FEATURE_HW_INTRINSICS
+    void TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
+#endif // FEATURE_HW_INTRINSICS
 
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode);
 #ifdef _TARGET_ARM_

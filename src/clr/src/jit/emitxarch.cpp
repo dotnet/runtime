@@ -41,16 +41,16 @@ bool IsSSE4Instruction(instruction ins)
 
 bool IsSSEOrAVXInstruction(instruction ins)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     return (ins >= INS_FIRST_SSE2_INSTRUCTION && ins <= INS_LAST_AVX_INSTRUCTION);
-#else  // !FEATURE_AVX_SUPPORT
+#else  // !LEGACY_BACKEND
     return IsSSE2Instruction(ins);
-#endif // !FEATURE_AVX_SUPPORT
+#endif // LEGACY_BACKEND
 }
 
 bool IsAVXOnlyInstruction(instruction ins)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     return (ins >= INS_FIRST_AVX_INSTRUCTION && ins <= INS_LAST_AVX_INSTRUCTION);
 #else
     return false;
@@ -59,14 +59,14 @@ bool IsAVXOnlyInstruction(instruction ins)
 
 bool emitter::IsAVXInstruction(instruction ins)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     return (UseAVX() && IsSSEOrAVXInstruction(ins));
 #else
     return false;
 #endif
 }
 
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
 // When we emit an instruction with only two operands, we will duplicate the destination
 // as a source.
@@ -76,27 +76,26 @@ bool emitter::IsAVXInstruction(instruction ins)
 bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
 {
     return IsAVXInstruction(ins) &&
-           (ins == INS_cvtsi2ss || ins == INS_cvtsi2sd || ins == INS_cvtss2sd || ins == INS_cvtsd2ss ||
-            ins == INS_addss || ins == INS_addsd || ins == INS_subss || ins == INS_subsd || ins == INS_mulss ||
-            ins == INS_mulsd || ins == INS_divss || ins == INS_divsd || ins == INS_addps || ins == INS_addpd ||
-            ins == INS_subps || ins == INS_subpd || ins == INS_mulps || ins == INS_mulpd || ins == INS_cmpps ||
-            ins == INS_cmppd || ins == INS_andps || ins == INS_andpd || ins == INS_orps || ins == INS_orpd ||
-            ins == INS_xorps || ins == INS_xorpd || ins == INS_dpps || ins == INS_dppd || ins == INS_haddpd ||
-            ins == INS_por || ins == INS_pand || ins == INS_pandn || ins == INS_pcmpeqd || ins == INS_pcmpgtd ||
-            ins == INS_pcmpeqw || ins == INS_pcmpgtw || ins == INS_pcmpeqb || ins == INS_pcmpgtb ||
-            ins == INS_pcmpeqq || ins == INS_pcmpgtq || ins == INS_pmulld || ins == INS_pmullw || ins == INS_shufps ||
-            ins == INS_shufpd || ins == INS_minps || ins == INS_minss || ins == INS_minpd || ins == INS_minsd ||
-            ins == INS_divps || ins == INS_divpd || ins == INS_maxps || ins == INS_maxpd || ins == INS_maxss ||
-            ins == INS_maxsd || ins == INS_andnps || ins == INS_andnpd || ins == INS_paddb || ins == INS_paddw ||
-            ins == INS_paddd || ins == INS_paddq || ins == INS_psubb || ins == INS_psubw || ins == INS_psubd ||
-            ins == INS_psubq || ins == INS_pmuludq || ins == INS_pxor || ins == INS_insertps ||
-            ins == INS_vinsertf128 || ins == INS_punpckldq || ins == INS_phaddd || ins == INS_pminub ||
-            ins == INS_pminsw || ins == INS_pminsb || ins == INS_pminsd || ins == INS_pminuw || ins == INS_pminud ||
-            ins == INS_pmaxub || ins == INS_pmaxsw || ins == INS_pmaxsb || ins == INS_pmaxsd || ins == INS_pmaxuw ||
-            ins == INS_pmaxud || ins == INS_vinserti128 || ins == INS_punpckhbw || ins == INS_punpcklbw ||
-            ins == INS_punpckhqdq || ins == INS_punpcklqdq || ins == INS_punpckhwd || ins == INS_punpcklwd ||
-            ins == INS_punpckhdq || ins == INS_packssdw || ins == INS_packsswb || ins == INS_packuswb ||
-            ins == INS_packusdw || ins == INS_vperm2i128);
+           (ins == INS_cvtsi2ss || ins == INS_cvtsi2sd || ins == INS_addss || ins == INS_addsd || ins == INS_subss ||
+            ins == INS_subsd || ins == INS_mulss || ins == INS_mulsd || ins == INS_divss || ins == INS_divsd ||
+            ins == INS_addps || ins == INS_addpd || ins == INS_subps || ins == INS_subpd || ins == INS_mulps ||
+            ins == INS_mulpd || ins == INS_cmpps || ins == INS_cmppd || ins == INS_andps || ins == INS_andpd ||
+            ins == INS_orps || ins == INS_orpd || ins == INS_xorps || ins == INS_xorpd || ins == INS_dpps ||
+            ins == INS_dppd || ins == INS_haddpd || ins == INS_por || ins == INS_pand || ins == INS_pandn ||
+            ins == INS_pcmpeqd || ins == INS_pcmpgtd || ins == INS_pcmpeqw || ins == INS_pcmpgtw ||
+            ins == INS_pcmpeqb || ins == INS_pcmpgtb || ins == INS_pcmpeqq || ins == INS_pcmpgtq || ins == INS_pmulld ||
+            ins == INS_pmullw || ins == INS_shufps || ins == INS_shufpd || ins == INS_minps || ins == INS_minss ||
+            ins == INS_minpd || ins == INS_minsd || ins == INS_divps || ins == INS_divpd || ins == INS_maxps ||
+            ins == INS_maxpd || ins == INS_maxss || ins == INS_maxsd || ins == INS_andnps || ins == INS_andnpd ||
+            ins == INS_paddb || ins == INS_paddw || ins == INS_paddd || ins == INS_paddq || ins == INS_psubb ||
+            ins == INS_psubw || ins == INS_psubd || ins == INS_psubq || ins == INS_pmuludq || ins == INS_pxor ||
+            ins == INS_insertps || ins == INS_vinsertf128 || ins == INS_punpckldq || ins == INS_phaddd ||
+            ins == INS_pminub || ins == INS_pminsw || ins == INS_pminsb || ins == INS_pminsd || ins == INS_pminuw ||
+            ins == INS_pminud || ins == INS_pmaxub || ins == INS_pmaxsw || ins == INS_pmaxsb || ins == INS_pmaxsd ||
+            ins == INS_pmaxuw || ins == INS_pmaxud || ins == INS_vinserti128 || ins == INS_punpckhbw ||
+            ins == INS_punpcklbw || ins == INS_punpckhqdq || ins == INS_punpcklqdq || ins == INS_punpckhwd ||
+            ins == INS_punpcklwd || ins == INS_punpckhdq || ins == INS_packssdw || ins == INS_packsswb ||
+            ins == INS_packuswb || ins == INS_packusdw || ins == INS_vperm2i128);
 }
 
 // Returns true if the AVX instruction requires 3 operands that duplicate the source
@@ -106,8 +105,9 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
 // to indicate whether a 3-operand instruction.
 bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 {
-    return IsAVXInstruction(ins) && (ins == INS_movlpd || ins == INS_movlps || ins == INS_movhpd || ins == INS_movhps ||
-                                     ins == INS_movss || ins == INS_movlhps || ins == INS_sqrtss || ins == INS_sqrtsd);
+    return IsAVXInstruction(ins) &&
+           (ins == INS_movlpd || ins == INS_movlps || ins == INS_movhpd || ins == INS_movhps || ins == INS_movss ||
+            ins == INS_movlhps || ins == INS_sqrtss || ins == INS_sqrtsd || ins == INS_cvtss2sd || ins == INS_cvtsd2ss);
 }
 
 // ------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ bool emitter::Is4ByteAVXInstruction(instruction ins)
 {
     return UseAVX() && (IsSSE4Instruction(ins) || IsAVXOnlyInstruction(ins)) && EncodedBySSE38orSSE3A(ins);
 }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !LEGACY_BACKEND
 
 // -------------------------------------------------------------------
 // Is4ByteSSE4Instruction: Returns true if the SSE4 instruction
@@ -136,14 +136,14 @@ bool emitter::Is4ByteAVXInstruction(instruction ins)
 bool emitter::Is4ByteSSE4Instruction(instruction ins)
 {
 #ifdef LEGACY_BACKEND
-    // On legacy backend SSE3_4 is not enabled.
+    // On legacy backend SSE4 is not enabled.
     return false;
 #else
-    return UseSSE3_4() && IsSSE4Instruction(ins) && EncodedBySSE38orSSE3A(ins);
+    return UseSSE4() && IsSSE4Instruction(ins) && EncodedBySSE38orSSE3A(ins);
 #endif
 }
 
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
 // Returns true if this instruction requires a VEX prefix
 // All AVX instructions require a VEX prefix
 bool emitter::TakesVexPrefix(instruction ins)
@@ -202,7 +202,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 
     return code;
 }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !LEGACY_BACKEND
 
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
 bool TakesRexWPrefix(instruction ins, emitAttr attr)
@@ -442,7 +442,7 @@ bool isPrefix(BYTE b)
 // Outputs VEX prefix (in case of AVX instructions) and REX.R/X/W/B otherwise.
 unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     if (hasVexPrefix(code))
     {
         // Only AVX instructions should have a VEX prefix
@@ -540,7 +540,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
         emitOutputByte(dst + 2, vexPrefix & 0xFF);
         return 3;
     }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !LEGACY_BACKEND
 
 #ifdef _TARGET_AMD64_
     if (code > 0x00FFFFFFFFLL)
@@ -670,7 +670,7 @@ unsigned emitter::emitGetVexPrefixSize(instruction ins, emitAttr attr)
 //=opcodeSize + vexPrefixAdjustedSize
 unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, code_t code)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     if (IsAVXInstruction(ins))
     {
         unsigned vexPrefixAdjustedSize = emitGetVexPrefixSize(ins, attr);
@@ -706,8 +706,7 @@ unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, c
 
         return vexPrefixAdjustedSize;
     }
-#endif // FEATURE_AVX_SUPPORT
-
+#endif // !LEGACY_BACKEND
     return 0;
 }
 
@@ -1246,7 +1245,7 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
  */
 inline emitter::code_t emitter::insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code)
 {
-#ifdef FEATURE_AVX_SUPPORT
+#ifndef LEGACY_BACKEND
     assert(reg < REG_STK);
     assert(IsAVXInstruction(ins));
     assert(hasVexPrefix(code));
@@ -1495,8 +1494,12 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
         return true;
     }
 
-    if ((ins != INS_movsx) && // These two instructions support high register
-        (ins != INS_movzx))   // encodings for reg1
+    if ((ins != INS_movsx) && // These three instructions support high register
+        (ins != INS_movzx)    // encodings for reg1
+#if FEATURE_HW_INTRINSICS
+        && (ins != INS_crc32)
+#endif
+            )
     {
         // reg1 must be a byte-able register
         if ((genRegMask(reg1) & RBM_BYTE_REGS) == 0)
@@ -3814,7 +3817,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
         // AVX: 3 byte VEX prefix + 1 byte opcode + 1 byte ModR/M + 1 byte immediate
         // SSE4: 4 byte opcode + 1 byte ModR/M + 1 byte immediate
         // SSE2: 3 byte opcode + 1 byte ModR/M + 1 byte immediate
-        sz = (UseAVX() || UseSSE3_4()) ? 6 : 5;
+        sz = (UseAVX() || UseSSE4()) ? 6 : 5;
     }
 
 #ifdef _TARGET_AMD64_
@@ -3840,7 +3843,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
     dispIns(id);
     emitCurIGsize += sz;
 }
-#ifdef FEATURE_AVX_SUPPORT
+
 /*****************************************************************************
 *
 *  Add an instruction with three register operands.
@@ -3901,7 +3904,6 @@ void emitter::emitIns_R_R_R_I(
     emitCurIGsize += sz;
 }
 
-#endif
 /*****************************************************************************
  *
  *  Add an instruction with a register + static member operands.
@@ -4231,8 +4233,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *  The following adds instructions referencing address modes.
  */
 
-void emitter::emitIns_I_AR(
-    instruction ins, emitAttr attr, int val, regNumber reg, int disp, int memCookie, void* clsCookie)
+void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int disp)
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
@@ -4275,13 +4276,6 @@ void emitter::emitIns_I_AR(
     instrDesc*     id = emitNewInstrAmdCns(attr, disp, val);
     id->idIns(ins);
     id->idInsFmt(fmt);
-
-    assert((memCookie == NULL) == (clsCookie == nullptr));
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = memCookie;
-    id->idDebugOnlyInfo()->idClsCookie = clsCookie;
-#endif
 
     id->idAddr()->iiaAddrMode.amBaseReg = reg;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
@@ -4351,8 +4345,7 @@ void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_AR(
-    instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp, int memCookie, void* clsCookie)
+void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp)
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_32BYTE) && (ireg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
@@ -4375,13 +4368,6 @@ void emitter::emitIns_R_AR(
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
-
-    assert((memCookie == NULL) == (clsCookie == nullptr));
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = memCookie;
-    id->idDebugOnlyInfo()->idClsCookie = clsCookie;
-#endif
 
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
@@ -4420,8 +4406,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(
-    instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp, int memCookie, void* clsCookie)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber base, int disp)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -4447,13 +4432,6 @@ void emitter::emitIns_AR_R(
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-
-    assert((memCookie == NULL) == (clsCookie == nullptr));
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = memCookie;
-    id->idDebugOnlyInfo()->idClsCookie = clsCookie;
-#endif
 
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
@@ -5664,20 +5642,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
         }
     }
-#endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idClsCookie = nullptr;
     id->idDebugOnlyInfo()->idCallSig   = sigInfo;
-#endif
+#endif // DEBUG
 
-#if defined(LATE_DISASM)
+#ifdef LATE_DISASM
     if (addr != nullptr)
     {
         codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
     }
-#endif // defined(LATE_DISASM)
+#endif // LATE_DISASM
 
     id->idCodeSize(sz);
 
@@ -6436,19 +6411,8 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 
     printf("]");
 
-    if (id->idDebugOnlyInfo()->idClsCookie)
-    {
-        if (id->idIns() == INS_call)
-        {
-            printf("%s", emitFncName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie));
-        }
-        else
-        {
-            printf("%s", emitFldName((CORINFO_FIELD_HANDLE)id->idDebugOnlyInfo()->idMemCookie));
-        }
-    }
     // pretty print string if it looks like one
-    else if (id->idGCref() == GCT_GCREF && id->idIns() == INS_mov && id->idAddr()->iiaAddrMode.amBaseReg == REG_NA)
+    if ((id->idGCref() == GCT_GCREF) && (id->idIns() == INS_mov) && (id->idAddr()->iiaAddrMode.amBaseReg == REG_NA))
     {
         const wchar_t* str = emitComp->eeGetCPString(disp);
         if (str != nullptr)
@@ -6718,13 +6682,12 @@ void emitter::emitDispIns(
     /* Display the instruction name */
 
     sstr = codeGen->genInsName(ins);
-#ifdef FEATURE_AVX_SUPPORT
+
     if (IsAVXInstruction(ins))
     {
         printf(" v%-8s", sstr);
     }
     else
-#endif // FEATURE_AVX_SUPPORT
     {
         printf(" %-9s", sstr);
     }
@@ -7079,6 +7042,12 @@ void emitter::emitDispIns(
                 // INS_bt operands are reversed. Display them in the normal order.
                 printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
             }
+#if FEATURE_HW_INTRINSICS
+            else if (ins == INS_crc32 && attr != EA_8BYTE)
+            {
+                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+            }
+#endif // FEATURE_HW_INTRINSICS
             else
             {
                 printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
@@ -7091,7 +7060,6 @@ void emitter::emitDispIns(
             printf(" %s", emitRegName(id->idReg2(), attr));
             break;
 
-#ifdef FEATURE_AVX_SUPPORT
         case IF_RWR_RRD_RRD:
             assert(IsAVXInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
@@ -7108,7 +7076,6 @@ void emitter::emitDispIns(
             val = emitGetInsSC(id);
             goto PRINT_CONSTANT;
             break;
-#endif
         case IF_RRW_RRW_CNS:
             printf("%s,", emitRegName(id->idReg1(), attr));
             printf(" %s", emitRegName(id->idReg2(), attr));
@@ -9190,6 +9157,26 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
 #endif // _TARGET_AMD64_
     }
+#if FEATURE_HW_INTRINSICS
+    else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt))
+    {
+        code = insEncodeRMreg(ins, code);
+        if ((ins == INS_crc32) && (size > EA_1BYTE))
+        {
+            code |= 0x0100;
+        }
+
+        if (size == EA_2BYTE)
+        {
+            assert(ins == INS_crc32);
+            dst += emitOutputByte(dst, 0x66);
+        }
+        else if (size == EA_8BYTE)
+        {
+            code = AddRexWPrefix(ins, code);
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
     else
     {
         code = insEncodeMRreg(ins, insCodeMR(ins));
@@ -9487,7 +9474,6 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     return dst;
 }
 
-#ifdef FEATURE_AVX_SUPPORT
 BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 {
     code_t code;
@@ -9563,7 +9549,6 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     return dst;
 }
-#endif
 
 /*****************************************************************************
  *
@@ -10756,7 +10741,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = emitSizeOfInsDsc(id);
             break;
 
-#ifdef FEATURE_AVX_SUPPORT
         case IF_RWR_RRD_RRD:
             dst = emitOutputRRR(dst, id);
             sz  = emitSizeOfInsDsc(id);
@@ -10766,7 +10750,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = emitSizeOfInsDsc(id);
             dst += emitOutputByte(dst, emitGetInsSC(id));
             break;
-#endif
 
         case IF_RRW_RRW_CNS:
             assert(id->idGCref() == GCT_NONE);
@@ -10796,7 +10779,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             assert(code & 0x00FF0000);
 
-#ifdef FEATURE_AVX_SUPPORT
             if (TakesRexWPrefix(ins, size))
             {
                 code = AddRexWPrefix(ins, code);
@@ -10821,7 +10803,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code = insEncodeReg3456(ins, id->idReg2(), size, code);
                 }
             }
-#endif // FEATURE_AVX_SUPPORT
 
             regcode = (insEncodeReg345(ins, rReg, size, &code) | insEncodeReg012(ins, mReg, size, &code)) << 8;
 
@@ -11174,7 +11155,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MWR_RRD:
         case IF_MRW_RRD:
             code = insCodeMR(ins);
-#ifdef FEATURE_AVX_SUPPORT
             code = AddVexPrefixIfNeeded(ins, code, size);
 
             // In case of AVX instructions that take 3 operands, encode reg1 as first source.
@@ -11188,7 +11168,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // encode source operand reg in 'vvvv' bits in 1's compliement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
             }
-#endif // FEATURE_AVX_SUPPORT
 
             regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
             dst     = emitOutputCV(dst, id, code | regcode | 0x0500);

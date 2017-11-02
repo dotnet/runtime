@@ -952,6 +952,13 @@ public:
         return GetMethodTable()->GetApproxArrayElementTypeHandle();
     }
 
+    PTR_OBJECTREF GetDataPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        return dac_cast<PTR_OBJECTREF>(dac_cast<PTR_BYTE>(this) + GetDataOffset());
+    }
+
     static SIZE_T GetDataOffset()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2868,9 +2875,6 @@ class SafeHandle : public Object
     //   Modifying the order or fields of this object may require
     //   other changes to the classlib class definition of this
     //   object or special handling when loading this system class.
-#ifdef _DEBUG
-    STRINGREF m_debugStackTrace;   // Where we allocated this SafeHandle
-#endif
     Volatile<LPVOID> m_handle;
     Volatile<INT32> m_state;        // Combined ref count and closed/disposed state (for atomicity)
     Volatile<CLR_BOOL> m_ownsHandle;
@@ -2938,9 +2942,6 @@ class CriticalHandle : public Object
     //   Modifying the order or fields of this object may require
     //   other changes to the classlib class definition of this
     //   object or special handling when loading this system class.
-#ifdef _DEBUG
-    STRINGREF m_debugStackTrace;   // Where we allocated this CriticalHandle
-#endif
     Volatile<LPVOID> m_handle;
     Volatile<CLR_BOOL> m_isClosed;
 

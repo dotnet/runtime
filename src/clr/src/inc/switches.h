@@ -64,13 +64,6 @@
 #define GC_STATS
 #endif
 
-
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && (defined(_TARGET_X86_) || defined(_TARGET_AMD64_))
-// On x86/x64 Windows debug builds, respect the COMPlus_EnforceEEThreadNotRequiredContracts
-// runtime switch. See code:InitThreadManager and code:GetThreadGenericFullCheck
-#define ENABLE_GET_THREAD_GENERIC_FULL_CHECK
-#endif
-
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
     #define USE_UPPER_ADDRESS       0
 

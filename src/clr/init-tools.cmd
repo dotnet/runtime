@@ -21,16 +21,24 @@ if [%1]==[force] (
 
 :: If semaphore exists do nothing
 if exist "%BUILD_TOOLS_SEMAPHORE%" (
-  echo Tools are already initialized.
+  echo %__MsgPrefix%Tools are already initialized.
   goto :EOF
 )
 
 if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
 
-:: Download Nuget.exe
-if NOT exist "%PACKAGES_DIR%NuGet.exe" (
-  if NOT exist "%PACKAGES_DIR%" mkdir "%PACKAGES_DIR%"
-  powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object Net.WebClient).DownloadFile('https://www.nuget.org/nuget.exe', '%PACKAGES_DIR%NuGet.exe')
+if exist "%DotNetBuildToolsDir%" (
+  echo Using tools from '%DotNetBuildToolsDir%'.
+  mklink /j "%TOOLRUNTIME_DIR%" "%DotNetBuildToolsDir%"
+
+  if not exist "%DOTNET_CMD%" (
+    echo ERROR: Ensure that '%DotNetBuildToolsDir%' contains the .NET Core SDK at '%DOTNET_PATH%'
+    exit /b 1
+  )
+
+  echo Done initializing tools.
+  echo Using tools from '%DotNetBuildToolsDir%'. > "%BUILD_TOOLS_SEMAPHORE%"
+  exit /b 0
 )
 
 echo Running %0 > "%INIT_TOOLS_LOG%"
@@ -38,33 +46,33 @@ echo Running %0 > "%INIT_TOOLS_LOG%"
 set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
 if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
-echo Installing dotnet cli...
+echo %__MsgPrefix%Installing dotnet cli...
 if NOT exist "%DOTNET_PATH%" mkdir "%DOTNET_PATH%"
-set DOTNET_ZIP_NAME=dotnet-dev-win-x64.%DOTNET_VERSION%.zip
-set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
+set DOTNET_ZIP_NAME=dotnet-sdk-%DOTNET_VERSION%-win-x64.zip
+set DOTNET_REMOTE_PATH=https://dotnetcli.azureedge.net/dotnet/Sdk/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
 set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
-echo Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> "%INIT_TOOLS_LOG%"
+echo %__MsgPrefix%Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> "%INIT_TOOLS_LOG%"
 powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { (New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%') } else { (New-Object -com shell.application).namespace('%DOTNET_PATH%').CopyHere((new-object -com shell.application).namespace('%DOTNET_LOCAL_PATH%').Items(),16) }" >> "%INIT_TOOLS_LOG%"
 if NOT exist "%DOTNET_LOCAL_PATH%" (
-  echo ERROR: Could not install dotnet cli correctly. 1>&2
+  echo %__MsgPrefix%ERROR: Could not install dotnet cli correctly. 1>&2
   goto :error
 )
 
 :afterdotnetrestore
 
 if exist "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
-echo Restoring BuildTools version %BUILDTOOLS_VERSION%...
-echo Running: "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% >> "%INIT_TOOLS_LOG%"
+echo %__MsgPrefix%Restoring BuildTools version %BUILDTOOLS_VERSION%...
+echo %__MsgPrefix%Running: "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% >> "%INIT_TOOLS_LOG%"
 call "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% >> "%INIT_TOOLS_LOG%"
 if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
-  echo ERROR: Could not restore build tools correctly. 1>&2
+  %__MsgPrefix%echo ERROR: Could not restore build tools correctly. 1>&2
   goto :error
 )
 
 :afterbuildtoolsrestore
 
-echo Initializing BuildTools...
-echo Running: "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
+echo %__MsgPrefix%Initializing BuildTools...
+echo %__MsgPrefix%Running: "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
 call "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
 set INIT_TOOLS_ERRORLEVEL=%ERRORLEVEL%
 if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
@@ -73,14 +81,14 @@ if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
 )
 
 :: Create semaphore file
-echo Done initializing tools.
+echo %__MsgPrefix%Done initializing tools.
 if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" (
-	mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
+  mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
 )
-echo Init-Tools.cmd completed for BuildTools Version: %BUILDTOOLS_VERSION% > "%BUILD_TOOLS_SEMAPHORE%"
+echo %__MsgPrefix%Init-Tools.cmd completed for BuildTools Version: %BUILDTOOLS_VERSION% > "%BUILD_TOOLS_SEMAPHORE%"
 exit /b 0
 
 :error
-echo Please check the detailed log that follows. 1>&2
+echo %__MsgPrefix%Please check the detailed log that follows. 1>&2
 type "%INIT_TOOLS_LOG%" 1>&2
 exit /b 1

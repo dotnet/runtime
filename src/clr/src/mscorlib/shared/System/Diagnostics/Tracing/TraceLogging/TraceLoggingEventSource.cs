@@ -24,14 +24,17 @@ using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
 #endif
 
 using System;
+using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Collections.ObjectModel;
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
+using Contract = System.Diagnostics.Contracts.Contract;
 using System.Collections.Generic;
 using System.Text;
 #else
+using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 using System.Collections.Generic;
 using System.Text;
 #endif
@@ -114,7 +117,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-
             if (!this.IsEnabled())
             {
                 return;
@@ -139,7 +141,6 @@ namespace System.Diagnostics.Tracing
             {
                 throw new ArgumentNullException(nameof(eventName));
             }
-
 
             if (!this.IsEnabled())
             {
@@ -774,7 +775,7 @@ namespace System.Diagnostics.Tracing
                             }
                             else
                             {
-                                throw new ArgumentException(Resources.GetResourceString("UnknownEtwTrait", etwTrait), "traits");
+                                throw new ArgumentException(SR.Format(SR.EventSource_UnknownEtwTrait, etwTrait), "traits");
                             }
                         }
                         string value = m_traits[i + 1];
@@ -817,7 +818,7 @@ namespace System.Diagnostics.Tracing
                     {
                         if (!(i + 1 < value.Length))
                         {
-                            throw new ArgumentException(Resources.GetResourceString("EvenHexDigits"), "traits");
+                            throw new ArgumentException(SR.EventSource_EvenHexDigits, "traits");
                         }
                         metaData.Add((byte)(HexDigit(value[i]) * 16 + HexDigit(value[i + 1])));
                         i++;
@@ -830,7 +831,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                throw new ArgumentException(Resources.GetResourceString("IllegalValue", value), "traits");
+                throw new ArgumentException(SR.Format(SR.EventSource_IllegalValue, value), "traits");
             }
 
             return metaData.Count - startPos;
@@ -854,7 +855,7 @@ namespace System.Diagnostics.Tracing
                 return (c - 'A' + 10);
             }
             
-            throw new ArgumentException(Resources.GetResourceString("BadHexDigit", c), "traits");
+            throw new ArgumentException(SR.Format(SR.EventSource_BadHexDigit, c), "traits");
         }
 
         private NameInfo UpdateDescriptor(

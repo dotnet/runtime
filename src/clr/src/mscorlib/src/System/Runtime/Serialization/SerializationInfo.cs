@@ -323,7 +323,6 @@ namespace System.Runtime.Serialization
         {
             if (m_nameToIndex.ContainsKey(name))
             {
-                BCLDebug.Trace("SER", "[SerializationInfo.AddValue]Tried to add ", name, " twice to the SI.");
                 throw new SerializationException(SR.Serialization_SameNameTwice);
             }
             m_nameToIndex.Add(name, m_currMember);
@@ -383,7 +382,6 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            BCLDebug.Trace("SER", "[SerializationInfo.FindElement]Looking for ", name, " CurrMember is: ", m_currMember);
             int index;
             if (m_nameToIndex.TryGetValue(name, out index))
             {
