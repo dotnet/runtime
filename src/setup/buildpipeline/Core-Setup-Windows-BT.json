@@ -440,6 +440,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build and run tests",
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'))",
       "timeoutInMinutes": 0,
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
@@ -669,7 +670,10 @@
       "value": "true"
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild)"
+      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) $(PB_AdditionalMSBuildArguments)"
+    },
+    "PB_AdditionalMSBuildArguments": {
+      "value": ""
     },
     "PB_PortableBuild": {
       "value": "true",

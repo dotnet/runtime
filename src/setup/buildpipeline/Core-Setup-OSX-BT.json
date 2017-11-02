@@ -67,7 +67,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/build.sh",
-        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) -- $(PB_AdditionalMSBuildArguments)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -168,7 +168,7 @@
       "allowOverride": true
     },
     "PB_BuildArguments": {
-      "value": "-ConfigurationGroup=$(BuildConfiguration) $(PB_PortableBuildArg)",
+      "value": "-ConfigurationGroup=$(BuildConfiguration) $(PB_AdditionalBuildArguments)",
       "allowOverride": true
     },
     "CONNECTION_STRING": {
@@ -229,8 +229,11 @@
     "PB_TargetArchitecture": {
       "value": "x64"
     },
-    "PB_PortableBuildArg": {
-      "value": "-PortableBuild=true"
+    "PB_AdditionalBuildArguments": {
+      "value": ""
+    },
+    "PB_AdditionalMSBuildArguments": {
+      "value": ""
     },
     "PB_PortableBuild": {
       "value": "true"
