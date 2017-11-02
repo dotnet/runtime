@@ -4969,7 +4969,7 @@ void ReportByRefPointersFromByRefLikeObject(promote_func *fn, ScanContext *sc, P
         }
 
         // TODO: GetApproxFieldTypeHandleThrowing may throw. This is a potential stress problem for fragile NGen of non-CoreLib
-        // assemblies. It won’t ever throw for CoreCLR with R2R. Figure out if anything needs to be done to deal with the
+        // assemblies. It won't ever throw for CoreCLR with R2R. Figure out if anything needs to be done to deal with the
         // exception.
         PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
         if (!pFieldMT->IsByRefLike())
