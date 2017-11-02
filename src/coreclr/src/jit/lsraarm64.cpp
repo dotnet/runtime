@@ -812,7 +812,21 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
             break;
 
         case SIMDIntrinsicGetItem:
-            info->srcCount = 1;
+            // We have an object and an item, which may be contained.
+            info->srcCount = simdTree->gtGetOp2()->isContained() ? 1 : 2;
+
+            if (!simdTree->gtGetOp2()->IsCnsIntOrI())
+            {
+                // If the index is not a constant, we will need a general purpose register
+                info->internalIntCount = 1;
+
+                // If the index is not a constant, we will use the SIMD temp location to store the vector.
+                compiler->getSIMDInitTempVarNum();
+
+                // internal register must not clobber input index
+                simdTree->gtOp.gtOp2->gtLsraInfo.isDelayFree = true;
+                info->hasDelayFreeSrc                        = true;
+            }
             break;
 
         case SIMDIntrinsicAdd:
