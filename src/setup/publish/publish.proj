@@ -252,7 +252,6 @@
     <Error Condition="'$(TransportFeedAccessToken)'==''" Text="Missing property TransportFeedAccessToken" />
     <PropertyGroup>
       <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
-      <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">false</PublishFlatContainer>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
@@ -261,7 +260,6 @@
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
-                    PublishFlatContainer="$(PublishFlatContainer)"
                     Overwrite="$(OverwriteOnPublish)"
                     IndexDirectory="$(ObjDir)"/>
   </Target>
@@ -271,7 +269,6 @@
     <Error Condition="'$(TransportFeedAccessToken)'==''" Text="Missing property TransportFeedAccessToken" />
     <PropertyGroup>
       <ExpectedFeedUrl>$(SymbolPackagesUrl)</ExpectedFeedUrl>
-      <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">true</PublishFlatContainer>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
@@ -280,7 +277,6 @@
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
-                    PublishFlatContainer="$(PublishFlatContainer)"
                     Overwrite="$(OverwriteOnPublish)"
                     IndexDirectory="$(ObjDir)"/>
   </Target>
