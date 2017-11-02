@@ -126,6 +126,15 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FormatException>(() => t);
         }
 
+        [Fact]
+        public async Task DefaultReadAsync_CatchesTryWriteExceptions()
+        {
+            var r = new TryReadThrowingReader<int>();
+            Task<int> t = r.ReadAsync().AsTask();
+            Assert.Equal(TaskStatus.Faulted, t.Status);
+            await Assert.ThrowsAsync<FieldAccessException>(() => t);
+        }
+
         private sealed class TestChannelWriter<T> : ChannelWriter<T>
         {
             private readonly Random _rand = new Random(42);
@@ -185,6 +194,12 @@ namespace System.Threading.Channels.Tests
         {
             public override bool TryWrite(T item) => throw new FormatException();
             public override Task<bool> WaitToWriteAsync(CancellationToken cancellationToken = default) => throw new InvalidDataException();
+        }
+
+        private sealed class TryReadThrowingReader<T> : ChannelReader<T>
+        {
+            public override bool TryRead(out T item) => throw new FieldAccessException();
+            public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken = default) => throw new DriveNotFoundException();
         }
 
         private sealed class CanReadFalseStream : MemoryStream
