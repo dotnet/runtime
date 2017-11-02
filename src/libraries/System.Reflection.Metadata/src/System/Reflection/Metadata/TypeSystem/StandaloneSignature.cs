@@ -8,7 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct StandaloneSignature
+    public readonly struct StandaloneSignature
     {
         private readonly MetadataReader _reader;
 

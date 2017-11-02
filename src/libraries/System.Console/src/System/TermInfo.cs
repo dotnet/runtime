@@ -897,7 +897,7 @@ namespace System
             /// It is a discriminated union of either an integer or a string, 
             /// with characters represented as integers.
             /// </summary>
-            public struct FormatParam
+            public readonly struct FormatParam
             {
                 /// <summary>The integer stored in the parameter.</summary>
                 private readonly int _int32;

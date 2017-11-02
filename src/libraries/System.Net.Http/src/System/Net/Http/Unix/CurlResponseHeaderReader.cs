@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net.Http
 {
-    internal struct CurlResponseHeaderReader
+    internal readonly struct CurlResponseHeaderReader
     {
         private const string HttpPrefix = "HTTP/";
 
@@ -139,7 +139,7 @@ namespace System.Net.Http
             return c == ' ' || (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
         }
 
-        private unsafe struct HeaderBufferSpan
+        private unsafe readonly struct HeaderBufferSpan
         {
             private readonly byte* _pointer;
             public readonly int Length;

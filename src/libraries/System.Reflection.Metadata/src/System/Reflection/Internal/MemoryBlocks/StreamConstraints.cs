@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Internal
 {
-    internal struct StreamConstraints
+    internal readonly struct StreamConstraints
     {
         public readonly object GuardOpt;
         public readonly long ImageStart;

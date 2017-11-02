@@ -24,7 +24,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Boolean
     }
 
-    internal struct ConstVal
+    internal readonly struct ConstVal
     {
         // Pre-boxed common values.
         private static readonly object s_false = false;

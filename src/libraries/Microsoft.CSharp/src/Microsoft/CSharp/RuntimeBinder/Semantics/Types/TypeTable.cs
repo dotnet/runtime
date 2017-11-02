@@ -10,7 +10,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal struct KeyPair<Key1, Key2> : IEquatable<KeyPair<Key1, Key2>>
+    internal readonly struct KeyPair<Key1, Key2> : IEquatable<KeyPair<Key1, Key2>>
     {
         private readonly Key1 _pKey1;
         private readonly Key2 _pKey2;

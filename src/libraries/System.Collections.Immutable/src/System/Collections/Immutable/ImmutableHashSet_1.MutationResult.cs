@@ -28,7 +28,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Describes the result of a mutation on the immutable data structure.
         /// </summary>
-        private struct MutationResult
+        private readonly struct MutationResult
         {
             /// <summary>
             /// The root node of the data structure after the mutation.

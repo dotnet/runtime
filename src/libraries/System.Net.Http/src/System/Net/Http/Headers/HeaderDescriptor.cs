@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,7 +10,7 @@ namespace System.Net.Http.Headers
     // if the header is one of our known headers, then it contains a reference to the KnownHeader object;
     // otherwise, for custom headers, it just contains a string for the header name.
     // Use HeaderDescriptor.TryGet to resolve an arbitrary header name to a HeaderDescriptor.
-    internal struct HeaderDescriptor : IEquatable<HeaderDescriptor>
+    internal readonly struct HeaderDescriptor : IEquatable<HeaderDescriptor>
     {
         private readonly string _headerName;
         private readonly KnownHeader _knownHeader;

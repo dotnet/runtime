@@ -31,7 +31,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Contains all the keys in the collection that hash to the same value.
         /// </summary>
-        internal struct HashBucket
+        internal readonly struct HashBucket
         {
             /// <summary>
             /// One of the values in this bucket.

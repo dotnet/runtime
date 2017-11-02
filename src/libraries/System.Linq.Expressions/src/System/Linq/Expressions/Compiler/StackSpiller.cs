@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Result of a rewrite operation. Always contains an action and a node.
         /// </summary>
-        private struct Result
+        private readonly struct Result
         {
             internal readonly RewriteAction Action;
             internal readonly Expression Node;

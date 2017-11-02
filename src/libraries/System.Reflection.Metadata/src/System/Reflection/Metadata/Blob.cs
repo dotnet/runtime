@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Metadata
 {
-    public struct Blob
+    public readonly struct Blob
     {
         internal readonly byte[] Buffer;
         internal readonly int Start;

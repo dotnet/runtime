@@ -10,7 +10,7 @@ namespace System.Collections.Generic
     /// Represents a reserved region within a <see cref="SparseArrayBuilder{T}"/>.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    internal struct Marker
+    internal readonly struct Marker
     {
         /// <summary>
         /// Constructs a new marker.

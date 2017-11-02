@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct AssemblyFile
+    public readonly struct AssemblyFile
     {
         private readonly MetadataReader _reader;
 

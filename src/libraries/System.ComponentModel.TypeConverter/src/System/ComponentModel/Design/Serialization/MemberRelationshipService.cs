@@ -180,7 +180,7 @@ namespace System.ComponentModel.Design.Serialization
     /// <summary>
     ///    This class represents a single relationship between an object and a member.
     /// </summary>
-    public struct MemberRelationship
+    public readonly struct MemberRelationship
     {
         public static readonly MemberRelationship Empty = new MemberRelationship();
 

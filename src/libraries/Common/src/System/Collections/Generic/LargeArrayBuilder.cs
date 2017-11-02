@@ -11,7 +11,7 @@ namespace System.Collections.Generic
     /// Represents a position within a <see cref="LargeArrayBuilder{T}"/>.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    internal struct CopyPosition
+    internal readonly struct CopyPosition
     {
         /// <summary>
         /// Constructs a new <see cref="CopyPosition"/>.

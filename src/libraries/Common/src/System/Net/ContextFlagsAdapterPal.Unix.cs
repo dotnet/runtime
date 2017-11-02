@@ -8,7 +8,7 @@ namespace System.Net
 {
     internal static class ContextFlagsAdapterPal
     {
-        private struct ContextFlagMapping
+        private readonly struct ContextFlagMapping
         {
             public readonly Interop.NetSecurityNative.GssFlags GssFlags;
             public readonly ContextFlagsPal ContextFlag;

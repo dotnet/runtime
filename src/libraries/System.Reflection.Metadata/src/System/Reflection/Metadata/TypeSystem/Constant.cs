@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct Constant
+    public readonly struct Constant
     {
         private readonly MetadataReader _reader;
 

@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata
     /// <remarks>
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localscope-table-0x32.
     /// </remarks>
-    public struct LocalScope
+    public readonly struct LocalScope
     {
         private readonly MetadataReader _reader;
 

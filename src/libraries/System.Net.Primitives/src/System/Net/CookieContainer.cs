@@ -56,7 +56,7 @@ using System.Text;
 
 namespace System.Net
 {
-    internal struct HeaderVariantInfo
+    internal readonly struct HeaderVariantInfo
     {
         private readonly string _name;
         private readonly CookieVariant _variant;

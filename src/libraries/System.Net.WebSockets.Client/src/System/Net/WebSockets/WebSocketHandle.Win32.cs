@@ -16,7 +16,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.WebSockets
 {
-    internal partial struct WebSocketHandle
+    internal readonly partial struct WebSocketHandle
     {
         private const string WebSocketAvailableApiCheck = "WinHttpWebSocketCompleteUpgrade";
 

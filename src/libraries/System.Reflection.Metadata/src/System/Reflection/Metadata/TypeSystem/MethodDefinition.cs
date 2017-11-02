@@ -7,7 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct MethodDefinition
+    public readonly struct MethodDefinition
     {
         private readonly MetadataReader _reader;
 

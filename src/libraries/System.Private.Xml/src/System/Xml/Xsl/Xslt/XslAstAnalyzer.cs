@@ -938,7 +938,7 @@ namespace System.Xml.Xsl.Xslt
         // ------------------------------- XPathAnalyzer --------------------------------
 
         // Ignores all errors and warnings
-        internal struct NullErrorHelper : IErrorHelper
+        internal readonly struct NullErrorHelper : IErrorHelper
         {
             public void ReportError(string res, params string[] args) { }
             public void ReportWarning(string res, params string[] args) { }

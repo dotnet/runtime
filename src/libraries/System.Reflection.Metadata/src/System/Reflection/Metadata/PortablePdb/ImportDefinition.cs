@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct ImportDefinition
+    public readonly struct ImportDefinition
     {
         public ImportDefinitionKind Kind { get; }
         public BlobHandle Alias { get; }

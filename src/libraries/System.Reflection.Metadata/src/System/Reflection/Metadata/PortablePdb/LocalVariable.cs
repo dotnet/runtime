@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata
     /// <remarks>
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localvariable-table-0x33.
     /// </remarks>
-    public struct LocalVariable
+    public readonly struct LocalVariable
     {
         private readonly MetadataReader _reader;
 

@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Metadata
 {
-    public struct ExceptionRegion
+    public readonly struct ExceptionRegion
     {
         private readonly ExceptionRegionKind _kind;
         private readonly int _tryOffset;

@@ -3267,7 +3267,7 @@ namespace System.Xml
         // Returns true when the whole value has been parsed. Return false when it needs to be called again to get a next chunk of value.
 
 
-        private struct ParseTextState
+        private readonly struct ParseTextState
         {
             public readonly int outOrChars;
             public readonly char[] chars;

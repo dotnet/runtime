@@ -16,7 +16,7 @@ namespace System.Net.Sockets
         //
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.  
         //
-        public struct Token
+        public readonly struct Token
         {
             private readonly SocketAsyncEngine _engine;
             private readonly IntPtr _handle;

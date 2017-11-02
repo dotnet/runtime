@@ -7,7 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct DocumentHandle : IEquatable<DocumentHandle>
+    public readonly struct DocumentHandle : IEquatable<DocumentHandle>
     {
         private const uint tokenType = TokenTypeIds.Document;
         private const byte tokenTypeSmall = (byte)HandleType.Document;
@@ -90,7 +90,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodDebugInformationHandle : IEquatable<MethodDebugInformationHandle>
+    public readonly struct MethodDebugInformationHandle : IEquatable<MethodDebugInformationHandle>
     {
         private const uint tokenType = TokenTypeIds.MethodDebugInformation;
         private const byte tokenTypeSmall = (byte)HandleType.MethodDebugInformation;
@@ -185,7 +185,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct LocalScopeHandle : IEquatable<LocalScopeHandle>
+    public readonly struct LocalScopeHandle : IEquatable<LocalScopeHandle>
     {
         private const uint tokenType = TokenTypeIds.LocalScope;
         private const byte tokenTypeSmall = (byte)HandleType.LocalScope;
@@ -268,7 +268,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct LocalVariableHandle : IEquatable<LocalVariableHandle>
+    public readonly struct LocalVariableHandle : IEquatable<LocalVariableHandle>
     {
         private const uint tokenType = TokenTypeIds.LocalVariable;
         private const byte tokenTypeSmall = (byte)HandleType.LocalVariable;
@@ -351,7 +351,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct LocalConstantHandle : IEquatable<LocalConstantHandle>
+    public readonly struct LocalConstantHandle : IEquatable<LocalConstantHandle>
     {
         private const uint tokenType = TokenTypeIds.LocalConstant;
         private const byte tokenTypeSmall = (byte)HandleType.LocalConstant;
@@ -434,7 +434,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct ImportScopeHandle : IEquatable<ImportScopeHandle>
+    public readonly struct ImportScopeHandle : IEquatable<ImportScopeHandle>
     {
         private const uint tokenType = TokenTypeIds.ImportScope;
         private const byte tokenTypeSmall = (byte)HandleType.ImportScope;
@@ -517,7 +517,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct CustomDebugInformationHandle : IEquatable<CustomDebugInformationHandle>
+    public readonly struct CustomDebugInformationHandle : IEquatable<CustomDebugInformationHandle>
     {
         private const uint tokenType = TokenTypeIds.CustomDebugInformation;
         private const byte tokenTypeSmall = (byte)HandleType.CustomDebugInformation;

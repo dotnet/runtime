@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct ManifestResource
+    public readonly struct ManifestResource
     {
         private readonly MetadataReader _reader;
 

@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Metadata
 {
-    public struct TypeLayout
+    public readonly struct TypeLayout
     {
         private readonly int _size;
         private readonly int _packingSize;

@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Ecma335
     public sealed class ControlFlowBuilder
     {
         // internal for testing:
-        internal struct BranchInfo
+        internal readonly struct BranchInfo
         {
             internal readonly int ILOffset;
             internal readonly LabelHandle Label;
@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        internal struct ExceptionHandlerInfo
+        internal readonly struct ExceptionHandlerInfo
         {
             public readonly ExceptionRegionKind Kind;
             public readonly LabelHandle TryStart, TryEnd, HandlerStart, HandlerEnd, FilterStart;

@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct CustomDebugInformation
+    public readonly struct CustomDebugInformation
     {
         private readonly MetadataReader _reader;
 

@@ -9,7 +9,7 @@ namespace System.Transactions
     /// enlistments.  This identifier is only unique within
     /// a given AppDomain.
     /// </summary>
-    internal struct EnlistmentTraceIdentifier : IEquatable<EnlistmentTraceIdentifier>
+    internal readonly struct EnlistmentTraceIdentifier : IEquatable<EnlistmentTraceIdentifier>
     {
         public static readonly EnlistmentTraceIdentifier Empty = new EnlistmentTraceIdentifier();
 
