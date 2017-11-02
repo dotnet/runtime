@@ -1408,7 +1408,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 			*exc = (MonoObject*) frame.ex;
 			return NULL;
 		}
-		mono_set_pending_exception (frame.ex);
+		mono_error_set_exception_instance (error, frame.ex);
 		return NULL;
 	}
 	return result.data.p;
