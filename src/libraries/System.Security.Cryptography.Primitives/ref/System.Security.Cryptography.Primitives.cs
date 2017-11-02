@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
         protected virtual bool TryHashFinal(Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct HashAlgorithmName : System.IEquatable<System.Security.Cryptography.HashAlgorithmName>
+    public readonly partial struct HashAlgorithmName : System.IEquatable<System.Security.Cryptography.HashAlgorithmName>
     {
         public HashAlgorithmName(string name) { throw null; }
         public static System.Security.Cryptography.HashAlgorithmName MD5 { get { throw null; } }

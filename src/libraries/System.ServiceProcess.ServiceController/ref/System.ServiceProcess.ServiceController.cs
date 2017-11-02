@@ -116,7 +116,7 @@ namespace System.ServiceProcess
         Win32ShareProcess = 32,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SessionChangeDescription
+    public readonly partial struct SessionChangeDescription
     {
         public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
         public int SessionId { get { throw null; } }

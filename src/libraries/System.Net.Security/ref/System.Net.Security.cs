@@ -122,7 +122,7 @@ namespace System.Net.Security
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null; } set { } }
         public EncryptionPolicy EncryptionPolicy { get { throw null; } set { } }
     }
-    public partial struct SslApplicationProtocol : IEquatable<SslApplicationProtocol>
+    public readonly partial struct SslApplicationProtocol : IEquatable<SslApplicationProtocol>
     {
         public static readonly SslApplicationProtocol Http2;
         public static readonly SslApplicationProtocol Http11;

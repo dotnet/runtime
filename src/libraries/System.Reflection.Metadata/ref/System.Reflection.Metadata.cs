@@ -83,7 +83,7 @@ namespace System.Reflection
 namespace System.Reflection.Metadata
 {
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ArrayShape
+    public readonly partial struct ArrayShape
     {
         public ArrayShape(int rank, System.Collections.Immutable.ImmutableArray<int> sizes, System.Collections.Immutable.ImmutableArray<int> lowerBounds) { throw null;}
         public System.Collections.Immutable.ImmutableArray<int> LowerBounds { get { throw null; } }
@@ -91,7 +91,7 @@ namespace System.Reflection.Metadata
         public System.Collections.Immutable.ImmutableArray<int> Sizes { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyDefinition
+    public readonly partial struct AssemblyDefinition
     {
         public System.Reflection.Metadata.StringHandle Culture { get { throw null; } }
         public System.Reflection.AssemblyFlags Flags { get { throw null; } }
@@ -106,7 +106,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyDefinitionHandle : System.IEquatable<System.Reflection.Metadata.AssemblyDefinitionHandle>
+    public readonly partial struct AssemblyDefinitionHandle : System.IEquatable<System.Reflection.Metadata.AssemblyDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -120,7 +120,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.AssemblyDefinitionHandle left, System.Reflection.Metadata.AssemblyDefinitionHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyFile
+    public readonly partial struct AssemblyFile
     {
         public bool ContainsMetadata { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle HashValue { get { throw null; } }
@@ -128,7 +128,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyFileHandle : System.IEquatable<System.Reflection.Metadata.AssemblyFileHandle>
+    public readonly partial struct AssemblyFileHandle : System.IEquatable<System.Reflection.Metadata.AssemblyFileHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -142,7 +142,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.AssemblyFileHandle left, System.Reflection.Metadata.AssemblyFileHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyFileHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.AssemblyFileHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.AssemblyFileHandle>, System.Collections.IEnumerable
+    public readonly partial struct AssemblyFileHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.AssemblyFileHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.AssemblyFileHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.AssemblyFileHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -159,7 +159,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyReference
+    public readonly partial struct AssemblyReference
     {
         public System.Reflection.Metadata.StringHandle Culture { get { throw null; } }
         public System.Reflection.AssemblyFlags Flags { get { throw null; } }
@@ -173,7 +173,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyReferenceHandle : System.IEquatable<System.Reflection.Metadata.AssemblyReferenceHandle>
+    public readonly partial struct AssemblyReferenceHandle : System.IEquatable<System.Reflection.Metadata.AssemblyReferenceHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -187,7 +187,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.AssemblyReferenceHandle left, System.Reflection.Metadata.AssemblyReferenceHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct AssemblyReferenceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.AssemblyReferenceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.AssemblyReferenceHandle>, System.Collections.IEnumerable
+    public readonly partial struct AssemblyReferenceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.AssemblyReferenceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.AssemblyReferenceHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.AssemblyReferenceHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -204,7 +204,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Blob
+    public readonly partial struct Blob
     {
         public bool IsDefault { get { throw null; } }
         public int Length { get { throw null; } }
@@ -282,7 +282,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct BlobContentId : System.IEquatable<System.Reflection.Metadata.BlobContentId>
+    public readonly partial struct BlobContentId : System.IEquatable<System.Reflection.Metadata.BlobContentId>
     {
         public BlobContentId(byte[] id) { throw null;}
         public BlobContentId(System.Collections.Immutable.ImmutableArray<byte> id) { throw null;}
@@ -300,7 +300,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.BlobContentId left, System.Reflection.Metadata.BlobContentId right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct BlobHandle : System.IEquatable<System.Reflection.Metadata.BlobHandle>
+    public readonly partial struct BlobHandle : System.IEquatable<System.Reflection.Metadata.BlobHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -410,14 +410,14 @@ namespace System.Reflection.Metadata
         public void WriteUTF8(string value, bool allowUnpairedSurrogates) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Constant
+    public readonly partial struct Constant
     {
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.ConstantTypeCode TypeCode { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Value { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ConstantHandle : System.IEquatable<System.Reflection.Metadata.ConstantHandle>
+    public readonly partial struct ConstantHandle : System.IEquatable<System.Reflection.Metadata.ConstantHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -449,7 +449,7 @@ namespace System.Reflection.Metadata
         UInt64 = (byte)11,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttribute
+    public readonly partial struct CustomAttribute
     {
         public System.Reflection.Metadata.EntityHandle Constructor { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
@@ -457,7 +457,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeValue<TType> DecodeValue<TType>(System.Reflection.Metadata.ICustomAttributeTypeProvider<TType> provider) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeHandle : System.IEquatable<System.Reflection.Metadata.CustomAttributeHandle>
+    public readonly partial struct CustomAttributeHandle : System.IEquatable<System.Reflection.Metadata.CustomAttributeHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -471,7 +471,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.CustomAttributeHandle left, System.Reflection.Metadata.CustomAttributeHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomAttributeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.CustomAttributeHandle>, System.Collections.IEnumerable
+    public readonly partial struct CustomAttributeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomAttributeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.CustomAttributeHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -493,7 +493,7 @@ namespace System.Reflection.Metadata
         Property = (byte)84,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeNamedArgument<TType>
+    public readonly partial struct CustomAttributeNamedArgument<TType>
     {
         public CustomAttributeNamedArgument(string name, System.Reflection.Metadata.CustomAttributeNamedArgumentKind kind, TType type, object value) { throw null;}
         public System.Reflection.Metadata.CustomAttributeNamedArgumentKind Kind { get { throw null; } }
@@ -502,28 +502,28 @@ namespace System.Reflection.Metadata
         public object Value { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeTypedArgument<TType>
+    public readonly partial struct CustomAttributeTypedArgument<TType>
     {
         public CustomAttributeTypedArgument(TType type, object value) { throw null;}
         public TType Type { get { throw null; } }
         public object Value { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeValue<TType>
+    public readonly partial struct CustomAttributeValue<TType>
     {
         public CustomAttributeValue(System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeTypedArgument<TType>> fixedArguments, System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeNamedArgument<TType>> namedArguments) { throw null;}
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeTypedArgument<TType>> FixedArguments { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeNamedArgument<TType>> NamedArguments { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomDebugInformation
+    public readonly partial struct CustomDebugInformation
     {
         public System.Reflection.Metadata.GuidHandle Kind { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Value { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomDebugInformationHandle : System.IEquatable<System.Reflection.Metadata.CustomDebugInformationHandle>
+    public readonly partial struct CustomDebugInformationHandle : System.IEquatable<System.Reflection.Metadata.CustomDebugInformationHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -537,7 +537,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.CustomDebugInformationHandle left, System.Reflection.Metadata.CustomDebugInformationHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomDebugInformationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomDebugInformationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.CustomDebugInformationHandle>, System.Collections.IEnumerable
+    public readonly partial struct CustomDebugInformationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.CustomDebugInformationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.CustomDebugInformationHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.CustomDebugInformationHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -560,14 +560,14 @@ namespace System.Reflection.Metadata
         public System.Collections.Immutable.ImmutableArray<byte> Id { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DeclarativeSecurityAttribute
+    public readonly partial struct DeclarativeSecurityAttribute
     {
         public System.Reflection.DeclarativeSecurityAction Action { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PermissionSet { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DeclarativeSecurityAttributeHandle : System.IEquatable<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>
+    public readonly partial struct DeclarativeSecurityAttributeHandle : System.IEquatable<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -581,7 +581,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.DeclarativeSecurityAttributeHandle left, System.Reflection.Metadata.DeclarativeSecurityAttributeHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DeclarativeSecurityAttributeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>, System.Collections.IEnumerable
+    public readonly partial struct DeclarativeSecurityAttributeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.DeclarativeSecurityAttributeHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.DeclarativeSecurityAttributeHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -598,7 +598,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Document
+    public readonly partial struct Document
     {
         public System.Reflection.Metadata.BlobHandle Hash { get { throw null; } }
         public System.Reflection.Metadata.GuidHandle HashAlgorithm { get { throw null; } }
@@ -606,7 +606,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.DocumentNameBlobHandle Name { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DocumentHandle : System.IEquatable<System.Reflection.Metadata.DocumentHandle>
+    public readonly partial struct DocumentHandle : System.IEquatable<System.Reflection.Metadata.DocumentHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -620,7 +620,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.DocumentHandle left, System.Reflection.Metadata.DocumentHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DocumentHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DocumentHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.DocumentHandle>, System.Collections.IEnumerable
+    public readonly partial struct DocumentHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.DocumentHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.DocumentHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.DocumentHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -637,7 +637,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DocumentNameBlobHandle : System.IEquatable<System.Reflection.Metadata.DocumentNameBlobHandle>
+    public readonly partial struct DocumentNameBlobHandle : System.IEquatable<System.Reflection.Metadata.DocumentNameBlobHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -649,7 +649,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.DocumentNameBlobHandle left, System.Reflection.Metadata.DocumentNameBlobHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct EntityHandle : System.IEquatable<System.Reflection.Metadata.EntityHandle>
+    public readonly partial struct EntityHandle : System.IEquatable<System.Reflection.Metadata.EntityHandle>
     {
         public static readonly System.Reflection.Metadata.AssemblyDefinitionHandle AssemblyDefinition;
         public static readonly System.Reflection.Metadata.ModuleDefinitionHandle ModuleDefinition;
@@ -664,14 +664,14 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.EntityHandle left, System.Reflection.Metadata.EntityHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct EventAccessors
+    public readonly partial struct EventAccessors
     {
         public System.Reflection.Metadata.MethodDefinitionHandle Adder { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Raiser { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Remover { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct EventDefinition
+    public readonly partial struct EventDefinition
     {
         public System.Reflection.EventAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -680,7 +680,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct EventDefinitionHandle : System.IEquatable<System.Reflection.Metadata.EventDefinitionHandle>
+    public readonly partial struct EventDefinitionHandle : System.IEquatable<System.Reflection.Metadata.EventDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -694,7 +694,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.EventDefinitionHandle left, System.Reflection.Metadata.EventDefinitionHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct EventDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.EventDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.EventDefinitionHandle>, System.Collections.IEnumerable
+    public readonly partial struct EventDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.EventDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.EventDefinitionHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.EventDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -711,7 +711,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ExceptionRegion
+    public readonly partial struct ExceptionRegion
     {
         public System.Reflection.Metadata.EntityHandle CatchType { get { throw null; } }
         public int FilterOffset { get { throw null; } }
@@ -729,7 +729,7 @@ namespace System.Reflection.Metadata
         Finally = (ushort)2,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ExportedType
+    public readonly partial struct ExportedType
     {
         public System.Reflection.TypeAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Implementation { get { throw null; } }
@@ -740,7 +740,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ExportedTypeHandle : System.IEquatable<System.Reflection.Metadata.ExportedTypeHandle>
+    public readonly partial struct ExportedTypeHandle : System.IEquatable<System.Reflection.Metadata.ExportedTypeHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -754,7 +754,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.ExportedTypeHandle left, System.Reflection.Metadata.ExportedTypeHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ExportedTypeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ExportedTypeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ExportedTypeHandle>, System.Collections.IEnumerable
+    public readonly partial struct ExportedTypeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ExportedTypeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ExportedTypeHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.ExportedTypeHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -771,7 +771,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct FieldDefinition
+    public readonly partial struct FieldDefinition
     {
         public System.Reflection.FieldAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -785,7 +785,7 @@ namespace System.Reflection.Metadata
         public int GetRelativeVirtualAddress() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct FieldDefinitionHandle : System.IEquatable<System.Reflection.Metadata.FieldDefinitionHandle>
+    public readonly partial struct FieldDefinitionHandle : System.IEquatable<System.Reflection.Metadata.FieldDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -799,7 +799,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.FieldDefinitionHandle left, System.Reflection.Metadata.FieldDefinitionHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct FieldDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.FieldDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.FieldDefinitionHandle>, System.Collections.IEnumerable
+    public readonly partial struct FieldDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.FieldDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.FieldDefinitionHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.FieldDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -816,7 +816,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GenericParameter
+    public readonly partial struct GenericParameter
     {
         public System.Reflection.GenericParameterAttributes Attributes { get { throw null; } }
         public int Index { get { throw null; } }
@@ -826,14 +826,14 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GenericParameterConstraint
+    public readonly partial struct GenericParameterConstraint
     {
         public System.Reflection.Metadata.GenericParameterHandle Parameter { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Type { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GenericParameterConstraintHandle : System.IEquatable<System.Reflection.Metadata.GenericParameterConstraintHandle>
+    public readonly partial struct GenericParameterConstraintHandle : System.IEquatable<System.Reflection.Metadata.GenericParameterConstraintHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -847,7 +847,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.GenericParameterConstraintHandle left, System.Reflection.Metadata.GenericParameterConstraintHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GenericParameterConstraintHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.GenericParameterConstraintHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.GenericParameterConstraintHandle>, System.Collections.Generic.IReadOnlyList<System.Reflection.Metadata.GenericParameterConstraintHandle>, System.Collections.IEnumerable
+    public readonly partial struct GenericParameterConstraintHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.GenericParameterConstraintHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.GenericParameterConstraintHandle>, System.Collections.Generic.IReadOnlyList<System.Reflection.Metadata.GenericParameterConstraintHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.GenericParameterConstraintHandle this[int index] { get { throw null; } }
@@ -865,7 +865,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GenericParameterHandle : System.IEquatable<System.Reflection.Metadata.GenericParameterHandle>
+    public readonly partial struct GenericParameterHandle : System.IEquatable<System.Reflection.Metadata.GenericParameterHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -879,7 +879,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.GenericParameterHandle left, System.Reflection.Metadata.GenericParameterHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GenericParameterHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.GenericParameterHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.GenericParameterHandle>, System.Collections.Generic.IReadOnlyList<System.Reflection.Metadata.GenericParameterHandle>, System.Collections.IEnumerable
+    public readonly partial struct GenericParameterHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.GenericParameterHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.GenericParameterHandle>, System.Collections.Generic.IReadOnlyList<System.Reflection.Metadata.GenericParameterHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.GenericParameterHandle this[int index] { get { throw null; } }
@@ -897,7 +897,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GuidHandle : System.IEquatable<System.Reflection.Metadata.GuidHandle>
+    public readonly partial struct GuidHandle : System.IEquatable<System.Reflection.Metadata.GuidHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -909,7 +909,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.GuidHandle left, System.Reflection.Metadata.GuidHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Handle : System.IEquatable<System.Reflection.Metadata.Handle>
+    public readonly partial struct Handle : System.IEquatable<System.Reflection.Metadata.Handle>
     {
         public static readonly System.Reflection.Metadata.AssemblyDefinitionHandle AssemblyDefinition;
         public static readonly System.Reflection.Metadata.ModuleDefinitionHandle ModuleDefinition;
@@ -1221,7 +1221,7 @@ namespace System.Reflection.Metadata
         public ImageFormatLimitationException(string message, System.Exception innerException) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ImportDefinition
+    public readonly partial struct ImportDefinition
     {
         public System.Reflection.Metadata.BlobHandle Alias { get { throw null; } }
         public System.Reflection.Metadata.ImportDefinitionKind Kind { get { throw null; } }
@@ -1230,7 +1230,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.EntityHandle TargetType { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ImportDefinitionCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ImportDefinition>, System.Collections.IEnumerable
+    public readonly partial struct ImportDefinitionCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ImportDefinition>, System.Collections.IEnumerable
     {
         public System.Reflection.Metadata.ImportDefinitionCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.ImportDefinition> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ImportDefinition>.GetEnumerator() { throw null; }
@@ -1258,14 +1258,14 @@ namespace System.Reflection.Metadata
         ImportXmlNamespace = 4,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ImportScope
+    public readonly partial struct ImportScope
     {
         public System.Reflection.Metadata.BlobHandle ImportsBlob { get { throw null; } }
         public System.Reflection.Metadata.ImportScopeHandle Parent { get { throw null; } }
         public System.Reflection.Metadata.ImportDefinitionCollection GetImports() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ImportScopeCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ImportScopeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ImportScopeHandle>, System.Collections.IEnumerable
+    public readonly partial struct ImportScopeCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ImportScopeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ImportScopeHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.ImportScopeCollection.Enumerator GetEnumerator() { throw null; }
@@ -1282,7 +1282,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ImportScopeHandle : System.IEquatable<System.Reflection.Metadata.ImportScopeHandle>
+    public readonly partial struct ImportScopeHandle : System.IEquatable<System.Reflection.Metadata.ImportScopeHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1296,13 +1296,13 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.ImportScopeHandle left, System.Reflection.Metadata.ImportScopeHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct InterfaceImplementation
+    public readonly partial struct InterfaceImplementation
     {
         public System.Reflection.Metadata.EntityHandle Interface { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct InterfaceImplementationHandle : System.IEquatable<System.Reflection.Metadata.InterfaceImplementationHandle>
+    public readonly partial struct InterfaceImplementationHandle : System.IEquatable<System.Reflection.Metadata.InterfaceImplementationHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1316,7 +1316,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.InterfaceImplementationHandle left, System.Reflection.Metadata.InterfaceImplementationHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct InterfaceImplementationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.InterfaceImplementationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.InterfaceImplementationHandle>, System.Collections.IEnumerable
+    public readonly partial struct InterfaceImplementationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.InterfaceImplementationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.InterfaceImplementationHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.InterfaceImplementationHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1352,13 +1352,13 @@ namespace System.Reflection.Metadata
         TType GetSZArrayType(TType elementType);
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalConstant
+    public readonly partial struct LocalConstant
     {
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalConstantHandle : System.IEquatable<System.Reflection.Metadata.LocalConstantHandle>
+    public readonly partial struct LocalConstantHandle : System.IEquatable<System.Reflection.Metadata.LocalConstantHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1372,7 +1372,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.LocalConstantHandle left, System.Reflection.Metadata.LocalConstantHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalConstantHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalConstantHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalConstantHandle>, System.Collections.IEnumerable
+    public readonly partial struct LocalConstantHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalConstantHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalConstantHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.LocalConstantHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1389,7 +1389,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalScope
+    public readonly partial struct LocalScope
     {
         public int EndOffset { get { throw null; } }
         public System.Reflection.Metadata.ImportScopeHandle ImportScope { get { throw null; } }
@@ -1401,7 +1401,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.LocalVariableHandleCollection GetLocalVariables() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalScopeHandle : System.IEquatable<System.Reflection.Metadata.LocalScopeHandle>
+    public readonly partial struct LocalScopeHandle : System.IEquatable<System.Reflection.Metadata.LocalScopeHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1415,7 +1415,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.LocalScopeHandle left, System.Reflection.Metadata.LocalScopeHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalScopeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.IEnumerable
+    public readonly partial struct LocalScopeHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalScopeHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.LocalScopeHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1441,7 +1441,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalVariable
+    public readonly partial struct LocalVariable
     {
         public System.Reflection.Metadata.LocalVariableAttributes Attributes { get { throw null; } }
         public int Index { get { throw null; } }
@@ -1454,7 +1454,7 @@ namespace System.Reflection.Metadata
         None = 0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalVariableHandle : System.IEquatable<System.Reflection.Metadata.LocalVariableHandle>
+    public readonly partial struct LocalVariableHandle : System.IEquatable<System.Reflection.Metadata.LocalVariableHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1468,7 +1468,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.LocalVariableHandle left, System.Reflection.Metadata.LocalVariableHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalVariableHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalVariableHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalVariableHandle>, System.Collections.IEnumerable
+    public readonly partial struct LocalVariableHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.LocalVariableHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.LocalVariableHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.LocalVariableHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1485,7 +1485,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ManifestResource
+    public readonly partial struct ManifestResource
     {
         public System.Reflection.ManifestResourceAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Implementation { get { throw null; } }
@@ -1494,7 +1494,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ManifestResourceHandle : System.IEquatable<System.Reflection.Metadata.ManifestResourceHandle>
+    public readonly partial struct ManifestResourceHandle : System.IEquatable<System.Reflection.Metadata.ManifestResourceHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1508,7 +1508,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.ManifestResourceHandle left, System.Reflection.Metadata.ManifestResourceHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ManifestResourceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ManifestResourceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ManifestResourceHandle>, System.Collections.IEnumerable
+    public readonly partial struct ManifestResourceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ManifestResourceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ManifestResourceHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.ManifestResourceHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1525,7 +1525,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MemberReference
+    public readonly partial struct MemberReference
     {
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle Parent { get { throw null; } }
@@ -1536,7 +1536,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.MemberReferenceKind GetKind() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MemberReferenceHandle : System.IEquatable<System.Reflection.Metadata.MemberReferenceHandle>
+    public readonly partial struct MemberReferenceHandle : System.IEquatable<System.Reflection.Metadata.MemberReferenceHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1550,7 +1550,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.MemberReferenceHandle left, System.Reflection.Metadata.MemberReferenceHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MemberReferenceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MemberReferenceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MemberReferenceHandle>, System.Collections.IEnumerable
+    public readonly partial struct MemberReferenceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MemberReferenceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MemberReferenceHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.MemberReferenceHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1687,7 +1687,7 @@ namespace System.Reflection.Metadata
         PrefetchMetadata = 2,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MetadataStringComparer
+    public readonly partial struct MetadataStringComparer
     {
         public bool Equals(System.Reflection.Metadata.DocumentNameBlobHandle handle, string value) { throw null; }
         public bool Equals(System.Reflection.Metadata.DocumentNameBlobHandle handle, string value, bool ignoreCase) { throw null; }
@@ -1719,7 +1719,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.BlobReader GetILReader() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodDebugInformation
+    public readonly partial struct MethodDebugInformation
     {
         public System.Reflection.Metadata.DocumentHandle Document { get { throw null; } }
         public System.Reflection.Metadata.StandaloneSignatureHandle LocalSignature { get { throw null; } }
@@ -1728,7 +1728,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.MethodDefinitionHandle GetStateMachineKickoffMethod() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodDebugInformationHandle : System.IEquatable<System.Reflection.Metadata.MethodDebugInformationHandle>
+    public readonly partial struct MethodDebugInformationHandle : System.IEquatable<System.Reflection.Metadata.MethodDebugInformationHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1743,7 +1743,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.MethodDefinitionHandle ToDefinitionHandle() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodDebugInformationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDebugInformationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodDebugInformationHandle>, System.Collections.IEnumerable
+    public readonly partial struct MethodDebugInformationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDebugInformationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodDebugInformationHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.MethodDebugInformationHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1760,7 +1760,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodDefinition
+    public readonly partial struct MethodDefinition
     {
         public System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public System.Reflection.MethodImplAttributes ImplAttributes { get { throw null; } }
@@ -1776,7 +1776,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.ParameterHandleCollection GetParameters() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodDefinitionHandle : System.IEquatable<System.Reflection.Metadata.MethodDefinitionHandle>
+    public readonly partial struct MethodDefinitionHandle : System.IEquatable<System.Reflection.Metadata.MethodDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1791,7 +1791,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.MethodDebugInformationHandle ToDebugInformationHandle() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodDefinitionHandle>, System.Collections.IEnumerable
+    public readonly partial struct MethodDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodDefinitionHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1808,7 +1808,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodImplementation
+    public readonly partial struct MethodImplementation
     {
         public System.Reflection.Metadata.EntityHandle MethodBody { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle MethodDeclaration { get { throw null; } }
@@ -1816,7 +1816,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodImplementationHandle : System.IEquatable<System.Reflection.Metadata.MethodImplementationHandle>
+    public readonly partial struct MethodImplementationHandle : System.IEquatable<System.Reflection.Metadata.MethodImplementationHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1830,7 +1830,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.MethodImplementationHandle left, System.Reflection.Metadata.MethodImplementationHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodImplementationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodImplementationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodImplementationHandle>, System.Collections.IEnumerable
+    public readonly partial struct MethodImplementationHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.MethodImplementationHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.MethodImplementationHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.MethodImplementationHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -1847,14 +1847,14 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodImport
+    public readonly partial struct MethodImport
     {
         public System.Reflection.MethodImportAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.ModuleReferenceHandle Module { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodSignature<TType>
+    public readonly partial struct MethodSignature<TType>
     {
         public MethodSignature(System.Reflection.Metadata.SignatureHeader header, TType returnType, int requiredParameterCount, int genericParameterCount, System.Collections.Immutable.ImmutableArray<TType> parameterTypes) { throw null;}
         public int GenericParameterCount { get { throw null; } }
@@ -1864,7 +1864,7 @@ namespace System.Reflection.Metadata
         public TType ReturnType { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodSpecification
+    public readonly partial struct MethodSpecification
     {
         public System.Reflection.Metadata.EntityHandle Method { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
@@ -1872,7 +1872,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodSpecificationHandle : System.IEquatable<System.Reflection.Metadata.MethodSpecificationHandle>
+    public readonly partial struct MethodSpecificationHandle : System.IEquatable<System.Reflection.Metadata.MethodSpecificationHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1886,7 +1886,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.MethodSpecificationHandle left, System.Reflection.Metadata.MethodSpecificationHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ModuleDefinition
+    public readonly partial struct ModuleDefinition
     {
         public System.Reflection.Metadata.GuidHandle BaseGenerationId { get { throw null; } }
         public int Generation { get { throw null; } }
@@ -1895,7 +1895,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ModuleDefinitionHandle : System.IEquatable<System.Reflection.Metadata.ModuleDefinitionHandle>
+    public readonly partial struct ModuleDefinitionHandle : System.IEquatable<System.Reflection.Metadata.ModuleDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1909,13 +1909,13 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.ModuleDefinitionHandle left, System.Reflection.Metadata.ModuleDefinitionHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ModuleReference
+    public readonly partial struct ModuleReference
     {
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ModuleReferenceHandle : System.IEquatable<System.Reflection.Metadata.ModuleReferenceHandle>
+    public readonly partial struct ModuleReferenceHandle : System.IEquatable<System.Reflection.Metadata.ModuleReferenceHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1938,7 +1938,7 @@ namespace System.Reflection.Metadata
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeDefinitionHandle> TypeDefinitions { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct NamespaceDefinitionHandle : System.IEquatable<System.Reflection.Metadata.NamespaceDefinitionHandle>
+    public readonly partial struct NamespaceDefinitionHandle : System.IEquatable<System.Reflection.Metadata.NamespaceDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1950,7 +1950,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.NamespaceDefinitionHandle left, System.Reflection.Metadata.NamespaceDefinitionHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Parameter
+    public readonly partial struct Parameter
     {
         public System.Reflection.ParameterAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -1960,7 +1960,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.BlobHandle GetMarshallingDescriptor() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ParameterHandle : System.IEquatable<System.Reflection.Metadata.ParameterHandle>
+    public readonly partial struct ParameterHandle : System.IEquatable<System.Reflection.Metadata.ParameterHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1974,7 +1974,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.ParameterHandle left, System.Reflection.Metadata.ParameterHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ParameterHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ParameterHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ParameterHandle>, System.Collections.IEnumerable
+    public readonly partial struct ParameterHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.ParameterHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.ParameterHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.ParameterHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -2036,13 +2036,13 @@ namespace System.Reflection.Metadata
         Void = (byte)1,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct PropertyAccessors
+    public readonly partial struct PropertyAccessors
     {
         public System.Reflection.Metadata.MethodDefinitionHandle Getter { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Setter { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct PropertyDefinition
+    public readonly partial struct PropertyDefinition
     {
         public System.Reflection.PropertyAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
@@ -2053,7 +2053,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.ConstantHandle GetDefaultValue() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct PropertyDefinitionHandle : System.IEquatable<System.Reflection.Metadata.PropertyDefinitionHandle>
+    public readonly partial struct PropertyDefinitionHandle : System.IEquatable<System.Reflection.Metadata.PropertyDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -2067,7 +2067,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.PropertyDefinitionHandle left, System.Reflection.Metadata.PropertyDefinitionHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct PropertyDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.PropertyDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.PropertyDefinitionHandle>, System.Collections.IEnumerable
+    public readonly partial struct PropertyDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.PropertyDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.PropertyDefinitionHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.PropertyDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -2084,14 +2084,14 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ReservedBlob<THandle> where THandle : struct
+    public readonly partial struct ReservedBlob<THandle> where THandle : struct
     {
         public System.Reflection.Metadata.Blob Content { get { throw null; } }
         public THandle Handle { get { throw null; } }
         public System.Reflection.Metadata.BlobWriter CreateWriter() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SequencePoint : System.IEquatable<System.Reflection.Metadata.SequencePoint>
+    public readonly partial struct SequencePoint : System.IEquatable<System.Reflection.Metadata.SequencePoint>
     {
         public const int HiddenLine = 16707566;
         public System.Reflection.Metadata.DocumentHandle Document { get { throw null; } }
@@ -2106,7 +2106,7 @@ namespace System.Reflection.Metadata
         public override int GetHashCode() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SequencePointCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.SequencePoint>, System.Collections.IEnumerable
+    public readonly partial struct SequencePointCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.SequencePoint>, System.Collections.IEnumerable
     {
         public System.Reflection.Metadata.SequencePointCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.SequencePoint> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.SequencePoint>.GetEnumerator() { throw null; }
@@ -2229,7 +2229,7 @@ namespace System.Reflection.Metadata
         ValueType = (byte)17,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct StandaloneSignature
+    public readonly partial struct StandaloneSignature
     {
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<TType> DecodeLocalSignature<TType, TGenericContext>(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext) { throw null; }
@@ -2238,7 +2238,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StandaloneSignatureKind GetKind() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct StandaloneSignatureHandle : System.IEquatable<System.Reflection.Metadata.StandaloneSignatureHandle>
+    public readonly partial struct StandaloneSignatureHandle : System.IEquatable<System.Reflection.Metadata.StandaloneSignatureHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -2257,7 +2257,7 @@ namespace System.Reflection.Metadata
         Method = 0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct StringHandle : System.IEquatable<System.Reflection.Metadata.StringHandle>
+    public readonly partial struct StringHandle : System.IEquatable<System.Reflection.Metadata.StringHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -2269,7 +2269,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.StringHandle left, System.Reflection.Metadata.StringHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeDefinition
+    public readonly partial struct TypeDefinition
     {
         public System.Reflection.TypeAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle BaseType { get { throw null; } }
@@ -2290,7 +2290,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.PropertyDefinitionHandleCollection GetProperties() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeDefinitionHandle : System.IEquatable<System.Reflection.Metadata.TypeDefinitionHandle>
+    public readonly partial struct TypeDefinitionHandle : System.IEquatable<System.Reflection.Metadata.TypeDefinitionHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -2304,7 +2304,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.TypeDefinitionHandle left, System.Reflection.Metadata.TypeDefinitionHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.TypeDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.TypeDefinitionHandle>, System.Collections.IEnumerable
+    public readonly partial struct TypeDefinitionHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.TypeDefinitionHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.TypeDefinitionHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.TypeDefinitionHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -2321,7 +2321,7 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeLayout
+    public readonly partial struct TypeLayout
     {
         public TypeLayout(int size, int packingSize) { throw null;}
         public bool IsDefault { get { throw null; } }
@@ -2329,14 +2329,14 @@ namespace System.Reflection.Metadata
         public int Size { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeReference
+    public readonly partial struct TypeReference
     {
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Namespace { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle ResolutionScope { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeReferenceHandle : System.IEquatable<System.Reflection.Metadata.TypeReferenceHandle>
+    public readonly partial struct TypeReferenceHandle : System.IEquatable<System.Reflection.Metadata.TypeReferenceHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -2350,7 +2350,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.TypeReferenceHandle left, System.Reflection.Metadata.TypeReferenceHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeReferenceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.TypeReferenceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.TypeReferenceHandle>, System.Collections.IEnumerable
+    public readonly partial struct TypeReferenceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.TypeReferenceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.TypeReferenceHandle>, System.Collections.IEnumerable
     {
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.TypeReferenceHandleCollection.Enumerator GetEnumerator() { throw null; }
@@ -2367,14 +2367,14 @@ namespace System.Reflection.Metadata
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeSpecification
+    public readonly partial struct TypeSpecification
     {
         public System.Reflection.Metadata.BlobHandle Signature { get { throw null; } }
         public TType DecodeSignature<TType, TGenericContext>(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext) { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct TypeSpecificationHandle : System.IEquatable<System.Reflection.Metadata.TypeSpecificationHandle>
+    public readonly partial struct TypeSpecificationHandle : System.IEquatable<System.Reflection.Metadata.TypeSpecificationHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -2388,7 +2388,7 @@ namespace System.Reflection.Metadata
         public static bool operator !=(System.Reflection.Metadata.TypeSpecificationHandle left, System.Reflection.Metadata.TypeSpecificationHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct UserStringHandle : System.IEquatable<System.Reflection.Metadata.UserStringHandle>
+    public readonly partial struct UserStringHandle : System.IEquatable<System.Reflection.Metadata.UserStringHandle>
     {
         public bool IsNil { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -2403,14 +2403,14 @@ namespace System.Reflection.Metadata
 namespace System.Reflection.Metadata.Ecma335
 {
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ArrayShapeEncoder
+    public readonly partial struct ArrayShapeEncoder
     {
         public ArrayShapeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Shape(int rank, System.Collections.Immutable.ImmutableArray<int> sizes, System.Collections.Immutable.ImmutableArray<int> lowerBounds) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct BlobEncoder
+    public readonly partial struct BlobEncoder
     {
         public BlobEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2452,7 +2452,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void AddFinallyRegion(System.Reflection.Metadata.Ecma335.LabelHandle tryStart, System.Reflection.Metadata.Ecma335.LabelHandle tryEnd, System.Reflection.Metadata.Ecma335.LabelHandle handlerStart, System.Reflection.Metadata.Ecma335.LabelHandle handlerEnd) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeArrayTypeEncoder
+    public readonly partial struct CustomAttributeArrayTypeEncoder
     {
         public CustomAttributeArrayTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2460,7 +2460,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void ObjectArray() { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeElementTypeEncoder
+    public readonly partial struct CustomAttributeElementTypeEncoder
     {
         public CustomAttributeElementTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2482,21 +2482,21 @@ namespace System.Reflection.Metadata.Ecma335
         public void UInt64() { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomAttributeNamedArgumentsEncoder
+    public readonly partial struct CustomAttributeNamedArgumentsEncoder
     {
         public CustomAttributeNamedArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.NamedArgumentsEncoder Count(int count) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CustomModifiersEncoder
+    public readonly partial struct CustomModifiersEncoder
     {
         public CustomModifiersEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder AddModifier(System.Reflection.Metadata.EntityHandle type, bool isOptional) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct EditAndContinueLogEntry : System.IEquatable<System.Reflection.Metadata.Ecma335.EditAndContinueLogEntry>
+    public readonly partial struct EditAndContinueLogEntry : System.IEquatable<System.Reflection.Metadata.Ecma335.EditAndContinueLogEntry>
     {
         public EditAndContinueLogEntry(System.Reflection.Metadata.EntityHandle handle, System.Reflection.Metadata.Ecma335.EditAndContinueOperation operation) { throw null;}
         public System.Reflection.Metadata.EntityHandle Handle { get { throw null; } }
@@ -2515,7 +2515,7 @@ namespace System.Reflection.Metadata.Ecma335
         Default = 0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ExceptionRegionEncoder
+    public readonly partial struct ExceptionRegionEncoder
     {
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public bool HasSmallFormat { get { throw null; } }
@@ -2532,7 +2532,7 @@ namespace System.Reflection.Metadata.Ecma335
         public static int GetTypeDefinitionId(this System.Reflection.Metadata.ExportedType exportedType) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct FixedArgumentsEncoder
+    public readonly partial struct FixedArgumentsEncoder
     {
         public FixedArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2545,7 +2545,7 @@ namespace System.Reflection.Metadata.Ecma335
         None = 0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct GenericTypeArgumentsEncoder
+    public readonly partial struct GenericTypeArgumentsEncoder
     {
         public GenericTypeArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2559,7 +2559,7 @@ namespace System.Reflection.Metadata.Ecma335
         UserString = 0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct InstructionEncoder
+    public readonly partial struct InstructionEncoder
     {
         public InstructionEncoder(System.Reflection.Metadata.BlobBuilder codeBuilder, System.Reflection.Metadata.Ecma335.ControlFlowBuilder controlFlowBuilder=null) { throw null;}
         public System.Reflection.Metadata.BlobBuilder CodeBuilder { get { throw null; } }
@@ -2589,7 +2589,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void Token(System.Reflection.Metadata.EntityHandle handle) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LabelHandle : System.IEquatable<System.Reflection.Metadata.Ecma335.LabelHandle>
+    public readonly partial struct LabelHandle : System.IEquatable<System.Reflection.Metadata.Ecma335.LabelHandle>
     {
         public int Id { get { throw null; } }
         public bool IsNil { get { throw null; } }
@@ -2600,7 +2600,7 @@ namespace System.Reflection.Metadata.Ecma335
         public static bool operator !=(System.Reflection.Metadata.Ecma335.LabelHandle left, System.Reflection.Metadata.Ecma335.LabelHandle right) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LiteralEncoder
+    public readonly partial struct LiteralEncoder
     {
         public LiteralEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2612,21 +2612,21 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.Ecma335.VectorEncoder Vector() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LiteralsEncoder
+    public readonly partial struct LiteralsEncoder
     {
         public LiteralsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.LiteralEncoder AddLiteral() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalVariablesEncoder
+    public readonly partial struct LocalVariablesEncoder
     {
         public LocalVariablesEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.LocalVariableTypeEncoder AddVariable() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct LocalVariableTypeEncoder
+    public readonly partial struct LocalVariableTypeEncoder
     {
         public LocalVariableTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2801,14 +2801,14 @@ namespace System.Reflection.Metadata.Ecma335
         None = 0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodBodyStreamEncoder
+    public readonly partial struct MethodBodyStreamEncoder
     {
         public MethodBodyStreamEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.MethodBodyStreamEncoder.MethodBody AddMethodBody(int codeSize, int maxStack=8, int exceptionRegionCount=0, bool hasSmallExceptionRegions=true, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature=default(System.Reflection.Metadata.StandaloneSignatureHandle), System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes=(System.Reflection.Metadata.Ecma335.MethodBodyAttributes)(1)) { throw null; }
         public int AddMethodBody(System.Reflection.Metadata.Ecma335.InstructionEncoder instructionEncoder, int maxStack=8, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature=default(System.Reflection.Metadata.StandaloneSignatureHandle), System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes=(System.Reflection.Metadata.Ecma335.MethodBodyAttributes)(1)) { throw null; }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        public partial struct MethodBody
+        public readonly partial struct MethodBody
         {
             public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder ExceptionRegions { get { throw null; } }
             public System.Reflection.Metadata.Blob Instructions { get { throw null; } }
@@ -2816,7 +2816,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MethodSignatureEncoder
+    public readonly partial struct MethodSignatureEncoder
     {
         public MethodSignatureEncoder(System.Reflection.Metadata.BlobBuilder builder, bool hasVarArgs) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2825,7 +2825,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void Parameters(int parameterCount, out System.Reflection.Metadata.Ecma335.ReturnTypeEncoder returnType, out System.Reflection.Metadata.Ecma335.ParametersEncoder parameters) { returnType = default(System.Reflection.Metadata.Ecma335.ReturnTypeEncoder); parameters = default(System.Reflection.Metadata.Ecma335.ParametersEncoder); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct NamedArgumentsEncoder
+    public readonly partial struct NamedArgumentsEncoder
     {
         public NamedArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2833,7 +2833,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void AddArgument(bool isField, out System.Reflection.Metadata.Ecma335.NamedArgumentTypeEncoder type, out System.Reflection.Metadata.Ecma335.NameEncoder name, out System.Reflection.Metadata.Ecma335.LiteralEncoder literal) { type = default(System.Reflection.Metadata.Ecma335.NamedArgumentTypeEncoder); name = default(System.Reflection.Metadata.Ecma335.NameEncoder); literal = default(System.Reflection.Metadata.Ecma335.LiteralEncoder); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct NamedArgumentTypeEncoder
+    public readonly partial struct NamedArgumentTypeEncoder
     {
         public NamedArgumentTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2842,14 +2842,14 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.Ecma335.CustomAttributeArrayTypeEncoder SZArray() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct NameEncoder
+    public readonly partial struct NameEncoder
     {
         public NameEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Name(string name) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ParametersEncoder
+    public readonly partial struct ParametersEncoder
     {
         public ParametersEncoder(System.Reflection.Metadata.BlobBuilder builder, bool hasVarArgs=false) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2858,7 +2858,7 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.Ecma335.ParametersEncoder StartVarArgs() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ParameterTypeEncoder
+    public readonly partial struct ParameterTypeEncoder
     {
         public ParameterTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2867,7 +2867,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void TypedReference() { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct PermissionSetEncoder
+    public readonly partial struct PermissionSetEncoder
     {
         public PermissionSetEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2883,7 +2883,7 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.BlobContentId Serialize(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ReturnTypeEncoder
+    public readonly partial struct ReturnTypeEncoder
     {
         public ReturnTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2893,7 +2893,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void Void() { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ScalarEncoder
+    public readonly partial struct ScalarEncoder
     {
         public ScalarEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -2902,7 +2902,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void SystemType(string serializedTypeName) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SignatureDecoder<TType, TGenericContext>
+    public readonly partial struct SignatureDecoder<TType, TGenericContext>
     {
         public SignatureDecoder(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, System.Reflection.Metadata.MetadataReader metadataReader, TGenericContext genericContext) { throw null;}
         public TType DecodeFieldSignature(ref System.Reflection.Metadata.BlobReader blobReader) { throw null; }
@@ -2912,7 +2912,7 @@ namespace System.Reflection.Metadata.Ecma335
         public TType DecodeType(ref System.Reflection.Metadata.BlobReader blobReader, bool allowTypeSpecifications=false) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SignatureTypeEncoder
+    public readonly partial struct SignatureTypeEncoder
     {
         public SignatureTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -3002,7 +3002,7 @@ namespace System.Reflection.Metadata.Ecma335
         TypeSpec = (byte)27,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct VectorEncoder
+    public readonly partial struct VectorEncoder
     {
         public VectorEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;}
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
@@ -3030,7 +3030,7 @@ namespace System.Reflection.PortableExecutable
         UpSystemOnly = (ushort)16384,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CodeViewDebugDirectoryData
+    public readonly partial struct CodeViewDebugDirectoryData
     {
         public int Age { get { throw null; } }
         public System.Guid Guid { get { throw null; } }
@@ -3081,7 +3081,7 @@ namespace System.Reflection.PortableExecutable
         public void AddReproducibleEntry() { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DebugDirectoryEntry
+    public readonly partial struct DebugDirectoryEntry
     {
         public DebugDirectoryEntry(uint stamp, ushort majorVersion, ushort minorVersion, System.Reflection.PortableExecutable.DebugDirectoryEntryType type, int dataSize, int dataRelativeVirtualAddress, int dataPointer) { throw null;}
         public int DataPointer { get { throw null; } }
@@ -3102,7 +3102,7 @@ namespace System.Reflection.PortableExecutable
         Unknown = 0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DirectoryEntry
+    public readonly partial struct DirectoryEntry
     {
         public readonly int RelativeVirtualAddress;
         public readonly int Size;
@@ -3299,7 +3299,7 @@ namespace System.Reflection.PortableExecutable
         PE32Plus = (ushort)523,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct PEMemoryBlock
+    public readonly partial struct PEMemoryBlock
     {
         public int Length { get { throw null; } }
         public unsafe byte* Pointer { get { throw null; } }
@@ -3395,7 +3395,7 @@ namespace System.Reflection.PortableExecutable
         TypeReg = (uint)0,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SectionHeader
+    public readonly partial struct SectionHeader
     {
         public string Name { get { throw null; } }
         public ushort NumberOfLineNumbers { get { throw null; } }
@@ -3409,7 +3409,7 @@ namespace System.Reflection.PortableExecutable
         public int VirtualSize { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SectionLocation
+    public readonly partial struct SectionLocation
     {
         public SectionLocation(int relativeVirtualAddress, int pointerToRawData) { throw null;}
         public int PointerToRawData { get { throw null; } }
