@@ -135,9 +135,6 @@ namespace System.Runtime.InteropServices
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
-#if DEBUG
-        private String _stackTrace; // Where we allocated this CriticalHandle.
-#endif
         protected IntPtr handle;    // This must be protected so derived classes can use out params. 
         private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
 
@@ -146,13 +143,6 @@ namespace System.Runtime.InteropServices
         {
             handle = invalidHandleValue;
             _isClosed = false;
-
-#if DEBUG
-            if (BCLDebug.SafeHandleStackTracesEnabled)
-                _stackTrace = Environment.GetStackTrace(null, false);
-            else
-                _stackTrace = "For a stack trace showing who allocated this CriticalHandle, set SafeHandleStackTraces to 1 and rerun your app.";
-#endif
         }
 
         // Adding an empty default constructor for annotation purposes

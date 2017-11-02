@@ -11,8 +11,6 @@
 #include <intrin.h>
 #endif // _MSC_VER
 
-#define FEATURE_REDHAWK 1
-
 #define REDHAWK_PALIMPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
 
@@ -207,6 +205,16 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 #endif // MemoryBarrier
 
 #endif // defined(__i386__) || defined(__x86_64__)
+
+#ifdef __aarch64__
+ #define YieldProcessor() asm volatile ("yield")
+ #define MemoryBarrier __sync_synchronize
+#endif // __aarch64__
+
+#ifdef __arm__
+ #define YieldProcessor()
+ #define MemoryBarrier __sync_synchronize
+#endif // __arm__
 
 #endif // _MSC_VER
 
@@ -420,12 +428,6 @@ typedef PTR_PTR_Object PTR_UNCHECKED_OBJECTREF;
 
 class Thread;
 
-inline bool IsGCSpecialThread()
-{
-    // [LOCALGC TODO] this is not correct
-    return false;
-}
-
 inline bool dbgOnly_IsSpecialEEThread()
 {
     return false;
@@ -453,12 +455,6 @@ namespace ETW
         GC_ROOT_OVERFLOW = 5
     } GC_ROOT_KIND;
 };
-
-inline bool IsGCThread()
-{
-    // [LOCALGC TODO] this is not correct
-    return false;
-}
 
 inline bool FitsInU1(uint64_t val)
 {

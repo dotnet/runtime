@@ -13,7 +13,10 @@ namespace System.Reflection
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            return ((IReflectableType)type).GetTypeInfo();  // Unguarded cast is unbecoming but kept for compatibility.
+            if (type is IReflectableType reflectableType)
+                return reflectableType.GetTypeInfo();
+
+            return new TypeDelegator(type);
         }
     }
 }

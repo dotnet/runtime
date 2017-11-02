@@ -72,10 +72,6 @@
 
 #include "lazycow.h"
 
-#include "compatibilityflags.h"
-extern BOOL GetCompatibilityFlag(CompatibilityFlag flag);
-extern DWORD* GetGlobalCompatibilityFlags();
-
 #include "strongname.h"
 #include "stdmacros.h"
 

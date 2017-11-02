@@ -1,9 +1,9 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-using CommandLine;
-using CommandLine.Text;
 using Microsoft.Xunit.Performance.Api;
+using Microsoft.Xunit.Performance.Api.Profilers.Etw;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,46 +11,123 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace JitBench
 {
-    class Program
+    class JitBenchHarness
     {
         static void Main(string[] args)
         {
             var options = JitBenchHarnessOptions.Parse(args);
 
-            s_temporaryDirectory = Path.Combine(options.IntermediateOutputDirectory, "JitBench");
+            SetupStatics(options);
+
+            using (var h = new XunitPerformanceHarness(args))
+            {
+                ProcessStartInfo startInfo = options.UseExistingSetup ? UseExistingSetup() : CreateNewSetup();
+
+                string scenarioName = "MusicStore";
+                if (!startInfo.Environment.ContainsKey("DOTNET_MULTILEVEL_LOOKUP"))
+                    throw new InvalidOperationException("DOTNET_MULTILEVEL_LOOKUP was not defined.");
+                if (startInfo.Environment["DOTNET_MULTILEVEL_LOOKUP"] != "0")
+                    throw new InvalidOperationException("DOTNET_MULTILEVEL_LOOKUP was not set to 0.");
+
+                if (options.EnableTiering)
+                {
+                    startInfo.Environment.Add("COMPlus_EXPERIMENTAL_TieredCompilation", "1");
+                    scenarioName += " Tiering";
+                }
+
+                if (options.Minopts)
+                {
+                    startInfo.Environment.Add("COMPlus_JITMinOpts", "1");
+                    scenarioName += " Minopts";
+                }
+
+                if (options.DisableR2R)
+                {
+                    startInfo.Environment.Add("COMPlus_ReadyToRun", "0");
+                    scenarioName += " NoR2R";
+                }
+
+                if (options.DisableNgen)
+                {
+                    startInfo.Environment.Add("COMPlus_ZapDisable", "1");
+                    scenarioName += " NoNgen";
+                }
+
+                var program = new JitBenchHarness("JitBench");
+                try
+                {
+                    var scenarioConfiguration = new ScenarioConfiguration(TimeSpan.FromMilliseconds(60000), startInfo) {
+                        Iterations = (int)options.Iterations,
+                        PreIterationDelegate = program.PreIteration,
+                        PostIterationDelegate = program.PostIteration,
+                    };
+                    var processesOfInterest = new string[] {
+                        "dotnet.exe",
+                    };
+                    var modulesOfInterest = new string[] {
+                        "Anonymously Hosted DynamicMethods Assembly",
+                        "clrjit.dll",
+                        "coreclr.dll",
+                        "dotnet.exe",
+                        "MusicStore.dll",
+                        "ntoskrnl.exe",
+                        "System.Private.CoreLib.dll",
+                        "Unknown",
+                    };
+
+                    if (!File.Exists(startInfo.FileName))
+                        throw new FileNotFoundException(startInfo.FileName);
+                    if (!Directory.Exists(startInfo.WorkingDirectory))
+                        throw new DirectoryNotFoundException(startInfo.WorkingDirectory);
+
+                    h.RunScenario(scenarioConfiguration, teardownDelegate: () => {
+                        return program.PostRun("MusicStore", processesOfInterest, modulesOfInterest);
+                    });
+                }
+                catch
+                {
+                    Console.WriteLine(program.StandardOutput);
+                    Console.WriteLine(program.StandardError);
+                    throw;
+                }
+            }
+        }
+
+        public JitBenchHarness(string scenarioBenchmarkName)
+        {
+            _scenarioBenchmarkName = scenarioBenchmarkName;
+            _stdout = new StringBuilder();
+            _stderr = new StringBuilder();
+            IterationsData = new List<IterationData>();
+        }
+
+        public string StandardOutput => _stdout.ToString();
+
+        public string StandardError => _stderr.ToString();
+
+        private static void SetupStatics(JitBenchHarnessOptions options)
+        {
+            s_temporaryDirectory = options.IntermediateOutputDirectory;
             s_targetArchitecture = options.TargetArchitecture;
             if (string.IsNullOrWhiteSpace(s_targetArchitecture))
                 throw new ArgumentNullException("Unspecified target architecture.");
 
-            if (Directory.Exists(s_temporaryDirectory))
-                Directory.Delete(s_temporaryDirectory, true);
-            Directory.CreateDirectory(s_temporaryDirectory);
-
-            s_jitBenchDevDirectory = Path.Combine(s_temporaryDirectory, "JitBench-dev");
-
-            using (var h = new XunitPerformanceHarness(args))
-            {
-                ProcessStartInfo startInfo = Setup();
-                h.RunScenario(startInfo, () => { PrintHeader("Running Benchmark Scenario"); }, PostIteration, PostProcessing, s_ScenarioConfiguration);
-            }
-        }
-
-        static Program()
-        {
-            s_ScenarioConfiguration = new ScenarioConfiguration(TimeSpan.FromMilliseconds(20000)) {
-                Iterations = 11
-            };
-
-            // Set variables we will need to store results.
-            s_iteration = 0;
-            s_startupTimes = new double[s_ScenarioConfiguration.Iterations];
-            s_requestTimes = new double[s_ScenarioConfiguration.Iterations];
-            s_targetArchitecture = "";
+            // J == JitBench folder. By reducing the length of the directory
+            // name we attempt to reduce the chances of hitting PATH length
+            // problems we have been hitting in the lab.
+            // The changes we have done have reduced it in this way:
+            // C:\Jenkins\workspace\perf_scenario---5b001a46\bin\sandbox\JitBench\JitBench-dev
+            // C:\j\workspace\perf_scenario---5b001a46\bin\sandbox\JitBench\JitBench-dev
+            // C:\j\w\perf_scenario---5b001a46\bin\sandbox\JitBench\JitBench-dev
+            // C:\j\w\perf_scenario---5b001a46\bin\sandbox\J
+            s_jitBenchDevDirectory = Path.Combine(s_temporaryDirectory, "J");
+            s_dotnetProcessFileName = Path.Combine(s_jitBenchDevDirectory, ".dotnet", "dotnet.exe");
+            s_musicStoreDirectory = Path.Combine(s_jitBenchDevDirectory, "src", "MusicStore");
         }
 
         private static void DownloadAndExtractJitBenchRepo()
@@ -80,7 +157,7 @@ namespace JitBench
 
         private static void InstallSharedRuntime()
         {
-            var psi = new ProcessStartInfo() {
+            var psi = new ProcessStartInfo {
                 WorkingDirectory = s_jitBenchDevDirectory,
                 FileName = @"powershell.exe",
                 Arguments = $".\\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
@@ -90,15 +167,14 @@ namespace JitBench
 
         private static IDictionary<string, string> InstallDotnet()
         {
-            var psi = new ProcessStartInfo() {
+            var psi = new ProcessStartInfo {
                 WorkingDirectory = s_jitBenchDevDirectory,
                 FileName = @"powershell.exe",
                 Arguments = $".\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
 
-            // TODO: This is currently hardcoded, but we could probably pull it from the powershell cmdlet call.
-            return new Dictionary<string, string> { { "PATH", $"{Path.Combine(s_jitBenchDevDirectory, ".dotnet")};{psi.Environment["PATH"]}" } };
+            return GetInitialEnvironment();
         }
 
         private static void ModifySharedFramework()
@@ -149,17 +225,16 @@ namespace JitBench
         private static IDictionary<string, string> GenerateStore(IDictionary<string, string> environment)
         {
             // This step generates some environment variables needed later.
-            var environmentFileName = "JitBenchEnvironment.txt";
-            var psi = new ProcessStartInfo() {
+            var psi = new ProcessStartInfo {
                 WorkingDirectory = s_jitBenchDevDirectory,
                 FileName = "powershell.exe",
-                Arguments = $"-Command \".\\AspNet-GenerateStore.ps1 -InstallDir .store -Architecture {s_targetArchitecture} -Runtime win7-{s_targetArchitecture}; gi env:JITBENCH_*, env:DOTNET_SHARED_STORE | %{{ \\\"$($_.Name)=$($_.Value)\\\" }} 1>>{environmentFileName}\""
+                Arguments = $"-Command \".\\AspNet-GenerateStore.ps1 -InstallDir .store -Architecture {s_targetArchitecture} -Runtime win7-{s_targetArchitecture}; gi env:JITBENCH_*, env:DOTNET_SHARED_STORE | %{{ \\\"$($_.Name)=$($_.Value)\\\" }} 1>>{EnvironmentFileName}\""
             };
 
             LaunchProcess(psi, 1800000, environment);
 
             // Return the generated environment variables.
-            return GetEnvironment(environment, Path.Combine(s_jitBenchDevDirectory, environmentFileName));
+            return GetEnvironment(environment, Path.Combine(s_jitBenchDevDirectory, EnvironmentFileName));
         }
 
         private static IDictionary<string, string> GetEnvironment(IDictionary<string, string> environment, string fileName)
@@ -182,9 +257,20 @@ namespace JitBench
             return environment;
         }
 
+        private static void DotNetInfo(string workingDirectory, string dotnetFileName, IDictionary<string, string> environment)
+        {
+            var psi = new ProcessStartInfo {
+                WorkingDirectory = workingDirectory,
+                FileName = dotnetFileName,
+                Arguments = "--info"
+            };
+
+            LaunchProcess(psi, 60000, environment);
+        }
+
         private static void RestoreMusicStore(string workingDirectory, string dotnetFileName, IDictionary<string, string> environment)
         {
-            var psi = new ProcessStartInfo() {
+            var psi = new ProcessStartInfo {
                 WorkingDirectory = workingDirectory,
                 FileName = dotnetFileName,
                 Arguments = "restore"
@@ -195,16 +281,67 @@ namespace JitBench
 
         private static void PublishMusicStore(string workingDirectory, string dotnetFileName, IDictionary<string, string> environment)
         {
-            var psi = new ProcessStartInfo() {
+            var manifest = environment["JITBENCH_ASPNET_MANIFEST"];
+            if (!File.Exists(manifest))
+                throw new FileNotFoundException(manifest);
+
+            var psi = new ProcessStartInfo {
                 WorkingDirectory = workingDirectory,
-                FileName = "cmd.exe",
-                Arguments = $"/C \"{dotnetFileName} publish -c Release -f {JitBenchTargetFramework} --manifest %JITBENCH_ASPNET_MANIFEST% /p:MvcRazorCompileOnPublish=false\""
+                FileName = dotnetFileName,
+                Arguments = $"publish -c Release -f {JitBenchTargetFramework} --manifest \"{manifest}\" /p:MvcRazorCompileOnPublish=false -o \"{MusicStorePublishDirectory}\""
             };
 
             LaunchProcess(psi, 300000, environment);
         }
 
-        private static ProcessStartInfo Setup()
+        // Return an environment with the downloaded dotnet on the path.
+        private static IDictionary<string, string> GetInitialEnvironment()
+        {
+            // TODO: This is currently hardcoded, but we could probably pull it from the powershell cmdlet call.
+            var dotnetPath = Path.Combine(s_jitBenchDevDirectory, ".dotnet");
+            var dotnetexe = Path.Combine(dotnetPath, "dotnet.exe");
+            if (!File.Exists(dotnetexe))
+                throw new FileNotFoundException(dotnetexe);
+
+            var environment = new Dictionary<string, string> {
+                { "DOTNET_MULTILEVEL_LOOKUP", "0" },
+                { "PATH", $"{dotnetPath};{Environment.GetEnvironmentVariable("PATH")}" }
+            };
+
+            return environment;
+        }
+
+        private static string MusicStorePublishDirectory =>
+            Path.Combine(s_musicStoreDirectory, "bin", s_targetArchitecture, "Release", JitBenchTargetFramework, "publish");
+
+        private static ProcessStartInfo CreateJitBenchStartInfo(IDictionary<string, string> environment)
+        {
+            var psi = new ProcessStartInfo {
+                Arguments = "MusicStore.dll",
+                FileName = s_dotnetProcessFileName,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                WorkingDirectory = MusicStorePublishDirectory,
+            };
+
+            foreach (KeyValuePair<string, string> pair in environment)
+                psi.Environment.Add(pair.Key, pair.Value);
+
+            return psi;
+        }
+
+        private static ProcessStartInfo UseExistingSetup()
+        {
+            PrintHeader("Using existing SETUP");
+
+            IDictionary<string, string> environment = GetInitialEnvironment();
+            environment = GetEnvironment(environment, Path.Combine(s_jitBenchDevDirectory, EnvironmentFileName));
+            ValidateEnvironment(environment);
+
+            return CreateJitBenchStartInfo(environment);
+        }
+
+        private static ProcessStartInfo CreateNewSetup()
         {
             PrintHeader("Starting SETUP");
 
@@ -217,116 +354,293 @@ namespace JitBench
 
             environment = GenerateStore(environment);
 
+            ValidateEnvironment(environment);
+
+            ModifySharedFramework();
+
+            DotNetInfo(s_musicStoreDirectory, s_dotnetProcessFileName, environment);
+            RestoreMusicStore(s_musicStoreDirectory, s_dotnetProcessFileName, environment);
+            PublishMusicStore(s_musicStoreDirectory, s_dotnetProcessFileName, environment);
+
+            return CreateJitBenchStartInfo(environment);
+        }
+
+        private static void ValidateEnvironment(IDictionary<string, string> environment)
+        {
             var expectedVariables = new string[] {
+                "DOTNET_MULTILEVEL_LOOKUP",
                 "PATH",
                 "JITBENCH_ASPNET_MANIFEST",
                 "JITBENCH_FRAMEWORK_VERSION",
                 "JITBENCH_ASPNET_VERSION",
-                "DOTNET_SHARED_STORE"
+                "DOTNET_SHARED_STORE",
             };
             if (expectedVariables.Except(environment.Keys, StringComparer.OrdinalIgnoreCase).Any())
                 throw new Exception("Missing expected environment variables.");
 
-            ModifySharedFramework();
-
-            var dotnetProcessFileName = Path.Combine(s_jitBenchDevDirectory, ".dotnet", "dotnet.exe");
-            var musicStoreDirectory = Path.Combine(s_jitBenchDevDirectory, "src", "MusicStore");
-
-            RestoreMusicStore(musicStoreDirectory, dotnetProcessFileName, environment);
-            PublishMusicStore(musicStoreDirectory, dotnetProcessFileName, environment);
-
-            var psi = new ProcessStartInfo() {
-                FileName = "cmd.exe",
-                Arguments = $"/C \"{dotnetProcessFileName} MusicStore.dll 1>{MusicStoreRedirectedStandardOutputFileName}\"",
-                WorkingDirectory = Path.Combine(musicStoreDirectory, "bin", "Release", "netcoreapp2.0", "publish")
-            };
-
-            foreach (KeyValuePair<string, string> pair in environment)
-                psi.Environment.Add(pair.Key, pair.Value);
-
-            return psi;
+            Console.WriteLine("**********************************************************************");
+            foreach (var env in expectedVariables)
+                Console.WriteLine($"  {env}={environment[env]}");
+            Console.WriteLine("**********************************************************************");
         }
 
-        private const string MusicStoreRedirectedStandardOutputFileName = "measures.txt";
         private const string JitBenchRepoUrl = "https://github.com/aspnet/JitBench";
-        private const string JitBenchCommitSha1Id = "f4a56adc31e08368ef927c4273eded38e158646b";
-        private const string JitBenchTargetFramework = "netcoreapp2.0";
+        private const string JitBenchCommitSha1Id = "b7e7b786c60daa255aacaea85006afe4d4ec8306";
+        private const string JitBenchTargetFramework = "netcoreapp2.1";
+        private const string EnvironmentFileName = "JitBenchEnvironment.txt";
 
-        private static void PostIteration()
+        private void PreIteration(Scenario scenario)
         {
-            var path = Path.Combine(s_jitBenchDevDirectory, "src", "MusicStore", "bin", "Release", "netcoreapp2.0", "publish");
-            path = Path.Combine(path, MusicStoreRedirectedStandardOutputFileName);
+            PrintHeader("Setting up data standard output/error process handlers.");
+
+            _stderr.Clear();
+            _stdout.Clear();
+
+            if (scenario.Process.StartInfo.RedirectStandardError)
+            {
+                scenario.Process.ErrorDataReceived += (object sender, DataReceivedEventArgs errorLine) => {
+                    if (!string.IsNullOrEmpty(errorLine.Data))
+                        _stderr.AppendLine(errorLine.Data);
+                };
+            }
+
+            if (scenario.Process.StartInfo.RedirectStandardInput)
+                throw new NotImplementedException("RedirectStandardInput has not been implemented yet.");
+
+            if (scenario.Process.StartInfo.RedirectStandardOutput)
+            {
+                scenario.Process.OutputDataReceived += (object sender, DataReceivedEventArgs outputLine) => {
+                    if (!string.IsNullOrEmpty(outputLine.Data))
+                        _stdout.AppendLine(outputLine.Data);
+                };
+            }
+        }
+
+        private void PostIteration(ScenarioExecutionResult scenarioExecutionResult)
+        {
+            PrintHeader("Processing iteration results.");
 
             double? startupTime = null;
-            double? requestTime = null;
-            foreach (string line in File.ReadLines(path))
-            {
-                Match match = Regex.Match(line, @"^Server started in (\d+)ms$");
-                if (match.Success && match.Groups.Count == 2)
-                {
-                    startupTime = Convert.ToDouble(match.Groups[1].Value);
-                    continue;
-                }
+            double? firstRequestTime = null;
+            double? steadyStateAverageTime = null;
 
-                match = Regex.Match(line, @"^Request took (\d+)ms$");
-                if (match.Success && match.Groups.Count == 2)
+            using (var reader = new StringReader(_stdout.ToString()))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
                 {
-                    requestTime = Convert.ToDouble(match.Groups[1].Value);
-                    break;
+                    Match match = Regex.Match(line, @"^Server started in (\d+)ms$");
+                    if (match.Success && match.Groups.Count == 2)
+                    {
+                        startupTime = Convert.ToDouble(match.Groups[1].Value);
+                        continue;
+                    }
+
+                    match = Regex.Match(line, @"^Request took (\d+)ms$");
+                    if (match.Success && match.Groups.Count == 2)
+                    {
+                        firstRequestTime = Convert.ToDouble(match.Groups[1].Value);
+                        continue;
+                    }
+
+                    match = Regex.Match(line, @"^Steadystate average response time: (\d+)ms$");
+                    if (match.Success && match.Groups.Count == 2)
+                    {
+                        steadyStateAverageTime = Convert.ToDouble(match.Groups[1].Value);
+                        break;
+                    }
                 }
             }
 
             if (!startupTime.HasValue)
                 throw new Exception("Startup time was not found.");
-            if (!requestTime.HasValue)
-                throw new Exception("Request time was not found.");
+            if (!firstRequestTime.HasValue)
+                throw new Exception("First Request time was not found.");
+            if (!steadyStateAverageTime.HasValue)
+                throw new Exception("Steady state average response time not found.");
 
-            s_startupTimes[s_iteration] = startupTime.Value;
-            s_requestTimes[s_iteration] = requestTime.Value;
+            IterationsData.Add(new IterationData {
+                ScenarioExecutionResult = scenarioExecutionResult,
+                StandardOutput = _stdout.ToString(),
+                StartupTime = startupTime.Value,
+                FirstRequestTime = firstRequestTime.Value,
+                SteadystateTime = steadyStateAverageTime.Value,
+            });
 
-            PrintRunningStepInformation($"{s_iteration} Server started in {s_startupTimes[s_iteration]}ms");
-            PrintRunningStepInformation($"{s_iteration} Request took {s_requestTimes[s_iteration]}ms");
-            PrintRunningStepInformation($"{s_iteration} Cold start time (server start + first request time): {s_startupTimes[s_iteration] + s_requestTimes[s_iteration]}ms");
+            PrintRunningStepInformation($"({IterationsData.Count}) Server started in {IterationsData.Last().StartupTime}ms");
+            PrintRunningStepInformation($"({IterationsData.Count}) Request took {IterationsData.Last().FirstRequestTime}ms");
+            PrintRunningStepInformation($"({IterationsData.Count}) Cold start time (server start + first request time): {IterationsData.Last().StartupTime + IterationsData.Last().FirstRequestTime}ms");
+            PrintRunningStepInformation($"({IterationsData.Count}) Average steady state response {IterationsData.Last().SteadystateTime}ms");
 
-            ++s_iteration;
+            _stdout.Clear();
+            _stderr.Clear();
         }
 
-        private static ScenarioBenchmark PostProcessing()
+        private ScenarioBenchmark PostRun(
+            string scenarioTestModelName,
+            IReadOnlyCollection<string> processesOfInterest,
+            IReadOnlyCollection<string> modulesOfInterest)
         {
-            PrintHeader("Starting POST");
+            PrintHeader("Post-Processing scenario data.");
 
-            var scenarioBenchmark = new ScenarioBenchmark("MusicStore") {
-                Namespace = "JitBench"
-            };
+            var scenarioBenchmark = new ScenarioBenchmark(_scenarioBenchmarkName);
 
-            // Create (measured) test entries for this scenario.
-            var startup = new ScenarioTestModel("Startup time");
-            scenarioBenchmark.Tests.Add(startup);
-
-            var request = new ScenarioTestModel("Request time");
-            scenarioBenchmark.Tests.Add(request);
-
-            // Add measured metrics to each test.
-            startup.Performance.Metrics.Add(new MetricModel {
-                Name = "Duration",
-                DisplayName = "Duration",
-                Unit = "ms"
-            });
-            request.Performance.Metrics.Add(new MetricModel {
-                Name = "Duration",
-                DisplayName = "Duration",
-                Unit = "ms"
-            });
-
-            for (int i = 0; i < s_ScenarioConfiguration.Iterations; ++i)
+            foreach (var iter in IterationsData)
             {
-                var startupIteration = new IterationModel { Iteration = new Dictionary<string, double>() };
-                startupIteration.Iteration.Add("Duration", s_startupTimes[i]);
-                startup.Performance.IterationModels.Add(startupIteration);
+                var scenarioExecutionResult = iter.ScenarioExecutionResult;
+                var scenarioTestModel = scenarioBenchmark.Tests
+                    .SingleOrDefault(t => t.Name == scenarioTestModelName);
 
-                var requestIteration = new IterationModel { Iteration = new Dictionary<string, double>() };
-                requestIteration.Iteration.Add("Duration", s_requestTimes[i]);
-                request.Performance.IterationModels.Add(requestIteration);
+                if (scenarioTestModel == null)
+                {
+                    scenarioTestModel = new ScenarioTestModel(scenarioTestModelName);
+                    scenarioBenchmark.Tests.Add(scenarioTestModel);
+
+                    // Add measured metrics to each test.
+                    scenarioTestModel.Performance.Metrics.Add(ElapsedTimeMilliseconds);
+                }
+
+                scenarioTestModel.Performance.IterationModels.Add(new IterationModel {
+                    Iteration = new Dictionary<string, double> {
+                        { ElapsedTimeMilliseconds.Name, (scenarioExecutionResult.ProcessExitInfo.ExitTime - scenarioExecutionResult.ProcessExitInfo.StartTime).TotalMilliseconds},
+                    }
+                });
+
+                // Create (measured) test entries for this scenario.
+                var startup = scenarioBenchmark.Tests
+                    .SingleOrDefault(t => t.Name == "Startup" && t.Namespace == scenarioTestModel.Name);
+                if (startup == null)
+                {
+                    startup = new ScenarioTestModel("Startup") {
+                        Namespace = scenarioTestModel.Name,
+                    };
+                    scenarioBenchmark.Tests.Add(startup);
+
+                    // Add measured metrics to each test.
+                    startup.Performance.Metrics.Add(ElapsedTimeMilliseconds);
+                }
+
+                var firstRequest = scenarioBenchmark.Tests
+                    .SingleOrDefault(t => t.Name == "First Request" && t.Namespace == scenarioTestModel.Name);
+                if (firstRequest == null)
+                {
+                    firstRequest = new ScenarioTestModel("First Request") {
+                        Namespace = scenarioTestModel.Name,
+                    };
+                    scenarioBenchmark.Tests.Add(firstRequest);
+
+                    // Add measured metrics to each test.
+                    firstRequest.Performance.Metrics.Add(ElapsedTimeMilliseconds);
+                }
+
+                startup.Performance.IterationModels.Add(new IterationModel {
+                    Iteration = new Dictionary<string, double> {
+                            { ElapsedTimeMilliseconds.Name, iter.StartupTime },
+                        },
+                });
+
+                firstRequest.Performance.IterationModels.Add(new IterationModel {
+                    Iteration = new Dictionary<string, double> {
+                            { ElapsedTimeMilliseconds.Name, iter.FirstRequestTime },
+                        },
+                });
+
+                if (!string.IsNullOrWhiteSpace(iter.ScenarioExecutionResult.EventLogFileName) &&
+                    File.Exists(iter.ScenarioExecutionResult.EventLogFileName))
+                {
+                    // Adding ETW data.
+                    scenarioBenchmark = AddEtwData(
+                        scenarioBenchmark, iter.ScenarioExecutionResult, processesOfInterest, modulesOfInterest);
+                }
+            }
+
+            for (int i = scenarioBenchmark.Tests.Count - 1; i >= 0; i--)
+                if (scenarioBenchmark.Tests[i].Performance.IterationModels.All(iter => iter.Iteration.Count == 0))
+                    scenarioBenchmark.Tests.RemoveAt(i);
+
+            return scenarioBenchmark;
+        }
+
+        private static ScenarioBenchmark AddEtwData(
+            ScenarioBenchmark scenarioBenchmark,
+            ScenarioExecutionResult scenarioExecutionResult,
+            IReadOnlyCollection<string> processesOfInterest,
+            IReadOnlyCollection<string> modulesOfInterest)
+        {
+            var metricModels = scenarioExecutionResult.PerformanceMonitorCounters
+                .Select(pmc => new MetricModel {
+                    DisplayName = pmc.DisplayName,
+                    Name = pmc.Name,
+                    Unit = pmc.Unit,
+                });
+
+            // Get the list of processes of interest.
+            Console.WriteLine($"Parsing: {scenarioExecutionResult.EventLogFileName}");
+            var processes = new SimpleTraceEventParser().GetProfileData(scenarioExecutionResult);
+
+            // Extract the Pmc data for each one of the processes.
+            foreach (var process in processes)
+            {
+                if (!processesOfInterest.Any(p => p.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                var processTest = scenarioBenchmark.Tests
+                    .SingleOrDefault(t => t.Name == process.Name && t.Namespace == "");
+                if (processTest == null)
+                {
+                    processTest = new ScenarioTestModel(process.Name) {
+                        Namespace = "",
+                    };
+                    scenarioBenchmark.Tests.Add(processTest);
+
+                    // Add metrics definitions.
+                    processTest.Performance.Metrics.Add(ElapsedTimeMilliseconds);
+                    processTest.Performance.Metrics.AddRange(metricModels);
+                }
+
+                var processIterationModel = new IterationModel {
+                    Iteration = new Dictionary<string, double>()
+                };
+                processTest.Performance.IterationModels.Add(processIterationModel);
+
+                processIterationModel.Iteration.Add(
+                    ElapsedTimeMilliseconds.Name, process.LifeSpan.Duration.TotalMilliseconds);
+
+                // Add process metrics values.
+                foreach (var pmcData in process.PerformanceMonitorCounterData)
+                    processIterationModel.Iteration.Add(pmcData.Key.Name, pmcData.Value);
+
+                foreach (var module in process.Modules)
+                {
+                    var moduleName = Path.GetFileName(module.FullName);
+                    if (modulesOfInterest.Any(m => m.Equals(moduleName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var moduleTestName = $"{moduleName}";
+                        var moduleTest = scenarioBenchmark.Tests
+                            .SingleOrDefault(t => t.Name == moduleTestName && t.Namespace == process.Name);
+
+                        if (moduleTest == null)
+                        {
+                            moduleTest = new ScenarioTestModel(moduleTestName) {
+                                Namespace = process.Name,
+                                Separator = "!",
+                            };
+                            scenarioBenchmark.Tests.Add(moduleTest);
+
+                            // Add metrics definitions.
+                            moduleTest.Performance.Metrics.AddRange(metricModels);
+                        }
+
+                        var moduleIterationModel = new IterationModel {
+                            Iteration = new Dictionary<string, double>()
+                        };
+                        moduleTest.Performance.IterationModels.Add(moduleIterationModel);
+
+                        // 5. Add module metrics values.
+                        foreach (var pmcData in module.PerformanceMonitorCounterData)
+                            moduleIterationModel.Iteration.Add(pmcData.Key.Name, pmcData.Value);
+                    }
+                }
             }
 
             return scenarioBenchmark;
@@ -349,7 +663,7 @@ namespace JitBench
                 }
             }
 
-            using (var p = new Process() { StartInfo = processStartInfo })
+            using (var p = new System.Diagnostics.Process { StartInfo = processStartInfo })
             {
                 p.Start();
                 if (p.WaitForExit(timeoutMilliseconds) == false)
@@ -368,7 +682,7 @@ namespace JitBench
         {
             Console.WriteLine();
             Console.WriteLine("**********************************************************************");
-            Console.WriteLine($"** {message}");
+            Console.WriteLine($"** [{DateTime.Now}] {message}");
             Console.WriteLine("**********************************************************************");
         }
 
@@ -377,113 +691,27 @@ namespace JitBench
             Console.WriteLine($"-- {message}");
         }
 
-        private static readonly ScenarioConfiguration s_ScenarioConfiguration;
+        private List<IterationData> IterationsData { get; }
 
-        private static int s_iteration;
-        private static double[] s_startupTimes;
-        private static double[] s_requestTimes;
+        private static MetricModel ElapsedTimeMilliseconds { get; } = new MetricModel {
+            DisplayName = "Duration",
+            Name = "Duration",
+            Unit = "ms",
+        };
+
+#if DEBUG
+        private const int NumberOfIterations = 2;
+#else
+        private const int NumberOfIterations = 11;
+#endif
+        private readonly string _scenarioBenchmarkName;
+        private readonly StringBuilder _stdout;
+        private readonly StringBuilder _stderr;
+
         private static string s_temporaryDirectory;
         private static string s_jitBenchDevDirectory;
+        private static string s_dotnetProcessFileName;
+        private static string s_musicStoreDirectory;
         private static string s_targetArchitecture;
-
-        /// <summary>
-        /// Provides an interface to parse the command line arguments passed to the JitBench harness.
-        /// </summary>
-        private sealed class JitBenchHarnessOptions
-        {
-            public JitBenchHarnessOptions()
-            {
-                _tempDirectory = Directory.GetCurrentDirectory();
-            }
-
-            [Option('o', Required = false, HelpText = "Specifies the intermediate output directory name.")]
-            public string IntermediateOutputDirectory
-            {
-                get { return _tempDirectory; }
-
-                set
-                {
-                    if (string.IsNullOrWhiteSpace(value))
-                        throw new InvalidOperationException("The intermediate output directory name cannot be null, empty or white space.");
-
-                    if (value.Any(c => Path.GetInvalidPathChars().Contains(c)))
-                        throw new InvalidOperationException("Specified intermediate output directory name contains invalid path characters.");
-
-                    _tempDirectory = Path.IsPathRooted(value) ? value : Path.GetFullPath(value);
-                    Directory.CreateDirectory(_tempDirectory);
-                }
-            }
-
-            [Option("target-architecture", Required = true, HelpText = "JitBench target architecture (It must match the built product that was copied into sandbox).")]
-            public string TargetArchitecture { get; set; }
-
-            public static JitBenchHarnessOptions Parse(string[] args)
-            {
-                using (var parser = new Parser((settings) => {
-                    settings.CaseInsensitiveEnumValues = true;
-                    settings.CaseSensitive = false;
-                    settings.HelpWriter = new StringWriter();
-                    settings.IgnoreUnknownArguments = true;
-                }))
-                {
-                    JitBenchHarnessOptions options = null;
-                    parser.ParseArguments<JitBenchHarnessOptions>(args)
-                        .WithParsed(parsed => options = parsed)
-                        .WithNotParsed(errors => {
-                            foreach (Error error in errors)
-                            {
-                                switch (error.Tag)
-                                {
-                                    case ErrorType.MissingValueOptionError:
-                                        throw new ArgumentException(
-                                                $"Missing value option for command line argument '{(error as MissingValueOptionError).NameInfo.NameText}'");
-                                    case ErrorType.HelpRequestedError:
-                                        Console.WriteLine(Usage());
-                                        Environment.Exit(0);
-                                        break;
-                                    case ErrorType.VersionRequestedError:
-                                        Console.WriteLine(new AssemblyName(typeof(JitBenchHarnessOptions).GetTypeInfo().Assembly.FullName).Version);
-                                        Environment.Exit(0);
-                                        break;
-                                    case ErrorType.BadFormatTokenError:
-                                    case ErrorType.UnknownOptionError:
-                                    case ErrorType.MissingRequiredOptionError:
-                                    case ErrorType.MutuallyExclusiveSetError:
-                                    case ErrorType.BadFormatConversionError:
-                                    case ErrorType.SequenceOutOfRangeError:
-                                    case ErrorType.RepeatedOptionError:
-                                    case ErrorType.NoVerbSelectedError:
-                                    case ErrorType.BadVerbSelectedError:
-                                    case ErrorType.HelpVerbRequestedError:
-                                        break;
-                                }
-                            }
-                        });
-                    return options;
-                }
-            }
-
-            public static string Usage()
-            {
-                var parser = new Parser((parserSettings) => {
-                    parserSettings.CaseInsensitiveEnumValues = true;
-                    parserSettings.CaseSensitive = false;
-                    parserSettings.EnableDashDash = true;
-                    parserSettings.HelpWriter = new StringWriter();
-                    parserSettings.IgnoreUnknownArguments = true;
-                });
-
-                var helpTextString = new HelpText {
-                    AddDashesToOption = true,
-                    AddEnumValuesToHelpText = true,
-                    AdditionalNewLineAfterOption = false,
-                    Heading = "JitBenchHarness",
-                    MaximumDisplayWidth = 80,
-                }.AddOptions(parser.ParseArguments<JitBenchHarnessOptions>(new string[] { "--help" })).ToString();
-                return helpTextString;
-            }
-
-            private string _tempDirectory;
-        }
     }
 }

@@ -26,8 +26,6 @@
 
 #include "clrinternal.h"
 
-#include "ivehandler.h"
-#include "ivalidator.h"
 #include "holder.h"
 
 #include "clrprivhosting.h"

@@ -31,7 +31,8 @@ namespace System.Reflection
         public abstract override bool IsGenericTypeDefinition { get; }
         public abstract override bool IsConstructedGenericType { get; }
         public abstract override bool IsGenericParameter { get; }
-        public abstract bool IsGenericMethodParameter { get; }
+        public abstract override bool IsGenericTypeParameter { get; }
+        public abstract override bool IsGenericMethodParameter { get; }
         public abstract override bool ContainsGenericParameters { get; }
         public sealed override MemberTypes MemberType => MemberTypes.TypeInfo;
 

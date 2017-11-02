@@ -269,12 +269,8 @@ def main(args):
 
     if Is_windows:
         command = 'build-tests.cmd'
-        if env_script is not None:
-            command = ('cmd /c \"%s&&' % env_script) + command + '\"'
     else:
         command = './build-tests.sh'
-        if env_script is not None:
-            command = ('. %s;' % env_script) + command
 
     command = ' '.join((
         command,
@@ -282,6 +278,9 @@ def main(args):
         '--',
         '/p:WithoutCategories=IgnoreForCI'
     ))
+
+    if env_script is not None:
+        command += (' /p:PreExecutionTestScript=%s' % env_script)
 
     if not Is_windows:
         command += ' /p:TestWithLocalNativeLibraries=true'

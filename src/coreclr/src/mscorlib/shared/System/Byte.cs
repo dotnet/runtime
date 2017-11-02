@@ -2,17 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: This class will encapsulate a byte and provide an
-**          Object representation of it.
-**
-** 
-===========================================================*/
-
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -81,14 +70,12 @@ namespace System
             return m_value;
         }
 
-        [Pure]
         public static byte Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        [Pure]
         public static byte Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -96,7 +83,6 @@ namespace System
             return Parse(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
-        [Pure]
         public static byte Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -106,7 +92,6 @@ namespace System
         // Parses an unsigned byte from a String in the given style.  If
         // a NumberFormatInfo isn't specified, the current culture's 
         // NumberFormatInfo is assumed.
-        [Pure]
         public static byte Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -182,25 +167,21 @@ namespace System
             return true;
         }
 
-        [Pure]
         public override String ToString()
         {
             return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        [Pure]
         public String ToString(String format)
         {
             return Number.FormatInt32(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        [Pure]
         public String ToString(IFormatProvider provider)
         {
             return Number.FormatInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        [Pure]
         public String ToString(String format, IFormatProvider provider)
         {
             return Number.FormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
@@ -209,7 +190,6 @@ namespace System
         //
         // IConvertible implementation
         // 
-        [Pure]
         public TypeCode GetTypeCode()
         {
             return TypeCode.Byte;

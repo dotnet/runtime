@@ -1997,6 +1997,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compLongUsed          = false;
     compTailCallUsed      = false;
     compLocallocUsed      = false;
+    compLocallocOptimized = false;
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
@@ -2443,6 +2444,52 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 #endif // DEBUG
 /*****************************************************************************/
 
+#ifdef _TARGET_XARCH_
+static bool configEnableISA(InstructionSet isa)
+{
+#ifdef DEBUG
+    switch (isa)
+    {
+        case InstructionSet_SSE:
+            return JitConfig.EnableSSE() != 0;
+        case InstructionSet_SSE2:
+            return JitConfig.EnableSSE2() != 0;
+        case InstructionSet_SSE3:
+            return JitConfig.EnableSSE3() != 0;
+        case InstructionSet_SSSE3:
+            return JitConfig.EnableSSSE3() != 0;
+        case InstructionSet_SSE41:
+            return JitConfig.EnableSSE41() != 0;
+        case InstructionSet_SSE42:
+            return JitConfig.EnableSSE42() != 0;
+        case InstructionSet_AVX:
+            return JitConfig.EnableAVX() != 0;
+        case InstructionSet_AVX2:
+            return JitConfig.EnableAVX2() != 0;
+
+        case InstructionSet_AES:
+            return JitConfig.EnableAES() != 0;
+        case InstructionSet_BMI1:
+            return JitConfig.EnableBMI1() != 0;
+        case InstructionSet_BMI2:
+            return JitConfig.EnableBMI2() != 0;
+        case InstructionSet_FMA:
+            return JitConfig.EnableFMA() != 0;
+        case InstructionSet_LZCNT:
+            return JitConfig.EnableLZCNT() != 0;
+        case InstructionSet_PCLMULQDQ:
+            return JitConfig.EnablePCLMULQDQ() != 0;
+        case InstructionSet_POPCNT:
+            return JitConfig.EnablePOPCNT() != 0;
+        default:
+            return false;
+    }
+#else
+    return true;
+#endif
+}
+#endif // _TARGET_XARCH_
+
 void Compiler::compSetProcessor()
 {
     const JitFlags& jitFlags = *opts.jitFlags;
@@ -2450,7 +2497,7 @@ void Compiler::compSetProcessor()
 #if defined(_TARGET_ARM_)
     info.genCPU = CPU_ARM;
 #elif defined(_TARGET_AMD64_)
-    info.genCPU       = CPU_X64;
+    info.genCPU         = CPU_X64;
 #elif defined(_TARGET_X86_)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
@@ -2464,16 +2511,16 @@ void Compiler::compSetProcessor()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_XARCH_
-    opts.compCanUseSSE3_4 = false;
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3_4))
+    opts.compCanUseSSE4 = false;
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) &&
+        jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
     {
         if (JitConfig.EnableSSE3_4() != 0)
         {
-            opts.compCanUseSSE3_4 = true;
+            opts.compCanUseSSE4 = true;
         }
     }
 
-#ifdef FEATURE_AVX_SUPPORT
     // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
     opts.compCanUseAVX = false;
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
@@ -2483,11 +2530,9 @@ void Compiler::compSetProcessor()
             opts.compCanUseAVX = true;
         }
     }
-#endif // FEATURE_AVX_SUPPORT
 
     if (!compIsForInlining())
     {
-#ifdef FEATURE_AVX_SUPPORT
         if (opts.compCanUseAVX)
         {
             codeGen->getEmitter()->SetUseAVX(true);
@@ -2495,11 +2540,9 @@ void Compiler::compSetProcessor()
             codeGen->getEmitter()->SetContainsAVX(false);
             codeGen->getEmitter()->SetContains256bitAVX(false);
         }
-        else
-#endif // FEATURE_AVX_SUPPORT
-            if (opts.compCanUseSSE3_4)
+        else if (opts.compCanUseSSE4)
         {
-            codeGen->getEmitter()->SetUseSSE3_4(true);
+            codeGen->getEmitter()->SetUseSSE4(true);
         }
     }
 #endif // _TARGET_XARCH_
@@ -2509,22 +2552,16 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV    = true;
     opts.compCanUseSSE2 = true;
 #elif defined(_TARGET_X86_)
-    opts.compUseFCOMI = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
-    opts.compUseCMOV  = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
-    opts.compCanUseSSE2 = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE2);
+    opts.compUseFCOMI   = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
+    opts.compUseCMOV    = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 
-#if !defined(LEGACY_BACKEND) && !defined(FEATURE_CORECLR)
+#ifdef LEGACY_BACKEND
+    opts.compCanUseSSE2 = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE2);
+#else
     // RyuJIT/x86 requires SSE2 to be available: there is no support for generating floating-point
-    // code with x87 instructions. On .NET Core, the VM always tells us that SSE2 is available.
-    // However, on desktop, under ngen, (and presumably in the unlikely case you're actually
-    // running on a machine without SSE2), the VM does not set the SSE2 flag. We ignore this and
-    // go ahead and generate SSE2 code anyway.
-    if (!opts.compCanUseSSE2)
-    {
-        JITDUMP("VM didn't set CORJIT_FLG_USE_SSE2! Ignoring, and generating SSE2 code anyway.\n");
-        opts.compCanUseSSE2 = true;
-    }
-#endif // !defined(LEGACY_BACKEND) && !defined(FEATURE_CORECLR)
+    // code with x87 instructions.
+    opts.compCanUseSSE2 = true;
+#endif
 
 #ifdef DEBUG
     if (opts.compUseFCOMI)
@@ -2569,59 +2606,104 @@ void Compiler::compSetProcessor()
     {
         if (opts.compCanUseSSE2)
         {
-            opts.setSupportedISA(InstructionSet_SSE);
-            opts.setSupportedISA(InstructionSet_SSE2);
+            if (configEnableISA(InstructionSet_SSE))
+            {
+                opts.setSupportedISA(InstructionSet_SSE);
+            }
+            if (configEnableISA(InstructionSet_SSE2))
+            {
+                opts.setSupportedISA(InstructionSet_SSE2);
+            }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES))
             {
-                opts.setSupportedISA(InstructionSet_AES);
+                if (configEnableISA(InstructionSet_AES))
+                {
+                    opts.setSupportedISA(InstructionSet_AES);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX))
             {
-                opts.setSupportedISA(InstructionSet_AVX);
+                if (configEnableISA(InstructionSet_AVX))
+                {
+                    opts.setSupportedISA(InstructionSet_AVX);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
             {
-                opts.setSupportedISA(InstructionSet_AVX2);
+                if (configEnableISA(InstructionSet_AVX2))
+                {
+                    opts.setSupportedISA(InstructionSet_AVX2);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1))
             {
-                opts.setSupportedISA(InstructionSet_BMI1);
+                if (configEnableISA(InstructionSet_BMI1))
+                {
+                    opts.setSupportedISA(InstructionSet_BMI1);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2))
             {
-                opts.setSupportedISA(InstructionSet_BMI2);
+                if (configEnableISA(InstructionSet_BMI2))
+                {
+                    opts.setSupportedISA(InstructionSet_BMI2);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FMA))
             {
-                opts.setSupportedISA(InstructionSet_FMA);
+                if (configEnableISA(InstructionSet_FMA))
+                {
+                    opts.setSupportedISA(InstructionSet_FMA);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT))
             {
-                opts.setSupportedISA(InstructionSet_LZCNT);
+                if (configEnableISA(InstructionSet_LZCNT))
+                {
+                    opts.setSupportedISA(InstructionSet_LZCNT);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_PCLMULQDQ))
             {
-                opts.setSupportedISA(InstructionSet_PCLMULQDQ);
+                if (configEnableISA(InstructionSet_PCLMULQDQ))
+                {
+                    opts.setSupportedISA(InstructionSet_PCLMULQDQ);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT))
             {
-                opts.setSupportedISA(InstructionSet_POPCNT);
+                if (configEnableISA(InstructionSet_POPCNT))
+                {
+                    opts.setSupportedISA(InstructionSet_POPCNT);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3))
             {
-                opts.setSupportedISA(InstructionSet_SSE3);
+                if (configEnableISA(InstructionSet_SSE3))
+                {
+                    opts.setSupportedISA(InstructionSet_SSE3);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41))
             {
-                opts.setSupportedISA(InstructionSet_SSE41);
+                if (configEnableISA(InstructionSet_SSE41))
+                {
+                    opts.setSupportedISA(InstructionSet_SSE41);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
             {
-                opts.setSupportedISA(InstructionSet_SSE42);
+                if (configEnableISA(InstructionSet_SSE42))
+                {
+                    opts.setSupportedISA(InstructionSet_SSE42);
+                }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3))
             {
-                opts.setSupportedISA(InstructionSet_SSSE3);
+                if (configEnableISA(InstructionSet_SSSE3))
+                {
+                    opts.setSupportedISA(InstructionSet_SSSE3);
+                }
             }
         }
     }
@@ -9229,10 +9311,12 @@ int cTreeKindsIR(Compiler* comp, GenTree* tree)
     {
         chars += printf("[LOGOP]");
     }
+#ifdef LEGACY_BACKEND
     if (kind & GTK_ASGOP)
     {
         chars += printf("[ASGOP]");
     }
+#endif
     if (kind & GTK_COMMUTE)
     {
         chars += printf("[COMMUTE]");
@@ -9805,8 +9889,10 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
             case GT_CAST:
             case GT_ADD:
             case GT_SUB:
+#ifdef LEGACY_BACKEND
             case GT_ASG_ADD:
             case GT_ASG_SUB:
+#endif
                 if (tree->gtFlags & GTF_OVERFLOW)
                 {
                     chars += printf("[OVERFLOW]");
@@ -9847,11 +9933,11 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
         {
             chars += printf("[SPILLED_OP2]");
         }
-#endif
         if (tree->gtFlags & GTF_ZSF_SET)
         {
             chars += printf("[ZSF_SET]");
         }
+#endif
 #if FEATURE_SET_FLAGS
         if (tree->gtFlags & GTF_SET_FLAGS)
         {
@@ -11307,3 +11393,33 @@ HelperCallProperties Compiler::s_helperCallProperties;
 
 /*****************************************************************************/
 /*****************************************************************************/
+
+//------------------------------------------------------------------------
+// killGCRefs:
+// Given some tree node return does it need all GC refs to be spilled from
+// callee save registers.
+//
+// Arguments:
+//    tree       - the tree for which we ask about gc refs.
+//
+// Return Value:
+//    true       - tree kills GC refs on callee save registers
+//    false      - tree doesn't affect GC refs on callee save registers
+bool Compiler::killGCRefs(GenTreePtr tree)
+{
+    if (tree->IsCall())
+    {
+        GenTreeCall* call = tree->AsCall();
+        if (call->IsUnmanaged())
+        {
+            return true;
+        }
+
+        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
+        {
+            assert(opts.ShouldUsePInvokeHelpers());
+            return true;
+        }
+    }
+    return false;
+}

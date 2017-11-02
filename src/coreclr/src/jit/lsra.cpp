@@ -134,13 +134,19 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
         tree->gtRegNum = reg;
     }
 #if defined(_TARGET_ARM_)
-    else if (tree->OperGet() == GT_MUL_LONG || tree->OperGet() == GT_PUTARG_REG || tree->OperGet() == GT_BITCAST)
+    else if (tree->OperIsMultiRegOp())
     {
         assert(regIdx == 1);
         GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
         mul->gtOtherReg        = reg;
     }
-    else if (tree->OperGet() == GT_PUTARG_SPLIT)
+    else if (tree->OperGet() == GT_COPY)
+    {
+        assert(regIdx == 1);
+        GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
+        copy->gtOtherRegs[0]      = (regNumberSmall)reg;
+    }
+    else if (tree->OperIsPutArgSplit())
     {
         GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
         putArg->SetRegNumByIdx(reg, regIdx);
@@ -1164,7 +1170,11 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // DEBUG
 
     enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0) && compiler->lvaTrackedCount > 0;
-    availableIntRegs    = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
+#ifdef _TARGET_ARM64_
+    availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
+#else
+    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
+#endif
 
 #if ETW_EBP_FRAMED
     availableIntRegs &= ~RBM_FPBASE;
@@ -3073,7 +3083,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             }
         }
 
-        if (killGCRefs(tree))
+        if (compiler->killGCRefs(tree))
         {
             RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree,
                                               (allRegs(TYP_REF) & ~RBM_ARG_REGS));
@@ -3081,35 +3091,6 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         return true;
     }
 
-    return false;
-}
-
-//------------------------------------------------------------------------
-// killGCRefs:
-// Given some tree node return does it need all GC refs to be spilled from
-// callee save registers.
-//
-// Arguments:
-//    tree       - the tree for which we ask about gc refs.
-//
-// Return Value:
-//    true       - tree kills GC refs on callee save registers
-//    false      - tree doesn't affect GC refs on callee save registers
-bool LinearScan::killGCRefs(GenTree* tree)
-{
-    if (tree->IsCall())
-    {
-        if ((tree->gtFlags & GTF_CALL_UNMANAGED) != 0)
-        {
-            return true;
-        }
-
-        if (tree->AsCall()->gtCallMethHnd == compiler->eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
-        {
-            assert(compiler->opts.ShouldUsePInvokeHelpers());
-            return true;
-        }
-    }
     return false;
 }
 
@@ -3592,7 +3573,6 @@ static int ComputeOperandDstCount(GenTree* operand)
         // pointers to argument setup stores.
         return 0;
     }
-#ifdef _TARGET_ARMARCH_
     else if (operand->OperIsPutArgStk())
     {
         // A PUTARG_STK argument is an operand of a call, but is neither contained, nor does it produce
@@ -3600,7 +3580,6 @@ static int ComputeOperandDstCount(GenTree* operand)
         assert(!operand->isContained());
         return 0;
     }
-#endif // _TARGET_ARMARCH_
     else
     {
         // If a field list or non-void-typed operand is not an unused value and does not have source registers,
@@ -4074,8 +4053,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
             regMaskTP candidates = getUseCandidates(useNode);
 #ifdef _TARGET_ARM_
-            if (useNode->OperIsPutArgSplit() ||
-                (compiler->opts.compUseSoftFP && (useNode->OperIsPutArgReg() || useNode->OperGet() == GT_BITCAST)))
+            if (useNode->OperIsPutArgSplit() || useNode->OperIsMultiRegOp())
             {
                 // get i-th candidate, set bits in useCandidates must be in sequential order.
                 candidates = genFindLowestReg(candidates & ~currCandidates);
@@ -4168,20 +4146,13 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
 
 #ifdef _TARGET_ARM_
-        if (tree->OperIsPutArgSplit())
+        // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
+        if (tree->OperIsPutArgSplit() || tree->OperIsMultiRegOp())
         {
             // get i-th candidate
             currCandidates = genFindLowestReg(candidates);
             candidates &= ~currCandidates;
         }
-#ifdef ARM_SOFTFP
-        // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
-        else if (tree->OperIsMultiRegOp() || tree->OperGet() == GT_BITCAST)
-        {
-            currCandidates = genFindLowestReg(candidates);
-            candidates &= ~currCandidates;
-        }
-#endif // ARM_SOFTFP
 #endif // _TARGET_ARM_
 
         if (interval == nullptr)
@@ -5341,6 +5312,68 @@ RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition*
 }
 
 //------------------------------------------------------------------------
+// isMatchingConstant: Check to see whether a given register contains the constant referenced
+//                     by the given RefPosition
+//
+// Arguments:
+//    physRegRecord:   The RegRecord for the register we're interested in.
+//    refPosition:     The RefPosition for a constant interval.
+//
+// Return Value:
+//    True iff the register was defined by an identical constant node as the current interval.
+//
+bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition)
+{
+    if ((physRegRecord->assignedInterval == nullptr) || !physRegRecord->assignedInterval->isConstant)
+    {
+        return false;
+    }
+    noway_assert(refPosition->treeNode != nullptr);
+    GenTree* otherTreeNode = physRegRecord->assignedInterval->firstRefPosition->treeNode;
+    noway_assert(otherTreeNode != nullptr);
+
+    if (refPosition->treeNode->OperGet() == otherTreeNode->OperGet())
+    {
+        switch (otherTreeNode->OperGet())
+        {
+            case GT_CNS_INT:
+                if ((refPosition->treeNode->AsIntCon()->IconValue() == otherTreeNode->AsIntCon()->IconValue()) &&
+                    (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode)))
+                {
+#ifdef _TARGET_64BIT_
+                    // If the constant is negative, only reuse registers of the same type.
+                    // This is because, on a 64-bit system, we do not sign-extend immediates in registers to
+                    // 64-bits unless they are actually longs, as this requires a longer instruction.
+                    // This doesn't apply to a 32-bit system, on which long values occupy multiple registers.
+                    // (We could sign-extend, but we would have to always sign-extend, because if we reuse more
+                    // than once, we won't have access to the instruction that originally defines the constant).
+                    if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) ||
+                        (refPosition->treeNode->AsIntCon()->IconValue() >= 0))
+#endif // _TARGET_64BIT_
+                    {
+                        return true;
+                    }
+                }
+                break;
+            case GT_CNS_DBL:
+            {
+                // For floating point constants, the values must be identical, not simply compare
+                // equal.  So we compare the bits.
+                if (refPosition->treeNode->AsDblCon()->isBitwiseEqual(otherTreeNode->AsDblCon()) &&
+                    (refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()))
+                {
+                    return true;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // tryAllocateFreeReg: Find a free register that satisfies the requirements for refPosition,
 //                     and takes into account the preferences for the given Interval
 //
@@ -5430,7 +5463,6 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 #ifdef DEBUG
     candidates = stressLimitRegs(refPosition, candidates);
 #endif
-    bool mustAssignARegister = true;
     assert(candidates != RBM_NONE);
 
     // If the related interval has no further references, it is possible that it is a source of the
@@ -5553,6 +5585,9 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         }
     }
 
+    //-------------------------------------------------------------------------
+    // Register Selection
+
     RegRecord* availablePhysRegInterval = nullptr;
     bool       unassignInterval         = false;
 
@@ -5653,52 +5688,9 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
         // If this is a definition of a constant interval, check to see if its value is already in this register.
         if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType) &&
-            (physRegRecord->assignedInterval != nullptr) && physRegRecord->assignedInterval->isConstant)
+            isMatchingConstant(physRegRecord, refPosition))
         {
-            noway_assert(refPosition->treeNode != nullptr);
-            GenTree* otherTreeNode = physRegRecord->assignedInterval->firstRefPosition->treeNode;
-            noway_assert(otherTreeNode != nullptr);
-
-            if (refPosition->treeNode->OperGet() == otherTreeNode->OperGet())
-            {
-                switch (otherTreeNode->OperGet())
-                {
-                    case GT_CNS_INT:
-                        if ((refPosition->treeNode->AsIntCon()->IconValue() ==
-                             otherTreeNode->AsIntCon()->IconValue()) &&
-                            (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode)))
-                        {
-#ifdef _TARGET_64BIT_
-                            // If the constant is negative, only reuse registers of the same type.
-                            // This is because, on a 64-bit system, we do not sign-extend immediates in registers to
-                            // 64-bits unless they are actually longs, as this requires a longer instruction.
-                            // This doesn't apply to a 32-bit system, on which long values occupy multiple registers.
-                            // (We could sign-extend, but we would have to always sign-extend, because if we reuse more
-                            // than once, we won't have access to the instruction that originally defines the constant).
-                            if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) ||
-                                (refPosition->treeNode->AsIntCon()->IconValue() >= 0))
-#endif // _TARGET_64BIT_
-                            {
-                                score |= VALUE_AVAILABLE;
-                            }
-                        }
-                        break;
-                    case GT_CNS_DBL:
-                    {
-                        // For floating point constants, the values must be identical, not simply compare
-                        // equal.  So we compare the bits.
-                        if (refPosition->treeNode->AsDblCon()->isBitwiseEqual(otherTreeNode->AsDblCon()) &&
-                            (refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()))
-                        {
-                            score |= VALUE_AVAILABLE;
-                        }
-                        break;
-                    }
-                    default:
-                        // for all other 'otherTreeNode->OperGet()' kinds, we leave 'score' unchanged
-                        break;
-                }
-            }
+            score |= VALUE_AVAILABLE;
         }
 
         // If the nextPhysRefLocation is a fixedRef for the rangeEndRefPosition, increment it so that
@@ -5838,6 +5830,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
     return foundReg;
 }
+
 //------------------------------------------------------------------------
 // canSpillReg: Determine whether we can spill physRegRecord
 //
@@ -5853,27 +5846,16 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 //
 // Note: This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg()
 //
-bool LinearScan::canSpillReg(RegRecord*   physRegRecord,
-                             LsraLocation refLocation,
-                             unsigned*    recentAssignedRefWeight,
-                             unsigned     farthestRefPosWeight)
+bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight)
 {
     assert(physRegRecord->assignedInterval != nullptr);
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
 
     if (recentAssignedRef != nullptr)
     {
-        if (recentAssignedRef->nodeLocation == refLocation)
+        if (isRefPositionActive(recentAssignedRef, refLocation))
         {
-            // We can't spill a register that's being used at the current location
-            return false;
-        }
-
-        // If the current position has the candidate register marked to be delayed,
-        // check if the previous location is using this register, if that's the case we have to skip
-        // since we can't spill this register.
-        if (recentAssignedRef->delayRegFree && (refLocation == recentAssignedRef->nodeLocation + 1))
-        {
+            // We can't spill a register that's active at the current location
             return false;
         }
 
@@ -5881,141 +5863,68 @@ bool LinearScan::canSpillReg(RegRecord*   physRegRecord,
         // of the spill candidate found so far.  We would consider spilling a greater weight
         // ref position only if the refPosition being allocated must need a reg.
         *recentAssignedRefWeight = getWeight(recentAssignedRef);
-        if (*recentAssignedRefWeight > farthestRefPosWeight)
-        {
-            return false;
-        }
     }
     return true;
 }
 
 #ifdef _TARGET_ARM_
+//------------------------------------------------------------------------
+// canSpillDoubleReg: Determine whether we can spill physRegRecord
+//
+// Arguments:
+//    physRegRecord             - reg to spill (must be a valid double register)
+//    refLocation               - Location of RefPosition where this register will be spilled
+//    recentAssignedRefWeight   - Weight of recent assigned RefPosition which will be determined in this function
+//
+// Return Value:
+//    True  - if we can spill physRegRecord
+//    False - otherwise
+//
+// Notes:
+//    This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg().
+//    The recentAssignedRefWeight is not updated if either register cannot be spilled.
+//
 bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
                                    LsraLocation refLocation,
-                                   unsigned*    recentAssignedRefWeight,
-                                   unsigned     farthestRefPosWeight)
+                                   unsigned*    recentAssignedRefWeight)
 {
+    assert(genIsValidDoubleReg(physRegRecord->regNum));
     bool     retVal  = true;
     unsigned weight  = BB_ZERO_WEIGHT;
     unsigned weight2 = BB_ZERO_WEIGHT;
 
     RegRecord* physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
 
-    if (physRegRecord->assignedInterval != nullptr)
-        retVal &= canSpillReg(physRegRecord, refLocation, &weight, farthestRefPosWeight);
-
+    if ((physRegRecord->assignedInterval != nullptr) && !canSpillReg(physRegRecord, refLocation, &weight))
+    {
+        return false;
+    }
     if (physRegRecord2->assignedInterval != nullptr)
-        retVal &= canSpillReg(physRegRecord2, refLocation, &weight2, farthestRefPosWeight);
-
-    if (!(weight == BB_ZERO_WEIGHT && weight2 == BB_ZERO_WEIGHT))
     {
-        // weight and/or weight2 have been updated.
-        *recentAssignedRefWeight = (weight > weight2) ? weight : weight2;
-    }
-
-    return retVal;
-}
-#endif
-
-//----------------------------------------------------------------------------
-// checkActiveInterval: Test activness of an interval
-//                      and check assertions if the interval is not active
-//
-// Arguments:
-//    interval    - An interval to be tested
-//    refLocation - Location where the interval is being tested
-//
-// Return Value:
-//    True - iff the interval is active
-//    False - otherwise
-//
-// Note: This helper is designed to be used only from checkActiveIntervals()
-//
-bool LinearScan::checkActiveInterval(Interval* interval, LsraLocation refLocation)
-{
-    if (!interval->isActive)
-    {
-        RefPosition* recentAssignedRef = interval->recentRefPosition;
-        // Note that we may or may not have actually handled the reference yet, so it could either
-        // be recentAssignedRef, or the next reference.
-        assert(recentAssignedRef != nullptr);
-        if (recentAssignedRef->nodeLocation != refLocation)
+        if (!canSpillReg(physRegRecord2, refLocation, &weight2))
         {
-            if (recentAssignedRef->nodeLocation + 1 == refLocation)
-            {
-                assert(recentAssignedRef->delayRegFree);
-            }
-            else
-            {
-                RefPosition* nextAssignedRef = recentAssignedRef->nextRefPosition;
-#ifdef _TARGET_ARM_
-                // This function is invoked only from allocateBusyReg() through checkActiveIntervals().
-                //
-                // For ARM32, when we try to allocate a double register which consists of two float registers,
-                // tryAllocateFreeReg() may fail to allocate a double register even if one of two float
-                // reigsters is assigned to a inactive constant interval.
-                // https://github.com/dotnet/coreclr/pull/14080
-                //
-                // Therefore an inactive constant interval may be encountered here.
-                assert(nextAssignedRef != nullptr || interval->isConstant);
-                if (nextAssignedRef != nullptr)
-                    assert(nextAssignedRef->nodeLocation == refLocation ||
-                           (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
-#else  // !_TARGET_ARM_
-                assert(nextAssignedRef != nullptr);
-                assert(nextAssignedRef->nodeLocation == refLocation ||
-                       (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
-#endif // !_TARGET_ARM_
-            }
+            return false;
         }
-        return false;
+        if (weight2 > weight)
+        {
+            weight = weight2;
+        }
     }
+    *recentAssignedRefWeight = weight;
     return true;
 }
+#endif
 
-//----------------------------------------------------------------------------------------
-// checkActiveIntervals: Test activness of a interval assinged to a register
-//                       and check assertions if the interval is not active.
-//                       We look into all intervals of two float registers consisting
-//                       a double regsiter for ARM32.
+#ifdef _TARGET_ARM_
+//------------------------------------------------------------------------
+// unassignDoublePhysReg: unassign a double register (pair)
 //
 // Arguments:
-//    physRegRecord - A register
-//    refLocation   - Location where intervsl is being tested
-//    registerType  - Type of regsiter
+//    doubleRegRecord - reg to unassign
 //
-// Return Value:
-//    True - iff the all intervals are active
-//    False - otherwise
+// Note:
+//    The given RegRecord must be a valid (even numbered) double register.
 //
-// Note: This helper is designed to be used only from allocateBusyReg()
-//
-bool LinearScan::checkActiveIntervals(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType)
-{
-    Interval* assignedInterval = physRegRecord->assignedInterval;
-
-#ifdef _TARGET_ARM_
-    // Check two intervals for a double register in ARM32
-    Interval* assignedInterval2 = nullptr;
-    if (registerType == TYP_DOUBLE)
-        assignedInterval2 = findAnotherHalfRegRec(physRegRecord)->assignedInterval;
-
-    // Both intervals should not be nullptr at the same time, becasue we already handle this case before.
-    assert(!(assignedInterval == nullptr && assignedInterval2 == nullptr));
-
-    if (assignedInterval != nullptr && !checkActiveInterval(assignedInterval, refLocation))
-        return false;
-
-    if (assignedInterval2 != nullptr && !checkActiveInterval(assignedInterval2, refLocation))
-        return false;
-
-    return true;
-#else
-    return checkActiveInterval(assignedInterval, refLocation);
-#endif
-}
-
-#ifdef _TARGET_ARM_
 void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 {
     assert(genIsValidDoubleReg(doubleRegRecord->regNum));
@@ -6062,40 +5971,194 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 
 #endif // _TARGET_ARM_
 
+//------------------------------------------------------------------------
+// isRefPositionActive: Determine whether a given RefPosition is active at the given location
+//
+// Arguments:
+//    refPosition - the RefPosition of interest
+//    refLocation - the LsraLocation at which we want to know if it is active
+//
+// Return Value:
+//    True  - if this RefPosition occurs at the given location, OR
+//            if it occurs at the previous location and is marked delayRegFree.
+//    False - otherwise
+//
+bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation)
+{
+    return (refPosition->nodeLocation == refLocation ||
+            ((refPosition->nodeLocation + 1 == refLocation) && refPosition->delayRegFree));
+}
+
 //----------------------------------------------------------------------------------------
 // isRegInUse: Test whether regRec is being used at the refPosition
 //
 // Arguments:
 //    regRec - A register to be tested
 //    refPosition - RefPosition where regRec is tested
-//    nextLocation - next RefPosition of interval assigned to regRec
 //
 // Return Value:
-//    True - if regRec is beding used
+//    True - if regRec is being used
 //    False - otherwise
 //
-// Note: This helper is designed to be used only from allocateBusyReg()
+// Notes:
+//    This helper is designed to be used only from allocateBusyReg().
+//    The caller must have already checked for the case where 'refPosition' is a fixed ref.
 //
-bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLocation* nextLocation)
+bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
 {
+    // We shouldn't reach this check if 'refPosition' is a FixedReg of this register.
+    assert(!refPosition->isFixedRefOfReg(regRec->regNum));
     Interval* assignedInterval = regRec->assignedInterval;
     if (assignedInterval != nullptr)
     {
-        LsraLocation refLocation     = refPosition->nodeLocation;
-        RefPosition* nextRefPosition = assignedInterval->getNextRefPosition();
-        *nextLocation                = assignedInterval->getNextRefLocation();
+        if (!assignedInterval->isActive)
+        {
+            // This can only happen if we have a recentRefPosition active at this location that hasn't yet been freed
+            // (Or, in the case of ARM, the other half of a double is either active or has an active recentRefPosition).
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef _TARGET_ARM_
+            if (refPosition->getInterval()->registerType == TYP_DOUBLE)
+            {
+                if (!isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation))
+                {
+                    RegRecord* otherHalfRegRec = findAnotherHalfRegRec(regRec);
+                    assert(otherHalfRegRec->assignedInterval->isActive ||
+                           isRefPositionActive(otherHalfRegRec->assignedInterval->recentRefPosition,
+                                               refPosition->nodeLocation));
+                }
+            }
+            else
+#endif
+            {
+                assert(isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation));
+            }
+            return true;
+        }
+        RefPosition* nextAssignedRef = assignedInterval->getNextRefPosition();
 
         // We should never spill a register that's occupied by an Interval with its next use at the current
         // location.
         // Normally this won't occur (unless we actually had more uses in a single node than there are registers),
         // because we'll always find something with a later nextLocation, but it can happen in stress when
         // we have LSRA_SELECT_NEAREST.
-        if ((*nextLocation == refLocation) && !refPosition->isFixedRegRef && nextRefPosition->RequiresRegister())
+        if ((nextAssignedRef != nullptr) && isRefPositionActive(nextAssignedRef, refPosition->nodeLocation) &&
+            nextAssignedRef->RequiresRegister())
         {
             return true;
         }
     }
     return false;
+}
+
+//------------------------------------------------------------------------
+// isSpillCandidate: Determine if a register is a spill candidate for a given RefPosition.
+//
+// Arguments:
+//    current               The interval for the current allocation
+//    refPosition           The RefPosition of the current Interval for which a register is being allocated
+//    physRegRecord         The RegRecord for the register we're considering for spill
+//    nextLocation          An out (reference) parameter in which the next use location of the
+//                          given RegRecord will be returned.
+//
+// Return Value:
+//    True iff the given register can be spilled to accommodate the given RefPosition.
+//
+bool LinearScan::isSpillCandidate(Interval*     current,
+                                  RefPosition*  refPosition,
+                                  RegRecord*    physRegRecord,
+                                  LsraLocation& nextLocation)
+{
+    regMaskTP    candidateBit = genRegMask(physRegRecord->regNum);
+    LsraLocation refLocation  = refPosition->nodeLocation;
+    if (physRegRecord->isBusyUntilNextKill)
+    {
+        return false;
+    }
+    Interval* assignedInterval = physRegRecord->assignedInterval;
+    if (assignedInterval != nullptr)
+    {
+        nextLocation = assignedInterval->getNextRefLocation();
+    }
+#ifdef _TARGET_ARM_
+    RegRecord* physRegRecord2    = nullptr;
+    Interval*  assignedInterval2 = nullptr;
+
+    // For ARM32, a double occupies a consecutive even/odd pair of float registers.
+    if (current->registerType == TYP_DOUBLE)
+    {
+        assert(genIsValidDoubleReg(physRegRecord->regNum));
+        physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
+        if (physRegRecord2->isBusyUntilNextKill)
+        {
+            return false;
+        }
+        assignedInterval2 = physRegRecord2->assignedInterval;
+        if ((assignedInterval2 != nullptr) && (assignedInterval2->getNextRefLocation() > nextLocation))
+        {
+            nextLocation = assignedInterval2->getNextRefLocation();
+        }
+    }
+#endif
+
+    // If there is a fixed reference at the same location (and it's not due to this reference),
+    // don't use it.
+    if (physRegRecord->conflictingFixedRegReference(refPosition))
+    {
+        return false;
+    }
+
+    if (refPosition->isFixedRefOfRegMask(candidateBit))
+    {
+        // Either:
+        // - there is a fixed reference due to this node, OR
+        // - or there is a fixed use fed by a def at this node, OR
+        // - or we have restricted the set of registers for stress.
+        // In any case, we must use this register as it's the only candidate
+        // TODO-CQ: At the time we allocate a register to a fixed-reg def, if it's not going
+        // to remain live until the use, we should set the candidates to allRegs(regType)
+        // to avoid a spill - codegen can then insert the copy.
+        // If this is marked as allocateIfProfitable, the caller will compare the weights
+        // of this RefPosition and the RefPosition to which it is currently assigned.
+        assert(refPosition->isFixedRegRef ||
+               (refPosition->nextRefPosition != nullptr && refPosition->nextRefPosition->isFixedRegRef) ||
+               candidatesAreStressLimited());
+        return true;
+    }
+
+    // If this register is not assigned to an interval, either
+    // - it has a FixedReg reference at the current location that is not this reference, OR
+    // - this is the special case of a fixed loReg, where this interval has a use at the same location
+    // In either case, we cannot use it
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef _TARGET_ARM_
+    if (assignedInterval == nullptr && assignedInterval2 == nullptr)
+#else
+    if (assignedInterval == nullptr)
+#endif
+    {
+        RefPosition* nextPhysRegPosition = physRegRecord->getNextRefPosition();
+        assert((nextPhysRegPosition->nodeLocation == refLocation && candidateBit != refPosition->registerAssignment)
+                   ARM64_ONLY(|| (physRegRecord->regNum == REG_IP0) || (physRegRecord->regNum == REG_IP1)));
+        return false;
+    }
+
+    if (isRegInUse(physRegRecord, refPosition))
+    {
+        return false;
+    }
+
+#ifdef _TARGET_ARM_
+    if (current->registerType == TYP_DOUBLE)
+    {
+        if (isRegInUse(physRegRecord2, refPosition))
+        {
+            return false;
+        }
+    }
+#endif
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -6123,6 +6186,7 @@ bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLoc
 //        The ref position chosen for spilling will not only be lowest weight
 //        of all but also has a weight lower than 'refPosition'.  If there is
 //        no such ref position, reg will not be allocated.
+//
 regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPosition, bool allocateIfProfitable)
 {
     regNumber foundReg = REG_NA;
@@ -6180,148 +6244,49 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         {
             continue;
         }
-        RegRecord* physRegRecord = getRegisterRecord(regNum);
-#ifdef _TARGET_ARM_
-        RegRecord* physRegRecord2 = nullptr;
-        // For ARM32, let's consider two float registers consisting a double reg together,
-        // when allocaing a double register.
-        if (current->registerType == TYP_DOUBLE)
-        {
-            assert(genIsValidDoubleReg(regNum));
-            physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
-        }
-#endif
-
-        if (physRegRecord->isBusyUntilNextKill)
-        {
-            continue;
-        }
-        Interval* assignedInterval = physRegRecord->assignedInterval;
-#ifdef _TARGET_ARM_
-        Interval* assignedInterval2 = (physRegRecord2 == nullptr) ? nullptr : physRegRecord2->assignedInterval;
-#endif
-
-        // If there is a fixed reference at the same location (and it's not due to this reference),
-        // don't use it.
-
-        if (physRegRecord->conflictingFixedRegReference(refPosition))
+        RegRecord*   physRegRecord  = getRegisterRecord(regNum);
+        RegRecord*   physRegRecord2 = nullptr; // only used for _TARGET_ARM_
+        LsraLocation nextLocation   = MinLocation;
+        LsraLocation physRegNextLocation;
+        if (!isSpillCandidate(current, refPosition, physRegRecord, nextLocation))
         {
             assert(candidates != candidateBit);
             continue;
         }
 
-        LsraLocation physRegNextLocation = MaxLocation;
-        if (refPosition->isFixedRefOfRegMask(candidateBit))
-        {
-            // Either there is a fixed reference due to this node, or one associated with a
-            // fixed use fed by a def at this node.
-            // In either case, we must use this register as it's the only candidate
-            // TODO-CQ: At the time we allocate a register to a fixed-reg def, if it's not going
-            // to remain live until the use, we should set the candidates to allRegs(regType)
-            // to avoid a spill - codegen can then insert the copy.
-            assert(candidates == candidateBit);
-
-            // If a refPosition has a fixed reg as its candidate and is also marked
-            // as allocateIfProfitable, we should allocate fixed reg only if the
-            // weight of this ref position is greater than the weight of the ref
-            // position to which fixed reg is assigned.  Such a case would arise
-            // on x86 under LSRA stress.
-            if (!allocateIfProfitable)
-            {
-                physRegNextLocation  = MaxLocation;
-                farthestRefPosWeight = BB_MAX_WEIGHT;
-            }
-        }
-        else
-        {
-            physRegNextLocation = physRegRecord->getNextRefLocation();
-
-            // If refPosition requires a fixed register, we should reject all others.
-            // Otherwise, we will still evaluate all phyRegs though their next location is
-            // not better than farthestLocation found so far.
-            //
-            // TODO: this method should be using an approach similar to tryAllocateFreeReg()
-            // where it uses a regOrder array to avoid iterating over any but the single
-            // fixed candidate.
-            if (refPosition->isFixedRegRef && physRegNextLocation < farthestLocation)
-            {
-                continue;
-            }
-        }
-
-        // If this register is not assigned to an interval, either
-        // - it has a FixedReg reference at the current location that is not this reference, OR
-        // - this is the special case of a fixed loReg, where this interval has a use at the same location
-        // In either case, we cannot use it
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef _TARGET_ARM_
-        if (assignedInterval == nullptr && assignedInterval2 == nullptr)
-#else
-        if (assignedInterval == nullptr)
-#endif
-        {
-            RefPosition* nextPhysRegPosition = physRegRecord->getNextRefPosition();
-
-#ifndef _TARGET_ARM64_
-            // TODO-Cleanup: Revisit this after Issue #3524 is complete
-            // On ARM64 the nodeLocation is not always == refLocation, Disabling this assert for now.
-            assert(nextPhysRegPosition->nodeLocation == refLocation && candidateBit != candidates);
-#endif
-            continue;
-        }
-
-#ifdef _TARGET_ARM_
-        RefPosition* recentAssignedRef = (assignedInterval == nullptr) ? nullptr : assignedInterval->recentRefPosition;
-        RefPosition* recentAssignedRef2 =
-            (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->recentRefPosition;
-#else
-        RefPosition* recentAssignedRef = assignedInterval->recentRefPosition;
-#endif
-
-        if (!checkActiveIntervals(physRegRecord, refLocation, current->registerType))
-        {
-            continue;
-        }
-
-        // If we have a recentAssignedRef, check that it is going to be OK to spill it
-        //
-        // TODO-Review: Under what conditions recentAssginedRef would be null?
-        unsigned recentAssignedRefWeight = BB_ZERO_WEIGHT;
-
+        // We've passed the preliminary checks for a spill candidate.
+        // Now, if we have a recentAssignedRef, check that it is going to be OK to spill it.
+        Interval*    assignedInterval        = physRegRecord->assignedInterval;
+        unsigned     recentAssignedRefWeight = BB_ZERO_WEIGHT;
+        RefPosition* recentAssignedRef       = nullptr;
+        RefPosition* recentAssignedRef2      = nullptr;
 #ifdef _TARGET_ARM_
         if (current->registerType == TYP_DOUBLE)
         {
-            if (!canSpillDoubleReg(physRegRecord, refLocation, &recentAssignedRefWeight, farthestRefPosWeight))
-                continue;
-        }
-        else
-#endif
-            // This if-stmt is associated with the above else
-            if (!canSpillReg(physRegRecord, refLocation, &recentAssignedRefWeight, farthestRefPosWeight))
-        {
-            continue;
-        }
-
-        LsraLocation nextLocation = MinLocation;
-
-        if (isRegInUse(physRegRecord, refPosition, &nextLocation))
-        {
-            continue;
-        }
-
-#ifdef _TARGET_ARM_
-        if (current->registerType == TYP_DOUBLE)
-        {
-            LsraLocation nextLocation2 = MinLocation;
-            if (isRegInUse(physRegRecord2, refPosition, &nextLocation2))
+            recentAssignedRef           = (assignedInterval == nullptr) ? nullptr : assignedInterval->recentRefPosition;
+            physRegRecord2              = findAnotherHalfRegRec(physRegRecord);
+            Interval* assignedInterval2 = physRegRecord2->assignedInterval;
+            recentAssignedRef2 = (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->recentRefPosition;
+            if (!canSpillDoubleReg(physRegRecord, refLocation, &recentAssignedRefWeight))
             {
                 continue;
             }
-            nextLocation = (nextLocation > nextLocation2) ? nextLocation : nextLocation2;
         }
+        else
 #endif
+        {
+            recentAssignedRef = assignedInterval->recentRefPosition;
+            if (!canSpillReg(physRegRecord, refLocation, &recentAssignedRefWeight))
+            {
+                continue;
+            }
+        }
+        if (recentAssignedRefWeight > farthestRefPosWeight)
+        {
+            continue;
+        }
 
+        physRegNextLocation = physRegRecord->getNextRefLocation();
         if (nextLocation > physRegNextLocation)
         {
             nextLocation = physRegNextLocation;
@@ -6384,7 +6349,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
                     if (recentAssignedRef2 != nullptr)
                         isBetterLocation &= (recentAssignedRef2->reload && recentAssignedRef2->AllocateIfProfitable());
 #else
-                    isBetterLocation   = (recentAssignedRef != nullptr) && recentAssignedRef->reload &&
+                    isBetterLocation = (recentAssignedRef != nullptr) && recentAssignedRef->reload &&
                                        recentAssignedRef->AllocateIfProfitable();
 #endif
                 }
@@ -6417,41 +6382,50 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
     {
         // Must have found a spill candidate.
         assert(farthestRefPhysRegRecord != nullptr);
-        if ((farthestLocation == refLocation) && !refPosition->isFixedRegRef)
+
+        if (farthestLocation == refLocation)
         {
-#ifdef _TARGET_ARM_
-            Interval* assignedInterval =
-                (farthestRefPhysRegRecord == nullptr) ? nullptr : farthestRefPhysRegRecord->assignedInterval;
-            Interval* assignedInterval2 =
-                (farthestRefPhysRegRecord2 == nullptr) ? nullptr : farthestRefPhysRegRecord2->assignedInterval;
-            RefPosition* nextRefPosition =
-                (assignedInterval == nullptr) ? nullptr : assignedInterval->getNextRefPosition();
-            RefPosition* nextRefPosition2 =
-                (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->getNextRefPosition();
-            if (nextRefPosition != nullptr)
+            // This must be a RefPosition that is constrained to use a single register, either directly,
+            // or at the use, or by stress.
+            bool isConstrained = (refPosition->isFixedRegRef || (refPosition->nextRefPosition != nullptr &&
+                                                                 refPosition->nextRefPosition->isFixedRegRef) ||
+                                  candidatesAreStressLimited());
+            if (!isConstrained)
             {
-                if (nextRefPosition2 != nullptr)
+#ifdef _TARGET_ARM_
+                Interval* assignedInterval =
+                    (farthestRefPhysRegRecord == nullptr) ? nullptr : farthestRefPhysRegRecord->assignedInterval;
+                Interval* assignedInterval2 =
+                    (farthestRefPhysRegRecord2 == nullptr) ? nullptr : farthestRefPhysRegRecord2->assignedInterval;
+                RefPosition* nextRefPosition =
+                    (assignedInterval == nullptr) ? nullptr : assignedInterval->getNextRefPosition();
+                RefPosition* nextRefPosition2 =
+                    (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->getNextRefPosition();
+                if (nextRefPosition != nullptr)
                 {
-                    assert(!nextRefPosition->RequiresRegister() || !nextRefPosition2->RequiresRegister());
+                    if (nextRefPosition2 != nullptr)
+                    {
+                        assert(!nextRefPosition->RequiresRegister() || !nextRefPosition2->RequiresRegister());
+                    }
+                    else
+                    {
+                        assert(!nextRefPosition->RequiresRegister());
+                    }
                 }
                 else
                 {
-                    assert(!nextRefPosition->RequiresRegister());
+                    assert(nextRefPosition2 != nullptr && !nextRefPosition2->RequiresRegister());
                 }
-            }
-            else
-            {
-                assert(nextRefPosition2 != nullptr && !nextRefPosition2->RequiresRegister());
-            }
 #else  // !_TARGET_ARM_
-            Interval*    assignedInterval = farthestRefPhysRegRecord->assignedInterval;
-            RefPosition* nextRefPosition  = assignedInterval->getNextRefPosition();
-            assert(!nextRefPosition->RequiresRegister());
+                Interval*    assignedInterval = farthestRefPhysRegRecord->assignedInterval;
+                RefPosition* nextRefPosition  = assignedInterval->getNextRefPosition();
+                assert(!nextRefPosition->RequiresRegister());
 #endif // !_TARGET_ARM_
+            }
         }
         else
         {
-            assert(farthestLocation > refLocation || refPosition->isFixedRegRef);
+            assert(farthestLocation > refLocation);
         }
     }
 #endif // DEBUG
@@ -6898,8 +6872,10 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 {
     Interval* assignedInterval = regRec->assignedInterval;
     assert(assignedInterval != nullptr);
-
     regNumber thisRegNum = regRec->regNum;
+
+    // Is assignedInterval actually still assigned to this register?
+    bool intervalIsAssigned = (assignedInterval->physReg == thisRegNum);
 
 #ifdef _TARGET_ARM_
     RegRecord* anotherRegRec = nullptr;
@@ -6913,6 +6889,10 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 
         // Both two RegRecords should have been assigned to the same interval.
         assert(assignedInterval == anotherRegRec->assignedInterval);
+        if (!intervalIsAssigned && (assignedInterval->physReg == anotherRegRec->regNum))
+        {
+            intervalIsAssigned = true;
+        }
     }
 #endif // _TARGET_ARM_
 
@@ -6942,7 +6922,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         nextRefPosition = spillRefPosition->nextRefPosition;
     }
 
-    if (assignedInterval->physReg != REG_NA && assignedInterval->physReg != thisRegNum)
+    if (!intervalIsAssigned && assignedInterval->physReg != REG_NA)
     {
         // This must have been a temporary copy reg, but we can't assert that because there
         // may have been intervening RefPositions that were not copyRegs.
@@ -7292,6 +7272,42 @@ bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
     return isAssigned;
 }
 
+void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap)
+{
+    // Is there another interval currently assigned to this register?  If so unassign it.
+    Interval* assignedInterval = regRecord->assignedInterval;
+    if (assignedInterval != nullptr)
+    {
+        if (isAssignedToInterval(assignedInterval, regRecord))
+        {
+            // Only localVars or constants should be assigned to registers at block boundaries.
+            if (!assignedInterval->isLocalVar)
+            {
+                assert(assignedInterval->isConstant);
+                // Don't need to update the VarToRegMap.
+                inVarToRegMap = nullptr;
+            }
+
+            regNumber assignedRegNum = assignedInterval->assignedReg->regNum;
+
+            // If the interval is active, it will be set to active when we reach its new
+            // register assignment (which we must not yet have done, or it wouldn't still be
+            // assigned to this register).
+            assignedInterval->isActive = false;
+            unassignPhysReg(assignedInterval->assignedReg, nullptr);
+            if ((inVarToRegMap != nullptr) && inVarToRegMap[assignedInterval->getVarIndex(compiler)] == assignedRegNum)
+            {
+                inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
+            }
+        }
+        else
+        {
+            // This interval is no longer assigned to this register.
+            updateAssignedInterval(regRecord, nullptr, assignedInterval->registerType);
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
 //                             registers.
@@ -7469,33 +7485,22 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 interval->physReg     = targetReg;
                 interval->assignedReg = targetRegRecord;
             }
-            Interval* assignedInterval = targetRegRecord->assignedInterval;
-            if (assignedInterval != interval)
+            if (targetRegRecord->assignedInterval != interval)
             {
-                // Is there another interval currently assigned to this register?  If so unassign it.
-                if (assignedInterval != nullptr)
+#ifdef _TARGET_ARM_
+                // If this is a TYP_DOUBLE interval, and the assigned interval is either null or is TYP_FLOAT,
+                // we also need to unassign the other half of the register.
+                // Note that if the assigned interval is TYP_DOUBLE, it will be unassigned below.
+                if ((interval->registerType == TYP_DOUBLE) &&
+                    ((targetRegRecord->assignedInterval == nullptr) ||
+                     (targetRegRecord->assignedInterval->registerType == TYP_FLOAT)))
                 {
-                    if (isAssignedToInterval(assignedInterval, targetRegRecord))
-                    {
-                        regNumber assignedRegNum = assignedInterval->assignedReg->regNum;
-
-                        // If the interval is active, it will be set to active when we reach its new
-                        // register assignment (which we must not yet have done, or it wouldn't still be
-                        // assigned to this register).
-                        assignedInterval->isActive = false;
-                        unassignPhysReg(assignedInterval->assignedReg, nullptr);
-                        if (allocationPass && assignedInterval->isLocalVar &&
-                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] == assignedRegNum)
-                        {
-                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
-                        }
-                    }
-                    else
-                    {
-                        // This interval is no longer assigned to this register.
-                        updateAssignedInterval(targetRegRecord, nullptr, assignedInterval->registerType);
-                    }
+                    assert(genIsValidDoubleReg(targetReg));
+                    unassignIntervalBlockStart(findAnotherHalfRegRec(targetRegRecord),
+                                               allocationPass ? inVarToRegMap : nullptr);
                 }
+#endif // _TARGET_ARM_
+                unassignIntervalBlockStart(targetRegRecord, allocationPass ? inVarToRegMap : nullptr);
                 assignPhysReg(targetRegRecord, interval);
             }
             if (interval->recentRefPosition != nullptr && !interval->recentRefPosition->copyReg &&
@@ -8522,17 +8527,23 @@ void LinearScan::allocateRegisters()
 //
 void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType)
 {
-    reg->assignedInterval = interval;
-
 #ifdef _TARGET_ARM_
-    // Update overlapping floating point register for TYP_DOUBLE
+    // Update overlapping floating point register for TYP_DOUBLE.
+    Interval* oldAssignedInterval = reg->assignedInterval;
     if (regType == TYP_DOUBLE)
     {
         RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
 
         anotherHalfReg->assignedInterval = interval;
     }
+    else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))
+    {
+        RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
+
+        anotherHalfReg->assignedInterval = nullptr;
+    }
 #endif
+    reg->assignedInterval = interval;
 }
 
 //-----------------------------------------------------------------------------
@@ -9177,8 +9188,6 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 {
                     typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
                 }
-#endif
-#ifdef ARM_SOFTFP
                 else if (treeNode->OperIsPutArgReg())
                 {
                     // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
@@ -9186,7 +9195,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     var_types typNode = treeNode->TypeGet();
                     typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
                 }
-#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
                 else
                 {
                     typ = treeNode->TypeGet();
@@ -9949,7 +9958,21 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
     VarToRegMap toVarToRegMap   = getInVarToRegMap(toBlock->bbNum);
 
+#ifdef _TARGET_ARM_
+    regMaskTP freeRegs;
+    if (type == TYP_DOUBLE)
+    {
+        // We have to consider all float registers for TYP_DOUBLE
+        freeRegs = allRegs(TYP_FLOAT);
+    }
+    else
+    {
+        freeRegs = allRegs(type);
+    }
+#else  // !_TARGET_ARM_
     regMaskTP freeRegs = allRegs(type);
+#endif // !_TARGET_ARM_
+
 #ifdef DEBUG
     if (getStressLimitRegs() == LSRA_LIMIT_SMALL_SET)
     {
@@ -9968,13 +9991,22 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
         assert(fromReg != REG_NA && toReg != REG_NA);
         if (fromReg != REG_STK)
         {
-            freeRegs &= ~genRegMask(fromReg);
+            freeRegs &= ~genRegMask(fromReg, getIntervalForLocalVar(varIndex)->registerType);
         }
         if (toReg != REG_STK)
         {
-            freeRegs &= ~genRegMask(toReg);
+            freeRegs &= ~genRegMask(toReg, getIntervalForLocalVar(varIndex)->registerType);
         }
     }
+
+#ifdef _TARGET_ARM_
+    if (type == TYP_DOUBLE)
+    {
+        // Exclude any doubles for which the odd half isn't in freeRegs.
+        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE);
+    }
+#endif
+
     if (freeRegs == RBM_NONE)
     {
         return REG_NA;
@@ -9985,6 +10017,73 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
         return tempReg;
     }
 }
+
+#ifdef _TARGET_ARM_
+//------------------------------------------------------------------------
+// addResolutionForDouble: Add resolution move(s) for TYP_DOUBLE interval
+//                         and update location.
+//
+// Arguments:
+//    block           - the BasicBlock into which the move will be inserted.
+//    insertionPoint  - the instruction before which to insert the move
+//    sourceIntervals - maintains sourceIntervals[reg] which each 'reg' is associated with
+//    location        - maintains location[reg] which is the location of the var that was originally in 'reg'.
+//    toReg           - the register to which the var is moving
+//    fromReg         - the register from which the var is moving
+//    resolveType     - the type of resolution to be performed
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    It inserts at least one move and updates incoming parameter 'location'.
+//
+void LinearScan::addResolutionForDouble(BasicBlock*     block,
+                                        GenTreePtr      insertionPoint,
+                                        Interval**      sourceIntervals,
+                                        regNumberSmall* location,
+                                        regNumber       toReg,
+                                        regNumber       fromReg,
+                                        ResolveType     resolveType)
+{
+    regNumber secondHalfTargetReg = REG_NEXT(fromReg);
+    Interval* intervalToBeMoved1  = sourceIntervals[fromReg];
+    Interval* intervalToBeMoved2  = sourceIntervals[secondHalfTargetReg];
+
+    assert(!(intervalToBeMoved1 == nullptr && intervalToBeMoved2 == nullptr));
+
+    if (intervalToBeMoved1 != nullptr)
+    {
+        if (intervalToBeMoved1->registerType == TYP_DOUBLE)
+        {
+            // TYP_DOUBLE interval occupies a double register, i.e. two float registers.
+            assert(intervalToBeMoved2 == nullptr);
+            assert(genIsValidDoubleReg(toReg));
+        }
+        else
+        {
+            // TYP_FLOAT interval occupies 1st half of double register, i.e. 1st float register
+            assert(genIsValidFloatReg(toReg));
+        }
+        addResolution(block, insertionPoint, intervalToBeMoved1, toReg, fromReg);
+        JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
+        location[fromReg] = (regNumberSmall)toReg;
+    }
+
+    if (intervalToBeMoved2 != nullptr)
+    {
+        // TYP_FLOAT interval occupies 2nd half of double register.
+        assert(intervalToBeMoved2->registerType == TYP_FLOAT);
+        regNumber secondHalfTempReg = REG_NEXT(toReg);
+
+        addResolution(block, insertionPoint, intervalToBeMoved2, secondHalfTempReg, secondHalfTargetReg);
+        JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
+        location[secondHalfTargetReg] = (regNumberSmall)secondHalfTempReg;
+    }
+
+    return;
+}
+#endif // _TARGET_ARM_
 
 //------------------------------------------------------------------------
 // addResolution: Add a resolution move of the given interval
@@ -10582,20 +10681,21 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         (resolveType == ResolveSharedCritical) ? REG_NA : getTempRegForResolution(fromBlock, toBlock, TYP_INT);
 #endif // !_TARGET_XARCH_
     regNumber tempRegFlt = REG_NA;
+    regNumber tempRegDbl = REG_NA; // Used only for ARM
     if ((compiler->compFloatingPointUsed) && (resolveType != ResolveSharedCritical))
     {
-
 #ifdef _TARGET_ARM_
-        // Let's try to reserve a double register for TYP_FLOAT and TYP_DOUBLE
-        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE);
-        if (tempRegFlt == REG_NA)
+        // Try to reserve a double register for TYP_DOUBLE and use it for TYP_FLOAT too if available.
+        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE);
+        if (tempRegDbl != REG_NA)
         {
-            // If fails, try to reserve a float register for TYP_FLOAT
+            tempRegFlt = tempRegDbl;
+        }
+        else
+#endif // _TARGET_ARM_
+        {
             tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
         }
-#else
-        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
-#endif
     }
 
     regMaskTP targetRegsToDo      = RBM_NONE;
@@ -10703,7 +10803,24 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         regNumber targetReg = genRegNumFromMask(targetRegMask);
         if (location[targetReg] == REG_NA)
         {
-            targetRegsReady |= targetRegMask;
+#ifdef _TARGET_ARM_
+            regNumber sourceReg = (regNumber)source[targetReg];
+            Interval* interval  = sourceIntervals[sourceReg];
+            if (interval->registerType == TYP_DOUBLE)
+            {
+                // For ARM32, make sure that both of the float halves of the double register are available.
+                assert(genIsValidDoubleReg(targetReg));
+                regNumber anotherHalfRegNum = REG_NEXT(targetReg);
+                if (location[anotherHalfRegNum] == REG_NA)
+                {
+                    targetRegsReady |= targetRegMask;
+                }
+            }
+            else
+#endif // _TARGET_ARM_
+            {
+                targetRegsReady |= targetRegMask;
+            }
         }
     }
 
@@ -10757,8 +10874,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
                     {
                         // ARM32 requires a double temp register for TYP_DOUBLE.
-                        // We tried to reserve a double temp register first, but sometimes we can't.
-                        tempReg = genIsValidDoubleReg(tempRegFlt) ? tempRegFlt : REG_NA;
+                        tempReg = tempRegDbl;
                     }
                     else
 #endif // _TARGET_ARM_
@@ -10849,10 +10965,24 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 else
                 {
                     compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(dumpTerse));
-                    assert(sourceIntervals[targetReg] != nullptr);
-                    addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg, targetReg);
-                    JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
-                    location[targetReg] = (regNumberSmall)tempReg;
+#ifdef _TARGET_ARM_
+                    if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
+                    {
+                        assert(genIsValidDoubleReg(targetReg));
+                        assert(genIsValidDoubleReg(tempReg));
+
+                        addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg, targetReg,
+                                               resolveType);
+                    }
+                    else
+#endif // _TARGET_ARM_
+                    {
+                        assert(sourceIntervals[targetReg] != nullptr);
+
+                        addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg, targetReg);
+                        JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
+                        location[targetReg] = (regNumberSmall)tempReg;
+                    }
                     targetRegsReady |= targetRegMask;
                 }
             }
@@ -11399,8 +11529,6 @@ void TreeNodeInfo::dump(LinearScan* lsra)
 
 void LinearScan::lsraDumpIntervals(const char* msg)
 {
-    Interval* interval;
-
     printf("\nLinear scan intervals %s:\n", msg);
     for (auto& interval : intervals)
     {

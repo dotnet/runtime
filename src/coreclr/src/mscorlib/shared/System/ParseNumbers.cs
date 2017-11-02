@@ -218,12 +218,7 @@ namespace System
 
         public static string IntToString(int n, int radix, int width, char paddingChar, int flags)
         {
-            Span<char> buffer;
-            unsafe
-            {
-                char* tmpBuffer = stackalloc char[66]; // Longest possible string length for an integer in binary notation with prefix
-                buffer = new Span<char>(tmpBuffer, 66);
-            }
+            Span<char> buffer = stackalloc char[66]; // Longest possible string length for an integer in binary notation with prefix
 
             if (radix < MinRadix || radix > MaxRadix)
                 throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
@@ -363,12 +358,7 @@ namespace System
 
         public static string LongToString(long n, int radix, int width, char paddingChar, int flags)
         {
-            Span<char> buffer;
-            unsafe
-            {
-                char* tmpBuffer = stackalloc char[67]; // Longest possible string length for an integer in binary notation with prefix
-                buffer = new Span<char>(tmpBuffer, 67);
-            }
+            Span<char> buffer = stackalloc char[67]; // Longest possible string length for an integer in binary notation with prefix
 
             if (radix < MinRadix || radix > MaxRadix)
                 throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));

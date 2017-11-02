@@ -384,16 +384,21 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
             return false;
         }
         GenTreePtr asg = loc->parent;
-        assert(asg->OperKind() & GTK_ASGOP);
+        assert(asg->OperIsAssignment());
         switch (asg->OperGet())
         {
             case GT_ASG:
                 return IsMonotonicallyIncreasing(asg->gtGetOp2(), path);
 
+#ifdef LEGACY_BACKEND
             case GT_ASG_ADD:
                 return IsBinOpMonotonicallyIncreasing(asg->gtGetOp1(), asg->gtGetOp2(), GT_ADD, path);
+#endif
 
             default:
+#ifndef LEGACY_BACKEND
+                noway_assert(false);
+#endif
                 // All other 'asg->OperGet()' kinds, return false
                 break;
         }
@@ -857,7 +862,7 @@ Range RangeCheck::ComputeRangeForLocalDef(
     }
 #endif
     GenTreePtr asg = loc->parent;
-    assert(asg->OperKind() & GTK_ASGOP);
+    assert(asg->OperIsAssignment());
     switch (asg->OperGet())
     {
         // If the operator of the definition is assignment, then compute the range of the rhs.
@@ -875,14 +880,19 @@ Range RangeCheck::ComputeRangeForLocalDef(
             return range;
         }
 
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
             // If the operator of the definition is +=, then compute the range of the operands of +.
             // Note that gtGetOp1 will return op1 to be the lhs; in the formulation of ssa, we have
             // a side table for defs and the lhs of a += is considered to be a use for SSA numbering.
             return ComputeRangeForBinOp(loc->block, loc->stmt, asg->gtGetOp1(), asg->gtGetOp2(), GT_ADD, path,
                                         monotonic DEBUGARG(indent));
+#endif
 
         default:
+#ifndef LEGACY_BACKEND
+            noway_assert(false);
+#endif
             // All other 'asg->OperGet()' kinds, return Limit::keUnknown
             break;
     }
@@ -1034,17 +1044,22 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreeP
     }
     // Get the parent node which is an asg.
     GenTreePtr asg = loc->parent;
-    assert(asg->OperKind() & GTK_ASGOP);
+    assert(asg->OperIsAssignment());
     switch (asg->OperGet())
     {
         case GT_ASG:
             return DoesOverflow(loc->block, loc->stmt, asg->gtGetOp2(), path);
 
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
             // For GT_ASG_ADD, op2 is use, op1 is also use since we side table for defs in useasg case.
             return DoesBinOpOverflow(loc->block, loc->stmt, asg->gtGetOp1(), asg->gtGetOp2(), path);
+#endif
 
         default:
+#ifndef LEGACY_BACKEND
+            noway_assert(false);
+#endif
             // All other 'asg->OperGet()' kinds, conservatively return true
             break;
     }
@@ -1283,7 +1298,7 @@ void RangeCheck::MapStmtDefs(const Location& loc)
         if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
         {
             // To avoid ind(addr) use asgs
-            if (loc.parent->OperKind() & GTK_ASGOP)
+            if (loc.parent->OperIsAssignment())
             {
                 SetDef(HashCode(lclNum, ssaNum), new (m_pCompiler->getAllocator()) Location(loc));
             }

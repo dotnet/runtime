@@ -2541,8 +2541,8 @@ private:
 
 public:
     NGenPdbWriter (LPCWSTR wszNativeImagePath, LPCWSTR wszPdbPath, DWORD dwExtraData, LPCWSTR wszManagedPDBSearchPath)
-        : m_hModule(NULL),
-          m_Create(NULL),
+        : m_Create(NULL),
+          m_hModule(NULL),
           m_wszPdbPath(wszPdbPath),
           m_dwExtraData(dwExtraData),
           m_wszManagedPDBSearchPath(wszManagedPDBSearchPath)
@@ -2600,7 +2600,7 @@ public:
     }
 };
 
-#define UNKNOWN_SOURCE_FILE_PATH L"unknown"
+#define UNKNOWN_SOURCE_FILE_PATH W("unknown")
 
 // ----------------------------------------------------------------------------
 // Manages generating all PDB data for an EE Module. Directly responsible for writing the
@@ -2730,10 +2730,10 @@ public:
         : m_Create(Create),
           m_wszPdbPath(wszPdbPath),
           m_pWriter(NULL),
-          m_dwExtraData(dwExtraData),
-          m_pBinder(pBinder),
           m_pModule(pModule),
+          m_dwExtraData(dwExtraData),
           m_wszManagedPDBSearchPath(wszManagedPDBSearchPath),
+          m_pBinder(pBinder),
           m_ilPdbDocCount(0),
           m_finalPdbDocCount(1)
     {
@@ -2836,9 +2836,9 @@ public:
           m_pMethodRegionInfo(pMethodRegionInfo),
           m_pCodeInfo(pCodeInfo),
           m_pDocNameToOffsetMap(pDocNameToOffsetMap),
+          m_isILPDBProvided(isILPDBProvided),
           m_cIlNativeMap(0),
-          m_cSeqPoints(0),
-          m_isILPDBProvided(isILPDBProvided)
+          m_cSeqPoints(0)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -3094,7 +3094,7 @@ HRESULT NGenModulePdbWriter::WritePDBData()
 	// we copy the file to somethign with this convention before generating the PDB
 	// and delete it when we are done.  
 	SString dllPath = pLoadedLayout->GetPath();
-	if (!dllPath.EndsWithCaseInsensitive(L".ni.dll") && !dllPath.EndsWithCaseInsensitive(L".ni.exe"))
+	if (!dllPath.EndsWithCaseInsensitive(W(".ni.dll")) && !dllPath.EndsWithCaseInsensitive(W(".ni.exe")))
 	{
 		SString::Iterator fileNameStart = dllPath.End();
 		dllPath.FindBack(fileNameStart, DIRECTORY_SEPARATOR_STR_W);
@@ -3105,7 +3105,7 @@ HRESULT NGenModulePdbWriter::WritePDBData()
 		// m_tempSourceDllName = Convertion of  INPUT.dll  to INPUT.ni.dll where the PDB lives.  
 		m_tempSourceDllName = m_wszPdbPath;
 		m_tempSourceDllName += SString(dllPath, fileNameStart, ext - fileNameStart);
-		m_tempSourceDllName += L".ni";
+		m_tempSourceDllName += W(".ni");
 		m_tempSourceDllName += SString(dllPath, ext, dllPath.End() - ext);
 		CopyFileW(dllPath, m_tempSourceDllName, false);
 		dllPath = m_tempSourceDllName;
@@ -3268,10 +3268,10 @@ HRESULT NGenModulePdbWriter::WriteMethodPDBData(PEImageLayout * pLoadedLayout, U
             fullName, 
             hotDesc, 
             TypeString::FormatNamespace | TypeString::FormatSignature);
-		fullName.Append(L"$#");
+		fullName.Append(W("$#"));
 		if (!mAssemblyName.Equals(assemblyName))
 			fullName.Append(assemblyName);
-		fullName.Append(L"#");
+		fullName.Append(W("#"));
         fullName.Append(methodToken);
         BSTRHolder hotNameHolder(SysAllocString(fullName.GetUnicode()));
         hr = m_pWriter->AddSymbol(hotNameHolder,
@@ -3291,10 +3291,10 @@ HRESULT NGenModulePdbWriter::WriteMethodPDBData(PEImageLayout * pLoadedLayout, U
                 fullNameCold, 
                 hotDesc, 
                 TypeString::FormatNamespace | TypeString::FormatSignature);
-			fullNameCold.Append(L"$#");
+			fullNameCold.Append(W("$#"));
 			if (!mAssemblyName.Equals(assemblyName))
 				fullNameCold.Append(assemblyName);
-			fullNameCold.Append(L"#");
+			fullNameCold.Append(W("#"));
             fullNameCold.Append(methodToken);
 
             BSTRHolder coldNameHolder(SysAllocString(fullNameCold.GetUnicode()));
@@ -5205,19 +5205,11 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
         if (et == ELEMENT_TYPE_I4 ||
             et == ELEMENT_TYPE_U4 ||
             et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_U1)
+            et == ELEMENT_TYPE_I2 ||
+            et == ELEMENT_TYPE_U1 ||
+            et == ELEMENT_TYPE_I1)
         {
             ss.Set(W("System.Collections.Generic.EnumEqualityComparer`1"));
-            return;
-        }
-        else if (et == ELEMENT_TYPE_I2)
-        {
-            ss.Set(W("System.Collections.Generic.ShortEnumEqualityComparer`1"));
-            return;
-        }
-        else if (et == ELEMENT_TYPE_I1)
-        {
-            ss.Set(W("System.Collections.Generic.SByteEnumEqualityComparer`1"));
             return;
         }
         else if (et == ELEMENT_TYPE_I8 ||

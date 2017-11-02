@@ -6917,6 +6917,14 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     if (MethodIndex < 0)
         return FALSE;
 
+    if (ppMethodDesc == NULL && pCodeInfo == NULL)
+    {
+        // Bail early if caller doesn't care about the MethodDesc or EECodeInfo.
+        // Avoiding the method desc lookups below also prevents deadlocks when this
+        // is called from IsManagedCode.
+        return TRUE;
+    }
+
 #ifdef WIN64EXCEPTIONS
     // Save the raw entry
     PTR_RUNTIME_FUNCTION RawFunctionEntry = pRuntimeFunctions + MethodIndex;

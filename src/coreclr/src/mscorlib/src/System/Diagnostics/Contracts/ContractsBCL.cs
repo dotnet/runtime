@@ -185,21 +185,28 @@ namespace System.Diagnostics.Contracts
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+#if CORECLR
     [SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
-    internal sealed class ContractException : Exception
+    internal
+#else
+    public // On CoreRT this must be public to support binary serialization with type forwarding.
+#endif
+    sealed class ContractException : Exception
     {
-        private readonly ContractFailureKind _Kind;
-        private readonly string _UserMessage;
-        private readonly string _Condition;
+        private readonly ContractFailureKind _kind;
+        private readonly string _userMessage;
+        private readonly string _condition;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        public ContractFailureKind Kind { get { return _Kind; } }
+        public ContractFailureKind Kind { get { return _kind; } }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         public string Failure { get { return this.Message; } }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        public string UserMessage { get { return _UserMessage; } }
+        public string UserMessage { get { return _userMessage; } }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        public string Condition { get { return _Condition; } }
+        public string Condition { get { return _condition; } }
 
         // Called by COM Interop, if we see COR_E_CODECONTRACTFAILED as an HRESULT.
         private ContractException()
@@ -211,14 +218,26 @@ namespace System.Diagnostics.Contracts
             : base(failure, innerException)
         {
             HResult = System.Runtime.CompilerServices.ContractHelper.COR_E_CODECONTRACTFAILED;
-            _Kind = kind;
-            _UserMessage = userMessage;
-            _Condition = condition;
+            _kind = kind;
+            _userMessage = userMessage;
+            _condition = condition;
         }
+
+        private ContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context)
+        {
+            _kind = (ContractFailureKind)info.GetInt32("Kind");
+            _userMessage = info.GetString("UserMessage");
+            _condition = info.GetString("Condition");
+        }
+
 
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("Kind", _kind);
+            info.AddValue("UserMessage", _userMessage);
+            info.AddValue("Condition", _condition);
         }
     }
 }
@@ -228,14 +247,14 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class ContractHelper
     {
-        #region Private fields
+#region Private fields
 
         private static volatile EventHandler<ContractFailedEventArgs> contractFailedEvent;
         private static readonly Object lockObject = new Object();
 
         internal const int COR_E_CODECONTRACTFAILED = unchecked((int)0x80131542);
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Allows a managed application environment such as an interactive interpreter (IronPython) or a

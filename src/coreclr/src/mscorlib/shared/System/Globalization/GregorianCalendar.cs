@@ -382,6 +382,22 @@ namespace System.Globalization
             return time.Year;
         }
 
+        internal override bool IsValidYear(int year, int era) => year >= 1 && year <= MaxYear;
+
+        internal override bool IsValidDay(int year, int month, int day, int era)
+        {
+            if ((era != CurrentEra && era != ADEra) || 
+                year < 1 || year > MaxYear ||
+                month < 1 || month > 12 ||
+                day < 1)
+            {
+                return false;
+            }
+
+            int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+            return day <= (days[month] - days[month - 1]);
+        }
+
         // Checks whether a given day in the specified era is a leap day. This method returns true if
         // the date is a leap day, or false if not.
         //

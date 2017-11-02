@@ -1935,7 +1935,6 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     GenTreePtr tree;
-    unsigned   lclNum;
 
     // Don't kill vars in scope
     VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
@@ -2694,6 +2693,9 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
         noway_assert(rhsNode);
         noway_assert(tree->gtFlags & GTF_VAR_DEF);
 
+#ifndef LEGACY_BACKEND
+        assert(asgNode->OperIs(GT_ASG));
+#else
         if (asgNode->gtOper != GT_ASG && asgNode->gtOverflowEx())
         {
             // asgNode may be <op_ovf>= (with GTF_OVERFLOW). In that case, we need to keep the <op_ovf>
@@ -2761,7 +2763,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             }
             return false;
         }
-
+#endif
         // Do not remove if this local variable represents
         // a promoted struct field of an address exposed local.
         if (varDsc->lvIsStructField && lvaTable[varDsc->lvParentLcl].lvAddrExposed)
