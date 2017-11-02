@@ -4458,10 +4458,9 @@ array_constructed:
 				if (exc) {
 					frame->ex = exc;
 					context->search_for_handler = 1;
+					goto handle_exception;
 				}
 			}
-			if (frame->ex != NULL)
-				goto handle_exception;
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_LDPTR) 
