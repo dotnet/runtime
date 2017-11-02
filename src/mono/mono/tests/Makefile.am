@@ -955,6 +955,8 @@ DISABLED_TESTS = \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
 	$(if $(LLVM),$(LLVM_DISABLED_TESTS))
 
+# bug-48015.exe: be careful when re-enabling, it happens that it returns with
+#                exit code 0, but doesn't actually execute the test.
 INTERP_DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
 	$(INTERP_PLATFORM_DISABLED_TESTS) \
@@ -962,6 +964,7 @@ INTERP_DISABLED_TESTS = \
 	$(if $(CI),$(CI_DISABLED_TESTS)) \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
 	abort-cctor.exe \
+	appdomain-unload.exe \
 	appdomain-thread-abort.exe \
 	array_load_exception.exe \
 	async-exc-compilation.exe \
