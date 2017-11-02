@@ -262,6 +262,7 @@ collectionflags=stopwatch
 hasWarmupRun=--drop-first-value
 stabilityPrefix=
 benchmarksOutputDir=$dp0/../../bin/sandbox/Logs
+pgoOptimized=pgo
 
 for i in "$@"
 do
@@ -297,6 +298,9 @@ do
         --optLevel=*)
             optLevel=${i#*=}
             ;;
+        --nopgo)
+            pgoOptimized=nopgo
+            ;;
         --collectionflags=*)
             collectionflags=${i#*=}
             ;;
@@ -315,7 +319,7 @@ do
         *)
             echo "Unknown switch: $i"
             print_usage
-            exit $EXIT_CODE_SUCCESS
+            exit $EXIT_CODE_EXCEPTION
             ;;
     esac
 done
@@ -418,6 +422,7 @@ if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
     args+=" --config-name Release"
     args+=" --config Configuration Release"
     args+=" --config OS $benchViewOS"
+    args+=" --config PGO $pgoOptimized"
     args+=" --config Profile $perfCollection"
     args+=" --config JitName ryujit"
     args+=" --config OptLevel $optLevel"
