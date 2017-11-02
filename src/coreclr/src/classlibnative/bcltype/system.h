@@ -52,12 +52,10 @@ public:
     void QCALLTYPE _GetCommandLine(QCall::StringHandleOnStack retString);
 
     static FCDECL0(Object*, GetCommandLineArgs);
-    static FCDECL1(FC_BOOL_RET, _GetCompatibilityFlag, int flag);
     static FCDECL1(VOID, FailFast, StringObject* refMessageUNSAFE);
     static FCDECL2(VOID, FailFastWithExitCode, StringObject* refMessageUNSAFE, UINT exitCode);
     static FCDECL2(VOID, FailFastWithException, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE);
 
-    static FCDECL1(Object*,       _GetEnvironmentVariable, StringObject* strVar);
     static FCDECL0(StringObject*, _GetModuleFileName);
     static FCDECL0(StringObject*, GetRuntimeDirectory);
 

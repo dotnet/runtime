@@ -26,9 +26,9 @@ public:
             , applyDiff(false)
             , parallel(false)
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
-            , useCoreDisTools(true)     // if CoreDisTools is available (but MSVCDIS is not), use it.
+            , useCoreDisTools(true) // if CoreDisTools is available (but MSVCDIS is not), use it.
 #else
-            , useCoreDisTools(false)    // Otherwise, use MSVCDIS if that is available (else no diffs are available).
+            , useCoreDisTools(false) // Otherwise, use MSVCDIS if that is available (else no diffs are available).
 #endif
             , skipCleanup(false)
             , workerCount(-1)
@@ -79,7 +79,11 @@ public:
 
     static bool Parse(int argc, char* argv[], /* OUT */ Options* o);
 
-    static bool AddJitOption(int& currArgument, int argc, char* argv[], LightWeightMap<DWORD, DWORD>** pJitOptions, LightWeightMap<DWORD, DWORD>** pForceJitOptions);
+    static bool AddJitOption(int&  currArgument,
+                             int   argc,
+                             char* argv[],
+                             LightWeightMap<DWORD, DWORD>** pJitOptions,
+                             LightWeightMap<DWORD, DWORD>** pForceJitOptions);
 
 private:
     static void DumpHelp(const char* program);

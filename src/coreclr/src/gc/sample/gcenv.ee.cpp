@@ -316,6 +316,16 @@ void GCToEEInterface::FreeStringConfigValue(const char *value)
 
 }
 
+bool GCToEEInterface::IsGCThread()
+{
+    return false;
+}
+
+bool GCToEEInterface::IsGCSpecialThread()
+{
+    return false;
+}
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     return g_pFreeObjectMethodTable;

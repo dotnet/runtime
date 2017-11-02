@@ -2,15 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-//using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Security;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -50,7 +44,7 @@ namespace System.Collections.Generic
     // means another generic instantiation, which can be costly esp.
     // for value types.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     internal sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
     {
         public override int Compare(T x, T y)
@@ -65,7 +59,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj) =>
+        public override bool Equals(object obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -73,7 +67,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     internal sealed class NullableComparer<T> : Comparer<T?> where T : struct, IComparable<T>
     {
         public override int Compare(T? x, T? y)
@@ -88,7 +82,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj) =>
+        public override bool Equals(object obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -96,7 +90,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     internal sealed class ObjectComparer<T> : Comparer<T>
     {
         public override int Compare(T x, T y)
@@ -105,7 +99,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj) =>
+        public override bool Equals(object obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -133,7 +127,6 @@ namespace System.Collections.Generic
     // since we want to serialize as ObjectComparer for
     // back-compat reasons (see below).
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class Int32EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public Int32EnumComparer()
@@ -152,7 +145,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj) =>
+        public override bool Equals(object obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -169,7 +162,6 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class UInt32EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public UInt32EnumComparer()
@@ -188,7 +180,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj) =>
+        public override bool Equals(object obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -201,7 +193,6 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class Int64EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public Int64EnumComparer()
@@ -217,7 +208,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj) =>
+        public override bool Equals(object obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -230,7 +221,6 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class UInt64EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {
         public UInt64EnumComparer()
@@ -249,7 +239,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj) =>
+        public override bool Equals(object obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>

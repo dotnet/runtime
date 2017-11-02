@@ -25,6 +25,7 @@ Abstract:
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <new>
 
 extern "C"
 {
@@ -53,9 +54,6 @@ extern "C"
         const char *c_szStr
         );
 }
-
-inline void* operator new(size_t, void* p) throw () { return p; }
-inline void* operator new[](size_t, void* p) throw () { return p; }
 
 namespace CorUnix{
 

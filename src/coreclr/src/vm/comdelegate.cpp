@@ -1050,126 +1050,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-// On the CoreCLR, we don't allow non-fulltrust delegates to be marshaled out (or created: CorHost::CreateDelegate ensures that)
-// This helper function checks if we have a full-trust delegate with AllowReversePInvokeCallsAttribute targets.
-BOOL COMDelegate::IsFullTrustDelegate(DELEGATEREF pDelegate)
-{
-    CONTRACTL
-    { 
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_WINDOWSPHONE
-    // we always allow reverse p/invokes on the phone.  The OS provides the sandbox.
-    return TRUE;
-#else
-    if (IsSecureDelegate(pDelegate))
-    {
-        // A secure delegate implies => creator and target are different, and creator is not fully-trusted
-        return FALSE;
-    }
-    else
-    {
-        // Suffices to look at the target assembly and check if that is fully-trusted.
-        // if creator is same as target, we're done.
-        // if creator is not same as target, then the only interesting case is when it's not FT, 
-        // and that's captured by the SecureDelegate case above.
-        // The target method yields the target assembly. Target method is not determinable for certain cases:
-        //    - Open Virtual Delegates
-        // For those cases we play it safe and return FALSE from this function
-        if (pDelegate->GetInvocationCount() != 0)
-        {
-            // From MulticastDelegate.cs (MulticastDelegate.Equals):
-            // there are 4 kind of delegate kinds that fall into this bucket
-            // 1- Multicast (_invocationList is Object[])
-            // 2- Secure (_invocationList is Delegate)
-            // 3- Unmanaged FntPtr (_invocationList == null)
-            // 4- Open virtual (_invocationCount == MethodDesc of target)
-            //                 (_invocationList == null, or _invocationList is a LoaderAllocator or DynamicResolver)
-
-            OBJECTREF invocationList = pDelegate->GetInvocationList();
-            if (invocationList != NULL)
-            {
-                
-                MethodTable *pMT;
-                pMT = invocationList->GetTrueMethodTable();
-                // Has to be a multicast delegate, or inner open virtual delegate of collectible secure delegate 
-                // since we already checked for secure delegates above
-                _ASSERTE(!pMT->IsDelegate());
-
-                if (!pMT->IsArray())
-                {
-                    // open Virtual delegate: conservatively return FALSE
-                    return FALSE;
-                }
-
-                // Given a multicast delegate we walk the list and make sure all targets are FullTrust.
-                // Yes, this is a recursive call to IsFullTrustDelegate. But we should hit stackoverflow 
-                // only for the same cases where invoking that delegate would hit stackoverflow.
-                PTRARRAYREF delegateArrayRef = (PTRARRAYREF) invocationList;
-                
-                int numDelegates = delegateArrayRef->GetNumComponents();
-                for(int i = 0; i< numDelegates; i++)
-                {
-                    DELEGATEREF innerDel = (DELEGATEREF)delegateArrayRef->GetAt(i);
-                    _ASSERTE(innerDel->GetMethodTable()->IsDelegate());
-                    if (!IsFullTrustDelegate(innerDel))
-                    {
-                        // If we find even one non full-trust target in the list, return FALSE
-                        return FALSE;
-                    }
-                }
-                // All targets in the multicast delegate are FullTrust, so this multicast delegate is 
-                // also FullTrust
-                return TRUE;
-            }
-            else
-            {
-                if (pDelegate->GetInvocationCount() == DELEGATE_MARKER_UNMANAGEDFPTR)
-                {
-                    // Delegate to unmanaged function pointer - FullTrust
-                    return TRUE;
-                }
-
-                // 
-                // open Virtual delegate: conservatively return FALSE
-                return FALSE;
-            }
-        }
-        // Regular delegate. Let's just look at the target Method
-        MethodDesc* pMD = GetMethodDesc((OBJECTREF)pDelegate);
-        if (pMD != NULL)
-        {
-            // The target must be decorated with AllowReversePInvokeCallsAttribute
-            if (!IsMethodAllowedToSinkReversePInvoke(pMD)) return FALSE;
-
-            return TRUE;
-        }
-    }
-    // Default: 
-    return FALSE;
-#endif //FEATURE_WINDOWSPHONE
-}
-
-// Checks whether the method is decorated with AllowReversePInvokeCallsAttribute.
-BOOL COMDelegate::IsMethodAllowedToSinkReversePInvoke(MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_WINDOWSPHONE
-    // we always allow reverse p/invokes on the phone.  The OS provides the sandbox.
-    return TRUE;
-#else
-    return (S_OK == pMD->GetMDImport()->GetCustomAttributeByName(
-                        pMD->GetMemberDef(),
-                        "System.Runtime.InteropServices.AllowReversePInvokeCallsAttribute",
-                        NULL,
-                        NULL));
-#endif // FEATURE_WINDOWSPHONE
-}
-
 // Marshals a managed method to an unmanaged callback provided the 
 // managed method is static and it's parameters require no marshalling.
 PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
@@ -1261,14 +1141,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
     MethodTable* pMT = pDelegate->GetMethodTable();
     DelegateEEClass* pClass = (DelegateEEClass*)(pMT->GetClass());
-
-    // On the CoreCLR, we only allow marshaling out delegates that we can guarantee are full-trust delegates
-    if (!IsFullTrustDelegate(pDelegate))
-    {        
-        StackSString strDelegateType;
-        TypeString::AppendType(strDelegateType, pMT, TypeString::FormatNamespace | TypeString::FormatAngleBrackets| TypeString::FormatSignature);
-        COMPlusThrow(kSecurityException, IDS_E_DELEGATE_FULLTRUST_ARPIC_1, strDelegateType.GetUnicode());
-    }
 
     if (pMT->HasInstantiation())
         COMPlusThrowArgumentException(W("delegate"), W("Argument_NeedNonGenericType"));
@@ -1450,12 +1322,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         if (pUMEntryThunk->GetDomainId() != GetAppDomain()->GetId())
             COMPlusThrow(kNotSupportedException, W("NotSupported_DelegateMarshalToWrongDomain"));
 
-        // On the CoreCLR, we only allow marshaling out delegates that we can guarantee are full-trust delegates
-        if (!IsFullTrustDelegate((DELEGATEREF)pDelegate))
-        {
-            COMPlusThrow(kSecurityException, IDS_E_DELEGATE_FULLTRUST_ARPIC_2);
-        }
-
         GCPROTECT_END();
         return pDelegate;
     }
@@ -1557,12 +1423,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
 
     GCPROTECT_END();
 #endif // defined(_TARGET_X86_)
-
-    // On the CoreCLR, we only allow marshaling out delegates that we can guarantee are full-trust delegates
-    if (!IsFullTrustDelegate(delObj))
-    {
-        COMPlusThrow(kSecurityException, IDS_E_DELEGATE_FULLTRUST_ARPIC_2);
-    }
 
     return delObj;
 }

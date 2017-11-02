@@ -100,9 +100,7 @@ namespace Microsoft.Win32
         private static int GetCVTypeFromClass(Type ctype)
         {
             Debug.Assert(ctype != null);
-#if _DEBUG
-            BCLDebug.Assert(ClassTypes[CV_OBJECT] == typeof(Object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
-#endif
+            Debug.Assert(ClassTypes[CV_OBJECT] == typeof(Object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
 
             int cvtype = -1;
             for (int i = 0; i < ClassTypes.Length; i++)

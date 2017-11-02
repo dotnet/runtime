@@ -19,15 +19,15 @@ Building LLDB
 	git clone http://llvm.org/git/lldb.git 
    ```
 
-2. Checkout the "release_38" branches in llvm/clang/lldb:
+2. Checkout the "release_39" branches in llvm/clang/lldb:
 
    ```
    cd $HOME/llvm
-   git checkout release_38
+   git checkout release_39
    cd $HOME/llvm/tools/clang
-   git checkout release_38
+   git checkout release_39
    cd $HOME/llvm/tools/lldb
-   git checkout release_38 
+   git checkout release_39 
    ```
 
 3. Install the prerequisites:

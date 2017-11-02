@@ -442,15 +442,9 @@ void UpdateGCWriteBarriers(bool postGrow = false)
 
         pDesc++;
     }
-
-    // We've changed code so we must flush the instruction cache.
-    BYTE *pbAlteredRange;
-    DWORD cbAlteredRange;
-    ComputeWriteBarrierRange(&pbAlteredRange, &cbAlteredRange);
-    FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
 }
 
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     // The runtime is not always suspended when this is called (unlike StompWriteBarrierEphemeral) but we have
     // no way to update the barrier code atomically on ARM since each 32-bit value we change is loaded over
@@ -462,26 +456,36 @@ void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
     // suspend/resuming the EE under GC stress will trigger a GC and if we're holding the
     // GC lock due to allocating a LOH segment it will cause a deadlock so disable it here.
     GCStressPolicy::InhibitHolder iholder;
+    int stompWBCompleteActions = SWB_ICACHE_FLUSH;
 
-    bool fSuspended = false;
     if (!isRuntimeSuspended)
     {
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-        fSuspended = true;
+        stompWBCompleteActions |= SWB_EE_RESTART;
     }
 
     UpdateGCWriteBarriers(bReqUpperBoundsCheck);
 
-    if (fSuspended)
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+    return stompWBCompleteActions;
 }
 
-void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
+int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
+    return SWB_ICACHE_FLUSH;
 }
+
+void FlushWriteBarrierInstructionCache()
+{
+    // We've changed code so we must flush the instruction cache.
+    BYTE *pbAlteredRange;
+    DWORD cbAlteredRange;
+    ComputeWriteBarrierRange(&pbAlteredRange, &cbAlteredRange);
+    FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
+}
+
 #endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
@@ -1399,30 +1403,21 @@ Stub *GenerateInitPInvokeFrameHelper()
     ThumbReg regThread  = ThumbReg(5);
     ThumbReg regScratch = ThumbReg(6);
 
-#ifdef FEATURE_IMPLICIT_TLS
-    TLSACCESSMODE mode = TLSACCESS_GENERIC;
-#else
-    TLSACCESSMODE mode = GetTLSAccessMode(GetThreadTLSIndex());
+#ifdef FEATURE_PAL
+    // Erect frame to perform call to GetThread
+    psl->ThumbEmitProlog(1, sizeof(ArgumentRegisters), FALSE); // Save r4 for aligned stack
+
+    // Save argument registers around the GetThread call. Don't bother with using ldm/stm since this inefficient path anyway.
+    for (int reg = 0; reg < 4; reg++)
+        psl->ThumbEmitStoreRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r[reg]));
 #endif
 
+    psl->ThumbEmitGetThread(regThread);
 
-    if (mode == TLSACCESS_GENERIC)
-    {
-        // Erect frame to perform call to GetThread
-        psl->ThumbEmitProlog(1, sizeof(ArgumentRegisters), FALSE); // Save r4 for aligned stack
-
-        // Save argument registers around the GetThread call. Don't bother with using ldm/stm since this inefficient path anyway.
-        for (int reg = 0; reg < 4; reg++)
-            psl->ThumbEmitStoreRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r[reg]));
-    }
-
-    psl->ThumbEmitGetThread(mode, regThread);
-
-    if (mode == TLSACCESS_GENERIC)
-    {
-        for (int reg = 0; reg < 4; reg++)
-            psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r[reg]));
-    }
+#ifdef FEATURE_PAL
+    for (int reg = 0; reg < 4; reg++)
+        psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r[reg]));
+#endif
 
     // mov [regFrame + FrameInfo.offsetOfGSCookie], GetProcessGSCookie()
     psl->ThumbEmitMovConstant(regScratch, GetProcessGSCookie());
@@ -1444,82 +1439,36 @@ Stub *GenerateInitPInvokeFrameHelper()
     psl->ThumbEmitMovConstant(regScratch, 0);
     psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress - negSpace);
 
-    if (mode == TLSACCESS_GENERIC)
-    {
-        DWORD cbSavedRegs = sizeof(ArgumentRegisters) + 2 * 4; // r0-r3, r4, lr
-        psl->ThumbEmitAdd(regScratch, thumbRegSp, cbSavedRegs);
-        psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
-    }
-    else
-    {
-        // str SP, [regFrame + FrameInfo.offsetOfCallSiteSP]
-        psl->ThumbEmitStoreRegIndirect(thumbRegSp, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
-    }
+#ifdef FEATURE_PAL
+    DWORD cbSavedRegs = sizeof(ArgumentRegisters) + 2 * 4; // r0-r3, r4, lr
+    psl->ThumbEmitAdd(regScratch, thumbRegSp, cbSavedRegs);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
+#else
+    // str SP, [regFrame + FrameInfo.offsetOfCallSiteSP]
+    psl->ThumbEmitStoreRegIndirect(thumbRegSp, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
+#endif
 
     // mov [regThread + offsetof(Thread, m_pFrame)], regFrame
     psl->ThumbEmitStoreRegIndirect(regFrame, regThread, offsetof(Thread, m_pFrame));
 
     // leave current Thread in R4
 
-    if (mode == TLSACCESS_GENERIC)
-    {
-        psl->ThumbEmitEpilog();
-    }
-    else
-    {
-        // Return. The return address has been restored into LR at this point.
-        // bx lr
-        psl->ThumbEmitJumpRegister(thumbRegLr);
-    }
+#ifdef FEATURE_PAL
+    psl->ThumbEmitEpilog();
+#else
+    // Return. The return address has been restored into LR at this point.
+    // bx lr
+    psl->ThumbEmitJumpRegister(thumbRegLr);
+#endif
 
     // A single process-wide stub that will never unload
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
 }
 
-void StubLinkerCPU::ThumbEmitGetThread(TLSACCESSMODE mode, ThumbReg dest)
+void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 {
-#ifndef FEATURE_IMPLICIT_TLS
-    DWORD idxThread = GetThreadTLSIndex();
+#ifdef FEATURE_PAL
 
-    if (mode != TLSACCESS_GENERIC)
-    {
-        // mrc p15, 0, dest, c13, c0, 2
-        Emit16(0xee1d);
-        Emit16((WORD)(0x0f50 | (dest << 12)));
-
-        if (mode == TLSACCESS_WNT)
-        {
-            // ldr dest, [dest, #(WINNT_TLS_OFFSET + (idxThread * sizeof(void*)))]
-            ThumbEmitLoadRegIndirect(dest, dest, offsetof(TEB, TlsSlots) + (idxThread * sizeof(void*)));
-        }
-        else
-        {
-            _ASSERTE(mode == TLSACCESS_WNT_HIGH);
-
-            // ldr dest, [dest, #WINNT5_TLSEXPANSIONPTR_OFFSET]
-            ThumbEmitLoadRegIndirect(dest, dest, offsetof(TEB, TlsExpansionSlots));
-
-            // ldr dest, [dest + #(idxThread * 4)]
-            ThumbEmitLoadRegIndirect(dest, dest, (idxThread - TLS_MINIMUM_AVAILABLE) * sizeof(void*));
-        }
-    }
-    else
-    {
-        ThumbEmitMovConstant(ThumbReg(0), idxThread);
-
-#pragma push_macro("TlsGetValue")
-#undef TlsGetValue
-        ThumbEmitMovConstant(ThumbReg(1), (TADDR)TlsGetValue);
-#pragma pop_macro("TlsGetValue")
-
-        ThumbEmitCallRegister(ThumbReg(1));
-
-        if (dest != ThumbReg(0))
-        {
-            ThumbEmitMovRegReg(dest, ThumbReg(0));
-        }
-    }
-#else
     ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThread);
 
     ThumbEmitCallRegister(ThumbReg(0));
@@ -1528,7 +1477,20 @@ void StubLinkerCPU::ThumbEmitGetThread(TLSACCESSMODE mode, ThumbReg dest)
     {
         ThumbEmitMovRegReg(dest, ThumbReg(0));
     }
-#endif
+
+#else // FEATURE_PAL
+
+    // mrc p15, 0, dest, c13, c0, 2
+    Emit16(0xee1d);
+    Emit16((WORD)(0x0f50 | (dest << 12)));
+
+    ThumbEmitLoadRegIndirect(dest, dest, offsetof(TEB, ThreadLocalStoragePointer));
+
+    ThumbEmitLoadRegIndirect(dest, dest, sizeof(void *) * (g_TlsIndex & 0xFFFF));
+
+    ThumbEmitLoadRegIndirect(dest, dest, (g_TlsIndex & 0x7FFF0000) >> 16);
+
+#endif // FEATURE_PAL
 }
 #endif // CROSSGEN_COMPILE
 
@@ -2533,110 +2495,12 @@ void UMEntryThunkCode::Poison()
 
 #ifndef CROSSGEN_COMPILE
 
-
-EXTERN_C DWORD gThreadTLSIndex;
-EXTERN_C DWORD gAppDomainTLSIndex;
-
-
-EXTERN_C Object* JIT_TrialAllocSFastMP_InlineGetThread(CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C Object* JIT_BoxFastMP_InlineGetThread (CORINFO_CLASS_HANDLE type, void* unboxedData);
-EXTERN_C Object* AllocateStringFastMP_InlineGetThread (CLR_I4 cch);
-EXTERN_C Object* JIT_NewArr1OBJ_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
-EXTERN_C Object* JIT_NewArr1VC_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
-
-EXTERN_C void JIT_TrialAllocSFastMP_InlineGetThread__PatchTLSOffset();
-EXTERN_C void JIT_BoxFastMP_InlineGetThread__PatchTLSOffset();
-EXTERN_C void AllocateStringFastMP_InlineGetThread__PatchTLSOffset();
-EXTERN_C void JIT_NewArr1VC_MP_InlineGetThread__PatchTLSOffset();
-EXTERN_C void JIT_NewArr1OBJ_MP_InlineGetThread__PatchTLSOffset();
-
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
-
-#ifndef FEATURE_IMPLICIT_TLS
-static const LPVOID InlineGetThreadLocations[] = {
-    (PVOID)JIT_TrialAllocSFastMP_InlineGetThread__PatchTLSOffset,
-    (PVOID)JIT_BoxFastMP_InlineGetThread__PatchTLSOffset,
-    (PVOID)AllocateStringFastMP_InlineGetThread__PatchTLSOffset,
-    (PVOID)JIT_NewArr1VC_MP_InlineGetThread__PatchTLSOffset,
-    (PVOID)JIT_NewArr1OBJ_MP_InlineGetThread__PatchTLSOffset,
-};
-#endif
-
-//EXTERN_C Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
-Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C Object* JIT_NewArr1OBJ_MP(CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-EXTERN_C Object* AllocateStringFastMP(CLR_I4 cch);
-EXTERN_C Object* JIT_NewArr1VC_MP(CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-EXTERN_C Object* JIT_BoxFastMP(CORINFO_CLASS_HANDLE type, void* unboxedData);
-
-
-EXTERN_C void JIT_GetSharedNonGCStaticBase__PatchTLSLabel();
-EXTERN_C void JIT_GetSharedNonGCStaticBaseNoCtor__PatchTLSLabel();
-EXTERN_C void JIT_GetSharedGCStaticBase__PatchTLSLabel();
-EXTERN_C void JIT_GetSharedGCStaticBaseNoCtor__PatchTLSLabel();
-
-EXTERN_C void JIT_GetSharedNonGCStaticBase_SingleAppDomain();
-EXTERN_C void JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain();
-EXTERN_C void JIT_GetSharedGCStaticBase_SingleAppDomain();
-EXTERN_C void JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain();
-
-
-static const LPVOID InlineGetAppDomainLocations[] = {
-    (PVOID)JIT_GetSharedNonGCStaticBase__PatchTLSLabel,
-    (PVOID)JIT_GetSharedNonGCStaticBaseNoCtor__PatchTLSLabel,
-    (PVOID)JIT_GetSharedGCStaticBase__PatchTLSLabel,
-    (PVOID)JIT_GetSharedGCStaticBaseNoCtor__PatchTLSLabel
-};
-
-#ifndef FEATURE_IMPLICIT_TLS
-void FixupInlineGetters(DWORD tlsSlot, const LPVOID * pLocations, int nLocations)
-{
-    STANDARD_VM_CONTRACT;
-
-    for (int i=0; i<nLocations; i++)
-    {
-        BYTE * pInlineGetter = (BYTE *)PCODEToPINSTR(GetEEFuncEntryPoint(pLocations[i]));
-
-        DWORD offset = (tlsSlot * sizeof(LPVOID) + offsetof(TEB, TlsSlots));
-
-        // ldr  r??, [r??, #offset]
-        _ASSERTE_ALL_BUILDS("clr/src/VM/arm/stubs.cpp",
-                            pInlineGetter[0] == 0x1d &&
-                            pInlineGetter[1] == 0xee &&
-                            pInlineGetter[2] == 0x50 &&
-                            pInlineGetter[5] == 0xf8 &&
-                            "Initialization failure while stomping instructions for the TLS slot offset: "
-                            "the instruction at the given offset did not match what we expect");
-
-        *((WORD*)(pInlineGetter + 6)) &= 0xf000;
-
-        _ASSERTE(offset <=4095);
-        *((WORD*)(pInlineGetter + 6)) |= (WORD)offset;
-    }
-}
-#endif
 
 void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
-    
-#ifndef FEATURE_IMPLICIT_TLS
-
-    if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
-    {
-        FixupInlineGetters(gThreadTLSIndex, InlineGetThreadLocations, COUNTOF(InlineGetThreadLocations));
-    }
-
-    if (gAppDomainTLSIndex < TLS_MINIMUM_AVAILABLE)
-    {
-        FixupInlineGetters(gAppDomainTLSIndex, InlineGetAppDomainLocations, COUNTOF(InlineGetAppDomainLocations));
-    }
-
-    if(gThreadTLSIndex < TLS_MINIMUM_AVAILABLE || gAppDomainTLSIndex < TLS_MINIMUM_AVAILABLE)
-    {
-        FlushInstructionCache(GetCurrentProcess(), JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-    }
 
 #if CHECK_APP_DOMAIN_LEAKS
     if(g_pConfig->AppDomainLeaks())
@@ -2651,54 +2515,14 @@ void InitJITHelpers1()
 #endif // _DEBUG
         ))
     {
-
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-        // If the TLS for Thread is low enough use the super-fast helpers
-        if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
-        {
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_TrialAllocSFastMP_InlineGetThread);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_BoxFastMP_InlineGetThread);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_InlineGetThread);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_InlineGetThread);
 
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastMP_InlineGetThread), ECall::FastAllocateString);
-        }
-        else
-        {
-/*
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_TrialAllocSFastMP);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_BoxFastMP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP);
+        SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
 
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastMP), ECall::FastAllocateString);
-*/
-        }
+        ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
     }
-
-
-    if(IsSingleAppDomain())
-    {
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_SingleAppDomain);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,       JIT_GetSharedNonGCStaticBase_SingleAppDomain);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
-    }
-    else
-    if (gAppDomainTLSIndex >= TLS_MINIMUM_AVAILABLE)
-    {
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_Portable);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,       JIT_GetSharedNonGCStaticBase_Portable);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_Portable);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_Portable);
-    }
-#endif
-}
-
-extern "C" Object *SetAppDomainInObject(Object *pObject)
-{
-    pObject->SetAppDomain();
-    return pObject;
 }
 
 //              +64     stack-based arguments here
@@ -3037,19 +2861,13 @@ void StubLinkerCPU::EmitStubLinkFrame(TADDR pFrameVptr, int offsetOfFrame, int o
     //  str r6, [r4 + #offsetof(MulticastFrame, m_Next)]
     //  str r4, [r5 + #offsetof(Thread, m_pFrame)]
 
-#ifdef FEATURE_IMPLICIT_TLS
-    TLSACCESSMODE mode = TLSACCESS_GENERIC;
-#else
-    TLSACCESSMODE mode = GetTLSAccessMode(GetThreadTLSIndex());
+    ThumbEmitGetThread(ThumbReg(5));
+#ifdef FEATURE_PAL
+    // reload argument registers that could have been corrupted by the call
+    for (int reg = 0; reg < 4; reg++)
+        ThumbEmitLoadRegIndirect(ThumbReg(reg), ThumbReg(4), 
+            offsetOfTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, r[reg]));
 #endif
-    ThumbEmitGetThread(mode, ThumbReg(5));
-    if (mode == TLSACCESS_GENERIC)
-    {
-        // reload argument registers that could have been corrupted by the call
-        for (int reg = 0; reg < 4; reg++)
-            ThumbEmitLoadRegIndirect(ThumbReg(reg), ThumbReg(4), 
-                offsetOfTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, r[reg]));
-    }
 
     ThumbEmitLoadRegIndirect(ThumbReg(6), ThumbReg(5), Thread::GetOffsetOfCurrentFrame());
     ThumbEmitStoreRegIndirect(ThumbReg(6), ThumbReg(4), Frame::GetOffsetOfNextLink());
@@ -3782,16 +3600,121 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
 
     // It's available only via the run-time helper function,
-    // since optimization cases are not yet implemented.
-    assert(pLookup->indirections == CORINFO_USEHELPER);
 
-    BEGIN_DYNAMIC_HELPER_EMIT(18);
+    if (pLookup->indirections == CORINFO_USEHELPER)
+    {
+        BEGIN_DYNAMIC_HELPER_EMIT(18);
 
-    EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+        EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
 
-    END_DYNAMIC_HELPER_EMIT();
+        END_DYNAMIC_HELPER_EMIT();
+    }
+    else
+    {
+        int indirectionsSize = 0;
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
+            {
+                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 2);
+                indirectionsSize += 4;
+            }
+            else
+            {
+                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
+            }
+        }
 
-    // @TODO : Additional implementation is required for optimization cases.
+        int codeSize = indirectionsSize + (pLookup->testForNull ? 26 : 2);
+
+        BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
+
+        if (pLookup->testForNull)
+        {
+            // mov r3, r0
+            *(WORD *)p = 0x4603;
+            p += 2;
+        }
+
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
+            {
+                if (pLookup->offsets[i] >= 0xFF)
+                {
+                    // mov r2, offset
+                    MovRegImm(p, 2, pLookup->offsets[i]);
+                    p += 8;
+
+                    // add r0, r2
+                    *(WORD *)p = 0x4410;
+                    p += 2;
+                }
+                else
+                {
+                    // add r0, <offset>
+                   *(WORD *)p = (WORD)((WORD)0x3000 | (WORD)((0x00FF) & pLookup->offsets[i]));
+                   p += 2;
+                }
+
+                // r0 is pointer + offset[0]
+                // ldr r2, [r0]
+                *(WORD *)p = 0x6802;
+                p += 2;
+
+                // r2 is offset1
+                // add r0, r2
+                *(WORD *)p = 0x4410;
+                p += 2;
+            }
+            else
+            {
+                if (pLookup->offsets[i] >= 0xFFF)
+                {
+                    // mov r2, offset
+                    MovRegImm(p, 2, pLookup->offsets[i]);
+                    p += 8;
+
+                    // ldr r0, [r0, r2]
+                    *(WORD *)p = 0x5880;
+                    p += 2;
+                }
+                else
+                {
+                    // ldr r0, [r0 + offset]
+                    *(WORD *)p = 0xF8D0;
+                    p += 2;
+                    *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
+                    p += 2;
+                }
+            }
+        }
+
+        // No null test required
+        if (!pLookup->testForNull)
+        {
+            // mov pc, lr
+            *(WORD *)p = 0x46F7;
+            p += 2;
+        }
+        else
+        {
+            // cbz r0, nullvaluelabel
+            *(WORD *)p = 0xB100;
+            p += 2;
+            // mov pc, lr
+            *(WORD *)p = 0x46F7;
+            p += 2;
+            // nullvaluelabel:
+            // mov r0, r3
+            *(WORD *)p = 0x4618;
+            p += 2;
+
+            EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+        }
+
+        END_DYNAMIC_HELPER_EMIT();
+    }
 }
 #endif // FEATURE_READYTORUN
 

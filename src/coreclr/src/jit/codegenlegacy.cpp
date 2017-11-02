@@ -4872,11 +4872,11 @@ void CodeGen::genStressRegs(GenTreePtr tree)
 void CodeGen::genCodeForTreeConst(GenTreePtr tree, regMaskTP destReg, regMaskTP bestReg)
 {
     noway_assert(tree->IsCnsIntOrI());
-
-    ssize_t   ival    = tree->gtIntConCommon.IconValue();
-    regMaskTP needReg = destReg;
-    regNumber reg;
-    bool      needReloc = compiler->opts.compReloc && tree->IsIconHandle();
+    GenTreeIntConCommon* con       = tree->AsIntConCommon();
+    ssize_t              ival      = con->IconValue();
+    bool                 needReloc = con->ImmedValNeedsReloc(compiler);
+    regMaskTP            needReg   = destReg;
+    regNumber            reg;
 
 #if REDUNDANT_LOAD
 
@@ -11603,8 +11603,10 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
 
         case GT_CNS_INT:
 
+            GenTreeIntConCommon* con;
+            con = op2->AsIntConCommon();
             ssize_t ival;
-            ival = op2->gtIntCon.gtIconVal;
+            ival = con->IconValue();
             emitAttr size;
             size = emitTypeSize(tree->TypeGet());
 
@@ -11660,7 +11662,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
             /* Move the value into the target */
 
             noway_assert(op1->gtOper != GT_REG_VAR);
-            if (compiler->opts.compReloc && op2->IsIconHandle())
+            if (con->ImmedValNeedsReloc(compiler))
             {
                 /* The constant is actually a handle that may need relocation
                    applied to it.  genComputeReg will do the right thing (see
@@ -16661,8 +16663,10 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
                     else
 #endif
                     {
-                        bool     needReloc = compiler->opts.compReloc && curr->IsIconHandle();
-                        emitAttr attr      = needReloc ? EA_HANDLE_CNS_RELOC : emitTypeSize(type);
+                        GenTreeIntConCommon* con       = curr->AsIntConCommon();
+                        bool                 needReloc = con->ImmedValNeedsReloc(compiler);
+                        emitAttr             attr      = needReloc ? EA_HANDLE_CNS_RELOC : emitTypeSize(type);
+
                         instGen_Store_Imm_Into_Lcl(type, attr, curr->gtIntCon.gtIconVal,
                                                    compiler->lvaOutgoingArgSpaceVar, argOffset);
                     }

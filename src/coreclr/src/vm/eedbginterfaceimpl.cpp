@@ -1387,14 +1387,11 @@ void EEDbgInterfaceImpl::DisableTraceCall(Thread *thread)
     thread->DecrementTraceCallCount();
 }
 
-#ifdef FEATURE_IMPLICIT_TLS
 EXTERN_C UINT32 _tls_index;
-#endif
 
 void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
                                            SIZE_T *pTLSIsSpecialIndex,
                                            SIZE_T *pTLSCantStopIndex,
-                                           SIZE_T* pTLSIndexOfPredefs,
                                            SIZE_T *pEEThreadStateOffset,
                                            SIZE_T *pEEThreadStateNCOffset,
                                            SIZE_T *pEEThreadPGCDisabledOffset,
@@ -1417,7 +1414,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
         PRECONDITION(CheckPointer(pTLSIndex));
         PRECONDITION(CheckPointer(pTLSIsSpecialIndex));
         PRECONDITION(CheckPointer(pEEThreadStateOffset));
-        PRECONDITION(CheckPointer(pTLSIndexOfPredefs));
         PRECONDITION(CheckPointer(pEEThreadStateNCOffset));
         PRECONDITION(CheckPointer(pEEThreadPGCDisabledOffset));
         PRECONDITION(CheckPointer(pEEThreadPGCDisabledValue));
@@ -1433,14 +1429,9 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
     }
     CONTRACTL_END;
     
-#ifdef FEATURE_IMPLICIT_TLS
-    *pTLSIndex = _tls_index;
-#else
-    *pTLSIndex = GetThreadTLSIndex();
-#endif
+    *pTLSIndex = g_TlsIndex;
     *pTLSIsSpecialIndex = TlsIdx_ThreadType;
     *pTLSCantStopIndex = TlsIdx_CantStopCount;
-    *pTLSIndexOfPredefs = CExecutionEngine::TlsIndex;
     *pEEThreadStateOffset = Thread::GetOffsetOfState();
     *pEEThreadStateNCOffset = Thread::GetOffsetOfStateNC();
     *pEEThreadPGCDisabledOffset = Thread::GetOffsetOfGCFlag();

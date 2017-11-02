@@ -149,7 +149,7 @@ extern ULONG    g_LocalComTypeNum;
 
 // MetaInfo integration:
 #include "../tools/metainfo/mdinfo.h"
-#include "ivehandler.h"
+
 BOOL                    g_fDumpMetaInfo = FALSE;
 ULONG                   g_ulMetaInfoFilter = MDInfo::dumpDefault;
 // Validator module type.
@@ -6849,29 +6849,6 @@ void DumpMI(__in __nullterminated const char *str)
     }
 }
 
-HRESULT VEHandlerReporter( // Return status.
-    LPCWSTR     szMsg,                  // Error message.
-    VEContext   Context,                // Error context (offset,token)
-    HRESULT     hrRpt)                  // HRESULT for the message
-{
-    WCHAR* wzMsg;
-    if(szMsg)
-    {
-        size_t L = wcslen(szMsg)+256;
-        if((wzMsg = new (nothrow) WCHAR[L]) != NULL)
-        {
-            wcscpy_s(wzMsg,L,szMsg);
-            // include token and offset from Context
-            if(Context.Token) swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), W(" [token:0x%08X]"),Context.Token);
-            if(Context.uOffset) swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), W(" [at:0x%X]"),Context.uOffset);
-            swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), W(" [hr:0x%08X]\n"),hrRpt);
-            DumpMI(UnicodeToUtf(wzMsg));
-            delete[] wzMsg;
-        }
-    }
-    return S_OK;
-}
-
 void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie)
 {
     const WCHAR* pch = wcsrchr(pwzFileName,L'.');
@@ -6913,7 +6890,6 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
             printLine(GUICookie,RstrUTF(IDS_E_MISTART));
             //MDInfo metaDataInfo(g_pPubImport, g_pAssemblyImport, (LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
             MDInfo metaDataInfo(g_pDisp,(LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
-            metaDataInfo.SetVEHandlerReporter((__int64) (size_t) VEHandlerReporter);
             metaDataInfo.DisplayMD();
             printLine(GUICookie,RstrUTF(IDS_E_MIEND));
         }

@@ -12,6 +12,18 @@
       "values": [],
       "defaultValue": ""
     },
+    "__PublishPackages": {
+      "description": "Specifies whether to publish product packages.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "__PublishSymbols": {
+      "description": "Specifies whether to publish symbol packages.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
     "BuildNumberMajor": {
       "description": "Product build major number.",
       "valueType": "property",
@@ -24,7 +36,7 @@
       "values": [],
       "defaultValue": ""
     },
-    "__Container": {
+    "ContainerName": {
       "description": "Container name for Azure upload.",
       "valueType": "property",
       "values": [],
@@ -269,6 +281,12 @@
       "valueType": "property",
       "values": [ true, false ],
       "defaultValue": true
+    },
+    "SkipSOS": {
+      "description": "",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": false
     },
     "SignType": {
       "description": "Sets the SignType.",
@@ -540,7 +558,7 @@
         "container": {
           "description": "Container name to download from in Azure Blob storage.",
           "settings": {
-            "__Container": "default"
+            "ContainerName": "default"
           }
         },
         "blobNamePrefix": {
@@ -598,7 +616,7 @@
         "container": {
           "description": "Container name to upload into in Azure Blob storage.",
           "settings": {
-            "__Container": "default"
+            "ContainerName": "default"
           }
         },
         "buildArch": {
@@ -630,7 +648,19 @@
           "settings": {
             "PublishTestNativeBins": "default"
           }
-        }
+        },
+        "PublishPackages": {
+          "description": "Publishes product packages.",
+          "settings": {
+            "__PublishPackages": "default"
+          }
+        },
+        "PublishSymbols": {
+          "description": "Publishes symbol packages.",
+          "settings": {
+            "__PublishSymbols": "default"
+          }
+        },
       },
       "defaultValues": {
         "toolName": "msbuild",

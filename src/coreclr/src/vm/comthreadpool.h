@@ -60,7 +60,7 @@ public:
 class AppDomainTimerNative
 {
 public:
-    static HANDLE QCALLTYPE CreateAppDomainTimer(INT32 dueTime);
+    static HANDLE QCALLTYPE CreateAppDomainTimer(INT32 dueTime, INT32 timerId);
     static BOOL QCALLTYPE ChangeAppDomainTimer(HANDLE hTimer, INT32 dueTime);
     static BOOL QCALLTYPE DeleteAppDomainTimer(HANDLE hTimer);
 };

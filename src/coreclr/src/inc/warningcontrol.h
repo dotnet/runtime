@@ -69,6 +69,7 @@
 
 #pragma warning(error   :4700)   // Local used w/o being initialized
 #pragma warning(disable :4706)   // assignment within conditional expression
+#pragma warning(disable :4768)   // __declspec attributes before linkage specification are ignored
 #pragma warning(error   :4806)   // unsafe operation involving type 'bool'
 #pragma warning(disable :4995)   // '_OLD_IOSTREAMS_ARE_DEPRECATED': name was marked as #pragma deprecated
 

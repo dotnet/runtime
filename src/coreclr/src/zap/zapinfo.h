@@ -573,6 +573,9 @@ public:
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls);
     BOOL canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
     BOOL areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+    TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
+    TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+
     CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1,
                                 CORINFO_CLASS_HANDLE cls2);
     BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope);
@@ -672,12 +675,14 @@ public:
     CORINFO_METHOD_HANDLE resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,
         CORINFO_CLASS_HANDLE implementingClass,
-        CORINFO_CONTEXT_HANDLE ownerType
-        );
+        CORINFO_CONTEXT_HANDLE ownerType);
+
+    CORINFO_METHOD_HANDLE getUnboxedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        bool* requiresInstMethodTableArg);
 
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
-        CORINFO_CLASS_HANDLE elemType
-        );
+        CORINFO_CLASS_HANDLE elemType);
 
     void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,

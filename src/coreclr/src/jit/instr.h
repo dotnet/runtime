@@ -277,23 +277,19 @@ enum emitAttr : unsigned
 enum InstructionSet
 {
 #ifdef _TARGET_XARCH_
-    // Linear order start
     InstructionSet_ILLEGAL = 0,
+    // Start linear order SIMD instruction sets
+    // These ISAs have strictly generation to generation order.
     InstructionSet_SSE     = 1,
     InstructionSet_SSE2    = 2,
     InstructionSet_SSE3    = 3,
     InstructionSet_SSSE3   = 4,
     InstructionSet_SSE41   = 5,
     InstructionSet_SSE42   = 6,
-    InstructionSet_SSE3_4  = 7,    // SSE3, SSSE3, SSE4.1 and SSE4.2 instruction set
-    InstructionSet_AVX     = 8,
-    InstructionSet_AVX2    = 9,
-    // Linear order end
-    // TODO - Instruction sets have the linear order only in above area.
-    // We should no long compare the return value of getSIMDInstructionSet()
-    // or getFloatingPointInstructionSet() to the InstructionSet values.
-    // Should refactor SIMD code only to be aware of SIMD feature levels 
-    // (SSE2, SSE3_4, AVX, and AVX2, etc.) rather than concrete ISA.
+    InstructionSet_AVX     = 7,
+    InstructionSet_AVX2    = 8,
+    // Reserve values <32 for future SIMD instruction sets (i.e., AVX512),
+    // End linear order SIMD instruction sets.
     
     InstructionSet_AES     = 32,
     InstructionSet_BMI1    = 33,

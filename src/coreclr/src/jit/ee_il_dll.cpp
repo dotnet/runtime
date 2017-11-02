@@ -205,9 +205,6 @@ ICorJitCompiler* __stdcall getJit()
 // Information kept in thread-local storage. This is used in the noway_assert exceptional path.
 // If you are using it more broadly in retail code, you would need to understand the
 // performance implications of accessing TLS.
-//
-// If the JIT is being statically linked, these methods must be implemented by the consumer.
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
 
 __declspec(thread) void* gJitTls = nullptr;
 
@@ -220,15 +217,6 @@ void SetJitTls(void* value)
 {
     gJitTls = value;
 }
-
-#else // !defined(FEATURE_MERGE_JIT_AND_ENGINE) || !defined(FEATURE_IMPLICIT_TLS)
-
-extern "C" {
-void* GetJitTls();
-void SetJitTls(void* value);
-}
-
-#endif // // defined(FEATURE_MERGE_JIT_AND_ENGINE) && defined(FEATURE_IMPLICIT_TLS)
 
 #if defined(DEBUG)
 
@@ -339,8 +327,6 @@ void CILJit::clearCache(void)
  */
 BOOL CILJit::isCacheCleanupRequired(void)
 {
-    BOOL doCleanup;
-
     if (g_realJitCompiler != nullptr)
     {
         if (g_realJitCompiler->isCacheCleanupRequired())
@@ -396,8 +382,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
     jitFlags.SetFromFlags(cpuCompileFlags);
 
 #ifdef FEATURE_SIMD
-#ifdef _TARGET_XARCH_
-#ifdef FEATURE_AVX_SUPPORT
+#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
         jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
     {
@@ -410,13 +395,12 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
             return 32;
         }
     }
-#endif // FEATURE_AVX_SUPPORT
+#endif // !(defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND))
     if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
     {
         JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");
     }
     return 16;
-#endif // _TARGET_XARCH_
 #else  // !FEATURE_SIMD
     if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
     {
@@ -522,7 +506,7 @@ GenTreePtr Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig)
     cookie = info.compCompHnd->GetCookieForPInvokeCalliSig(szMetaSig, &pCookie);
     assert((cookie == nullptr) != (pCookie == nullptr));
 
-    return gtNewIconEmbHndNode(cookie, pCookie, GTF_ICON_PINVKI_HDL);
+    return gtNewIconEmbHndNode(cookie, pCookie, GTF_ICON_PINVKI_HDL, szMetaSig);
 }
 
 //------------------------------------------------------------------------

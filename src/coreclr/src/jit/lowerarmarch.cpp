@@ -108,6 +108,9 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_ADD:
             case GT_SUB:
 #ifdef _TARGET_ARM64_
+            case GT_CMPXCHG:
+            case GT_LOCKADD:
+            case GT_XADD:
                 return emitter::emitIns_valid_imm_for_add(immVal, size);
 #elif defined(_TARGET_ARM_)
                 return emitter::emitIns_valid_imm_for_add(immVal, flags);
@@ -481,6 +484,28 @@ void Lowering::LowerRotate(GenTreePtr tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
+#ifdef FEATURE_SIMD
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
+//
+//  Arguments:
+//     simdNode - The SIMD intrinsic node.
+//
+void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
+{
+    assert(simdNode->gtType != TYP_SIMD32);
+
+    if (simdNode->TypeGet() == TYP_SIMD12)
+    {
+        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
+        // produces a TYP_SIMD16 result
+        simdNode->gtType = TYP_SIMD16;
+    }
+
+    ContainCheckSIMD(simdNode);
+}
+#endif // FEATURE_SIMD
+
 //------------------------------------------------------------------------
 // Containment analysis
 //------------------------------------------------------------------------
@@ -694,68 +719,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    if (CheckImmedAndMakeContained(cmp, cmp->gtOp2))
-    {
-#ifdef _TARGET_ARM64_
-        GenTreePtr op1 = cmp->gtOp.gtOp1;
-        GenTreePtr op2 = cmp->gtOp.gtOp2;
-
-        // If op1 codegen can set flags op2 is an immediate 0
-        // we don't need to generate cmp instruction,
-        // provided we don't have another GenTree node between op1
-        // and cmp that could potentially modify flags.
-        //
-        // TODO-CQ: right now the below peep is inexpensive and
-        // gets the benefit in most of cases because in majority
-        // of cases op1, op2 and cmp would be in that order in
-        // execution.  In general we should be able to check that all
-        // the nodes that come after op1 in execution order do not
-        // modify the flags so that it is safe to avoid generating a
-        // test instruction.  Such a check requires that on each
-        // GenTree node we need to set the info whether its codegen
-        // will modify flags.
-        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
-            !cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && op1->OperIs(GT_ADD, GT_AND, GT_SUB))
-        {
-            assert(!op1->gtSetFlags());
-            op1->gtFlags |= GTF_SET_FLAGS;
-            cmp->gtFlags |= GTF_USE_FLAGS;
-        }
-
-        if (!varTypeIsFloating(cmp) && op2->IsCnsIntOrI() && ((cmp->gtFlags & GTF_USE_FLAGS) == 0))
-        {
-            LIR::Use cmpUse;
-            bool     useJCMP = false;
-            uint64_t flags   = 0;
-
-            if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && BlockRange().TryGetUse(cmp, &cmpUse) &&
-                cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-                flags   = cmp->OperIs(GT_EQ) ? GTF_JCMP_EQ : 0;
-                useJCMP = true;
-            }
-            else if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(op2->gtIntCon.IconValue()) &&
-                     BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-                flags   = GTF_JCMP_TST | (cmp->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : 0);
-                useJCMP = true;
-            }
-
-            if (useJCMP)
-            {
-                cmp->gtLsraInfo.isNoRegCompare = true;
-                cmp->SetOper(GT_JCMP);
-
-                cmp->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-                cmp->gtFlags |= flags;
-
-                BlockRange().Remove(cmpUse.User());
-            }
-        }
-#endif // _TARGET_ARM64_
-    }
+    CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 
 //------------------------------------------------------------------------
@@ -773,6 +737,55 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         CheckImmedAndMakeContained(node, node->gtArrLen);
     }
 }
+
+#ifdef FEATURE_SIMD
+//----------------------------------------------------------------------------------------------
+// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
+//
+//  Arguments:
+//     simdNode - The SIMD intrinsic node.
+//
+void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
+{
+    switch (simdNode->gtSIMDIntrinsicID)
+    {
+        GenTree* op1;
+        GenTree* op2;
+
+        case SIMDIntrinsicInit:
+            // TODO-ARM64-CQ Support containing 0
+            break;
+
+        case SIMDIntrinsicInitArray:
+            // We have an array and an index, which may be contained.
+            CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
+            break;
+
+        case SIMDIntrinsicOpEquality:
+        case SIMDIntrinsicOpInEquality:
+            // TODO-ARM64-CQ Support containing 0
+            break;
+
+        case SIMDIntrinsicGetItem:
+        {
+            // TODO-ARM64-CQ Support containing op1 memory ops
+
+            // This implements get_Item method. The sources are:
+            //  - the source SIMD struct
+            //  - index (which element to get)
+            // The result is baseType of SIMD struct.
+            op2 = simdNode->gtOp.gtOp2;
+
+            // If the index is a constant, mark it as contained.
+            CheckImmedAndMakeContained(simdNode, op2);
+            break;
+        }
+
+        default:
+            break;
+    }
+}
+#endif // FEATURE_SIMD
 
 #endif // _TARGET_ARMARCH_
 
