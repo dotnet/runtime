@@ -1438,7 +1438,7 @@ namespace System.ComponentModel.Design.Serialization
         public object Invoke() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MemberRelationship
+    public readonly partial struct MemberRelationship
     {
         public static readonly System.ComponentModel.Design.Serialization.MemberRelationship Empty;
         public MemberRelationship(object owner, System.ComponentModel.MemberDescriptor member) { throw null; }

@@ -159,7 +159,7 @@ namespace System.Threading.Tasks.Dataflow
         public bool PropagateCompletion { get { throw null; } set { } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct DataflowMessageHeader : System.IEquatable<System.Threading.Tasks.Dataflow.DataflowMessageHeader>
+    public readonly partial struct DataflowMessageHeader : System.IEquatable<System.Threading.Tasks.Dataflow.DataflowMessageHeader>
     {
         public DataflowMessageHeader(long id) { throw null;}
         public long Id { get { throw null; } }

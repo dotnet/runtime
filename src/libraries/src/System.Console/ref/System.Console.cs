@@ -127,7 +127,7 @@ namespace System
         White = 15,
         Yellow = 14,
     }
-    public partial struct ConsoleKeyInfo
+    public readonly partial struct ConsoleKeyInfo
     {
         public ConsoleKeyInfo(char keyChar, ConsoleKey key, bool shift, bool alt, bool control) { }
         public char KeyChar { get { throw null; } }
