@@ -108,6 +108,7 @@ namespace System.Net.WebSockets
 
         public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
+            HttpResponseMessage response = null;
             try
             {
                 // Create the request message, including a uri with ws{s} switched to http{s}.
@@ -138,11 +139,25 @@ namespace System.Net.WebSockets
                 }
 
                 // Issue the request.  The response must be status code 101.
-                HttpResponseMessage response;
-                using (var externalAndAbortCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _abortSource.Token))
+                CancellationTokenSource linkedCancellation, externalAndAbortCancellation;
+                if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
+                {
+                    linkedCancellation =
+                        externalAndAbortCancellation = 
+                        CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _abortSource.Token);
+                }
+                else
+                {
+                    linkedCancellation = null;
+                    externalAndAbortCancellation = _abortSource;
+                }
+
+                using (linkedCancellation)
                 {
                     response = await handler.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
+                    externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
                 }
+
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
                     throw new WebSocketException(SR.net_webstatus_ConnectFailure);
@@ -198,6 +213,7 @@ namespace System.Net.WebSockets
                 }
 
                 Abort();
+                response?.Dispose();
 
                 if (exc is WebSocketException)
                 {
