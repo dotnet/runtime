@@ -286,12 +286,12 @@ void DoubleToNumberWorker( double value, int count, int* dec, int* sign, wchar_t
     // Following are the Scheme code from the paper:
     // --------------------------------------------------------------------------------
     // (if (>= est 0)
-    // (fixup r (∗ s (exptt B est)) m+ m− est B low-ok? high-ok? )
+    // (fixup r (* s (exptt B est)) m+ m− est B low-ok? high-ok? )
     // (let ([scale (exptt B (− est))])
-    // (fixup (∗ r scale) s (∗ m+ scale) (∗ m− scale) est B low-ok? high-ok? ))))
+    // (fixup (* r scale) s (* m+ scale) (* m− scale) est B low-ok? high-ok? ))))
     // --------------------------------------------------------------------------------
     //
-    // If est is 0, (∗ s (exptt B est)) = s, (∗ r scale) = (* r (exptt B (− est)))) = r.
+    // If est is 0, (* s (exptt B est)) = s, (* r scale) = (* r (exptt B (− est)))) = r.
     //
     // So we just skip when k = 0.
     

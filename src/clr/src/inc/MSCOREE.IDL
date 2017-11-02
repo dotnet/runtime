@@ -22,7 +22,6 @@ import "unknwn.idl";
 #if defined(FEATURE_WINDOWSPHONE)
 import "gchost.idl";
 #endif
-import "ivalidator.idl";
 
 #include "product_version.h"
 
@@ -930,11 +929,6 @@ EInitializeNewDomainFlags;
 library mscoree
 {
     importlib("stdole32.tlb");
-
-#ifdef INCLUDE_SVC_IDL
-#define IN_MSCOREE
-#include "mscorsvc.idl"
-#endif
 
     //*****************************************************************************
     //

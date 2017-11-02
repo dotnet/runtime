@@ -474,8 +474,7 @@ private:
     void ThrowAccessException(
         AccessCheckContext* pContext,
         MethodTable*        pFailureMT = NULL, 
-        Exception*          pInnerException = NULL,
-        BOOL                fAccessingFrameworkCode = FALSE) const;
+        Exception*          pInnerException = NULL) const;
 
     MethodTable *           m_pTargetMT;
     MethodDesc *            m_pTargetMethod;
@@ -493,38 +492,32 @@ private:
 void DECLSPEC_NORETURN ThrowFieldAccessException(MethodDesc *pCallerMD,
                                                  FieldDesc *pFD,
                                                  UINT messageID = 0,
-                                                 Exception *pInnerException = NULL,
-                                                 BOOL fAccessingFrameworkCode = FALSE);
+                                                 Exception *pInnerException = NULL);
 
 void DECLSPEC_NORETURN ThrowMethodAccessException(MethodDesc *pCallerMD,
                                                   MethodDesc *pCalleeMD,
                                                   UINT messageID = 0,
-                                                  Exception *pInnerException = NULL,
-                                                  BOOL fAccessingFrameworkCode = FALSE);
+                                                  Exception *pInnerException = NULL);
 
 void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc *pCallerMD,
                                                 MethodTable *pMT,
                                                 UINT messageID = 0,
-                                                Exception *pInnerException = NULL,
-                                                BOOL fAccessingFrameworkCode = FALSE);
+                                                Exception *pInnerException = NULL);
 
 void DECLSPEC_NORETURN ThrowFieldAccessException(AccessCheckContext* pContext,
                                                  FieldDesc *pFD,
                                                  UINT messageID = 0,
-                                                 Exception *pInnerException = NULL,
-                                                 BOOL fAccessingFrameworkCode = FALSE);
+                                                 Exception *pInnerException = NULL);
 
 void DECLSPEC_NORETURN ThrowMethodAccessException(AccessCheckContext* pContext,
                                                   MethodDesc *pCalleeMD,
                                                   UINT messageID = 0,
-                                                  Exception *pInnerException = NULL,
-                                                  BOOL fAccessingFrameworkCode = FALSE);
+                                                  Exception *pInnerException = NULL);
 
 void DECLSPEC_NORETURN ThrowTypeAccessException(AccessCheckContext* pContext,
                                                 MethodTable *pMT,
                                                 UINT messageID = 0,
-                                                Exception *pInnerException = NULL,
-                                                BOOL fAccessingFrameworkCode = FALSE);
+                                                Exception *pInnerException = NULL);
 
 
 //---------------------------------------------------------------------------------------

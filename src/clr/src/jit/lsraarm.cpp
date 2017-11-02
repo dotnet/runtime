@@ -83,7 +83,8 @@ void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
                     useCandidates = RBM_FLOATRET;
                     break;
                 case TYP_DOUBLE:
-                    useCandidates = RBM_DOUBLERET;
+                    // We ONLY want the valid double register in the RBM_DOUBLERET mask.
+                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
                     break;
                 case TYP_LONG:
                     useCandidates = RBM_LNGRET;
@@ -214,7 +215,18 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     }
 
     // Set the default dstCount. This may be modified below.
-    info->dstCount = tree->IsValue() ? 1 : 0;
+    if (tree->IsValue())
+    {
+        info->dstCount = 1;
+        if (tree->IsUnusedValue())
+        {
+            info->isLocalDefUse = true;
+        }
+    }
+    else
+    {
+        info->dstCount = 0;
+    }
 
     switch (tree->OperGet())
     {
@@ -364,8 +376,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_ASG:
-        case GT_ASG_ADD:
-        case GT_ASG_SUB:
             noway_assert(!"We should never hit any assignment operator in lowering");
             info->srcCount = 0;
             break;
@@ -442,6 +452,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_LONG:
             assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
+                                           // An unused GT_LONG doesn't produce any registers.
+            tree->gtType = TYP_VOID;
+            tree->ClearUnusedValue();
+            info->isLocalDefUse = false;
 
             // An unused GT_LONG node needs to consume its sources.
             info->srcCount = 2;
@@ -690,7 +704,18 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_COPY:
             info->srcCount = 1;
-            assert(info->dstCount == 1);
+#ifdef _TARGET_ARM_
+            // This case currently only occurs for double types that are passed as TYP_LONG;
+            // actual long types would have been decomposed by now.
+            if (tree->TypeGet() == TYP_LONG)
+            {
+                info->dstCount = 2;
+            }
+            else
+#endif
+            {
+                assert(info->dstCount == 1);
+            }
             break;
 
         case GT_PUTARG_SPLIT:
@@ -711,7 +736,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             assert(info->dstCount == 1);
             regNumber argReg  = tree->gtRegNum;
             regMaskTP argMask = genRegMask(argReg);
-#ifdef ARM_SOFTFP
+
             // If type of node is `long` then it is actually `double`.
             // The actual `long` types must have been transformed as a field list with two fields.
             if (tree->TypeGet() == TYP_LONG)
@@ -720,7 +745,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
                 assert(genRegArgNext(argReg) == REG_NEXT(argReg));
                 argMask |= genRegMask(REG_NEXT(argReg));
             }
-#endif // ARM_SOFTFP
+
             info->setDstCandidates(this, argMask);
             info->setSrcCandidates(this, argMask);
             tree->AsUnOp()->gtOp1->gtLsraInfo.isTgtPref = true;
@@ -785,6 +810,8 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
     }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || tree->IsMultiRegNode());
+    assert(info->isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
+    assert(!tree->IsUnusedValue() || (info->dstCount != 0));
 }
 
 #endif // _TARGET_ARM_

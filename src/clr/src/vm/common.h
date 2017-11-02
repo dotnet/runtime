@@ -97,9 +97,6 @@
 
 //-----------------------------------------------------------------------------------------------------------
 
-#include "compatibilityflags.h"
-extern BOOL GetCompatibilityFlag(CompatibilityFlag flag);
-
 #include "strongname.h"
 #include "stdmacros.h"
 
@@ -316,6 +313,7 @@ namespace Loader
 #include "pedecoder.h"
 #include "sstring.h"
 #include "slist.h"
+#include "yieldprocessornormalized.h"
 
 #include "eeconfig.h"
 
@@ -475,33 +473,10 @@ extern DummyGlobalContract ___contract;
 #include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
-#include "mscorcfg.h"
 #ifdef FEATURE_COMINTEROP
 #include "WinRTRedirector.h"
 #include "winrtredirector.inl"
 #endif // FEATURE_COMINTEROP
-
-inline HRESULT CreateConfigStreamHelper(LPCWSTR filename, IStream** pOutStream)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    HRESULT hr =S_OK;
-
-    EX_TRY
-    {
-        hr = CreateConfigStream( filename, pOutStream);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-
 
 #if defined(COMMON_TURNED_FPO_ON)
 #pragma optimize("", on)        // Go back to command line default optimizations

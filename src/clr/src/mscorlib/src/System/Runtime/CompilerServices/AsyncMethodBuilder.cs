@@ -11,12 +11,15 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Threading;
-using System.Threading.Tasks;
 #if FEATURE_COMINTEROP
 using System.Runtime.InteropServices.WindowsRuntime;
 #endif // FEATURE_COMINTEROP
+using System.Threading;
+using System.Threading.Tasks;
+using System.Text;
 
 namespace System.Runtime.CompilerServices
 {
@@ -89,12 +92,14 @@ namespace System.Runtime.CompilerServices
                 AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Task.Id, AsyncCausalityStatus.Completed);
             }
 
+            // Mark the builder as completed.  As this is a void-returning method, this mostly
+            // doesn't matter, but it can affect things like debug events related to finalization.
+            _builder.SetResult();
+
             if (_synchronizationContext != null)
             {
                 NotifySynchronizationContextOfCompletion();
             }
-
-            // No need to call _builder.SetResult, as no one pays attention to the task's completion.
         }
 
         /// <summary>Faults the method builder with an exception.</summary>
@@ -134,7 +139,8 @@ namespace System.Runtime.CompilerServices
                 AsyncMethodBuilderCore.ThrowAsync(exception, targetContext: null);
             }
 
-            // No need to call _builder.SetException, as no one pays attention to the task's completion.
+            // The exception was propagated already; we don't need or want to fault the builder, just mark it as completed.
+            _builder.SetResult();
         }
 
         /// <summary>Notifies the current synchronization context that the operation completed.</summary>
@@ -387,108 +393,39 @@ namespace System.Runtime.CompilerServices
         {
             IAsyncStateMachineBox box = GetStateMachineBox(ref stateMachine);
 
-            // TODO https://github.com/dotnet/coreclr/issues/12877:
-            // Once the JIT is able to recognize "awaiter is ITaskAwaiter" and "awaiter is IConfiguredTaskAwaiter",
-            // use those in order to a) consolidate a lot of this code, and b) handle all Task/Task<T> and not just
-            // the few types special-cased here.  For now, handle common {Configured}TaskAwaiter.  Having the types
-            // explicitly listed here allows the JIT to generate the best code for them; otherwise we'll fall through
-            // to the later workaround.
-            if (typeof(TAwaiter) == typeof(TaskAwaiter) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<object>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<string>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<byte[]>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<bool>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<byte>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<int>) ||
-                typeof(TAwaiter) == typeof(TaskAwaiter<long>))
+            // The null tests here ensure that the jit can optimize away the interface
+            // tests when TAwaiter is is a ref type.
+            if ((null != (object)default(TAwaiter)) && (awaiter is ITaskAwaiter))
             {
                 ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter); // relies on TaskAwaiter/TaskAwaiter<T> having the same layout
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
             }
-            else if (
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<object>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<string>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<byte[]>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<bool>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<byte>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<int>.ConfiguredTaskAwaiter) ||
-                typeof(TAwaiter) == typeof(ConfiguredTaskAwaitable<long>.ConfiguredTaskAwaiter))
+            else if ((null != (object)default(TAwaiter)) && (awaiter is IConfiguredTaskAwaiter))
             {
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
             }
-
-            // Handle common {Configured}ValueTaskAwaiter<T> types.  Unfortunately these need to be special-cased
-            // individually, as we don't have good way to extract the task from a ValueTaskAwaiter<T> when we don't
-            // know what the T is; we could make ValueTaskAwaiter<T> implement an IValueTaskAwaiter interface, but
-            // calling a GetTask method on that would end up boxing the awaiter.  This hard-coded list here is
-            // somewhat arbitrary and is based on types currently in use with ValueTask<T> in coreclr/corefx.
-            else if (typeof(TAwaiter) == typeof(ValueTaskAwaiter<int>))
+            else if ((null != (object)default(TAwaiter)) && (awaiter is IValueTaskAwaiter))
             {
-                var vta = (ValueTaskAwaiter<int>)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, continueOnCapturedContext: true);
+                Task t = ((IValueTaskAwaiter)awaiter).GetTask();
+                TaskAwaiter.UnsafeOnCompletedInternal(t, box, continueOnCapturedContext: true);
             }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<int>.ConfiguredValueTaskAwaiter))
+            else if ((null != (object)default(TAwaiter)) && (awaiter is IConfiguredValueTaskAwaiter))
             {
-                var vta = (ConfiguredValueTaskAwaitable<int>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
+                (Task task, bool continueOnCapturedContext) t = ((IConfiguredValueTaskAwaiter)awaiter).GetTask();
+                TaskAwaiter.UnsafeOnCompletedInternal(t.task, box, t.continueOnCapturedContext);
             }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<System.IO.Stream>.ConfiguredValueTaskAwaiter))
-            {
-                var vta = (ConfiguredValueTaskAwaitable<System.IO.Stream>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
-            }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<ArraySegment<byte>>.ConfiguredValueTaskAwaiter))
-            {
-                var vta = (ConfiguredValueTaskAwaitable<ArraySegment<byte>>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
-            }
-            else if (typeof(TAwaiter) == typeof(ConfiguredValueTaskAwaitable<object>.ConfiguredValueTaskAwaiter))
-            {
-                var vta = (ConfiguredValueTaskAwaitable<object>.ConfiguredValueTaskAwaiter)(object)awaiter;
-                TaskAwaiter.UnsafeOnCompletedInternal(vta.AsTask(), box, vta._continueOnCapturedContext);
-            }
-
-            // To catch all Task/Task<T> awaits, do the currently more expensive interface checks.
-            // Eventually these and the above Task/Task<T> checks should be replaced by "is" checks,
-            // once that's recognized and optimized by the JIT.  We do these after all of the hardcoded
-            // checks above so that they don't incur the costs of these checks.
-            else if (InterfaceIsCheckWorkaround<TAwaiter>.IsITaskAwaiter)
-            {
-                ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter);
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
-            }
-            else if (InterfaceIsCheckWorkaround<TAwaiter>.IsIConfiguredTaskAwaiter)
-            {
-                ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
-            }
-
             // The awaiter isn't specially known. Fall back to doing a normal await.
             else
             {
-                // TODO https://github.com/dotnet/coreclr/issues/14177:
-                // Move the code back into this method once the JIT is able to
-                // elide it successfully when one of the previous branches is hit.
-                AwaitArbitraryAwaiterUnsafeOnCompleted(ref awaiter, box);
-            }
-        }
-
-        /// <summary>Schedules the specified state machine to be pushed forward when the specified awaiter completes.</summary>
-        /// <typeparam name="TAwaiter">Specifies the type of the awaiter.</typeparam>
-        /// <param name="awaiter">The awaiter.</param>
-        /// <param name="box">The state machine box.</param>
-        private static void AwaitArbitraryAwaiterUnsafeOnCompleted<TAwaiter>(ref TAwaiter awaiter, IAsyncStateMachineBox box)
-            where TAwaiter : ICriticalNotifyCompletion
-        {
-            try
-            {
-                awaiter.UnsafeOnCompleted(box.MoveNextAction);
-            }
-            catch (Exception e)
-            {
-                AsyncMethodBuilderCore.ThrowAsync(e, targetContext: null);
+                try
+                {
+                    awaiter.UnsafeOnCompleted(box.MoveNextAction);
+                }
+                catch (Exception e)
+                {
+                    AsyncMethodBuilderCore.ThrowAsync(e, targetContext: null);
+                }
             }
         }
 
@@ -555,17 +492,40 @@ namespace System.Runtime.CompilerServices
             // cases is we lose the ability to properly step in the debugger, as the debugger uses that
             // object's identity to track this specific builder/state machine.  As such, we proceed to
             // overwrite whatever's there anyway, even if it's non-null.
-            var box = new AsyncStateMachineBox<TStateMachine>();
+            var box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
+                new DebugFinalizableAsyncStateMachineBox<TStateMachine>() :
+                new AsyncStateMachineBox<TStateMachine>();
             m_task = box; // important: this must be done before storing stateMachine into box.StateMachine!
             box.StateMachine = stateMachine;
             box.Context = currentContext;
             return box;
         }
 
+        /// <summary>
+        /// Provides an async state machine box with a finalizer that will fire an EventSource
+        /// event about the state machine if it's being finalized without having been completed.
+        /// </summary>
+        /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
+        private sealed class DebugFinalizableAsyncStateMachineBox<TStateMachine> :
+            AsyncStateMachineBox<TStateMachine>
+            where TStateMachine : IAsyncStateMachine
+        {
+            ~DebugFinalizableAsyncStateMachineBox()
+            {
+                // If the state machine is being finalized, something went wrong during its processing,
+                // e.g. it awaited something that got collected without itself having been completed.
+                // Fire an event with details about the state machine to help with debugging.
+                if (!IsCompleted) // double-check it's not completed, just to help minimize false positives
+                {
+                    TplEtwProvider.Log.IncompleteAsyncMethod(this);
+                }
+            }
+        }
+
         /// <summary>A strongly-typed box for Task-based async state machines.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <typeparam name="TResult">Specifies the type of the Task's result.</typeparam>
-        private sealed class AsyncStateMachineBox<TStateMachine> :
+        private class AsyncStateMachineBox<TStateMachine> :
             Task<TResult>, IAsyncStateMachineBox
             where TStateMachine : IAsyncStateMachine
         {
@@ -594,6 +554,14 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     ExecutionContext.Run(Context, s_callback, this);
+                }
+
+                // In case this is a state machine box with a finalizer, suppress its finalization
+                // if it's now complete.  We only need the finalizer to run if the box is collected
+                // without having been completed.
+                if (IsCompleted && AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                {
+                    GC.SuppressFinalize(this);
                 }
             }
 
@@ -642,7 +610,9 @@ namespace System.Runtime.CompilerServices
         private Task<TResult> InitializeTaskAsStateMachineBox()
         {
             Debug.Assert(m_task == null);
-            return (m_task = new AsyncStateMachineBox<IAsyncStateMachine>());
+            return (m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
+                new DebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
+                new AsyncStateMachineBox<IAsyncStateMachine>());
         }
 
         /// <summary>
@@ -922,17 +892,10 @@ namespace System.Runtime.CompilerServices
             new Task<TResult>(false, result, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
     }
 
-    /// <summary>Temporary workaround for https://github.com/dotnet/coreclr/issues/12877.</summary>
-    internal static class InterfaceIsCheckWorkaround<TAwaiter>
-    {
-        internal static readonly bool IsITaskAwaiter = typeof(TAwaiter).GetInterface("ITaskAwaiter") != null;
-        internal static readonly bool IsIConfiguredTaskAwaiter = typeof(TAwaiter).GetInterface("IConfiguredTaskAwaiter") != null;
-    }
-
     /// <summary>
     /// An interface implemented by all <see cref="AsyncStateMachineBox{TStateMachine, TResult}"/> instances, regardless of generics.
     /// </summary>
-    interface IAsyncStateMachineBox : ITaskCompletionAction
+    internal interface IAsyncStateMachineBox : ITaskCompletionAction
     {
         /// <summary>
         /// Gets an action for moving forward the contained state machine.
@@ -947,6 +910,32 @@ namespace System.Runtime.CompilerServices
     /// <summary>Shared helpers for manipulating state related to async state machines.</summary>
     internal static class AsyncMethodBuilderCore // debugger depends on this exact name
     {
+        /// <summary>Gets whether we should be tracking async method completions for eventing.</summary>
+        internal static bool TrackAsyncMethodCompletion
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => TplEtwProvider.Log.IsEnabled(EventLevel.Warning, TplEtwProvider.Keywords.AsyncMethod);
+        }
+
+        /// <summary>Gets a description of the state of the state machine object, suitable for debug purposes.</summary>
+        /// <param name="stateMachine">The state machine object.</param>
+        /// <returns>A description of the state machine.</returns>
+        internal static string GetAsyncStateMachineDescription(IAsyncStateMachine stateMachine)
+        {
+            Debug.Assert(stateMachine != null);
+
+            Type stateMachineType = stateMachine.GetType();
+            FieldInfo[] fields = stateMachineType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            var sb = new StringBuilder();
+            sb.AppendLine(stateMachineType.FullName);
+            foreach (FieldInfo fi in fields)
+            {
+                sb.AppendLine($"    {fi.Name}: {fi.GetValue(stateMachine)}");
+            }
+            return sb.ToString();
+        }
+
         internal static Action OutputAsyncCausalityEvents(Task task, Action continuation) =>
             CreateContinuationWrapper(continuation, (innerContinuation, innerTask) =>
             {

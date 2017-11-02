@@ -39,6 +39,7 @@
     <ProjectFile Condition="'$(BuildArchitecture)' == 'amd64'" Include="arm64altjit\arm64altjit.nativeproj" />
     <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="protojit\protojit.nativeproj" />
     <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="protononjit\protononjit.nativeproj" />
+    <!-- <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="armelnonjit\armelnonjit.nativeproj" /> -->
   </ItemGroup>
 
   <!--Import the targets-->

@@ -3101,8 +3101,10 @@ public:
     static BOOL IsEncodedModuleIndex(SIZE_T ModuleID)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-            
-        return (ModuleID&1)==1;
+        
+        // We should never see encoded module index in CoreCLR
+        _ASSERTE((ModuleID&1)==0);
+        return FALSE;
     }
 
     static SIZE_T IndexToID(ModuleIndex index)
@@ -3553,6 +3555,10 @@ struct VASigCookieEx : public VASigCookie
     const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
 };
 
-bool IsSingleAppDomain();
+inline bool IsSingleAppDomain()
+{
+    // CoreCLR always runs as single AppDomain
+    return true;
+}
 
 #endif // !CEELOAD_H_

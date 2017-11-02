@@ -2,7 +2,7 @@
 
 # resolve python-version to use
 if [ "$PYTHON" == "" ] ; then
-    if ! PYTHON=$(command -v python || command -v python2 || command -v python 2.7)
+    if ! PYTHON=$(command -v python2.7 || command -v python2 || command -v python)
     then
        echo "Unable to locate build-dependency python2.x!" 1>&2
        exit 1
@@ -50,7 +50,6 @@ usage()
     echo "-ignorewarnings - do not treat warnings as errors"
     echo "-cmakeargs - user-settable additional arguments passed to CMake."
     echo "-bindir - output directory (defaults to $__ProjectRoot/bin)"
-    echo "-buildstandalonegc - builds the GC in a standalone mode. Can't be used with \"cmakeargs\"."
     echo "-msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
     echo "-numproc - set the number of build processes."
     exit 1
@@ -62,7 +61,7 @@ initHostDistroRid()
     if [ "$__HostOS" == "Linux" ]; then
         if [ -e /etc/os-release ]; then
             source /etc/os-release
-            if [[ $ID == "alpine" ]]; then
+            if [[ $ID == "alpine" || $ID == "rhel" ]]; then
                 # remove the last version digit
                 VERSION_ID=${VERSION_ID%.*}
             fi
@@ -73,6 +72,10 @@ initHostDistroRid()
                __HostDistroRid="rhel.6-$__HostArch"
             fi
         fi
+    fi
+    if [ "$__HostOS" == "FreeBSD" ]; then
+        __freebsd_version=`sysctl -n kern.osrelease | cut -f1 -d'.'`
+        __HostDistroRid="freebsd.$__freebsd_version-$__HostArch"
     fi
 
     if [ "$__HostDistroRid" == "" ]; then
@@ -101,12 +104,18 @@ initTargetDistroRid()
         export __DistroRid="$__HostDistroRid"
     fi
 
+    if [ "$__BuildOS" == "OSX" ]; then
+        __PortableBuild=1
+    fi
+
     # Portable builds target the base RID
     if [ $__PortableBuild == 1 ]; then
         if [ "$__BuildOS" == "Linux" ]; then
             export __DistroRid="linux-$__BuildArch"
         elif [ "$__BuildOS" == "OSX" ]; then
             export __DistroRid="osx-$__BuildArch"
+        elif [ "$__BuildOS" == "FreeBSD" ]; then
+            export __DistroRid="freebsd-$__BuildArch"
         fi
     fi
 }
@@ -166,7 +175,7 @@ restore_optdata()
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
         local DotNetCli="$__ProjectRoot/Tools/dotnetcli/dotnet"
         if [ ! -f $DotNetCli ]; then
-            "$__ProjectRoot/init-tools.sh"
+            source "$__ProjectRoot/init-tools.sh"
             if [ $? != 0 ]; then
                 echo "Failed to restore buildtools."
                 exit 1
@@ -224,7 +233,7 @@ generate_event_logging_sources()
         fi
 
         case $__BuildOS in
-            Linux)
+            Linux|FreeBSD)
                 echo "Laying out dynamically generated EventPipe Implementation"
                 $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genEventPipe.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventPipe" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst"
                 if  [[ $? != 0 ]]; then
@@ -237,7 +246,7 @@ generate_event_logging_sources()
 
         #determine the logging system
         case $__BuildOS in
-            Linux)
+            Linux|FreeBSD)
                 echo "Laying out dynamically generated Event Logging Implementation of Lttng"
                 $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventProvider"
                 if  [[ $? != 0 ]]; then
@@ -325,7 +334,7 @@ build_native()
         echo "Failed to generate $message build project!"
         exit 1
     fi
-    
+
     # Build
     if [ $__ConfigureOnly == 1 ]; then
         echo "Finish configuration & skipping $message build."
@@ -553,6 +562,10 @@ case $CPUName in
         __HostArch=arm64
         ;;
 
+    amd64)
+        __BuildArch=x64
+        __HostArch=x64
+        ;;
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         __BuildArch=x64
@@ -608,7 +621,7 @@ __IgnoreWarnings=0
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
 __SourceDir="$__ProjectDir/src"
-__PackagesDir="$__ProjectDir/packages"
+__PackagesDir="${DotNetRestorePackagesPath:-${__ProjectDir}/packages}"
 __RootBinDir="$__ProjectDir/bin"
 __UnprocessedBuildArgs=
 __RunArgs=
@@ -845,9 +858,6 @@ while :; do
                 exit 1
             fi
             ;;
-        buildstandalonegc|-buildstandalonegc)
-            __cmakeargs="$__cmakeargs -DFEATURE_STANDALONE_GC=1 -DFEATURE_STANDALONE_GC_ONLY=1"
-            ;;
         msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
             __msbuildonunsupportedplatform=1
             ;;
@@ -860,6 +870,16 @@ while :; do
               exit 1
             fi
             ;;
+        osgroup|-osgroup)
+            if [ -n "$2" ]; then
+              __BuildOS="$2"
+              shift
+            else
+              echo "ERROR: 'osgroup' requires a non-empty option argument"
+              exit 1
+            fi
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
@@ -878,19 +898,8 @@ fi
 
 # Set default clang version
 if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
-    if [ $__CrossBuild == 1 ]; then
-        if [[ "$__BuildArch" == "arm" || "$__BuildArch" == "armel" ]]; then
-            __ClangMajorVersion=3
-            __ClangMinorVersion=9
-        else
-            __ClangMajorVersion=3
-            __ClangMinorVersion=6
-        fi
-
-    else
-        __ClangMajorVersion=3
-        __ClangMinorVersion=5
-    fi
+    __ClangMajorVersion=3
+    __ClangMinorVersion=9
 fi
 
 if [[ "$__BuildArch" == "armel" ]]; then

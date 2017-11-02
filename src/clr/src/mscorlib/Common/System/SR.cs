@@ -56,7 +56,7 @@ namespace System
         {
             if (key == null || key.Length == 0)
             {
-                Debug.Assert(false, "SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
+                Debug.Fail("SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
                 return key;
             }
 
@@ -100,7 +100,6 @@ namespace System
                     // Note: our infrastructure for reporting this exception will again cause resource lookup.
                     // This is the most direct way of dealing with that problem.
                     string message = $"Infinite recursion during resource lookup within {System.CoreLib.Name}.  This may be a bug in {System.CoreLib.Name}, or potentially in certain extensibility points such as assembly resolve events or CultureInfo names.  Resource name: {key}";
-                    Assert.Fail("[Recursive resource lookup bug]", message, Assert.COR_E_FAILFAST, System.Diagnostics.StackTrace.TraceFormat.NoResourceLookup);
                     Environment.FailFast(message);
                 }
                 if (_currentlyLoading == null)

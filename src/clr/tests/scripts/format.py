@@ -71,8 +71,9 @@ def main(argv):
 
     # build.cmd removes the Tools directory, so we need to put our version of jitutils
     # outside of the Tools directory
+    # must use short path here to avoid trouble on windows
 
-    dotnetcliPath = os.path.join(coreclr, 'dotnetcli-jitutils')
+    dotnetcliPath = os.path.join(coreclr, 'dj')
 
     # Try to make the dotnetcli-jitutils directory if it doesn't exist
 
@@ -84,13 +85,13 @@ def main(argv):
 
     print("Downloading .Net CLI")
     if platform == 'Linux':
-        dotnetcliUrl = "https://go.microsoft.com/fwlink/?linkid=839628"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0/dotnet-sdk-2.0.0-linux-x64.tar.gz"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'OSX':
-        dotnetcliUrl = "https://go.microsoft.com/fwlink/?linkid=839641"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0/dotnet-sdk-2.0.0-macos-x64.tar.gz"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'Windows_NT':
-        dotnetcliUrl = "https://go.microsoft.com/fwlink/?linkid=839634"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0/dotnet-sdk-2.0.0-win-x64.zip"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.zip')
     else:
         print('Unknown os ', os)

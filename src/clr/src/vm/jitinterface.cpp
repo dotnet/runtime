@@ -676,16 +676,7 @@ BOOL CEEInfo::shouldEnforceCallvirtRestriction(
         CORINFO_MODULE_HANDLE scopeHnd)
 {
     LIMITED_METHOD_CONTRACT;
-    // see vsw 599197
-    // verification rule added in whidbey requiring virtual methods
-    // to be called via callvirt except if certain other rules are
-    // obeyed.
-
-    if (g_pConfig->LegacyVirtualMethodCallVerification())
-        return false;
-    else 
-        return true;
-       
+    return TRUE;       
 }
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -2267,7 +2258,14 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
-    if (pMT->IsByRefLike())
+    if (VMClsHnd.IsNativeValueType())
+    {
+        // native value types have no GC pointers
+        result = 0;
+        memset(gcPtrs, TYPE_GC_NONE,
+               (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
+    }
+    else if (pMT->IsByRefLike())
     {
         // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in
         // which case the check for g_TypedReferenceMT below would not be necessary
@@ -2286,13 +2284,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             // types (TypedReference can not be.)
             result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
         }
-    }
-    else if (VMClsHnd.IsNativeValueType())
-    {
-        // native value types have no GC pointers
-        result = 0;
-        memset(gcPtrs, TYPE_GC_NONE,
-               (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
     }
     else
     {
@@ -4578,6 +4569,156 @@ BOOL CEEInfo::areTypesEquivalent(
     JIT_TO_EE_TRANSITION();
 
     result = ((TypeHandle)cls1).IsEquivalentTo((TypeHandle)cls2);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
+// See if a cast from fromClass to toClass will succeed, fail, or needs
+// to be resolved at runtime.
+TypeCompareState CEEInfo::compareTypesForCast(
+        CORINFO_CLASS_HANDLE        fromClass,
+        CORINFO_CLASS_HANDLE        toClass)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle fromHnd = (TypeHandle) fromClass;
+    TypeHandle toHnd = (TypeHandle) toClass;
+
+#ifdef FEATURE_COMINTEROP
+    // If casting from a com object class, don't try to optimize.
+    if (fromHnd.IsComObjectType())
+    {
+        result = TypeCompareState::May;
+    }
+    else
+#endif // FEATURE_COMINTEROP
+
+    // If casting from ICastable, don't try to optimize
+    if (fromHnd.GetMethodTable()->IsICastable())
+    {
+        result = TypeCompareState::May;
+    }
+    // If casting to Nullable<T>, don't try to optimize
+    else if (Nullable::IsNullableType(toHnd))
+    {
+        result = TypeCompareState::May;
+    }
+    // If the types are not shared, we can check directly.
+    else if (!fromHnd.IsCanonicalSubtype() && !toHnd.IsCanonicalSubtype())
+    {
+        result = fromHnd.CanCastTo(toHnd) ? TypeCompareState::Must : TypeCompareState::MustNot;
+    }
+    // Casting from a shared type to an unshared type.
+    else if (fromHnd.IsCanonicalSubtype() && !toHnd.IsCanonicalSubtype())
+    {
+        // Only handle casts to interface types for now
+        if (toHnd.IsInterface())
+        {
+            // Do a preliminary check.
+            BOOL canCast = fromHnd.CanCastTo(toHnd);
+
+            // Pass back positive results unfiltered. The unknown type
+            // parameters in fromClass did not come into play.
+            if (canCast)
+            {
+                result = TypeCompareState::Must;
+            }
+            // For negative results, the unknown type parameter in
+            // fromClass might match some instantiated interface,
+            // either directly or via variance.
+            //
+            // However, CanCastTo will report failure in such cases since
+            // __Canon won't match the instantiated type on the
+            // interface (which can't be __Canon since we screened out
+            // canonical subtypes for toClass above). So only report
+            // failure if the interface is not instantiated.
+            else if (!toHnd.HasInstantiation())
+            {
+                result = TypeCompareState::MustNot;
+            }
+        }
+    }
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    // In R2R it is a breaking change for a previously positive
+    // cast to become negative, but not for a previously negative
+    // cast to become positive. So in R2R a negative result is
+    // always reported back as May.
+    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot))
+    {
+        result = TypeCompareState::May;
+    }
+#endif // FEATURE_READYTORUN_COMPILER
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
+// See if types represented by cls1 and cls2 compare equal, not
+// equal, or the comparison needs to be resolved at runtime.
+TypeCompareState CEEInfo::compareTypesForEquality(
+        CORINFO_CLASS_HANDLE        cls1,
+        CORINFO_CLASS_HANDLE        cls2)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle hnd1 = (TypeHandle) cls1;
+    TypeHandle hnd2 = (TypeHandle) cls2;
+
+    // If neither type is a canonical subtype, type handle comparison suffices
+    if (!hnd1.IsCanonicalSubtype() && !hnd2.IsCanonicalSubtype())
+    {
+        result = (hnd1 == hnd2 ? TypeCompareState::Must : TypeCompareState::MustNot);
+    }
+    // If either or both types are canonical subtypes, we can sometimes prove inequality.
+    else
+    {
+        // If either is a value type then the types cannot
+        // be equal unless the type defs are the same.
+        if (hnd1.IsValueType() || hnd2.IsValueType())
+        {
+            if (!hnd1.GetMethodTable()->HasSameTypeDefAs(hnd2.GetMethodTable()))
+            {
+                result = TypeCompareState::MustNot;
+            }
+        }
+        // If we have two ref types that are not __Canon, then the
+        // types cannot be equal unless the type defs are the same.
+        else
+        {
+            TypeHandle canonHnd = TypeHandle(g_pCanonMethodTableClass);
+            if ((hnd1 != canonHnd) && (hnd2 != canonHnd))
+            {
+                if (!hnd1.GetMethodTable()->HasSameTypeDefAs(hnd2.GetMethodTable()))
+                {
+                    result = TypeCompareState::MustNot;
+                }
+            }
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 
@@ -8683,6 +8824,45 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE method
     return result;
 }
 
+/*********************************************************************/
+CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
+    CORINFO_METHOD_HANDLE ftn,
+    bool* requiresInstMethodTableArg)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(ftn);
+    bool requiresInstMTArg = false;
+
+    if (pMD->IsUnboxingStub())
+    {
+        MethodTable* pMT = pMD->GetMethodTable();
+        MethodDesc* pUnboxedMD = pMT->GetUnboxedEntryPointMD(pMD);
+
+        result = (CORINFO_METHOD_HANDLE)pUnboxedMD;
+        requiresInstMTArg = !!pUnboxedMD->RequiresInstMethodTableArg();
+    }
+
+    if (requiresInstMethodTableArg != NULL)
+    {
+        *requiresInstMethodTableArg = requiresInstMTArg;
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
     CORINFO_GENERICHANDLE_RESULT *  pResult)
@@ -8764,17 +8944,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
         switch(normType)
         {
             case ELEMENT_TYPE_I1:
-            {
-                targetClass = MscorlibBinder::GetClass(CLASS__SBYTE_ENUM_EQUALITYCOMPARER);
-                break;
-            }
-
             case ELEMENT_TYPE_I2:
-            {
-                targetClass = MscorlibBinder::GetClass(CLASS__SHORT_ENUM_EQUALITYCOMPARER);
-                break;
-            }
-
             case ELEMENT_TYPE_U1:
             case ELEMENT_TYPE_U2:
             case ELEMENT_TYPE_I4:
@@ -9870,19 +10040,6 @@ DWORD CEEInfo::getThreadTLSIndex(void **ppIndirection)
 
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_IMPLICIT_TLS)
-    result = GetThreadTLSIndex();
-
-    // The JIT can use the optimized TLS access only if the runtime is using it as well.
-    //  (This is necessaryto make managed code work well under appverifier.)
-    if (GetTLSAccessMode(result) == TLSACCESS_GENERIC)
-        result = (DWORD)-1;
-#endif
-
-    EE_TO_JIT_TRANSITION();
 
     return result;
 }
@@ -12032,24 +12189,11 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             //
             // Notify the debugger that we have successfully jitted the function
             //
-            if (ftn->HasNativeCode())
+            if (g_pDebugInterface)
             {
-                //
-                // Nothing to do here (don't need to notify the debugger
-                // because the function has already been successfully jitted)
-                //
-                // This is the case where we aborted the jit because of a deadlock cycle
-                // in initClass.  
-                //
-            }
-            else
-            {
-                if (g_pDebugInterface)
+                if (param.res == CORJIT_OK && !((CEEJitInfo*)param.comp)->JitAgain())
                 {
-                    if (param.res == CORJIT_OK && !((CEEJitInfo*)param.comp)->JitAgain())
-                    {
-                        g_pDebugInterface->JITComplete(ftn, (TADDR) *nativeEntry);
-                    }
+                    g_pDebugInterface->JITComplete(ftn, (TADDR)*nativeEntry);
                 }
             }
         }

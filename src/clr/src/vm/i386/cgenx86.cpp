@@ -1076,7 +1076,7 @@ Stub *GenerateInitPInvokeFrameHelper()
     unsigned negSpace = FrameInfo.offsetOfFrameVptr;
 
     // mov esi, GetThread()
-    psl->X86EmitCurrentThreadFetch(kESI, (1<<kEDI)|(1<<kEBX)|(1<<kECX)|(1<<kEDX));
+    psl->X86EmitCurrentThreadFetch(kESI, (1 << kEDI) | (1 << kEBX) | (1 << kECX) | (1 << kEDX));
 
     // mov [edi + FrameInfo.offsetOfGSCookie], GetProcessGSCookie()
     psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfGSCookie - negSpace);

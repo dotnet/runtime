@@ -5,6 +5,15 @@
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
 
+// The major version of the GC/EE interface. Breaking changes to this interface
+// require bumps in the major version number.
+#define GC_INTERFACE_MAJOR_VERSION 1
+
+// The minor version of the GC/EE interface. Non-breaking changes are required
+// to bump the minor version number. GCs and EEs with minor version number
+// mismatches can still interopate correctly, with some care.
+#define GC_INTERFACE_MINOR_VERSION 1
+
 struct ScanContext;
 struct gc_alloc_context;
 class CrawlFrame;
@@ -173,20 +182,6 @@ struct segment_info
 class Object;
 class IGCHeap;
 class IGCHandleManager;
-
-// The function that initialzes the garbage collector.
-// Should only be called once: here, during EE startup.
-// Returns true if the initialization was successful, false otherwise.
-typedef bool (*InitializeGarbageCollectorFunction)(
-    /* In  */ IGCToCLR*,
-    /* Out */ IGCHeap**,
-    /* Out */ IGCHandleManager**,
-    /* Out */ GcDacVars*
-);
-
-// The name of the function that initializes the garbage collector,
-// to be used as an argument to GetProcAddress.
-#define INITIALIZE_GC_FUNCTION_NAME "InitializeGarbageCollector"
 
 #ifdef WRITE_BARRIER_CHECK
 //always defined, but should be 0 in Server GC
@@ -842,15 +837,19 @@ struct ScanContext
     bool concurrent; //TRUE: concurrent scanning 
 #if CHECK_APP_DOMAIN_LEAKS || defined (FEATURE_APPDOMAIN_RESOURCE_MONITORING) || defined (DACCESS_COMPILE)
     AppDomain *pCurrentDomain;
+#else
+    void* _unused1;
 #endif //CHECK_APP_DOMAIN_LEAKS || FEATURE_APPDOMAIN_RESOURCE_MONITORING || DACCESS_COMPILE
 
-#ifndef FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined (DACCESS_COMPILE)
     MethodDesc *pMD;
+#else
+    void* _unused2;
 #endif //GC_PROFILING || DACCESS_COMPILE
-#endif // FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     EtwGCRootKind dwEtwRootKind;
+#else
+    int _unused3;
 #endif // GC_PROFILING || FEATURE_EVENT_TRACE
     
     ScanContext()
@@ -870,5 +869,25 @@ struct ScanContext
 #endif // FEATURE_EVENT_TRACE
     }
 };
+
+// These types are used as part of the loader protocol between the EE
+// and the GC.
+struct VersionInfo {
+    uint32_t MajorVersion;
+    uint32_t MinorVersion;
+    uint32_t BuildVersion;
+    const char* Name;
+};
+
+typedef void (*GC_VersionInfoFunction)(
+    /* Out */ VersionInfo*
+);
+
+typedef HRESULT (*GC_InitializeFunction)(
+    /* In  */ IGCToCLR*,
+    /* Out */ IGCHeap**,
+    /* Out */ IGCHandleManager**,
+    /* Out */ GcDacVars*
+);
 
 #endif // _GC_INTERFACE_H_

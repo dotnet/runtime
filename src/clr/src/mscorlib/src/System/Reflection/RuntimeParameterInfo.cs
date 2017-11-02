@@ -403,7 +403,7 @@ namespace System.Reflection
                 if (namedArgument.MemberInfo.Name.Equals("Value"))
                 {
                     // This is not possible because Decimal cannot be represented directly in the metadata.
-                    Debug.Assert(false, "Decimal cannot be represented directly in the metadata.");
+                    Debug.Fail("Decimal cannot be represented directly in the metadata.");
                     return (Decimal)namedArgument.TypedValue.Value;
                 }
             }

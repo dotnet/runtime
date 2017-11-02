@@ -120,12 +120,9 @@ GPTR_IMPL_INIT(StressLog, g_pStressLog, &StressLog::theLog);
 GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
 
+GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 
 #ifndef DACCESS_COMPILE
-
-// <TODO> @TODO Remove eventually - </TODO> determines whether the verifier throws an exception when something fails
-bool                g_fVerifierOff;
-
 
 // <TODO> @TODO - PROMOTE. </TODO>
 OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
@@ -294,50 +291,5 @@ extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie = 0;
 __GlobalVal< GSCookie > s_gsCookie(&g_dacGlobals.dac__s_gsCookie);
 #endif //!DACCESS_COMPILE
 
-BOOL IsCompilationProcess()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-#if defined(FEATURE_NATIVE_IMAGE_GENERATION) && !defined(DACCESS_COMPILE)
-    return g_pCEECompileInfo != NULL;
-#else
-    return FALSE;
-#endif
-}
-
 //==============================================================================
 
-enum NingenState
-{
-    kNotInitialized = 0,
-    kNingenEnabled = 1,
-    kNingenDisabled = 2,
-};
-
-extern int g_ningenState;
-int g_ningenState = kNotInitialized;
-
-// Removes all execution of managed or third-party code in the ngen compilation process.
-BOOL NingenEnabled()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef CROSSGEN_COMPILE
-    // Always enable ningen for cross-compile
-    return TRUE;
-#else // CROSSGEN_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Note that ningen is enabled by default to get byte-to-byte identical NGen images between native compile and cross-compile
-    if (g_ningenState == kNotInitialized)
-    {
-        // This code must be idempotent as we don't have a lock to prevent a race to initialize g_ningenState.
-        g_ningenState = (IsCompilationProcess() && (0 != CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Ningen))) ? kNingenEnabled : kNingenDisabled;
-    }
-
-    return g_ningenState == kNingenEnabled;
-#else
-    return FALSE;
-#endif
-
-#endif // CROSSGEN_COMPILE
-}
