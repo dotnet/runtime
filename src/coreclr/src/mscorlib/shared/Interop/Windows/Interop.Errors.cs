@@ -40,5 +40,6 @@ internal partial class Interop
         internal const int ERROR_NOT_FOUND = 0x490;
         internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
+        internal const int ERROR_TIMEOUT = 0x000005B4;
     }
 }

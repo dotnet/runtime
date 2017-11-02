@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private IDisposableToIClosableAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         public void Close()
@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private IClosableToIDisposableAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         private void Dispose()

@@ -2,28 +2,28 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
-    <NugetTargetMonikerShort>netstandard1.5</NugetTargetMonikerShort>
+    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
+    <NugetTargetMonikerShort>netstandard1.6</NugetTargetMonikerShort>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="xunit.performance.api">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.core">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.execution">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.metrics">
-      <Version>$(XUnitPerformanceApiVersion)</Version>
+      <Version>$(XunitPerformanceApiPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-      <Version>$(MicrosoftDiagnosticsTracingLibraryVersion)</Version>
+      <Version>$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>2.0.0-preview2-25302-03</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Collections.NonGeneric">
       <Version>4.4.0-beta-24913-02</Version>
@@ -41,7 +41,7 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors">
-      <Version>4.4.0-preview2-25302-03</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection">
       <Version>4.4.0-beta-24913-02</Version>
@@ -50,7 +50,7 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.TypeExtensions">
-      <Version>4.4.0-preview2-25302-03</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime">
       <Version>4.4.0-beta-24913-02</Version>
@@ -92,14 +92,17 @@
       <Version>$(XunitPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.console.netcore">
-      <Version>$(XUnitConsoleNetCoreVersion)</Version>
+      <Version>$(XunitConsoleNetcorePackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.runner.utility">
       <Version>$(XunitPackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="System.Security.Principal.Windows">
+      <Version>4.4.0</Version>
+    </PackageReference>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>netstandard1.5</TargetFramework>
+    <TargetFramework>netstandard1.6</TargetFramework>
     <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
     <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
     <ContainsPackageReferences>true</ContainsPackageReferences>

@@ -2498,7 +2498,7 @@ namespace System.Threading.Tasks
                 actionWithState(m_stateObject);
                 return;
             }
-            Debug.Assert(false, "Invalid m_action in Task");
+            Debug.Fail("Invalid m_action in Task");
         }
 
         /// <summary>
@@ -2644,10 +2644,10 @@ namespace System.Threading.Tasks
                 SynchronizationContext syncCtx = SynchronizationContext.CurrentNoFlow;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    Action moveNextAction = stateMachineBox.MoveNextAction;
-                    if (!AddTaskContinuation(new SynchronizationContextAwaitTaskContinuation(syncCtx, moveNextAction, flowExecutionContext: false), addBeforeOthers: false))
+                    var tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, stateMachineBox.MoveNextAction, flowExecutionContext: false);
+                    if (!AddTaskContinuation(tc, addBeforeOthers: false))
                     {
-                        AwaitTaskContinuation.UnsafeScheduleAction(moveNextAction, this);
+                        tc.Run(this, canInlineContinuationTask: false);
                     }
                     return;
                 }
@@ -2656,10 +2656,10 @@ namespace System.Threading.Tasks
                     TaskScheduler scheduler = TaskScheduler.InternalCurrent;
                     if (scheduler != null && scheduler != TaskScheduler.Default)
                     {
-                        Action moveNextAction = stateMachineBox.MoveNextAction;
-                        if (!AddTaskContinuation(new TaskSchedulerAwaitTaskContinuation(scheduler, moveNextAction, flowExecutionContext: false), addBeforeOthers: false))
+                        var tc = new TaskSchedulerAwaitTaskContinuation(scheduler, stateMachineBox.MoveNextAction, flowExecutionContext: false);
+                        if (!AddTaskContinuation(tc, addBeforeOthers: false))
                         {
-                            AwaitTaskContinuation.UnsafeScheduleAction(moveNextAction, this);
+                            tc.Run(this, canInlineContinuationTask: false);
                         }
                         return;
                     }
@@ -2879,6 +2879,13 @@ namespace System.Threading.Tasks
         // to be able to see the method on the stack and inspect arguments).
         private bool InternalWaitCore(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+            // If the task has already completed, there's nothing to wait for.
+            bool returnValue = IsCompleted;
+            if (returnValue)
+            {
+                return true;
+            }
+
             // ETW event for Task Wait Begin
             var etwLog = TplEtwProvider.Log;
             bool etwIsEnabled = etwLog.IsEnabled();
@@ -2890,30 +2897,24 @@ namespace System.Threading.Tasks
                     this.Id, TplEtwProvider.TaskWaitBehavior.Synchronous, 0);
             }
 
-            bool returnValue = IsCompleted;
+            // Alert a listening debugger that we can't make forward progress unless it slips threads.
+            // We call NOCTD for two reasons:
+            //    1. If the task runs on another thread, then we'll be blocked here indefinitely.
+            //    2. If the task runs inline but takes some time to complete, it will suffer ThreadAbort with possible state corruption,
+            //       and it is best to prevent this unless the user explicitly asks to view the value with thread-slipping enabled.
+            Debugger.NotifyOfCrossThreadDependency();
 
-            // If the event hasn't already been set, we will wait.
-            if (!returnValue)
+            // We will attempt inline execution only if an infinite wait was requested
+            // Inline execution doesn't make sense for finite timeouts and if a cancellation token was specified
+            // because we don't know how long the task delegate will take.
+            if (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled &&
+                WrappedTryRunInline() && IsCompleted) // TryRunInline doesn't guarantee completion, as there may be unfinished children.
             {
-                // Alert a listening debugger that we can't make forward progress unless it slips threads.
-                // We call NOCTD for two reasons:
-                //    1. If the task runs on another thread, then we'll be blocked here indefinitely.
-                //    2. If the task runs inline but takes some time to complete, it will suffer ThreadAbort with possible state corruption,
-                //       and it is best to prevent this unless the user explicitly asks to view the value with thread-slipping enabled.
-                Debugger.NotifyOfCrossThreadDependency();
-
-                // We will attempt inline execution only if an infinite wait was requested
-                // Inline execution doesn't make sense for finite timeouts and if a cancellation token was specified
-                // because we don't know how long the task delegate will take.
-                if (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled &&
-                    WrappedTryRunInline() && IsCompleted) // TryRunInline doesn't guarantee completion, as there may be unfinished children.
-                {
-                    returnValue = true;
-                }
-                else
-                {
-                    returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
-                }
+                returnValue = true;
+            }
+            else
+            {
+                returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
 
             Debug.Assert(IsCompleted || millisecondsTimeout != Timeout.Infinite);
@@ -5444,8 +5445,7 @@ namespace System.Threading.Tasks
             // ... and create our timer and make sure that it stays rooted.
             if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
             {
-                promise.Timer = new Timer(state => ((DelayPromise)state).Complete(), promise, millisecondsDelay, Timeout.Infinite);
-                promise.Timer.KeepRootedWhileScheduled();
+                promise.Timer = new TimerQueueTimer(state => ((DelayPromise)state).Complete(), promise, (uint)millisecondsDelay, Timeout.UnsignedInfinite);
             }
 
             // Return the timer proxy task
@@ -5470,7 +5470,7 @@ namespace System.Threading.Tasks
 
             internal readonly CancellationToken Token;
             internal CancellationTokenRegistration Registration;
-            internal Timer Timer;
+            internal TimerQueueTimer Timer;
 
             internal void Complete()
             {
@@ -5496,7 +5496,7 @@ namespace System.Threading.Tasks
                 // If we set the value, also clean up.
                 if (setSucceeded)
                 {
-                    if (Timer != null) Timer.Dispose();
+                    Timer?.Close();
                     Registration.Dispose();
                 }
             }
@@ -6606,7 +6606,7 @@ namespace System.Threading.Tasks
                     Debug.Assert(result, "Expected TrySetFromTask from inner task to succeed");
                     break;
                 default:
-                    Debug.Assert(false, "UnwrapPromise in illegal state");
+                    Debug.Fail("UnwrapPromise in illegal state");
                     break;
             }
         }

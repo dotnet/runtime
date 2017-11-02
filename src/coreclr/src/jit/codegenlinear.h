@@ -53,9 +53,7 @@ void genPutArgSplit(GenTreePutArgSplit* treeNode);
 unsigned getBaseVarForPutArgStk(GenTreePtr treeNode);
 #endif // _TARGET_XARCH_
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 unsigned getFirstArgWithStackSlot();
-#endif // _TARGET_XARCH_ || _TARGET_ARM64_
 
 void genCompareFloat(GenTreePtr treeNode);
 void genCompareInt(GenTreePtr treeNode);
@@ -68,6 +66,9 @@ enum SIMDScalarMoveType
     SMT_PreserveUpper                   // preserve target upper bits
 };
 
+#ifdef _TARGET_ARM64_
+insOpts genGetSimdInsOpt(bool is16B, var_types elementType);
+#endif
 instruction getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival = nullptr);
 void genSIMDScalarMove(
     var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
@@ -112,6 +113,25 @@ void genStoreSIMD12ToStack(regNumber operandReg, regNumber tmpReg);
 void genPutArgStkSIMD12(GenTree* treeNode);
 #endif // _TARGET_X86_
 #endif // FEATURE_SIMD
+
+#if FEATURE_HW_INTRINSICS
+void genHWIntrinsic(GenTreeHWIntrinsic* node);
+void genSSEIntrinsic(GenTreeHWIntrinsic* node);
+void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
+void genSSE3Intrinsic(GenTreeHWIntrinsic* node);
+void genSSSE3Intrinsic(GenTreeHWIntrinsic* node);
+void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
+void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
+void genAVXIntrinsic(GenTreeHWIntrinsic* node);
+void genAVX2Intrinsic(GenTreeHWIntrinsic* node);
+void genAESIntrinsic(GenTreeHWIntrinsic* node);
+void genBMI1Intrinsic(GenTreeHWIntrinsic* node);
+void genBMI2Intrinsic(GenTreeHWIntrinsic* node);
+void genFMAIntrinsic(GenTreeHWIntrinsic* node);
+void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
+void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
+void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_HW_INTRINSICS
 
 #if !defined(_TARGET_64BIT_)
 

@@ -6,7 +6,7 @@ include_directories("../inc")
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_PLATFORM_UNIX))
   add_definitions(-DFEATURE_SIMD)
-  add_definitions(-DFEATURE_AVX_SUPPORT)
+  add_definitions(-DFEATURE_HW_INTRINSICS)
 endif ()
 
 # JIT_BUILD disables certain PAL_TRY debugging features
@@ -101,6 +101,7 @@ set( JIT_AMD64_SOURCES
   targetamd64.cpp
   unwindamd64.cpp
   hwintrinsicxarch.cpp
+  hwintrinsiccodegenxarch.cpp
 )
 
 set( JIT_ARM_SOURCES
@@ -129,6 +130,7 @@ set( JIT_I386_SOURCES
   targetx86.cpp
   unwindx86.cpp
   hwintrinsicxarch.cpp
+  hwintrinsiccodegenxarch.cpp
 )
 
 set( JIT_ARM64_SOURCES
@@ -259,6 +261,11 @@ if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64)
     # On x86, build RyuJIT/ARM32 cross-compiling altjit.
     # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
     add_subdirectory(protononjit)
+endif ()
+
+if (CLR_CMAKE_PLATFORM_ARCH_I386)
+     # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
+    add_subdirectory(armelnonjit)
 endif ()
 
 if ((CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64) AND WIN32)

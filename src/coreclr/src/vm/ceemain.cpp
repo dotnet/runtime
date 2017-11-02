@@ -175,7 +175,6 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"
-#include "gcenv.ee.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -233,6 +232,10 @@
 // Included for referencing __security_cookie
 #include "process.h"
 #endif // !FEATURE_PAL
+
+#ifdef FEATURE_GDBJIT
+#include "gdbjit.h"
+#endif // FEATURE_GDBJIT
 
 #ifdef FEATURE_IPCMAN
 static HRESULT InitializeIPCManager(void);
@@ -684,6 +687,11 @@ void EEStartupHelper(COINITIEE fFlags)
         // Initialize the event pipe.
         EventPipe::Initialize();
 #endif // FEATURE_PERFTRACING
+
+#ifdef FEATURE_GDBJIT
+        // Initialize gdbjit
+        NotifyGdb::Initialize();
+#endif // FEATURE_GDBJIT
 
 #ifdef FEATURE_EVENT_TRACE        
         // Initialize event tracing early so we can trace CLR startup time events.
@@ -2438,103 +2446,6 @@ BOOL ExecuteDLL_ReturnOrThrow(HRESULT hr, BOOL fFromThunk)
 // Initialize the Garbage Collector
 //
 
-// Prototype for the function that initialzes the garbage collector.
-// Should only be called once: here, during EE startup.
-// Returns true if the initialization was successful, false otherwise.
-//
-// When using a standalone GC, this function is loaded dynamically using
-// GetProcAddress.
-extern "C" bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
-
-#ifdef FEATURE_STANDALONE_GC
-
-void LoadGarbageCollector()
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    TCHAR *standaloneGc = nullptr;
-    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCStandaloneLocation, &standaloneGc);
-    HMODULE hMod;
-    if (!standaloneGc)
-    {
-#ifdef FEATURE_STANDALONE_GC_ONLY
-        // if the user has set GCUseStandalone but has not given us a standalone location,
-        // try and load the initialization symbol from the current module.
-        hMod = GetModuleInst();
-#else
-        ThrowHR(E_FAIL);
-#endif // FEATURE_STANDALONE_GC_ONLY
-    }
-    else
-    {
-        hMod = CLRLoadLibrary(standaloneGc);
-    }
-
-    if (!hMod)
-    {
-        ThrowHR(E_FAIL);
-    }
-
-    InitializeGarbageCollectorFunction igcf = (InitializeGarbageCollectorFunction)GetProcAddress(hMod, INITIALIZE_GC_FUNCTION_NAME);
-    if (!igcf)
-    {
-        ThrowHR(E_FAIL);
-    }
-
-    // at this point we are committing to using the standalone GC
-    // given to us.
-    IGCToCLR* gcToClr = new (nothrow) standalone::GCToEEInterface();
-    if (!gcToClr)
-    {
-        ThrowOutOfMemory();
-    }
-
-    IGCHandleManager *pGcHandleManager;
-    IGCHeap *pGCHeap;
-    if (!igcf(gcToClr, &pGCHeap, &pGcHandleManager, &g_gc_dac_vars))
-    {
-        ThrowOutOfMemory();
-    }
-
-    assert(pGCHeap != nullptr);
-    assert(pGcHandleManager != nullptr);
-    g_pGCHeap = pGCHeap;
-    g_pGCHandleManager = pGcHandleManager;
-    g_gcDacGlobals = &g_gc_dac_vars;
-}
-
-#endif // FEATURE_STANDALONE_GC
-
-#ifndef FEATURE_STANDALONE_GC_ONLY
-void LoadStaticGarbageCollector()
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    IGCHandleManager *pGcHandleManager;
-    IGCHeap *pGCHeap;
-
-    if (!InitializeGarbageCollector(nullptr, &pGCHeap, &pGcHandleManager, &g_gc_dac_vars)) 
-    {
-        ThrowOutOfMemory();
-    }
-
-    assert(pGCHeap != nullptr);
-    assert(pGcHandleManager != nullptr);
-    g_pGCHeap = pGCHeap;
-    g_pGCHandleManager = pGcHandleManager;
-    g_gcDacGlobals = &g_gc_dac_vars;
-}
-#endif // FEATURE_STANDALONE_GC_ONLY
-
-
 void InitializeGarbageCollector()
 {
     CONTRACTL{
@@ -2557,21 +2468,10 @@ void InitializeGarbageCollector()
     g_pFreeObjectMethodTable->SetBaseSize(ObjSizeOf (ArrayBase));
     g_pFreeObjectMethodTable->SetComponentSize(1);
 
-#ifdef FEATURE_STANDALONE_GC
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCUseStandalone)
-#ifdef FEATURE_STANDALONE_GC_ONLY
-        || true
-#endif // FEATURE_STANDALONE_GC_ONLY
-        )
+    hr = GCHeapUtilities::LoadAndInitialize();
+    if (hr != S_OK)
     {
-        LoadGarbageCollector();
-    }
-    else
-#endif // FEATURE_STANDALONE_GC
-    {
-#ifndef FEATURE_STANDALONE_GC_ONLY
-        LoadStaticGarbageCollector();
-#endif // FEATURE_STANDALONE_GC_ONLY
+        ThrowHR(hr);
     }
 
     // Apparently the Windows linker removes global variables if they are never
@@ -2705,17 +2605,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                                                                                          , TRUE
 #endif
                                                                                          );
-#ifdef FEATURE_IMPLICIT_TLS
                 Thread* thread = GetThread();
-#else
-                // Don't use GetThread because perhaps we didn't initialize yet, or we
-                // have already shutdown the EE.  Note that there is a race here.  We
-                // might ask for TLS from a slot we just released.  We are assuming that
-                // nobody re-allocates that same slot while we are doing this.  It just
-                // isn't worth locking for such an obscure case.
-                DWORD   tlsVal = GetThreadTLSIndex();
-                Thread  *thread = (tlsVal != (DWORD)-1)?(Thread *) UnsafeTlsGetValue(tlsVal):NULL;
-#endif
                 if (thread)
                 {
 #ifdef FEATURE_COMINTEROP

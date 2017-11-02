@@ -39,7 +39,7 @@
     <LinkModuleDefinitionFile>$(OutputName).def</LinkModuleDefinitionFile>
 
     <ClDefines>$(ClDefines);ALT_JIT</ClDefines>
-    <ClDefines Condition="'$(BuildArchitecture)' == 'amd64'">$(ClDefines);FEATURE_SIMD;FEATURE_AVX_SUPPORT</ClDefines>
+    <ClDefines Condition="'$(BuildArchitecture)' == 'amd64'">$(ClDefines);FEATURE_SIMD</ClDefines>
 
     <Win32DllLibs>$(SdkLibPath)\kernel32.lib;$(SdkLibPath)\user32.lib;$(SdkLibPath)\advapi32.lib;$(SdkLibPath)\oleaut32.lib;$(SdkLibPath)\uuid.lib</Win32DllLibs>
     <Win32DllLibs>$(Win32DllLibs);$(ClrLibPath)\utilcode.lib</Win32DllLibs>

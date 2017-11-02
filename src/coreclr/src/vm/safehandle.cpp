@@ -62,9 +62,6 @@ void SafeHandle::AddRef()
     // Cannot use "this" after Release, which toggles the GC mode.
     SAFEHANDLEREF sh(this);
 
-#ifdef _DEBUG
-    VALIDATEOBJECTREF(sh->m_debugStackTrace);
-#endif
     _ASSERTE(sh->IsFullyInitialized());
 
     // To prevent handle recycling security attacks we must enforce the
@@ -137,9 +134,6 @@ void SafeHandle::Release(bool fDispose)
     // Cannot use "this" after RunReleaseMethod, which toggles the GC mode.
     SAFEHANDLEREF sh(this);
 
-#ifdef _DEBUG
-    VALIDATEOBJECTREF(sh->m_debugStackTrace);
-#endif
     _ASSERTE(sh->IsFullyInitialized());
 
     // See AddRef above for the design of the synchronization here. Basically we
@@ -236,9 +230,6 @@ void SafeHandle::Dispose()
     // Release may trigger a GC.
     SAFEHANDLEREF sh(this);
 
-#ifdef _DEBUG
-    VALIDATEOBJECTREF(sh->m_debugStackTrace);
-#endif
     _ASSERTE(sh->IsFullyInitialized());
 
     GCPROTECT_BEGIN(sh);

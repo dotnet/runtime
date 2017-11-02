@@ -204,7 +204,7 @@ public:
 class ManagedLoggingHelper {
 
 public:
-    static FCDECL6(INT32, GetRegistryLoggingValues, CLR_BOOL* bLoggingEnabled, CLR_BOOL* bLogToConsole, INT32 *bLogLevel, CLR_BOOL* bPerfWarnings, CLR_BOOL* bCorrectnessWarnings, CLR_BOOL* bSafeHandleStackTraces);
+    static FCDECL3(INT32, GetRegistryLoggingValues, CLR_BOOL* bLoggingEnabled, CLR_BOOL* bLogToConsole, INT32 *bLogLevel);
 };
 
 class ValueTypeHelper {

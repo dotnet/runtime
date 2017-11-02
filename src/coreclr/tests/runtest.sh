@@ -736,24 +736,65 @@ if [ `uname` = "NetBSD" ]; then
 elif [ `uname` = "Darwin" ]; then
     NumProc=$(getconf _NPROCESSORS_ONLN)
 else
-    NumProc=$(nproc --all)
+    if [ -x "$(command -v nproc)" ]; then
+        NumProc=$(nproc --all)
+    elif [ -x "$(command -v getconf)" ]; then
+        NumProc=$(getconf _NPROCESSORS_ONLN)
+    else
+        NumProc=1
+    fi
 fi
 ((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
 
-((nextProcessIndex = 0))
 ((processCount = 0))
 declare -a scriptFilePaths
 declare -a outputFilePaths
 declare -a processIds
 declare -a testStartTimes
+waitProcessIndex=
+pidNone=0
+
+function waitany {
+    local pid
+    local exitcode
+    while true; do
+        for (( i=0; i<$maxProcesses; i++ )); do
+            pid=${processIds[$i]}
+            if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+                continue
+            fi
+            if ! kill -0 $pid 2>/dev/null; then
+                wait $pid
+                exitcode=$?
+                waitProcessIndex=$i
+                processIds[$i]=$pidNone
+                return $exitcode
+            fi
+        done
+        sleep 0.1
+    done
+}
+
+function get_available_process_index {
+    local pid
+    local i=0
+    for (( i=0; i<$maxProcesses; i++ )); do
+        pid=${processIds[$i]}
+        if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+            break
+        fi
+    done
+    echo $i
+}
 
 function finish_test {
-    wait ${processIds[$nextProcessIndex]}
+    waitany
     local testScriptExitCode=$?
+    local finishedProcessIndex=$waitProcessIndex
     ((--processCount))
 
-    local scriptFilePath=${scriptFilePaths[$nextProcessIndex]}
-    local outputFilePath=${outputFilePaths[$nextProcessIndex]}
+    local scriptFilePath=${scriptFilePaths[$finishedProcessIndex]}
+    local outputFilePath=${outputFilePaths[$finishedProcessIndex]}
     local scriptFileName=$(basename "$scriptFilePath")
 
     local testEndTime=
@@ -766,7 +807,7 @@ function finish_test {
 
     if [ "$showTime" == "ON" ]; then
         testEndTime=$(date +%s)
-        testRunningTime=$(( $testEndTime - ${testStartTimes[$nextProcessIndex]} ))
+        testRunningTime=$(( $testEndTime - ${testStartTimes[$finishedProcessIndex]} ))
         header=$header$(printf "[%4ds]" $testRunningTime)
     fi
 
@@ -805,14 +846,9 @@ function finish_test {
 
 function finish_remaining_tests {
     # Finish the remaining tests in the order in which they were started
-    if ((nextProcessIndex >= processCount)); then
-        ((nextProcessIndex = 0))
-    fi
     while ((processCount > 0)); do
         finish_test
-        ((nextProcessIndex = (nextProcessIndex + 1) % maxProcesses))
     done
-    ((nextProcessIndex = 0))
 }
 
 function prep_test {
@@ -835,6 +871,7 @@ function prep_test {
 }
 
 function start_test {
+    local nextProcessIndex=$(get_available_process_index)
     local scriptFilePath=$1
     if ((runFailingTestsOnly == 1)) && ! is_failing_test "$scriptFilePath"; then
         return
@@ -846,8 +883,9 @@ function start_test {
         return
     fi
 
-    if ((nextProcessIndex < processCount)); then
+    if ((nextProcessIndex == maxProcesses)); then
         finish_test
+        nextProcessIndex=$(get_available_process_index)
     fi
 
     scriptFilePaths[$nextProcessIndex]=$scriptFilePath
@@ -869,7 +907,6 @@ function start_test {
     fi
     processIds[$nextProcessIndex]=$!
 
-    ((nextProcessIndex = (nextProcessIndex + 1) % maxProcesses))
     ((++processCount))
 }
 

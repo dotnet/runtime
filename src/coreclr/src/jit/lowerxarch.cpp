@@ -474,8 +474,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             BlockRange().InsertAfter(fieldList, head);
             BlockRange().Remove(fieldList);
 
-            fieldList        = head;
-            putArgStk->gtOp1 = fieldList;
+            fieldList         = head;
+            putArgStk->gtOp1  = fieldList;
+            putArgStk->gtType = fieldList->gtType;
         }
 
         // Now that the fields have been sorted, the kind of code we will generate.
@@ -557,7 +558,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     GenTreePtr src = putArgStk->gtOp1;
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    if (putArgStk->TypeGet() != TYP_STRUCT)
+    if (src->TypeGet() != TYP_STRUCT)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
     {
         // If the child of GT_PUTARG_STK is a constant, we don't need a register to
@@ -793,6 +794,72 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         // into GT_IND(newAddr) where newAddr combines
         // the addr of SIMD vector with the given index.
         simdNode->gtOp1->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
+    }
+    else if (simdNode->IsSIMDEqualityOrInequality())
+    {
+        LIR::Use simdUse;
+
+        if (BlockRange().TryGetUse(simdNode, &simdUse))
+        {
+            //
+            // Try to transform JTRUE(EQ|NE(SIMD<OpEquality|OpInEquality>(x, y), 0|1)) into
+            // JCC(SIMD<OpEquality|OpInEquality>(x, y)). SIMD<OpEquality|OpInEquality>(x, y)
+            // is expected to set the Zero flag appropriately.
+            // All the involved nodes must form a continuous range, there's no other way to
+            // guarantee that condition flags aren't changed between the SIMD node and the JCC
+            // node.
+            //
+
+            bool     transformed = false;
+            GenTree* simdUser    = simdUse.User();
+
+            if (simdUser->OperIs(GT_EQ, GT_NE) && simdUser->gtGetOp2()->IsCnsIntOrI() &&
+                (simdNode->gtNext == simdUser->gtGetOp2()) && (simdUser->gtGetOp2()->gtNext == simdUser))
+            {
+                ssize_t relopOp2Value = simdUser->gtGetOp2()->AsIntCon()->IconValue();
+
+                if ((relopOp2Value == 0) || (relopOp2Value == 1))
+                {
+                    GenTree* jtrue = simdUser->gtNext;
+
+                    if ((jtrue != nullptr) && jtrue->OperIs(GT_JTRUE) && (jtrue->gtGetOp1() == simdUser))
+                    {
+                        if ((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) != simdUser->OperIs(GT_EQ))
+                        {
+                            relopOp2Value ^= 1;
+                        }
+
+                        jtrue->ChangeOper(GT_JCC);
+                        GenTreeCC* jcc = jtrue->AsCC();
+                        jcc->gtFlags |= GTF_USE_FLAGS;
+                        jcc->gtCondition = (relopOp2Value == 0) ? GT_NE : GT_EQ;
+
+                        BlockRange().Remove(simdUser->gtGetOp2());
+                        BlockRange().Remove(simdUser);
+                        transformed = true;
+                    }
+                }
+            }
+
+            if (!transformed)
+            {
+                //
+                // The code generated for SIMD SIMD<OpEquality|OpInEquality>(x, y) nodes sets
+                // the Zero flag like integer compares do so we can simply use SETCC<EQ|NE>
+                // to produce the desired result. This avoids the need for subsequent phases
+                // to have to handle 2 cases (set flags/set destination register).
+                //
+
+                genTreeOps condition = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ? GT_EQ : GT_NE;
+                GenTreeCC* setcc     = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, simdNode->TypeGet());
+                setcc->gtFlags |= GTF_USE_FLAGS;
+                BlockRange().InsertAfter(simdNode, setcc);
+                simdUse.ReplaceWith(comp, setcc);
+            }
+        }
+
+        simdNode->gtFlags |= GTF_SET_FLAGS;
+        simdNode->gtType = TYP_VOID;
     }
 #endif
     ContainCheckSIMD(simdNode);
@@ -1803,41 +1870,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             {
                 MakeSrcContained(cmp, op1);
             }
-            // If op1 codegen sets ZF and SF flags and ==/!= against
-            // zero, we don't need to generate test instruction,
-            // provided we don't have another GenTree node between op1
-            // and cmp that could potentially modify flags.
-            //
-            // TODO-CQ: right now the below peep is inexpensive and
-            // gets the benefit in most of cases because in majority
-            // of cases op1, op2 and cmp would be in that order in
-            // execution.  In general we should be able to check that all
-            // the nodes that come after op1 in execution order do not
-            // modify the flags so that it is safe to avoid generating a
-            // test instruction.  Such a check requires that on each
-            // GenTree node we need to set the info whether its codegen
-            // will modify flags.
-            //
-            // TODO-CQ: We can optimize compare against zero in the
-            // following cases by generating the branch as indicated
-            // against each case.
-            //  1) unsigned compare
-            //        < 0  - always FALSE
-            //       <= 0  - ZF=1 and jne
-            //        > 0  - ZF=0 and je
-            //       >= 0  - always TRUE
-            //
-            // 2) signed compare
-            //        < 0  - SF=1 and js
-            //       >= 0  - SF=0 and jns
-            else if (cmp->OperIs(GT_EQ, GT_NE) && op1->gtSetZSFlags() && op2->IsIntegralConst(0) &&
-                     (op1->gtNext == op2) && (op2->gtNext == cmp))
-            {
-                // Require codegen of op1 to set the flags.
-                assert(!op1->gtSetFlags());
-                op1->gtFlags |= GTF_SET_FLAGS;
-                cmp->gtFlags |= GTF_USE_FLAGS;
-            }
             else
             {
                 SetRegOptional(op1);
@@ -2010,9 +2042,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         return;
     }
 
-    // Codegen of these tree nodes sets ZF and SF flags.
-    node->gtFlags |= GTF_ZSF_SET;
-
     // We're not marking a constant hanging on the left of an add
     // as containable so we assign it to a register having CQ impact.
     // TODO-XArch-CQ: Detect this case and support both generating a single instruction
@@ -2178,7 +2207,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             {
                 MakeSrcContained(simdNode, op1);
             }
-            else if ((comp->getSIMDInstructionSet() == InstructionSet_AVX) &&
+            else if ((comp->getSIMDSupportLevel() == SIMD_AVX2_Supported) &&
                      ((simdNode->gtSIMDSize == 16) || (simdNode->gtSIMDSize == 32)))
             {
                 // Either op1 is a float or dbl constant or an addr
@@ -2202,7 +2231,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             // for integral vectors but not for floating-point for the reason
             // that we have +0.0 and -0.0 and +0.0 == -0.0
             op2 = simdNode->gtGetOp2();
-            if ((comp->getSIMDInstructionSet() >= InstructionSet_SSE3_4) && op2->IsIntegralConstVector(0))
+            if ((comp->getSIMDSupportLevel() >= SIMD_SSE4_Supported) && op2->IsIntegralConstVector(0))
             {
                 MakeSrcContained(simdNode, op2);
             }

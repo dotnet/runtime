@@ -348,7 +348,7 @@ namespace System.Reflection.Emit
                         writer.Write((byte)CustomAttributeEncoding.Double);
                         break;
                     default:
-                        Debug.Assert(false, "Invalid primitive type");
+                        Debug.Fail("Invalid primitive type");
                         break;
                 }
             }
@@ -432,7 +432,7 @@ namespace System.Reflection.Emit
                         writer.Write((ulong)value);
                         break;
                     default:
-                        Debug.Assert(false, "Invalid enum base type");
+                        Debug.Fail("Invalid enum base type");
                         break;
                 }
             }
@@ -509,7 +509,7 @@ namespace System.Reflection.Emit
                         writer.Write((double)value);
                         break;
                     default:
-                        Debug.Assert(false, "Invalid primitive type");
+                        Debug.Fail("Invalid primitive type");
                         break;
                 }
             }

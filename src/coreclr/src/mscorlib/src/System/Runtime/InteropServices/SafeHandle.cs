@@ -17,6 +17,7 @@
 namespace System.Runtime.InteropServices
 {
     using System;
+    using System.Diagnostics;
     using System.Reflection;
     using System.Threading;
     using System.Runtime;
@@ -137,12 +138,6 @@ namespace System.Runtime.InteropServices
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
-#if DEBUG
-        // FxCop thinks this field is marshaled and so it raises a CA2101 error unless 
-        // we specify this.  In practice this is never presented to Win32.
-        [MarshalAs(UnmanagedType.LPWStr)]
-        private String _stackTrace;  // Where we allocated this SafeHandle.
-#endif
         protected IntPtr handle;   // this must be protected so derived classes can use out params. 
         private int _state;   // Combined ref count and closed/disposed flags (so we can atomically modify them).
         private bool _ownsHandle;  // Whether we can release this handle.
@@ -162,13 +157,6 @@ namespace System.Runtime.InteropServices
             if (!ownsHandle)
                 GC.SuppressFinalize(this);
 
-#if DEBUG
-            if (BCLDebug.SafeHandleStackTracesEnabled)
-                _stackTrace = Environment.GetStackTrace(null, false);
-            else
-                _stackTrace = "For a stack trace showing who allocated this SafeHandle, set SafeHandleStackTraces to 1 and rerun your app.";
-#endif
-
             // Set this last to prevent SafeHandle's finalizer from freeing an
             // invalid handle.  This means we don't have to worry about 
             // ThreadAbortExceptions interrupting this constructor or the managed
@@ -179,7 +167,7 @@ namespace System.Runtime.InteropServices
         // Migrating InheritanceDemands requires this default ctor, so we can mark it critical
         protected SafeHandle()
         {
-            BCLDebug.Assert(false, "SafeHandle's protected default ctor should never be used!");
+            Debug.Fail("SafeHandle's protected default ctor should never be used!");
             throw new NotImplementedException();
         }
 

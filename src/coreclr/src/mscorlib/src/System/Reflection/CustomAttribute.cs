@@ -1912,7 +1912,7 @@ namespace System.Reflection
             s_pca = temp_pca;
         }
 
-        [Conditional("_DEBUG")]
+        [Conditional("DEBUG")]
         private static void VerifyPseudoCustomAttribute(RuntimeType pca)
         {
             // If any of these are invariants are no longer true will have to 

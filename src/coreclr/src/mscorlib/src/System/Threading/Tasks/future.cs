@@ -616,7 +616,7 @@ namespace System.Threading.Tasks
                 m_result = funcWithState(m_stateObject);
                 return;
             }
-            Debug.Assert(false, "Invalid m_action in Task<TResult>");
+            Debug.Fail("Invalid m_action in Task<TResult>");
         }
 
         #region Await Support

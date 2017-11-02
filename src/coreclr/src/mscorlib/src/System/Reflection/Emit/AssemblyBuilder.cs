@@ -375,8 +375,6 @@ namespace System.Reflection.Emit
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
 
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.DefineDynamicModule( " + name + " )");
-
             Debug.Assert(m_assemblyData != null, "m_assemblyData is null in DefineDynamicModuleInternal");
 
             ModuleBuilder dynModule;
@@ -672,7 +670,6 @@ namespace System.Reflection.Emit
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
 
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.GetDynamicModule( " + name + " )");
             int size = m_assemblyData.m_moduleBuilderList.Count;
             for (int i = 0; i < size; i++)
             {

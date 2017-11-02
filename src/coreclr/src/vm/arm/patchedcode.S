@@ -20,22 +20,6 @@
     LEAF_END JIT_PatchedCodeStart, _TEXT
 
 // ------------------------------------------------------------------
-// Optimized TLS getters
-
-    LEAF_ENTRY GetTLSDummy, _TEXT
-        mov     r0, #0
-        bx      lr
-    LEAF_END GetTLSDummy, _TEXT
-
-        .align 4
-    LEAF_ENTRY ClrFlsGetBlock, _TEXT
-        // This will be overwritten at runtime with optimized ClrFlsGetBlock implementation
-        b       C_FUNC(GetTLSDummy)
-        // Just allocate space that will be filled in at runtime
-        .space (TLS_GETTER_MAX_SIZE_ASM - 2)
-    LEAF_END ClrFlsGetBlock, _TEXT
-
-// ------------------------------------------------------------------
 // GC write barrier support.
 //
 // GC Write barriers are defined in asmhelpers.asm. The following functions are used to define 

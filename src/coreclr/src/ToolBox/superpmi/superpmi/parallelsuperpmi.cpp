@@ -282,7 +282,7 @@ Cleanup:
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 {
     // Since the child SuperPMI.exe processes share the same console
-     //We don't need to kill them individually as they also receive the Ctrl-C
+    // We don't need to kill them individually as they also receive the Ctrl-C
 
     closeRequested = true; // set a flag to indicate we need to quit
     return TRUE;
@@ -334,15 +334,19 @@ void MergeWorkerMCLs(char* mclFilename, char** arrWorkerMCLPath, int workerCount
 //    spmiArgs     -   pointer to the argument string
 //    optionName   -   the jitOption name, can include [force] flag.
 //
-void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions, int &bytesWritten, char * spmiArgs, const char* optionName)
+void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions,
+                          int&        bytesWritten,
+                          char*       spmiArgs,
+                          const char* optionName)
 {
     if (jitOptions != nullptr)
     {
         for (unsigned i = 0; i < jitOptions->GetCount(); i++)
         {
-            wchar_t* key = (wchar_t*)jitOptions->GetBuffer(jitOptions->GetKey(i));
+            wchar_t* key   = (wchar_t*)jitOptions->GetBuffer(jitOptions->GetKey(i));
             wchar_t* value = (wchar_t*)jitOptions->GetBuffer(jitOptions->GetItem(i));
-            bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %S=%S", optionName, key, value);
+            bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %S=%S",
+                                      optionName, key, value);
         }
     }
 }
@@ -432,7 +436,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
         o.workerCount = sysinfo.dwNumberOfProcessors;
 
         // If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
-         //we still can't spawn more than the max supported by WaitForMultipleObjects()
+        // we still can't spawn more than the max supported by WaitForMultipleObjects()
         if (o.workerCount > MAXIMUM_WAIT_OBJECTS)
             o.workerCount = MAXIMUM_WAIT_OBJECTS;
     }
@@ -583,7 +587,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
         int loaded = 0, jitted = 0, failed = 0, diffs = 0;
 
         // Read the stderr files and log them as errors
-         //Read the stdout files and parse them for counts and log any MISSING or ISSUE errors
+        // Read the stdout files and parse them for counts and log any MISSING or ISSUE errors
         for (int i = 0; i < o.workerCount; i++)
         {
             ProcessChildStdErr(arrStdErrorPath[i]);
