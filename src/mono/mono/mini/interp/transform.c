@@ -3604,7 +3604,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					return_if_nok (error);
 				}
 			} else {
-				handle = mono_ldtoken (image, token, &klass, generic_context);
+				handle = mono_ldtoken_checked (image, token, &klass, generic_context, error);
+				return_if_nok (error);
 			}
 			mono_class_init (klass);
 			mt = mint_type (&klass->byval_arg);

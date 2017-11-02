@@ -2560,7 +2560,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				 * An exception occurred, need to run finally, fault and catch handlers..
 				 */
 				frame->ex = child_frame.ex;
-				goto handle_exception;;
+				if (context->search_for_handler) {
+					context->search_for_handler = 0;
+					goto handle_exception;
+				}
+				goto handle_finally;
 			}
 
 			/* need to handle typedbyref ... */
@@ -2602,6 +2606,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				 * An exception occurred, need to run finally, fault and catch handlers..
 				 */
 				frame->ex = child_frame.ex;
+				if (context->search_for_handler) {
+					context->search_for_handler = 0;
+					goto handle_exception;
+				}
 				goto handle_finally;
 			}
 			MINT_IN_BREAK;

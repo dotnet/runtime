@@ -968,7 +968,6 @@ INTERP_DISABLED_TESTS = \
 	array_load_exception.exe \
 	async-exc-compilation.exe \
 	async-with-cb-throws.exe \
-	bug-327438.2.exe \
 	bug-335131.2.exe \
 	bug-415577.exe \
 	bug-45841-fpstack-exceptions.exe \
@@ -976,7 +975,6 @@ INTERP_DISABLED_TESTS = \
 	bug-58782-capture-and-throw.exe \
 	bug-58782-plain-throw.exe \
 	bug-81673.exe \
-	bug-82022.exe \
 	bug445361.exe \
 	call_missing_class.exe \
 	call_missing_method.exe \
