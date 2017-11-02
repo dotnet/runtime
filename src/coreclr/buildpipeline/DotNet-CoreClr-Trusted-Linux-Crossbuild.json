@@ -440,7 +440,7 @@
       "value": "coreclr-cross-$(Build.BuildId)"
     },
     "DockerCommonRunArgs": {
-      "value": "--name $(DockerContainerName) -v \"$(DockerVolumeName):$(GitHubDirectory)\" -w=\"$(GitHubDirectory)\" $(DockerImageName)"
+      "value": "--name $(DockerContainerName) --ulimit core=-1 -v \"$(DockerVolumeName):$(GitHubDirectory)\" -w=\"$(GitHubDirectory)\" $(DockerImageName)"
     },
     "PB_CleanAgent": {
       "value": "true"
