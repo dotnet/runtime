@@ -5156,11 +5156,22 @@ void LinearScan::setFrameType()
     compiler->rpFrameType = frameType;
 }
 
-// Is the copyReg/moveReg given by this RefPosition still busy at the
-// given location?
+//------------------------------------------------------------------------
+// copyOrMoveRegInUse: Is 'ref' a copyReg/moveReg that is still busy at the given location?
+//
+// Arguments:
+//    ref: The RefPosition of interest
+//    loc: The LsraLocation at which we're determining whether it's busy.
+//
+// Return Value:
+//    true iff 'ref' is active at the given location
+//
 bool copyOrMoveRegInUse(RefPosition* ref, LsraLocation loc)
 {
-    assert(ref->copyReg || ref->moveReg);
+    if (!ref->copyReg && !ref->moveReg)
+    {
+        return false;
+    }
     if (ref->getRefEndLocation() >= loc)
     {
         return true;
@@ -5226,9 +5237,12 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
 
         if (!assignedInterval->isAssignedTo(physRegRecord->regNum))
         {
-            // Don't reassign it if it's still in use
-            if ((recentReference->copyReg || recentReference->moveReg) &&
-                copyOrMoveRegInUse(recentReference, currentLoc))
+            // If the recentReference is for a different register, it can be reassigned, but
+            // otherwise don't reassign it if it's still in use.
+            // (Note that it is unlikely that we have a recent copy or move to a different register,
+            // where this physRegRecord is still pointing at an earlier copy or move, but it is possible,
+            // especially in stress modes.)
+            if ((recentReference->registerAssignment == regMask) && copyOrMoveRegInUse(recentReference, currentLoc))
             {
                 return false;
             }
