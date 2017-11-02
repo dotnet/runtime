@@ -4514,19 +4514,43 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     // Optimize the case of op1 is in memory and trying to access ith element.
     assert(op1->isUsedFromReg());
 
+    emitAttr baseTypeSize = emitTypeSize(baseType);
+
     if (op2->IsCnsIntOrI())
     {
         assert(op2->isContained());
 
-        emitAttr     attr  = emitTypeSize(baseType);
-        unsigned int index = (unsigned int)op2->gtIntCon.gtIconVal;
+        ssize_t index = op2->gtIntCon.gtIconVal;
 
-        getEmitter()->emitIns_R_R_I(INS_mov, attr, targetReg, srcReg, index);
+        if (getEmitter()->isValidVectorIndex(emitTypeSize(simdType), baseTypeSize, index))
+        {
+            // Only generate code for the get if the index is valid
+            // Otherwise generated code will throw
+            getEmitter()->emitIns_R_R_I(INS_mov, baseTypeSize, targetReg, srcReg, index);
+        }
     }
     else
     {
-        NYI("getItem() with non const index");
-        assert(op2->IsCnsIntOrI());
+        unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
+        noway_assert(compiler->lvaSIMDInitTempVarNum != BAD_VAR_NUM);
+
+        regNumber indexReg = op2->gtRegNum;
+        regNumber tmpReg   = simdNode->ExtractTempReg();
+
+        assert(genIsValidIntReg(tmpReg));
+        assert(tmpReg != indexReg);
+
+        unsigned baseTypeScale = genLog2(EA_SIZE_IN_BYTES(baseTypeSize));
+
+        // Load the address of simdInitTempVarNum
+        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, tmpReg, simdInitTempVarNum, 0);
+
+        // Store the vector to simdInitTempVarNum
+        getEmitter()->emitIns_R_R(INS_str, emitTypeSize(simdType), srcReg, tmpReg);
+
+        // Load item at simdInitTempVarNum[index]
+        getEmitter()->emitIns_R_R_R_Ext(ins_Load(baseType), baseTypeSize, targetReg, tmpReg, indexReg, INS_OPTS_LSL,
+                                        baseTypeScale);
     }
 
     genProduceReg(simdNode);
