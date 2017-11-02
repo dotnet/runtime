@@ -177,6 +177,13 @@ int pthread_getschedparam (pthread_t thread, int *policy, struct sched_param *pa
 }
 
 int
+pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
+{
+	return 0;
+}
+
+
+int
 pthread_attr_getstacksize (const pthread_attr_t *restrict attr, size_t *restrict stacksize)
 {
 	return 65536; //wasm page size
