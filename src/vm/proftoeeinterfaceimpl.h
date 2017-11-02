@@ -133,7 +133,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo8
+class ProfToEEInterfaceImpl : public ICorProfilerInfo9
 {
 public:
 
@@ -576,6 +576,29 @@ public:
         WCHAR wszName[]);
 
     // end ICorProfilerInfo8
+
+    // beging ICorProfilerInfo9
+
+    COM_METHOD GetNativeCodeStartAddresses(
+        FunctionID functionID, 
+        ReJITID reJitId, 
+        ULONG32 cCodeStartAddresses, 
+        ULONG32 *pcCodeStartAddresses, 
+        UINT_PTR codeStartAddresses[]);
+
+    COM_METHOD GetILToNativeMapping3(
+        UINT_PTR pNativeCodeStartAddress, 
+        ULONG32 cMap, 
+        ULONG32 *pcMap, 
+        COR_DEBUG_IL_TO_NATIVE_MAP map[]);
+
+    COM_METHOD GetCodeInfo4(
+        UINT_PTR pNativeCodeStartAddress, 
+        ULONG32 cCodeInfos, 
+        ULONG32* pcCodeInfos, 
+        COR_PRF_CODE_INFO codeInfos[]);
+
+    // end ICorProfilerInfo9
 
 protected:
 

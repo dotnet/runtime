@@ -32,6 +32,8 @@ SET_DEFAULT_DEBUG_CHANNEL(NUMA);
 #include <pthread.h>
 #include <dlfcn.h>
 
+#include <algorithm>
+
 #include "numashim.h"
 
 using namespace CorUnix;
@@ -630,7 +632,7 @@ SetThreadAffinityMask(
 
     if (st == 0)
     {
-        for (int i = 0; i < min(8 * sizeof(KAFFINITY), g_possibleCpuCount); i++)
+        for (int i = 0; i < std::min(8 * (int)sizeof(KAFFINITY), g_possibleCpuCount); i++)
         {
             if (CPU_ISSET(i, &prevCpuSet))
             {

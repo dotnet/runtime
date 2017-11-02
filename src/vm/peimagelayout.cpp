@@ -445,7 +445,7 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
         // if (!HasNativeHeader())
         //     ThrowHR(COR_E_BADIMAGEFORMAT);
 
-        if (HasNativeHeader())
+        if (HasNativeHeader() && g_fAllowNativeImages)
         {
             if (!IsNativeMachineFormat())
                 ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -501,7 +501,7 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
     if (!HasCorHeader())
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    if (HasNativeHeader() || HasReadyToRunHeader())
+    if ((HasNativeHeader() || HasReadyToRunHeader()) && g_fAllowNativeImages)
     {
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())

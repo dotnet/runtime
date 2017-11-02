@@ -124,7 +124,7 @@ BOOL GetRegistryLongValue(HKEY hKeyParent, LPCWSTR szKey, LPCWSTR szName, long* 
 
 //----------------------------------------------------------------------------
 //
-// GetCurrentModuleFileName - Retrieve the current module's filename 
+// GetCurrentModuleFileName - Retrieve the current module's filename
 //
 // Arguments:
 //    pBuffer - output string buffer
@@ -174,7 +174,7 @@ HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __ino
 
 //----------------------------------------------------------------------------
 //
-// IsCurrentModuleFileNameInAutoExclusionList - decide if the current module's filename 
+// IsCurrentModuleFileNameInAutoExclusionList - decide if the current module's filename
 //                                              is in the AutoExclusionList list
 //
 // Arguments:
@@ -347,7 +347,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
                                  &valueSize);
 
                 // The OS's behavior is to consider Auto to be FALSE unless the first character is set
-                // to 1. They don't take into consideration the following characters. Also if the value 
+                // to 1. They don't take into consideration the following characters. Also if the value
                 // isn't present they assume an Auto value of FALSE.
                 if ((wzAutoKey[0] == L'1') && !IsCurrentModuleFileNameInAutoExclusionList())
                 {

@@ -751,6 +751,22 @@ inline BOOL CORProfilerIsMonitoringDynamicFunctionUnloads()
         ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS));
 }
 
+inline BOOL CORProfilerDisableTieredCompilation()
+{
+    CONTRACTL 
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+
+    return (CORProfilerPresent() &&
+         ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_DISABLE_TIERED_COMPILATION));
+}
+
 #if defined(PROFILING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
 
 #if defined(FEATURE_PROFAPI_ATTACH_DETACH)

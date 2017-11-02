@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private IterableToEnumerableAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // This method is invoked when GetEnumerator is called on a WinRT-backed implementation of IEnumerable<T>.
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private BindableIterableToEnumerableAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         private sealed class NonGenericToGenericIterator : IIterator<object>

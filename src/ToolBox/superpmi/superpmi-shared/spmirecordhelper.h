@@ -291,12 +291,12 @@ inline MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAg
 {
     MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup;
     ZeroMemory(&runtimeLookup, sizeof(runtimeLookup));
-    runtimeLookup.signature           = (DWORDLONG)pLookup->signature;
-    runtimeLookup.helper              = (DWORD)pLookup->helper;
-    runtimeLookup.indirections        = (DWORD)pLookup->indirections;
-    runtimeLookup.testForNull         = (DWORD)pLookup->testForNull;
-    runtimeLookup.testForFixup        = (DWORD)pLookup->testForFixup;
-    runtimeLookup.indirectFirstOffset = (DWORD)pLookup->indirectFirstOffset;
+    runtimeLookup.signature            = (DWORDLONG)pLookup->signature;
+    runtimeLookup.helper               = (DWORD)pLookup->helper;
+    runtimeLookup.indirections         = (DWORD)pLookup->indirections;
+    runtimeLookup.testForNull          = (DWORD)pLookup->testForNull;
+    runtimeLookup.testForFixup         = (DWORD)pLookup->testForFixup;
+    runtimeLookup.indirectFirstOffset  = (DWORD)pLookup->indirectFirstOffset;
     runtimeLookup.indirectSecondOffset = (DWORD)pLookup->indirectSecondOffset;
     for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (DWORDLONG)pLookup->offsets[i];
@@ -307,12 +307,12 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
 {
     CORINFO_RUNTIME_LOOKUP runtimeLookup;
-    runtimeLookup.signature           = (LPVOID)lookup.signature;
-    runtimeLookup.helper              = (CorInfoHelpFunc)lookup.helper;
-    runtimeLookup.indirections        = (WORD)lookup.indirections;
-    runtimeLookup.testForNull         = lookup.testForNull != 0;
-    runtimeLookup.testForFixup        = lookup.testForFixup != 0;
-    runtimeLookup.indirectFirstOffset = lookup.indirectFirstOffset != 0;
+    runtimeLookup.signature            = (LPVOID)lookup.signature;
+    runtimeLookup.helper               = (CorInfoHelpFunc)lookup.helper;
+    runtimeLookup.indirections         = (WORD)lookup.indirections;
+    runtimeLookup.testForNull          = lookup.testForNull != 0;
+    runtimeLookup.testForFixup         = lookup.testForFixup != 0;
+    runtimeLookup.indirectFirstOffset  = lookup.indirectFirstOffset != 0;
     runtimeLookup.indirectSecondOffset = lookup.indirectSecondOffset != 0;
     for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (size_t)lookup.offsets[i];

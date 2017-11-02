@@ -43,6 +43,8 @@ function print_usage {
     echo '  --benchViewOS=<os>                : Specify the os that will be used to insert data into Benchview.'
     echo '  --runType=<local|private|rolling> : Specify the runType for Benchview. [Default: local]'
     echo '  --outputdir                       : Specifies the directory where the generated performance output will be saved.'
+    echo '  --optLevel=<min_opt|full_opt|tiered>'
+    echo '                                    : Specifies the optimization level to be used by the jit.'
 }
 
 # libExtension determines extension for dynamic library files
@@ -94,6 +96,37 @@ function handle_ctrl_c {
     echo "*** Stopping... ***"
     print_results
     exit_with_error "$errorSource" "Test run aborted by Ctrl+C."
+}
+
+function is_valid_optlevel {
+    if [ -z "$optLevel" ]; then
+        echo "[ERROR] --optLevel is required."
+        return 1
+    fi
+
+    declare -A valid_optlevels=(
+        [min_opt]=1 [full_opt]=1 [tiered]=1
+    )
+    [[ -n "${valid_optlevels[$optLevel]}" ]] || {
+        echo "[ERROR] Specified an unknown optLevel=$optLevel";
+        return 1;
+    }
+    return 0
+}
+
+function setup_optimization_level {
+    unset COMPlus_JITMinOpts
+    unset COMPLUS_EXPERIMENTAL_TieredCompilation
+
+    if [ "$optLevel" == "min_opt" ]; then
+        export COMPlus_JITMinOpts=1
+        return 0
+    fi
+    if [ "$optLevel" == "tiered" ]; then
+        export COMPLUS_EXPERIMENTAL_TieredCompilation=1
+        return 0
+    fi
+    return 0
 }
 
 # Register the Ctrl-C handler
@@ -204,6 +237,8 @@ function copy_test_native_bin_to_test_root {
         done
 }
 
+export DOTNET_MULTILEVEL_LOOKUP=0
+
 # Exit code constants
 readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
 readonly EXIT_CODE_EXCEPTION=1     # Script exited because something exceptional happened (e.g. bad arguments, Ctrl-C interrupt).
@@ -227,6 +262,7 @@ collectionflags=stopwatch
 hasWarmupRun=--drop-first-value
 stabilityPrefix=
 benchmarksOutputDir=$dp0/../../bin/sandbox/Logs
+pgoOptimized=pgo
 
 for i in "$@"
 do
@@ -262,6 +298,9 @@ do
         --optLevel=*)
             optLevel=${i#*=}
             ;;
+        --nopgo)
+            pgoOptimized=nopgo
+            ;;
         --collectionflags=*)
             collectionflags=${i#*=}
             ;;
@@ -280,7 +319,7 @@ do
         *)
             echo "Unknown switch: $i"
             print_usage
-            exit $EXIT_CODE_SUCCESS
+            exit $EXIT_CODE_EXCEPTION
             ;;
     esac
 done
@@ -298,6 +337,7 @@ if [ ! -z "$BENCHVIEW_TOOLS_PATH" ] && { [ ! -d "$BENCHVIEW_TOOLS_PATH" ]; }; th
     echo BenchView path: "$BENCHVIEW_TOOLS_PATH" was specified, but it does not exist.
     exit $EXIT_CODE_EXCEPTION
 fi
+is_valid_optlevel || exit $EXIT_CODE_EXCEPTION
 if [ "$collectionflags" == "stopwatch" ]; then
     perfCollection=Off
 else
@@ -319,10 +359,7 @@ if [ ! -d "$benchmarksOutputDir" ]; then
     mkdir -p "$benchmarksOutputDir" || { echo "Failed to delete $benchmarksOutputDir"; exit 1; }
 fi
 
-# Set minopts
-if ["$optLevel" == "min_opt"]; then
-    export COMPlus_JITMinOpts=1
-fi
+setup_optimization_level || exit $EXIT_CODE_EXCEPTION
 
 cd $CORE_ROOT
 
@@ -385,6 +422,7 @@ if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
     args+=" --config-name Release"
     args+=" --config Configuration Release"
     args+=" --config OS $benchViewOS"
+    args+=" --config PGO $pgoOptimized"
     args+=" --config Profile $perfCollection"
     args+=" --config JitName ryujit"
     args+=" --config OptLevel $optLevel"

@@ -3,7 +3,7 @@
   
   <!-- List the projects that need to be built -->
   <ItemGroup>
-    <Project Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
+    <Project Condition="$(SkipSOS) != 'true'" Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
     <Project Include="mscorlib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 

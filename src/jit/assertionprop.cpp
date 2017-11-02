@@ -26,7 +26,7 @@ Compiler::fgWalkResult Compiler::optAddCopiesCallback(GenTreePtr* pTree, fgWalkD
 {
     GenTreePtr tree = *pTree;
 
-    if (tree->OperKind() & GTK_ASGOP)
+    if (tree->OperIsAssignment())
     {
         GenTreePtr op1  = tree->gtOp.gtOp1;
         Compiler*  comp = data->compiler;
@@ -455,7 +455,7 @@ void Compiler::optAddCopies()
             GenTreePtr tree = optAddCopyAsgnNode;
             GenTreePtr op1  = tree->gtOp.gtOp1;
 
-            noway_assert(tree && op1 && (tree->OperKind() & GTK_ASGOP) && (op1->gtOper == GT_LCL_VAR) &&
+            noway_assert(tree && op1 && tree->OperIsAssignment() && (op1->gtOper == GT_LCL_VAR) &&
                          (op1->gtLclVarCommon.gtLclNum == lclNum));
 
             /*  TODO-Review: BB_UNITY_WEIGHT is not the correct block weight */
@@ -4782,7 +4782,9 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Gen
         case GT_RSH:
         case GT_RSZ:
         case GT_NEG:
+#ifdef LEGACY_BACKEND
         case GT_CHS:
+#endif
         case GT_CAST:
         case GT_INTRINSIC:
             break;

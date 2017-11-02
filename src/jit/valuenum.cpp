@@ -5603,6 +5603,15 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
     }
 #endif
 
+#if FEATURE_HW_INTRINSICS
+    if (oper == GT_HWIntrinsic)
+    {
+        // TODO-CQ: For now hardware intrinsics are not handled by value numbering to be amenable for CSE'ing.
+        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
@@ -5908,6 +5917,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
             }
             else // Must be an "op="
             {
+#ifndef LEGACY_BACKEND
+                unreached();
+#else
                 // If the LHS is an IND, we didn't evaluate it when we visited it previously.
                 // But we didn't know that the parent was an op=.  We do now, so go back and evaluate it.
                 // (We actually check if the effective val is the IND.  We will have evaluated any non-last
@@ -5951,6 +5963,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                                                            lhsNormVNP),
                                                     lhsExcVNP);
                 }
+#endif // !LEGACY_BACKEND
             }
             if (tree->TypeGet() != TYP_VOID)
             {

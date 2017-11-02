@@ -4,7 +4,7 @@
 
 #include "jitpch.h"
 
-#ifdef _TARGET_XARCH_
+#if FEATURE_HW_INTRINSICS
 
 struct HWIntrinsicInfo
 {
@@ -17,6 +17,11 @@ static const hwIntrinsicInfoArray[] = {
 #define HARDWARE_INTRINSIC(id, name, isa) {NI_##id, name, InstructionSet_##isa},
 #include "hwintrinsiclistxarch.h"
 };
+
+extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic)
+{
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].intrinsicName;
+}
 
 //------------------------------------------------------------------------
 // lookupHWIntrinsicISA: map class name to InstructionSet value
@@ -162,6 +167,14 @@ InstructionSet Compiler::isaOfHWIntrinsic(NamedIntrinsic intrinsic)
 GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     InstructionSet isa = isaOfHWIntrinsic(intrinsic);
+    if (!compSupports(isa) && strcmp("get_IsSupported", getHWIntrinsicName(intrinsic)) != 0)
+    {
+        for (unsigned i = 0; i < sig->numArgs; i++)
+        {
+            impPopStack();
+        }
+        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType));
+    }
     switch (isa)
     {
         case InstructionSet_SSE:
@@ -262,14 +275,45 @@ GenTree* Compiler::impSSE41Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
 
 GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
+    GenTree*  retNode  = nullptr;
+    GenTree*  op1      = nullptr;
+    GenTree*  op2      = nullptr;
+    var_types callType = JITtype2varType(sig->retType);
+
+    CORINFO_ARG_LIST_HANDLE argLst = sig->args;
+    CORINFO_CLASS_HANDLE    argClass;
+    CorInfoType             corType;
     switch (intrinsic)
     {
         case NI_SSE42_IsSupported:
-            return gtNewIconNode(compSupports(InstructionSet_SSE42));
+            retNode = gtNewIconNode(compSupports(InstructionSet_SSE42));
+            break;
+
+        case NI_SSE42_Crc32:
+            assert(sig->numArgs == 2);
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(callType))
+            {
+                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType);
+            }
+#endif
+            argLst  = info.compCompHnd->getArgNext(argLst);                        // the second argument
+            corType = strip(info.compCompHnd->getArgType(sig, argLst, &argClass)); // type of the second argument
+
+            retNode = gtNewScalarHWIntrinsicNode(callType, op1, op2, NI_SSE42_Crc32);
+
+            // TODO - currently we use the BaseType to bring the type of the second argument
+            // to the code generator. May encode the overload info in other way.
+            retNode->gtHWIntrinsic.gtSIMDBaseType = JITtype2varType(corType);
+            break;
 
         default:
-            return nullptr;
+            JITDUMP("Not implemented hardware intrinsic");
+            break;
     }
+    return retNode;
 }
 
 GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
@@ -346,14 +390,33 @@ GenTree* Compiler::impFMAIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
 GenTree* Compiler::impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
+    GenTree*  retNode  = nullptr;
+    GenTree*  op1      = nullptr;
+    var_types callType = JITtype2varType(sig->retType);
+
     switch (intrinsic)
     {
         case NI_LZCNT_IsSupported:
-            return gtNewIconNode(compSupports(InstructionSet_LZCNT));
+            retNode = gtNewIconNode(compSupports(InstructionSet_LZCNT));
+            break;
+
+        case NI_LZCNT_LeadingZeroCount:
+            assert(sig->numArgs == 1);
+            op1 = impPopStack().val;
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(callType))
+            {
+                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType);
+            }
+#endif
+            retNode = gtNewScalarHWIntrinsicNode(callType, op1, NI_LZCNT_LeadingZeroCount);
+            break;
 
         default:
-            return nullptr;
+            JITDUMP("Not implemented hardware intrinsic");
+            break;
     }
+    return retNode;
 }
 
 GenTree* Compiler::impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
@@ -370,14 +433,33 @@ GenTree* Compiler::impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
 
 GenTree* Compiler::impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
+    GenTree*  retNode  = nullptr;
+    GenTree*  op1      = nullptr;
+    var_types callType = JITtype2varType(sig->retType);
+
     switch (intrinsic)
     {
         case NI_POPCNT_IsSupported:
-            return gtNewIconNode(compSupports(InstructionSet_POPCNT));
+            retNode = gtNewIconNode(compSupports(InstructionSet_POPCNT));
+            break;
+
+        case NI_POPCNT_PopCount:
+            assert(sig->numArgs == 1);
+            op1 = impPopStack().val;
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(callType))
+            {
+                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType);
+            }
+#endif
+            retNode = gtNewScalarHWIntrinsicNode(callType, op1, NI_POPCNT_PopCount);
+            break;
 
         default:
-            return nullptr;
+            JITDUMP("Not implemented hardware intrinsic");
+            break;
     }
+    return retNode;
 }
 
-#endif // _TARGET_XARCH_
+#endif // FEATURE_HW_INTRINSICS

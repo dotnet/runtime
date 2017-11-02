@@ -14,6 +14,7 @@
 
 namespace System
 {
+    using System.Buffers;
     using System.IO;
     using System.Security;
     using System.Resources;
@@ -114,21 +115,6 @@ namespace System
         //    details contained in the object (if any).
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message, Exception exception);
-
-        // Returns the system directory (ie, C:\WinNT\System32).
-        internal static String SystemDirectory
-        {
-            get
-            {
-                StringBuilder sb = new StringBuilder(Path.MaxPath);
-                int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
-                Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
-                if (r == 0) throw Win32Marshal.GetExceptionForLastWin32Error();
-                String path = sb.ToString();
-
-                return path;
-            }
-        }
 
         public static String ExpandEnvironmentVariables(String name)
         {
@@ -536,23 +522,33 @@ namespace System
 
         private static string GetEnvironmentVariableCore(string variable)
         {
-            StringBuilder sb = StringBuilderCache.Acquire(128); // A somewhat reasonable default size
-            int requiredSize = Win32Native.GetEnvironmentVariable(variable, sb, sb.Capacity);
+            Span<char> buffer = stackalloc char[128]; // A somewhat reasonable default size
+            return GetEnvironmentVariableCoreHelper(variable, buffer);
+        }
+
+        private static string GetEnvironmentVariableCoreHelper(string variable, Span<char> buffer)
+        {
+            int requiredSize = Win32Native.GetEnvironmentVariable(variable, buffer);
 
             if (requiredSize == 0 && Marshal.GetLastWin32Error() == Win32Native.ERROR_ENVVAR_NOT_FOUND)
             {
-                StringBuilderCache.Release(sb);
                 return null;
             }
 
-            while (requiredSize > sb.Capacity)
+            if (requiredSize > buffer.Length)
             {
-                sb.Capacity = requiredSize;
-                sb.Length = 0;
-                requiredSize = Win32Native.GetEnvironmentVariable(variable, sb, sb.Capacity);
+                char[] chars = ArrayPool<char>.Shared.Rent(requiredSize);
+                try
+                {
+                    return GetEnvironmentVariableCoreHelper(variable, chars);
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(chars);
+                }
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return new string(buffer.Slice(0, requiredSize));
         }
 
         private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target)
@@ -577,7 +573,6 @@ namespace System
             }
             else if (target == EnvironmentVariableTarget.User)
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
                 baseKey = Registry.CurrentUser;
                 keyName = "Environment";
             }
@@ -667,7 +662,6 @@ namespace System
             }
             else if (target == EnvironmentVariableTarget.User)
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
                 baseKey = Registry.CurrentUser;
                 keyName = @"Environment";
             }
@@ -745,8 +739,6 @@ namespace System
             }
             else if (target == EnvironmentVariableTarget.User)
             {
-                Debug.Assert(target == EnvironmentVariableTarget.User);
-
                 // User-wide environment variables stored in the registry are limited to 255 chars for the environment variable name.
                 const int MaxUserEnvVariableLength = 255;
                 if (variable.Length >= MaxUserEnvVariableLength)
@@ -781,7 +773,7 @@ namespace System
             IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST),
                 Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, "Environment", 0, 1000, IntPtr.Zero);
 
-            if (r == IntPtr.Zero) Debug.Assert(false, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
+            Debug.Assert(r != IntPtr.Zero, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
 #endif // FEATURE_WIN32_REGISTRY
         }
     }

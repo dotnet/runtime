@@ -83,8 +83,6 @@ public:
     // Setup FLS simulation block, including ClrDebugState and StressLog.
     static void SetupTLSForThread(Thread *pThread);
 
-    static DWORD GetTlsIndex () {return TlsIndex;}
-
     static LPVOID* GetTlsData();
     static BOOL SetTlsData (void** ppTlsInfo);
 
@@ -92,12 +90,6 @@ public:
     // private implementation:
     //***************************************************************************
 private:
-
-    // The debugger needs access to the TlsIndex so that we can read it from OOP.
-    friend class EEDbgInterfaceImpl;
-
-    SVAL_DECL (DWORD, TlsIndex);
-
     static PTLS_CALLBACK_FUNCTION Callbacks[MAX_PREDEFINED_TLS_SLOT];
 
     //***************************************************************************

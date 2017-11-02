@@ -4928,7 +4928,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
         if (m_fThrowIfTargetIsInaccessible)
         {
-            ThrowAccessException(pContext, pTargetMT, NULL, FALSE);
+            ThrowAccessException(pContext, pTargetMT, NULL);
         }
 
         return FALSE;
@@ -4938,7 +4938,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
     {
         if (m_fThrowIfTargetIsInaccessible)
         {
-            ThrowAccessException(pContext, pTargetMT, NULL, FALSE);
+            ThrowAccessException(pContext, pTargetMT, NULL);
         }
 
         return FALSE;
@@ -4947,8 +4947,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
     BOOL canAccessTarget = FALSE;
 
 #ifndef CROSSGEN_COMPILE
-
-    BOOL fAccessingFrameworkCode = FALSE;
 
     // In CoreCLR kRestrictedMemberAccess means that one can access private/internal
     // classes/members in app code.
@@ -4966,7 +4964,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
     // No Access
     if (m_fThrowIfTargetIsInaccessible)
     {
-        ThrowAccessException(pContext, pTargetMT, NULL, fAccessingFrameworkCode);
+        ThrowAccessException(pContext, pTargetMT, NULL);
     }
 
 #endif // CROSSGEN_COMPILE
@@ -4982,8 +4980,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 void AccessCheckOptions::ThrowAccessException(
     AccessCheckContext* pContext,
     MethodTable*        pFailureMT,             /* = NULL  */
-    Exception*          pInnerException,        /* = NULL  */
-    BOOL                fAccessingFrameworkCode /* = FALSE */) const
+    Exception*          pInnerException         /* = NULL  */) const
 {
     CONTRACTL
     {
@@ -5005,7 +5002,7 @@ void AccessCheckOptions::ThrowAccessException(
         // If we know the specific type that caused the failure, display it.
         // Else display the whole type that we are trying to access.
         MethodTable * pMT = (pFailureMT != NULL) ? pFailureMT : m_pTargetMT;
-        ThrowTypeAccessException(pContext, pMT, 0, pInnerException, fAccessingFrameworkCode);
+        ThrowTypeAccessException(pContext, pMT, 0, pInnerException);
     }
     else if (m_pTargetMethod != NULL) 
     {
@@ -5018,17 +5015,17 @@ void AccessCheckOptions::ThrowAccessException(
         // throwing the standard MethodAccessException.
         if (pCallerMD != NULL && m_pTargetMethod == pCallerMD && pFailureMT != NULL)
         {
-            ThrowTypeAccessException(pContext, pFailureMT, 0, pInnerException, fAccessingFrameworkCode);
+            ThrowTypeAccessException(pContext, pFailureMT, 0, pInnerException);
         }
         else
         {
-            ThrowMethodAccessException(pContext, m_pTargetMethod, 0, pInnerException, fAccessingFrameworkCode);
+            ThrowMethodAccessException(pContext, m_pTargetMethod, 0, pInnerException);
         }
     }
     else
     {
         _ASSERTE(m_pTargetField != NULL);
-        ThrowFieldAccessException(pContext, m_pTargetField, 0, pInnerException, fAccessingFrameworkCode);
+        ThrowFieldAccessException(pContext, m_pTargetField, 0, pInnerException);
     }
 }
 
@@ -5085,80 +5082,10 @@ BOOL AccessCheckOptions::FailOrThrow(AccessCheckContext *pContext) const
     return FALSE;
 }
 
-// Generate access exception context strings that are due to potential security misconfiguration
-void GetAccessExceptionAdditionalContextForSecurity(Assembly *pAccessingAssembly,
-                                                    Assembly *pTargetAssembly,
-                                                    BOOL fAccessingFrameworkCode,
-                                                    StringArrayList *pContextInformation)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pAccessingAssembly));
-        PRECONDITION(CheckPointer(pTargetAssembly));
-        PRECONDITION(CheckPointer(pContextInformation));
-    }
-    CONTRACTL_END;
-
-    if (fAccessingFrameworkCode)
-    {
-        SString accessingFrameworkCodeError;
-        EEException::GetResourceMessage(IDS_E_ACCESSING_PRIVATE_FRAMEWORK_CODE, accessingFrameworkCodeError);
-
-        pContextInformation->Append(accessingFrameworkCodeError);
-    }
-
-
-}
-
-// Generate additional context about the root cause of an access exception which may help in debugging it (for
-// instance v4 APTCA implying transparnecy, or conditional APTCA not being enabled). If no additional
-// context is available, then this returns SString.Empty.
-SString GetAdditionalAccessExceptionContext(Assembly *pAccessingAssembly,
-                                            Assembly *pTargetAssembly,
-                                            BOOL fAccessingFrameworkCode)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pAccessingAssembly));
-        PRECONDITION(CheckPointer(pTargetAssembly));
-    }
-    CONTRACTL_END;
-
-    StringArrayList contextComponents;
-
-    // See if the exception may have been caused by security
-    GetAccessExceptionAdditionalContextForSecurity(pAccessingAssembly,
-                                                   pTargetAssembly,
-                                                   fAccessingFrameworkCode,
-                                                   &contextComponents);
-
-    // Append each component of additional context we found into the additional context string in its own
-    // paragraph.
-    SString additionalContext;
-    for (DWORD i = 0; i < contextComponents.GetCount(); ++i)
-    {
-        SString contextComponent = contextComponents.Get(i);
-        if (!contextComponent.IsEmpty())
-        {
-            additionalContext.Append(W("\n\n"));
-            additionalContext.Append(contextComponent);
-        }
-    }
-
-    return additionalContext;
-}
-
 void DECLSPEC_NORETURN ThrowFieldAccessException(AccessCheckContext* pContext,
                                                  FieldDesc *pFD,
                                                  UINT messageID /* = 0 */,
-                                                 Exception *pInnerException /* = NULL */,
-                                                 BOOL fAccessingFrameworkCode /* = FALSE */)
+                                                 Exception *pInnerException /* = NULL */)
 {
     CONTRACTL
     {
@@ -5175,15 +5102,13 @@ void DECLSPEC_NORETURN ThrowFieldAccessException(AccessCheckContext* pContext,
     ThrowFieldAccessException(pCallerMD,
                               pFD,
                               messageID,
-                              pInnerException,
-                              fAccessingFrameworkCode);
+                              pInnerException);
 }
 
 void DECLSPEC_NORETURN ThrowFieldAccessException(MethodDesc* pCallerMD,
                                                  FieldDesc *pFD,
                                                  UINT messageID /* = 0 */,
-                                                 Exception *pInnerException /* = NULL */,
-                                                 BOOL fAccessingFrameworkCode /* = FALSE */)
+                                                 Exception *pInnerException /* = NULL */)
 {
     CONTRACTL
     {
@@ -5202,11 +5127,7 @@ void DECLSPEC_NORETURN ThrowFieldAccessException(MethodDesc* pCallerMD,
             messageID = IDS_E_FIELDACCESS;
         }
 
-        SString strAdditionalContext = GetAdditionalAccessExceptionContext(pCallerMD->GetAssembly(),
-                                                                           pFD->GetApproxEnclosingMethodTable()->GetAssembly(),
-                                                                           fAccessingFrameworkCode);
-
-        EX_THROW_WITH_INNER(EEFieldException, (pFD, pCallerMD, strAdditionalContext, messageID), pInnerException);
+        EX_THROW_WITH_INNER(EEFieldException, (pFD, pCallerMD, SString::Empty(), messageID), pInnerException);
     }
     else
     {
@@ -5217,8 +5138,7 @@ void DECLSPEC_NORETURN ThrowFieldAccessException(MethodDesc* pCallerMD,
 void DECLSPEC_NORETURN ThrowMethodAccessException(AccessCheckContext* pContext,
                                                   MethodDesc *pCalleeMD,
                                                   UINT messageID /* = 0 */,
-                                                  Exception *pInnerException /* = NULL */,
-                                                  BOOL fAccessingFrameworkCode /* = FALSE */)
+                                                  Exception *pInnerException /* = NULL */)
 {
     CONTRACTL
     {
@@ -5235,15 +5155,13 @@ void DECLSPEC_NORETURN ThrowMethodAccessException(AccessCheckContext* pContext,
     ThrowMethodAccessException(pCallerMD,
                                pCalleeMD,
                                messageID,
-                               pInnerException,
-                               fAccessingFrameworkCode);
+                               pInnerException);
 }
 
 void DECLSPEC_NORETURN ThrowMethodAccessException(MethodDesc* pCallerMD,
                                                   MethodDesc *pCalleeMD,
                                                   UINT messageID /* = 0 */,
-                                                  Exception *pInnerException /* = NULL */,
-                                                  BOOL fAccessingFrameworkCode /* = FALSE */)
+                                                  Exception *pInnerException /* = NULL */)
 {
     CONTRACTL
     {
@@ -5262,11 +5180,7 @@ void DECLSPEC_NORETURN ThrowMethodAccessException(MethodDesc* pCallerMD,
             messageID = IDS_E_METHODACCESS;
         }
 
-        SString strAdditionalContext = GetAdditionalAccessExceptionContext(pCallerMD->GetAssembly(),
-                                                                           pCalleeMD->GetAssembly(),
-                                                                           fAccessingFrameworkCode);
-
-        EX_THROW_WITH_INNER(EEMethodException, (pCalleeMD, pCallerMD, strAdditionalContext, messageID), pInnerException);
+        EX_THROW_WITH_INNER(EEMethodException, (pCalleeMD, pCallerMD, SString::Empty(), messageID), pInnerException);
     }
     else
     {
@@ -5277,8 +5191,7 @@ void DECLSPEC_NORETURN ThrowMethodAccessException(MethodDesc* pCallerMD,
 void DECLSPEC_NORETURN ThrowTypeAccessException(AccessCheckContext* pContext,
                                                 MethodTable *pMT,
                                                 UINT messageID /* = 0 */,
-                                                Exception *pInnerException /* = NULL */,
-                                                BOOL fAccessingFrameworkCode /* = FALSE */)
+                                                Exception *pInnerException /* = NULL */)
 {
     CONTRACTL
     {
@@ -5295,15 +5208,13 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(AccessCheckContext* pContext,
     ThrowTypeAccessException(pCallerMD,
                              pMT,
                              messageID,
-                             pInnerException,
-                             fAccessingFrameworkCode);
+                             pInnerException);
 }
 
 void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc* pCallerMD,
                                                 MethodTable *pMT,
                                                 UINT messageID /* = 0 */,
-                                                Exception *pInnerException /* = NULL */,
-                                                BOOL fAccessingFrameworkCode /* = FALSE */)
+                                                Exception *pInnerException /* = NULL */)
 {
     CONTRACTL
     {
@@ -5322,11 +5233,7 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc* pCallerMD,
             messageID = IDS_E_TYPEACCESS;
         }
 
-        SString strAdditionalContext = GetAdditionalAccessExceptionContext(pCallerMD->GetAssembly(),
-                                                                           pMT->GetAssembly(),
-                                                                           fAccessingFrameworkCode);
-
-        EX_THROW_WITH_INNER(EETypeAccessException, (pMT, pCallerMD, strAdditionalContext, messageID), pInnerException);
+        EX_THROW_WITH_INNER(EETypeAccessException, (pMT, pCallerMD, SString::Empty(), messageID), pInnerException);
     }
     else
     {

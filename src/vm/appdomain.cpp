@@ -46,7 +46,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "comtoclrcall.h"
-#include "sxshelpers.h"
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
 #include "olevariant.h"
@@ -63,8 +62,6 @@
 #include "threadpoolrequest.h"
 
 #include "nativeoverlapped.h"
-
-#include "compatibilityflags.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -2062,8 +2059,6 @@ BOOL AppDomain::GetPreferComInsteadOfManagedRemoting()
     return (GetComOrRemotingFlag() == COMorRemoting_COM);
 }
 
-STDAPI GetXMLObjectEx(IXMLParser **ppv);
-
 COMorRemotingFlag AppDomain::GetPreferComInsteadOfManagedRemotingFromConfigFile()
 {
     CONTRACTL
@@ -2404,10 +2399,6 @@ void SystemDomain::Init()
 #endif
     _ASSERTE(curCtx);
     _ASSERTE(curCtx->GetDomain() != NULL);
-#endif
-
-#ifdef _DEBUG
-    g_fVerifierOff = g_pConfig->IsVerifierOff();
 #endif
 
 #ifdef FEATURE_PREJIT
@@ -10942,22 +10933,6 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     return pMT;
 }
 
-#ifndef DACCESS_COMPILE
-
-
-//------------------------------------------------------------------------
-BOOL GetCompatibilityFlag(CompatibilityFlag flag)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
-    return FALSE;
-}
-#endif // !DACCESS_COMPILE
-
 //---------------------------------------------------------------------------------------
 // 
 BOOL 
@@ -11914,20 +11889,4 @@ void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatf
 #endif
 }
 
-#endif
-
-#if !defined(CROSSGEN_COMPILE)
-bool IsSingleAppDomain()
-{
-    STARTUP_FLAGS flags = CorHost2::GetStartupFlags();
-    if(flags & STARTUP_SINGLE_APPDOMAIN)
-        return TRUE;
-    else
-        return FALSE;
-}
-#else
-bool IsSingleAppDomain()
-{
-    return FALSE;
-}
 #endif

@@ -955,6 +955,7 @@ public:
 
         DebuggerJitInfo* m_pCurrent;
         Module* m_pLoaderModuleFilter;
+        MethodDesc* m_pMethodDescFilter;
     public:
         DJIIterator();
 
@@ -964,8 +965,12 @@ public:
 
     };
 
-    // Ensure the DJI cache is completely up to date. (This is heavy weight).
-    void CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module * pModuleFilter = NULL);
+    // Ensure the DJI cache is completely up to date. (This can be an expensive call, but
+    // much less so if pMethodDescFilter is used).
+    void CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module * pModuleFilter, MethodDesc * pMethodDescFilter);
+
+    // Ensure the DJI cache is up to date for a particular closed method desc
+    void CreateDJIsForMethodDesc(MethodDesc * pMethodDesc);
 
     // Get an iterator for all native blobs (accounts for Generics, Enc, + Prejiiting).
     // Must be stopped when we do this. This could be heavy weight.
@@ -973,7 +978,9 @@ public:
     // You may optionally pass pLoaderModuleFilter to restrict the DJIs iterated to
     // exist only on MethodDescs whose loader module matches the filter (pass NULL not
     // to filter by loader module).
-    void IterateAllDJIs(AppDomain * pAppDomain, Module * pLoaderModuleFilter, DJIIterator * pEnum);
+    // You may optionally pass pMethodDescFilter to restrict the DJIs iterated to only
+    // a single generic instantiation.
+    void IterateAllDJIs(AppDomain * pAppDomain, Module * pLoaderModuleFilter, MethodDesc * pMethodDescFilter, DJIIterator * pEnum);
 
 private:
     // The linked list of JIT's of this version of the method.   This will ALWAYS
@@ -1003,7 +1010,7 @@ public:
 
     // Creating the Jit-infos.
     DebuggerJitInfo *FindOrCreateInitAndAddJitInfo(MethodDesc* fd);
-    DebuggerJitInfo *CreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr);
+    DebuggerJitInfo *CreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr, BOOL* jitInfoWasCreated);
 
 
     void DeleteJitInfo(DebuggerJitInfo *dji);
@@ -2018,7 +2025,7 @@ public:
     DebuggerJitInfo *GetLatestJitInfoFromMethodDesc(MethodDesc * pMethodDesc);
 
 
-    HRESULT GetILToNativeMapping(MethodDesc *pMD, ULONG32 cMap, ULONG32 *pcMap,
+    HRESULT GetILToNativeMapping(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap,
                                  COR_DEBUG_IL_TO_NATIVE_MAP map[]);
 
     HRESULT GetILToNativeMappingIntoArrays(

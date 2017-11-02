@@ -32,7 +32,6 @@ public:
         regOptional            = false;
         definesAnyRegisters    = false;
         isInternalRegDelayFree = false;
-        isNoRegCompare         = false;
 #ifdef DEBUG
         isInitialized = false;
 #endif
@@ -144,9 +143,6 @@ public:
     // Whether internal register needs to be different from targetReg
     // in which result is produced.
     unsigned char isInternalRegDelayFree : 1;
-
-    // True if this is a compare feeding a JTRUE that doesn't need to be generated into a register.
-    unsigned char isNoRegCompare : 1;
 
 #ifdef DEBUG
     // isInitialized is set when the tree node is handled.

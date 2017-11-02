@@ -219,11 +219,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitLeaRIP(CodeLabel *target, X86Reg reg);
 #endif
 
-        static const unsigned X86TLSFetch_TRASHABLE_REGS = (1<<kEAX) | (1<<kEDX) | (1<<kECX);
-        VOID X86EmitTLSFetch(DWORD idx, X86Reg dstreg, unsigned preservedRegSet);
-
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
-        VOID X86EmitCurrentAppDomainFetch(X86Reg dstreg, unsigned preservedRegSet);
         
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, __int32 ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, __int32 ofs, X86Reg srcreg);
@@ -421,7 +417,7 @@ class StubLinkerCPU : public StubLinker
         VOID EmitDebugBreak();
 #endif // !FEATURE_STUBS_AS_IL
 
-#if defined(_DEBUG) && (defined(_TARGET_AMD64_) || defined(_TARGET_X86_)) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
         //===========================================================================
         // Emits code to log JITHelper access
         void EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount);

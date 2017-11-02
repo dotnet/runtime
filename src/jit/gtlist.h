@@ -50,14 +50,16 @@ GTNODE(NEG              , GenTreeOp          ,0,GTK_UNOP)
 GTNODE(COPY             , GenTreeCopyOrReload,0,GTK_UNOP)               // Copies a variable from its current location to a register that satisfies
                                                                         // code generation constraints.  The child is the actual lclVar node.
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,GTK_UNOP)
+#ifdef LEGACY_BACKEND
 GTNODE(CHS              , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR) // GT_CHS is actually unary -- op2 is ignored.
                                                                                 // Changing to unary presently causes problems, though -- take a little work to fix.
+#endif
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)      // array-length
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,GTK_BINOP|GTK_EXOP)     // intrinsics
 
-GTNODE(LOCKADD          , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)
+GTNODE(LOCKADD          , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XADD             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XCHG             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,GTK_SPECIAL)
@@ -99,6 +101,8 @@ GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP)      // objec
 
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP)               // Initialization value for an initBlk
 
+GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP)    // Runtime handle lookup
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------
@@ -126,6 +130,9 @@ GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP) // returns high bits 
                                                            // the div into a MULHI + some adjustments. In codegen, we only use the
                                                            // results of the high register, and we drop the low results.
 
+#ifndef LEGACY_BACKEND
+GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
+#else
 GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_ADD          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_SUB          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
@@ -142,7 +149,7 @@ GTNODE(ASG_AND          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_LSH          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_RSH          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
 GTNODE(ASG_RSZ          , GenTreeOp          ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)
-
+#endif
 GTNODE(EQ               , GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(NE               , GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(LT               , GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
@@ -190,8 +197,6 @@ GTNODE(ADD_LO           , GenTreeOp          ,1,GTK_BINOP)
 GTNODE(ADD_HI           , GenTreeOp          ,1,GTK_BINOP)
 GTNODE(SUB_LO           , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(DIV_HI           , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(MOD_HI           , GenTreeOp          ,0,GTK_BINOP)
 
 // A mul that returns the 2N bit result of an NxN multiply. This op is used for
 // multiplies that take two ints and return a long result. All other multiplies
@@ -218,6 +223,10 @@ GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP)
 #ifdef FEATURE_SIMD
 GTNODE(SIMD             , GenTreeSIMD        ,0,GTK_BINOP|GTK_EXOP)     // SIMD functions/operators/intrinsics
 #endif // FEATURE_SIMD
+
+#if FEATURE_HW_INTRINSICS
+GTNODE(HWIntrinsic      , GenTreeHWIntrinsic ,0,GTK_BINOP|GTK_EXOP)               // hardware intrinsics
+#endif // FEATURE_HW_INTRINSICS
 
 //-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:

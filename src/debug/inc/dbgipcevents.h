@@ -133,7 +133,6 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     SIZE_T  m_TLSIndex;                                 // The TLS index the CLR is using to hold Thread objects
     SIZE_T  m_TLSIsSpecialIndex;                        // The index into the Predef block of the the "IsSpecial" status for a thread.
     SIZE_T  m_TLSCantStopIndex;                         // The index into the Predef block of the the Can't-Stop count.
-    SIZE_T  m_TLSIndexOfPredefs;                        // The TLS index of the Predef block.
     SIZE_T  m_EEThreadStateOffset;                      // Offset of m_state in a Thread
     SIZE_T  m_EEThreadStateNCOffset;                    // Offset of m_stateNC in a Thread
     SIZE_T  m_EEThreadPGCDisabledOffset;                // Offset of the bit for whether PGC is disabled or not in a Thread
