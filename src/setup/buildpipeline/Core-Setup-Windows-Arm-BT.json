@@ -62,6 +62,7 @@
       "alwaysRun": false,
       "displayName": "Install Signing Plugin",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), in(variables.PB_SignType, 'real', 'test'))",
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
         "versionSpec": "1.*",
@@ -76,6 +77,7 @@
     },
     {
       "enabled": true,
+
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies",
