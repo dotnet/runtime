@@ -269,56 +269,6 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
-    // We use NonRandomizedStringEqualityComparer as default comparer as it doesnt use the randomized string hashing which 
-    // keeps the performance unaffected till we hit collision threshold and then we switch to the comparer which is using 
-    // randomized string hashing GenericEqualityComparer<string>
-    // We are keeping serialization support here to support deserialization of .NET Core 2.0 serialization payloads with this type in it.
-    [Serializable]
-    internal sealed class NonRandomizedStringEqualityComparer : EqualityComparer<string>, ISerializable
-    {
-        private static IEqualityComparer<string> s_nonRandomizedComparer;
-
-        private NonRandomizedStringEqualityComparer() { }
-
-        // This is used by the serialization engine.
-        private NonRandomizedStringEqualityComparer(SerializationInfo information, StreamingContext context) { }
-
-        internal static new IEqualityComparer<string> Default
-        {
-            get
-            {
-                if (s_nonRandomizedComparer == null)
-                {
-                    s_nonRandomizedComparer = new NonRandomizedStringEqualityComparer();
-                }
-                return s_nonRandomizedComparer;
-            }
-        }
-
-        public override bool Equals(string x, string y)
-        {
-            if (x != null)
-            {
-                if (y != null) return x.Equals(y);
-                return false;
-            }
-            if (y != null) return false;
-            return true;
-        }
-
-        public override int GetHashCode(string obj)
-        {
-            if (obj == null) return 0;
-            return obj.GetLegacyNonRandomizedHashCode();
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            // We are doing this to stay compatible with .NET Framework.
-            info.SetType(typeof(GenericEqualityComparer<string>));
-        }
-    }
-
     // Performance of IndexOf on byte array is very important for some scenarios.
     // We will call the C runtime function memchr, which is optimized.
     [Serializable]
