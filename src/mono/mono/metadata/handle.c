@@ -73,37 +73,6 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
  * points to a valid value.
  */
 
-#if defined(HAVE_BOEHM_GC) || defined(HAVE_NULL_GC)
-static HandleStack*
-new_handle_stack (void)
-{
-	return (HandleStack *)mono_gc_alloc_fixed (sizeof (HandleStack), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_HANDLE, "Thread Handle Stack");
-}
-
-static void
-free_handle_stack (HandleStack *stack)
-{
-	mono_gc_free_fixed (stack);
-}
-
-static HandleChunk*
-new_handle_chunk (void)
-{
-#if defined(HAVE_BOEHM_GC)
-	return (HandleChunk *)GC_MALLOC (sizeof (HandleChunk));
-#elif defined(HAVE_NULL_GC)
-	return (HandleChunk *)g_malloc (sizeof (HandleChunk));
-#endif
-}
-
-static void
-free_handle_chunk (HandleChunk *chunk)
-{
-#if defined(HAVE_NULL_GC)
-	g_free (chunk);
-#endif
-}
-#else
 static HandleStack*
 new_handle_stack (void)
 {
@@ -127,7 +96,6 @@ free_handle_chunk (HandleChunk *chunk)
 {
 	g_free (chunk);
 }
-#endif
 
 const MonoObjectHandle mono_null_value_handle = NULL;
 

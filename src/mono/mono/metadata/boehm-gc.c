@@ -404,6 +404,7 @@ mono_gc_thread_detach_with_lock (MonoThreadInfo *p)
 		mono_threads_add_joinable_thread ((gpointer)tid);
 
 	mono_handle_stack_free (p->handle_stack);
+	p->handle_stack = NULL;
 }
 
 gboolean
@@ -585,9 +586,32 @@ push_root (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
+push_handle_stack (HandleStack* stack)
+{
+	HandleChunk *cur = stack->bottom;
+	HandleChunk *last = stack->top;
+
+	if (!cur)
+		return;
+
+	while (cur) {
+		if (cur->size > 0)
+			GC_push_all (cur->elems, (char*)(cur->elems + cur->size) + 1);
+		if (cur == last)
+			break;
+		cur = cur->next;
+	}
+}
+
+static void
 mono_push_other_roots (void)
 {
 	g_hash_table_foreach (roots, push_root, NULL);
+	FOREACH_THREAD (info) {
+		HandleStack* stack = (HandleStack*)info->handle_stack;
+		if (stack)
+			push_handle_stack (stack);
+	} FOREACH_THREAD_END
 	if (default_push_other_roots)
 		default_push_other_roots ();
 }
