@@ -3745,8 +3745,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					td->sp -= info->sig->param_count;
 
 					if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
+						int mt = mint_type (info->sig->ret);
 						td->sp ++;
-						SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_I);
+						SET_SIMPLE_TYPE(td->sp - 1, stack_type [mt]);
 					}
 					break;
 				}
