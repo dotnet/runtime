@@ -78,7 +78,6 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ActiveIssue(24994, TestPlatforms.OSX)]
         [Theory]
         [InlineData(1)]
         [InlineData(3)]
@@ -87,41 +86,35 @@ namespace System.IO.Pipes.Tests
             string name = GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(name))
             {
-                var clients = new List<NamedPipeClientStream>(numClients);
-                var clientConnects = new List<Task>();
-                for (int i = 0; i < numClients; i++)
+                var clients = new List<Task>(from i in Enumerable.Range(0, numClients) select ConnectClientAndReadAsync());
+
+                while (clients.Count > 0)
                 {
-                    clients.Add(new NamedPipeClientStream(name));
-                    clientConnects.Add(clients[i].ConnectAsync());
+                    Task<Task> firstClient = Task.WhenAny(clients);
+                    await WhenAllOrAnyFailed(ServerWaitReadAndWriteAsync(), firstClient);
+                    clients.Remove(firstClient.Result);
                 }
 
-                while (clientConnects.Count > 0)
+                async Task ServerWaitReadAndWriteAsync()
                 {
-                    Task serverWait = server.WaitForConnectionAsync();
-                    Task clientWait = await Task.WhenAny(clientConnects);
-                    await WhenAllOrAnyFailed(serverWait, clientWait);
-
-                    int connectedIndex = clientConnects.IndexOf(clientWait);
-                    NamedPipeClientStream client = clients[connectedIndex];
-                    clientConnects.RemoveAt(connectedIndex);
-                    clients.RemoveAt(connectedIndex);
-
-                    Task writeAsync = client.WriteAsync(new byte[1], 0, 1);
-                    Task<int> readAsync = server.ReadAsync(new byte[1], 0, 1);
-                    await Task.WhenAll(writeAsync, readAsync);
-                    Assert.Equal(1, await readAsync);
-
-                    writeAsync = server.WriteAsync(new byte[1], 0, 1);
-                    readAsync = client.ReadAsync(new byte[1], 0, 1);
-                    await Task.WhenAll(writeAsync, readAsync);
-                    Assert.Equal(1, await readAsync);
-
+                    await server.WaitForConnectionAsync();
+                    await server.WriteAsync(new byte[1], 0, 1);
+                    Assert.Equal(1, await server.ReadAsync(new byte[1], 0, 1));
                     server.Disconnect();
+                }
+
+                async Task ConnectClientAndReadAsync()
+                {
+                    using (var npcs = new NamedPipeClientStream(name))
+                    {
+                        await npcs.ConnectAsync();
+                        Assert.Equal(1, await npcs.ReadAsync(new byte[1], 0, 1));
+                        await npcs.WriteAsync(new byte[1], 0, 1);
+                    }
                 }
             }
         }
 
-        [ActiveIssue(24994, TestPlatforms.OSX)]
         [Fact]
         public void MaxNumberOfServerInstances_TooManyServers_Throws()
         {
@@ -157,7 +150,6 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ActiveIssue(24994, TestPlatforms.OSX)]
         [Theory]
         [InlineData(1)]
         [InlineData(4)]
