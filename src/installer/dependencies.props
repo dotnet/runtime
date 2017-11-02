@@ -10,21 +10,21 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>a87a61a80f95252a94f30c69d569fd3647c5b593</CoreFxCurrentRef>
-    <CoreClrCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</CoreClrCurrentRef>
+    <CoreClrCurrentRef>4dd4bc933ecb18df77beb65afe79b118cae240d4</CoreClrCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
-    <WCFCurrentRef>e038b5c2daec85be4855d29287ac548c07f41bd1</WCFCurrentRef>
-    <BuildToolsCurrentRef>a06e8956aad203c43d155837d811f7d6dc93f7a1</BuildToolsCurrentRef>
+    <WCFCurrentRef>4dd4bc933ecb18df77beb65afe79b118cae240d4</WCFCurrentRef>
+    <BuildToolsCurrentRef>4dd4bc933ecb18df77beb65afe79b118cae240d4</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25831-01</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25831-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25831-01</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25901-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25901-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.1</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
-    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25831-02</SystemServiceModelDuplexPackageVersion>
+    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25902-01</SystemServiceModelDuplexPackageVersion>
     <SystemServiceModelHttpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelHttpPackageVersion>
     <SystemServiceModelNetTcpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelNetTcpPackageVersion>
     <SystemServiceModelPrimitivesPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelPrimitivesPackageVersion>
@@ -50,7 +50,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02201-02</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02202-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
