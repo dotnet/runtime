@@ -19,7 +19,7 @@ namespace System.Net.Security
         //
         // Uses certificate thumb-print comparison.
         //
-        private struct SslCredKey : IEquatable<SslCredKey>
+        private readonly struct SslCredKey : IEquatable<SslCredKey>
         {
             private readonly byte[] _thumbPrint;
             private readonly int _allowedProtocols;

@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata.Ecma335
     // TODO: debug metadata blobs
     // TODO: revisit ctors (public vs internal vs static factories)?
 
-    public struct BlobEncoder
+    public readonly struct BlobEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -191,7 +191,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct MethodSignatureEncoder
+    public readonly struct MethodSignatureEncoder
     {
         public BlobBuilder Builder { get; }
         public bool HasVarArgs { get; }
@@ -242,7 +242,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct LocalVariablesEncoder
+    public readonly struct LocalVariablesEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -257,7 +257,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct LocalVariableTypeEncoder
+    public readonly struct LocalVariableTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -292,7 +292,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct ParameterTypeEncoder
+    public readonly struct ParameterTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -322,7 +322,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct PermissionSetEncoder
+    public readonly struct PermissionSetEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -378,7 +378,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct GenericTypeArgumentsEncoder
+    public readonly struct GenericTypeArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -393,7 +393,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct FixedArgumentsEncoder
+    public readonly struct FixedArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -408,7 +408,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct LiteralEncoder
+    public readonly struct LiteralEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -492,7 +492,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct ScalarEncoder
+    public readonly struct ScalarEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -564,7 +564,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct LiteralsEncoder
+    public readonly struct LiteralsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -579,7 +579,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct VectorEncoder
+    public readonly struct VectorEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -600,7 +600,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct NameEncoder
+    public readonly struct NameEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -618,7 +618,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct CustomAttributeNamedArgumentsEncoder
+    public readonly struct CustomAttributeNamedArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -639,7 +639,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct NamedArgumentsEncoder
+    public readonly struct NamedArgumentsEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -688,7 +688,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct NamedArgumentTypeEncoder
+    public readonly struct NamedArgumentTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -713,7 +713,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct CustomAttributeArrayTypeEncoder
+    public readonly struct CustomAttributeArrayTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -735,7 +735,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct CustomAttributeElementTypeEncoder
+    public readonly struct CustomAttributeElementTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -804,7 +804,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct SignatureTypeEncoder
+    public readonly struct SignatureTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -1057,7 +1057,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct CustomModifiersEncoder
+    public readonly struct CustomModifiersEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -1094,7 +1094,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct ArrayShapeEncoder
+    public readonly struct ArrayShapeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -1174,7 +1174,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct ReturnTypeEncoder
+    public readonly struct ReturnTypeEncoder
     {
         public BlobBuilder Builder { get; }
 
@@ -1209,7 +1209,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    public struct ParametersEncoder
+    public readonly struct ParametersEncoder
     {
         public BlobBuilder Builder { get; }
         public bool HasVarArgs { get; }

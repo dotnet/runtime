@@ -144,7 +144,7 @@ namespace System.Data.SqlClient
         }
 
         // Used to hold column metadata for SqlDataReader case
-        private struct SourceColumnMetadata
+        private readonly struct SourceColumnMetadata
         {
             public SourceColumnMetadata(ValueMethod method, bool isSqlType, bool isDataFeed)
             {

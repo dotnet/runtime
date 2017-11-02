@@ -4,7 +4,7 @@
 
 namespace System.IO
 {
-    internal struct PathPair
+    internal readonly struct PathPair
     {
         internal readonly string UserPath;
         internal readonly string FullPath;

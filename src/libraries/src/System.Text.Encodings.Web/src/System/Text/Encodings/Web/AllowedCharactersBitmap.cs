@@ -8,7 +8,7 @@ using System.Text.Unicode;
 
 namespace System.Text.Internal
 {
-    internal struct AllowedCharactersBitmap
+    internal readonly struct AllowedCharactersBitmap
     {
         private const int ALLOWED_CHARS_BITMAP_LENGTH = 0x10000 / (8 * sizeof(uint));
         private readonly uint[] _allowedCharacters;

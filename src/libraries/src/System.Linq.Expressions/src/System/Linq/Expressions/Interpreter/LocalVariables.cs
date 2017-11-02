@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal struct LocalDefinition
+    internal readonly struct LocalDefinition
     {
         internal LocalDefinition(int localIndex, ParameterExpression parameter)
         {

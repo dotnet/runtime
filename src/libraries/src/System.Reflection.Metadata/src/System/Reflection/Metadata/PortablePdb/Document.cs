@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata
     /// <remarks>
     /// See also https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-table-0x30.
     /// </remarks>
-    public struct Document
+    public readonly struct Document
     {
         private readonly MetadataReader _reader;
 

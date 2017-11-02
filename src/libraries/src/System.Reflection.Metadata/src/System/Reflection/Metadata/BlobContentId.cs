@@ -8,7 +8,7 @@ using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata
 {
-    public struct BlobContentId : IEquatable<BlobContentId>
+    public readonly struct BlobContentId : IEquatable<BlobContentId>
     {
         private const int Size = BlobUtilities.SizeOfGuid + sizeof(uint);
 

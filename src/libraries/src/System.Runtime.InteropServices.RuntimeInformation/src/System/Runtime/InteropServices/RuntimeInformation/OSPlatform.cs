@@ -4,7 +4,7 @@
 
 namespace System.Runtime.InteropServices
 {
-    public struct OSPlatform : IEquatable<OSPlatform>
+    public readonly struct OSPlatform : IEquatable<OSPlatform>
     {
         private readonly string _osPlatform;
 

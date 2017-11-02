@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct MethodImplementation
+    public readonly struct MethodImplementation
     {
         private readonly MetadataReader _reader;
 

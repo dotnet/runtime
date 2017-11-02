@@ -459,7 +459,7 @@ namespace Internal.Cryptography.Pal
             return new X509ChainElement(cert, statuses.ToArray(), "");
         }
 
-        private struct X509ChainErrorMapping
+        private readonly struct X509ChainErrorMapping
         {
             internal static readonly X509ChainErrorMapping[] s_chainErrorMappings =
             {

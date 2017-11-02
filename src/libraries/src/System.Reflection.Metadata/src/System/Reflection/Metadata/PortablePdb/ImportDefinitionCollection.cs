@@ -10,7 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct ImportDefinitionCollection : IEnumerable<ImportDefinition>
+    public readonly struct ImportDefinitionCollection : IEnumerable<ImportDefinition>
     {
         private readonly MemoryBlock _block;
 

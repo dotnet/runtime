@@ -77,7 +77,7 @@ namespace Internal.Cryptography.Pal
                 return SR.Unknown_Error;
         }
 
-        private struct X509ChainErrorMapping
+        private readonly struct X509ChainErrorMapping
         {
             public readonly CertTrustErrorStatus Win32Flag;
             public readonly int Win32ErrorCode;

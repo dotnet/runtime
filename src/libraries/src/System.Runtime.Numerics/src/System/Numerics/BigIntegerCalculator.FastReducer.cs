@@ -15,7 +15,7 @@ namespace System.Numerics
 
         // see https://en.wikipedia.org/wiki/Barrett_reduction
 
-        internal struct FastReducer
+        internal readonly struct FastReducer
         {
             private readonly uint[] _modulus;
             private readonly uint[] _mu;

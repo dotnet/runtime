@@ -12,7 +12,7 @@ namespace System.Data.Odbc
 {
     internal class OdbcMetaDataFactory : DbMetaDataFactory
     {
-        private struct SchemaFunctionName
+        private readonly struct SchemaFunctionName
         {
             internal SchemaFunctionName(string schemaName, ODBC32.SQL_API odbcFunction)
             {

@@ -9,7 +9,7 @@ namespace System.Reflection.PortableExecutable
     /// <summary>
     /// Identifies the location, size and format of a block of debug information.
     /// </summary>
-    public struct DebugDirectoryEntry
+    public readonly struct DebugDirectoryEntry
     {
         internal const int Size =
             sizeof(uint) +   // Characteristics

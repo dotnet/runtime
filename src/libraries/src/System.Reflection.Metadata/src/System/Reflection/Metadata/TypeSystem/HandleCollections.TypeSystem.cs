@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents generic type parameters of a method or type.
     /// </summary>
-    public struct GenericParameterHandleCollection : IReadOnlyList<GenericParameterHandle>
+    public readonly struct GenericParameterHandleCollection : IReadOnlyList<GenericParameterHandle>
     {
         private readonly int _firstRowId;
         private readonly ushort _count;
@@ -121,7 +121,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents constraints of a generic type parameter.
     /// </summary>
-    public struct GenericParameterConstraintHandleCollection : IReadOnlyList<GenericParameterConstraintHandle>
+    public readonly struct GenericParameterConstraintHandleCollection : IReadOnlyList<GenericParameterConstraintHandle>
     {
         private readonly int _firstRowId;
         private readonly ushort _count;
@@ -226,7 +226,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct CustomAttributeHandleCollection : IReadOnlyCollection<CustomAttributeHandle>
+    public readonly struct CustomAttributeHandleCollection : IReadOnlyCollection<CustomAttributeHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -346,7 +346,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct DeclarativeSecurityAttributeHandleCollection : IReadOnlyCollection<DeclarativeSecurityAttributeHandle>
+    public readonly struct DeclarativeSecurityAttributeHandleCollection : IReadOnlyCollection<DeclarativeSecurityAttributeHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -453,7 +453,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodDefinitionHandleCollection : IReadOnlyCollection<MethodDefinitionHandle>
+    public readonly struct MethodDefinitionHandleCollection : IReadOnlyCollection<MethodDefinitionHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -573,7 +573,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct FieldDefinitionHandleCollection : IReadOnlyCollection<FieldDefinitionHandle>
+    public readonly struct FieldDefinitionHandleCollection : IReadOnlyCollection<FieldDefinitionHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -693,7 +693,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct PropertyDefinitionHandleCollection : IReadOnlyCollection<PropertyDefinitionHandle>
+    public readonly struct PropertyDefinitionHandleCollection : IReadOnlyCollection<PropertyDefinitionHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -813,7 +813,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct EventDefinitionHandleCollection : IReadOnlyCollection<EventDefinitionHandle>
+    public readonly struct EventDefinitionHandleCollection : IReadOnlyCollection<EventDefinitionHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -933,7 +933,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodImplementationHandleCollection : IReadOnlyCollection<MethodImplementationHandle>
+    public readonly struct MethodImplementationHandleCollection : IReadOnlyCollection<MethodImplementationHandle>
     {
         private readonly int _firstRowId;
         private readonly int _lastRowId;
@@ -1036,7 +1036,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Collection of parameters of a specified method.
     /// </summary>
-    public struct ParameterHandleCollection : IReadOnlyCollection<ParameterHandle>
+    public readonly struct ParameterHandleCollection : IReadOnlyCollection<ParameterHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -1148,7 +1148,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct InterfaceImplementationHandleCollection : IReadOnlyCollection<InterfaceImplementationHandle>
+    public readonly struct InterfaceImplementationHandleCollection : IReadOnlyCollection<InterfaceImplementationHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -1249,7 +1249,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents a collection of <see cref="TypeDefinitionHandle"/>.
     /// </summary>
-    public struct TypeDefinitionHandleCollection : IReadOnlyCollection<TypeDefinitionHandle>
+    public readonly struct TypeDefinitionHandleCollection : IReadOnlyCollection<TypeDefinitionHandle>
     {
         private readonly int _lastRowId;
 
@@ -1339,7 +1339,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents a collection of <see cref="TypeReferenceHandle"/>.
     /// </summary>
-    public struct TypeReferenceHandleCollection : IReadOnlyCollection<TypeReferenceHandle>
+    public readonly struct TypeReferenceHandleCollection : IReadOnlyCollection<TypeReferenceHandle>
     {
         private readonly int _lastRowId;
 
@@ -1429,7 +1429,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents a collection of <see cref="TypeReferenceHandle"/>.
     /// </summary>
-    public struct ExportedTypeHandleCollection : IReadOnlyCollection<ExportedTypeHandle>
+    public readonly struct ExportedTypeHandleCollection : IReadOnlyCollection<ExportedTypeHandle>
     {
         private readonly int _lastRowId;
 
@@ -1519,7 +1519,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents a collection of <see cref="MemberReferenceHandle"/>.
     /// </summary>
-    public struct MemberReferenceHandleCollection : IReadOnlyCollection<MemberReferenceHandle>
+    public readonly struct MemberReferenceHandleCollection : IReadOnlyCollection<MemberReferenceHandle>
     {
         private readonly int _lastRowId;
 
@@ -1606,7 +1606,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct PropertyAccessors
+    public readonly struct PropertyAccessors
     {
         // Workaround: JIT doesn't generate good code for nested structures, so use uints.
 
@@ -1626,7 +1626,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct EventAccessors
+    public readonly struct EventAccessors
     {
         // Workaround: JIT doesn't generate good code for nested structures, so use uints.
 
@@ -1652,7 +1652,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Collection of assembly references.
     /// </summary>
-    public struct AssemblyReferenceHandleCollection : IReadOnlyCollection<AssemblyReferenceHandle>
+    public readonly struct AssemblyReferenceHandleCollection : IReadOnlyCollection<AssemblyReferenceHandle>
     {
         private readonly MetadataReader _reader;
 
@@ -1763,7 +1763,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents a collection of <see cref="ManifestResourceHandle"/>.
     /// </summary>
-    public struct ManifestResourceHandleCollection : IReadOnlyCollection<ManifestResourceHandle>
+    public readonly struct ManifestResourceHandleCollection : IReadOnlyCollection<ManifestResourceHandle>
     {
         private readonly int _lastRowId;
 
@@ -1853,7 +1853,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents a collection of <see cref="AssemblyFileHandle"/>.
     /// </summary>
-    public struct AssemblyFileHandleCollection : IReadOnlyCollection<AssemblyFileHandle>
+    public readonly struct AssemblyFileHandleCollection : IReadOnlyCollection<AssemblyFileHandle>
     {
         private readonly int _lastRowId;
 

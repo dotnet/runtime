@@ -106,7 +106,7 @@ namespace System.IO.Compression
             _bitCount = state._bitCount;
         }
 
-        internal struct BufferState
+        internal readonly struct BufferState
         {
             internal readonly int _pos;      // position
             internal readonly uint _bitBuf;  // store uncomplete bits

@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace System.Data
 {
-    internal struct IndexField
+    internal readonly struct IndexField
     {
         public readonly DataColumn Column;
         public readonly bool IsDescending; // false = Asc; true = Desc what is default value for this?

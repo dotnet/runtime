@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct GenericParameterConstraint
+    public readonly struct GenericParameterConstraint
     {
         private readonly MetadataReader _reader;
 

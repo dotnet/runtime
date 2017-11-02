@@ -21,7 +21,7 @@ namespace System.Threading.Tasks
         }
     }
 
-    internal struct ForceAsyncAwaiter : ICriticalNotifyCompletion
+    internal readonly struct ForceAsyncAwaiter : ICriticalNotifyCompletion
     {
         private readonly Task _task;
 

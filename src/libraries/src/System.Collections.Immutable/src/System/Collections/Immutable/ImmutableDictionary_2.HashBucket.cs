@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Contains all the key/values in the collection that hash to the same value.
         /// </summary>
-        internal struct HashBucket : IEnumerable<KeyValuePair<TKey, TValue>>
+        internal readonly struct HashBucket : IEnumerable<KeyValuePair<TKey, TValue>>
         {
             /// <summary>
             /// One of the values in this bucket.

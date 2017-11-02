@@ -7,7 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct ModuleDefinitionHandle : IEquatable<ModuleDefinitionHandle>
+    public readonly struct ModuleDefinitionHandle : IEquatable<ModuleDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Module;
         private const byte tokenTypeSmall = (byte)HandleType.Module;
@@ -90,7 +90,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct AssemblyDefinitionHandle : IEquatable<AssemblyDefinitionHandle>
+    public readonly struct AssemblyDefinitionHandle : IEquatable<AssemblyDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Assembly;
         private const byte tokenTypeSmall = (byte)HandleType.Assembly;
@@ -173,7 +173,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct InterfaceImplementationHandle : IEquatable<InterfaceImplementationHandle>
+    public readonly struct InterfaceImplementationHandle : IEquatable<InterfaceImplementationHandle>
     {
         private const uint tokenType = TokenTypeIds.InterfaceImpl;
         private const byte tokenTypeSmall = (byte)HandleType.InterfaceImpl;
@@ -256,7 +256,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodDefinitionHandle : IEquatable<MethodDefinitionHandle>
+    public readonly struct MethodDefinitionHandle : IEquatable<MethodDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.MethodDef;
         private const byte tokenTypeSmall = (byte)HandleType.MethodDef;
@@ -351,7 +351,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodImplementationHandle : IEquatable<MethodImplementationHandle>
+    public readonly struct MethodImplementationHandle : IEquatable<MethodImplementationHandle>
     {
         private const uint tokenType = TokenTypeIds.MethodImpl;
         private const byte tokenTypeSmall = (byte)HandleType.MethodImpl;
@@ -434,7 +434,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodSpecificationHandle : IEquatable<MethodSpecificationHandle>
+    public readonly struct MethodSpecificationHandle : IEquatable<MethodSpecificationHandle>
     {
         private const uint tokenType = TokenTypeIds.MethodSpec;
         private const byte tokenTypeSmall = (byte)HandleType.MethodSpec;
@@ -517,7 +517,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct TypeDefinitionHandle : IEquatable<TypeDefinitionHandle>
+    public readonly struct TypeDefinitionHandle : IEquatable<TypeDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.TypeDef;
         private const byte tokenTypeSmall = (byte)HandleType.TypeDef;
@@ -600,7 +600,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct ExportedTypeHandle : IEquatable<ExportedTypeHandle>
+    public readonly struct ExportedTypeHandle : IEquatable<ExportedTypeHandle>
     {
         private const uint tokenType = TokenTypeIds.ExportedType;
         private const byte tokenTypeSmall = (byte)HandleType.ExportedType;
@@ -683,7 +683,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct TypeReferenceHandle : IEquatable<TypeReferenceHandle>
+    public readonly struct TypeReferenceHandle : IEquatable<TypeReferenceHandle>
     {
         private const uint tokenType = TokenTypeIds.TypeRef;
         private const byte tokenTypeSmall = (byte)HandleType.TypeRef;
@@ -766,7 +766,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct TypeSpecificationHandle : IEquatable<TypeSpecificationHandle>
+    public readonly struct TypeSpecificationHandle : IEquatable<TypeSpecificationHandle>
     {
         private const uint tokenType = TokenTypeIds.TypeSpec;
         private const byte tokenTypeSmall = (byte)HandleType.TypeSpec;
@@ -849,7 +849,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MemberReferenceHandle : IEquatable<MemberReferenceHandle>
+    public readonly struct MemberReferenceHandle : IEquatable<MemberReferenceHandle>
     {
         private const uint tokenType = TokenTypeIds.MemberRef;
         private const byte tokenTypeSmall = (byte)HandleType.MemberRef;
@@ -932,7 +932,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct FieldDefinitionHandle : IEquatable<FieldDefinitionHandle>
+    public readonly struct FieldDefinitionHandle : IEquatable<FieldDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.FieldDef;
         private const byte tokenTypeSmall = (byte)HandleType.FieldDef;
@@ -1015,7 +1015,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct EventDefinitionHandle : IEquatable<EventDefinitionHandle>
+    public readonly struct EventDefinitionHandle : IEquatable<EventDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Event;
         private const byte tokenTypeSmall = (byte)HandleType.Event;
@@ -1098,7 +1098,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct PropertyDefinitionHandle : IEquatable<PropertyDefinitionHandle>
+    public readonly struct PropertyDefinitionHandle : IEquatable<PropertyDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Property;
         private const byte tokenTypeSmall = (byte)HandleType.Property;
@@ -1181,7 +1181,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct StandaloneSignatureHandle : IEquatable<StandaloneSignatureHandle>
+    public readonly struct StandaloneSignatureHandle : IEquatable<StandaloneSignatureHandle>
     {
         private const uint tokenType = TokenTypeIds.Signature;
         private const byte tokenTypeSmall = (byte)HandleType.Signature;
@@ -1264,7 +1264,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct ParameterHandle : IEquatable<ParameterHandle>
+    public readonly struct ParameterHandle : IEquatable<ParameterHandle>
     {
         private const uint tokenType = TokenTypeIds.ParamDef;
         private const byte tokenTypeSmall = (byte)HandleType.ParamDef;
@@ -1347,7 +1347,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct GenericParameterHandle : IEquatable<GenericParameterHandle>
+    public readonly struct GenericParameterHandle : IEquatable<GenericParameterHandle>
     {
         private const uint tokenType = TokenTypeIds.GenericParam;
         private const byte tokenTypeSmall = (byte)HandleType.GenericParam;
@@ -1430,7 +1430,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct GenericParameterConstraintHandle : IEquatable<GenericParameterConstraintHandle>
+    public readonly struct GenericParameterConstraintHandle : IEquatable<GenericParameterConstraintHandle>
     {
         private const uint tokenType = TokenTypeIds.GenericParamConstraint;
         private const byte tokenTypeSmall = (byte)HandleType.GenericParamConstraint;
@@ -1513,7 +1513,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct ModuleReferenceHandle : IEquatable<ModuleReferenceHandle>
+    public readonly struct ModuleReferenceHandle : IEquatable<ModuleReferenceHandle>
     {
         private const uint tokenType = TokenTypeIds.ModuleRef;
         private const byte tokenTypeSmall = (byte)HandleType.ModuleRef;
@@ -1596,7 +1596,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct AssemblyReferenceHandle : IEquatable<AssemblyReferenceHandle>
+    public readonly struct AssemblyReferenceHandle : IEquatable<AssemblyReferenceHandle>
     {
         private const uint tokenType = TokenTypeIds.AssemblyRef;
         private const byte tokenTypeSmall = (byte)HandleType.AssemblyRef;
@@ -1714,7 +1714,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct CustomAttributeHandle : IEquatable<CustomAttributeHandle>
+    public readonly struct CustomAttributeHandle : IEquatable<CustomAttributeHandle>
     {
         private const uint tokenType = TokenTypeIds.CustomAttribute;
         private const byte tokenTypeSmall = (byte)HandleType.CustomAttribute;
@@ -1797,7 +1797,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct DeclarativeSecurityAttributeHandle : IEquatable<DeclarativeSecurityAttributeHandle>
+    public readonly struct DeclarativeSecurityAttributeHandle : IEquatable<DeclarativeSecurityAttributeHandle>
     {
         private const uint tokenType = TokenTypeIds.DeclSecurity;
         private const byte tokenTypeSmall = (byte)HandleType.DeclSecurity;
@@ -1880,7 +1880,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct ConstantHandle : IEquatable<ConstantHandle>
+    public readonly struct ConstantHandle : IEquatable<ConstantHandle>
     {
         private const uint tokenType = TokenTypeIds.Constant;
         private const byte tokenTypeSmall = (byte)HandleType.Constant;
@@ -1963,7 +1963,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct ManifestResourceHandle : IEquatable<ManifestResourceHandle>
+    public readonly struct ManifestResourceHandle : IEquatable<ManifestResourceHandle>
     {
         private const uint tokenType = TokenTypeIds.ManifestResource;
         private const byte tokenTypeSmall = (byte)HandleType.ManifestResource;
@@ -2046,7 +2046,7 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct AssemblyFileHandle : IEquatable<AssemblyFileHandle>
+    public readonly struct AssemblyFileHandle : IEquatable<AssemblyFileHandle>
     {
         private const uint tokenType = TokenTypeIds.File;
         private const byte tokenTypeSmall = (byte)HandleType.File;
@@ -2135,7 +2135,7 @@ namespace System.Reflection.Metadata
     /// <remarks>
     /// The handle is 32-bit wide.
     /// </remarks>
-    public struct UserStringHandle : IEquatable<UserStringHandle>
+    public readonly struct UserStringHandle : IEquatable<UserStringHandle>
     {
         // bits:
         //     31: 0
@@ -2207,7 +2207,7 @@ namespace System.Reflection.Metadata
     }
 
     // #String heap handle
-    public struct StringHandle : IEquatable<StringHandle>
+    public readonly struct StringHandle : IEquatable<StringHandle>
     {
         // bits:
         //     31: IsVirtual
@@ -2430,7 +2430,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// A handle that represents a namespace definition. 
     /// </summary>
-    public struct NamespaceDefinitionHandle : IEquatable<NamespaceDefinitionHandle>
+    public readonly struct NamespaceDefinitionHandle : IEquatable<NamespaceDefinitionHandle>
     {
         // Non-virtual (namespace having at least one type or forwarder of its own) 
         // heap offset is to the null-terminated full name of the namespace in the 
@@ -2546,7 +2546,7 @@ namespace System.Reflection.Metadata
     }
 
     // #Blob heap handle
-    public struct BlobHandle : IEquatable<BlobHandle>
+    public readonly struct BlobHandle : IEquatable<BlobHandle>
     {
         // bits:
         //     31: IsVirtual
@@ -2677,7 +2677,7 @@ namespace System.Reflection.Metadata
     }
 
     // #Guid heap handle
-    public struct GuidHandle : IEquatable<GuidHandle>
+    public readonly struct GuidHandle : IEquatable<GuidHandle>
     {
         // The Guid heap is an array of GUIDs, each 16 bytes wide. 
         // Its first element is numbered 1, its second 2, and so on.

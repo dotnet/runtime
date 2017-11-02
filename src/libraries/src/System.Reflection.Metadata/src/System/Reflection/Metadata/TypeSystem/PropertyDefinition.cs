@@ -8,7 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct PropertyDefinition
+    public readonly struct PropertyDefinition
     {
         private readonly MetadataReader _reader;
 

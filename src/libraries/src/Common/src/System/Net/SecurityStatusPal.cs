@@ -4,7 +4,7 @@
 
 namespace System.Net
 {
-    internal struct SecurityStatusPal
+    internal readonly struct SecurityStatusPal
     {
         public readonly SecurityStatusPalErrorCode ErrorCode;
         public readonly Exception Exception;
