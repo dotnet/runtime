@@ -48,11 +48,9 @@
       <ItemsToPush Include="$(FinalSymbolsPackagesPattern)" />
     </ItemGroup>
     <Error Condition="'@(ItemsToPush)'==''" Text="ItemsToPush for symbols is empty." />
-    <!-- flat publish till symbol feed works -->
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    Overwrite="$(PublishOverwrite)"
-                    PublishFlatContainer="true" />
+                    Overwrite="$(PublishOverwrite)" />
   </Target>
 </Project>
