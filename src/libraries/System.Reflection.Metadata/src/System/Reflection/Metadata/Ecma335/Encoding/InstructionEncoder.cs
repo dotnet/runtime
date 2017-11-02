@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata.Ecma335
     /// <summary>
     /// Encodes instructions.
     /// </summary>
-    public struct InstructionEncoder
+    public readonly struct InstructionEncoder
     {
         /// <summary>
         /// Underlying builder where encoded instructions are written to.

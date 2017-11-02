@@ -4,7 +4,7 @@
 
 namespace System
 {
-    public struct ConsoleKeyInfo
+    public readonly struct ConsoleKeyInfo
     {
         private readonly char _keyChar;
         private readonly ConsoleKey _key;

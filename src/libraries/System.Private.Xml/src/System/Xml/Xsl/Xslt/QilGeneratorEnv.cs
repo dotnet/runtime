@@ -20,7 +20,7 @@ namespace System.Xml.Xsl.Xslt
         // Everywhere in this code in case of error in the stylesheet we should throw XslLoadException.
         // This helper IErrorHelper implementation is used to wrap XmlException's into XslLoadException's.
 
-        private struct ThrowErrorHelper : IErrorHelper
+        private readonly struct ThrowErrorHelper : IErrorHelper
         {
             public void ReportError(string res, params string[] args)
             {

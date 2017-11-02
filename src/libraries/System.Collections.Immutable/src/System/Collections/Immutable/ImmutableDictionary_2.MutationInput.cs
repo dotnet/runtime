@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
         /// Description of the current data structure as input into a
         /// mutating or query method.
         /// </summary>
-        private struct MutationInput
+        private readonly struct MutationInput
         {
             /// <summary>
             /// The root of the data structure for the collection.

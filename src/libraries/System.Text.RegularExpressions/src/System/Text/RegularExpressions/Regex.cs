@@ -1119,7 +1119,7 @@ namespace System.Text.RegularExpressions
     /*
      * Used as a key for CacheCodeEntry
      */
-    internal struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
+    internal readonly struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
     {
         private readonly RegexOptions _options;
         private readonly string _cultureKey;

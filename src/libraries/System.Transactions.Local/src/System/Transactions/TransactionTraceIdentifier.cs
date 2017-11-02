@@ -9,7 +9,7 @@ namespace System.Transactions
     /// of transaction objects.  This identifier is only unique within
     /// a given AppDomain.
     /// </summary>
-    internal struct TransactionTraceIdentifier : IEquatable<TransactionTraceIdentifier>
+    internal readonly struct TransactionTraceIdentifier : IEquatable<TransactionTraceIdentifier>
     {
         public static readonly TransactionTraceIdentifier Empty = new TransactionTraceIdentifier();
 

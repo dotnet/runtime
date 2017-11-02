@@ -1423,7 +1423,7 @@ namespace System.Xml
         private object debuggerDisplayProxy { get { return new DebuggerDisplayXmlNodeProxy(this); } }
 
         [DebuggerDisplay("{ToString()}")]
-        internal struct DebuggerDisplayXmlNodeProxy
+        internal readonly struct DebuggerDisplayXmlNodeProxy
         {
             private readonly XmlNode _node;
 

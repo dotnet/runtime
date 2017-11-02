@@ -12,7 +12,7 @@ namespace System.Text
     /// allocate/copy the chars into a new string.  This comes at the expense of an extra
     /// reference field + two Int32s per key in the size of the dictionary's Entry array.
     /// </summary>
-    internal struct StringOrCharArray : IEquatable<StringOrCharArray>
+    internal readonly struct StringOrCharArray : IEquatable<StringOrCharArray>
     {
         public readonly string String;
 

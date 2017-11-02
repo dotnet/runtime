@@ -3273,7 +3273,7 @@ namespace System.ComponentModel
             ///     A type descriptor for extended types.  This type descriptor
             ///     looks at the head node in the linked list.
             /// </summary>
-            private struct DefaultExtendedTypeDescriptor : ICustomTypeDescriptor
+            private readonly struct DefaultExtendedTypeDescriptor : ICustomTypeDescriptor
             {
                 private readonly TypeDescriptionNode _node;
                 private readonly object _instance;
@@ -3584,7 +3584,7 @@ namespace System.ComponentModel
             /// <summary>
             ///     The default type descriptor.
             /// </summary>
-            private struct DefaultTypeDescriptor : ICustomTypeDescriptor
+            private readonly struct DefaultTypeDescriptor : ICustomTypeDescriptor
             {
                 private readonly TypeDescriptionNode _node;
                 private readonly Type _objectType;

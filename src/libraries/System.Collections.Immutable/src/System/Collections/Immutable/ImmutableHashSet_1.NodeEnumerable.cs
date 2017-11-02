@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Enumerates over a sorted dictionary used for hash buckets.
         /// </summary>
-        private struct NodeEnumerable : IEnumerable<T>
+        private readonly struct NodeEnumerable : IEnumerable<T>
         {
             /// <summary>
             /// The root of the sorted dictionary to enumerate.

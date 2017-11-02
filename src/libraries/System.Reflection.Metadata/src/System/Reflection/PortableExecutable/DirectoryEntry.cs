@@ -4,7 +4,7 @@
 
 namespace System.Reflection.PortableExecutable
 {
-    public struct DirectoryEntry
+    public readonly struct DirectoryEntry
     {
         public readonly int RelativeVirtualAddress;
         public readonly int Size;

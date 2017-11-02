@@ -4,7 +4,7 @@
 
 namespace System.Reflection.PortableExecutable
 {
-    public struct SectionLocation
+    public readonly struct SectionLocation
     {
         public int RelativeVirtualAddress { get; }
         public int PointerToRawData { get; }

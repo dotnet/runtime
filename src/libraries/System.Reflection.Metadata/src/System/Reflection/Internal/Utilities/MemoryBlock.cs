@@ -11,7 +11,7 @@ using System.Text;
 namespace System.Reflection.Internal
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-    internal unsafe struct MemoryBlock
+    internal unsafe readonly struct MemoryBlock
     {
         internal readonly byte* Pointer;
         internal readonly int Length;

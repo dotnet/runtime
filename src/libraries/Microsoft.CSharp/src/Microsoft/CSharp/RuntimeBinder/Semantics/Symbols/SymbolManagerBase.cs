@@ -256,7 +256,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // 2) Make it so parameter lists can be compared by a simple pointer comparison
         // 3) Allow us to associate a token with each signature for faster metadata emit
 
-        private struct TypeArrayKey : IEquatable<TypeArrayKey>
+        private readonly struct TypeArrayKey : IEquatable<TypeArrayKey>
         {
             private readonly CType[] _types;
             private readonly int _hashCode;

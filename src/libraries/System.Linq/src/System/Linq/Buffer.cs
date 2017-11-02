@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,7 +10,7 @@ namespace System.Linq
     /// A buffer into which the contents of an <see cref="IEnumerable{TElement}"/> can be stored.
     /// </summary>
     /// <typeparam name="TElement">The type of the buffer's elements.</typeparam>
-    internal struct Buffer<TElement>
+    internal readonly struct Buffer<TElement>
     {
         /// <summary>
         /// The stored items.

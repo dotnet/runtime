@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -487,7 +487,7 @@ namespace System.Net.Http
 
         /// <summary>A cached idle connection and metadata about it.</summary>
         [StructLayout(LayoutKind.Auto)]
-        private struct CachedConnection : IEquatable<CachedConnection>
+        private readonly struct CachedConnection : IEquatable<CachedConnection>
         {
             /// <summary>The cached connection.</summary>
             internal readonly HttpConnection _connection;

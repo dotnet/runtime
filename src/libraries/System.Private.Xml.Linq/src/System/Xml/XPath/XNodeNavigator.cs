@@ -853,7 +853,7 @@ namespace System.Xml.XPath
         }
     }
 
-    internal struct XPathEvaluator
+    internal readonly struct XPathEvaluator
     {
         public object Evaluate<T>(XNode node, string expression, IXmlNamespaceResolver resolver) where T : class
         {

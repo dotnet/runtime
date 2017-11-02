@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System.Threading;
@@ -15,7 +15,7 @@ namespace System.Net.Security
             Task WriteAsync(byte[] buffer, int offset, int count);
         }
 
-        private struct SslWriteAsync : ISslWriteAdapter
+        private readonly struct SslWriteAsync : ISslWriteAdapter
         {
             private readonly SslState _sslState;
             private readonly CancellationToken _cancellationToken;
@@ -31,7 +31,7 @@ namespace System.Net.Security
             public Task WriteAsync(byte[] buffer, int offset, int count) => _sslState.InnerStream.WriteAsync(buffer, offset, count, _cancellationToken);
         }
 
-        private struct SslWriteSync : ISslWriteAdapter
+        private readonly struct SslWriteSync : ISslWriteAdapter
         {
             private readonly SslState _sslState;
 

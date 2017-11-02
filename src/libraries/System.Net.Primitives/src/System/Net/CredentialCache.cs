@@ -418,7 +418,7 @@ namespace System.Net
         }
     }
 
-    internal struct CredentialHostKey : IEquatable<CredentialHostKey>
+    internal readonly struct CredentialHostKey : IEquatable<CredentialHostKey>
     {
         public readonly string Host;
         public readonly string AuthenticationType;
