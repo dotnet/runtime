@@ -2,31 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-** Purpose: Generic hash table implementation
-**
-** #DictionaryVersusHashtableThreadSafety
-** Hashtable has multiple reader/single writer (MR/SW) thread safety built into 
-** certain methods and properties, whereas Dictionary doesn't. If you're 
-** converting framework code that formerly used Hashtable to Dictionary, it's
-** important to consider whether callers may have taken a dependence on MR/SW
-** thread safety. If a reader writer lock is available, then that may be used
-** with a Dictionary to get the same thread safety guarantee. 
-** 
-===========================================================*/
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
-
     /// <summary>
     /// Used internally to control behavior of insertion into a <see cref="Dictionary{TKey, TValue}"/>.
     /// </summary>
@@ -51,7 +34,7 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
     {
         private struct Entry
@@ -71,13 +54,13 @@ namespace System.Collections.Generic
         private IEqualityComparer<TKey> comparer;
         private KeyCollection keys;
         private ValueCollection values;
-        private Object _syncRoot;
+        private object _syncRoot;
 
         // constants for serialization
-        private const String VersionName = "Version"; // Do not rename (binary serialization)
-        private const String HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
-        private const String KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
-        private const String ComparerName = "Comparer"; // Do not rename (binary serialization)
+        private const string VersionName = "Version"; // Do not rename (binary serialization)
+        private const string HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
+        private const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
+        private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
 
         public Dictionary() : this(0, null) { }
 
@@ -132,9 +115,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) :
-            this(collection, null)
-        { }
+        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) : this(collection, null) { }
 
         public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) :
             this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
@@ -152,9 +133,9 @@ namespace System.Collections.Generic
 
         protected Dictionary(SerializationInfo info, StreamingContext context)
         {
-            //We can't do anything with the keys and values until the entire graph has been deserialized
-            //and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
-            //we'll just cache this.  The graph is not valid until OnDeserialization has been called.
+            // We can't do anything with the keys and values until the entire graph has been deserialized
+            // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
+            // we'll just cache this.  The graph is not valid until OnDeserialization has been called.
             HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
@@ -355,12 +336,14 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
+
             info.AddValue(VersionName, version);
             info.AddValue(ComparerName, comparer, typeof(IEqualityComparer<TKey>));
-            info.AddValue(HashSizeName, buckets == null ? 0 : buckets.Length); //This is the length of the bucket array.
+            info.AddValue(HashSizeName, buckets == null ? 0 : buckets.Length); // This is the length of the bucket array
+
             if (buckets != null)
             {
-                KeyValuePair<TKey, TValue>[] array = new KeyValuePair<TKey, TValue>[Count];
+                var array = new KeyValuePair<TKey, TValue>[Count];
                 CopyTo(array, 0);
                 info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
             }
@@ -402,7 +385,7 @@ namespace System.Collections.Generic
 
             if (buckets == null) Initialize(0);
             int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
-            int targetBucket = hashCode % buckets.Length;            
+            int targetBucket = hashCode % buckets.Length;
             int collisionCount = 0;
 
             for (int i = buckets[targetBucket]; i >= 0; i = entries[i].next)
@@ -423,9 +406,9 @@ namespace System.Collections.Generic
 
                     return false;
                 }
-
                 collisionCount++;
             }
+
             int index;
             if (freeCount > 0)
             {
@@ -454,7 +437,7 @@ namespace System.Collections.Generic
             // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
             // i.e. EqualityComparer<string>.Default.
 
-            if (collisionCount > HashHelpers.HashCollisionThreshold && comparer == NonRandomizedStringEqualityComparer.Default)
+            if (collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
             {
                 comparer = (IEqualityComparer<TKey>)EqualityComparer<string>.Default;
                 Resize(entries.Length, true);
@@ -463,17 +446,15 @@ namespace System.Collections.Generic
             return true;
         }
 
-        public virtual void OnDeserialization(Object sender)
+        public virtual void OnDeserialization(object sender)
         {
             SerializationInfo siInfo;
             HashHelpers.SerializationInfoTable.TryGetValue(this, out siInfo);
 
             if (siInfo == null)
             {
-                // It might be necessary to call OnDeserialization from a container if the container object also implements
-                // OnDeserialization. However, remoting will call OnDeserialization again.
                 // We can return immediately if this function is called twice. 
-                // Note we set remove the serialization info from the table at the end of this method.
+                // Note we remove the serialization info from the table at the end of this method.
                 return;
             }
 
@@ -526,6 +507,7 @@ namespace System.Collections.Generic
             for (int i = 0; i < newBuckets.Length; i++) newBuckets[i] = -1;
             Entry[] newEntries = new Entry[newSize];
             Array.Copy(entries, 0, newEntries, 0, count);
+
             if (forceNewHashCodes)
             {
                 for (int i = 0; i < count; i++)
@@ -536,6 +518,7 @@ namespace System.Collections.Generic
                     }
                 }
             }
+
             for (int i = 0; i < count; i++)
             {
                 if (newEntries[i].hashCode >= 0)
@@ -545,6 +528,7 @@ namespace System.Collections.Generic
                     newBuckets[bucket] = i;
                 }
             }
+
             buckets = newBuckets;
             entries = newEntries;
         }
@@ -672,6 +656,7 @@ namespace System.Collections.Generic
             value = default(TValue);
             return false;
         }
+
         public bool TryAdd(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.None);
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
@@ -1170,7 +1155,7 @@ namespace System.Collections.Generic
                 get { return false; }
             }
 
-            Object ICollection.SyncRoot
+            object ICollection.SyncRoot
             {
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
@@ -1225,7 +1210,7 @@ namespace System.Collections.Generic
                     }
                 }
 
-                Object System.Collections.IEnumerator.Current
+                object System.Collections.IEnumerator.Current
                 {
                     get
                     {
@@ -1396,7 +1381,7 @@ namespace System.Collections.Generic
                 get { return false; }
             }
 
-            Object ICollection.SyncRoot
+            object ICollection.SyncRoot
             {
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
@@ -1450,7 +1435,7 @@ namespace System.Collections.Generic
                     }
                 }
 
-                Object System.Collections.IEnumerator.Current
+                object System.Collections.IEnumerator.Current
                 {
                     get
                     {
