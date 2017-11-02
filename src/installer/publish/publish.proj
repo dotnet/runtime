@@ -260,8 +260,7 @@
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
-                    Overwrite="$(OverwriteOnPublish)"
-                    IndexDirectory="$(ObjDir)"/>
+                    Overwrite="$(OverwriteOnPublish)"/>
   </Target>
 
   <Target Name="PublishSymbolsToAzureBlobFeed">
@@ -277,8 +276,7 @@
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
-                    Overwrite="$(OverwriteOnPublish)"
-                    IndexDirectory="$(ObjDir)"/>
+                    Overwrite="$(OverwriteOnPublish)"/>
   </Target>
 
   <Target Name="PublishDebToolPackageToFeed"
