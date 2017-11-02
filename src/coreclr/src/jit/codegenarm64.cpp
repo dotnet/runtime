@@ -4365,6 +4365,14 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 
     getEmitter()->emitIns_R_R_R(ins, attr, tmpFloatReg, op1Reg, op2Reg, opt);
 
+    if ((simdNode->gtFlags & GTF_SIMD12_OP) != 0)
+    {
+        // For 12Byte vectors we must set upper bits to get correct comparison
+        // We do not assume upper bits are zero.
+        instGen_Set_Reg_To_Imm(EA_4BYTE, targetReg, -1);
+        getEmitter()->emitIns_R_R_I(INS_ins, EA_4BYTE, tmpFloatReg, targetReg, 3);
+    }
+
     getEmitter()->emitIns_R_R(INS_uminv, attr, tmpFloatReg, tmpFloatReg,
                               (simdNode->gtSIMDSize > 8) ? INS_OPTS_16B : INS_OPTS_8B);
 
