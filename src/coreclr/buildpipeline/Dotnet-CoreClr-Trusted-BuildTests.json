@@ -23,23 +23,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "sync.cmd",
-        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -RuntimeId=$(Rid) -BlobNamePrefix=$(PB_BlobNamePrefix)$(PB_BuildType)/TestNativeBins/$(Rid) -- /p:DownloadDirectory=$(Build.SourcesDirectory)/packages/TestNativeBins/$(Rid)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Run clean.cmd",
       "timeoutInMinutes": 0,
       "task": {
@@ -50,6 +33,23 @@
       "inputs": {
         "filename": "clean.cmd",
         "arguments": "",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "sync.cmd",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -RuntimeId=$(Rid) -BlobNamePrefix=$(PB_BlobNamePrefix)$(PB_BuildType)/TestNativeBins/$(Rid) -- /p:DownloadDirectory=$(Build.SourcesDirectory)/packages/TestNativeBins/$(Rid)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
