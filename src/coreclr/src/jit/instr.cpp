@@ -440,7 +440,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef _TARGET_ARM_
     getEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(_TARGET_XARCH_) && defined(FEATURE_AVX_SUPPORT)
+#elif defined(_TARGET_XARCH_)
     getEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
@@ -1214,35 +1214,17 @@ void CodeGen::sched_AM(instruction ins,
         assert(baseReg != REG_NA);
         reg = baseReg;
 
-#ifdef LATE_DISASM
-        /*
-            Keep in mind that non-static data members (GT_FIELD nodes) were
-            transformed into GT_IND nodes - we keep the CLS/CPX information
-            in the GT_CNS_INT node representing the field offset of the
-            class member
-         */
-
-        if (addr->gtOper != GT_LEA && (addr->gtOp.gtOp2->gtOper == GT_CNS_INT) &&
-            addr->gtOp.gtOp2->IsIconHandle(GTF_ICON_FIELD_HDL))
-        {
-            /* This is a field offset - set the CPX/CLS values to emit a fixup */
-
-            cpx = addr->gtOp.gtOp2->gtIntCon.gtIconFld.gtIconCPX;
-            cls = addr->gtOp.gtOp2->gtIntCon.gtIconFld.gtIconCls;
-        }
-#endif
-
         if (cons)
         {
-            getEmitter()->emitIns_I_AR(ins, size, imm, reg, offs, cpx, cls);
+            getEmitter()->emitIns_I_AR(ins, size, imm, reg, offs);
         }
         else if (rdst)
         {
-            getEmitter()->emitIns_R_AR(ins, size, ireg, reg, offs, cpx, cls);
+            getEmitter()->emitIns_R_AR(ins, size, ireg, reg, offs);
         }
         else
         {
-            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, offs, cpx, cls);
+            getEmitter()->emitIns_AR_R(ins, size, ireg, reg, offs);
         }
     }
 }
@@ -1888,18 +1870,13 @@ AGAIN:
     }
 }
 
+#ifdef LEGACY_BACKEND
 regNumber CodeGen::genGetZeroRegister()
 {
-    regNumber zeroReg = REG_NA;
-
-#if REDUNDANT_LOAD
-
     // Is the constant already in some register?
 
-    zeroReg = regTracker.rsIconIsInReg(0);
-#endif
+    regNumber zeroReg = regTracker.rsIconIsInReg(0);
 
-#ifdef LEGACY_BACKEND
     if (zeroReg == REG_NA)
     {
         regMaskTP freeMask = regSet.rsRegMaskFree();
@@ -1924,7 +1901,6 @@ regNumber CodeGen::genGetZeroRegister()
             genSetRegToIcon(zeroReg, 0, TYP_INT);
         }
     }
-#endif // !LEGACY_BACKEND
 
     return zeroReg;
 }
@@ -1934,7 +1910,6 @@ regNumber CodeGen::genGetZeroRegister()
  *  Generate an instruction that has one operand given by a tree (which has
  *  been made addressable) and another that is an integer constant.
  */
-#ifdef LEGACY_BACKEND
 void CodeGen::inst_TT_IV(instruction ins, GenTreePtr tree, ssize_t val, unsigned offs, emitAttr size, insFlags flags)
 {
     bool sizeInferred = false;
@@ -2265,9 +2240,7 @@ AGAIN:
             assert(!"invalid address");
     }
 }
-#endif // LEGACY_BACKEND
 
-#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  *  Generate an instruction that has one operand given by a register and the
@@ -3310,6 +3283,8 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             // latter.
             return (aligned) ? INS_movaps : INS_movups;
         }
+#elif defined(_TARGET_ARM64_)
+        return INS_ldr;
 #else
         assert(!"ins_Load with SIMD type");
 #endif
@@ -3585,19 +3560,24 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     switch (oper)
     {
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             return type == TYP_DOUBLE ? INS_addsd : INS_addss;
-            break;
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             return type == TYP_DOUBLE ? INS_subsd : INS_subss;
-            break;
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             return type == TYP_DOUBLE ? INS_mulsd : INS_mulss;
-            break;
         case GT_DIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             return type == TYP_DOUBLE ? INS_divsd : INS_divss;
         case GT_AND:
             return type == TYP_DOUBLE ? INS_andpd : INS_andps;
@@ -3759,19 +3739,25 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     switch (oper)
     {
         case GT_ADD:
+#ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
+#endif
             return INS_vadd;
-            break;
         case GT_SUB:
+#ifdef LEGACY_BACKEND
         case GT_ASG_SUB:
+#endif
             return INS_vsub;
-            break;
         case GT_MUL:
+#ifdef LEGACY_BACKEND
         case GT_ASG_MUL:
+#endif
             return INS_vmul;
             break;
         case GT_DIV:
+#ifdef LEGACY_BACKEND
         case GT_ASG_DIV:
+#endif
             return INS_vdiv;
         case GT_NEG:
             return INS_vneg;

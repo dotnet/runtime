@@ -119,42 +119,13 @@ exit /b
 
 :Roslyn
 echo Build ** Roslyn **
-pushd %LinkBenchRoot%\roslyn
-
-REM Fetch ILLink
-if not exist illink mkdir illink
-cd illink
-copy %AssetDir%\Roslyn\illinkcsproj illink.csproj 
-call %__dotnet% restore --packages pkg
-if errorlevel 1 set ExitCode=1&&echo Roslyn: IlLink fetch failed
-set __IlLinkDll=%cd%\pkg\microsoft.netcore.illink\0.1.9-preview\lib\netcoreapp1.1\illink.dll
-cd ..
-
-REM Build CscCore
-call Restore.cmd
-REM Fetch the appropriate version of MSBuild to build and publish CscCore 
-for /f "delims=`" %%i in ('powershell -noprofile -executionPolicy RemoteSigned -command "& { . build\scripts\build-utils.ps1;Ensure-MSBuild }"') do set MSBUILD=%%i
-REM publish CscCore for win7-x64
-"%MSBUILD%" src\Compilers\CSharp\CscCore\CscCore.csproj /t:Publish /p:RuntimeIdentifier=win7-x64 /p:Configuration=Release /p:TreatWarningsAsErrors=true /warnaserror /nologo /nodeReuse:false /m 
-if errorlevel 1 set ExitCode=1&& echo Roslyn: publish failed 
-REM Published CscCore to Binaries\Release\Exes\CscCore\win7-x64\publish
-
-REM Create Linker Directory
-cd Binaries\Release\Exes\CscCore\win7-x64\
-mkdir Linked
-
-REM Copy Unmanaged Assets
-cd publish
-FOR /F "delims=" %%I IN ('DIR /b *') DO (
-    %__CORFLAGS% %%I 
-    if errorlevel 1 copy %%I ..\Linked 
-)
-copy *.ni.dll ..\Linked
-
-REM Run Linker
-echo Running %__dotnet1% %__IlLinkDll% -t -c link -a @%AssetDir%\Roslyn\RoslynRoots.txt -x %AssetDir%\Roslyn\RoslynRoots.xml -l none -out ..\Linked
-call %__dotnet1% %__IlLinkDll% -t -c link -a @%AssetDir%\Roslyn\RoslynRoots.txt -x %AssetDir%\Roslyn\RoslynRoots.xml -l none -out ..\Linked
-if errorlevel 1 set ExitCode=1&& echo Roslyn: ILLink failed
-
+pushd %LinkBenchRoot%\roslyn\
+call restore.cmd
+cd src\Compilers\CSharp\csc
+call %__dotnet2% restore -r win10-x64
+call %__dotnet2% publish -c release -r win10-x64 -f netcoreapp2.0 /p:LinkDuringPublish=false --output ..\..\..\..\Binaries\release\Exes\csc\netcoreapp2.0\win10-x64\Unlinked
+if errorlevel 1 set ExitCode=1&&echo Roslyn: publish failed
+call %__dotnet2% publish -c release -r win10-x64 -f netcoreapp2.0 --output ..\..\..\..\Binaries\release\Exes\csc\netcoreapp2.0\win10-x64\Linked
+if errorlevel 1 set ExitCode=1&&echo Roslyn: publish-iLLink failed
 popd
 exit /b

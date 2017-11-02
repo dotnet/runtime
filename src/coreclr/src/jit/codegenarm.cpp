@@ -142,8 +142,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeIntConCommon* con    = tree->AsIntConCommon();
             ssize_t              cnsVal = con->IconValue();
 
-            bool needReloc = compiler->opts.compReloc && tree->IsIconHandle();
-            if (needReloc)
+            if (con->ImmedValNeedsReloc(compiler))
             {
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
                 regTracker.rsTrackRegTrash(targetReg);
@@ -893,9 +892,18 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         for (unsigned i = 0; i < slots; ++i)
         {
             if (gcPtrs[i] == GCT_GCREF)
+            {
                 attr = EA_GCREF;
+            }
             else if (gcPtrs[i] == GCT_BYREF)
+            {
                 attr = EA_BYREF;
+            }
+            else
+            {
+                attr = EA_PTRSIZE;
+            }
+
             emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
                                 INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
             emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
@@ -1712,7 +1720,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
 
     regTracker.rsTrashRegSet(RBM_CALLEE_TRASH);
-    regTracker.rsTrashRegsForGCInterruptability();
 }
 
 //------------------------------------------------------------------------

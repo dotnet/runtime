@@ -519,7 +519,6 @@ namespace System.Globalization
             int daysInMonth = GetDaysInMonth(year, month, era);
             if (day < 1 || day > daysInMonth)
             {
-                // BCLDebug.Log("year = " + year + ", month = " + month + ", day = " + day);
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
                             String.Format(

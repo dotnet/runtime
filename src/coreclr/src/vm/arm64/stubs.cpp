@@ -16,10 +16,6 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
-EXTERN_C void JIT_GetSharedNonGCStaticBase_SingleAppDomain();
-EXTERN_C void JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain();
-EXTERN_C void JIT_GetSharedGCStaticBase_SingleAppDomain();
-EXTERN_C void JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain();
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
 
 
@@ -1114,14 +1110,6 @@ void InitJITHelpers1()
     }
 #endif
 
-    if(IsSingleAppDomain())
-    {
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_SingleAppDomain);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,       JIT_GetSharedNonGCStaticBase_SingleAppDomain);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain);
-        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
-    }
-
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 #ifndef FEATURE_PAL // TODO-ARM64-WINDOWS #13592
@@ -1348,26 +1336,35 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#ifndef CROSSGEN_COMPILE
-void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
+void FlushWriteBarrierInstructionCache()
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    // this wouldn't be called in arm64, just to comply with gchelpers.h
 }
 
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+#ifndef CROSSGEN_COMPILE
+int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
+}
+
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+{
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-void SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
 }
 
-void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #endif // CROSSGEN_COMPILE
@@ -1836,33 +1833,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 }
 
 #ifndef CROSSGEN_COMPILE
-
-EXTERN_C UINT32 _tls_index;
-void StubLinkerCPU::EmitGetThreadInlined(IntReg Xt)
-{
-#if defined(FEATURE_IMPLICIT_TLS) && !defined(FEATURE_PAL)
-    // Trashes x8.
-    IntReg X8 = IntReg(8);
-    _ASSERTE(Xt != X8);
-    
-    // Load the _tls_index
-    EmitLabelRef(NewExternalCodeLabel((LPVOID)&_tls_index), reinterpret_cast<LoadFromLabelInstructionFormat&>(gLoadFromLabelIF), X8);
-    
-    // Load Teb->ThreadLocalStoragePointer into x8
-    EmitLoadStoreRegImm(eLOAD, Xt, IntReg(18), offsetof(_TEB, ThreadLocalStoragePointer));
-
-    // index it with _tls_index, i.e Teb->ThreadLocalStoragePointer[_tls_index]. 
-    // This will give us the TLS section for the module on this thread's context
-    EmitLoadRegReg(Xt, Xt, X8, eLSL);
-
-    // read the Thread* from TLS section
-    EmitAddImm(Xt, Xt, OFFSETOF__TLS__tls_CurrentThread);
-    EmitLoadStoreRegImm(eLOAD, Xt, Xt, 0);
-#else
-    _ASSERTE(!"NYI:StubLinkerCPU::EmitGetThreadInlined");
-#endif
-
-}
 
 void StubLinkerCPU::EmitUnboxMethodStub(MethodDesc *pMD)
 {

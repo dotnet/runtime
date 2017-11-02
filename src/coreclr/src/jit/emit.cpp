@@ -1337,7 +1337,7 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG)
     /* In debug mode we clear/set some additional fields */
 
     instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
@@ -1346,7 +1346,6 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
     info->idSize       = sz;
     info->idVarRefOffs = 0;
     info->idMemCookie  = 0;
-    info->idClsCookie  = nullptr;
 #ifdef TRANSLATE_PDB
     info->idilStart = emitInstrDescILBase;
 #endif
@@ -1356,7 +1355,7 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
 
     id->idDebugOnlyInfo(info);
 
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG)
 
     /* Store the size and handle the two special values
        that indicate GCref and ByRef */
@@ -1521,10 +1520,6 @@ void emitter::emitMarkPrologEnd()
 void emitter::emitEndProlog()
 {
     assert(emitComp->compGeneratingProlog);
-
-    size_t prolSz;
-
-    insGroup* tempIG;
 
     emitNoGCIG = false;
 
@@ -3649,7 +3644,7 @@ AGAIN:
             ssz         = JCC_SIZE_SMALL;
             bool isTest = (jmp->idIns() == INS_tbz) || (jmp->idIns() == INS_tbnz);
 
-            nsd = (isTest) ? TB_DIST_SMALL_MAX_NEG : JCC_DIST_SMALL_MAX_POS;
+            nsd = (isTest) ? TB_DIST_SMALL_MAX_NEG : JCC_DIST_SMALL_MAX_NEG;
             psd = (isTest) ? TB_DIST_SMALL_MAX_POS : JCC_DIST_SMALL_MAX_POS;
         }
         else if (emitIsUncondJump(jmp))
@@ -7195,7 +7190,6 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
     char*           retbuf;
 
     insGroup*      ig;
-    UNATIVE_OFFSET of;
     UNATIVE_OFFSET nextof = 0;
 
     for (ig = emitIGlist; ig != nullptr; ig = ig->igNext)

@@ -398,11 +398,8 @@ void CodeGen::genCodeForBBlist()
         // performed at the end of each block.
         // TODO: could these checks be performed more frequently? E.g., at each location where
         // the register allocator says there are no live non-variable registers. Perhaps this could
-        // be done by (a) keeping a running count of live non-variable registers by using
-        // gtLsraInfo.srcCount and gtLsraInfo.dstCount to decrement and increment the count, respectively,
-        // and running the checks when the count is zero. Or, (b) use the map maintained by LSRA
-        // (operandToLocationInfoMap) to mark a node somehow when, after the execution of that node,
-        // there will be no live non-variable registers.
+        // be done by using the map maintained by LSRA (operandToLocationInfoMap) to mark a node
+        // somehow when, after the execution of that node, there will be no live non-variable registers.
 
         regSet.rsSpillChk();
 
@@ -1375,15 +1372,12 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
                                         regNumber         srcReg,
                                         regNumber         sizeReg)
 {
-    assert(varTypeIsStruct(putArgNode));
-
     // The putArgNode children are always contained. We should not consume any registers.
     assert(putArgNode->gtGetOp1()->isContained());
 
-    GenTree* dstAddr = putArgNode;
-
     // Get the source address.
     GenTree* src = putArgNode->gtGetOp1();
+    assert(varTypeIsStruct(src));
     assert((src->gtOper == GT_OBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
     GenTree* srcAddr = src->gtGetOp1();
 
@@ -1406,6 +1400,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     assert(dstReg != REG_SPBASE);
     inst_RV_RV(INS_mov, dstReg, REG_SPBASE);
 #else  // !_TARGET_X86_
+    GenTree* dstAddr = putArgNode;
     if (dstAddr->gtRegNum != dstReg)
     {
         // Generate LEA instruction to load the stack of the outgoing var + SlotNum offset (or the incoming arg area

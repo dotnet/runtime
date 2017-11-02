@@ -3796,27 +3796,31 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // We've got in-memory ILDB symbols, create the ILDB symbol binder
             // Note that in this case, we must be very careful not to use diasymreader.dll
             // at all - we don't trust it, and shouldn't run any code in it
-            IfFailThrow(IldbSymbolsCreateInstance(CLSID_CorSymBinder_SxS,
-                                  IID_ISymUnmanagedBinder,
-                                  (void**)&pBinder));
+            IfFailThrow(IldbSymbolsCreateInstance(CLSID_CorSymBinder_SxS, IID_ISymUnmanagedBinder, (void**)&pBinder));
         }
         else
         {
-            // We're going to be working with PDB format symbols
-            // Attempt to coCreate the symbol binder.
-            // CoreCLR supports not having a symbol reader installed, so this is expected there.
+            // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
+            // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var 
+            // and then tries coreclr dll location.
             // On desktop, the framework installer is supposed to install diasymreader.dll as well
             // and so this shouldn't happen.
-            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
-                                        NATIVE_SYMBOL_READER_DLL,
-                                        IID_ISymUnmanagedBinder,
-                                        (void**)&pBinder,
-                                        NULL);
+            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
             if (FAILED(hr))
             {
-                RETURN (NULL);
+                PathString symbolReaderPath;
+                hr = GetHModuleDirectory(GetModuleInst(), symbolReaderPath);
+                if (FAILED(hr))
+                {
+                    RETURN (NULL);
+                }
+                symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
+                hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+                if (FAILED(hr))
+                {
+                    RETURN (NULL);
+                }
             }
-
         }
 
         LOG((LF_CORDB, LL_INFO10, "M::GISUR: Created binder\n"));
@@ -10844,11 +10848,7 @@ void Module::LoadTokenTables()
         pEEInfo->emptyString = (CORINFO_Object **)StringObject::GetEmptyStringRefPtr();
     }
 
-#ifdef FEATURE_IMPLICIT_TLS
     pEEInfo->threadTlsIndex = TLS_OUT_OF_INDEXES;
-#else
-    pEEInfo->threadTlsIndex = GetThreadTLSIndex();
-#endif
     pEEInfo->rvaStaticTlsIndex = NULL;
 #endif // CROSSGEN_COMPILE
 }

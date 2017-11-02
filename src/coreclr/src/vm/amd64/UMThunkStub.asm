@@ -166,13 +166,11 @@ UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE - (U
         ;
         ; Call GetThread()
         ;
-        CALL_GETTHREAD                          ; will not trash r10
-        test            rax, rax
+        INLINE_GETTHREAD r12                    ; will not trash r10
+        test            r12, r12
         jz              DoThreadSetup
 
 HaveThread:
-
-        mov             r12, rax                ; r12 <- Thread*
 
         ;FailFast if a native callable method invoked via ldftn and calli.
         cmp             dword ptr [r12 + OFFSETOF__Thread__m_fPreemptiveGCDisabled], 1
@@ -250,6 +248,8 @@ DoThreadSetup:
         movdqa          xmm1, xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 10h]
         movdqa          xmm2, xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 20h]
         movdqa          xmm3, xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 30h]
+
+        mov             r12, rax
         
         jmp             HaveThread
         

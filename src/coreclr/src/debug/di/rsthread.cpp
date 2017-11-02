@@ -1471,7 +1471,15 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
 
     FLOATING_SAVE_AREA currentFPUState;
 
+#ifdef _MSC_VER
     __asm fnsave currentFPUState // save the current FPU state.
+#else
+    __asm__ __volatile__
+    (
+        "  fnsave %0\n" \
+        : "=m"(currentFPUState)
+    );
+#endif
 
     floatarea.StatusWord &= 0xFF00; // remove any error codes.
     floatarea.ControlWord |= 0x3F; // mask all exceptions.
@@ -1482,12 +1490,22 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     // @dbgtodo Microsoft crossplat: the conversion from a series of bytes to a floating 
     // point value will need to be done with an explicit conversion routine to unpack
     // the IEEE format and compute the real number value represented. 
-    
+
+#ifdef _MSC_VER
     __asm
     {
         fninit
         frstor floatarea          ;; reload the threads FPU state.
     }
+#else
+    __asm__
+    (
+        "  fninit\n" \
+        "  frstor %0\n" \
+        : /* no outputs */
+        : "m"(floatarea)
+    );
+#endif
 
     unsigned int i;
 
@@ -1498,11 +1516,21 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
         m_floatValues[i] = td;
     }
 
+#ifdef _MSC_VER
     __asm
     {
         fninit
         frstor currentFPUState    ;; restore our saved FPU state.
     }
+#else
+    __asm__
+    (
+        "  fninit\n" \
+        "  frstor %0\n" \
+        : /* no outputs */
+        : "m"(currentFPUState)
+    );
+#endif
 
     m_fFloatStateValid = true;
     m_floatStackTop = floatStackTop;
@@ -2968,12 +2996,7 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
 //    return value == 0 (assumed default, *pRead = false
 REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T slot, bool * pRead)
 {
-#ifdef FEATURE_IMPLICIT_TLS
     REMOTE_PTR pBlock = (REMOTE_PTR) GetEETlsDataBlock();
-#else
-    DebuggerIPCRuntimeOffsets *pRO = &(GetProcess()->m_runtimeOffsets);
-    REMOTE_PTR pBlock = (REMOTE_PTR) GetTlsSlot(pRO->m_TLSIndexOfPredefs);
-#endif
 
     REMOTE_PTR data = 0;
 
@@ -3007,164 +3030,6 @@ REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T slot, bool * pRead)
     *pRead = false;
     return 0;
 }
-
-#ifndef FEATURE_IMPLICIT_TLS
-
-// Read the contents from a LS threads's TLS slot.
-DWORD_PTR CordbUnmanagedThread::GetTlsSlot(SIZE_T slot)
-{
-    DWORD_PTR ret = 0;
-
-    // Compute the address of the necessary TLS value.
-    if (FAILED(LoadTLSArrayPtr()))
-    {
-            return NULL;
-    }
-
-
-    void * pBase = NULL;
-    SIZE_T slotAdjusted = slot;
-
-    if (slot < TLS_MINIMUM_AVAILABLE)
-    {
-        pBase = m_pTLSArray;
-    }
-    else if (slot < TLS_MINIMUM_AVAILABLE + TLS_EXPANSION_SLOTS)
-    {
-        pBase = m_pTLSExtendedArray;
-        slotAdjusted -= TLS_MINIMUM_AVAILABLE;
-
-        // Expansion slot is lazily allocated. If we're trying to read from it, but hasn't been allocated,
-        // then the TLS slot is still the default value, which is 0 (NULL).
-        if (pBase == NULL)
-        {
-            return NULL;
-        }
-    }
-    else
-    {
-        // Slot is out of range. Shouldn't happen unless debuggee is corrupted.
-        _ASSERTE(!"Invalid TLS slot");
-        return NULL;
-    }
-
-    void *pEEThreadTLS = (BYTE*) pBase + (slotAdjusted * sizeof(void*));
-
-
-    // Read the thread's TLS value.
-    HRESULT hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pEEThreadTLS), &ret);    
-    if (FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETV: failed to read TLS value: computed addr=0x%p index=%d, err=%x\n",
-             pEEThreadTLS, slot, hr));
-
-        return NULL;
-    }
-
-    LOG((LF_CORDB, LL_INFO1000000, "CUT::GEETV: EE Thread TLS value is 0x%p for thread 0x%x, slot 0x%x\n", ret, m_id, slot));
-
-    return ret;
-}
-
-// This does a WriteProcessMemory to write to the debuggee's TLS slot allotted to EEThread
-// 
-// Arguments:
-//   EETlsValue - the value to write to the remote TLS slot.
-//   
-// Notes:
-//   The TLS slot is m_TLSIndex. 
-//   
-//   This is very brittle because the OS can lazily allocates storage for TLS slots.
-//   In order to gaurantee the storage is available, it must have been written to by the debuggee.
-//   For managed threads, that's easy because the Thread* is already written to the slot.
-//   But for pure native threads where GetThread() == NULL, the storage may not yet be allocated.
-//   
-//   The saving grace is that the debuggee's hijack filters will force the TLS to be allocated before it
-//   sends a flare.
-//   
-//   Therefore, this function can only be called:
-//   1) on a managed thread
-//   2) on a native thread after that thread has been hijacked and sent a flare.
-//   
-//   This is brittle reasoning, but so is the rest of interop-debugging.
-//   
-HRESULT CordbUnmanagedThread::SetEEThreadValue(REMOTE_PTR EETlsValue)
-{
-    FAIL_IF_NEUTERED(this);
-
-    // Compute the address of the necessary TLS value.
-    DebuggerIPCRuntimeOffsets *pRO = &(GetProcess()->m_runtimeOffsets);
-
-    // Compute the address of the necessary TLS value.
-    HRESULT hr = LoadTLSArrayPtr();
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    
-    DWORD slot = (DWORD) pRO->m_TLSIndex;
-
-    void * pBase = NULL;
-    SIZE_T slotAdjusted = slot;
-    if (slot < TLS_MINIMUM_AVAILABLE)
-    {
-        pBase = m_pTLSArray;
-    }
-    else if (slot < TLS_MINIMUM_AVAILABLE+TLS_EXPANSION_SLOTS)
-    {
-        pBase = m_pTLSExtendedArray;
-        slotAdjusted -= TLS_MINIMUM_AVAILABLE;
-
-        // Expansion slot is lazily allocated. If we're trying to read from it, but hasn't been allocated,
-        // then the TLS slot is still the default value, which is 0.
-        if (pBase == NULL)
-        {
-            // See reasoning in header for why this should succeed.
-            _ASSERTE(!"Can't set to expansion slots because they haven't been allocated");
-            return E_FAIL;
-        }
-    }
-    else
-    {
-        // Slot is out of range. Shouldn't happen unless debuggee is corrupted.
-        _ASSERTE(!"Invalid TLS slot");
-        return E_INVALIDARG;
-    }
-
-
-    void *pEEThreadTLS = (BYTE*) pBase + (slotAdjusted * sizeof(void*));
-
-
-    // Write the thread's TLS value.
-    hr = GetProcess()->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pEEThreadTLS), &EETlsValue);
-
-    if (FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::SEETV: failed to set TLS value: "
-             "computed addr=0x%p index=%d, err=%x\n",
-             pEEThreadTLS, pRO->m_TLSIndex, hr));
-
-        return hr;
-    }
-
-    LOG((LF_CORDB, LL_INFO1000000,
-        "CUT::SEETV: EE Thread TLS value is now 0x%p for thread 0x%x\n",
-        EETlsValue, m_id));
-
-    return S_OK;
-}
-#else // FEATURE_IMPLICIT_TLS
-
-#ifdef DBG_TARGET_X86
-#define WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer  0x2c
-#elif defined(DBG_TARGET_AMD64)
-#define WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer  0x58
-#elif defined(DBG_TARGET_ARM)
-#define WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer  0x2c
-#elif defined(DBG_TARGET_ARM64)
-#define WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer  0x58
-#endif
 
 // sets the value of gCurrentThreadInfo.m_pThread
 HRESULT CordbUnmanagedThread::SetEEThreadValue(REMOTE_PTR EETlsValue)
@@ -3247,7 +3112,7 @@ REMOTE_PTR CordbUnmanagedThread::GetClrModuleTlsDataAddress()
     DWORD slot = (DWORD)(GetProcess()->m_runtimeOffsets.m_TLSIndex);
 
     REMOTE_PTR clrModuleTlsDataAddr; 
-    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)tlsArrayAddr + slot * sizeof(void*)), &clrModuleTlsDataAddr);
+    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)tlsArrayAddr + (slot & 0xFFFF) * sizeof(void*)), &clrModuleTlsDataAddr);
     if (FAILED(hr))
     {
         return NULL;
@@ -3259,7 +3124,7 @@ REMOTE_PTR CordbUnmanagedThread::GetClrModuleTlsDataAddress()
         return NULL;
     }
 
-    return clrModuleTlsDataAddr;
+    return (BYTE*) clrModuleTlsDataAddr + ((slot & 0x7FFF0000) >> 16);
 }
 
 // gets the value of gCurrentThreadInfo.m_EETlsData
@@ -3284,8 +3149,6 @@ REMOTE_PTR CordbUnmanagedThread::GetEETlsDataBlock()
     return ret;
 }
 
-#endif // FEATURE_IMPLICIT_TLS
-
 /*
  * CacheEEDebuggerWord
  *
@@ -3309,11 +3172,7 @@ void CordbUnmanagedThread::CacheEEDebuggerWord()
 {
     LOG((LF_CORDB, LL_INFO1000, "CacheEEDW: Entered\n"));
 
-#ifdef FEATURE_IMPLICIT_TLS
     REMOTE_PTR value = (REMOTE_PTR)GetEEThreadValue();
-#else
-    REMOTE_PTR value = (REMOTE_PTR)GetTlsSlot(GetProcess()->m_runtimeOffsets.m_TLSIndex);
-#endif
 
     if ((((DWORD)value) & 0x1) == 1)
     {

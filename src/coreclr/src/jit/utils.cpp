@@ -277,20 +277,20 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #define REGDEF(name, rnum, mask, sname) "x" sname,
 #include "register.h"
     };
-#ifdef FEATURE_AVX_SUPPORT
+#ifdef FEATURE_SIMD
     static const char* regNamesYMM[] = {
 #define REGDEF(name, rnum, mask, sname) "y" sname,
 #include "register.h"
     };
-#endif // FEATURE_AVX_SUPPORT
+#endif // FEATURE_SIMD
     assert((unsigned)reg < ArrLen(regNamesFloat));
 
-#ifdef FEATURE_AVX_SUPPORT
+#ifdef FEATURE_SIMD
     if (type == TYP_SIMD32)
     {
         return regNamesYMM[reg];
     }
-#endif // FEATURE_AVX_SUPPORT
+#endif // FEATURE_SIMD
 
     return regNamesFloat[reg];
 #endif
@@ -1476,6 +1476,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_RETHROW:
             case CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
             case CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
+            case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
 
                 break;
 
@@ -2113,7 +2114,6 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  q2;
     UT  t;
     T   result_magic;
-    int result_shift;
     int iters = 0;
 
     absDenom = abs(denom);

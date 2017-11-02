@@ -163,10 +163,10 @@ CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 
 // This function returns the offset of the specified method in the
 // vtable of it's owning class or interface.
-void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
-                                   unsigned*             offsetOfIndirection,   /* OUT */
-                                   unsigned*             offsetAfterIndirection,/* OUT */
-                                   bool*                 isRelative             /* OUT */
+void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                 /* IN */
+                                   unsigned*             offsetOfIndirection,    /* OUT */
+                                   unsigned*             offsetAfterIndirection, /* OUT */
+                                   bool*                 isRelative              /* OUT */
                                    )
 {
     jitInstance->mc->cr->AddCall("getMethodVTableOffset");
@@ -185,6 +185,15 @@ CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtua
     return result;
 }
 
+// Get the unboxed entry point for a method, if possible.
+CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
+{
+    jitInstance->mc->cr->AddCall("getUnboxedEntry");
+    CORINFO_METHOD_HANDLE result =
+        jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
+    return result;
+}
+
 // Given T, return the type of the default EqualityComparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)
@@ -194,9 +203,7 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
     return result;
 }
 
-void MyICJI::expandRawHandleIntrinsic(
-    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-    CORINFO_GENERICHANDLE_RESULT *  pResult)
+void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
     LogError("Hit unimplemented expandRawHandleIntrinsic");
@@ -760,6 +767,22 @@ BOOL MyICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE 
     return jitInstance->mc->repAreTypesEquivalent(cls1, cls2);
 }
 
+// See if a cast from fromClass to toClass will succeed, fail, or needs
+// to be resolved at runtime.
+TypeCompareState MyICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+{
+    jitInstance->mc->cr->AddCall("compareTypesForCast");
+    return jitInstance->mc->repCompareTypesForCast(fromClass, toClass);
+}
+
+// See if types represented by cls1 and cls2 compare equal, not
+// equal, or the comparison needs to be resolved at runtime.
+TypeCompareState MyICJI::compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    jitInstance->mc->cr->AddCall("compareTypesForEquality");
+    return jitInstance->mc->repCompareTypesForEquality(cls1, cls2);
+}
+
 // returns is the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE MyICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
@@ -818,7 +841,8 @@ void* MyICJI::getArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size)
 CorInfoIsAccessAllowedResult MyICJI::canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                     CORINFO_METHOD_HANDLE   callerHandle,
                                                     CORINFO_HELPER_DESC*    pAccessHelper /* If canAccessMethod returns
-                                                                                             something other    than ALLOWED,
+                                                                                             something other    than
+                                                                                             ALLOWED,
                                                                                              then this is filled in. */
                                                     )
 {
@@ -991,7 +1015,7 @@ void MyICJI::getVars(CORINFO_METHOD_HANDLE      ftn,   // [IN]  method of intere
 void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of interest
                      ULONG32                       cVars, // [IN] size of 'vars'
                      ICorDebugInfo::NativeVarInfo* vars   // [IN] map telling where local vars are stored at what points
-                                                        //      jit allocated with allocateArray, EE frees
+                                                          //      jit allocated with allocateArray, EE frees
                      )
 {
     jitInstance->mc->cr->AddCall("setVars");
@@ -1684,8 +1708,8 @@ BOOL MyICJI::logMsg(unsigned level, const char* fmt, va_list args)
 
     //  if(level<=2)
     //  {
-     //jitInstance->mc->cr->recMessageLog(fmt, args);
-     //DebugBreakorAV(0x99);
+    // jitInstance->mc->cr->recMessageLog(fmt, args);
+    // DebugBreakorAV(0x99);
     //}
     jitInstance->mc->cr->recMessageLog(fmt, args);
     return 0;

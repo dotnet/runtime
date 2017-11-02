@@ -17,7 +17,9 @@ using System.Runtime.Serialization;
 namespace System
 {
     // The ArgumentOutOfRangeException is thrown when an argument 
-    // is outside the legal range for that argument.  
+    // is outside the legal range for that argument.
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentOutOfRangeException : ArgumentException
     {
         private Object _actualValue;
@@ -61,12 +63,13 @@ namespace System
         protected ArgumentOutOfRangeException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            _actualValue = info.GetValue("ActualValue", typeof(object));
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("ActualValue", _actualValue, typeof(object));
         }
 
         public override String Message

@@ -2455,7 +2455,7 @@ namespace System
         // It is never legal to instantiate this class.
         private SZArrayHelper()
         {
-            Debug.Assert(false, "Hey! How'd I get here?");
+            Debug.Fail("Hey! How'd I get here?");
         }
 
         // -----------------------------------------------------------

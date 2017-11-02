@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private IVectorViewToIReadOnlyListAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // T this[int index] { get }

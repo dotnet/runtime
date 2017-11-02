@@ -194,10 +194,12 @@ void Compiler::optEarlyProp()
             bool isRewritten = false;
             for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
-                if (optEarlyPropRewriteTree(tree))
+                GenTreePtr rewrittenTree = optEarlyPropRewriteTree(tree);
+                if (rewrittenTree != nullptr)
                 {
-                    gtUpdateSideEffects(stmt, tree);
+                    gtUpdateSideEffects(stmt, rewrittenTree);
                     isRewritten = true;
+                    tree        = rewrittenTree;
                 }
             }
 
@@ -228,9 +230,10 @@ void Compiler::optEarlyProp()
 //    tree           - The input tree node to be rewritten.
 //
 // Return Value:
-//    Return true iff "tree" is successfully rewritten.
-
-bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
+//    Return a new tree if the original tree was successfully rewritten.
+//    The containing tree links are updated.
+//
+GenTreePtr Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
 {
     GenTreePtr  objectRefPtr = nullptr;
     optPropKind propKind     = optPropKind::OPK_INVALID;
@@ -254,7 +257,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             //          \--*  lclVar    ref    V02 loc0
             if (compCurStmt->gtStmt.gtStmtExpr == tree)
             {
-                return false;
+                return nullptr;
             }
 
             objectRefPtr = tree->AsIndir()->Addr();
@@ -262,39 +265,42 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         }
         else
         {
-            return false;
+            return nullptr;
         }
     }
     else
     {
-        return false;
+        return nullptr;
     }
 
     if (!objectRefPtr->OperIsScalarLocal() || fgExcludeFromSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
 
     {
-        return false;
+        return nullptr;
     }
 
-    bool       isRewritten = false;
-    GenTreePtr root        = compCurStmt;
-    unsigned   lclNum      = objectRefPtr->AsLclVarCommon()->GetLclNum();
-    unsigned   ssaNum      = objectRefPtr->AsLclVarCommon()->GetSsaNum();
-
+    unsigned   lclNum    = objectRefPtr->AsLclVarCommon()->GetLclNum();
+    unsigned   ssaNum    = objectRefPtr->AsLclVarCommon()->GetSsaNum();
     GenTreePtr actualVal = optPropGetValue(lclNum, ssaNum, propKind);
 
     if (actualVal != nullptr)
     {
+        assert((propKind == optPropKind::OPK_ARRAYLEN) || (propKind == optPropKind::OPK_OBJ_GETTYPE));
+        assert(actualVal->IsCnsIntOrI());
+#if SMALL_TREE_NODES
+        assert(actualVal->GetNodeSize() == TREE_NODE_SZ_SMALL);
+#endif
+
+        ssize_t actualConstVal = actualVal->AsIntCon()->IconValue();
+
         if (propKind == optPropKind::OPK_ARRAYLEN)
         {
-            assert(actualVal->IsCnsIntOrI());
-
-            if ((actualVal->AsIntCon()->IconValue() < 0) || (actualVal->AsIntCon()->IconValue() > INT32_MAX))
+            if ((actualConstVal < 0) || (actualConstVal > INT32_MAX))
             {
                 // Don't propagate array lengths that are beyond the maximum value of a GT_ARR_LENGTH or negative.
                 // node. CORINFO_HELP_NEWARR_1_OBJ helper call allows to take a long integer as the
                 // array length argument, but the type of GT_ARR_LENGTH is always INT32.
-                return false;
+                return nullptr;
             }
 
             // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_ARR_BOUNDS_CHECK
@@ -307,72 +313,58 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             {
                 GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
 
-                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI() &&
-                    (check->gtIndex->AsIntCon()->IconValue() >= 0) &&
-                    (check->gtIndex->AsIntCon()->IconValue() < actualVal->AsIntCon()->IconValue()))
+                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI())
                 {
-                    GenTree* comma = check->gtGetParent(nullptr);
-
-                    if ((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check))
+                    ssize_t checkConstVal = check->gtIndex->AsIntCon()->IconValue();
+                    if ((checkConstVal >= 0) && (checkConstVal < actualConstVal))
                     {
-                        GenTree* next = check->gtNext;
-                        optRemoveRangeCheck(comma, root);
-                        // Both `tree` and `check` have been removed from the statement. Ensure that optEarlyProp
-                        // can process the rest of the statment by changing tree->gtNext appropriately.
-                        tree->gtNext = next;
-                        return true;
+                        GenTree* comma = check->gtGetParent(nullptr);
+                        if ((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check))
+                        {
+                            GenTree* next = check->gtNext;
+                            optRemoveRangeCheck(comma, compCurStmt);
+                            // Both `tree` and `check` have been removed from the statement.
+                            // 'tree' was replaced with 'nop' or side effect list under 'comma'.
+                            return comma->gtGetOp1();
+                        }
                     }
                 }
             }
-        }
-        else if (propKind == optPropKind::OPK_OBJ_GETTYPE)
-        {
-            assert(actualVal->IsCnsIntOrI());
         }
 
 #ifdef DEBUG
         if (verbose)
         {
             printf("optEarlyProp Rewriting BB%02u\n", compCurBB->bbNum);
-            gtDispTree(root);
+            gtDispTree(compCurStmt);
             printf("\n");
         }
 #endif
-        // Rewrite the tree using a copy of "actualVal"
-        GenTreePtr actualValCopy;
-        var_types  origType = tree->gtType;
+
+        GenTreePtr actualValClone = gtCloneExpr(actualVal);
+
+        if (actualValClone->gtType != tree->gtType)
+        {
+            assert(actualValClone->gtType == TYP_LONG);
+            assert(tree->gtType == TYP_INT);
+            assert((actualConstVal >= 0) && (actualConstVal <= INT32_MAX));
+            actualValClone->gtType = tree->gtType;
+        }
+
         // Propagating a constant into an array index expression requires calling
         // LabelIndex to update the FieldSeq annotations.  EarlyProp may replace
         // array length expressions with constants, so check if this is an array
         // length operator that is part of an array index expression.
         bool isIndexExpr = (tree->OperGet() == GT_ARR_LENGTH && ((tree->gtFlags & GTF_ARRLEN_ARR_IDX) != 0));
-
-        if (actualVal->GetNodeSize() <= tree->GetNodeSize())
+        if (isIndexExpr)
         {
-            actualValCopy = tree;
-        }
-        else
-        {
-            actualValCopy = gtNewLargeOperNode(GT_ADD, TYP_INT);
+            actualValClone->LabelIndex(this);
         }
 
         DecLclVarRefCountsVisitor::WalkTree(this, tree);
-
-        actualValCopy->CopyFrom(actualVal, this);
-        actualValCopy->gtType = origType;
-        if (isIndexExpr)
-        {
-            actualValCopy->LabelIndex(this);
-        }
-
-        IncLclVarRefCountsVisitor::WalkTree(this, actualValCopy);
-
-        if (actualValCopy != tree)
-        {
-            gtReplaceTree(root, tree, actualValCopy);
-        }
-
-        isRewritten = true;
+        // acutalValClone has small tree node size, it is safe to use CopyFrom here.
+        tree->ReplaceWith(actualValClone, this);
+        IncLclVarRefCountsVisitor::WalkTree(this, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -382,9 +374,10 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             printf("\n");
         }
 #endif
+        return tree;
     }
 
-    return isRewritten;
+    return nullptr;
 }
 
 //-------------------------------------------------------------------------------------------

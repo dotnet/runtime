@@ -372,12 +372,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
 
-if(HAVE_NUMA_H)
-  target_link_libraries(coreclrpal
-    numa
-  )
-endif(HAVE_NUMA_H)
-
 add_subdirectory(examples)
 
 if(FEATURE_EVENT_TRACE)

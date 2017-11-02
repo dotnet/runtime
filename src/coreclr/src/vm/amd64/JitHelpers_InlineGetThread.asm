@@ -2,11 +2,6 @@
 ; The .NET Foundation licenses this file to you under the MIT license.
 ; See the LICENSE file in the project root for more information.
 
-; ==++==
-;
-
-;
-; ==--==
 ; ***********************************************************************
 ; File: JitHelpers_InlineGetThread.asm, see history in jithelp.asm
 ;
@@ -20,15 +15,6 @@ include asmconstants.inc
 
 ; Min amount of stack space that a nested function should allocate.
 MIN_SIZE equ 28h
-
-; Macro to create a patchable inline GetAppdomain, if we decide to create patchable
-; high TLS inline versions then just change this macro to make sure to create enough
-; space in the asm to patch the high TLS getter instructions.
-PATCHABLE_INLINE_GETTHREAD macro Reg, PatchLabel
-PATCH_LABEL PatchLabel
-        mov     Reg, gs:[OFFSET__TEB__TlsSlots]
-        endm
-
 
 JIT_NEW                 equ     ?JIT_New@@YAPEAVObject@@PEAUCORINFO_CLASS_STRUCT_@@@Z
 Object__DEBUG_SetAppDomain equ ?DEBUG_SetAppDomain@Object@@QEAAXPEAVAppDomain@@@Z
@@ -49,11 +35,6 @@ extern JIT_NewArr1:proc
 
 extern JIT_InternalThrow:proc
 
-ifdef _DEBUG
-extern DEBUG_TrialAllocSetAppDomain:proc
-extern DEBUG_TrialAllocSetAppDomain_NoScratchArea:proc
-endif
-
 ; IN: rcx: MethodTable*
 ; OUT: rax: new object
 LEAF_ENTRY JIT_TrialAllocSFastMP_InlineGetThread, _TEXT
@@ -61,7 +42,7 @@ LEAF_ENTRY JIT_TrialAllocSFastMP_InlineGetThread, _TEXT
 
         ; m_BaseSize is guaranteed to be a multiple of 8.
 
-        PATCHABLE_INLINE_GETTHREAD r11, JIT_TrialAllocSFastMP_InlineGetThread__PatchTLSOffset
+        INLINE_GETTHREAD r11
         mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
@@ -72,10 +53,6 @@ LEAF_ENTRY JIT_TrialAllocSFastMP_InlineGetThread, _TEXT
 
         mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], rdx
         mov     [rax], rcx
-
-ifdef _DEBUG
-        call    DEBUG_TrialAllocSetAppDomain_NoScratchArea
-endif ; _DEBUG
 
         ret
 
@@ -95,7 +72,7 @@ NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
 
         ; m_BaseSize is guaranteed to be a multiple of 8.
 
-        PATCHABLE_INLINE_GETTHREAD r11, JIT_BoxFastMPIGT__PatchTLSLabel
+        INLINE_GETTHREAD r11
         mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
@@ -106,10 +83,6 @@ NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
 
         mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], r8
         mov     [rax], rcx
-
-ifdef _DEBUG
-        call    DEBUG_TrialAllocSetAppDomain_NoScratchArea
-endif ; _DEBUG
 
         ; Check whether the object contains pointers
         test    dword ptr [rcx + OFFSETOF__MethodTable__m_dwFlags], MethodTable__enum_flag_ContainsPointers
@@ -169,7 +142,7 @@ LEAF_ENTRY AllocateStringFastMP_InlineGetThread, _TEXT
         lea     edx, [edx + ecx*2 + 7]
         and     edx, -8
 
-        PATCHABLE_INLINE_GETTHREAD r11, AllocateStringFastMP_InlineGetThread__PatchTLSOffset
+        INLINE_GETTHREAD r11
         mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
@@ -182,10 +155,6 @@ LEAF_ENTRY AllocateStringFastMP_InlineGetThread, _TEXT
         mov     [rax], r9
 
         mov     [rax + OFFSETOF__StringObject__m_StringLength], ecx
-
-ifdef _DEBUG
-        call    DEBUG_TrialAllocSetAppDomain_NoScratchArea
-endif ; _DEBUG
 
         ret
 
@@ -226,7 +195,7 @@ LEAF_ENTRY JIT_NewArr1VC_MP_InlineGetThread, _TEXT
         and     r8d, -8
 
 
-        PATCHABLE_INLINE_GETTHREAD r11, JIT_NewArr1VC_MP_InlineGetThread__PatchTLSOffset
+        INLINE_GETTHREAD r11
         mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
@@ -240,10 +209,6 @@ LEAF_ENTRY JIT_NewArr1VC_MP_InlineGetThread, _TEXT
         mov     [rax], rcx
 
         mov     dword ptr [rax + OFFSETOF__ArrayBase__m_NumComponents], edx
-
-ifdef _DEBUG
-        call    DEBUG_TrialAllocSetAppDomain_NoScratchArea
-endif ; _DEBUG
 
         ret
 
@@ -279,7 +244,7 @@ LEAF_ENTRY JIT_NewArr1OBJ_MP_InlineGetThread, _TEXT
         ; No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         ; to be a multiple of 8.
 
-        PATCHABLE_INLINE_GETTHREAD r11, JIT_NewArr1OBJ_MP_InlineGetThread__PatchTLSOffset
+        INLINE_GETTHREAD r11
         mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
@@ -292,10 +257,6 @@ LEAF_ENTRY JIT_NewArr1OBJ_MP_InlineGetThread, _TEXT
         mov     [rax], rcx
 
         mov     dword ptr [rax + OFFSETOF__ArrayBase__m_NumComponents], edx
-
-ifdef _DEBUG
-        call    DEBUG_TrialAllocSetAppDomain_NoScratchArea
-endif ; _DEBUG
 
         ret
 

@@ -1658,9 +1658,7 @@ FCIMPL1(void, ThreadNative::SpinWait, int iterations)
     //
     if (iterations <= 100000)
     {
-        YieldProcessorNormalizationInfo normalizationInfo;
-        for (int i = 0; i < iterations; i++)
-            YieldProcessorNormalized(normalizationInfo);
+        YieldProcessorNormalized(YieldProcessorNormalizationInfo(), iterations);
         return;
     }
 
@@ -1670,9 +1668,7 @@ FCIMPL1(void, ThreadNative::SpinWait, int iterations)
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
     GCX_PREEMP();
 
-    YieldProcessorNormalizationInfo normalizationInfo;
-    for (int i = 0; i < iterations; i++)
-        YieldProcessorNormalized(normalizationInfo);
+    YieldProcessorNormalized(YieldProcessorNormalizationInfo(), iterations);
 
     HELPER_METHOD_FRAME_END();
 }

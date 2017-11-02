@@ -69,12 +69,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     switch (treeNode->gtOper)
     {
-#ifdef _TARGET_ARM64_
-
         case GT_START_NONGC:
             getEmitter()->emitDisableGC();
             break;
 
+#ifdef _TARGET_ARM64_
         case GT_PROF_HOOK:
             // We should be seeing this only if profiler hook is needed
             noway_assert(compiler->compIsProfilerHookNeeded());
@@ -343,7 +342,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_CMPXCHG:
-            NYI("GT_CMPXCHG");
+            NYI_ARM("GT_CMPXCHG");
+#ifdef _TARGET_ARM64_
+            genCodeForCmpXchg(treeNode->AsCmpXchg());
+#endif
             break;
 
         case GT_RELOAD:
@@ -538,8 +540,8 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    var_types  targetType = treeNode->TypeGet();
     GenTreePtr source     = treeNode->gtOp1;
+    var_types  targetType = genActualType(source->TypeGet());
     emitter*   emit       = getEmitter();
 
     // This is the varNum for our store operations,
@@ -564,9 +566,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // All other calls - stk arg is setup in out-going arg area.
     if (treeNode->putInIncomingArgArea())
     {
-        NYI_ARM("genPutArgStk: fast tail call");
-
-#ifdef _TARGET_ARM64_
         varNumOut    = getFirstArgWithStackSlot();
         argOffsetMax = compiler->compArgSize;
 #if FEATURE_FASTTAILCALL
@@ -579,7 +578,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         LclVarDsc* varDsc = &(compiler->lvaTable[varNumOut]);
         assert(varDsc != nullptr);
 #endif // FEATURE_FASTTAILCALL
-#endif // _TARGET_ARM64_
     }
     else
     {
@@ -611,7 +609,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
             genConsumeReg(source);
             emit->emitIns_S_R(storeIns, storeAttr, source->gtRegNum, varNumOut, argOffsetOut);
-            if (compiler->opts.compUseSoftFP && targetType == TYP_LONG)
+#ifdef _TARGET_ARM_
+            if (targetType == TYP_LONG)
             {
                 // This case currently only occurs for double types that are passed as TYP_LONG;
                 // actual long types would have been decomposed by now.
@@ -621,6 +620,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 argOffsetOut += EA_4BYTE;
                 emit->emitIns_S_R(storeIns, storeAttr, otherReg, varNumOut, argOffsetOut);
             }
+#endif // _TARGET_ARM_
         }
         argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
         assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
@@ -1963,7 +1963,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 // b) The size argument of the InitBlk is >= INITBLK_STOS_LIMIT bytes.
 void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 {
-    // Make sure we got the arguments of the initblk operation in the right registers
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
     GenTreePtr initVal = initBlkNode->Data();
@@ -1974,14 +1973,6 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    if (initBlkNode->gtOper == GT_STORE_DYN_BLK)
-    {
-        assert(initBlkNode->AsDynBlk()->gtDynamicSize->gtRegNum == REG_ARG_2);
-    }
-    else
-    {
-        assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
-    }
 
 #ifdef _TARGET_ARM64_
     if (size != 0)
@@ -2209,16 +2200,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 inst_RV_RV(ins_Move_Extend(argNode->TypeGet(), true), argReg, argNode->gtRegNum);
             }
         }
-
-        // In the case of a varargs call,
-        // the ABI dictates that if we have floating point args,
-        // we must pass the enregistered arguments in both the
-        // integer and floating point registers so, let's do that.
-        if (call->IsVarargs() && varTypeIsFloating(argNode))
-        {
-            NYI_ARM("CodeGen - IsVarargs");
-            NYI_ARM64("CodeGen - IsVarargs");
-        }
     }
 
     // Insert a null check on "this" pointer if asked.
@@ -2271,15 +2252,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         genConsumeReg(target);
 
-        NYI_ARM("fast tail call");
-
-#ifdef _TARGET_ARM64_
-        // Use IP0 as the call target register.
-        if (target->gtRegNum != REG_IP0)
+        // Use IP0 on ARM64 and R12 on ARM32 as the call target register.
+        if (target->gtRegNum != REG_FASTTAILCALL_TARGET)
         {
-            inst_RV_RV(INS_mov, REG_IP0, target->gtRegNum);
+            inst_RV_RV(INS_mov, REG_FASTTAILCALL_TARGET, target->gtRegNum);
         }
-#endif // _TARGET_ARM64_
 
         return;
     }
@@ -2288,7 +2265,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // the GC pointer state before the callsite.
     // We can't utilize the typical lazy killing of GC pointers
     // at (or inside) the callsite.
-    if (call->IsUnmanaged())
+    if (compiler->killGCRefs(call))
     {
         genDefineTempLabel(genCreateTempLabel());
     }
@@ -3673,9 +3650,6 @@ void CodeGen::genStructReturn(GenTreePtr treeNode)
     }
     else // op1 must be multi-reg GT_CALL
     {
-#ifdef _TARGET_ARM_
-        NYI_ARM("struct return from multi-reg GT_CALL");
-#endif
         assert(op1->IsMultiRegCall() || op1->IsCopyOrReloadOfMultiRegCall());
 
         genConsumeRegs(op1);

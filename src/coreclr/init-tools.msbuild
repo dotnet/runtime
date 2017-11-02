@@ -3,14 +3,19 @@
     <TargetFramework>netcoreapp1.0</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Tools/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(ToolsDir)/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
+    <PackageTargetFallback>$(PackageTargetFallback);netframework</PackageTargetFallback>
   </PropertyGroup>
+  <Import Project="dependencies.props" />
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.BuildTools">
+    <PackageReference Include="microsoft.dotnet.buildtools">
       <Version>$(BuildToolsPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.BuildTools.Coreclr">
+    <PackageReference Include="microsoft.dotnet.buildtools.coreclr">
       <Version>1.0.4-prerelease</Version>
+    </PackageReference>
+    <PackageReference Include="$(FeedTasksPackage)">
+      <Version>$(FeedTasksPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
 </Project>

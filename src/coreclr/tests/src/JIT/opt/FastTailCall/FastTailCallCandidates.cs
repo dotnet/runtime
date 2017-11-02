@@ -62,6 +62,7 @@ public class FastTailCallCandidates
         CheckOutput(CallerHFACaseWithStack(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, new HFASize32(1.0, 2.0, 3.0, 4.0)));
         CheckOutput(CallerHFACaseCalleeOnly(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0));
         CheckOutput(CallerHFaCaseCalleeStackArgs(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0));
+        CheckOutput(DoubleCountRetBuffCaller(1));
 
         return s_ret_value;
 
@@ -851,6 +852,18 @@ public class FastTailCallCandidates
         }
     }
 
+    public struct StructSizeEightIntNotExplicit
+    {
+        public int a;
+        public int b;
+
+        public StructSizeEightIntNotExplicit(int a, int b)
+        {
+            this.a = a;
+            this.b = b;
+        }
+    }
+
     public struct StructSizeSixteenNotExplicit
     {
         public long a;
@@ -1047,6 +1060,103 @@ public class FastTailCallCandidates
             return StackBasedCallee(b, a, new StructSizeThirtyTwo(b, a, a, b));
         }
     }
+
+    /// <summary>
+    /// Decision to fast tail call. See DoubleCountRetBuffCaller for more
+    /// information.
+    /// </summary>
+    public static StructSizeThirtyTwo DoubleCountRetBuffCallee(StructSizeEightIntNotExplicit sstf,
+                                                               StructSizeEightIntNotExplicit sstf2,
+                                                               StructSizeEightIntNotExplicit sstf3,
+                                                               StructSizeEightIntNotExplicit sstf4,
+                                                               StructSizeEightIntNotExplicit sstf5)
+    {
+        int a = sstf.a;
+        int b = sstf.b;
+
+        StructSizeThirtyTwo retVal = new StructSizeThirtyTwo(b, a, a, b);
+
+        int count = 0;
+        for (int i = 0; i < b; ++i)
+        {
+            if (i % 2 == 0)
+            {
+                ++count;
+            }
+        }
+
+        return retVal;
+    }
+
+    /// <summary>
+    /// Decision to fast tail call. See DoubleCountRetBuffCaller for more
+    /// information.
+    /// </summary>
+    public static StructSizeThirtyTwo DoubleCountRetBuffCallerWrapper(int a, int b)
+    {
+        if (a % 2 == 0)
+        {
+            StructSizeEightIntNotExplicit eightBytes = new StructSizeEightIntNotExplicit(a, a);
+            a = 1;
+            b = b + 2;
+            return DoubleCountRetBuffCallee(eightBytes, eightBytes, eightBytes, eightBytes, eightBytes);
+        }
+        else
+        {
+            StructSizeEightIntNotExplicit eightBytes = new StructSizeEightIntNotExplicit(b, b);
+            a = 4;
+            b = b + 1;
+            return DoubleCountRetBuffCallee(eightBytes, eightBytes, eightBytes, eightBytes, eightBytes);
+        }
+    }
+
+    /// <summary>
+    /// Decision to fast tail call
+    /// </summary>
+    /// <remarks>
+    ///
+    /// On x64 linux this will fast tail call.
+    ///
+    /// The caller uses 3 integer registers (2 args, one ret buf)
+    /// The callee uses 6 integer registers (5 args, one ret buf)
+    ///
+    /// Return 100 is a pass.
+    /// Return 112 is a failure.
+    ///
+    /// </remarks>
+    public static int DoubleCountRetBuffCaller(int i)
+    {
+        if (i % 2 == 0)
+        {
+            StructSizeThirtyTwo retVal = DoubleCountRetBuffCallerWrapper(4, 2);
+            
+            if (retVal.b == 4.0)
+            {
+                return 100;
+            }
+            else
+            {
+                return 112;
+            }
+        }
+        else
+        {
+            StructSizeThirtyTwo retVal = DoubleCountRetBuffCallerWrapper(3, 1);
+            
+            if (retVal.b == 1.0)
+            {
+                return 100;
+            }
+            else
+            {
+                return 112;
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Main
+    ////////////////////////////////////////////////////////////////////////////
 
     public static int Main()
     {

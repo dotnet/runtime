@@ -116,6 +116,15 @@ namespace System.Threading.Tasks
             // and the hash code we generate in GetHashCode.
             _task ?? AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
 
+        internal Task<TResult> AsTaskExpectNonNull() =>
+            // Return the task if we were constructed from one, otherwise manufacture one.
+            // Unlike AsTask(), this method is called only when we expect _task to be non-null,
+            // and thus we don't want GetTaskForResult inlined.
+            _task ?? GetTaskForResultNoInlining();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private Task<TResult> GetTaskForResultNoInlining() => AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
+
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a completed operation.</summary>
         public bool IsCompleted => _task == null || _task.IsCompleted;
 
