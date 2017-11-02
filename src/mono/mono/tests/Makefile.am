@@ -965,7 +965,6 @@ INTERP_DISABLED_TESTS = \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
 	abort-cctor.exe \
 	appdomain-unload.exe \
-	appdomain-thread-abort.exe \
 	array_load_exception.exe \
 	async-exc-compilation.exe \
 	async-with-cb-throws.exe \
@@ -991,7 +990,6 @@ INTERP_DISABLED_TESTS = \
 	exception18.exe \
 	field-access.exe \
 	finally_block_ending_in_dead_bb.exe \
-	generic-marshalbyref.2.exe \
 	handleref.exe \
 	invalid-token.exe \
 	invalid_generic_instantiation.exe \

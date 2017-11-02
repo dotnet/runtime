@@ -349,7 +349,7 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 
 #ifndef DISABLE_REMOTING
 	if (mono_object_is_transparent_proxy (obj)) {
-		ret = mono_interp_get_imethod (domain, mono_marshal_get_remoting_invoke (m), &error);
+		ret = mono_interp_get_imethod (domain, mono_marshal_get_remoting_invoke_with_check (m), &error);
 		mono_error_assert_ok (&error);
 		return ret;
 	}
