@@ -24,17 +24,17 @@
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
     <CoreFxCurrentRef>a87a61a80f95252a94f30c69d569fd3647c5b593</CoreFxCurrentRef>
-    <CoreClrCurrentRef>5b662e16887cd01cada59eb678ab0c1dd64438c4</CoreClrCurrentRef>
-    <BuildToolsCurrentRef>c9ddd341788aa55815788ab43bccb036a4848092</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>c9ddd341788aa55815788ab43bccb036a4848092</PgoDataCurrentRef>
+    <CoreClrCurrentRef>4dd4bc933ecb18df77beb65afe79b118cae240d4</CoreClrCurrentRef>
+    <BuildToolsCurrentRef>4dd4bc933ecb18df77beb65afe79b118cae240d4</BuildToolsCurrentRef>
+    <PgoDataCurrentRef>4dd4bc933ecb18df77beb65afe79b118cae240d4</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25831-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25831-01</MicrosoftNETCorePlatformsPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20171031-0018</PgoDataPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25829-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20171102-0019</PgoDataPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25901-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XunitConsoleNetcorePackageVersion>1.0.2-prerelease-00177</XunitConsoleNetcorePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0010</XunitPerformanceApiPackageVersion>
@@ -45,7 +45,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02131-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02202-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
