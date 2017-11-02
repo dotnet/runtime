@@ -7,7 +7,7 @@
 
 namespace System.Drawing
 {
-    public partial struct Color : System.IEquatable<System.Drawing.Color>
+    public readonly partial struct Color : System.IEquatable<System.Drawing.Color>
     {
         public static readonly System.Drawing.Color Empty;
         public byte A { get { throw null; } }

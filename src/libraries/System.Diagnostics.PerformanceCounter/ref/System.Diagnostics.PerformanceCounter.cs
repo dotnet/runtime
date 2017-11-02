@@ -32,7 +32,7 @@ namespace System.Diagnostics
         public virtual void Remove(System.Diagnostics.CounterCreationData value) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct CounterSample
+    public readonly partial struct CounterSample
     {
         public static System.Diagnostics.CounterSample Empty;
         public CounterSample(long rawValue, long baseValue, long counterFrequency, long systemFrequency, long timeStamp, long timeStamp100nSec, System.Diagnostics.PerformanceCounterType counterType) { throw null;}
