@@ -13,7 +13,7 @@ namespace System.Management.Tests
         public void Select_Win32_LogicalDisk_ClassName()
         {
             var query = new SelectQuery("Win32_LogicalDisk");
-            var scope = new ManagementScope($@"\\{Environment.MachineName}\root\cimv2");
+            var scope = new ManagementScope($@"\\{WmiTestHelper.TargetMachine}\root\cimv2");
             scope.Connect();
 
             using (var searcher = new ManagementObjectSearcher(scope, query))
@@ -32,7 +32,7 @@ namespace System.Management.Tests
         public void Select_Win32_LogicalDisk_ClassName_Condition()
         {
             var query = new SelectQuery("Win32_LogicalDisk", "DriveType=3");
-            var scope = new ManagementScope($@"\\{Environment.MachineName}\root\cimv2");
+            var scope = new ManagementScope($@"\\{WmiTestHelper.TargetMachine}\root\cimv2");
             scope.Connect();
 
             using (var searcher = new ManagementObjectSearcher(scope, query))
@@ -46,11 +46,12 @@ namespace System.Management.Tests
             }
         }
 
-        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
-        public void Select_All_Win32_LogicalDisk_Wql()
+        [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [MemberData(nameof(WmiTestHelper.ScopeRoots), MemberType = typeof(WmiTestHelper))]
+        public void Select_All_Win32_LogicalDisk_Wql(string scopeRoot)
         {
             var query = new SelectQuery("select * from Win32_LogicalDisk");
-            var scope = new ManagementScope(@"root\cimv2");
+            var scope = new ManagementScope(scopeRoot + @"root\cimv2");
             scope.Connect();
 
             using (var searcher = new ManagementObjectSearcher(scope, query))
