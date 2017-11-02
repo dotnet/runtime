@@ -53,6 +53,9 @@ setlocal ENABLEDELAYEDEXPANSION
   if not defined JIT_NAME (
     set JIT_NAME=ryujit
   )
+  if not defined PGO_OPTIMIZED (
+    set PGO_OPTIMIZED=pgo
+  )
 
   rem optionally upload results to benchview
   if not [%BENCHVIEW_PATH%] == [] (
@@ -205,6 +208,11 @@ rem ****************************************************************************
   IF /I [%~1] == [-jitName] (
     set JIT_NAME=%~2
     shift
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-nopgo] (
+    set PGO_OPTIMIZED=nopgo
     shift
     goto :parse_command_line_arguments
   )
@@ -395,6 +403,7 @@ setlocal
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Profile "%ETW_COLLECTION%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OptLevel "%OPT_LEVEL%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config JitName  "%JIT_NAME%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config PGO  "%PGO_OPTIMIZED%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --architecture "%TEST_ARCHITECTURE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
 
