@@ -1287,7 +1287,7 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
 #endif // DEBUG
 
     getEmitter()->emitInsBinary(INS_cmp, emitActualTypeSize(bndsChkType), src1, src2);
-    genJumpToThrowHlpBlk(jmpKind, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
 }
 
 //---------------------------------------------------------------------
