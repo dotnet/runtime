@@ -79,7 +79,7 @@ namespace System.Net.Security.Tests
                 serverOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
 
                 CancellationTokenSource cts = new CancellationTokenSource();
-                Task clientTask = Assert.ThrowsAsync<TaskCanceledException>(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
+                Task clientTask = Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
                 Task serverTask = Assert.ThrowsAsync<TimeoutException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
 
                 cts.Cancel();
@@ -107,7 +107,7 @@ namespace System.Net.Security.Tests
 
                 CancellationTokenSource cts = new CancellationTokenSource();
                 Task clientTask = Assert.ThrowsAsync<TimeoutException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
-                Task serverTask = Assert.ThrowsAsync<TaskCanceledException>(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+                Task serverTask = Assert.ThrowsAnyAsync<OperationCanceledException>(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
 
                 cts.Cancel();
                 Assert.True(Task.WaitAll(new[] { clientTask, serverTask }, TestConfiguration.PassingTestTimeoutMilliseconds));
