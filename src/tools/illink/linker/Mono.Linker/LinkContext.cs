@@ -38,6 +38,7 @@ namespace Mono.Linker {
 
 		Pipeline _pipeline;
 		AssemblyAction _coreAction;
+		AssemblyAction _userAction;
 		Dictionary<string, AssemblyAction> _actions;
 		string _outputDirectory;
 		readonly Dictionary<string, string> _parameters;
@@ -69,6 +70,11 @@ namespace Mono.Linker {
 		public AssemblyAction CoreAction {
 			get { return _coreAction; }
 			set { _coreAction = value; }
+		}
+
+		public AssemblyAction UserAction {
+			get { return _userAction; }
+			set { _userAction = value; }
 		}
 
 		public bool LinkSymbols {
@@ -247,7 +253,7 @@ namespace Mono.Linker {
 			} else if (IsCore (name)) {
 				action = _coreAction;
 			} else {
-				action = AssemblyAction.Link;
+				action = _userAction;
 			}
 
 			_annotations.SetAction (assembly, action);
