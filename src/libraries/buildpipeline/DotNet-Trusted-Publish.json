@@ -215,7 +215,7 @@
       "inputs": {
         "filename": "msbuild",
         "arguments": "src\\publish.proj /t:PublishToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$(PB_ConfigurationGroup)",
-        "workingFolder": "",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
     },
@@ -259,7 +259,7 @@
       "inputs": {
         "filename": "msbuild",
         "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$ConfigurationGroup /p:PublishSymbols=\"true\" ",
-        "workingFolder": "",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
     },
