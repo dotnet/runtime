@@ -85,16 +85,8 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ModelPolicy(compiler, isPrejitRoot);
     }
 
-    // Optionally fallback to the original legacy policy
-    bool useLegacyPolicy = JitConfig.JitInlinePolicyLegacy() != 0;
-
-    if (useLegacyPolicy)
-    {
-        return new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
-    }
-
-    // Use the enhanced legacy policy by default
-    return new (compiler, CMK_Inlining) EnhancedLegacyPolicy(compiler, isPrejitRoot);
+    // Use the default policy by default
+    return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -225,7 +217,7 @@ void LegalPolicy::SetCandidate(InlineObservation obs)
 //------------------------------------------------------------------------
 // NoteSuccess: handle finishing all the inlining checks successfully
 
-void LegacyPolicy::NoteSuccess()
+void DefaultPolicy::NoteSuccess()
 {
     assert(InlDecisionIsCandidate(m_Decision));
     m_Decision = InlineDecision::SUCCESS;
@@ -237,7 +229,7 @@ void LegacyPolicy::NoteSuccess()
 // Arguments:
 //    obs      - the current obsevation
 //    value    - the value of the observation
-void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
+void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
 {
     // Check the impact
     InlineImpact impact = InlGetImpact(obs);
@@ -275,7 +267,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-                // LegacyPolicy ignores this for prejit roots.
+                // DefaultPolicy ignores this for prejit roots.
                 if (!m_IsPrejitRoot)
                 {
                     m_LooksLikeWrapperMethod = value;
@@ -283,7 +275,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-                // LegacyPolicy ignores this for prejit roots.
+                // DefaultPolicy ignores this for prejit roots.
                 if (!m_IsPrejitRoot)
                 {
                     m_ArgFeedsConstantTest++;
@@ -291,7 +283,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-                // LegacyPolicy ignores this for prejit roots.
+                // DefaultPolicy ignores this for prejit roots.
                 if (!m_IsPrejitRoot)
                 {
                     m_ArgFeedsRangeCheck++;
@@ -300,7 +292,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 
             case InlineObservation::CALLEE_HAS_SWITCH:
             case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
-                // LegacyPolicy ignores these for prejit roots.
+                // DefaultPolicy ignores these for prejit roots.
                 if (!m_IsPrejitRoot)
                 {
                     // Pass these on, they should cause inlining to fail.
@@ -383,19 +375,52 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
             }
 
-            case InlineObservation::CALLEE_HAS_PINNED_LOCALS:
-            case InlineObservation::CALLEE_HAS_LOCALLOC:
-                // The legacy policy is to never inline methods with
-                // pinned locals or localloc.
-                SetNever(obs);
-                break;
-
             case InlineObservation::CALLSITE_IN_TRY_REGION:
                 m_CallsiteIsInTryRegion = true;
                 break;
 
             case InlineObservation::CALLSITE_IN_LOOP:
                 m_CallsiteIsInLoop = true;
+                break;
+
+            case InlineObservation::CALLEE_DOES_NOT_RETURN:
+                m_IsNoReturn      = value;
+                m_IsNoReturnKnown = true;
+                break;
+
+            case InlineObservation::CALLSITE_RARE_GC_STRUCT:
+                // If this is a discretionary or always inline candidate
+                // with a gc struct, we may change our mind about inlining
+                // if the call site is rare, to avoid costs associated with
+                // zeroing the GC struct up in the root prolog.
+                if (m_Observation == InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE)
+                {
+                    assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
+                    SetFailure(obs);
+                    return;
+                }
+                else if (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
+                {
+                    assert(m_CallsiteFrequency == InlineCallsiteFrequency::RARE);
+                    SetFailure(obs);
+                    return;
+                }
+                break;
+
+            case InlineObservation::CALLEE_HAS_PINNED_LOCALS:
+                if (m_CallsiteIsInTryRegion)
+                {
+                    // Inlining a method with pinned locals in a try
+                    // region requires wrapping the inline body in a
+                    // try/finally to ensure unpinning. Bail instead.
+                    SetFailure(InlineObservation::CALLSITE_PIN_IN_TRY_REGION);
+                    return;
+                }
+                break;
+
+            case InlineObservation::CALLEE_HAS_LOCALLOC:
+                // We see this during the IL prescan. Ignore for now, we will
+                // bail out, if necessary, during importation
                 break;
 
             default:
@@ -417,7 +442,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 //    obs      - the current obsevation
 //    value    - the value being observed
 
-void LegacyPolicy::NoteInt(InlineObservation obs, int value)
+void DefaultPolicy::NoteInt(InlineObservation obs, int value)
 {
     switch (obs)
     {
@@ -439,10 +464,23 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
         {
             assert(m_IsForceInlineKnown);
             assert(value != 0);
+            assert(m_IsNoReturnKnown);
+
+            //
+            // Let's be conservative for now and reject inlining of "no return" methods only
+            // if the callee contains a single basic block. This covers most of the use cases
+            // (typical throw helpers simply do "throw new X();" and so they have a single block)
+            // without affecting more exotic cases (loops that do actual work for example) where
+            // failure to inline could negatively impact code quality.
+            //
 
             unsigned basicBlockCount = static_cast<unsigned>(value);
 
-            if (!m_IsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
+            if (m_IsNoReturn && (basicBlockCount == 1))
+            {
+                SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+            }
+            else if (!m_IsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
             {
                 SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
             }
@@ -551,7 +589,7 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
 // Notes: uses the accumulated set of observations to compute a
 // profitability boost for the inline candidate.
 
-double LegacyPolicy::DetermineMultiplier()
+double DefaultPolicy::DetermineMultiplier()
 {
     double multiplier = 0;
 
@@ -673,7 +711,7 @@ double LegacyPolicy::DetermineMultiplier()
 //    candidates.  Should not be needed for forced or always
 //    candidates.
 
-int LegacyPolicy::DetermineNativeSizeEstimate()
+int DefaultPolicy::DetermineNativeSizeEstimate()
 {
     // Should be a discretionary candidate.
     assert(m_StateMachine != nullptr);
@@ -693,7 +731,7 @@ int LegacyPolicy::DetermineNativeSizeEstimate()
 //    call site. While the quality of the estimate here is questionable
 //    (especially for x64) it is being left as is for legacy compatibility.
 
-int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
+int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
 {
     int callsiteSize = 55; // Direct call take 5 native bytes; indirect call takes 6 native bytes.
 
@@ -756,7 +794,7 @@ int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methI
 //    candidates, since it does not make sense to do this assessment for
 //    failed, always, or forced inlines.
 
-void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
 
 #if defined(DEBUG)
@@ -781,7 +819,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     m_Multiplier                 = DetermineMultiplier();
     const int threshold          = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
-    // Note the LegacyPolicy estimates are scaled up by SIZE_SCALE
+    // Note the DefaultPolicy estimates are scaled up by SIZE_SCALE
     JITDUMP("\ncalleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
     JITDUMP("callsiteNativeSizeEstimate=%d\n", m_CallsiteNativeSizeEstimate);
     JITDUMP("benefit multiplier=%g\n", m_Multiplier);
@@ -837,11 +875,11 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    not).  For always or force inlines the legacy policy doesn't
 //    estimate size impact.
 
-int LegacyPolicy::CodeSizeEstimate()
+int DefaultPolicy::CodeSizeEstimate()
 {
     if (m_StateMachine != nullptr)
     {
-        // This is not something the LegacyPolicy explicitly computed,
+        // This is not something the DefaultPolicy explicitly computed,
         // since it uses a blended evaluation model (mixing size and time
         // together for overall profitability). But it's effecitvely an
         // estimate of the size impact.
@@ -854,123 +892,10 @@ int LegacyPolicy::CodeSizeEstimate()
 }
 
 //------------------------------------------------------------------------
-// NoteBool: handle a boolean observation with non-fatal impact
-//
-// Arguments:
-//    obs      - the current observation
-//    value    - the value of the observation
-
-void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
-{
-
-#ifdef DEBUG
-    // Check the impact
-    InlineImpact impact = InlGetImpact(obs);
-
-    // As a safeguard, all fatal impact must be
-    // reported via NoteFatal.
-    assert(impact != InlineImpact::FATAL);
-#endif // DEBUG
-
-    switch (obs)
-    {
-        case InlineObservation::CALLEE_DOES_NOT_RETURN:
-            m_IsNoReturn      = value;
-            m_IsNoReturnKnown = true;
-            break;
-
-        case InlineObservation::CALLSITE_RARE_GC_STRUCT:
-            // If this is a discretionary or always inline candidate
-            // with a gc struct, we may change our mind about inlining
-            // if the call site is rare, to avoid costs associated with
-            // zeroing the GC struct up in the root prolog.
-            if (m_Observation == InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE)
-            {
-                assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
-                SetFailure(obs);
-                return;
-            }
-            else if (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
-            {
-                assert(m_CallsiteFrequency == InlineCallsiteFrequency::RARE);
-                SetFailure(obs);
-                return;
-            }
-            break;
-
-        case InlineObservation::CALLEE_HAS_PINNED_LOCALS:
-            if (m_CallsiteIsInTryRegion)
-            {
-                // Inlining a method with pinned locals in a try
-                // region requires wrapping the inline body in a
-                // try/finally to ensure unpinning. Bail instead.
-                SetFailure(InlineObservation::CALLSITE_PIN_IN_TRY_REGION);
-                return;
-            }
-            break;
-
-        case InlineObservation::CALLEE_HAS_LOCALLOC:
-            // We see this during the IL prescan. Ignore for now, we will
-            // bail out, if necessary, during importation
-            break;
-
-        default:
-            // Pass all other information to the legacy policy
-            LegacyPolicy::NoteBool(obs, value);
-            break;
-    }
-}
-
-//------------------------------------------------------------------------
-// NoteInt: handle an observed integer value
-//
-// Arguments:
-//    obs      - the current obsevation
-//    value    - the value being observed
-
-void EnhancedLegacyPolicy::NoteInt(InlineObservation obs, int value)
-{
-    switch (obs)
-    {
-        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
-        {
-            assert(value != 0);
-            assert(m_IsNoReturnKnown);
-
-            //
-            // Let's be conservative for now and reject inlining of "no return" methods only
-            // if the callee contains a single basic block. This covers most of the use cases
-            // (typical throw helpers simply do "throw new X();" and so they have a single block)
-            // without affecting more exotic cases (loops that do actual work for example) where
-            // failure to inline could negatively impact code quality.
-            //
-
-            unsigned basicBlockCount = static_cast<unsigned>(value);
-
-            if (m_IsNoReturn && (basicBlockCount == 1))
-            {
-                SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
-            }
-            else
-            {
-                LegacyPolicy::NoteInt(obs, value);
-            }
-
-            break;
-        }
-
-        default:
-            // Pass all other information to the legacy policy
-            LegacyPolicy::NoteInt(obs, value);
-            break;
-    }
-}
-
-//------------------------------------------------------------------------
 // PropagateNeverToRuntime: determine if a never result should cause the
 // method to be marked as un-inlinable.
 
-bool EnhancedLegacyPolicy::PropagateNeverToRuntime() const
+bool DefaultPolicy::PropagateNeverToRuntime() const
 {
     //
     // Do not propagate the "no return" observation. If we do this then future inlining
@@ -982,8 +907,6 @@ bool EnhancedLegacyPolicy::PropagateNeverToRuntime() const
     //
 
     bool propagate = (m_Observation != InlineObservation::CALLEE_DOES_NOT_RETURN);
-
-    propagate &= LegacyPolicy::PropagateNeverToRuntime();
 
     return propagate;
 }
@@ -1079,7 +1002,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 
     // Use a probability curve that roughly matches the observed
-    // behavior of the LegacyPolicy. That way we're inlining
+    // behavior of the DefaultPolicy. That way we're inlining
     // differently but not creating enormous methods.
     //
     // We vary a bit at the extremes. The RandomPolicy won't always
@@ -1172,7 +1095,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 // clang-format off
 DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
-    : EnhancedLegacyPolicy(compiler, isPrejitRoot)
+    : DefaultPolicy(compiler, isPrejitRoot)
     , m_Depth(0)
     , m_BlockCount(0)
     , m_Maxstack(0)
@@ -1280,7 +1203,7 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
             break;
 
         default:
-            EnhancedLegacyPolicy::NoteBool(obs, value);
+            DefaultPolicy::NoteBool(obs, value);
             break;
     }
 }
@@ -1323,7 +1246,7 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
             // on similarity of impact on codegen.
             OPCODE opcode = static_cast<OPCODE>(value);
             ComputeOpcodeBin(opcode);
-            EnhancedLegacyPolicy::NoteInt(obs, value);
+            DefaultPolicy::NoteInt(obs, value);
             break;
         }
 
@@ -1345,7 +1268,7 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
 
         default:
             // Delegate remainder to the super class.
-            EnhancedLegacyPolicy::NoteInt(obs, value);
+            DefaultPolicy::NoteInt(obs, value);
             break;
     }
 }
@@ -1661,7 +1584,7 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     EstimatePerformanceImpact();
 
     // Delegate to super class for the rest
-    EnhancedLegacyPolicy::DetermineProfitability(methodInfo);
+    DefaultPolicy::DetermineProfitability(methodInfo);
 }
 
 //------------------------------------------------------------------------
