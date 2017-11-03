@@ -1191,17 +1191,14 @@ no_intrinsic:
 }
 
 static MonoClassField *
-interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, MonoGenericContext *generic_context)
+interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, MonoGenericContext *generic_context, MonoError *error)
 {
 	MonoClassField *field = NULL;
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		field = (MonoClassField *) mono_method_get_wrapper_data (method, token);
 		*klass = field->parent;
 	} else {
-		MonoError error;
-		error_init (&error);
-		field = mono_field_from_token_checked (method->klass->image, token, klass, generic_context, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		field = mono_field_from_token_checked (method->klass->image, token, klass, generic_context, error);
 	}
 	return field;
 }
@@ -2824,7 +2821,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		case CEE_LDFLDA:
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
-			field = interp_field_from_token (method, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context, error);
+			return_if_nok (error);
 			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 			if (is_static) {
@@ -2847,7 +2845,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		case CEE_LDFLD: {
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
-			field = interp_field_from_token (method, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context, error);
+			return_if_nok (error);
 			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 
@@ -2893,7 +2892,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		case CEE_STFLD: {
 			CHECK_STACK (td, 2);
 			token = read32 (td->ip + 1);
-			field = interp_field_from_token (method, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context, error);
+			return_if_nok (error);
 			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 			mt = mint_type(field->type);
@@ -2931,7 +2931,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		}
 		case CEE_LDSFLDA:
 			token = read32 (td->ip + 1);
-			field = interp_field_from_token (method, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context, error);
+			return_if_nok (error);
 			ADD_CODE(td, MINT_LDSFLDA);
 			ADD_CODE(td, get_data_item_index (td, field));
 			td->ip += 5;
@@ -2939,7 +2940,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			break;
 		case CEE_LDSFLD:
 			token = read32 (td->ip + 1);
-			field = interp_field_from_token (method, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context, error);
+			return_if_nok (error);
 			mt = mint_type(field->type);
 			ADD_CODE(td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
 			ADD_CODE(td, get_data_item_index (td, field));
@@ -2960,7 +2962,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		case CEE_STSFLD:
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
-			field = interp_field_from_token (method, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context, error);
+			return_if_nok (error);
 			mt = mint_type(field->type);
 			ADD_CODE(td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 			ADD_CODE(td, get_data_item_index (td, field));
