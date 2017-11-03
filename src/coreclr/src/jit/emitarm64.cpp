@@ -6320,7 +6320,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         if (useRegForImm)
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(size, rsvdReg, imm);
+            codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, rsvdReg, imm);
             fmt = IF_LS_3A;
         }
     }
