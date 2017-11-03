@@ -179,6 +179,7 @@
       "alwaysRun": false,
       "displayName": "packages -> dotnet.myget.org",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), contains(variables.PB_PublishType, 'myget'), eq(ConfigurationGroup, 'Release'))",
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
         "versionSpec": "1.*",
@@ -199,6 +200,7 @@
       "alwaysRun": false,
       "displayName": "symbol packages -> dotnet.myget.org",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), contains(variables.PB_PublishType, 'myget'), eq(ConfigurationGroup, 'Release'))",
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
         "versionSpec": "1.*",
@@ -217,9 +219,9 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Packages -> Azure",
+      "displayName": "Packages -> Blob Feed",
       "timeoutInMinutes": 0,
-      "condition": "and(succeeded(), eq(variables['ConfigurationGroup'], 'Release'))",
+      "condition": "and(succeeded(),  contains(variables.PB_PublishType, 'blob'), eq(variables.ConfigurationGroup'], 'Release'))",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -236,9 +238,9 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Symbol Packages -> Azure",
+      "displayName": "Symbol Packages -> Blob Feed",
       "timeoutInMinutes": 0,
-      "condition": "and(succeeded(), eq(variables['ConfigurationGroup'], 'Release'))",
+      "condition": "and(succeeded(),  contains(variables.PB_PublishType, 'blob'), eq(variables.ConfigurationGroup'], 'Release'))",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -297,6 +299,7 @@
       "alwaysRun": false,
       "displayName": "Update versions repository",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(),  contains(variables.PB_PublishType, 'versions'), eq(variables.ConfigurationGroup'], 'Release'))",
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
         "versionSpec": "1.*",
@@ -615,6 +618,10 @@
     },
     "PB_SymbolCatalogCertificateId": {
       "value": "400"
+    },
+    "PB_PublishType": {
+      "value": "",
+      "allowOverride": true
     }
   },
   "retentionRules": [
