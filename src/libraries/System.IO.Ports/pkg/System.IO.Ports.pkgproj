@@ -11,8 +11,5 @@
     <InboxOnTargetFramework Include="$(UAPvNextTFM)" /> 
     <ProjectReference Include="..\src\System.IO.Ports.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
