@@ -9,7 +9,7 @@ namespace System
     public sealed partial class TimeZoneInfo
     {
         [Serializable]
-        public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
+        public readonly struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             private readonly DateTime _timeOfDay;
             private readonly byte _month;
