@@ -42,4 +42,12 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is used when awaiting and IsCompleted returned false; thus we expect the value task to be wrapping a non-null task.</remarks>
         Task IValueTaskAwaiter.GetTask() => _value.AsTaskExpectNonNull();
     }
+
+    /// <summary>
+    /// Internal interface used to enable extract the Task from arbitrary ValueTask awaiters.
+    /// </summary>>
+    internal interface IValueTaskAwaiter
+    {
+        Task GetTask();
+    }
 }
