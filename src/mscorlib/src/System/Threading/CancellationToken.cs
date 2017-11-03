@@ -27,7 +27,7 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
-    public struct CancellationToken
+    public readonly struct CancellationToken
     {
         private readonly static Action<object> s_actionToActionObjShunt = obj => ((Action)obj)();
 

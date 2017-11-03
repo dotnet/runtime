@@ -55,7 +55,7 @@ namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct TaskAwaiter : ICriticalNotifyCompletion, ITaskAwaiter
+    public readonly struct TaskAwaiter : ICriticalNotifyCompletion, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access the generic TaskAwaiter<> as TaskAwaiter.
         // Its layout must remain the same.
@@ -320,7 +320,7 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct TaskAwaiter<TResult> : ICriticalNotifyCompletion, ITaskAwaiter
+    public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access TaskAwaiter<> as the non-generic TaskAwaiter.
         // Its layout must remain the same.
@@ -409,7 +409,7 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct ConfiguredTaskAwaitable
+    public readonly struct ConfiguredTaskAwaitable
     {
         /// <summary>The task being awaited.</summary>
         private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter m_configuredTaskAwaiter;
@@ -434,7 +434,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
         {
             // WARNING: Unsafe.As is used to access the generic ConfiguredTaskAwaiter as this.
             // Its layout must remain the same.
@@ -500,7 +500,7 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    public struct ConfiguredTaskAwaitable<TResult>
+    public readonly struct ConfiguredTaskAwaitable<TResult>
     {
         /// <summary>The underlying awaitable on whose logic this awaitable relies.</summary>
         private readonly ConfiguredTaskAwaitable<TResult>.ConfiguredTaskAwaiter m_configuredTaskAwaiter;
@@ -524,7 +524,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable{TResult}"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
         {
             // WARNING: Unsafe.As is used to access this as the non-generic ConfiguredTaskAwaiter.
             // Its layout must remain the same.
