@@ -6,6 +6,7 @@
       "alwaysRun": false,
       "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
       "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
         "versionSpec": "1.*",
@@ -25,6 +26,7 @@
       "alwaysRun": false,
       "displayName": "Run clean.cmd",
       "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -42,6 +44,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -60,6 +63,7 @@
       "alwaysRun": false,
       "displayName": "Generate version props file",
       "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -78,6 +82,7 @@
       "alwaysRun": false,
       "displayName": "Run build-test.cmd",
       "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -95,6 +100,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Send job to Helix",
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -114,6 +120,7 @@
       "alwaysRun": true,
       "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
         "versionSpec": "1.*",
@@ -200,6 +207,10 @@
     },
     "Label": {
       "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "PB_SkipTests": {
+      "value": "false",
       "allowOverride": true
     },
     "CloudResultsAccountName": {

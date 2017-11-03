@@ -142,6 +142,27 @@ internal partial class VectorTest
                 Console.WriteLine("Failed to throw IndexOutOfRangeException for index == Count of " + Vector<T>.Count);
                 returnVal = Fail;
             }
+
+            // Check lower bounds
+            caught = false;
+            try
+            {
+                check = A[-1];
+            }
+            catch (IndexOutOfRangeException)
+            {
+                caught = true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Caught exception: " + e.GetType());
+            }
+            if (!caught)
+            {
+                Console.WriteLine("Failed to throw IndexOutOfRangeException for index == -1");
+                returnVal = Fail;
+            }
+
             return returnVal;
         }
     }
