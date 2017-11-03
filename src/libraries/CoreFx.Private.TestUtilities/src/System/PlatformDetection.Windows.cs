@@ -24,19 +24,19 @@ namespace System
         public static bool IsUbuntu1604 => false;
         public static bool IsUbuntu1704 => false;
         public static bool IsUbuntu1710 => false;
-        public static bool IsCentos7 => false;
         public static bool IsTizen => false;
-        public static bool IsNotFedoraOrRedHatOrCentos => true;
+        public static bool IsNotFedoraOrRedHatFamily => true;
         public static bool IsFedora => false;
         public static bool IsWindowsNanoServer => (IsNotWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
         public static bool IsWindowsServerCore => GetInstallationType().Equals("Server Core", StringComparison.OrdinalIgnoreCase);
         public static int WindowsVersion => GetWindowsVersion();
         public static bool IsMacOsHighSierraOrHigher { get; } = false;
         public static Version ICUVersion => new Version(0, 0, 0, 0);
-        public static bool IsRedHat => false;
-        public static bool IsNotRedHat => true;
-        public static bool IsRedHat69 => false;
-        public static bool IsNotRedHat69 => true;
+        public static bool IsRedHatFamily => false;
+        public static bool IsNotRedHatFamily => true;
+        public static bool IsRedHatFamily6 => false;
+        public static bool IsRedHatFamily7 => false;
+        public static bool IsNotRedHatFamily6 => true;
 
         public static bool IsWindows10Version1607OrGreater => 
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
