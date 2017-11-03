@@ -973,7 +973,6 @@ void CLRLifoSemaphore::Release(INT32 releaseCount)
         if (countsBeforeUpdate == counts)
         {
             _ASSERTE((UINT32)releaseCount <= m_maximumSignalCount - counts.signalCount);
-            _ASSERTE(newCounts.countOfWaitersSignaledToWake <= newCounts.waiterCount);
             if (countOfWaitersToWake <= 0)
             {
                 return;

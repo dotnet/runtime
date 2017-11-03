@@ -10,9 +10,8 @@
 // -- CLASSES --
 //
 // LegalPolicy          - partial class providing common legality checks
-// LegacyPolicy         - policy that provides legacy inline behavior
-// EnhancedLegacyPolicy - legacy variant with some enhancements
-// DiscretionaryPolicy  - legacy variant with uniform size policy
+// DefaultPolicy        - default inliner policy
+// DiscretionaryPolicy  - default variant with uniform size policy
 // ModelPolicy          - policy based on statistical modelling
 //
 // These experimental policies are available only in
@@ -22,7 +21,7 @@
 // FullPolicy           - inlines everything up to size and depth limits
 // SizePolicy           - tries not to increase method sizes
 //
-// The default policy in use is the EnhancedLegacyPolicy.
+// The default policy in use is the DefaultPolicy.
 
 #ifndef _INLINE_POLICY_H_
 #define _INLINE_POLICY_H_
@@ -66,18 +65,17 @@ protected:
 };
 
 // Forward declaration for the state machine class used by the
-// LegacyPolicy
+// DefaultPolicy
 
 class CodeSeqSM;
 
-// LegacyPolicy implements the inlining policy used by the jit in its
-// initial release.
+// DefaultPolicy implements the default inlining policy for the jit.
 
-class LegacyPolicy : public LegalPolicy
+class DefaultPolicy : public LegalPolicy
 {
 public:
-    // Construct a LegacyPolicy
-    LegacyPolicy(Compiler* compiler, bool isPrejitRoot)
+    // Construct a DefaultPolicy
+    DefaultPolicy(Compiler* compiler, bool isPrejitRoot)
         : LegalPolicy(isPrejitRoot)
         , m_RootCompiler(compiler)
         , m_StateMachine(nullptr)
@@ -100,6 +98,8 @@ public:
         , m_MethodIsMostlyLoadStore(false)
         , m_CallsiteIsInTryRegion(false)
         , m_CallsiteIsInLoop(false)
+        , m_IsNoReturn(false)
+        , m_IsNoReturnKnown(false)
     {
         // empty
     }
@@ -113,14 +113,7 @@ public:
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
 
     // Policy policies
-    bool PropagateNeverToRuntime() const override
-    {
-        return true;
-    }
-    bool IsLegacyPolicy() const override
-    {
-        return true;
-    }
+    bool PropagateNeverToRuntime() const override;
 
     // Policy estimates
     int CodeSizeEstimate() override;
@@ -129,7 +122,7 @@ public:
 
     const char* GetName() const override
     {
-        return "LegacyPolicy";
+        return "DefaultPolicy";
     }
 
 #endif // (DEBUG) || defined(INLINE_DATA)
@@ -169,46 +162,18 @@ protected:
     bool                    m_MethodIsMostlyLoadStore : 1;
     bool                    m_CallsiteIsInTryRegion : 1;
     bool                    m_CallsiteIsInLoop : 1;
+    bool                    m_IsNoReturn : 1;
+    bool                    m_IsNoReturnKnown : 1;
 };
 
-// EnhancedLegacyPolicy extends the legacy policy by
-// relaxing various restrictions.
-
-class EnhancedLegacyPolicy : public LegacyPolicy
-{
-public:
-    EnhancedLegacyPolicy(Compiler* compiler, bool isPrejitRoot)
-        : LegacyPolicy(compiler, isPrejitRoot), m_IsNoReturn(false), m_IsNoReturnKnown(false)
-    {
-        // empty
-    }
-
-    // Policy observations
-    void NoteBool(InlineObservation obs, bool value) override;
-    void NoteInt(InlineObservation obs, int value) override;
-
-    // Policy policies
-    bool PropagateNeverToRuntime() const override;
-    bool IsLegacyPolicy() const override
-    {
-        return false;
-    }
-
-protected:
-    // Data members
-    bool m_IsNoReturn : 1;
-    bool m_IsNoReturnKnown : 1;
-};
-
-// DiscretionaryPolicy is a variant of the enhanced legacy policy.  It
+// DiscretionaryPolicy is a variant of the default policy.  It
 // differs in that there is no ALWAYS_INLINE class, there is no IL
-// size limit, it does not try and maintain legacy compatabilty, and
-// in prejit mode, discretionary failures do not set the "NEVER"
-// inline bit.
+// size limit, and in prejit mode, discretionary failures do not
+// propagate the "NEVER" inline bit to the runtime.
 //
 // It is useful for gathering data about inline costs.
 
-class DiscretionaryPolicy : public EnhancedLegacyPolicy
+class DiscretionaryPolicy : public DefaultPolicy
 {
 public:
     // Construct a DiscretionaryPolicy

@@ -16882,7 +16882,7 @@ void Compiler::fgMorphBlocks()
                 GenTreePtr last = (block->bbTreeList != nullptr) ? block->bbTreeList->gtPrev : nullptr;
                 GenTreePtr ret  = (last != nullptr) ? last->gtStmt.gtStmtExpr : nullptr;
 
-                if ((ret != nullptr) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
+                if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
                 {
                     // This return was generated during epilog merging, so leave it alone
                 }

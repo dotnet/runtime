@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides an awaitable type that enables configured awaits on a <see cref="ValueTask{TResult}"/>.</summary>
     /// <typeparam name="TResult">The type of the result produced.</typeparam>
     [StructLayout(LayoutKind.Auto)]
-    public struct ConfiguredValueTaskAwaitable<TResult>
+    public readonly struct ConfiguredValueTaskAwaitable<TResult>
     {
         /// <summary>The wrapped <see cref="ValueTask{TResult}"/>.</summary>
         private readonly ValueTask<TResult> _value;
@@ -76,5 +76,13 @@ namespace System.Runtime.CompilerServices
             /// <remarks>This method is used when awaiting and IsCompleted returned false; thus we expect the value task to be wrapping a non-null task.</remarks>
             (Task, bool) IConfiguredValueTaskAwaiter.GetTask() => (_value.AsTaskExpectNonNull(), _continueOnCapturedContext);
         }
+    }
+
+    /// <summary>
+    /// Internal interface used to enable extract the Task from arbitrary configured ValueTask awaiters.
+    /// </summary>
+    internal interface IConfiguredValueTaskAwaiter
+    {
+        (Task task, bool continueOnCapturedContext) GetTask();
     }
 }
