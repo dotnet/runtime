@@ -1943,6 +1943,18 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		return NULL;
 	}
 
+#ifndef DISABLE_REMOTING
+	if (G_UNLIKELY (obj != NULL && mono_class_is_transparent_proxy (mono_object_class (obj)))) {
+		/* We get here if someone used a
+		 * System.Reflection.FieldInfo:GetValue on a
+		 * ContextBoundObject's or cross-domain MarshalByRefObject's
+		 * transparent proxy. */
+		MonoObject *result = mono_load_remote_field_new_checked (obj, fklass, cf, &error);
+		mono_error_set_pending_exception (&error);
+		return result;
+	}
+#endif
+
 	MonoObject * result = mono_field_get_value_object_checked (domain, cf, obj, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1963,6 +1975,20 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionFieldHandle field, MonoObjec
 	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
 		return;
 	}
+
+#ifndef DISABLE_REMOTING
+	if (G_UNLIKELY (!MONO_HANDLE_IS_NULL (obj) && mono_class_is_transparent_proxy (mono_handle_class (obj)))) {
+		/* We get here if someone used a
+		 * System.Reflection.FieldInfo:SetValue on a
+		 * ContextBoundObject's or cross-domain MarshalByRefObject's
+		 * transparent proxy. */
+		/* FIXME: use handles for mono_store_remote_field_new_checked */
+		MonoObject *v = MONO_HANDLE_RAW (value);
+		MonoObject *o = MONO_HANDLE_RAW (obj);
+		mono_store_remote_field_new_checked (o, field_klass, cf, v, error);
+		return;
+	}
+#endif
 
 	MonoType *type = mono_field_get_type_checked (cf, error);
 	return_if_nok (error);
