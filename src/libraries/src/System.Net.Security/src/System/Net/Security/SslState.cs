@@ -642,7 +642,7 @@ namespace System.Net.Security
             if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
             {
                 // Cancel async operation, before I/O starts.
-                asyncRequest.CompleteUserWithError(new TaskCanceledException());
+                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
                 return;
             }
 
@@ -752,8 +752,8 @@ namespace System.Net.Security
         {
             if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
             {
-                // Return async operation if cancellation requested.
-                asyncRequest.CompleteUserWithError(new TaskCanceledException());
+                // Cancel async operation if cancellation requested.
+                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
                 return;
             }
 
@@ -813,8 +813,8 @@ namespace System.Net.Security
         {
             if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
             {
-                // Return async operation if cancellation requested.
-                asyncRequest.CompleteUserWithError(new TaskCanceledException());
+                // Cancel async operation if cancellation requested.
+                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
                 return;
             }
 
@@ -849,7 +849,7 @@ namespace System.Net.Security
         {
             if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
             {
-                asyncRequest.CompleteUserWithError(new TaskCanceledException());
+                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
                 return;
             }
 
@@ -895,7 +895,7 @@ namespace System.Net.Security
         {
             if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
             {
-                asyncRequest.CompleteUserWithError(new TaskCanceledException());
+                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
                 return;
             }
 
@@ -953,7 +953,7 @@ namespace System.Net.Security
         {
             if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
             {
-                asyncRequest.CompleteUserWithError(new TaskCanceledException());
+                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
                 return;
             }
 
