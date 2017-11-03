@@ -4,7 +4,7 @@
 
 namespace System.Runtime.Serialization
 {
-    public struct StreamingContext
+    public readonly struct StreamingContext
     {
         private readonly object _additionalContext;
         private readonly StreamingContextStates _state;
