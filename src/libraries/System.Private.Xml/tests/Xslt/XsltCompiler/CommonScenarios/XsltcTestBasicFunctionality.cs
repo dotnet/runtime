@@ -29,6 +29,7 @@ namespace System.Xml.Tests
         [InlineData("/debug+", "bft37.txt")]
         //[Variation("38", Desc = "Empty string in arguments", Pri = 1, Params = new object[] { "\"\"", "bft38.txt" })]
         [InlineData("\"\"", "bft38.txt")]
+        [Trait("category", "XsltcExeRequired")]
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var2(object param0, object param1)
         {
