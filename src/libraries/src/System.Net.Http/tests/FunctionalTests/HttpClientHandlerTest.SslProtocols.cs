@@ -147,7 +147,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                if (PlatformDetection.IsCentos7)
+                if (PlatformDetection.IsRedHatFamily7)
                 {
                     // Default protocol selection is always TLSv1 on Centos7 libcurl 7.29.0
                     // Hence, set the specific protocol on HttpClient that is required by test
