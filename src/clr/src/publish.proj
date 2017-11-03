@@ -19,8 +19,7 @@
 
   <Target Name="PublishPackages" Condition="'$(__PublishPackages)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <RelativePath Condition="'$(RelativePath)' == ''">$(__BuildType)/pkg</RelativePath>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)/index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
@@ -36,8 +35,7 @@
 
   <Target Name="PublishSymbolPackages" Condition="'$(__PublishSymbols)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <RelativePath Condition="'$(RelativePath)' == ''">$(__BuildType)/symbolpkg</RelativePath>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)/index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
