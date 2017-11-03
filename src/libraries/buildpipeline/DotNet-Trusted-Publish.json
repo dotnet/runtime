@@ -206,16 +206,15 @@
       "displayName": "packages -> Blob Feed",
       "timeoutInMinutes": 0,
       "condition": "and(succeeded(), contains(variables.PB_PublishType, 'blob'), eq(variables.PB_ConfigurationGroup, 'Release'))",
-      "refName": "BatchScript1",
+      "refName": "CmdLine1",
       "task": {
-        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "msbuild",
         "arguments": "src\\publish.proj /t:PublishToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$(PB_ConfigurationGroup)",
-        "modifyEnvironment": "False",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -251,16 +250,15 @@
       "displayName": "symbol packages -> Blob Feed",
       "timeoutInMinutes": 0,
       "condition": "and(succeeded(), contains(variables.PB_PublishType, 'blob'), eq(variables.PB_ConfigurationGroup, 'Release'))",
-      "refName": "BatchScript2",
+      "refName": "CmdLine2",
       "task": {
-        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "msbuild",
         "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$ConfigurationGroup /p:PublishSymbols=\"true\" ",
-        "modifyEnvironment": "False",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
