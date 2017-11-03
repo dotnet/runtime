@@ -4748,7 +4748,9 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 static gpointer
 get_this_addr (StackFrame *frame)
 {
-	//Logic inspiered by "add_var" method and took out path that happens in async method for getting this
+	if (frame->ji->is_interp)
+		return mono_interp_frame_get_this (frame->interp_frame);
+
 	MonoDebugVarInfo *var = frame->jit->this_var;
 	if ((var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) != MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET)
 		return NULL;
