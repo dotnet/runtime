@@ -6547,7 +6547,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         // The reserved register is not stored in idReg3() since that field overlaps with iiaLclVar.
         // It is instead implicit when idSetIsLclVar() is set, with this encoding format.
         regNumber rsvdReg = codeGen->rsGetRsvdReg();
-        codeGen->instGen_Set_Reg_To_Imm(size, rsvdReg, imm);
+        codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, rsvdReg, imm);
         fmt = IF_LS_3A;
     }
 
