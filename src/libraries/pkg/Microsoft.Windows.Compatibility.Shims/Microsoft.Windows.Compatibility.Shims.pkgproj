@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageVersion>$(CompatibilityShimsPackageVersion)</PackageVersion>
+    <_ShimsLocationPath>$(BaseIntermediateOutputPath)shims/netcoreapp/facades/</_ShimsLocationPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ShimsToInclude Include="mscorlib.dll" />
+    <ShimsToInclude Include="System.dll" />
+    <ShimsToInclude Include="System.Configuration.dll" />
+    <ShimsToInclude Include="System.Core.dll" />
+    <ShimsToInclude Include="System.Data.dll" />
+    <ShimsToInclude Include="System.Drawing.dll" />
+    <ShimsToInclude Include="System.Net.dll" />
+    <ShimsToInclude Include="System.Security.dll" />
+    <ShimsToInclude Include="System.ServiceModel.Web.dll" />
+    <ShimsToInclude Include="System.ServiceProcess.dll" />
+    <ShimsToInclude Include="System.Transactions.dll" />
+    <ShimsToInclude Include="WindowsBase.dll" />
+  </ItemGroup>
+
+  <Target Name="AddShimsToPackage"
+          BeforeTargets="GetPackageFiles">
+
+    <Error Text="Required facade: %(ShimsToInclude.Identity) was not found in $(_ShimsLocationPath)." Condition="!Exists('@(ShimsToInclude->'$(_ShimsLocationPath)%(Identity)')')" />
+
+    <ItemGroup>
+      <File Include="@(ShimsToInclude->'$(_ShimsLocationPath)%(Identity)')">
+        <TargetPath>/lib/netcoreapp2.0</TargetPath>
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+      </File>
+      <!-- Include placeholder to be netstandard2.0 compatible -->
+      <File Include="$(PlaceHolderFile)">
+        <TargetPath>/lib/netstandard2.0</TargetPath>
+      </File>
+    </ItemGroup>
+
+    <Message Importance="Low" Text="Added: %(ShimsToInclude.Identity) to package." />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
