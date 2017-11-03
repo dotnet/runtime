@@ -563,6 +563,20 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         return;
     }
 
+#ifdef FEATURE_SIMD
+    // If indirTree is of TYP_SIMD12, don't mark addr as contained
+    // so that it always get computed to a register.  This would
+    // mean codegen side logic doesn't need to handle all possible
+    // addr expressions that could be contained.
+    //
+    // TODO-ARM64-CQ: handle other addr mode expressions that could be marked
+    // as contained.
+    if (indirNode->TypeGet() == TYP_SIMD12)
+    {
+        return;
+    }
+#endif // FEATURE_SIMD
+
     GenTree* addr          = indirNode->Addr();
     bool     makeContained = true;
     if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
