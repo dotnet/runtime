@@ -518,7 +518,6 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        [ActiveIssue(24368)]
         public void GetCookies_DifferentPaths_ReturnsConsistentResults()
         {
             Cookie c1 = new Cookie("name1", "value", "/base", ".url.com");
