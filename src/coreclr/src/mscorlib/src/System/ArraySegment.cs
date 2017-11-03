@@ -26,7 +26,7 @@ namespace System
     // (ie, users could assign a new value to the old location).  
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
+    public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
     {
         // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.

@@ -248,7 +248,6 @@ public:
 
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;
-    virtual bool IsLegacyPolicy() const          = 0;
 
     // Policy estimates
     virtual int CodeSizeEstimate() = 0;
@@ -452,13 +451,6 @@ public:
     InlinePolicy* GetPolicy() const
     {
         return m_Policy;
-    }
-
-    // True if the policy used for this result is (exactly) the legacy
-    // policy.
-    bool UsesLegacyPolicy() const
-    {
-        return m_Policy->IsLegacyPolicy();
     }
 
     // SetReported indicates that this particular result doesn't need
