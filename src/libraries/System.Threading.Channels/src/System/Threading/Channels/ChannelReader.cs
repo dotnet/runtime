@@ -30,5 +30,53 @@ namespace System.Threading.Channels
         /// or with a <c>false</c> result when no further data will ever be available to be read.
         /// </returns>
         public abstract Task<bool> WaitToReadAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>Asynchronously reads an item from the channel.</summary>		
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the read operation.</param>		
+        /// <returns>A <see cref="ValueTask{TResult}"/> that represents the asynchronous read operation.</returns>
+        public virtual ValueTask<T> ReadAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<T>(Task.FromCanceled<T>(cancellationToken));
+            }
+
+            try
+            {
+                if (TryRead(out T fastItem))
+                {
+                    return new ValueTask<T>(fastItem);
+                }
+            }
+            catch (Exception exc) when (!(exc is ChannelClosedException || exc is OperationCanceledException))
+            {
+                return new ValueTask<T>(Task.FromException<T>(exc));
+            }
+
+            return ReadAsyncCore(cancellationToken);
+
+            async ValueTask<T> ReadAsyncCore(CancellationToken ct)
+            {
+                try
+                {
+                    while (true)
+                    {
+                        if (!await WaitToReadAsync(ct))
+                        {
+                            throw new ChannelClosedException();
+                        }
+
+                        if (TryRead(out T item))
+                        {
+                            return item;
+                        }
+                    }
+                }
+                catch (Exception exc) when (!(exc is ChannelClosedException || exc is OperationCanceledException))
+                {
+                    throw new ChannelClosedException(exc);
+                }
+            }
+        }
     }
 }
