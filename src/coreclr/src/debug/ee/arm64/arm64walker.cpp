@@ -105,10 +105,10 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
     /*
     Modify the patchBypass if the opcode is IP-relative, otherwise return it
     The following are the instructions that are IP-relative  :
-    • ADR and ADRP.
-    • The Load register (literal) instruction class.
-    • Direct branches that use an immediate offset.
-    • The unconditional branch with link instructions, BL and BLR, that use the PC to create the return link
+    . ADR and ADRP.
+    . The Load register (literal) instruction class.
+    . Direct branches that use an immediate offset.
+    . The unconditional branch with link instructions, BL and BLR, that use the PC to create the return link
       address.
     */
 

@@ -4923,19 +4923,16 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
     {
         compInlineResult->Note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
-        if (!compInlineResult->UsesLegacyPolicy())
+        // If there are no return blocks we know it does not return, however if there
+        // return blocks we don't know it returns as it may be counting unreachable code.
+        // However we will still make the CALLEE_DOES_NOT_RETURN observation.
+
+        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
+
+        if (retBlocks == 0 && isInlining)
         {
-            // If there are no return blocks we know it does not return, however if there
-            // return blocks we don't know it returns as it may be counting unreachable code.
-            // However we will still make the CALLEE_DOES_NOT_RETURN observation.
-
-            compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
-
-            if (retBlocks == 0 && isInlining)
-            {
-                // Mark the call node as "no return" as it can impact caller's code quality.
-                impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-            }
+            // Mark the call node as "no return" as it can impact caller's code quality.
+            impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
         }
 
         // If the inline is viable and discretionary, do the
@@ -5056,14 +5053,6 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
 
     // The stack only has to be 1 deep for BRTRUE/FALSE
     bool lookForBranchCases = stack.IsStackAtLeastOneDeep();
-
-    if (compInlineResult->UsesLegacyPolicy())
-    {
-        // LegacyPolicy misses cases where the stack is really one
-        // deep but the model says it's two deep. We need to do
-        // likewise to preseve old behavior.
-        lookForBranchCases &= !stack.IsStackTwoDeep();
-    }
 
     if (lookForBranchCases)
     {
@@ -5913,14 +5902,8 @@ void Compiler::fgFindBasicBlocks()
 #ifdef DEBUG
         // If fgFindJumpTargets marked the call as "no return" there
         // really should be no BBJ_RETURN blocks in the method.
-        //
-        // Note LegacyPolicy does not mark calls as no return, so if
-        // it's active, skip the check.
-        if (!compInlineResult->UsesLegacyPolicy())
-        {
-            bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
-            assert((markedNoReturn && (retBlocks == 0)) || (!markedNoReturn && (retBlocks >= 1)));
-        }
+        bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
+        assert((markedNoReturn && (retBlocks == 0)) || (!markedNoReturn && (retBlocks >= 1)));
 #endif // DEBUG
 
         if (compInlineResult->IsFailure())

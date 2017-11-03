@@ -1103,7 +1103,7 @@ namespace System.Reflection.Emit
     /// Describes exception handler in a method body.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ExceptionHandler : IEquatable<ExceptionHandler>
+    internal readonly struct ExceptionHandler : IEquatable<ExceptionHandler>
     {
         // Keep in sync with unmanged structure. 
         internal readonly int m_exceptionClass;
