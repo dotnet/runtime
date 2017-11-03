@@ -53,7 +53,7 @@ namespace System.Net
                 int remainingCount = request.Count, offset = request.Offset;
                 do
                 {
-                    int bytes = await transport.ReadAsync(request.Buffer, offset, remainingCount, CancellationToken.None).ConfigureAwait(false);
+                    int bytes = await transport.ReadAsync(request.Buffer, offset, remainingCount, request.CancellationToken).ConfigureAwait(false);
                     if (bytes == 0)
                     {
                         if (remainingCount != request.Count)
