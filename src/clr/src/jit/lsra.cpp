@@ -6615,7 +6615,7 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
         ((assignedInterval == nullptr) || (assignedInterval->registerType == TYP_FLOAT)))
     {
         RegRecord* otherRegRecord = getSecondHalfRegRec(regRec);
-        assignedInterval = otherRegRecord->assignedInterval;
+        assignedInterval          = otherRegRecord->assignedInterval;
         if (assignedInterval != nullptr && assignedInterval != interval)
         {
             if (assignedInterval->assignedReg == otherRegRecord)
