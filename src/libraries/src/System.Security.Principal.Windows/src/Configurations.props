@@ -2,13 +2,15 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PackageConfigurations>
+      netstandard;
       netcoreapp2.0-Windows_NT;
       netcoreapp2.0-Unix;
-      netstandard;
       netfx-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
       uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
