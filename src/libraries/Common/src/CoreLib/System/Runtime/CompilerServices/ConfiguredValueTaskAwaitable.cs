@@ -77,4 +77,12 @@ namespace System.Runtime.CompilerServices
             (Task, bool) IConfiguredValueTaskAwaiter.GetTask() => (_value.AsTaskExpectNonNull(), _continueOnCapturedContext);
         }
     }
+
+    /// <summary>
+    /// Internal interface used to enable extract the Task from arbitrary configured ValueTask awaiters.
+    /// </summary>
+    internal interface IConfiguredValueTaskAwaiter
+    {
+        (Task task, bool continueOnCapturedContext) GetTask();
+    }
 }
