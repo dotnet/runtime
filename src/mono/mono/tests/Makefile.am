@@ -976,8 +976,6 @@ INTERP_DISABLED_TESTS = \
 	bug-58782-plain-throw.exe \
 	bug-81673.exe \
 	bug445361.exe \
-	call_missing_class.exe \
-	call_missing_method.exe \
 	calliGenericTest.exe \
 	cominterop.exe \
 	context-static.exe \
@@ -989,10 +987,7 @@ INTERP_DISABLED_TESTS = \
 	field-access.exe \
 	finally_block_ending_in_dead_bb.exe \
 	handleref.exe \
-	invalid-token.exe \
 	invalid_generic_instantiation.exe \
-	ldfld_missing_class.exe \
-	ldfld_missing_field.exe \
 	ldftn-access.exe \
 	marshal.exe \
 	marshal8.exe \
