@@ -144,6 +144,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run $(Agent.BuildDirectory)/s/corefx/build-tests.sh",
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'))",
       "timeoutInMinutes": 0,
       "refName": "Task8",
       "task": {
@@ -164,6 +165,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
+      "condition": "and(ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
       "timeoutInMinutes": 0,
       "refName": "Task9",
       "task": {
@@ -327,6 +329,10 @@
     },
     "PB_CreateHelixArguments": {
       "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX",
+      "allowOverride": true
+    },
+    "PB_SkipTests": {
+      "value": "false",
       "allowOverride": true
     }
   },
