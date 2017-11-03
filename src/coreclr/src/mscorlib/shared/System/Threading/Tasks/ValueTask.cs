@@ -50,7 +50,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     [AsyncMethodBuilder(typeof(AsyncValueTaskMethodBuilder<>))]
     [StructLayout(LayoutKind.Auto)]
-    public struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
+    public readonly struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
     {
         /// <summary>The task to be used if the operation completed asynchronously or if it completed synchronously but non-successfully.</summary>
         internal readonly Task<TResult> _task;

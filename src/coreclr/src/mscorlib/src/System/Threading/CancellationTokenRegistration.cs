@@ -10,7 +10,7 @@ namespace System.Threading
     /// <remarks>
     /// To unregister a callback, dispose the corresponding Registration instance.
     /// </remarks>
-    public struct CancellationTokenRegistration : IEquatable<CancellationTokenRegistration>, IDisposable
+    public readonly struct CancellationTokenRegistration : IEquatable<CancellationTokenRegistration>, IDisposable
     {
         private readonly long _id;
         private readonly CancellationTokenSource.CallbackNode _node;
