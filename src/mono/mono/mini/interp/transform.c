@@ -4252,6 +4252,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	int backwards;
 	MonoGenericContext *generic_context = NULL;
 	MonoDomain *domain = imethod->domain;
+	InterpMethod tmp_imethod;
+	InterpMethod *real_imethod;
 
 	error_init (&error);
 
@@ -4460,16 +4462,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	}
 	// g_printerr ("TRANSFORM(0x%016lx): end %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 
-	/* the rest needs to be locked so it is only done once */
-	mono_os_mutex_lock(&calc_section);
-	if (imethod->transformed) {
-		mono_os_mutex_unlock(&calc_section);
-		g_free (is_bb_start);
-		if (header)
-			mono_metadata_free_mh (header);
-		MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
-		return NULL;
-	}
+	/* Make modifications to a copy of imethod, copy them back inside the lock */
+	real_imethod = imethod;
+	memcpy (&tmp_imethod, imethod, sizeof (InterpMethod));
+	imethod = &tmp_imethod;
 
 	imethod->local_offsets = g_malloc (header->num_locals * sizeof(guint32));
 	imethod->stack_size = (sizeof (stackval)) * (header->max_stack + 2); /* + 1 for returns of called functions  + 1 for 0-ing in trace*/
@@ -4526,18 +4522,25 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	generate (method, header, imethod, is_bb_start, generic_context, &error);
 
 	mono_metadata_free_mh (header);
-
-	if (!mono_error_ok (&error)) {
-		mono_os_mutex_unlock (&calc_section);
-		return mono_error_convert_to_exception (&error);
-	}
-
 	g_free (is_bb_start);
+
+	if (!mono_error_ok (&error))
+		return mono_error_convert_to_exception (&error);
 
 	// FIXME: Add a different callback ?
 	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
-	imethod->transformed = TRUE;
-	mono_os_mutex_unlock(&calc_section);
+
+	/* Copy changes back */
+	imethod = real_imethod;
+	mono_os_mutex_lock (&calc_section);
+	if (!imethod->transformed) {
+		InterpMethod *hash = imethod->next_jit_code_hash;
+		memcpy (imethod, &tmp_imethod, sizeof (InterpMethod));
+		imethod->next_jit_code_hash = hash;
+		mono_memory_barrier ();
+		imethod->transformed = TRUE;
+	}
+	mono_os_mutex_unlock (&calc_section);
 
 	return NULL;
 }
