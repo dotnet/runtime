@@ -47,8 +47,8 @@ namespace System.Drawing
 
         public static bool GetRecentGdiPlusIsAvailable2()
         {
-            // CentOS 7, RHEL 7 and Ubuntu 14.04, as well as Fedora 25 and OpenSUSE 4.22 are running outdated versions of libgdiplus
-            if (PlatformDetection.IsCentos7 || PlatformDetection.IsRedHat || PlatformDetection.IsUbuntu1404 || PlatformDetection.IsFedora || PlatformDetection.IsOpenSUSE)
+            // RedHat and Ubuntu 14.04, as well as Fedora 25 and OpenSUSE 4.22 are running outdated versions of libgdiplus
+            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsUbuntu1404 || PlatformDetection.IsFedora || PlatformDetection.IsOpenSUSE)
             {
                 return false;
             }
@@ -58,7 +58,7 @@ namespace System.Drawing
 
         public static bool GetGdiPlusIsAvailableNotRedhat73()
         {
-            if (PlatformDetection.IsRedHat)
+            if (PlatformDetection.IsRedHatFamily)
             {
                 return false;
             }
@@ -78,8 +78,8 @@ namespace System.Drawing
 
         public static bool GetRecentGdiPlusIsAvailable()
         {
-            // CentOS 7, RHEL 7 and Ubuntu 14.04 are running outdated versions of libgdiplus
-            if (PlatformDetection.IsCentos7 || PlatformDetection.IsRedHat || PlatformDetection.IsUbuntu1404)
+            // RedHat and Ubuntu 14.04 are running outdated versions of libgdiplus
+            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsUbuntu1404)
             {
                 return false;
             }

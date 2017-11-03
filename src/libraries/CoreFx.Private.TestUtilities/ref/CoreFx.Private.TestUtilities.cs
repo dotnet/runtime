@@ -41,7 +41,6 @@ namespace System
         public static System.PlatformDetection.Range[] FrameworkRanges { get { throw null; } }
         public static bool HasWindowsShell { get { throw null; } }
         public static bool IsArmProcess { get { throw null; } }
-        public static bool IsCentos7 { get { throw null; } }
         public static bool IsDebian { get { throw null; } }
         public static bool IsDebian8 { get { throw null; } }
         public static bool IsDrawingSupported { get { throw null; } }
@@ -55,7 +54,7 @@ namespace System
         public static bool IsNetNative { get { throw null; } }
         public static bool IsNonZeroLowerBoundArraySupported { get { throw null; } }
         public static bool IsNotArmProcess { get { throw null; } }
-        public static bool IsNotFedoraOrRedHatOrCentos { get { throw null; } }
+        public static bool IsNotFedoraOrRedHatFamily { get { throw null; } }
         public static bool IsNotMacOsHighSierraOrHigher { get { throw null; } }
         public static bool IsNotNetNativeRunningAsConsoleApp { get { throw null; } } 
         public static bool IsNotOneCoreUAP { get { throw null; } }
@@ -70,10 +69,11 @@ namespace System
         public static bool IsOSX { get { throw null; } }
         public static bool IsSuperUser { get { throw null; } }
         public static bool IsTizen { get { throw null; } }
-        public static bool IsRedHat { get { throw null; } }
-        public static bool IsNotRedHat { get { throw null; } }
-        public static bool IsRedHat69 { get { throw null; } }
-        public static bool IsNotRedHat69 { get { throw null; } }
+        public static bool IsRedHatFamily { get { throw null; } }
+        public static bool IsNotRedHatFamily { get { throw null; } }
+        public static bool IsRedHatFamily6 { get { throw null; } }
+        public static bool IsRedHatFamily7 { get { throw null; } }
+        public static bool IsNotRedHatFamily6 { get { throw null; } }
         public static bool IsUap { get { throw null; } }
         public static Version ICUVersion { get { return null; } }
         public static bool IsUbuntu { get { throw null; } }
