@@ -204,7 +204,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build tests",
-      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'))",
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_SkipTestBuild, 'true'))",
       "timeoutInMinutes": 0,
       "refName": "Task10",
       "task": {
@@ -225,7 +225,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
-      "condition": "and(ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
       "timeoutInMinutes": 0,
       "refName": "Task11",
       "task": {
