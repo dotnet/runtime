@@ -5561,11 +5561,12 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
 
         case GT_FIELD_LIST:
             return TryGetUseList(def, use);
+
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
         case GT_PUTARG_SPLIT:
             if (this->AsUnOp()->gtOp1->gtOper == GT_FIELD_LIST)
             {
-                return TryGetUseList(def, use);
+                return this->AsUnOp()->gtOp1->TryGetUseList(def, use);
             }
             if (def == this->AsUnOp()->gtOp1)
             {
