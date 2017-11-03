@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides an awaitable type that enables configured awaits on a <see cref="ValueTask{TResult}"/>.</summary>
     /// <typeparam name="TResult">The type of the result produced.</typeparam>
     [StructLayout(LayoutKind.Auto)]
-    public struct ConfiguredValueTaskAwaitable<TResult>
+    public readonly struct ConfiguredValueTaskAwaitable<TResult>
     {
         /// <summary>The wrapped <see cref="ValueTask{TResult}"/>.</summary>
         private readonly ValueTask<TResult> _value;

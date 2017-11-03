@@ -33,7 +33,7 @@ namespace System.Globalization
     }
 
     // Value type version of DaylightTime
-    internal struct DaylightTimeStruct
+    internal readonly struct DaylightTimeStruct
     {
         public DaylightTimeStruct(DateTime start, DateTime end, TimeSpan delta)
         {

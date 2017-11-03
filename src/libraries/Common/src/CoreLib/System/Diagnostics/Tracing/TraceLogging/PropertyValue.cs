@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -27,7 +27,7 @@ namespace System.Diagnostics.Tracing
 #else
     internal
 #endif
-    unsafe struct PropertyValue
+    unsafe readonly struct PropertyValue
     {
         /// <summary>
         /// Union of well-known value types, to avoid boxing those types.
