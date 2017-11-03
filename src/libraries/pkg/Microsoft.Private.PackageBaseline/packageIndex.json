@@ -130,7 +130,10 @@
       "BaselineVersion": "2.0.0",
       "InboxOn": {}
     },
-    "Microsoft.NETFramework.Compatibility": {
+    "Microsoft.Windows.Compatibility": {
+      "InboxOn": {}
+    },
+    "Microsoft.Windows.Compatibility.Shims": {
       "InboxOn": {}
     },
     "Microsoft.Phone": {
