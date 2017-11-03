@@ -3122,9 +3122,11 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
         // TODO-CQ: based on whether src type is aligned use movaps instead
 
         return (srcInReg) ? INS_movaps : INS_movups;
-#else  // !defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
+#elif defined(_TARGET_ARM64_)
+        return (srcInReg) ? INS_mov : ins_Load(srcType);
+#else  // !defined(_TARGET_ARM64_) && !(defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND))
         assert(!"unhandled SIMD type");
-#endif // !defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
+#endif // !defined(_TARGET_ARM64_) && !(defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND))
     }
 
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
