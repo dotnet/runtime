@@ -19,8 +19,7 @@ namespace System
         public static bool IsWindows8x => false;
         public static bool IsWindows10Version1607OrGreater => false;
         public static bool IsWindows10Version1703OrGreater => false;
-        public static bool IsWindows10InsiderPreviewBuild16215OrGreater => false;
-        public static bool IsWindows10Version16251OrGreater => false;
+        public static bool IsWindows10Version1709OrGreater => false;
         public static bool IsNotOneCoreUAP =>  true;
         public static bool IsNetfx462OrNewer() { return false; }
         public static bool IsNetfx470OrNewer() { return false; }
@@ -41,7 +40,6 @@ namespace System
         public static bool IsWindowsNanoServer => false;
         public static bool IsWindowsServerCore => false;
         public static bool IsWindowsAndElevated => false;
-        public static bool IsWindowsRedStone2 => false;
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();

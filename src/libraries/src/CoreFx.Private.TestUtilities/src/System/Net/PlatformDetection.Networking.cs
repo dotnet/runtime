@@ -9,6 +9,6 @@ namespace System
         // Windows 10 Insider Preview Build 16215 introduced the necessary APIs for the UAP version of
         // ClientWebSocket.ReceiveAsync to consume partial message data as it arrives, without having to wait
         // for "end of message" to be signaled.
-        public static bool ClientWebSocketPartialMessagesSupported => !IsUap || IsWindows10InsiderPreviewBuild16215OrGreater;
+        public static bool ClientWebSocketPartialMessagesSupported => !IsUap || IsWindows10Version1709OrGreater;
     }
 }
