@@ -51,23 +51,22 @@ namespace System.Web
             {
                 int count = Count;
                 if (count == 0)
+                {
                     return "";
+                }
+
                 StringBuilder sb = new StringBuilder();
                 string[] keys = AllKeys;
                 for (int i = 0; i < count; i++)
                 {
                     sb.AppendFormat("{0}={1}&", keys[i], UrlEncode(this[keys[i]]));
                 }
-                if (sb.Length > 0)
-                    sb.Length--;
-                return sb.ToString();
+
+                return sb.ToString(0, sb.Length - 1);
             }
         }
 
-        public static NameValueCollection ParseQueryString(string query)
-        {
-            return ParseQueryString(query, Encoding.UTF8);
-        }
+        public static NameValueCollection ParseQueryString(string query) => ParseQueryString(query, Encoding.UTF8);
 
         public static NameValueCollection ParseQueryString(string query, Encoding encoding)
         {
@@ -129,187 +128,81 @@ namespace System.Web
             return result;
         }
 
-        public static string HtmlDecode(string s)
-        {
-            return HttpEncoder.HtmlDecode(s);
-        }
+        public static string HtmlDecode(string s) => HttpEncoder.HtmlDecode(s);
 
+        public static void HtmlDecode(string s, TextWriter output) => HttpEncoder.HtmlDecode(s, output);
 
-        public static void HtmlDecode(string s, TextWriter output)
-        {
-            HttpEncoder.HtmlDecode(s, output);
-        }
+        public static string HtmlEncode(string s) => HttpEncoder.HtmlEncode(s);
 
+        public static string HtmlEncode(object value) =>
+            value == null ? null : HtmlEncode(Convert.ToString(value, CultureInfo.CurrentCulture));
 
-        public static string HtmlEncode(string s)
-        {
-            return HttpEncoder.HtmlEncode(s);
-        }
+        public static void HtmlEncode(string s, TextWriter output) => HttpEncoder.HtmlEncode(s, output);
 
+        public static string HtmlAttributeEncode(string s) => HttpEncoder.HtmlAttributeEncode(s);
 
-        public static string HtmlEncode(object value)
-        {
-            if (value == null)
-                return null;
+        public static void HtmlAttributeEncode(string s, TextWriter output) => HttpEncoder.HtmlAttributeEncode(s, output);
 
-            return HtmlEncode(Convert.ToString(value, CultureInfo.CurrentCulture));
-        }
+        public static string UrlEncode(string str) => str == null ? null : UrlEncode(str, Encoding.UTF8);
 
+        public static string UrlPathEncode(string str) => HttpEncoder.UrlPathEncode(str);
 
-        public static void HtmlEncode(string s, TextWriter output)
-        {
-            HttpEncoder.HtmlEncode(s, output);
-        }
+        public static string UrlEncode(string str, Encoding e) =>
+            str == null ? null : Encoding.ASCII.GetString(UrlEncodeToBytes(str, e));
 
+        public static string UrlEncode(byte[] bytes) => bytes == null ? null : Encoding.ASCII.GetString(UrlEncodeToBytes(bytes));
 
-        public static string HtmlAttributeEncode(string s)
-        {
-            return HttpEncoder.HtmlAttributeEncode(s);
-        }
+        public static string UrlEncode(byte[] bytes, int offset, int count) => bytes == null ? null : Encoding.ASCII.GetString(UrlEncodeToBytes(bytes, offset, count));
 
+        public static byte[] UrlEncodeToBytes(string str) => str == null ? null : UrlEncodeToBytes(str, Encoding.UTF8);
 
-        public static void HtmlAttributeEncode(string s, TextWriter output)
-        {
-            HttpEncoder.HtmlAttributeEncode(s, output);
-        }
-
-        public static string UrlEncode(string str)
-        {
-            if (str == null)
-                return null;
-            return UrlEncode(str, Encoding.UTF8);
-        }
-
-
-        public static string UrlPathEncode(string str)
-        {
-            return HttpEncoder.UrlPathEncode(str);
-        }
-
-        public static string UrlEncode(string str, Encoding e)
-        {
-            if (str == null)
-                return null;
-            return Encoding.ASCII.GetString(UrlEncodeToBytes(str, e));
-        }
-
-        public static string UrlEncode(byte[] bytes)
-        {
-            if (bytes == null)
-                return null;
-            return Encoding.ASCII.GetString(UrlEncodeToBytes(bytes));
-        }
-
-        public static string UrlEncode(byte[] bytes, int offset, int count)
-        {
-            if (bytes == null)
-                return null;
-            return Encoding.ASCII.GetString(UrlEncodeToBytes(bytes, offset, count));
-        }
-
-        public static byte[] UrlEncodeToBytes(string str)
-        {
-            if (str == null)
-                return null;
-            return UrlEncodeToBytes(str, Encoding.UTF8);
-        }
-
-        public static byte[] UrlEncodeToBytes(byte[] bytes)
-        {
-            if (bytes == null)
-                return null;
-            return UrlEncodeToBytes(bytes, 0, bytes.Length);
-        }
+        public static byte[] UrlEncodeToBytes(byte[] bytes) => bytes == null ? null : UrlEncodeToBytes(bytes, 0, bytes.Length);
 
         [Obsolete(
              "This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncodeToBytes(String)."
          )]
-        public static byte[] UrlEncodeUnicodeToBytes(string str)
-        {
-            if (str == null)
-                return null;
-            return Encoding.ASCII.GetBytes(UrlEncodeUnicode(str));
-        }
+        public static byte[] UrlEncodeUnicodeToBytes(string str) => str == null ? null : Encoding.ASCII.GetBytes(UrlEncodeUnicode(str));
 
-        public static string UrlDecode(string str)
-        {
-            if (str == null)
-                return null;
-            return UrlDecode(str, Encoding.UTF8);
-        }
+        public static string UrlDecode(string str) => str == null ? null : UrlDecode(str, Encoding.UTF8);
 
-        public static string UrlDecode(byte[] bytes, Encoding e)
-        {
-            if (bytes == null)
-                return null;
-            return UrlDecode(bytes, 0, bytes.Length, e);
-        }
+        public static string UrlDecode(byte[] bytes, Encoding e) => bytes == null ? null : UrlDecode(bytes, 0, bytes.Length, e);
 
-        public static byte[] UrlDecodeToBytes(string str)
-        {
-            if (str == null)
-                return null;
-            return UrlDecodeToBytes(str, Encoding.UTF8);
-        }
+        public static byte[] UrlDecodeToBytes(string str) => str == null ? null : UrlDecodeToBytes(str, Encoding.UTF8);
 
-        public static byte[] UrlDecodeToBytes(string str, Encoding e)
-        {
-            if (str == null)
-                return null;
-            return UrlDecodeToBytes(e.GetBytes(str));
-        }
+        public static byte[] UrlDecodeToBytes(string str, Encoding e) => str == null ? null : UrlDecodeToBytes(e.GetBytes(str));
 
-        public static byte[] UrlDecodeToBytes(byte[] bytes)
-        {
-            if (bytes == null)
-                return null;
-            return UrlDecodeToBytes(bytes, 0, bytes != null ? bytes.Length : 0);
-        }
+        public static byte[] UrlDecodeToBytes(byte[] bytes) => bytes == null ? null : UrlDecodeToBytes(bytes, 0, bytes.Length);
 
         public static byte[] UrlEncodeToBytes(string str, Encoding e)
         {
             if (str == null)
+            {
                 return null;
-            var bytes = e.GetBytes(str);
-            return HttpEncoder.UrlEncode(bytes, 0, bytes.Length, false /* alwaysCreateNewReturnValue */);
+            }
+
+            byte[] bytes = e.GetBytes(str);
+            return HttpEncoder.UrlEncode(bytes, 0, bytes.Length, alwaysCreateNewReturnValue: false);
         }
 
-        public static byte[] UrlEncodeToBytes(byte[] bytes, int offset, int count)
-        {
-            return HttpEncoder.UrlEncode(bytes, offset, count, true /* alwaysCreateNewReturnValue */);
-        }
+        public static byte[] UrlEncodeToBytes(byte[] bytes, int offset, int count) => HttpEncoder.UrlEncode(bytes, offset, count, alwaysCreateNewReturnValue: true);
 
         [Obsolete(
              "This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(String)."
          )]
-        public static string UrlEncodeUnicode(string str)
-        {
-            return HttpEncoder.UrlEncodeUnicode(str, false /* ignoreAscii */);
-        }
+        public static string UrlEncodeUnicode(string str) => HttpEncoder.UrlEncodeUnicode(str);
 
-        public static string UrlDecode(string str, Encoding e)
-        {
-            return HttpEncoder.UrlDecode(str, e);
-        }
+        public static string UrlDecode(string str, Encoding e) => HttpEncoder.UrlDecode(str, e);
 
-        public static string UrlDecode(byte[] bytes, int offset, int count, Encoding e)
-        {
-            return HttpEncoder.UrlDecode(bytes, offset, count, e);
-        }
+        public static string UrlDecode(byte[] bytes, int offset, int count, Encoding e) =>
+            HttpEncoder.UrlDecode(bytes, offset, count, e);
 
-        public static byte[] UrlDecodeToBytes(byte[] bytes, int offset, int count)
-        {
-            return HttpEncoder.UrlDecode(bytes, offset, count);
-        }
+        public static byte[] UrlDecodeToBytes(byte[] bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
 
-        public static string JavaScriptStringEncode(string value)
-        {
-            return JavaScriptStringEncode(value, false);
-        }
+        public static string JavaScriptStringEncode(string value) => HttpEncoder.JavaScriptStringEncode(value);
 
         public static string JavaScriptStringEncode(string value, bool addDoubleQuotes)
         {
-            var encoded = HttpEncoder.JavaScriptStringEncode(value);
+            string encoded = HttpEncoder.JavaScriptStringEncode(value);
             return addDoubleQuotes ? "\"" + encoded + "\"" : encoded;
         }
     }
