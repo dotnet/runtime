@@ -14,7 +14,7 @@ namespace System
 {
     public static partial class PlatformDetection
     {
-        public static Version OSXKernelVersion => throw new PlatformNotSupportedException();
+        public static Version OSXVersion => throw new PlatformNotSupportedException();
         public static bool IsSuperUser => throw new PlatformNotSupportedException();
         public static bool IsOpenSUSE => false;
         public static bool IsUbuntu => false;
