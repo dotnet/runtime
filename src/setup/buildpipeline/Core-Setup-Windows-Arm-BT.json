@@ -77,7 +77,6 @@
     },
     {
       "enabled": true,
-
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies",
