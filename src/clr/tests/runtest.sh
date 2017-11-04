@@ -148,6 +148,7 @@ function xunit_output_add_test {
     local outputFilePath=$2
     local testResult=$3 # Pass, Fail, or Skip
     local testScriptExitCode=$4
+    local testRunningTime=$5
 
     local testPath=${scriptFilePath%.sh} # Remove trailing ".sh"
     local testDir=$(dirname "$testPath")
@@ -165,6 +166,9 @@ function xunit_output_add_test {
     line="${line} type=\"${testDir}\""
     line="${line} method=\"${testName}\""
     line="${line} result=\"${testResult}\""
+    if [ -n "$testRunningTime" ] && [ "$testResult" != "Skip" ]; then
+        line="${line} time=\"${testRunningTime}\""
+    fi
 
     if [ "$testResult" == "Pass" ]; then
         line="${line}/>"
@@ -841,7 +845,7 @@ function finish_test {
         done <"$outputFilePath"
     fi
 
-    xunit_output_add_test "$scriptFilePath" "$outputFilePath" "$xunitTestResult" "$testScriptExitCode"
+    xunit_output_add_test "$scriptFilePath" "$outputFilePath" "$xunitTestResult" "$testScriptExitCode" "$testRunningTime"
 }
 
 function finish_remaining_tests {
