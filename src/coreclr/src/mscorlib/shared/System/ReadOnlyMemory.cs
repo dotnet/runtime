@@ -90,17 +90,17 @@ namespace System
         private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
 
         /// <summary>
-        /// Defines an implicit conversion of an array to a <see cref="Memory{T}"/>
+        /// Defines an implicit conversion of an array to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
         public static implicit operator ReadOnlyMemory<T>(T[] array) => new ReadOnlyMemory<T>(array);
         
         /// <summary>
-        /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Memory{T}"/>
+        /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
         public static implicit operator ReadOnlyMemory<T>(ArraySegment<T> arraySegment) => new ReadOnlyMemory<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 
         /// <summary>
-        /// Returns an empty <see cref="Memory{T}"/>
+        /// Returns an empty <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
         public static ReadOnlyMemory<T> Empty { get; } = Array.Empty<T>();
 
