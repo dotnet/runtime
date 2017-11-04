@@ -30,7 +30,7 @@ namespace System.Diagnostics.Tests
                         eventCounter += 1;
                         signal.Set();
                     });
-                    eventLog.EnableRaisingEvents = waitOnEvent;
+                    Helpers.RetryOnWin7(() => eventLog.EnableRaisingEvents = waitOnEvent);
                     Helpers.RetryOnWin7(() => eventLog.WriteEntry(message, EventLogEntryType.Information));
                     if (waitOnEvent)
                     {
