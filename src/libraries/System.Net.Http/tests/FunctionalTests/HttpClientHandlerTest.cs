@@ -97,6 +97,7 @@ namespace System.Net.Http.Functional.Tests
             GetMethods("HEAD", "TRACE");
 
         private static bool IsWindows10Version1607OrGreater => PlatformDetection.IsWindows10Version1607OrGreater;
+        private static bool NotWindowsUAPOrBeforeVersion1709 => !PlatformDetection.IsUap || PlatformDetection.IsWindows10Version1709OrGreater;
 
         private static IEnumerable<object[]> GetMethods(params string[] methods)
         {
@@ -1000,9 +1001,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(22187, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
-        [Theory, MemberData(nameof(HeaderWithEmptyValueAndUris))]
+        [ConditionalTheory(nameof(NotWindowsUAPOrBeforeVersion1709)), MemberData(nameof(HeaderWithEmptyValueAndUris))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(string name, string value, Uri uri)
         {
             using (HttpClient client = CreateHttpClient())

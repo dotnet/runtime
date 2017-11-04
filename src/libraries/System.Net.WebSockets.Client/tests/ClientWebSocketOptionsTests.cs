@@ -25,10 +25,10 @@ namespace System.Net.WebSockets.Client.Tests
         public static bool CanTestClientCertificates =>
             CanTestCertificates && BackendSupportsCustomCertificateHandling;
 
-        // Windows 10 Insider Preview Build 16215 introduced the necessary APIs for the UAP version of
+        // Windows 10 Version 1709 introduced the necessary APIs for the UAP version of
         // ClientWebSocket.ConnectAsync to carry out mutual TLS authentication.
         public static bool ClientCertificatesSupported =>
-            !PlatformDetection.IsUap || PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater;
+            !PlatformDetection.IsUap || PlatformDetection.IsWindows10Version1709OrGreater;
 
         public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
 

@@ -82,11 +82,9 @@ namespace System
         public static bool IsUbuntu1704 { get { throw null; } }
         public static bool IsUbuntu1710 { get { throw null; } }
         public static bool IsWindows { get { throw null; } }
-        public static bool IsWindows10InsiderPreviewBuild16215OrGreater { get { throw null; } }
-        public static bool IsWindows10Version1607OrGreater { get { throw null; } }
-        public static bool IsWindows10Version16251OrGreater { get { throw null; } }
-        public static bool IsWindows10Version1703OrGreater { get { throw null; } }
-        public static bool IsWindowsRedStone2 { get { throw null; } }
+        public static bool IsWindows10Version1607OrGreater { get { throw null; } } // >= Windows 10 Anniversary Update
+        public static bool IsWindows10Version1703OrGreater { get { throw null; } } // >= Windows 10 Creators Update
+        public static bool IsWindows10Version1709OrGreater { get { throw null; } } // >= Windows 10 Fall Creators Update
         public static bool IsWindows7 { get { throw null; } }
         public static bool IsWindows8x { get { throw null; } }
         public static bool IsWindowsAndElevated { get { throw null; } }
