@@ -1444,7 +1444,14 @@ namespace Mono.Linker.Steps {
 				return true;
 			case MethodAction.Parse:
 				AssemblyDefinition assembly = ResolveAssembly (method.DeclaringType.Scope);
-				return Annotations.GetAction (assembly) == AssemblyAction.Link;
+				switch (Annotations.GetAction (assembly)) {
+				case AssemblyAction.Link:
+				case AssemblyAction.Copy:
+				case AssemblyAction.CopyUsed:
+					return true;
+				default:
+					return false;
+				}
 			default:
 				return false;
 			}
