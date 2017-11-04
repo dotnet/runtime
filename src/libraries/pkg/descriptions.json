@@ -65,12 +65,12 @@
   },
   {
     "Name": "Microsoft.Windows.Compatibility",
-    "Description": "Windows Compatibility Pack for .NET Core that includes libraries intended to provide support for more APIs that exist on .NET Framework.",
+    "Description": "This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.",
     "CommonTypes": []
   },
   {
     "Name": "Microsoft.Windows.Compatibility.Shims",
-    "Description": "Includes .NET Framework shims that type forward to .NET Core implementations in the Microsoft.Windows.Compatibility package.",
+    "Description": "This package provides infrastructure services and shouldn't be referenced directly from your code. It provides facade assemblies in order to make the Microsoft.Windows.Compatibility package work across all .NET implementations.",
     "CommonTypes": []
   },
   {
