@@ -62,6 +62,7 @@
       "alwaysRun": false,
       "displayName": "Install Signing Plugin",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), in(variables.PB_SignType, 'real', 'test'))",
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
         "versionSpec": "1.*",
@@ -503,9 +504,9 @@
       "allowOverride": true
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalBuildArguments)"
+      "value": "/p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalMSBuildArguments)"
     },
-    "PB_AdditionalBuildArguments": {
+    "PB_AdditionalMSBuildArguments": {
       "value": ""
     },
     "OfficialBuildId": {

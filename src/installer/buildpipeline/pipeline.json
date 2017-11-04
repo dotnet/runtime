@@ -19,7 +19,8 @@
           "Name": "Core-Setup-Linux-BT",
           "Parameters": {
             "PB_DockerTag": "centos-7-d485f41-20173404063424",
-            "PB_AdditionalBuildArguments":"-PortableBuild=true -strip-symbols",
+            "PB_AdditionalBuildArguments":"-PortableBuild=true -strip-symbols -SkipTests=$(PB_SkipTests)",
+            "PB_AdditionalMSBuildArguments":"/p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -34,8 +35,8 @@
           "Parameters": {
             "PB_DockerTag": "centos-6-376e1a3-20174311014331",
             "PB_TargetArchitecture": "x64",
-            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols",
-            "PB_AdditionalMSBuildArguments":"/p:OutputRid=rhel.6-x64",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols -SkipTests=$(PB_SkipTests)",
+            "PB_AdditionalMSBuildArguments":"/p:OutputRid=rhel.6-x64 /p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_PortableBuild": "false"
           },
           "ReportingParameters": {
@@ -49,8 +50,8 @@
           "Parameters": {
             "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
             "PB_TargetArchitecture": "x64",
-            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols",
-            "PB_AdditionalMSBuildArguments":"/p:OutputRid=alpine.3.6-x64",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols -SkipTests=$(PB_SkipTests)",
+            "PB_AdditionalMSBuildArguments":"/p:OutputRid=alpine.3.6-x64 /p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_PortableBuild": "false"
           },
           "ReportingParameters": {
@@ -65,6 +66,7 @@
             "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20170319080304",
             "PB_TargetArchitecture": "arm",
             "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
+            "PB_AdditionalMSBuildArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
             "PB_PortableBuild": "true"
           },
@@ -78,7 +80,8 @@
         {
           "Name": "Core-Setup-OSX-BT",
           "Parameters": {
-            "PB_PortableBuildArg": "-PortableBuild=true -strip-symbols",
+            "PB_AdditionalBuildArguments": "-PortableBuild=true -strip-symbols -SkipTests=$(PB_SkipTests)",
+            "PB_AdditionalMSBuildArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -91,7 +94,7 @@
         {
           "Name": "Core-Setup-Windows-Arm-BT",
           "Parameters": {
-            "PB_AdditionalBuildArguments": "/p:SkipTests=true",
+            "PB_AdditionalMSBuildArguments": "/p:SkipTests=true /p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_TargetArchitecture": "arm",
             "PB_PortableBuild": "true"
           },
@@ -105,7 +108,7 @@
         {
           "Name": "Core-Setup-Windows-Arm-BT",
           "Parameters": {
-            "PB_AdditionalBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
+            "PB_AdditionalMSBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr /p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_TargetArchitecture": "arm64",
             "PB_PortableBuild": "true"
           },
@@ -121,6 +124,7 @@
           "Parameters": {
             "PB_TargetArchitecture": "x64",
             "PB_PortableBuild": "true",
+            "PB_AdditionalMSBuildArguments": "/p:SkipTests=$(PB_SkipTests) /p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_PublishRidAgnosticPackages": "true",
             "PB_BuildFullPlatformManifest": "true"
           },
@@ -135,7 +139,8 @@
           "Name": "Core-Setup-Windows-BT",
           "Parameters": {
             "PB_TargetArchitecture": "x86",
-            "PB_PortableBuild": "true"
+            "PB_PortableBuild": "true",
+            "PB_AdditionalMSBuildArguments": "/p:SkipTests=$(PB_SkipTests) /p:DotNetRestoreSources=$(PB_RestoreSource)"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",

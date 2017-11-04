@@ -6,6 +6,7 @@
       "alwaysRun": false,
       "displayName": "Install Signing Plugin",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), in(variables.PB_SignType, 'real', 'test'))",
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
         "versionSpec": "1.*",
@@ -222,6 +223,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish",
+      "condition": "and(succeeded(), ne(variables.PB_PublishType, ''))",
       "timeoutInMinutes": 0,
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
