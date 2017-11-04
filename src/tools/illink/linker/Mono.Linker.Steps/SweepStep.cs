@@ -75,11 +75,23 @@ namespace Mono.Linker.Steps {
 
 		void SweepAssembly (AssemblyDefinition assembly)
 		{
-			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+			switch (Annotations.GetAction (assembly)) {
+			case AssemblyAction.Link:
+				if (!IsMarkedAssembly (assembly)) {
+					RemoveAssembly (assembly);
+					return;
+				}
+				break;
+
+			case AssemblyAction.CopyUsed:
+				if (!IsMarkedAssembly (assembly)) {
+					RemoveAssembly (assembly);
+				} else {
+					Annotations.SetAction (assembly, AssemblyAction.Copy);
+				}
 				return;
 
-			if (!IsMarkedAssembly (assembly)) {
-				RemoveAssembly (assembly);
+			default:
 				return;
 			}
 
@@ -166,8 +178,8 @@ namespace Mono.Linker.Steps {
 				case AssemblyAction.Copy:
 					// Copy means even if "unlinked" we still want that assembly to be saved back 
 					// to disk (OutputStep) without the (removed) reference
-					Annotations.SetAction (assembly, AssemblyAction.Save);
 					if (!Context.KeepTypeForwarderOnlyAssemblies) {
+						Annotations.SetAction (assembly, AssemblyAction.Save);
 						ResolveAllTypeReferences (assembly);
 					}
 					break;

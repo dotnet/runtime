@@ -303,8 +303,8 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --version           Print the version number of the {0}", _linker);
 			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types and methods (true or false)");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
-			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy or link, default to skip");
-			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy or link, default to link");
+			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused or link, default to skip");
+			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused or link, default to link");
 			Console.WriteLine ("   -p                  Action per assembly");
 			Console.WriteLine ("   -s                  Add a new step to the pipeline.");
 			Console.WriteLine ("   -t                  Keep assemblies in which only type forwarders are referenced.");
