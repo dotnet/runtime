@@ -359,7 +359,7 @@ namespace System.Diagnostics.Tests
         public void WriteEventInstanceNull()
         {
             string source = "Source_" + nameof(WriteEventInstanceNull);
-            Assert.Throws<ArgumentNullException>(() => EventLog.WriteEvent(source, null, insertStrings));
+            Assert.Throws<ArgumentNullException>(() => Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, null, insertStrings)));
         }
 
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
@@ -368,7 +368,7 @@ namespace System.Diagnostics.Tests
             string source = "Source_" + nameof(WriteEventMessageValues_OutOfRange);
             string[] message = new string[1];
             message[0] = new string('c', 32767);
-            Assert.Throws<ArgumentException>(() => EventLog.WriteEvent(source, eventInstance, message));
+            Assert.Throws<ArgumentException>(() => Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, eventInstance, message)));
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
@@ -377,7 +377,7 @@ namespace System.Diagnostics.Tests
             string source = "Source_" + nameof(WriteWithoutExistingSource);
             try
             {
-                EventLog.WriteEvent(source, eventInstance, rawData, null);
+                Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, eventInstance, rawData, null));
                 Assert.Equal("Application", EventLog.LogNameFromSourceName(source, "."));
             }
             finally
@@ -401,5 +401,4 @@ namespace System.Diagnostics.Tests
             return Helpers.RetryOnWin7(() => elec.Count > 0 ? elec[elec.Count - 1] : null);
         }
     }
-
 }
