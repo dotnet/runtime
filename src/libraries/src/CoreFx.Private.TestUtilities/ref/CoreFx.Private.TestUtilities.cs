@@ -97,7 +97,7 @@ namespace System
         public static bool IsInAppContainer { get { throw null; } }
         public static bool IsWinRTSupported { get { throw null; } }
         public static bool IsXmlDsigXsltTransformSupported { get { throw null; } }
-        public static System.Version OSXKernelVersion { get { throw null; } }
+        public static System.Version OSXVersion { get { throw null; } }
         public static int WindowsVersion { get { throw null; } }
         public static string GetDistroVersionString() { throw null; }
         public static bool IsNetfx462OrNewer() { throw null; }
