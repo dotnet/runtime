@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.CodeDom;
 using System.IO;
 using Xunit;
@@ -41,6 +42,33 @@ namespace System.Management.Tests
             finally
             {
                 if (passed && tempFilePath != null)
+                    File.Delete(tempFilePath);
+            }
+        }
+
+        [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [InlineData(CodeLanguage.JScript)]
+        [InlineData(CodeLanguage.Mcpp)]
+        [InlineData(CodeLanguage.VJSharp)]
+        public void Throw_On_Unsupported_Languages(CodeLanguage lang)
+        {
+            // On full framework JScript is supported and no exception raised
+            if (lang == CodeLanguage.JScript && PlatformDetection.IsFullFramework)
+                return;
+
+            var tempFilePath = Path.GetTempFileName();
+            var managementClass = new ManagementClass(null, "Win32_Processor", null);
+
+            try
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => managementClass.GetStronglyTypedClassCode(lang, tempFilePath, "Wmi.Test.CoreFx"));
+            }
+            finally
+            {
+                managementClass = null;
+                GC.Collect(2);
+                GC.WaitForPendingFinalizers();
+                if (tempFilePath != null)
                     File.Delete(tempFilePath);
             }
         }
