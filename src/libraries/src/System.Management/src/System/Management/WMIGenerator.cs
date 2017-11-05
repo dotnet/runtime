@@ -4861,7 +4861,12 @@ namespace System.Management
                         strProvider = "Visual Basic.";
                         cp = new VBCodeProvider();
                         break;
-            
+
+                    case CodeLanguage.JScript:
+                        strProvider = "JScript.NET.";
+                        bSucceeded = false; // JScriptCodeProvider does not exist on CoreFx
+                        break;
+
                     case CodeLanguage.CSharp:
                         strProvider = "C#.";
                         cp= new CSharpCodeProvider() ;
