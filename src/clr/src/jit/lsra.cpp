@@ -6590,7 +6590,8 @@ bool LinearScan::isAssigned(RegRecord* regRec, LsraLocation lastLocation ARM_ARG
 //
 void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 {
-    if (regRec->assignedInterval != nullptr && regRec->assignedInterval != interval)
+    Interval* assignedInterval = regRec->assignedInterval;
+    if (assignedInterval != nullptr && assignedInterval != interval)
     {
         // This is allocated to another interval.  Either it is inactive, or it was allocated as a
         // copyReg and is therefore not the "assignedReg" of the other interval.  In the latter case,
@@ -6600,13 +6601,32 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
         // in method SerialStream.GetDcbFlag.
         // Note that we can't check for the copyReg case, because we may have seen a more recent
         // RefPosition for the Interval that was NOT a copyReg.
-        if (regRec->assignedInterval->assignedReg == regRec)
+        if (assignedInterval->assignedReg == regRec)
         {
-            assert(regRec->assignedInterval->isActive == false);
-            regRec->assignedInterval->physReg = REG_NA;
+            assert(assignedInterval->isActive == false);
+            assignedInterval->physReg = REG_NA;
         }
         unassignPhysReg(regRec->regNum);
     }
+#ifdef _TARGET_ARM_
+    // If 'interval' and 'assignedInterval' were both TYP_DOUBLE, then we have unassigned 'assignedInterval'
+    // from both halves. Otherwise, if 'interval' is TYP_DOUBLE, we now need to unassign the other half.
+    if ((interval->registerType == TYP_DOUBLE) &&
+        ((assignedInterval == nullptr) || (assignedInterval->registerType == TYP_FLOAT)))
+    {
+        RegRecord* otherRegRecord = getSecondHalfRegRec(regRec);
+        assignedInterval          = otherRegRecord->assignedInterval;
+        if (assignedInterval != nullptr && assignedInterval != interval)
+        {
+            if (assignedInterval->assignedReg == otherRegRecord)
+            {
+                assert(assignedInterval->isActive == false);
+                assignedInterval->physReg = REG_NA;
+            }
+            unassignPhysReg(otherRegRecord->regNum);
+        }
+    }
+#endif
 
     updateAssignedInterval(regRec, interval, interval->registerType);
 }
@@ -7210,6 +7230,30 @@ bool LinearScan::isSecondHalfReg(RegRecord* regRec, Interval* interval)
 }
 
 //------------------------------------------------------------------------------------------
+// getSecondHalfRegRec: Get the second (odd) half of an ARM32 double register
+//
+// Arguments:
+//    regRec - A float RegRecord
+//
+// Assumptions:
+//    regRec must be a valid double register (i.e. even)
+//
+// Return Value:
+//    The RegRecord for the second half of the double register
+//
+RegRecord* LinearScan::getSecondHalfRegRec(RegRecord* regRec)
+{
+    regNumber  secondHalfRegNum;
+    RegRecord* secondHalfRegRec;
+
+    assert(genIsValidDoubleReg(regRec->regNum));
+
+    secondHalfRegNum = REG_NEXT(regRec->regNum);
+    secondHalfRegRec = getRegisterRecord(secondHalfRegNum);
+
+    return secondHalfRegRec;
+}
+//------------------------------------------------------------------------------------------
 // findAnotherHalfRegRec: Find another half RegRecord which forms same ARM32 double register
 //
 // Arguments:
@@ -7650,7 +7694,7 @@ bool LinearScan::registerIsFree(regNumber regNum, RegisterType regType)
 #ifdef _TARGET_ARM_
     if (isFree && regType == TYP_DOUBLE)
     {
-        isFree = getRegisterRecord(REG_NEXT(regNum))->isFree();
+        isFree = getSecondHalfRegRec(physRegRecord)->isFree();
     }
 #endif // _TARGET_ARM_
 
@@ -7942,7 +7986,7 @@ void LinearScan::allocateRegisters()
                 // Update overlapping floating point register for TYP_DOUBLE
                 if (assignedInterval->registerType == TYP_DOUBLE)
                 {
-                    regRecord        = getRegisterRecord(REG_NEXT(regRecord->regNum));
+                    regRecord        = getSecondHalfRegRec(regRecord);
                     assignedInterval = regRecord->assignedInterval;
 
                     assert(assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant);
