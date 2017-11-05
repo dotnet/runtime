@@ -524,6 +524,7 @@ void       g_ptr_array_sort_with_data     (GPtrArray *array, GCompareDataFunc co
 void       g_ptr_array_set_size           (GPtrArray *array, gint length);
 gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
+guint      g_ptr_array_capacity           (GPtrArray *array);
 #define    g_ptr_array_index(array,index) (array)->pdata[(index)]
 
 /*
