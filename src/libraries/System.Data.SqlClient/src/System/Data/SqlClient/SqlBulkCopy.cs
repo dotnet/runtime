@@ -131,7 +131,7 @@ namespace System.Data.SqlClient
             DbDataReader
         }
 
-        // Enum for specifying SqlDataReader.Get method used 
+        // Enum for specifying SqlDataReader.Get method used
         private enum ValueMethod : byte
         {
             GetValue,
@@ -217,7 +217,7 @@ namespace System.Data.SqlClient
         private SourceColumnMetadata[] _currentRowMetadata;
 
 #if DEBUG
-        internal static bool _setAlwaysTaskOnWrite = false; //when set and in DEBUG mode, TdsParser::WriteBulkCopyValue will always return a task 
+        internal static bool _setAlwaysTaskOnWrite = false; //when set and in DEBUG mode, TdsParser::WriteBulkCopyValue will always return a task
         internal static bool SetAlwaysTaskOnWrite
         {
             set
@@ -402,7 +402,7 @@ namespace System.Data.SqlClient
 
         private bool IsCopyOption(SqlBulkCopyOptions copyOption) => ((_copyOptions & copyOption) == copyOption);
 
-        //Creates the initial query string, but does not execute it. 
+        //Creates the initial query string, but does not execute it.
         private string CreateInitialQuery()
         {
             string[] parts;
@@ -479,9 +479,9 @@ namespace System.Data.SqlClient
         }
 
         // Creates and then executes initial query to get information about the targettable
-        // When __isAsyncBulkCopy == false (i.e. it is Sync copy): out result contains the resulset. Returns null. 
-        // When __isAsyncBulkCopy == true (i.e. it is Async copy): This still uses the _parser.Run method synchronously and return Task<BulkCopySimpleResultSet>. 
-        // We need to have a _parser.RunAsync to make it real async. 
+        // When __isAsyncBulkCopy == false (i.e. it is Sync copy): out result contains the resulset. Returns null.
+        // When __isAsyncBulkCopy == true (i.e. it is Async copy): This still uses the _parser.Run method synchronously and return Task<BulkCopySimpleResultSet>.
+        // We need to have a _parser.RunAsync to make it real async.
         private Task<BulkCopySimpleResultSet> CreateAndExecuteInitialQueryAsync(out BulkCopySimpleResultSet result)
         {
             string TDSCommand = CreateInitialQuery();
@@ -1034,7 +1034,7 @@ namespace System.Data.SqlClient
         {
             if (_isAsyncBulkCopy && _DbDataReaderRowSource != null)
             {
-                // This will call ReadAsync for DbDataReader (for SqlDataReader it will be truly async read; for non-SqlDataReader it may block.) 
+                // This will call ReadAsync for DbDataReader (for SqlDataReader it will be truly async read; for non-SqlDataReader it may block.)
                 return _DbDataReaderRowSource.ReadAsync(cts).ContinueWith((t) =>
                 {
                     if (t.Status == TaskStatus.RanToCompletion)
@@ -1488,7 +1488,7 @@ namespace System.Data.SqlClient
                     case TdsEnums.SQLUDT:
                         throw ADP.DbTypeNotSupported("UDT");
                     case TdsEnums.SQLXMLTYPE:
-                        // Could be either string, SqlCachedBuffer, XmlReader or XmlDataFeed 
+                        // Could be either string, SqlCachedBuffer, XmlReader or XmlDataFeed
                         Debug.Assert((value is XmlReader) || (value is SqlCachedBuffer) || (value is string) || (value is SqlString) || (value is XmlDataFeed), "Invalid value type of Xml datatype");
                         if (value is XmlReader)
                         {
@@ -1963,7 +1963,7 @@ namespace System.Data.SqlClient
                                 case ValueSourceType.IDataReader:
                                     try
                                     {
-                                        index = _DbDataReaderRowSource.GetOrdinal(unquotedColumnName);
+                                        index = ((IDataReader)_rowSource).GetOrdinal(unquotedColumnName);
                                     }
                                     catch (IndexOutOfRangeException e)
                                     {
