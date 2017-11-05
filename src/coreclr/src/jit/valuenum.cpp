@@ -41,10 +41,6 @@ VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
             return VNF_SUB_UN;
         case GT_MUL:
             return VNF_MUL_UN;
-        case GT_DIV:
-            return VNF_DIV_UN;
-        case GT_MOD:
-            return VNF_MOD_UN;
 
         case GT_NOP:
         case GT_COMMA:
@@ -190,16 +186,6 @@ T ValueNumStore::EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
                 return T(UT(v0) - UT(v1));
             case VNF_MUL_UN:
                 return T(UT(v0) * UT(v1));
-            case VNF_DIV_UN:
-                if (IsIntZero(v1))
-                {
-                    *pExcSet = VNExcSetSingleton(VNForFunc(TYP_REF, VNF_DivideByZeroExc));
-                    return (T)0;
-                }
-                else
-                {
-                    return T(UT(v0) / UT(v1));
-                }
             default:
                 // Must be int-specific
                 return EvalOpIntegral(vnf, v0, v1, pExcSet);
