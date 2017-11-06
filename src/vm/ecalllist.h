@@ -145,15 +145,6 @@ FCFuncStart(gDiagnosticsStackTrace)
     FCFuncElement("GetStackFramesInternal", DebugStackTrace::GetStackFramesInternal)
 FCFuncEnd()
 
-FCFuncStart(gDiagnosticsLog)
-    FCFuncElement("AddLogSwitch", Log::AddLogSwitch)
-    FCFuncElement("ModifyLogSwitch", Log::ModifyLogSwitch)
-FCFuncEnd()
-
-FCFuncStart(gDiagnosticsAssert)
-    FCFuncElement("ShowDefaultAssertDialog", DebuggerAssert::ShowDefaultAssertDialog)
-FCFuncEnd()
-
 FCFuncStart(gDateTimeFuncs)
     FCFuncElement("GetSystemTimeAsFileTime", SystemNative::__GetSystemTimeAsFileTime)
 FCFuncEnd()
@@ -466,10 +457,6 @@ FCFuncStart(gCompatibilitySwitchFuncs)
     FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
 FCFuncEnd()
 
-
-FCFuncStart(gBCLDebugFuncs)
-    FCFuncElement("GetRegistryLoggingValues", ManagedLoggingHelper::GetRegistryLoggingValues)
-FCFuncEnd()
 
 FCFuncStart(gAppDomainManagerFuncs)
     QCFuncElement("GetEntryAssembly", AssemblyNative::GetEntryAssembly)
@@ -1317,8 +1304,6 @@ FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExte
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
-FCClassElement("Assert", "System.Diagnostics", gDiagnosticsAssert)
-FCClassElement("BCLDebug", "System", gBCLDebugFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CompareInfo", "System.Globalization", gCompareInfoFuncs)
@@ -1360,7 +1345,6 @@ FCClassElement("InterfaceMarshaler", "System.StubHelpers", gInterfaceMarshalerFu
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("JitHelpers", "System.Runtime.CompilerServices", gJitHelpers)
 FCClassElement("LoaderAllocatorScout", "System.Reflection", gLoaderAllocatorFuncs)
-FCClassElement("Log", "System.Diagnostics", gDiagnosticsLog)
 FCClassElement("ManifestBasedResourceGroveler", "System.Resources",  gManifestBasedResourceGrovelerFuncs)
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
 FCClassElement("Math", "System", gMathFuncs)
