@@ -1,4 +1,4 @@
-﻿# Multi-level SharedFX Lookup
+# Multi-level SharedFX Lookup
 
 ## Introduction
 
@@ -78,20 +78,20 @@ Both files carry the filenames for dependencies that must be found. They can be 
 
 At last, the coreclr is loaded into memory and called to run the application.
 
-## Proposed changes
+## Global locations
 
-Almost every file search is done in relation to the executable directory. It would be better to be able to search for some files in other directories as well, namely the global .NET location. The  global folders may vary depending on the running operational system. They are defined as follows:
+In addition to searching the executable directory, the global .NET location is also searched. The global folders may vary depending on the running operational system. They are defined as follows:
 
 Global .NET location:
 
 	Windows 32-bit: %SystemDrive%\Program Files\dotnet
 	Windows 64-bit (32-bit application): %SystemDrive%\Program Files (x86)\dotnet
 	Windows 64-bit (64-bit application): %SystemDrive%\Program Files\dotnet
-	Unix: the directory of “dotnet” defined in the system path.
-
+	Unix: none
+	
 ### Framework search
 
-It’s being proposed that, if the specified version is defined through the configuration json file, the search must be conducted as follows:
+If the specified version is defined through the configuration json file, the search must be conducted as follows:
 
 - For productions:
 
@@ -105,7 +105,7 @@ It’s being proposed that, if the specified version is defined through the conf
 
 In the case that the desired version is defined through an argument, the multi-level lookup will happen as well but it will only consider the exact specified version (it will not roll forward).
 
-### Tests
+#### Tests
 
 To make sure that the changes are working correctly, the following behavior conditions will be verified through tests:
 
@@ -115,13 +115,14 @@ To make sure that the changes are working correctly, the following behavior cond
 - If the version is specified through an argument, then roll forwards are not allowed to happen.
 - If no compatible version folder is found, then an error message must be returned and the process must end.
 
-## Future changes
 
 ### SDK search
 
-By following similar logic, it will be possible to implement future changes in the SDK search. Instead of looking for it only in relation to the executable directory, we could do it in the folders specified above by following the same priority rank.
+Like the Framework search, the SDK is searched for a compatible version. Instead of looking for it only in relation to the executable directory, it is also searched in the folders specified above by following the same priority rank.
 
-The search would be conducted as follows:
+The search is conducted as follows:
 
 1.	In relation to the executable directory: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
-2.	In relation to the global location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, then we were not able to find any version folder and an error message must be returned.
+2.	In relation to the global location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, then we were not able to find any version folder and an error message is returned.
+
+Unlike the Framework search, the SDK search does a roll-forward for pre-release versions when the patch version changes. For example, if you install v2.0.1-pre, it will be used over v2.0.0.
