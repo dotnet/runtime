@@ -325,4 +325,41 @@ inline TypeHandle Object::GetGCSafeTypeHandle() const
         return TypeHandle(pMT);
 }
 
+template<class F>
+inline void FindByRefPointerOffsetsInByRefLikeObject(PTR_MethodTable pMT, SIZE_T baseOffset, const F processPointerOffset)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(pMT != nullptr);
+    _ASSERTE(pMT->IsByRefLike());
+
+    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field,
+    // in which case the check for g_TypedReferenceMT below would not be necessary
+    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
+    {
+        processPointerOffset(baseOffset);
+        return;
+    }
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+        {
+            continue;
+        }
+
+        // TODO: GetApproxFieldTypeHandleThrowing may throw. This is a potential stress problem for fragile NGen of non-CoreLib
+        // assemblies. It won't ever throw for CoreCLR with R2R. Figure out if anything needs to be done to deal with the
+        // exception.
+        PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+        if (!pFieldMT->IsByRefLike())
+        {
+            continue;
+        }
+
+        SIZE_T fieldStartIndex = pFD->GetOffset() / sizeof(void *);
+        FindByRefPointerOffsetsInByRefLikeObject(pFieldMT, baseOffset + fieldStartIndex, processPointerOffset);
+    }
+}
+
 #endif  // _OBJECT_INL_

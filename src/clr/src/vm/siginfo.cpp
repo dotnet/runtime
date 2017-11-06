@@ -4946,50 +4946,20 @@ void PromoteCarefully(promote_func   fn,
     (*fn) (ppObj, sc, flags);
 }
 
-void ReportByRefPointersFromByRefLikeObject(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, PTR_VOID pSrc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(pMT->IsByRefLike());
-
-    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field,
-    // in which case the check for g_TypedReferenceMT below would not be necessary
-    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
-    {
-        (*fn)(dac_cast<PTR_PTR_Object>(pSrc), sc, GC_CALL_INTERIOR);
-        return;
-    }
-
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
-        {
-            continue;
-        }
-
-        // TODO: GetApproxFieldTypeHandleThrowing may throw. This is a potential stress problem for fragile NGen of non-CoreLib
-        // assemblies. It won't ever throw for CoreCLR with R2R. Figure out if anything needs to be done to deal with the
-        // exception.
-        PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-        if (!pFieldMT->IsByRefLike())
-        {
-            continue;
-        }
-
-        int fieldStartIndex = pFD->GetOffset() / sizeof(void *);
-        PTR_PTR_Object fieldRef = dac_cast<PTR_PTR_Object>(PTR_BYTE(pSrc) + fieldStartIndex);
-        ReportByRefPointersFromByRefLikeObject(fn, sc, pFieldMT, fieldRef);
-    }
-}
-
 void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, PTR_VOID pSrc)
 {
     WRAPPER_NO_CONTRACT;
 
     if (pMT->IsByRefLike())
     {
-        ReportByRefPointersFromByRefLikeObject(fn, sc, pMT, pSrc);
+        FindByRefPointerOffsetsInByRefLikeObject(
+            pMT,
+            0 /* baseOffset */,
+            [&](SIZE_T pointerOffset)
+            {
+                PTR_PTR_Object fieldRef = dac_cast<PTR_PTR_Object>(PTR_BYTE(pSrc) + pointerOffset);
+                (*fn)(fieldRef, sc, GC_CALL_INTERIOR);
+            });
     }
 
     if (!pMT->ContainsPointers())
