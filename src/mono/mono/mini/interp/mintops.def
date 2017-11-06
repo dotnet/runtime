@@ -168,8 +168,10 @@ OPDEF(MINT_STIND_REF, "stind.ref", 1, MintOpNoArgs)
 
 OPDEF(MINT_BR, "br", 3, MintOpBranch)
 OPDEF(MINT_LEAVE, "leave", 3, MintOpBranch)
+OPDEF(MINT_LEAVE_CHECK, "leave.check", 3, MintOpBranch)
 OPDEF(MINT_BR_S, "br.s", 2, MintOpShortBranch)
 OPDEF(MINT_LEAVE_S, "leave.s", 2, MintOpShortBranch)
+OPDEF(MINT_LEAVE_S_CHECK, "leave.s.check", 2, MintOpShortBranch)
 
 OPDEF(MINT_THROW, "throw", 1, MintOpNoArgs)
 OPDEF(MINT_RETHROW, "rethrow", 2, MintOpUShortInt)

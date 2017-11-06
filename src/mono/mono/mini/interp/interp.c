@@ -114,7 +114,6 @@ static void interp_exec_method (InterpFrame *frame, ThreadContext *context);
 
 typedef void (*ICallMethod) (InterpFrame *frame);
 
-static guint32 die_on_exception = 0;
 static MonoNativeTlsKey thread_context_id;
 
 static char* dump_args (InterpFrame *inv);
@@ -198,6 +197,14 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 
 #endif
 
+static void
+set_resume_state (ThreadContext *context, InterpFrame *frame)
+{
+	frame->ex = NULL;
+	context->has_resume_state = 0;
+	context->handler_frame = NULL;
+}
+
 /* Set the current execution state to the resume state in context */
 #define SET_RESUME_STATE(context) do { \
 		ip = (context)->handler_ip;						\
@@ -205,9 +212,7 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 		sp->data.p = frame->ex;											\
 		++sp;															\
 		} \
-		frame->ex = NULL;												\
-		(context)->has_resume_state = 0;								\
-		(context)->handler_frame = NULL;								\
+		set_resume_state ((context), (frame));							\
 		goto main_loop;													\
 	} while (0)
 
@@ -591,6 +596,41 @@ stackval_to_data (MonoType *type_, stackval *val, char *data, gboolean pinvoke)
 	}
 }
 
+/*
+ * interp_throw:
+ *   Throw an exception from the interpreter.
+ */
+static void
+interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gconstpointer ip, gboolean rethrow)
+{
+	MonoLMFExt ext;
+
+	interp_push_lmf (&ext, frame);
+	frame->ip = ip;
+	frame->ex = ex;
+
+	if (!rethrow) {
+		ex->stack_trace = NULL;
+		ex->trace_ips = NULL;
+	}
+
+	MonoContext ctx;
+	memset (&ctx, 0, sizeof (MonoContext));
+	MONO_CONTEXT_SET_SP (&ctx, frame);
+
+	/*
+	 * Call the JIT EH code. The EH code will call back to us using:
+	 * - mono_interp_set_resume_state ()/run_finally ()/run_filter ().
+	 * Since ctx.ip is 0, this will start unwinding from the LMF frame
+	 * pushed above, which points to our frames.
+	 */
+	mono_handle_exception (&ctx, (MonoObject*)ex);
+
+	interp_pop_lmf (&ext);
+
+	g_assert (context->has_resume_state);
+}
+
 static void
 fill_in_trace (MonoException *exception, InterpFrame *frame)
 {
@@ -605,18 +645,25 @@ fill_in_trace (MonoException *exception, InterpFrame *frame)
 
 #define FILL_IN_TRACE(exception, frame) fill_in_trace(exception, frame)
 
-#define THROW_EX_GENERAL(exception,ex_ip,rethrow)		\
-	do {\
-		frame->ip = (ex_ip);		\
-		frame->ex = (MonoException*)(exception);	\
-		if (!rethrow) { \
-			FILL_IN_TRACE(frame->ex, frame);	\
-		} \
-		MONO_PROFILER_RAISE (exception_throw, ((MonoObject *) exception));	\
-		goto handle_exception;	\
+#define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
+	do {							\
+		interp_throw (context, (exception), (frame), (ex_ip), (rethrow)); \
+		if (frame == context->handler_frame) \
+			SET_RESUME_STATE (context); \
+		else \
+			goto exit_frame; \
 	} while (0)
 
 #define THROW_EX(exception,ex_ip) THROW_EX_GENERAL ((exception), (ex_ip), FALSE)
+
+/*
+ * Its possible for child_frame.ex to contain an unthrown exception, if the transform phase
+ * produced one.
+ */
+#define CHECK_CHILD_EX(child_frame, ip) do { \
+	if ((child_frame).ex) \
+		THROW_EX ((child_frame).ex, (ip)); \
+	} while (0)
 
 static MonoObject*
 ves_array_create (InterpFrame *frame, MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
@@ -2222,6 +2269,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 	frame->ex = NULL;
 	frame->ex_handler = NULL;
 	frame->ip = NULL;
+	frame->domain = mono_domain_get ();
 	context->current_frame = frame;
 
 	debug_enter (frame, &tracing);
@@ -2463,13 +2511,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					goto exit_frame;
 			}
 
-			if (child_frame.ex) {
-				/*
-				 * An exception occurred, need to run finally, fault and catch handlers..
-				 */
-				frame->ex = child_frame.ex;
-				goto handle_finally;
-			}
+			CHECK_CHILD_EX (child_frame, ip - 2);
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -2510,17 +2552,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					goto exit_frame;
 			}
 
-			if (child_frame.ex) {
-				/*
-				 * An exception occurred, need to run finally, fault and catch handlers..
-				 */
-				frame->ex = child_frame.ex;
-				if (context->search_for_handler) {
-					context->search_for_handler = 0;
-					goto handle_exception;
-				}
-				goto handle_finally;
-			}
+			CHECK_CHILD_EX (child_frame, ip - 2);
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -2554,18 +2586,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				else
 					goto exit_frame;
 			}
-
-			if (child_frame.ex) {
-				/*
-				 * An exception occurred, need to run finally, fault and catch handlers..
-				 */
-				frame->ex = child_frame.ex;
-				if (context->search_for_handler) {
-					context->search_for_handler = 0;
-					goto handle_exception;
-				}
-				goto handle_finally;
-			}
+			CHECK_CHILD_EX (child_frame, ip - 2);
 
 			/* need to handle typedbyref ... */
 			*sp = *endsp;
@@ -2601,17 +2622,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					goto exit_frame;
 			}
 
-			if (child_frame.ex) {
-				/*
-				 * An exception occurred, need to run finally, fault and catch handlers..
-				 */
-				frame->ex = child_frame.ex;
-				if (context->search_for_handler) {
-					context->search_for_handler = 0;
-					goto handle_exception;
-				}
-				goto handle_finally;
-			}
+			CHECK_CHILD_EX (child_frame, ip - 2);
 			MINT_IN_BREAK;
 		}
 
@@ -2678,17 +2689,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					goto exit_frame;
 			}
 
-			if (child_frame.ex) {
-				/*
-				 * An exception occurred, need to run finally, fault and catch handlers..
-				 */
-				frame->ex = child_frame.ex;
-				if (context->search_for_handler) {
-					context->search_for_handler = 0;
-					goto handle_exception;
-				}
-				goto handle_finally;
-			}
+			CHECK_CHILD_EX (child_frame, ip - 2);
 
 			/* need to handle typedbyref ... */
 			*sp = *endsp;
@@ -2732,24 +2733,15 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					goto exit_frame;
 			}
 
-			if (child_frame.ex) {
-				/*
-				 * An exception occurred, need to run finally, fault and catch handlers..
-				 */
-				frame->ex = child_frame.ex;
-				if (context->search_for_handler) {
-					context->search_for_handler = 0;
-					goto handle_exception;
-				}
-				goto handle_finally;
-			}
+			CHECK_CHILD_EX (child_frame, ip - 2);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLRUN)
 			ves_imethod (frame, context);
 			if (frame->ex) {
-				rtm = NULL;
-				goto handle_exception;
+				MonoException *fex = frame->ex;
+				//frame = frame->parent;
+				THROW_EX (fex, frame->ip);
 			}
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET)
@@ -3500,8 +3492,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				sp -= csig->param_count;
 				child_frame.stack_args = sp;
 				o = ves_array_create (&child_frame, rtm->domain, newobj_class, csig, sp);
-				if (child_frame.ex)
-					THROW_EX (child_frame.ex, ip);
+				CHECK_CHILD_EX (child_frame, ip - 2);
 				goto array_constructed;
 			}
 
@@ -3556,13 +3547,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					goto exit_frame;
 			}
 
-			if (child_frame.ex) {
-				/*
-				 * An exception occurred, need to run finally, fault and catch handlers..
-				 */
-				frame->ex = child_frame.ex;
-				goto handle_finally;
-			}
+			CHECK_CHILD_EX (child_frame, ip - 2);
 			/*
 			 * a constructor returns void, but we need to return the object we created
 			 */
@@ -4450,6 +4435,32 @@ array_constructed:
 			endfinally_ip = ip;
 			goto handle_finally;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LEAVE_CHECK)
+		MINT_IN_CASE(MINT_LEAVE_S_CHECK)
+			while (sp > frame->stack) {
+				--sp;
+			}
+			frame->ip = ip;
+
+			if (frame->ex_handler != NULL && MONO_OFFSET_IN_HANDLER(frame->ex_handler, frame->ip - rtm->code)) {
+				frame->ex_handler = NULL;
+				frame->ex = NULL;
+			}
+
+			if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+				MonoException *abort_exc = mono_thread_get_undeniable_exception ();
+				if (abort_exc)
+					THROW_EX (abort_exc, frame->ip);
+			}
+
+			if (*ip == MINT_LEAVE_S_CHECK) {
+				ip += (short) *(ip + 1);
+			} else {
+				ip += (gint32) READ32 (ip + 1);
+			}
+			endfinally_ip = ip;
+			goto handle_finally;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_V_V) 
 		MINT_IN_CASE(MINT_ICALL_V_P)
 		MINT_IN_CASE(MINT_ICALL_P_V) 
@@ -4463,11 +4474,14 @@ array_constructed:
 			sp = do_icall (context, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
 			if (*mono_thread_interruption_request_flag ()) {
 				MonoException *exc = mono_thread_interruption_checkpoint ();
-				if (exc) {
-					frame->ex = exc;
-					context->search_for_handler = 1;
-					goto handle_exception;
-				}
+				if (exc)
+					THROW_EX (exc, ip);
+			}
+			if (context->has_resume_state) {
+				if (frame == context->handler_frame)
+					SET_RESUME_STATE (context);
+				else
+					goto exit_frame;
 			}
 			ip += 2;
 			MINT_IN_BREAK;
@@ -4958,102 +4972,6 @@ array_constructed:
 	}
 
 	g_assert_not_reached ();
-	/*
-	 * Exception handling code.
-	 * The exception object is stored in frame->ex.
-	 */
-
-	handle_exception:
-	{
-		int i;
-		guint32 ip_offset;
-		InterpFrame *inv;
-		MonoExceptionClause *clause;
-		/*char *message;*/
-		MonoObject *ex_obj;
-
-#if DEBUG_INTERP
-		if (tracing)
-			g_print ("* Handling exception '%s' at IL_%04x\n", 
-				frame->ex == NULL ? "** Unknown **" : mono_object_class (frame->ex)->name, 
-				rtm == NULL ? 0 : frame->ip - rtm->code);
-#endif
-		if (die_on_exception)
-			goto die_on_ex;
-
-		for (inv = frame; inv; inv = inv->parent) {
-			MonoMethod *method;
-			if (inv->imethod == NULL)
-				continue;
-			method = inv->imethod->method;
-			if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-				continue;
-			if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))
-				continue;
-			if (inv->ip == NULL)
-				continue;
-			ip_offset = inv->ip - inv->imethod->code;
-			inv->ex_handler = NULL; /* clear this in case we are trhowing an exception while handling one  - this one wins */
-			for (i = 0; i < inv->imethod->num_clauses; ++i) {
-				clause = &inv->imethod->clauses [i];
-#if DEBUG_INTERP
-				g_print ("* clause [%d]: %p\n", i, clause);
-#endif
-				if (!MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
-					continue;
-				}
-				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-#if DEBUG_INTERP
-					if (tracing)
-						g_print ("* Filter found at '%s'\n", method->name);
-#endif
-					InterpFrame dup_frame;
-					stackval retval;
-					memcpy (&dup_frame, inv, sizeof (InterpFrame));
-					dup_frame.retval = &retval;
-					interp_exec_method_full (&dup_frame, context, inv->imethod->code + clause->data.filter_offset, frame->ex, -1, NULL);
-					if (dup_frame.retval->data.i) {
-#if DEBUG_INTERP
-						if (tracing)
-							g_print ("* Matched Filter at '%s'\n", method->name);
-#endif
-						inv->ex_handler = clause;
-						*(MonoException**)(inv->locals + inv->imethod->exvar_offsets [i]) = frame->ex;
-						goto handle_finally;
-					}
-				} else if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
-					MonoObject *isinst_obj = mono_object_isinst_checked ((MonoObject*)frame->ex, clause->data.catch_class, &error);
-					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-					if (isinst_obj) {
-						/* 
-						 * OK, we found an handler, now we need to execute the finally
-						 * and fault blocks before branching to the handler code.
-						 */
-#if DEBUG_INTERP
-						if (tracing)
-							g_print ("* Found handler at '%s'\n", method->name);
-#endif
-						inv->ex_handler = clause;
-						*(MonoException**)(inv->locals + inv->imethod->exvar_offsets [i]) = frame->ex;
-						goto handle_finally;
-					}
-				}
-			}
-		}
-		/*
-		 * If we get here, no handler was found: print a stack trace.
-		 */
-		for (inv = frame; inv; inv = inv->parent) {
-			if (inv->invoke_trap)
-				goto handle_finally;
-		}
-die_on_ex:
-		ex_obj = (MonoObject *) frame->ex;
-		mono_unhandled_exception (ex_obj);
-		MonoJitTlsData *jit_tls = (MonoJitTlsData *) mono_tls_get_jit_tls ();
-		jit_tls->abort_func (ex_obj);
-		g_assert_not_reached ();
-	}
 	handle_finally:
 	{
 		int i;
@@ -5437,14 +5355,19 @@ mono_interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJi
  *
  *   Run the finally clause identified by CLAUSE_INDEX in the intepreter frame given by
  * frame->interp_frame.
+ * Return TRUE if the finally clause threw an exception.
  */
-void
+gboolean
 mono_interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
 {
 	InterpFrame *iframe = frame->interp_frame;
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 
 	interp_exec_method_full (iframe, context, handler_ip, NULL, clause_index, NULL);
+	if (context->has_resume_state)
+		return TRUE;
+	else
+		return FALSE;
 }
 
 /*
@@ -5511,8 +5434,7 @@ mono_interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 		return FALSE;
 
 	frame->type = FRAME_TYPE_INTERP;
-	// FIXME:
-	frame->domain = mono_domain_get ();
+	frame->domain = iframe->domain;
 	frame->interp_frame = iframe;
 	frame->method = iframe->imethod->method;
 	frame->actual_method = frame->method;

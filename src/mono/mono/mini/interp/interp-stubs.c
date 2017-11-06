@@ -82,7 +82,7 @@ mono_interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJi
 	g_assert_not_reached ();
 }
 
-void
+gboolean
 mono_interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
 {
 	g_assert_not_reached ();

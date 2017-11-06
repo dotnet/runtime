@@ -68,7 +68,7 @@ interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUn
 void
 mono_interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip);
 
-void
+gboolean
 mono_interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip);
 
 gboolean
