@@ -17,30 +17,11 @@
 ===========================================================*/
 #define DEBUG // The behavior of this contract library should be consistent regardless of build type.
 
-#if SILVERLIGHT
-#define FEATURE_UNTRUSTED_CALLERS
-
-#elif REDHAWK_RUNTIME
-
-#elif BARTOK_RUNTIME
-
-#else // CLR
-#define FEATURE_UNTRUSTED_CALLERS
-#define FEATURE_RELIABILITY_CONTRACTS
-#endif
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-
-#if FEATURE_RELIABILITY_CONTRACTS
-using System.Runtime.ConstrainedExecution;
-#endif
-#if FEATURE_UNTRUSTED_CALLERS
-using System.Security;
-#endif
 
 namespace System.Diagnostics.Contracts
 {
@@ -127,37 +108,6 @@ namespace System.Diagnostics.Contracts
     {
     }
 
-    /*
-    [Serializable]
-    internal enum Mutability
-    {
-        Immutable,    // read-only after construction, except for lazy initialization & caches
-        // Do we need a "deeply immutable" value?
-        Mutable,
-        HasInitializationPhase,  // read-only after some point.  
-        // Do we need a value for mutable types with read-only wrapper subclasses?
-    }
-
-    // Note: This hasn't been thought through in any depth yet.  Consider it experimental.
-    // We should replace this with Joe's concepts.
-    [Conditional("CONTRACTS_FULL")]
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-    [SuppressMessage("Microsoft.Design", "CA1019:DefineAccessorsForAttributeArguments", Justification = "Thank you very much, but we like the names we've defined for the accessors")]
-    internal sealed class MutabilityAttribute : Attribute 
-    {
-        private Mutability _mutabilityMarker;
-
-        public MutabilityAttribute(Mutability mutabilityMarker)
-        {
-            _mutabilityMarker = mutabilityMarker;
-        }
-
-        public Mutability Mutability {
-            get { return _mutabilityMarker; }
-        }
-    }
-    */
-
     /// <summary>
     /// Instructs downstream tools whether to assume the correctness of this assembly, type or member without performing any verification or not.
     /// Can use [ContractVerification(false)] to explicitly mark assembly, type or member as one to *not* have verification performed on it.
@@ -189,7 +139,6 @@ namespace System.Diagnostics.Contracts
     /// </summary>
     [Conditional("CONTRACTS_FULL")]
     [AttributeUsage(AttributeTargets.Field)]
-    [SuppressMessage("Microsoft.Design", "CA1019:DefineAccessorsForAttributeArguments", Justification = "Thank you very much, but we like the names we've defined for the accessors")]
     public sealed class ContractPublicPropertyNameAttribute : Attribute
     {
         private String _publicName;
@@ -299,8 +248,6 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Assume(bool condition)
         {
             if (!condition)
@@ -320,8 +267,6 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Assume(bool condition, String userMessage)
         {
             if (!condition)
@@ -341,8 +286,6 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Assert(bool condition)
         {
             if (!condition)
@@ -357,8 +300,6 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Assert(bool condition, String userMessage)
         {
             if (!condition)
@@ -380,8 +321,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Requires(bool condition)
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires");
@@ -399,8 +338,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Requires(bool condition, String userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires");
@@ -415,11 +352,7 @@ namespace System.Diagnostics.Contracts
         /// This contract is exposed to clients so must only reference members at least as visible as the enclosing method.
         /// Use this form when you want to throw a particular exception.
         /// </remarks>
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "condition")]
-        [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter")]
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Requires<TException>(bool condition) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires<TException>");
@@ -435,12 +368,7 @@ namespace System.Diagnostics.Contracts
         /// This contract is exposed to clients so must only reference members at least as visible as the enclosing method.
         /// Use this form when you want to throw a particular exception.
         /// </remarks>
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "userMessage")]
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "condition")]
-        [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter")]
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Requires<TException>(bool condition, String userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires<TException>");
@@ -461,8 +389,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Ensures(bool condition)
         {
             AssertMustUseRewriter(ContractFailureKind.Postcondition, "Ensures");
@@ -480,8 +406,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Ensures(bool condition, String userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Postcondition, "Ensures");
@@ -499,9 +423,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "Exception type used in tools.")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void EnsuresOnThrow<TException>(bool condition) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.PostconditionOnException, "EnsuresOnThrow");
@@ -520,9 +441,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "Exception type used in tools.")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void EnsuresOnThrow<TException>(bool condition, String userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.PostconditionOnException, "EnsuresOnThrow");
@@ -538,10 +456,7 @@ namespace System.Diagnostics.Contracts
         /// <remarks>
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "Not intended to be called at runtime.")]
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static T Result<T>() { return default(T); }
 
         /// <summary>
@@ -553,10 +468,7 @@ namespace System.Diagnostics.Contracts
         /// <remarks>
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "0#", Justification = "Not intended to be called at runtime.")]
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static T ValueAtReturn<T>(out T value) { value = default(T); return value; }
 
         /// <summary>
@@ -568,10 +480,7 @@ namespace System.Diagnostics.Contracts
         /// <remarks>
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static T OldValue<T>(T value) { return default(T); }
 
         #endregion Old, Result, and Out Parameters
@@ -591,8 +500,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Invariant(bool condition)
         {
             AssertMustUseRewriter(ContractFailureKind.Invariant, "Invariant");
@@ -610,8 +517,6 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void Invariant(bool condition, String userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Invariant, "Invariant");
@@ -634,8 +539,6 @@ namespace System.Diagnostics.Contracts
         /// starting from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static bool ForAll(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
             if (fromInclusive > toExclusive)
@@ -663,8 +566,6 @@ namespace System.Diagnostics.Contracts
         /// <paramref name="collection"/>.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
             if (collection == null)
@@ -692,8 +593,6 @@ namespace System.Diagnostics.Contracts
         /// starting from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static bool Exists(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
             if (fromInclusive > toExclusive)
@@ -720,8 +619,6 @@ namespace System.Diagnostics.Contracts
         /// <paramref name="collection"/>.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
         [Pure]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
             if (collection == null)
@@ -747,147 +644,22 @@ namespace System.Diagnostics.Contracts
         /// Marker to indicate the end of the contract section of a method.
         /// </summary>
         [Conditional("CONTRACTS_FULL")]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
         public static void EndContractBlock() { }
 
         #endregion
 
         #endregion User Methods
-
-        #region Failure Behavior
-
-        /// <summary>
-        /// Without contract rewriting, failing Assert/Assumes end up calling this method.
-        /// Code going through the contract rewriter never calls this method. Instead, the rewriter produced failures call
-        /// System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent, followed by 
-        /// System.Runtime.CompilerServices.ContractHelper.TriggerFailure.
-        /// </summary>
-        static partial void ReportFailure(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException);
-
-        /// <summary>
-        /// This method is used internally to trigger a failure indicating to the "programmer" that he is using the interface incorrectly.
-        /// It is NEVER used to indicate failure of actual contracts at runtime.
-        /// </summary>
-        static partial void AssertMustUseRewriter(ContractFailureKind kind, String contractKind);
-
-        #endregion
     }
 
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public enum ContractFailureKind
     {
         Precondition,
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Postcondition")]
         Postcondition,
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Postcondition")]
         PostconditionOnException,
         Invariant,
         Assert,
         Assume,
-    }
-}
-
-// Note: In .NET FX 4.5, we duplicated the ContractHelper class in the System.Runtime.CompilerServices
-// namespace to remove an ugly wart of a namespace from the Windows 8 profile.  But we still need the
-// old locations left around, so we can support rewritten .NET FX 4.0 libraries.  Consider removing
-// these from our reference assembly in a future version.
-namespace System.Diagnostics.Contracts.Internal
-{
-    [Obsolete("Use the ContractHelper class in the System.Runtime.CompilerServices namespace instead.")]
-    public static class ContractHelper
-    {
-        #region Rewriter Failure Hooks
-
-        /// <summary>
-        /// Rewriter will call this method on a contract failure to allow listeners to be notified.
-        /// The method should not perform any failure (assert/throw) itself.
-        /// </summary>
-        /// <returns>null if the event was handled and should not trigger a failure.
-        ///          Otherwise, returns the localized failure message</returns>
-        [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
-        [System.Diagnostics.DebuggerNonUserCode]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
-        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
-        {
-            return System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent(failureKind, userMessage, conditionText, innerException);
-        }
-
-        /// <summary>
-        /// Rewriter calls this method to get the default failure behavior.
-        /// </summary>
-        [System.Diagnostics.DebuggerNonUserCode]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
-        public static void TriggerFailure(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
-        {
-            System.Runtime.CompilerServices.ContractHelper.TriggerFailure(kind, displayMessage, userMessage, conditionText, innerException);
-        }
-
-        #endregion Rewriter Failure Hooks
-    }
-}  // namespace System.Diagnostics.Contracts.Internal
-
-
-namespace System.Runtime.CompilerServices
-{
-    public static partial class ContractHelper
-    {
-        #region Rewriter Failure Hooks
-
-        /// <summary>
-        /// Rewriter will call this method on a contract failure to allow listeners to be notified.
-        /// The method should not perform any failure (assert/throw) itself.
-        /// </summary>
-        /// <returns>null if the event was handled and should not trigger a failure.
-        ///          Otherwise, returns the localized failure message</returns>
-        [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
-        [System.Diagnostics.DebuggerNonUserCode]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
-        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
-        {
-            var resultFailureMessage = "Contract failed"; // default in case implementation does not assign anything.
-            RaiseContractFailedEventImplementation(failureKind, userMessage, conditionText, innerException, ref resultFailureMessage);
-            return resultFailureMessage;
-        }
-
-
-        /// <summary>
-        /// Rewriter calls this method to get the default failure behavior.
-        /// </summary>
-        [System.Diagnostics.DebuggerNonUserCode]
-#if FEATURE_RELIABILITY_CONTRACTS
-#endif
-        public static void TriggerFailure(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
-        {
-            TriggerFailureImplementation(kind, displayMessage, userMessage, conditionText, innerException);
-        }
-
-        #endregion Rewriter Failure Hooks
-
-        #region Implementation Stubs
-
-        /// <summary>
-        /// Rewriter will call this method on a contract failure to allow listeners to be notified.
-        /// The method should not perform any failure (assert/throw) itself.
-        /// This method has 3 functions:
-        /// 1. Call any contract hooks (such as listeners to Contract failed events)
-        /// 2. Determine if the listeners deem the failure as handled (then resultFailureMessage should be set to null)
-        /// 3. Produce a localized resultFailureMessage used in advertising the failure subsequently.
-        /// </summary>
-        /// <param name="resultFailureMessage">Should really be out (or the return value), but partial methods are not flexible enough.
-        /// On exit: null if the event was handled and should not trigger a failure.
-        ///          Otherwise, returns the localized failure message</param>
-        static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException, ref string resultFailureMessage);
-
-        /// <summary>
-        /// Implements the default failure behavior of the platform. Under the BCL, it triggers an Assert box.
-        /// </summary>
-        static partial void TriggerFailureImplementation(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException);
-
-        #endregion Implementation Stubs
     }
 }  // namespace System.Runtime.CompilerServices
 
