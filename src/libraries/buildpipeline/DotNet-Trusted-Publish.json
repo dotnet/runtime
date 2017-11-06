@@ -258,7 +258,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$ConfigurationGroup /p:PublishSymbols=\"true\" ",
+        "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:PublishSymbols=\"true\" ",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
