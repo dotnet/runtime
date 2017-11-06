@@ -17169,7 +17169,7 @@ void Compiler::verInitBBEntryState(BasicBlock* block, EntryState* srcState)
         return;
     }
 
-    block->bbEntryState = (EntryState*)compGetMemA(sizeof(EntryState));
+    block->bbEntryState = (EntryState*)compGetMem(sizeof(EntryState));
 
     // block->bbEntryState.esRefcount = 1;
 

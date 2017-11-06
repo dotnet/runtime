@@ -6805,7 +6805,7 @@ void Compiler::rpRecordPrediction()
         if (rpBestRecordedPrediction == NULL)
         {
             rpBestRecordedPrediction =
-                reinterpret_cast<VarRegPrediction*>(compGetMemArrayA(lvaCount, sizeof(VarRegPrediction)));
+                reinterpret_cast<VarRegPrediction*>(compGetMemArray(lvaCount, sizeof(VarRegPrediction)));
         }
         for (unsigned k = 0; k < lvaCount; k++)
         {

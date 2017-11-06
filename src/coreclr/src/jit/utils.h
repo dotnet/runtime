@@ -17,6 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _UTILS_H_
 
 #include "iallocator.h"
+#include "hostallocator.h"
 #include "cycletimer.h"
 
 // Needed for unreached()
@@ -131,23 +132,6 @@ int signum(T val)
         return 0;
     }
 }
-
-class JitSimplerHashBehavior
-{
-public:
-    static const unsigned s_growth_factor_numerator   = 3;
-    static const unsigned s_growth_factor_denominator = 2;
-
-    static const unsigned s_density_factor_numerator   = 3;
-    static const unsigned s_density_factor_denominator = 4;
-
-    static const unsigned s_minimum_allocation = 7;
-
-    inline static void DECLSPEC_NORETURN NoMemory()
-    {
-        NOMEM();
-    }
-};
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -548,12 +532,12 @@ class AssemblyNamesList2
         AssemblyName* m_next;
     };
 
-    AssemblyName* m_pNames; // List of names
-    IAllocator*   m_alloc;  // IAllocator to use in this class
+    AssemblyName*  m_pNames; // List of names
+    HostAllocator* m_alloc;  // HostAllocator to use in this class
 
 public:
     // Take a Unicode string list of assembly names, parse it, and store it.
-    AssemblyNamesList2(const wchar_t* list, __in IAllocator* alloc);
+    AssemblyNamesList2(const wchar_t* list, __in HostAllocator* alloc);
 
     ~AssemblyNamesList2();
 
@@ -616,23 +600,6 @@ public:
 unsigned CountDigits(unsigned num, unsigned base = 10);
 
 #endif // DEBUG
-
-// Utility class for lists.
-template <typename T>
-struct ListNode
-{
-    T            data;
-    ListNode<T>* next;
-
-    // Create the class without using constructors.
-    static ListNode<T>* Create(T value, IAllocator* alloc)
-    {
-        ListNode<T>* node = new (alloc) ListNode<T>;
-        node->data        = value;
-        node->next        = nullptr;
-        return node;
-    }
-};
 
 /*****************************************************************************
 * Floating point utility class
