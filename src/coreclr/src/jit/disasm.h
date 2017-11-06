@@ -58,12 +58,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #ifdef _HOST_64BIT_
 template <typename T>
-struct SizeTKeyFuncs : LargePrimitiveKeyFuncs<T>
+struct SizeTKeyFuncs : JitLargePrimitiveKeyFuncs<T>
 {
 };
 #else  // !_HOST_64BIT_
 template <typename T>
-struct SizeTKeyFuncs : SmallPrimitiveKeyFuncs<T>
+struct SizeTKeyFuncs : JitSmallPrimitiveKeyFuncs<T>
 {
 };
 #endif // _HOST_64BIT_
