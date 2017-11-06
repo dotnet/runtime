@@ -15,7 +15,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, sbyte.Parse(value.AsReadOnlySpan(), style, provider));
 
-            Assert.True(sbyte.TryParse(value.AsReadOnlySpan(), out sbyte result, style, provider));
+            Assert.True(sbyte.TryParse(value.AsReadOnlySpan(), style, provider, out sbyte result));
             Assert.Equal(expected, result);
         }
 
@@ -27,7 +27,7 @@ namespace System.Tests
             {
                 Assert.Throws(exceptionType, () => sbyte.Parse(value.AsReadOnlySpan(), style, provider));
 
-                Assert.False(sbyte.TryParse(value.AsReadOnlySpan(), out sbyte result, style, provider));
+                Assert.False(sbyte.TryParse(value.AsReadOnlySpan(), style, provider, out sbyte result));
                 Assert.Equal(0, result);
             }
         }

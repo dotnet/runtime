@@ -15,7 +15,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, ulong.Parse(value.AsReadOnlySpan(), style, provider));
 
-            Assert.True(ulong.TryParse(value.AsReadOnlySpan(), out ulong result, style, provider));
+            Assert.True(ulong.TryParse(value.AsReadOnlySpan(), style, provider, out ulong result));
             Assert.Equal(expected, result);
         }
 
@@ -27,7 +27,7 @@ namespace System.Tests
             {
                 Assert.Throws(exceptionType, () => ulong.Parse(value.AsReadOnlySpan(), style, provider));
 
-                Assert.False(ulong.TryParse(value.AsReadOnlySpan(), out ulong result, style, provider));
+                Assert.False(ulong.TryParse(value.AsReadOnlySpan(), style, provider, out ulong result));
                 Assert.Equal(0, (long)result);
             }
         }
