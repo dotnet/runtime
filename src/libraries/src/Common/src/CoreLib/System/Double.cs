@@ -306,6 +306,11 @@ namespace System
             return TryParse(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, out double result)
+        {
+            return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
+        }
+
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
@@ -319,7 +324,7 @@ namespace System
             return TryParse(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out double result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);

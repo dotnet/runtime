@@ -415,7 +415,7 @@ namespace System
                 return true;
             }
 
-            return int.TryParse(component, out parsedComponent, NumberStyles.Integer, CultureInfo.InvariantCulture) && parsedComponent >= 0;
+            return int.TryParse(component, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedComponent) && parsedComponent >= 0;
         }
 
         public static bool operator ==(Version v1, Version v2)
