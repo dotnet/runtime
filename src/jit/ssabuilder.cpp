@@ -73,15 +73,13 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 
 void Compiler::fgSsaBuild()
 {
-    IAllocator* pIAllocator = new (this, CMK_SSA) CompAllocator(this, CMK_SSA);
-
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
     {
         fgResetForSsa();
     }
 
-    SsaBuilder builder(this, pIAllocator);
+    SsaBuilder builder(this, new (this, CMK_SSA) CompAllocator(this, CMK_SSA));
     builder.Build();
     fgSsaPassesCompleted++;
 #ifdef DEBUG
@@ -161,17 +159,17 @@ void Compiler::fgResetForSsa()
  *
  *  @remarks Initializes the class and member pointers/objects that use constructors.
  */
-SsaBuilder::SsaBuilder(Compiler* pCompiler, IAllocator* pIAllocator)
+SsaBuilder::SsaBuilder(Compiler* pCompiler, CompAllocator* pAllocator)
     : m_pCompiler(pCompiler)
-    , m_allocator(pIAllocator)
+    , m_allocator(pAllocator)
 
 #ifdef SSA_FEATURE_DOMARR
     , m_pDomPreOrder(NULL)
     , m_pDomPostOrder(NULL)
 #endif
 #ifdef SSA_FEATURE_USEDEF
-    , m_uses(jitstd::allocator<void>(pIAllocator))
-    , m_defs(jitstd::allocator<void>(pIAllocator))
+    , m_uses(jitstd::allocator<void>(pAllocator))
+    , m_defs(jitstd::allocator<void>(pAllocator))
 #endif
 {
 }
@@ -1974,9 +1972,8 @@ void Compiler::JitTestCheckSSA()
         }
     };
 
-    typedef SimplerHashTable<ssize_t, SmallPrimitiveKeyFuncs<ssize_t>, SSAName, JitSimplerHashBehavior>
-        LabelToSSANameMap;
-    typedef SimplerHashTable<SSAName, SSAName, ssize_t, JitSimplerHashBehavior> SSANameToLabelMap;
+    typedef JitHashTable<ssize_t, JitSmallPrimitiveKeyFuncs<ssize_t>, SSAName> LabelToSSANameMap;
+    typedef JitHashTable<SSAName, SSAName, ssize_t>                            SSANameToLabelMap;
 
     // If we have no test data, early out.
     if (m_nodeTestData == nullptr)

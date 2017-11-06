@@ -149,7 +149,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
     length += param.siglength + 2;
 
-    char* retName = (char*)compGetMemA(length, CMK_DebugOnly);
+    char* retName = (char*)compGetMem(length, CMK_DebugOnly);
 
     /* Now generate the full signature string in the allocated buffer */
 
