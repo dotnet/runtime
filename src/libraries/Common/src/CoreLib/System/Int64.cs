@@ -141,6 +141,11 @@ namespace System
             return Number.TryParseInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, out long result)
+        {
+            return Number.TryParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -154,7 +159,7 @@ namespace System
             return Number.TryParseInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out long result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out long result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result);
