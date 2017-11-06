@@ -144,6 +144,12 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        public static bool TryParse(ReadOnlySpan<char> s, out ulong result)
+        {
+            return Number.TryParseUInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        [CLSCompliant(false)]
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out UInt64 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -158,7 +164,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static Boolean TryParse(ReadOnlySpan<char> s, out UInt64 result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out ulong result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseUInt64(s, style, NumberFormatInfo.GetInstance(provider), out result);
