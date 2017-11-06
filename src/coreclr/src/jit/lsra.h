@@ -1004,7 +1004,6 @@ private:
         GenTree* operand, bool& first, LsraTupleDumpMode mode, char* operandString, const unsigned operandStringLength);
     void TupleStyleDump(LsraTupleDumpMode mode);
 
-    bool         dumpTerse;
     LsraLocation maxNodeLocation;
 
     // Width of various fields - used to create a streamlined dump during allocation that shows the
@@ -1031,11 +1030,19 @@ private:
     // How many rows have we printed since last printing a "title row"?
     static const int MAX_ROWS_BETWEEN_TITLES = 50;
     int              rowCountSinceLastTitle;
+    // Current mask of registers being printed in the dump.
+    regMaskTP lastDumpedRegisters;
+    regMaskTP registersToDump;
+    int       lastUsedRegNumIndex;
+    bool shouldDumpReg(regNumber regNum)
+    {
+        return (registersToDump & genRegMask(regNum)) != 0;
+    }
 
     void dumpRegRecordHeader();
     void dumpRegRecordTitle();
+    void dumpRegRecordTitleIfNeeded();
     void dumpRegRecordTitleLines();
-    int  getLastUsedRegNumIndex();
     void dumpRegRecords();
     // An abbreviated RefPosition dump for printing with column-based register state
     void dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock);
@@ -1044,8 +1051,7 @@ private:
     // A dump of Referent, in exactly regColumnWidth characters
     void dumpIntervalName(Interval* interval);
 
-    // Events during the allocation phase that cause some dump output, which differs depending
-    // upon whether dumpTerse is set:
+    // Events during the allocation phase that cause some dump output
     enum LsraDumpEvent{
         // Conflicting def/use
         LSRA_EVENT_DEFUSE_CONFLICT, LSRA_EVENT_DEFUSE_FIXED_DELAY_USE, LSRA_EVENT_DEFUSE_CASE1, LSRA_EVENT_DEFUSE_CASE2,
