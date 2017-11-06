@@ -15,7 +15,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, uint.Parse(value.AsReadOnlySpan(), style, provider));
 
-            Assert.True(uint.TryParse(value.AsReadOnlySpan(), out uint result, style, provider));
+            Assert.True(uint.TryParse(value.AsReadOnlySpan(), style, provider, out uint result));
             Assert.Equal(expected, result);
         }
 
@@ -27,7 +27,7 @@ namespace System.Tests
             {
                 Assert.Throws(exceptionType, () => uint.Parse(value.AsReadOnlySpan(), style, provider));
 
-                Assert.False(uint.TryParse(value.AsReadOnlySpan(), out uint result, style, provider));
+                Assert.False(uint.TryParse(value.AsReadOnlySpan(), style, provider, out uint result));
                 Assert.Equal(0, (int)result);
             }
         }

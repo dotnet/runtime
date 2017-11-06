@@ -93,7 +93,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, double.Parse(value.AsReadOnlySpan(), style, provider));
 
-            Assert.True(double.TryParse(value.AsReadOnlySpan(), out double result, style, provider));
+            Assert.True(double.TryParse(value.AsReadOnlySpan(), style, provider, out double result));
             Assert.Equal(expected, result);
         }
 
@@ -105,7 +105,7 @@ namespace System.Tests
             {
                 Assert.Throws(exceptionType, () => double.Parse(value.AsReadOnlySpan(), style, provider));
 
-                Assert.False(double.TryParse(value.AsReadOnlySpan(), out double result, style, provider));
+                Assert.False(double.TryParse(value.AsReadOnlySpan(), style, provider, out double result));
                 Assert.Equal(0, result);
             }
         }
