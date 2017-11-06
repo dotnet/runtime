@@ -768,7 +768,9 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	* runtime but not identified as runtime threads needs to make sure thread detach calls won't
 	* race with runtime shutdown.
 	*/
+#ifdef HOST_WIN32
 	mono_threads_add_joinable_runtime_thread (thread->thread_info);
+#endif
 
 	/*
 	 * thread->synch_cs can be NULL if this was called after
