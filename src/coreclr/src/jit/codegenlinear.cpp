@@ -1891,6 +1891,12 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         // Casts int32/uint32/int64/uint64 --> float/double
         genIntToFloatCast(tree);
     }
+#ifndef _TARGET_64BIT_
+    else if (varTypeIsLong(tree->gtOp1))
+    {
+        genLongToIntCast(tree);
+    }
+#endif // !_TARGET_64BIT_
     else
     {
         // Casts int <--> int

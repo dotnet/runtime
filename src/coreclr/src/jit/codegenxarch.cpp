@@ -6506,14 +6506,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
     GenTreePtr castOp  = treeNode->gtCast.CastOp();
     var_types  srcType = genActualType(castOp->TypeGet());
     noway_assert(genTypeSize(srcType) >= 4);
-
-#ifdef _TARGET_X86_
-    if (varTypeIsLong(srcType))
-    {
-        genLongToIntCast(treeNode);
-        return;
-    }
-#endif // _TARGET_X86_
+    assert(genTypeSize(srcType) <= genTypeSize(TYP_I_IMPL));
 
     regNumber targetReg     = treeNode->gtRegNum;
     regNumber sourceReg     = castOp->gtRegNum;
