@@ -6278,7 +6278,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         else
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(size, rsvdReg, imm);
+            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
             fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
         }
     }
@@ -6320,7 +6320,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         if (useRegForImm)
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, rsvdReg, imm);
+            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
             fmt = IF_LS_3A;
         }
     }
@@ -6360,7 +6360,6 @@ void emitter::emitIns_R_R_S_S(
     assert(isGeneralRegisterOrZR(reg2));
     assert(offs >= 0);
 
-    emitAttr       size  = EA_SIZE(attr1);
     insFormat      fmt   = IF_LS_3B;
     int            disp  = 0;
     const unsigned scale = 3;
@@ -6401,7 +6400,7 @@ void emitter::emitIns_R_R_S_S(
     if (useRegForAdr)
     {
         regNumber rsvd = codeGen->rsGetRsvdReg();
-        emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvd, reg3, imm);
+        emitIns_R_R_Imm(INS_add, EA_PTRSIZE, rsvd, reg3, imm);
         reg3 = rsvd;
         imm  = 0;
     }
@@ -6547,7 +6546,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         // The reserved register is not stored in idReg3() since that field overlaps with iiaLclVar.
         // It is instead implicit when idSetIsLclVar() is set, with this encoding format.
         regNumber rsvdReg = codeGen->rsGetRsvdReg();
-        codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, rsvdReg, imm);
+        codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
         fmt = IF_LS_3A;
     }
 
@@ -6586,7 +6585,6 @@ void emitter::emitIns_S_S_R_R(
     assert(isGeneralRegisterOrZR(reg2));
     assert(offs >= 0);
 
-    emitAttr       size  = EA_SIZE(attr1);
     insFormat      fmt   = IF_LS_3B;
     int            disp  = 0;
     const unsigned scale = 3;
@@ -6627,7 +6625,7 @@ void emitter::emitIns_S_S_R_R(
     if (useRegForAdr)
     {
         regNumber rsvd = codeGen->rsGetRsvdReg();
-        emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvd, reg3, imm);
+        emitIns_R_R_Imm(INS_add, EA_PTRSIZE, rsvd, reg3, imm);
         reg3 = rsvd;
         imm  = 0;
     }
