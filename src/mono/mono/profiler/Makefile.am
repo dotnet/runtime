@@ -78,7 +78,11 @@ if HOST_IOS
 # libmono when building a bitcode runtime.
 libmono_dep = $(top_builddir)/mono/mini/$(LIBMONO_LA)
 else
+if HOST_TIZEN
+libmono_dep = $(top_builddir)/mono/mini/$(LIBMONO_LA)
+else
 libmono_dep =
+endif
 endif
 endif
 

@@ -113,6 +113,7 @@ ikvm_native=yes
 host_win32=no
 target_win32=no
 platform_android=no
+platform_tizen=no
 platform_ios=no
 host_darwin=no
 
@@ -268,6 +269,11 @@ case "$host" in
                 	mono_cv_uscore=no
                 fi
 		case "$host" in
+		*-tizen-linux-*)
+			platform_tizen=yes
+			;;
+		esac
+		case "$host" in
 		aarch64-*)
 			support_boehm=no
 			with_gc=sgen
@@ -405,6 +411,7 @@ AM_CONDITIONAL(HOST_LINUX, echo x$target_os | grep -q linux)
 AM_CONDITIONAL(HOST_DARWIN, test x$host_darwin = xyes)
 AM_CONDITIONAL(HOST_SIGPOSIX, test x$use_sigposix = xyes)
 AM_CONDITIONAL(HOST_ANDROID, test x$platform_android = xyes)
+AM_CONDITIONAL(HOST_TIZEN, test x$platform_tizen = xyes)
 AM_CONDITIONAL(HOST_IOS, test x$platform_ios = xyes)
 
 if test -z "$HOST_DARWIN_TRUE"; then :
