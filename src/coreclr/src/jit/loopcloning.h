@@ -99,13 +99,13 @@ class Compiler;
  */
 struct ArrIndex
 {
-    unsigned                   arrLcl;   // The array base local num
-    ExpandArrayStack<unsigned> indLcls;  // The indices local nums
-    ExpandArrayStack<GenTree*> bndsChks; // The bounds checks nodes along each dimension.
-    unsigned                   rank;     // Rank of the array
-    BasicBlock*                useBlock; // Block where the [] occurs
+    unsigned                      arrLcl;   // The array base local num
+    JitExpandArrayStack<unsigned> indLcls;  // The indices local nums
+    JitExpandArrayStack<GenTree*> bndsChks; // The bounds checks nodes along each dimension.
+    unsigned                      rank;     // Rank of the array
+    BasicBlock*                   useBlock; // Block where the [] occurs
 
-    ArrIndex(IAllocator* alloc) : arrLcl(BAD_VAR_NUM), indLcls(alloc), bndsChks(alloc), rank(0), useBlock(nullptr)
+    ArrIndex(CompAllocator* alloc) : arrLcl(BAD_VAR_NUM), indLcls(alloc), bndsChks(alloc), rank(0), useBlock(nullptr)
     {
     }
 
@@ -186,7 +186,7 @@ struct LcMdArrayOptInfo : public LcOptInfo
     {
     }
 
-    ArrIndex* GetArrIndexForDim(IAllocator* alloc)
+    ArrIndex* GetArrIndexForDim(CompAllocator* alloc)
     {
         if (index == nullptr)
         {
@@ -516,8 +516,8 @@ struct LC_Condition
  */
 struct LC_Deref
 {
-    const LC_Array               array;
-    ExpandArrayStack<LC_Deref*>* children;
+    const LC_Array                  array;
+    JitExpandArrayStack<LC_Deref*>* children;
 
     unsigned level;
 
@@ -530,10 +530,10 @@ struct LC_Deref
     unsigned Lcl();
 
     bool HasChildren();
-    void EnsureChildren(IAllocator* alloc);
-    static LC_Deref* Find(ExpandArrayStack<LC_Deref*>* children, unsigned lcl);
+    void EnsureChildren(CompAllocator* alloc);
+    static LC_Deref* Find(JitExpandArrayStack<LC_Deref*>* children, unsigned lcl);
 
-    void DeriveLevelConditions(ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* len);
+    void DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* len);
 #ifdef DEBUG
     void Print(unsigned indent = 0)
     {
@@ -551,7 +551,7 @@ struct LC_Deref
 #ifdef _MSC_VER
                 (*children)[i]->Print(indent + 1);
 #else  // _MSC_VER
-                (*((ExpandArray<LC_Deref*>*)children))[i]->Print(indent + 1);
+                (*((JitExpandArray<LC_Deref*>*)children))[i]->Print(indent + 1);
 #endif // _MSC_VER
             }
         }
@@ -577,22 +577,24 @@ struct LC_Deref
  */
 struct LoopCloneContext
 {
-    IAllocator*                    alloc;        // The allocator
-    ExpandArrayStack<LcOptInfo*>** optInfo;      // The array of optimization opportunities found in each loop. (loop x
-                                                 // optimization-opportunities)
-    ExpandArrayStack<LC_Condition>** conditions; // The array of conditions that influence which path to take for each
-                                                 // loop. (loop x cloning-conditions)
-    ExpandArrayStack<LC_Array>** derefs;         // The array of dereference conditions found in each loop. (loop x
-                                                 // deref-conditions)
-    ExpandArrayStack<ExpandArrayStack<LC_Condition>*>** blockConditions; // The array of block levels of conditions for
-                                                                         // each loop. (loop x level x conditions)
+    CompAllocator*                    alloc;   // The allocator
+    JitExpandArrayStack<LcOptInfo*>** optInfo; // The array of optimization opportunities found in each loop. (loop x
+                                               // optimization-opportunities)
+    JitExpandArrayStack<LC_Condition>** conditions; // The array of conditions that influence which path to take for
+                                                    // each
+                                                    // loop. (loop x cloning-conditions)
+    JitExpandArrayStack<LC_Array>** derefs;         // The array of dereference conditions found in each loop. (loop x
+                                                    // deref-conditions)
+    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>** blockConditions; // The array of block levels of
+                                                                               // conditions for
+                                                                               // each loop. (loop x level x conditions)
 
-    LoopCloneContext(unsigned loopCount, IAllocator* alloc) : alloc(alloc)
+    LoopCloneContext(unsigned loopCount, CompAllocator* alloc) : alloc(alloc)
     {
-        optInfo         = new (alloc) ExpandArrayStack<LcOptInfo*>*[loopCount];
-        conditions      = new (alloc) ExpandArrayStack<LC_Condition>*[loopCount];
-        derefs          = new (alloc) ExpandArrayStack<LC_Array>*[loopCount];
-        blockConditions = new (alloc) ExpandArrayStack<ExpandArrayStack<LC_Condition>*>*[loopCount];
+        optInfo         = new (alloc) JitExpandArrayStack<LcOptInfo*>*[loopCount];
+        conditions      = new (alloc) JitExpandArrayStack<LC_Condition>*[loopCount];
+        derefs          = new (alloc) JitExpandArrayStack<LC_Array>*[loopCount];
+        blockConditions = new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>*[loopCount];
         for (unsigned i = 0; i < loopCount; ++i)
         {
             optInfo[i]         = nullptr;
@@ -603,15 +605,15 @@ struct LoopCloneContext
     }
 
     // Evaluate conditions into a JTRUE stmt and put it in the block. Reverse condition if 'reverse' is true.
-    void CondToStmtInBlock(Compiler* comp, ExpandArrayStack<LC_Condition>& conds, BasicBlock* block, bool reverse);
+    void CondToStmtInBlock(Compiler* comp, JitExpandArrayStack<LC_Condition>& conds, BasicBlock* block, bool reverse);
 
     // Get all the optimization information for loop "loopNum"; This information is held in "optInfo" array.
     // If NULL this allocates the optInfo[loopNum] array for "loopNum"
-    ExpandArrayStack<LcOptInfo*>* EnsureLoopOptInfo(unsigned loopNum);
+    JitExpandArrayStack<LcOptInfo*>* EnsureLoopOptInfo(unsigned loopNum);
 
     // Get all the optimization information for loop "loopNum"; This information is held in "optInfo" array.
     // If NULL this does not allocate the optInfo[loopNum] array for "loopNum"
-    ExpandArrayStack<LcOptInfo*>* GetLoopOptInfo(unsigned loopNum);
+    JitExpandArrayStack<LcOptInfo*>* GetLoopOptInfo(unsigned loopNum);
 
     // Cancel all optimizations for loop "loopNum" by clearing out the "conditions" member if non-null
     // and setting the optInfo to "null.", If "null", then the user of this class is not supposed to
@@ -619,19 +621,20 @@ struct LoopCloneContext
     void CancelLoopOptInfo(unsigned loopNum);
 
     // Get the conditions that decide which loop to take for "loopNum." If NULL allocate an empty array.
-    ExpandArrayStack<LC_Condition>* EnsureConditions(unsigned loopNum);
+    JitExpandArrayStack<LC_Condition>* EnsureConditions(unsigned loopNum);
 
     // Get the conditions for loop. No allocation is performed.
-    ExpandArrayStack<LC_Condition>* GetConditions(unsigned loopNum);
+    JitExpandArrayStack<LC_Condition>* GetConditions(unsigned loopNum);
 
     // Ensure that the "deref" conditions array is allocated.
-    ExpandArrayStack<LC_Array>* EnsureDerefs(unsigned loopNum);
+    JitExpandArrayStack<LC_Array>* EnsureDerefs(unsigned loopNum);
 
     // Get block conditions for each loop, no allocation is performed.
-    ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* GetBlockConditions(unsigned loopNum);
+    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* GetBlockConditions(unsigned loopNum);
 
     // Ensure that the block condition is present, if not allocate space.
-    ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* EnsureBlockConditions(unsigned loopNum, unsigned totalBlocks);
+    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* EnsureBlockConditions(unsigned loopNum,
+                                                                                   unsigned totalBlocks);
 
     // Print the block conditions for the loop.
     void PrintBlockConditions(unsigned loopNum);
@@ -653,7 +656,7 @@ struct LoopCloneContext
     void EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool* pAnyFalse DEBUGARG(bool verbose));
 
 private:
-    void OptimizeConditions(ExpandArrayStack<LC_Condition>& conds);
+    void OptimizeConditions(JitExpandArrayStack<LC_Condition>& conds);
 
 public:
     // Optimize conditions to remove redundant conditions.

@@ -1180,7 +1180,7 @@ struct FileLine
         m_condStr = other.m_condStr;
     }
 
-    // GetHashCode() and Equals() are needed by SimplerHashTable
+    // GetHashCode() and Equals() are needed by JitHashTable
 
     static unsigned GetHashCode(FileLine fl)
     {
@@ -1200,7 +1200,7 @@ struct FileLine
     }
 };
 
-typedef SimplerHashTable<FileLine, FileLine, size_t, JitSimplerHashBehavior> FileLineToCountMap;
+typedef JitHashTable<FileLine, FileLine, size_t, HostAllocator> FileLineToCountMap;
 FileLineToCountMap* NowayAssertMap;
 
 void Compiler::RecordNowayAssert(const char* filename, unsigned line, const char* condStr)
@@ -1892,13 +1892,15 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     {
         m_inlineStrategy = nullptr;
         compInlineResult = inlineInfo->inlineResult;
-        compAsIAllocator = nullptr; // We shouldn't be using the compAsIAllocator for other than the root compiler.
+
+        // We shouldn't be using the compAllocatorGeneric for other than the root compiler.
+        compAllocatorGeneric = nullptr;
 #if MEASURE_MEM_ALLOC
-        compAsIAllocatorBitset    = nullptr;
-        compAsIAllocatorGC        = nullptr;
-        compAsIAllocatorLoopHoist = nullptr;
+        compAllocatorBitset    = nullptr;
+        compAllocatorGC        = nullptr;
+        compAllocatorLoopHoist = nullptr;
 #ifdef DEBUG
-        compAsIAllocatorDebugOnly = nullptr;
+        compAllocatorDebugOnly = nullptr;
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
@@ -1910,18 +1912,19 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     {
         m_inlineStrategy = new (this, CMK_Inlining) InlineStrategy(this);
         compInlineResult = nullptr;
-        compAsIAllocator = new (this, CMK_Unknown) CompAllocator(this, CMK_AsIAllocator);
+
+        compAllocatorGeneric = new (this, CMK_Unknown) CompAllocator(this, CMK_Generic);
 #if MEASURE_MEM_ALLOC
-        compAsIAllocatorBitset    = new (this, CMK_Unknown) CompAllocator(this, CMK_bitset);
-        compAsIAllocatorGC        = new (this, CMK_Unknown) CompAllocator(this, CMK_GC);
-        compAsIAllocatorLoopHoist = new (this, CMK_Unknown) CompAllocator(this, CMK_LoopHoist);
+        compAllocatorBitset    = new (this, CMK_Unknown) CompAllocator(this, CMK_bitset);
+        compAllocatorGC        = new (this, CMK_Unknown) CompAllocator(this, CMK_GC);
+        compAllocatorLoopHoist = new (this, CMK_Unknown) CompAllocator(this, CMK_LoopHoist);
 #ifdef DEBUG
-        compAsIAllocatorDebugOnly = new (this, CMK_Unknown) CompAllocator(this, CMK_DebugOnly);
+        compAllocatorDebugOnly = new (this, CMK_Unknown) CompAllocator(this, CMK_DebugOnly);
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
 #ifdef LEGACY_BACKEND
-        compQMarks = new (this, CMK_Unknown) ExpandArrayStack<GenTreePtr>(getAllocator());
+        compQMarks = new (this, CMK_Unknown) JitExpandArrayStack<GenTreePtr>(getAllocator());
 #endif
     }
 
@@ -1961,9 +1964,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 
         // If this method were a real constructor for Compiler, these would
         // become method initializations.
-        impPendingBlockMembers    = ExpandArray<BYTE>(getAllocator());
-        impSpillCliquePredMembers = ExpandArray<BYTE>(getAllocator());
-        impSpillCliqueSuccMembers = ExpandArray<BYTE>(getAllocator());
+        impPendingBlockMembers    = JitExpandArray<BYTE>(getAllocator());
+        impSpillCliquePredMembers = JitExpandArray<BYTE>(getAllocator());
+        impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
         memset(&lvMemoryPerSsaData, 0, sizeof(PerSsaArray));
         lvMemoryPerSsaData.Init(getAllocator());
@@ -2158,19 +2161,6 @@ void Compiler::compDoComponentUnitTestsOnce()
     }
 }
 #endif // DEBUG
-
-/******************************************************************************
- *
- *  The Emitter uses this callback function to allocate its memory
- */
-
-/* static */
-void* Compiler::compGetMemCallback(void* p, size_t size, CompMemKind cmk)
-{
-    assert(p);
-
-    return ((Compiler*)p)->compGetMem(size, cmk);
-}
 
 /*****************************************************************************
  *
@@ -5186,7 +5176,7 @@ bool Compiler::compQuirkForPPP()
         assert((varDscExposedStruct->lvExactSize / TARGET_POINTER_SIZE) == 8);
 
         BYTE* oldGCPtrs = varDscExposedStruct->lvGcLayout;
-        BYTE* newGCPtrs = (BYTE*)compGetMemA(8, CMK_LvaTable);
+        BYTE* newGCPtrs = (BYTE*)compGetMem(8, CMK_LvaTable);
 
         for (int i = 0; i < 4; i++)
         {

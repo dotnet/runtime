@@ -1119,7 +1119,7 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp)
 LinearScan::LinearScan(Compiler* theCompiler)
     : compiler(theCompiler)
 #if MEASURE_MEM_ALLOC
-    , lsraIAllocator(nullptr)
+    , lsraAllocator(nullptr)
 #endif // MEASURE_MEM_ALLOC
     , intervals(LinearScanMemoryAllocatorInterval(theCompiler))
     , refPositions(LinearScanMemoryAllocatorRefPosition(theCompiler))

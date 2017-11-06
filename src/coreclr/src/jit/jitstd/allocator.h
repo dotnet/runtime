@@ -2,26 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                            allocator<T>                                   XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
 #pragma once
 
-#include "iallocator.h"
 #include "new.h"
 
 namespace jitstd
@@ -50,7 +32,7 @@ private:
     allocator();
 
 public:
-    inline allocator(IAllocator* pAlloc);
+    inline allocator(CompAllocator* pAlloc);
 
     template <typename U>
     inline allocator(const allocator<U>& alloc);
@@ -61,12 +43,12 @@ public:
     inline allocator& operator=(const allocator<U>& alloc);
 
 private:
-    IAllocator* m_pAlloc;
+    CompAllocator* m_pAlloc;
     template <typename U>
     friend class allocator;
 };
 
-allocator<void>::allocator(IAllocator* pAlloc)
+allocator<void>::allocator(CompAllocator* pAlloc)
     : m_pAlloc(pAlloc)
 {
 }
@@ -104,7 +86,7 @@ public:
 private:
     allocator();
 public:
-    allocator(IAllocator* pAlloc);
+    allocator(CompAllocator* pAlloc);
 
     template <typename U>
     allocator(const allocator<U>& alloc);
@@ -128,7 +110,7 @@ public:
     };
 
 private:
-    IAllocator* m_pAlloc;
+    CompAllocator* m_pAlloc;
     template <typename U>
     friend class allocator;
 };
@@ -140,7 +122,7 @@ namespace jitstd
 {
 
 template <typename T>
-allocator<T>::allocator(IAllocator* pAlloc)
+allocator<T>::allocator(CompAllocator* pAlloc)
     : m_pAlloc(pAlloc)
 {
 }
