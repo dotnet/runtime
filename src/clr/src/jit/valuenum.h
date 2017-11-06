@@ -99,26 +99,26 @@ public:
     // VNMap - map from something to ValueNum, where something is typically a constant value or a VNFunc
     //         This class has two purposes - to abstract the implementation and to validate the ValueNums
     //         being stored or retrieved.
-    template <class fromType, class keyfuncs = LargePrimitiveKeyFuncs<fromType>>
-    class VNMap : public SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>
+    template <class fromType, class keyfuncs = JitLargePrimitiveKeyFuncs<fromType>>
+    class VNMap : public JitHashTable<fromType, keyfuncs, ValueNum>
     {
     public:
-        VNMap(IAllocator* alloc) : SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>(alloc)
+        VNMap(CompAllocator* alloc) : JitHashTable<fromType, keyfuncs, ValueNum>(alloc)
         {
         }
         ~VNMap()
         {
-            ~VNMap<fromType, keyfuncs>::SimplerHashTable();
+            ~VNMap<fromType, keyfuncs>::JitHashTable();
         }
 
         bool Set(fromType k, ValueNum val)
         {
             assert(val != RecursiveVN);
-            return SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>::Set(k, val);
+            return JitHashTable<fromType, keyfuncs, ValueNum>::Set(k, val);
         }
         bool Lookup(fromType k, ValueNum* pVal = nullptr) const
         {
-            bool result = SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>::Lookup(k, pVal);
+            bool result = JitHashTable<fromType, keyfuncs, ValueNum>::Lookup(k, pVal);
             assert(!result || *pVal != RecursiveVN);
             return result;
         }
@@ -128,7 +128,7 @@ private:
     Compiler* m_pComp;
 
     // For allocations.  (Other things?)
-    IAllocator* m_alloc;
+    CompAllocator* m_alloc;
 
     // TODO-Cleanup: should transform "attribs" into a struct with bit fields.  That would be simpler...
 
@@ -234,7 +234,7 @@ public:
     static void InitValueNumStoreStatics();
 
     // Initialize an empty ValueNumStore.
-    ValueNumStore(Compiler* comp, IAllocator* allocator);
+    ValueNumStore(Compiler* comp, CompAllocator* allocator);
 
     // Returns "true" iff "vnf" (which may have been created by a cast from an integral value) represents
     // a legal value number function.
@@ -907,7 +907,7 @@ private:
         // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for
         // allocations).
         // (Increments "*baseVN" by ChunkSize.)
-        Chunk(IAllocator*            alloc,
+        Chunk(CompAllocator*         alloc,
               ValueNum*              baseVN,
               var_types              typ,
               ChunkExtraAttribs      attribs,
@@ -928,7 +928,7 @@ private:
         };
     };
 
-    struct VNHandle : public KeyFuncsDefEquals<VNHandle>
+    struct VNHandle : public JitKeyFuncsDefEquals<VNHandle>
     {
         ssize_t  m_cnsVal;
         unsigned m_flags;
@@ -1042,7 +1042,7 @@ private:
     // So we have to be careful about breaking infinite recursion.  We can ignore "recursive" results -- if all the
     // non-recursive results are the same, the recursion indicates that the loop structure didn't alter the result.
     // This stack represents the set of outer phis such that select(phi, ind) is being evaluated.
-    ExpandArrayStack<VNDefFunc2Arg> m_fixedPointMapSels;
+    JitExpandArrayStack<VNDefFunc2Arg> m_fixedPointMapSels;
 
 #ifdef DEBUG
     // Returns "true" iff "m_fixedPointMapSels" is non-empty, and it's top element is
@@ -1057,7 +1057,7 @@ private:
     CheckedBoundVNSet m_checkedBoundVNs;
 
     // This is a map from "chunk number" to the attributes of the chunk.
-    ExpandArrayStack<Chunk*> m_chunks;
+    JitExpandArrayStack<Chunk*> m_chunks;
 
     // These entries indicate the current allocation chunk, if any, for each valid combination of <var_types,
     // ChunkExtraAttribute, loopNumber>.  Valid combinations require attribs==CEA_None or loopNum==MAX_LOOP_NUM.
@@ -1143,7 +1143,7 @@ private:
         return m_handleMap;
     }
 
-    struct LargePrimitiveKeyFuncsFloat : public LargePrimitiveKeyFuncs<float>
+    struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {
         static bool Equals(float x, float y)
         {
@@ -1163,7 +1163,7 @@ private:
     }
 
     // In the JIT we need to distinguish -0.0 and 0.0 for optimizations.
-    struct LargePrimitiveKeyFuncsDouble : public LargePrimitiveKeyFuncs<double>
+    struct LargePrimitiveKeyFuncsDouble : public JitLargePrimitiveKeyFuncs<double>
     {
         static bool Equals(double x, double y)
         {
@@ -1192,7 +1192,7 @@ private:
         return m_byrefCnsMap;
     }
 
-    struct VNDefFunc0ArgKeyFuncs : public KeyFuncsDefEquals<VNDefFunc1Arg>
+    struct VNDefFunc0ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc1Arg>
     {
         static unsigned GetHashCode(VNDefFunc1Arg val)
         {
@@ -1210,7 +1210,7 @@ private:
         return m_VNFunc0Map;
     }
 
-    struct VNDefFunc1ArgKeyFuncs : public KeyFuncsDefEquals<VNDefFunc1Arg>
+    struct VNDefFunc1ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc1Arg>
     {
         static unsigned GetHashCode(VNDefFunc1Arg val)
         {
@@ -1228,7 +1228,7 @@ private:
         return m_VNFunc1Map;
     }
 
-    struct VNDefFunc2ArgKeyFuncs : public KeyFuncsDefEquals<VNDefFunc2Arg>
+    struct VNDefFunc2ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc2Arg>
     {
         static unsigned GetHashCode(VNDefFunc2Arg val)
         {
@@ -1246,7 +1246,7 @@ private:
         return m_VNFunc2Map;
     }
 
-    struct VNDefFunc3ArgKeyFuncs : public KeyFuncsDefEquals<VNDefFunc3Arg>
+    struct VNDefFunc3ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc3Arg>
     {
         static unsigned GetHashCode(VNDefFunc3Arg val)
         {
@@ -1264,7 +1264,7 @@ private:
         return m_VNFunc3Map;
     }
 
-    struct VNDefFunc4ArgKeyFuncs : public KeyFuncsDefEquals<VNDefFunc4Arg>
+    struct VNDefFunc4ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc4Arg>
     {
         static unsigned GetHashCode(VNDefFunc4Arg val)
         {

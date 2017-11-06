@@ -720,7 +720,7 @@ void Compiler::eeGetVars()
     {
         // Allocate a bit-array for all the variables and initialize to false
 
-        bool*    varInfoProvided = (bool*)compGetMemA(info.compLocalsCount * sizeof(varInfoProvided[0]));
+        bool*    varInfoProvided = (bool*)compGetMem(info.compLocalsCount * sizeof(varInfoProvided[0]));
         unsigned i;
         for (i = 0; i < info.compLocalsCount; i++)
         {

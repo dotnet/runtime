@@ -50,7 +50,7 @@ VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
     }
 }
 
-ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc)
+ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator* alloc)
     : m_pComp(comp)
     , m_alloc(alloc)
     ,
@@ -652,8 +652,11 @@ bool ValueNumStore::IsSharedStatic(ValueNum vn)
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_SharedStatic) != 0;
 }
 
-ValueNumStore::Chunk::Chunk(
-    IAllocator* alloc, ValueNum* pNextBaseVN, var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum)
+ValueNumStore::Chunk::Chunk(CompAllocator*         alloc,
+                            ValueNum*              pNextBaseVN,
+                            var_types              typ,
+                            ChunkExtraAttribs      attribs,
+                            BasicBlock::loopNumber loopNum)
     : m_defs(nullptr), m_numUsed(0), m_baseVN(*pNextBaseVN), m_typ(typ), m_attribs(attribs), m_loopNum(loopNum)
 {
     // Allocate "m_defs" here, according to the typ/attribs pair.
@@ -4259,7 +4262,7 @@ void ValueNumStore::RunTests(Compiler* comp)
 }
 #endif // DEBUG
 
-typedef ExpandArrayStack<BasicBlock*> BlockStack;
+typedef JitExpandArrayStack<BasicBlock*> BlockStack;
 
 // This represents the "to do" state of the value number computation.
 struct ValueNumberState
@@ -7905,8 +7908,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 // TODO-Cleanup: new JitTestLabels for lib vs cons vs both VN classes?
 void Compiler::JitTestCheckVN()
 {
-    typedef SimplerHashTable<ssize_t, SmallPrimitiveKeyFuncs<ssize_t>, ValueNum, JitSimplerHashBehavior>  LabelToVNMap;
-    typedef SimplerHashTable<ValueNum, SmallPrimitiveKeyFuncs<ValueNum>, ssize_t, JitSimplerHashBehavior> VNToLabelMap;
+    typedef JitHashTable<ssize_t, JitSmallPrimitiveKeyFuncs<ssize_t>, ValueNum>  LabelToVNMap;
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, ssize_t> VNToLabelMap;
 
     // If we have no test data, early out.
     if (m_nodeTestData == nullptr)
@@ -7917,7 +7920,7 @@ void Compiler::JitTestCheckVN()
     NodeToTestDataMap* testData = GetNodeTestData();
 
     // First we have to know which nodes in the tree are reachable.
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, int, JitSimplerHashBehavior> NodeToIntMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, int> NodeToIntMap;
     NodeToIntMap* reachable = FindReachableNodesInNodeTestData();
 
     LabelToVNMap* labelToVN = new (getAllocatorDebugOnly()) LabelToVNMap(getAllocatorDebugOnly());

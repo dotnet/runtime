@@ -951,8 +951,7 @@ private:
         unsigned fromBBNum;
         unsigned toBBNum;
     };
-    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, SplitEdgeInfo, JitSimplerHashBehavior>
-                                SplitBBNumToTargetBBNumMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, SplitEdgeInfo> SplitBBNumToTargetBBNumMap;
     SplitBBNumToTargetBBNumMap* splitBBNumToTargetBBNumMap;
     SplitBBNumToTargetBBNumMap* getSplitBBNumToTargetBBNumMap()
     {
@@ -1106,17 +1105,17 @@ private:
 
 private:
 #if MEASURE_MEM_ALLOC
-    IAllocator* lsraIAllocator;
+    CompAllocator* lsraAllocator;
 #endif
 
-    IAllocator* getAllocator(Compiler* comp)
+    CompAllocator* getAllocator(Compiler* comp)
     {
 #if MEASURE_MEM_ALLOC
-        if (lsraIAllocator == nullptr)
+        if (lsraAllocator == nullptr)
         {
-            lsraIAllocator = new (comp, CMK_LSRA) CompAllocator(comp, CMK_LSRA);
+            lsraAllocator = new (comp, CMK_LSRA) CompAllocator(comp, CMK_LSRA);
         }
-        return lsraIAllocator;
+        return lsraAllocator;
 #else
         return comp->getAllocator();
 #endif

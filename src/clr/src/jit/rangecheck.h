@@ -59,7 +59,6 @@
 
 #pragma once
 #include "compiler.h"
-#include "expandarray.h"
 
 static bool IntAddOverflows(int max1, int max2)
 {
@@ -215,7 +214,7 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(IAllocator* alloc)
+    const char* ToString(CompAllocator* alloc)
     {
         unsigned size = 64;
         char*    buf  = (char*)alloc->Alloc(size);
@@ -280,7 +279,7 @@ struct Range
     }
 
 #ifdef DEBUG
-    char* ToString(IAllocator* alloc)
+    char* ToString(CompAllocator* alloc)
     {
         size_t size = 64;
         char*  buf  = (char*)alloc->Alloc(size);
@@ -467,12 +466,11 @@ public:
         Location();
     };
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, bool, JitSimplerHashBehavior>          OverflowMap;
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, Range*, JitSimplerHashBehavior>        RangeMap;
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, BasicBlock*, JitSimplerHashBehavior>   SearchPath;
-    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, Location*, JitSimplerHashBehavior> VarToLocMap;
-    typedef SimplerHashTable<INT64, LargePrimitiveKeyFuncs<INT64>, ExpandArrayStack<Location*>*, JitSimplerHashBehavior>
-        VarToLocArrayMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, bool>                                OverflowMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, Range*>                              RangeMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, BasicBlock*>                         SearchPath;
+    typedef JitHashTable<INT64, JitLargePrimitiveKeyFuncs<INT64>, Location*>                       VarToLocMap;
+    typedef JitHashTable<INT64, JitLargePrimitiveKeyFuncs<INT64>, JitExpandArrayStack<Location*>*> VarToLocArrayMap;
 
     // Generate a hashcode unique for this ssa var.
     UINT64 HashCode(unsigned lclNum, unsigned ssaNum);
