@@ -2842,13 +2842,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
     emitAttr  movSize     = emitActualTypeSize(dstType);
     bool      movRequired = false;
 
-#ifdef _TARGET_ARM_
-    if (varTypeIsLong(srcType))
-    {
-        genLongToIntCast(treeNode);
-        return;
-    }
-#endif // _TARGET_ARM_
+    assert(genTypeSize(srcType) <= genTypeSize(TYP_I_IMPL));
 
     regNumber targetReg = treeNode->gtRegNum;
     regNumber sourceReg = castOp->gtRegNum;
