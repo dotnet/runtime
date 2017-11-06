@@ -60,6 +60,7 @@ description = 'Tool to facilitate running CoreFx tests from the CoreCLR repo'
 parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument('-arch', dest='arch', default='x64')
+parser.add_argument('-ci_arch', dest='ci_arch', default=None)
 parser.add_argument('-build_type', dest='build_type', default='Debug')
 parser.add_argument('-clr_root', dest='clr_root', default=None)
 parser.add_argument('-fx_root', dest='fx_root', default=None)
@@ -77,14 +78,15 @@ def validate_args(args):
     Args:
         args (argparser.ArgumentParser): Args parsed by the argument parser.
     Returns:
-        (arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script)
-            (str, str, str, str, str, str, str)
+        (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script)
+            (str, str, str, str, str, str, str, str)
     Notes:
     If the arguments are valid then return them all in a tuple. If not, raise
     an exception stating x argument is incorrect.
     """
 
     arch = args.arch
+    ci_arch = args.ci_arch
     build_type = args.build_type
     clr_root = args.clr_root
     fx_root = args.fx_root
@@ -136,10 +138,11 @@ def validate_args(args):
         validate_arg(env_script, lambda item: os.path.isfile(env_script))
         env_script = os.path.abspath(env_script)
 
-    args = (arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script)
+    args = (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script)
 
     log('Configuration:')
     log(' arch: %s' % arch)
+    log(' ci_arch: %s' % ci_arch)
     log(' build_type: %s' % build_type)
     log(' clr_root: %s' % clr_root)
     log(' fx_root: %s' % fx_root)
@@ -185,7 +188,7 @@ def main(args):
 
     testing = False
 
-    arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script = validate_args(
+    arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script = validate_args(
         args)
 
     clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
@@ -272,11 +275,22 @@ def main(args):
     else:
         command = './build-tests.sh'
 
+    # If we're doing altjit testing, then don't run any tests that don't work with altjit.
+    if ci_arch is not None and (ci_arch == 'x86_arm_altjit' or ci_arch == 'x64_arm64_altjit'):
+        # The property value we need to specify is a semicolon separated list of two values,
+        # so the two values must be enclosed in double quotes. Without the quotes, msbuild
+        # thinks the item after the semicolon is a different named property. Also, the double
+        # quotes need preceeding backslashes or else run.exe (invoked from build-tests.cmd)
+        # will eat them. They need to be double backslashes so Python preserves the backslashes.
+        without_categories = '/p:WithoutCategories=\\"IgnoreForCI;XsltcExeRequired\\"'
+    else:
+        without_categories = '/p:WithoutCategories=IgnoreForCI'
+
     command = ' '.join((
         command,
         config_args,
         '--',
-        '/p:WithoutCategories=IgnoreForCI'
+        without_categories
     ))
 
     if env_script is not None:
