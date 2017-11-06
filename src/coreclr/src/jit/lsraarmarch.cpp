@@ -672,6 +672,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
     }
     else
     {
+        assert(!putArgChild->isContained());
 #if defined(_TARGET_ARM_)
         // The `double` types have been transformed to `long` on armel,
         // while the actual long types have been decomposed.
