@@ -173,6 +173,11 @@ namespace System.Xml.Serialization
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
                 string serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location), serializerName + ".dll");
+                if (!File.Exists(serializerPath))
+                {
+                    serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), serializerName + ".dll");
+                }
+
                 try
                 {
                     serializer = Assembly.LoadFile(serializerPath);
