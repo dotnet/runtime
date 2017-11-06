@@ -150,6 +150,11 @@ namespace System
             return Number.TryParseInt32(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, out int result)
+        {
+            return Number.TryParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
         // Parses an integer from a String in the given style. Returns false rather
         // than throwing exceptin if input is invalid
         // 
@@ -166,7 +171,7 @@ namespace System
             return Number.TryParseInt32(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out int result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result);
