@@ -2997,6 +2997,15 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     emitAttr    attr       = emitTypeSize(tree);
     instruction ins        = ins_Store(targetType);
 
+#ifdef FEATURE_SIMD
+    // Storing Vector3 of size 12 bytes through indirection
+    if (tree->TypeGet() == TYP_SIMD12)
+    {
+        genStoreIndTypeSIMD12(tree);
+        return;
+    }
+#endif // FEATURE_SIMD
+
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
@@ -4701,6 +4710,89 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
         genConsumeReg(saveNode);
     }
     getEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, lclVarReg, srcReg, 1, 0);
+}
+
+//-----------------------------------------------------------------------------
+// genStoreIndTypeSIMD12: store indirect a TYP_SIMD12 (i.e. Vector3) to memory.
+// Since Vector3 is not a hardware supported write size, it is performed
+// as two writes: 8 byte followed by 4-byte.
+//
+// Arguments:
+//    treeNode - tree node that is attempting to store indirect
+//
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_STOREIND);
+
+    GenTree* addr = treeNode->gtOp.gtOp1;
+    GenTree* data = treeNode->gtOp.gtOp2;
+
+    // addr and data should not be contained.
+    assert(!data->isContained());
+    assert(!addr->isContained());
+
+#ifdef DEBUG
+    // Should not require a write barrier
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode, data);
+    assert(writeBarrierForm == GCInfo::WBF_NoBarrier);
+#endif
+
+    genConsumeOperands(treeNode->AsOp());
+
+    // Need an addtional integer register to extract upper 4 bytes from data.
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+    assert(tmpReg != addr->gtRegNum);
+
+    // 8-byte write
+    getEmitter()->emitIns_R_R(ins_Store(TYP_DOUBLE), EA_8BYTE, data->gtRegNum, addr->gtRegNum);
+
+    // Extract upper 4-bytes from data
+    getEmitter()->emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, data->gtRegNum, 2);
+
+    // 4-byte write
+    getEmitter()->emitIns_R_R_I(INS_str, EA_4BYTE, tmpReg, addr->gtRegNum, 8);
+}
+
+//-----------------------------------------------------------------------------
+// genLoadIndTypeSIMD12: load indirect a TYP_SIMD12 (i.e. Vector3) value.
+// Since Vector3 is not a hardware supported write size, it is performed
+// as two loads: 8 byte followed by 4-byte.
+//
+// Arguments:
+//    treeNode - tree node of GT_IND
+//
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_IND);
+
+    GenTree*  addr      = treeNode->gtOp.gtOp1;
+    regNumber targetReg = treeNode->gtRegNum;
+
+    assert(!addr->isContained());
+
+    regNumber operandReg = genConsumeReg(addr);
+
+    // Need an addtional int register to read upper 4 bytes, which is different from targetReg
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+
+    // 8-byte read
+    getEmitter()->emitIns_R_R(ins_Load(TYP_DOUBLE), EA_8BYTE, targetReg, addr->gtRegNum);
+
+    // 4-byte read
+    getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, addr->gtRegNum, 8);
+
+    // Insert upper 4-bytes into data
+    getEmitter()->emitIns_R_R_I(INS_mov, EA_4BYTE, targetReg, tmpReg, 2);
+
+    genProduceReg(treeNode);
 }
 
 #endif // FEATURE_SIMD

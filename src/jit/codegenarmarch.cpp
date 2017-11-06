@@ -1716,6 +1716,15 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitAttr    attr       = emitTypeSize(tree);
     instruction ins        = ins_Load(targetType);
 
+#ifdef FEATURE_SIMD
+    // Handling of Vector3 type values loaded through indirection.
+    if (tree->TypeGet() == TYP_SIMD12)
+    {
+        genLoadIndTypeSIMD12(tree);
+        return;
+    }
+#endif // FEATURE_SIMD
+
     genConsumeAddress(tree->Addr());
     if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
     {
