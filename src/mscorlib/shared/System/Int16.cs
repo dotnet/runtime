@@ -185,6 +185,10 @@ namespace System
             return TryParse(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParse(ReadOnlySpan<char> s, out Int16 result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null) =>
+            TryParse(s, style, provider, out result);
+
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out short result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
