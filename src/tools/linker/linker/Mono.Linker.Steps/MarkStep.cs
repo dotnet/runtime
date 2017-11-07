@@ -1550,12 +1550,16 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void HandleUnresolvedType (TypeReference reference)
 		{
-			throw new ResolutionException (reference);
+			if (!_context.IgnoreUnresolved) {
+				throw new ResolutionException (reference);
+			}
 		}
 
 		protected virtual void HandleUnresolvedMethod (MethodReference reference)
 		{
-			throw new ResolutionException (reference);
+			if (!_context.IgnoreUnresolved) {
+				throw new ResolutionException (reference);
+			}
 		}
 	}
 }

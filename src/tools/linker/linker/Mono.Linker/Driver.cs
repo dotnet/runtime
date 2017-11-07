@@ -95,6 +95,11 @@ namespace Mono.Linker {
 						if (token.Length < 3)
 							Usage ("Option is too short");
 
+						if (token == "--skip-unresolved") {
+							context.IgnoreUnresolved = bool.Parse (GetParam ());
+							continue;
+						}
+
 						switch (token [2]) {
 						case 'v':
 							Version ();
@@ -294,26 +299,27 @@ namespace Mono.Linker {
 			Console.WriteLine ("monolinker [options] -x|-a|-i file");
 #endif
 
-			Console.WriteLine ("   --about     About the {0}", _linker);
-			Console.WriteLine ("   --version   Print the version number of the {0}", _linker);
-			Console.WriteLine ("   -out        Specify the output directory, default to `output'");
-			Console.WriteLine ("   -c          Action on the core assemblies, skip, copy or link, default to skip");
-			Console.WriteLine("    -u          Action on the user assemblies, skip, copy or link, default to link");
-			Console.WriteLine ("   -p          Action per assembly");
-			Console.WriteLine ("   -s          Add a new step to the pipeline.");
-			Console.WriteLine ("   -t          Keep assemblies in which only type forwarders are referenced.");
-			Console.WriteLine ("   -d          Add a directory where the linker will look for assemblies");
-			Console.WriteLine ("   -b          Generate debug symbols for each linked module (true or false)");
-			Console.WriteLine ("   -g          Generate a new unique guid for each linked module (true or false)");
-			Console.WriteLine ("   -v          Keep memebers needed by debugger attributes (true or false)");
-			Console.WriteLine ("   -l          List of i18n assemblies to copy to the output directory");
-			Console.WriteLine ("                 separated with a comma: none,all,cjk,mideast,other,rare,west");
-			Console.WriteLine ("                 default is all");
-			Console.WriteLine ("   -x          Link from an XML descriptor");
-			Console.WriteLine ("   -a          Link from a list of assemblies");
-			Console.WriteLine ("   -r          Link from a list of assemblies using roots visible outside of the assembly");
-			Console.WriteLine ("   -i          Link from an mono-api-info descriptor");
-			Console.WriteLine ("   -z          Include default preservations (true or false), default to true");
+			Console.WriteLine ("   --about             About the {0}", _linker);
+			Console.WriteLine ("   --version           Print the version number of the {0}", _linker);
+			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types and methods (true or false)");
+			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
+			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy or link, default to skip");
+			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy or link, default to link");
+			Console.WriteLine ("   -p                  Action per assembly");
+			Console.WriteLine ("   -s                  Add a new step to the pipeline.");
+			Console.WriteLine ("   -t                  Keep assemblies in which only type forwarders are referenced.");
+			Console.WriteLine ("   -d                  Add a directory where the linker will look for assemblies");
+			Console.WriteLine ("   -b                  Generate debug symbols for each linked module (true or false)");
+			Console.WriteLine ("   -g                  Generate a new unique guid for each linked module (true or false)");
+			Console.WriteLine ("   -v                  Keep memebers needed by debugger attributes (true or false)");
+			Console.WriteLine ("   -l                  List of i18n assemblies to copy to the output directory");
+			Console.WriteLine ("                         separated with a comma: none,all,cjk,mideast,other,rare,west");
+			Console.WriteLine ("                         default is all");
+			Console.WriteLine ("   -x                  Link from an XML descriptor");
+			Console.WriteLine ("   -a                  Link from a list of assemblies");
+			Console.WriteLine ("   -r                  Link from a list of assemblies using roots visible outside of the assembly");
+			Console.WriteLine ("   -i                  Link from an mono-api-info descriptor");
+			Console.WriteLine ("   -z                  Include default preservations (true or false), default to true");
 			Console.WriteLine ("");
 
 			Environment.Exit (1);
