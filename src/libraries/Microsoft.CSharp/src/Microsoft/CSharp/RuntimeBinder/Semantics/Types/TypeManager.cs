@@ -122,7 +122,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     name = NameManager.GetPredefinedName(PredefinedName.PN_ARRAY0 + args);
                     break;
                 default:
-                    name = _BSymmgr.GetNameManager().Add("[X" + args + 1);
+                    name = NameManager.Add("[X" + args + 1);
                     break;
             }
 

@@ -147,9 +147,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
-                        !loader.IsBaseAggregate(aggIList, aggDst.getAggregate())) &&
+                        !SymbolLoader.IsBaseAggregate(aggIList, aggDst.getAggregate())) &&
                         (aggIReadOnlyList == null ||
-                        !loader.IsBaseAggregate(aggIReadOnlyList, aggDst.getAggregate())))
+                        !SymbolLoader.IsBaseAggregate(aggIReadOnlyList, aggDst.getAggregate())))
                     {
                         return false;
                     }
@@ -179,9 +179,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
-                        !loader.IsBaseAggregate(aggIList, aggtypeSrc.getAggregate())) &&
+                        !SymbolLoader.IsBaseAggregate(aggIList, aggtypeSrc.getAggregate())) &&
                         (aggIReadOnlyList == null ||
-                        !loader.IsBaseAggregate(aggIReadOnlyList, aggtypeSrc.getAggregate())))
+                        !SymbolLoader.IsBaseAggregate(aggIReadOnlyList, aggtypeSrc.getAggregate())))
                     {
                         return false;
                     }

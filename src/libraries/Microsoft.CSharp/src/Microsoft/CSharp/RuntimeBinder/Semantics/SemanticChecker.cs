@@ -124,7 +124,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ErrorHandling ErrorContext => SymbolLoader.ErrorContext;
 
-        public NameManager GetNameManager() { return SymbolLoader.GetNameManager(); }
         public TypeManager GetTypeManager() { return SymbolLoader.GetTypeManager(); }
         public BSYMMGR getBSymmgr() { return SymbolLoader.getBSymmgr(); }
         public SymFactory GetGlobalSymbolFactory() { return SymbolLoader.GetGlobalSymbolFactory(); }
