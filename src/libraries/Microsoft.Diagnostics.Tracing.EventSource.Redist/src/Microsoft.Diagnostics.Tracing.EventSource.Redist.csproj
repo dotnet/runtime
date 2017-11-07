@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <ProjectGuid>{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;PLATFORM_WINDOWS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
