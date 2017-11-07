@@ -59,12 +59,23 @@ namespace System.Diagnostics.Tests
 
         public static void WaitForEventLog(EventLog eventLog, int entriesExpected)
         {
-            int tries = 0;
-            while (RetryOnAllPlatforms((() => eventLog.Entries.Count)) < entriesExpected && tries < 20)
+            int tries = 1;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            while (RetryOnAllPlatforms((() => eventLog.Entries.Count)) < entriesExpected && tries <= 50)
             {
-                Thread.Sleep(100);
+                if (tries == 50)
+                {
+                    Thread.Sleep(30000);
+                }
+                else
+                {
+                    Thread.Sleep(100 * (tries));
+                }
                 tries++;
             }
+
+            if (stopwatch.ElapsedMilliseconds / 1000 >= 5)
+                Console.WriteLine($"{stopwatch.ElapsedMilliseconds / 1000 } seconds");
 
             Assert.Equal(entriesExpected, RetryOnWin7((() => eventLog.Entries.Count)));
         }
