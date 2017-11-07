@@ -21,7 +21,7 @@ namespace System.Buffers
                 {
                     ThrowHelper.ThrowObjectDisposedException(nameof(OwnedMemory<T>), ExceptionResource.Memory_ThrowIfDisposed);
                 }
-                return new Memory<T>(this, 0, Length);
+                return new Memory<T>(owner: this, 0, Length);
             }
         }
 
