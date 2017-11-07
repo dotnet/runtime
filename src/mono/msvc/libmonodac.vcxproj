@@ -134,6 +134,11 @@
   <ItemGroup>
     <ClCompile Include="..\mono\mini\mini-windows-dlldac.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="build-init.vcxproj">
+      <Project>{92ae7622-5f58-4234-9a26-9ec71876b3f4}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
