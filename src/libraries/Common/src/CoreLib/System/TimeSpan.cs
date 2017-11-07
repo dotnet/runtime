@@ -370,6 +370,11 @@ namespace System
         {
             return TimeSpanParse.TryParse(s, null, out result);
         }
+
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParse(ReadOnlySpan<char> input, out TimeSpan result, IFormatProvider formatProvider = null) =>
+            TryParse(input, formatProvider, out result);
+
         public static Boolean TryParse(String input, IFormatProvider formatProvider, out TimeSpan result)
         {
             if (input == null)
@@ -409,6 +414,11 @@ namespace System
         {
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
         }
+
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, out TimeSpan result, TimeSpanStyles styles = TimeSpanStyles.None) =>
+            TryParseExact(input, format, formatProvider, styles, out result);
+
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
@@ -434,6 +444,11 @@ namespace System
             }
             return TimeSpanParse.TryParseExactMultiple(input.AsReadOnlySpan(), formats, formatProvider, styles, out result);
         }
+
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider formatProvider, out TimeSpan result, TimeSpanStyles styles = TimeSpanStyles.None) =>
+            TryParseExact(input, formats, formatProvider, styles, out result);
+
         public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
