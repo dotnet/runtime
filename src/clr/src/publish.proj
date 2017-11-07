@@ -12,6 +12,8 @@
     <TestNativeBinariesPattern Condition="'$(TestNativeBinariesPattern)' == ''">$(OutputPath)\bin\**</TestNativeBinariesPattern>
     <SymbolsPackagesPattern Condition="'$(SymbolPackagesPattern)' == ''">$(PackagesBinDir)symbolpkg\*.nupkg</SymbolsPackagesPattern>
     <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">true</PublishFlatContainer>
+    <RelativePathWithSlash>$(RelativePath)</RelativePathWithSlash>
+    <RelativePathWithSlash Condition="'$(RelativePathWithSlash)' != '' and !HasTrailingSlash('$(RelativePathWithSlash)')">$(RelativePathWithSlash)/</RelativePathWithSlash>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -22,12 +24,13 @@
 
   <Target Name="PublishPackages" Condition="'$(__PublishPackages)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
-      <ItemsToPush Include="$(PackagesPattern)" Exclude="$(SymbolsPackagesPattern)">
-        <RelativeBlobPath>$(RelativePath)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      <ItemsToPush Include="$(PackagesPattern)" Exclude="$(SymbolsPackagesPattern)"/>
+      <ItemsToPush>
+        <RelativeBlobPath>$(RelativePathWithSlash)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </ItemsToPush>
     </ItemGroup>
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
@@ -52,12 +55,13 @@
 
   <Target Name="PublishSymbolPackages" Condition="'$(__PublishSymbols)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
-      <ItemsToPush Include="$(SymbolsPackagesPattern)">
-        <RelativeBlobPath>$(RelativePath)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      <ItemsToPush Include="$(SymbolsPackagesPattern)"/>
+      <ItemsToPush>
+        <RelativeBlobPath>$(RelativePathWithSlash)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </ItemsToPush>
     </ItemGroup>
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
@@ -87,8 +91,9 @@
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
-      <ItemsToPush Include="$(TestNativeBinariesPattern)">
-        <RelativeBlobPath>$(RelativePath)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      <ItemsToPush Include="$(TestNativeBinariesPattern)" />
+      <ItemsToPush>
+        <RelativeBlobPath>$(RelativePath)/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </ItemsToPush>
     </ItemGroup>
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
