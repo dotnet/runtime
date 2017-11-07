@@ -721,9 +721,9 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
     Interval* theInterval = rp->getInterval();
 
 #ifdef DEBUG
-    regMaskTP calleeSaveMask = calleeSaveRegs(getRegisterType(theInterval, rp));
     if (doReverseCallerCallee())
     {
+        regMaskTP calleeSaveMask = calleeSaveRegs(theInterval->registerType);
         rp->registerAssignment =
             getConstrainedRegMask(rp->registerAssignment, calleeSaveMask, rp->minRegCandidateCount);
     }
