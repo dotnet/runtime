@@ -33,17 +33,18 @@
         <RelativeBlobPath>$(RelativePathWithSlash)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </ItemsToPush>
     </ItemGroup>
+
+    <!-- create the container if it doesn't exist -->
+    <CreateAzureContainer AccountKey="$(AccountKey)"
+                          AccountName="$(AccountName)"
+                          ContainerName="$(ContainerName)" />
+
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
                     Overwrite="$(OverwriteOnPublish)" />
 
-    <!-- create the container if it doesn't exist -->
-    <CreateAzureContainer Condition="'$(PublishFlatContainer)' == 'true'"
-                          AccountKey="$(AccountKey)"
-                          AccountName="$(AccountName)"
-                          ContainerName="$(ContainerName)" />
     <!-- now upload the items -->
     <UploadToAzure  Condition="'$(PublishFlatContainer)' == 'true'"
                     AccountKey="$(AccountKey)"
@@ -64,17 +65,18 @@
         <RelativeBlobPath>$(RelativePathWithSlash)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </ItemsToPush>
     </ItemGroup>
+
+   <!-- create the container if it doesn't exist -->
+    <CreateAzureContainer AccountKey="$(AccountKey)"
+                          AccountName="$(AccountName)"
+                          ContainerName="$(ContainerName)" />
+
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
                     Overwrite="$(OverwriteOnPublish)" />
 
-    <!-- create the container if it doesn't exist -->
-    <CreateAzureContainer Condition="'$(PublishFlatContainer)' == 'true'"
-                          AccountKey="$(AccountKey)"
-                          AccountName="$(AccountName)"
-                          ContainerName="$(ContainerName)" />
     <!-- now upload the items -->
     <UploadToAzure  Condition="'$(PublishFlatContainer)' == 'true'"
                     AccountKey="$(AccountKey)"
@@ -96,17 +98,18 @@
         <RelativeBlobPath>$(RelativePath)/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </ItemsToPush>
     </ItemGroup>
+
+    <!-- create the container if it doesn't exist -->
+    <CreateAzureContainer AccountKey="$(AccountKey)"
+                          AccountName="$(AccountName)"
+                          ContainerName="$(ContainerName)" />
+
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
                     Overwrite="$(OverwriteOnPublish)" />
 
-    <!-- create the container if it doesn't exist -->
-    <CreateAzureContainer Condition="'$(PublishFlatContainer)' == 'true'"
-                          AccountKey="$(AccountKey)"
-                          AccountName="$(AccountName)"
-                          ContainerName="$(ContainerName)" />
     <!-- now upload the items -->
     <UploadToAzure  Condition="'$(PublishFlatContainer)' == 'true'"
                     AccountKey="$(AccountKey)"
