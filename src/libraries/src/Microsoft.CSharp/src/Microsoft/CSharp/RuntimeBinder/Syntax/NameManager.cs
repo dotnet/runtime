@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
-    internal class NameManager
+    internal static class NameManager
     {
         private static readonly Name[] s_predefinedNames = {
             new Name(".ctor"),
@@ -133,7 +133,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new Name("")
         };
 
-        private static readonly NameTable s_knownNames = GetKnownNames();
+        private static readonly NameTable s_names = GetKnownNames();
 
         private static NameTable GetKnownNames()
         {
@@ -147,33 +147,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             return table;
         }
 
-        private readonly NameTable _names = new NameTable();
-
-        internal Name Add(string key)
+        internal static Name Add(string key)
         {
             if (key == null)
             {
                 throw Error.InternalCompilerError();
             }
 
-            return s_knownNames.Lookup(key) ?? _names.Add(key);
+            return s_names.Add(key);
         }
 
-        internal Name Add(string key, int length)
+        internal static Name Add(string key, int length)
         {
             Debug.Assert(key != null);
             Debug.Assert(key.Length >= length);
-            return s_knownNames.Lookup(key, length) ?? _names.Add(key, length);
+            return s_names.Add(key, length);
         }
 
-        internal Name Lookup(string key)
+        internal static Name Lookup(string key)
         {
-            if (key == null)
-            {
-                throw Error.InternalCompilerError();
-            }
-
-            return s_knownNames.Lookup(key) ?? _names.Lookup(key);
+            Debug.Assert(key != null);
+            return s_names.Lookup(key);
         }
 
         internal static Name GetPredefinedName(PredefinedName id)

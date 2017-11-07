@@ -2639,7 +2639,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool foundSome = false;
             for (MethodSymbol methCur = GetSymbolLoader().LookupAggMember(name, type.getAggregate(), symbmask_t.MASK_MethodSymbol) as MethodSymbol;
                 methCur != null;
-                methCur = GetSymbolLoader().LookupNextSym(methCur, type.getAggregate(), symbmask_t.MASK_MethodSymbol) as MethodSymbol)
+                methCur = SymbolLoader.LookupNextSym(methCur, type.getAggregate(), symbmask_t.MASK_MethodSymbol) as MethodSymbol)
             {
                 if (UserDefinedBinaryOperatorIsApplicable(candidateList, ek, methCur, type, arg1, arg2, fDontLift))
                 {

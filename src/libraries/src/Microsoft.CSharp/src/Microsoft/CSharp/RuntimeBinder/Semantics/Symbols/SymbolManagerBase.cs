@@ -21,7 +21,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private readonly NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
 
-        private NameManager m_nameTable;
         private SYMTBL tableGlobal;
 
         // The hash table for type arrays.
@@ -29,14 +28,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static readonly TypeArray s_taEmpty = new TypeArray(Array.Empty<CType>());
 
-        public BSYMMGR(NameManager nameMgr)
+        public BSYMMGR()
         {
-            this.m_nameTable = nameMgr;
             this.tableGlobal = new SYMTBL();
             _symFactory = new SymFactory(this.tableGlobal);
 
             this.tableTypeArrays = new Dictionary<TypeArrayKey, TypeArray>();
-            _rootNS = _symFactory.CreateNamespace(m_nameTable.Lookup(""), null);
+            _rootNS = _symFactory.CreateNamespace(NameManager.Lookup(""), null);
             GetNsAid(_rootNS);
 
             ////////////////////////////////////////////////////////////////////////////////
@@ -55,17 +53,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (iDot == -1)
                         break;
                     string sub = (iDot > start) ? name.Substring(start, iDot - start) : name.Substring(start);
-                    Name nm = this.GetNameManager().Add(sub);
+                    Name nm = NameManager.Add(sub);
                     ns = LookupGlobalSymCore(nm, ns, symbmask_t.MASK_NamespaceSymbol) as NamespaceSymbol ?? _symFactory.CreateNamespace(nm, ns);
                     start += sub.Length + 1;
                 }
             }
-        }
-
-
-        public NameManager GetNameManager()
-        {
-            return m_nameTable;
         }
 
         public SYMTBL GetSymbolTable()
@@ -183,7 +175,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     int iDot = name.IndexOf('.', start);
                     if (iDot == -1) break;
                     string sub = (iDot > start) ? name.Substring(start, iDot - start) : name.Substring(start);
-                    Name nm = this.GetNameManager().Add(sub);
+                    Name nm = NameManager.Add(sub);
                     ns = LookupGlobalSymCore(nm, ns, symbmask_t.MASK_NamespaceSymbol) as NamespaceSymbol ?? _symFactory.CreateNamespace(nm, ns);
                     start += sub.Length + 1;
                 }
@@ -225,11 +217,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Note: this won't produce the same names as the native logic
             if (u2 != null)
             {
-                return this.m_nameTable.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}-{1:X}", u1.GetHashCode(), u2.GetHashCode()));
+                return NameManager.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}-{1:X}", u1.GetHashCode(), u2.GetHashCode()));
             }
             else
             {
-                return this.m_nameTable.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}", u1.GetHashCode()));
+                return NameManager.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}", u1.GetHashCode()));
             }
         }
 

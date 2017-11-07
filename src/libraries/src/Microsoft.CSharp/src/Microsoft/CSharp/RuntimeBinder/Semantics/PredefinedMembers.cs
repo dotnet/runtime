@@ -443,7 +443,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             for (Symbol sym = GetSymbolLoader().LookupAggMember(methodName, type, symbmask_t.MASK_ALL);
                  sym != null;
-                 sym = GetSymbolLoader().LookupNextSym(sym, type, symbmask_t.MASK_ALL))
+                 sym = SymbolLoader.LookupNextSym(sym, type, symbmask_t.MASK_ALL))
             {
                 if (sym is MethodSymbol methsym)
                 {

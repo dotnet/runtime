@@ -10,17 +10,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class SymbolLoader
     {
-        private readonly NameManager _nameManager;
-
-        public PredefinedMembers PredefinedMembers { get; }
+        private PredefinedMembers PredefinedMembers { get; }
         private GlobalSymbolContext GlobalSymbolContext { get; }
         public ErrorHandling ErrorContext { get; }
         public SymbolTable RuntimeBinderSymbolTable { get; private set; }
 
         public SymbolLoader()
         {
-            GlobalSymbolContext globalSymbols = new GlobalSymbolContext(new NameManager());
-            _nameManager = globalSymbols.GetNameManager();
+            GlobalSymbolContext globalSymbols = new GlobalSymbolContext();
             PredefinedMembers = new PredefinedMembers(this);
             ErrorContext = new ErrorHandling(globalSymbols);
             GlobalSymbolContext = globalSymbols;
@@ -50,11 +47,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
             return null;
-        }
-
-        public NameManager GetNameManager()
-        {
-            return _nameManager;
         }
 
         public PredefinedTypes GetPredefindTypes()
@@ -96,10 +88,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return getBSymmgr().LookupAggMember(name, agg, mask);
         }
 
-        public Symbol LookupNextSym(Symbol sym, ParentSymbol parent, symbmask_t kindmask)
-        {
-            return BSYMMGR.LookupNextSym(sym, parent, kindmask);
-        }
+        public static Symbol LookupNextSym(Symbol sym, ParentSymbol parent, symbmask_t kindmask)
+            => BSYMMGR.LookupNextSym(sym, parent, kindmask);
 
         // It would be nice to make this a virtual method on typeSym.
         public AggregateType GetAggTypeSym(CType typeSym)
@@ -122,7 +112,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        private bool IsBaseInterface(AggregateType atsDer, AggregateType pBase)
+        private static bool IsBaseInterface(AggregateType atsDer, AggregateType pBase)
         {
             Debug.Assert(atsDer != null);
             Debug.Assert(pBase != null);
@@ -146,7 +136,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        public bool IsBaseClassOfClass(CType pDerived, CType pBase)
+        public static bool IsBaseClassOfClass(CType pDerived, CType pBase)
         {
             Debug.Assert(pDerived != null);
             Debug.Assert(pBase != null);
@@ -160,7 +150,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return IsBaseClass(pDerived, pBase);
         }
 
-        private bool IsBaseClass(CType pDerived, CType pBase)
+        private static bool IsBaseClass(CType pDerived, CType pBase)
         {
             Debug.Assert(pDerived != null);
             Debug.Assert(pBase != null);
@@ -215,10 +205,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return HasImplicitReferenceConversion(pSource, pDest);
         }
 
-        private bool AreTypesEqualForConversion(CType pType1, CType pType2)
-        {
-            return pType1.Equals(pType2);
-        }
+        private static bool AreTypesEqualForConversion(CType pType1, CType pType2) => pType1.Equals(pType2);
 
         private bool HasArrayConversionToInterface(ArrayType pSource, CType pDest)
         {
@@ -506,7 +493,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        public bool HasImplicitBoxingConversion(CType pSource, CType pDest)
+        private bool HasImplicitBoxingConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
@@ -515,18 +502,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // The rest of the boxing conversions only operate when going from a value type
             // to a reference type.
 
-            if (!pSource.IsValType() || !pDest.IsRefType())
+            if (!pDest.IsRefType())
             {
                 return false;
             }
 
             // A boxing conversion exists from a nullable type to a reference type
             // if and only if a boxing conversion exists from the underlying type.
-
             if (pSource is NullableType nubSource)
             {
-                return HasImplicitBoxingConversion(nubSource.GetUnderlyingType(), pDest);
+                pSource = nubSource.UnderlyingType; // pSource.IsValType() known to be true.
             }
+            else if (!pSource.IsValType())
+            {
+                return false;
+            }
+
 
             // A boxing conversion exists from any non-nullable value type to object,
             // to System.ValueType, and to any interface type implemented by the
@@ -536,15 +527,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // We set the base class of the structs to System.ValueType, System.Enum, etc,
             // so we can just check here.
 
-            if (IsBaseClass(pSource, pDest))
-            {
-                return true;
-            }
-            if (HasAnyBaseInterfaceConversion(pSource, pDest))
-            {
-                return true;
-            }
-            return false;
+            return IsBaseClass(pSource, pDest) || HasAnyBaseInterfaceConversion(pSource, pDest);
         }
 
         public bool HasBaseConversion(CType pSource, CType pDest)
@@ -590,7 +573,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return HasIdentityOrImplicitReferenceConversion(pSource, pDest) || HasImplicitBoxingConversion(pSource, pDest);
         }
 
-        public bool IsBaseAggregate(AggregateSymbol derived, AggregateSymbol @base)
+        public static bool IsBaseAggregate(AggregateSymbol derived, AggregateSymbol @base)
         {
             Debug.Assert(!derived.IsEnum() && !@base.IsEnum());
 
