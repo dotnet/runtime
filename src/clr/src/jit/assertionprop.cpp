@@ -4563,7 +4563,7 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
     }
     // Compute the data flow values for all tracked expressions
     // IN and OUT never change for the initial basic block B1
-    BitVecOps::OldStyleClearD(apTraits, fgFirstBB->bbAssertionIn);
+    BitVecOps::ClearD(apTraits, fgFirstBB->bbAssertionIn);
     return jumpDestOut;
 }
 
