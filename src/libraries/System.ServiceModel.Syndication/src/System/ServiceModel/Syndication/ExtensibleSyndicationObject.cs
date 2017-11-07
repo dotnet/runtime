@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Xml.Serialization;
+using System.Xml;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Xml;
-    using System.Threading.Tasks;
-
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     internal struct ExtensibleSyndicationObject : IExtensibleSyndicationObject
     {
@@ -84,12 +85,11 @@ namespace System.ServiceModel.Syndication
         {
             if (readerOverUnparsedExtensions == null)
             {
-                throw new ArgumentNullException(nameof(readerOverUnparsedExtensions));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("readerOverUnparsedExtensions");
             }
-
             if (maxExtensionSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxExtensionSize));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("maxExtensionSize"));
             }
             XmlDictionaryReader r = XmlDictionaryReader.CreateDictionaryReader(readerOverUnparsedExtensions);
             _elementExtensions = new SyndicationElementExtensionCollection(CreateXmlBuffer(r, maxExtensionSize));
@@ -103,43 +103,29 @@ namespace System.ServiceModel.Syndication
 
         internal void WriteAttributeExtensions(XmlWriter writer)
         {
-            WriteAttributeExtensionsAsync(writer).GetAwaiter().GetResult();
-        }
-
-        internal void WriteElementExtensions(XmlWriter writer)
-        {
-            WriteElementExtensionsAsync(writer).GetAwaiter().GetResult();
-        }
-
-        internal async Task WriteAttributeExtensionsAsync(XmlWriter writer)
-        {
             if (writer == null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
             }
-
-            writer = XmlWriterWrapper.CreateFromWriter(writer);
-
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
                 {
                     string value = _attributeExtensions[qname];
-                    await writer.WriteAttributeStringAsync(qname.Name, qname.Namespace, value).ConfigureAwait(false);
+                    writer.WriteAttributeString(qname.Name, qname.Namespace, value);
                 }
             }
         }
 
-        internal async Task WriteElementExtensionsAsync(XmlWriter writer)
+        internal void WriteElementExtensions(XmlWriter writer)
         {
             if (writer == null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
             }
-
             if (_elementExtensions != null)
             {
-                await _elementExtensions.WriteToAsync(writer).ConfigureAwait(false);
+                _elementExtensions.WriteTo(writer);
             }
         }
 

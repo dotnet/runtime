@@ -159,7 +159,7 @@ ws-content-src.xml
 ws-entry-id.xml
 ws-entry-published.xml
 ws-entry-updated.xml
-ws-feed-icon.xml
+#ws-feed-icon.xml
 ws-feed-id.xml
 ws-feed-logo.xml
 ws-feed-updated.xml

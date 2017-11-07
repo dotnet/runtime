@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Xml;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
+using System.Xml.Serialization;
+using System.Runtime.CompilerServices;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Threading.Tasks;
-    using System.Xml;
-
     public abstract class CategoriesDocument : IExtensibleSyndicationObject
     {
         private Uri _baseUri;
@@ -70,13 +72,8 @@ namespace System.ServiceModel.Syndication
 
         public static CategoriesDocument Load(XmlReader reader)
         {
-            return LoadAsync(reader).GetAwaiter().GetResult();
-        }
-
-        public static async Task<CategoriesDocument> LoadAsync(XmlReader reader)
-        {
             AtomPub10CategoriesDocumentFormatter formatter = new AtomPub10CategoriesDocumentFormatter();
-            await formatter.ReadFromAsync(reader).ConfigureAwait(false);
+            formatter.ReadFrom(reader);
             return formatter.Document;
         }
 
@@ -87,7 +84,7 @@ namespace System.ServiceModel.Syndication
 
         public void Save(XmlWriter writer)
         {
-            GetFormatter().WriteTo(writer);
+            this.GetFormatter().WriteTo(writer);
         }
 
         protected internal virtual bool TryParseAttribute(string name, string ns, string value, string version)
@@ -108,16 +105,6 @@ namespace System.ServiceModel.Syndication
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
             _extensions.WriteElementExtensions(writer);
-        }
-
-        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
-        {
-            return _extensions.WriteAttributeExtensionsAsync(writer);
-        }
-
-        protected internal virtual Task WriteElementExtensionsAsync(XmlWriter writer, string version)
-        {
-            return _extensions.WriteElementExtensionsAsync(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)

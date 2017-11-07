@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Xml;
+using System.Collections.ObjectModel;
+using System.Xml.Serialization;
+using System.Runtime.Serialization;
+using System.Runtime.CompilerServices;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using System.Xml;
-
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class SyndicationLink : IExtensibleSyndicationObject
     {
@@ -29,7 +31,7 @@ namespace System.ServiceModel.Syndication
         {
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(length));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("length"));
             }
             _baseUri = null;
             _uri = uri;
@@ -48,7 +50,7 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
             }
             _length = source._length;
             _mediaType = source._mediaType;
@@ -82,7 +84,7 @@ namespace System.ServiceModel.Syndication
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("value"));
                 }
                 _length = value;
             }
@@ -183,16 +185,6 @@ namespace System.ServiceModel.Syndication
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
             _extensions.WriteElementExtensions(writer);
-        }
-
-        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
-        {
-            return _extensions.WriteAttributeExtensionsAsync(writer);
-        }
-
-        protected internal virtual Task WriteElementExtensionsAsync(XmlWriter writer, string version)
-        {
-            return _extensions.WriteElementExtensionsAsync(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)

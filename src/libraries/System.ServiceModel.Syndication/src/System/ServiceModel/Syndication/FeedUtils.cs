@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.ObjectModel;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Runtime.Serialization;
+using System.Globalization;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Xml;
-
     internal static class FeedUtils
     {
         public static string AddLineInfo(XmlReader reader, string error)
@@ -16,7 +17,7 @@ namespace System.ServiceModel.Syndication
             IXmlLineInfo lineInfo = reader as IXmlLineInfo;
             if (lineInfo != null && lineInfo.HasLineInfo())
             {
-                error = string.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, lineInfo.LineNumber, lineInfo.LinePosition), error);
+                error = String.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, lineInfo.LineNumber, lineInfo.LinePosition), SR.Format(error));
             }
             return error;
         }
@@ -78,13 +79,11 @@ namespace System.ServiceModel.Syndication
             {
                 return rootBase;
             }
-
             Uri newBaseUri = new Uri(newBase, UriKind.RelativeOrAbsolute);
             if (rootBase == null || newBaseUri.IsAbsoluteUri)
             {
                 return newBaseUri;
             }
-
             return new Uri(rootBase, newBase);
         }
 
