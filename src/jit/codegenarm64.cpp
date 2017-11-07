@@ -4227,11 +4227,17 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
 
     instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
 
-    bool     is16B = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi);
-    emitAttr attr  = is16B ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt   = genGetSimdInsOpt(is16B, baseType);
+    if (varTypeIsFloating(baseType))
+    {
+        getEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
+    }
+    else
+    {
+        bool    is16B = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi);
+        insOpts opt   = genGetSimdInsOpt(is16B, baseType);
 
-    getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
+        getEmitter()->emitIns_R_R(ins, is16B ? EA_16BYTE : EA_8BYTE, targetReg, op1Reg, opt);
+    }
 
     genProduceReg(simdNode);
 }
@@ -4266,19 +4272,48 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
     assert(genIsValidFloatReg(op2Reg));
     assert(genIsValidFloatReg(targetReg));
     assert(op2Reg != targetReg);
+    assert(simdNode->gtSIMDSize == 16);
 
     instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-
     assert((ins == INS_fcvtn) || (ins == INS_xtn));
 
-    instruction ins2 = ins == INS_fcvtn ? INS_fcvtn2 : INS_xtn2;
+    if (ins == INS_fcvtn)
+    {
+        getEmitter()->emitIns_R_R(INS_fcvtn, EA_8BYTE, targetReg, op1Reg);
+        getEmitter()->emitIns_R_R(INS_fcvtn2, EA_8BYTE, targetReg, op2Reg);
+    }
+    else
+    {
+        insOpts opt  = INS_OPTS_NONE;
+        insOpts opt2 = INS_OPTS_NONE;
 
-    bool     is16B = (simdNode->gtSIMDSize > 8);
-    emitAttr attr  = is16B ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt   = genGetSimdInsOpt(is16B, baseType);
-
-    getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
-    getEmitter()->emitIns_R_R(ins2, attr, targetReg, op2Reg, opt);
+        // This is not the same as genGetSimdInsOpt()
+        // Basetype is the soure operand type
+        // However encoding is based on the destination operand type which is 1/2 the basetype.
+        switch (baseType)
+        {
+            case TYP_ULONG:
+            case TYP_LONG:
+                opt  = INS_OPTS_2S;
+                opt2 = INS_OPTS_4S;
+                break;
+            case TYP_UINT:
+            case TYP_INT:
+                opt  = INS_OPTS_4H;
+                opt2 = INS_OPTS_8H;
+                break;
+            case TYP_CHAR:
+            case TYP_SHORT:
+                opt  = INS_OPTS_8B;
+                opt2 = INS_OPTS_16B;
+                break;
+            default:
+                assert(!"Unsupported narrowing element type");
+                unreached();
+        }
+        getEmitter()->emitIns_R_R(INS_xtn, EA_8BYTE, targetReg, op1Reg, opt);
+        getEmitter()->emitIns_R_R(INS_xtn2, EA_16BYTE, targetReg, op2Reg, opt2);
+    }
 
     genProduceReg(simdNode);
 }
