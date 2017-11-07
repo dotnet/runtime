@@ -24,9 +24,6 @@
 #include "interp-internals.h"
 #include "interp.h"
 
-// TODO: export from marshal.c
-MonoDelegate* mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
-
 #define DEBUG 0
 
 typedef struct
@@ -3776,9 +3773,6 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 						g_assert_not_reached ();
 					}
 
-					if (func == mono_ftnptr_to_delegate) {
-						g_error ("TODO: CEE_MONO_ICALL mono_ftnptr_to_delegate?");
-					}
 					ADD_CODE(td, get_data_item_index (td, func));
 					td->sp -= info->sig->param_count;
 
