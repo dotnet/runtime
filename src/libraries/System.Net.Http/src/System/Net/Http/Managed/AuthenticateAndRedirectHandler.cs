@@ -2,72 +2,58 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class AutoRedirectHandler : HttpMessageHandler
+    internal sealed partial class AuthenticateAndRedirectHandler : HttpMessageHandler
     {
         private readonly HttpMessageHandler _innerHandler;
+        private readonly bool _preAuthenticate;
+        private readonly ICredentials _credentials;
+        private readonly bool _allowRedirect;
         private readonly int _maxAutomaticRedirections;
 
-        public AutoRedirectHandler(int maxAutomaticRedirections, HttpMessageHandler innerHandler)
+        public AuthenticateAndRedirectHandler(bool preAuthenticate, ICredentials credentials, bool allowRedirect, int maxAutomaticRedirections, HttpMessageHandler innerHandler)
         {
-            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
+            Debug.Assert(innerHandler != null);
 
-            if (maxAutomaticRedirections < 0)
+            _preAuthenticate = preAuthenticate;
+            _credentials = credentials;
+            _allowRedirect = allowRedirect;
+
+            if (allowRedirect && maxAutomaticRedirections < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxAutomaticRedirections));
             }
+
             _maxAutomaticRedirections = maxAutomaticRedirections;
-        }
-
-        internal static bool RequestNeedsRedirect(HttpResponseMessage response)
-        {
-            bool needRedirect = false;
-            switch (response.StatusCode)
-            {
-                case HttpStatusCode.Moved:
-                case HttpStatusCode.Found:
-                case HttpStatusCode.SeeOther:
-                case HttpStatusCode.TemporaryRedirect:
-                    needRedirect = true;
-                    break;
-
-                case HttpStatusCode.MultipleChoices:
-                    needRedirect = response.Headers.Location != null; // Don't redirect if no Location specified
-                    break;
-            }
-
-            return needRedirect;
-        }
-
-        private static bool RequestRequiresForceGet(HttpStatusCode statusCode, HttpMethod requestMethod)
-        {
-            if (statusCode == HttpStatusCode.Moved ||
-                statusCode == HttpStatusCode.Found ||
-                statusCode == HttpStatusCode.SeeOther ||
-                statusCode == HttpStatusCode.MultipleChoices)
-            {
-                return requestMethod == HttpMethod.Post;
-            }
-
-            return false;
+            _innerHandler = innerHandler;
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             HttpResponseMessage response;
             uint redirectCount = 0;
+            bool useCredentialCache = false;
             while (true)
             {
-                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                response = await SendRequestAsync(request, useCredentialCache, cancellationToken).ConfigureAwait(false);
 
                 if (!RequestNeedsRedirect(response))
                 {
                     break;
                 }
+
+                // Clear the authorization header, if the request requires redirect.
+                request.Headers.Authorization = null;
+
+                // Just as with WinHttpHandler and CurlHandler, for security reasons, we drop the server credential if it is
+                // anything other than a CredentialCache. We allow credentials in a CredentialCache since they
+                // are specifically tied to URIs.
+                useCredentialCache = true;
 
                 Uri location = response.Headers.Location;
                 if (location == null)
@@ -123,3 +109,4 @@ namespace System.Net.Http
         }
     }
 }
+
