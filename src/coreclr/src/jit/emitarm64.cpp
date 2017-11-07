@@ -3985,8 +3985,8 @@ void emitter::emitIns_R_R(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(size != EA_16BYTE);    // Narrowing must start with wide format
-            assert(elemsize != EA_1BYTE); // Narrowing must start with more than one byte src
+            assert(size == (ins == INS_xtn) ? EA_8BYTE : EA_16BYTE); // Size is determined by instruction
+            assert(elemsize != EA_8BYTE);                            // Narrowing must not end with 8 byte data
             fmt = IF_DV_2M;
             break;
 
@@ -4132,23 +4132,13 @@ void emitter::emitIns_R_R(
 
         case INS_fcvtl:
         case INS_fcvtl2:
-            assert(isVectorRegister(reg1));
-            assert(isVectorRegister(reg2));
-            assert(isValidVectorDatasize(size));
-            assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-            assert(elemsize == EA_4BYTE); // Widening from Float to Double, opt should correspond to src layout
-            fmt = IF_DV_2G;
-            break;
-
         case INS_fcvtn:
         case INS_fcvtn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isValidVectorDatasize(size));
-            assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-            assert(elemsize == EA_8BYTE); // Narrowing from Double to Float, opt should correspond to src layout
+            assert(insOptsNone(opt));
+            assert(size == EA_8BYTE); // Narrowing from Double or Widening to Double (Half not supported)
             fmt = IF_DV_2G;
             break;
 
