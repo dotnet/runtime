@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Xml;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
+using System.Xml.Serialization;
+using System.Runtime.CompilerServices;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-
     public class ReferencedCategoriesDocument : CategoriesDocument
     {
         private Uri _link;
@@ -19,7 +25,7 @@ namespace System.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException(nameof(link));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("link");
             }
             _link = link;
         }

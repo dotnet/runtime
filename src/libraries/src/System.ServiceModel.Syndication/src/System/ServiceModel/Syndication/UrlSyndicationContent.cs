@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Xml;
+using System.Runtime.CompilerServices;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-    using System.Xml;
-
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class UrlSyndicationContent : SyndicationContent
     {
@@ -17,7 +17,7 @@ namespace System.ServiceModel.Syndication
         {
             if (url == null)
             {
-                throw new ArgumentNullException(nameof(url));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("url");
             }
             _url = url;
             _mediaType = mediaType;
@@ -28,7 +28,7 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
             }
             _url = source._url;
             _mediaType = source._mediaType;

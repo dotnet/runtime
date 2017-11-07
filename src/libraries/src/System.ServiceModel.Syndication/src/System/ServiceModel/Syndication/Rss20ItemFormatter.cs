@@ -2,14 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml.Schema;
+using System.Runtime.CompilerServices;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-    using System.Threading.Tasks;
-    using System.Xml;
-    using System.Xml.Schema;
-    using System.Xml.Serialization;
-
     [XmlRoot(ElementName = Rss20Constants.ItemTag, Namespace = Rss20Constants.Rss20Namespace)]
     public class Rss20ItemFormatter : SyndicationItemFormatter, IXmlSerializable
     {
@@ -29,11 +34,12 @@ namespace System.ServiceModel.Syndication
         {
             if (itemTypeToCreate == null)
             {
-                throw new ArgumentNullException(nameof(itemTypeToCreate));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("itemTypeToCreate");
             }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
-                throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("itemTypeToCreate",
+                    SR.Format(SR.InvalidObjectTypePassed, "itemTypeToCreate", "SyndicationItem"));
             }
             _feedSerializer = new Rss20FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
@@ -105,69 +111,63 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
             }
-
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
         XmlSchema IXmlSerializable.GetSchema()
         {
             return null;
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             if (reader == null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
             }
-
-            ReadItemAsync(XmlReaderWrapper.CreateFromReader(reader)).GetAwaiter().GetResult();
+            SyndicationFeedFormatter.TraceItemReadBegin();
+            ReadItem(reader);
+            SyndicationFeedFormatter.TraceItemReadEnd();
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
             }
-
+            SyndicationFeedFormatter.TraceItemWriteBegin();
             WriteItem(writer);
+            SyndicationFeedFormatter.TraceItemWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
-            ReadFromAsync(reader).GetAwaiter().GetResult();
+            SyndicationFeedFormatter.TraceItemReadBegin();
+            if (!CanRead(reader))
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI)));
+            }
+            ReadItem(reader);
+            SyndicationFeedFormatter.TraceItemReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
         {
-            WriteToAsync(writer).GetAwaiter().GetResult();
-        }
-
-        public override Task ReadFromAsync(XmlReader reader)
-        {
-            if (!CanRead(reader))
-            {
-                throw new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
-            }
-
-            return ReadItemAsync(XmlReaderWrapper.CreateFromReader(reader));
-        }
-
-        public override async Task WriteToAsync(XmlWriter writer)
-        {
             if (writer == null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
             }
-
-            writer = XmlWriterWrapper.CreateFromWriter(writer);
-
-            await writer.WriteStartElementAsync(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace).ConfigureAwait(false);
-            await WriteItem(writer).ConfigureAwait(false);
-            await writer.WriteEndElementAsync().ConfigureAwait(false);
+            SyndicationFeedFormatter.TraceItemWriteBegin();
+            writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
+            WriteItem(writer);
+            writer.WriteEndElement();
+            SyndicationFeedFormatter.TraceItemWriteEnd();
         }
 
         protected override SyndicationItem CreateItemInstance()
@@ -175,20 +175,20 @@ namespace System.ServiceModel.Syndication
             return SyndicationItemFormatter.CreateItemInstance(_itemType);
         }
 
-        private Task ReadItemAsync(XmlReader reader)
+        private void ReadItem(XmlReader reader)
         {
             SetItem(CreateItemInstance());
-            return _feedSerializer.ReadItemFromAsync(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), Item);
+            _feedSerializer.ReadItemFrom(XmlDictionaryReader.CreateDictionaryReader(reader), this.Item);
         }
 
-        private Task WriteItem(XmlWriter writer)
+        private void WriteItem(XmlWriter writer)
         {
-            if (Item == null)
+            if (this.Item == null)
             {
-                throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ItemFormatterDoesNotHaveItem)));
             }
             XmlDictionaryWriter w = XmlDictionaryWriter.CreateDictionaryWriter(writer);
-            return _feedSerializer.WriteItemContentsAsync(w, Item);
+            _feedSerializer.WriteItemContents(w, this.Item);
         }
     }
 
