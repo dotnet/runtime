@@ -15,6 +15,8 @@
     <Compile Include="Perf.Span.IndexOf.cs" />
     <Compile Include="Perf.Span.StartsWith.cs" />
     <Compile Include="Perf.MemorySlice.cs" />
+    <Compile Include="Perf.Utf8Formatter.cs" />
+    <Compile Include="Perf.Utf8Parser.cs" />
     <Compile Include="..\Base64\Base64TestHelper.cs" />
     <Compile Include="..\TestHelpers.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">

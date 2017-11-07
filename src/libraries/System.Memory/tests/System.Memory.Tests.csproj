@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="AllocationHelper.cs" />
     <Compile Include="TInt.cs" />
+    <Compile Include="TestException.cs" />
     <Compile Include="TestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -102,6 +103,33 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryReaderUnitTests.cs" />
     <Compile Include="Binary\BinaryWriterUnitTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Common\src\System\MutableDecimal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ParsersAndFormatters\Formatter\FormatterTestData.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.Negative.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\TestData.Formatter.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\ValidateFormatter.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTestData.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTests.2gbOverflow.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTests.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTests.Negative.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Boolean.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Integer.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.DecimalsAndFloats.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Guid.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Date.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.TimeSpan.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ValidateParser.cs" />
+    <Compile Include="ParsersAndFormatters\PseudoDateTime.cs" />
+    <Compile Include="ParsersAndFormatters\StandardFormatTests.cs" />
+    <Compile Include="ParsersAndFormatters\SupportedFormats.cs" />
+    <Compile Include="ParsersAndFormatters\TestData.cs" />
+    <Compile Include="ParsersAndFormatters\TestUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Base64\Base64DecoderUnitTests.cs" />
