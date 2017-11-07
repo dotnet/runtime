@@ -182,7 +182,6 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
-#include "perfdefaults.h"
 
 #ifdef FEATURE_STACK_SAMPLING
 #include "stacksampler.h"
