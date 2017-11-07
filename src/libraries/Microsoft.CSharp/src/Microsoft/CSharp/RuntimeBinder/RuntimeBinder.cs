@@ -54,12 +54,10 @@ namespace Microsoft.CSharp.RuntimeBinder
             _semanticChecker = new CSemanticChecker();
 
             BSYMMGR bsymmgr = _semanticChecker.getBSymmgr();
-            NameManager nameManager = _semanticChecker.GetNameManager();
 
             _symbolTable = new SymbolTable(
                 bsymmgr.GetSymbolTable(),
                 bsymmgr.GetSymFactory(),
-                nameManager,
                 _semanticChecker.GetTypeManager(),
                 bsymmgr,
                 _semanticChecker);
@@ -457,7 +455,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
                 LocalVariableSymbol local =
                     _semanticChecker.GetGlobalSymbolFactory()
-                        .CreateLocalVar(_semanticChecker.GetNameManager().Add("p" + i), pScope, type);
+                        .CreateLocalVar(NameManager.Add("p" + i), pScope, type);
                 local.fUsedInAnonMeth = true;
                 locals[i] = local;
             }
@@ -474,7 +472,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // We don't actually need the real delegate type here - we just need SOME delegate type.
             // This is because we never attempt any conversions on the lambda itself.
             AggregateType delegateType = _symbolTable.GetCTypeFromType(typeof(Func<>)) as AggregateType;
-            LocalVariableSymbol thisLocal = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(_semanticChecker.GetNameManager().Add("this"), pScope, _symbolTable.GetCTypeFromType(typeof(object)));
+            LocalVariableSymbol thisLocal = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(NameManager.Add("this"), pScope, _symbolTable.GetCTypeFromType(typeof(object)));
             thisLocal.isThis = true;
             ExprBoundLambda boundLambda = _exprFactory.CreateAnonymousMethod(delegateType, pScope);
             ExprReturn returnStatement = _exprFactory.CreateReturn(call);
@@ -583,7 +581,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (argument.Info.NamedArgument)
             {
                 Debug.Assert(argument.Info.Name != null);
-                arg = _exprFactory.CreateNamedArgumentSpecification(_semanticChecker.GetNameManager().Add(argument.Info.Name), arg);
+                arg = _exprFactory.CreateNamedArgumentSpecification(NameManager.Add(argument.Info.Name), arg);
             }
 
             // If we have an object that was "dynamic" at compile time, we need
@@ -618,7 +616,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Expr callingObject,
             SYMKIND kind)
         {
-            Name name = _semanticChecker.GetNameManager().Add(Name);
+            Name name = NameManager.Add(Name);
             AggregateType callingType;
 
             CType callingObjectType = callingObject.Type;

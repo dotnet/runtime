@@ -177,7 +177,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // If we have generated an identity cast or reference cast to a base class
             // we can omit the cast.
             if (pArgument.Type == pExpr.Type ||
-                    GetSymbolLoader().IsBaseClassOfClass(pArgument.Type, pExpr.Type) ||
+                    SymbolLoader.IsBaseClassOfClass(pArgument.Type, pExpr.Type) ||
                     CConversions.FImpRefConv(GetSymbolLoader(), pArgument.Type, pExpr.Type))
             {
                 return Visit(pArgument);

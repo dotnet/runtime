@@ -574,7 +574,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     }
 
                 case TypeKind.TK_VoidType:
-                    ErrAppendName(GetNameManager().Lookup(TokenFacts.GetText(TokenKind.Void)));
+                    ErrAppendName(NameManager.Lookup(TokenFacts.GetText(TokenKind.Void)));
                     break;
 
                 case TypeKind.TK_ParameterModifierType:
@@ -673,11 +673,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
 
             return result;
-        }
-
-        private NameManager GetNameManager()
-        {
-            return m_globalSymbols.GetNameManager();
         }
 
         private TypeManager GetTypeManager()

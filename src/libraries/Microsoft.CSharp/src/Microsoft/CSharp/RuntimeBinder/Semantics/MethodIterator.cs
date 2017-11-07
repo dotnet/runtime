@@ -200,7 +200,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        _pCurrentSym = GetSymbolLoader().LookupNextSym(
+                        _pCurrentSym = SymbolLoader.LookupNextSym(
                                 _pCurrentSym, _pCurrentType.getAggregate(), _mask) as MethodOrPropertySymbol;
                     }
 
