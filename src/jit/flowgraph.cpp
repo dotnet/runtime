@@ -10422,7 +10422,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     if (fgDomsComputed && block->bbNum > fgDomBBcount)
     {
         BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-        BlockSetOps::OldStyleClearD(this, bNext->bbReach);
+        BlockSetOps::ClearD(this, bNext->bbReach);
 
         block->bbIDom = bNext->bbIDom;
         bNext->bbIDom = nullptr;
