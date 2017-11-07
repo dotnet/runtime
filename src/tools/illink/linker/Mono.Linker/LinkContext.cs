@@ -45,6 +45,7 @@ namespace Mono.Linker {
 		bool _linkSymbols;
 		bool _keepTypeForwarderOnlyAssemblies;
 		bool _keepMembersForDebuggerAttributes;
+		bool _ignoreUnresolved;
 
 		AssemblyResolver _resolver;
 
@@ -92,6 +93,12 @@ namespace Mono.Linker {
 		{
 			get { return _keepMembersForDebuggerAttributes; }
 			set { _keepMembersForDebuggerAttributes = value; }
+		}
+
+		public bool IgnoreUnresolved
+		{
+			get { return _ignoreUnresolved; }
+			set { _ignoreUnresolved = value; }
 		}
 
 		public System.Collections.IDictionary Actions {
