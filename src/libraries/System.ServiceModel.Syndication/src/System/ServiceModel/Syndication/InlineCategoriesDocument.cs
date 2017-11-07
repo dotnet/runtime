@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Xml;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
+using System.Xml.Serialization;
+using System.Runtime.CompilerServices;
+
 namespace System.ServiceModel.Syndication
 {
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-
     public class InlineCategoriesDocument : CategoriesDocument
     {
         private Collection<SyndicationCategory> _categories;

@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
+using System.Xml.Serialization;
+using System.Collections.Generic;
+using System.Xml;
+using System.Runtime.CompilerServices;
+
 namespace System.ServiceModel.Syndication
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Threading.Tasks;
-    using System.Xml;
-
     public class ResourceCollectionInfo : IExtensibleSyndicationObject
     {
         private static IEnumerable<string> s_singleEmptyAccept;
@@ -43,11 +44,11 @@ namespace System.ServiceModel.Syndication
         {
             if (title == null)
             {
-                throw new ArgumentNullException(nameof(title));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("title");
             }
             if (link == null)
             {
-                throw new ArgumentNullException(nameof(link));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("link");
             }
             _title = title;
             _link = link;
@@ -155,16 +156,6 @@ namespace System.ServiceModel.Syndication
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
             _extensions.WriteElementExtensions(writer);
-        }
-
-        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
-        {
-            return _extensions.WriteAttributeExtensionsAsync(writer);
-        }
-
-        protected internal virtual Task WriteElementExtensionsAsync(XmlWriter writer, string version)
-        {
-            return _extensions.WriteElementExtensionsAsync(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
