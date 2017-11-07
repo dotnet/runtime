@@ -138,4 +138,16 @@
   <data name="OutstandingReferences" xml:space="preserve">
     <value>Release all references before disposing this instance.</value>
   </data>
+  <data name="Argument_BadFormatSpecifier" xml:space="preserve">
+    <value>Format specifier was invalid.</value>
+  </data>
+  <data name="Argument_GWithPrecisionNotSupported" xml:space="preserve">
+    <value>The 'G' format combined with a precision is not supported.</value>
+  </data>
+  <data name="Argument_CannotParsePrecision" xml:space="preserve">
+    <value>Characters following the format symbol must be a number of {0} or less.</value>
+  </data>
+  <data name="Argument_PrecisionTooLarge" xml:space="preserve">
+    <value>Precision cannot be larger than {0}.</value>
+  </data>
 </root>
