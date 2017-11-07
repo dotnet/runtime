@@ -1611,7 +1611,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
                                    REG_V28, REG_V29, REG_V30, REG_V31, \
                                    REG_V7,  REG_V6,  REG_V5,  REG_V4,  \
                                    REG_V8,  REG_V9,  REG_V10, REG_V11, \
-                                   REG_V12, REG_V13, REG_V14, REG_V16, \
+                                   REG_V12, REG_V13, REG_V14, REG_V15, \
                                    REG_V3,  REG_V2, REG_V1,  REG_V0 
 
   #define REG_CALLEE_SAVED_ORDER   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28
