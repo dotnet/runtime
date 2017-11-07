@@ -137,6 +137,10 @@ namespace System
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParse(ReadOnlySpan<char> s, out byte result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null) =>
+            TryParse(s, style, provider, out result);
+
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out Byte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
