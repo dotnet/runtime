@@ -72,8 +72,15 @@ mono_w32error_unix_to_win32 (guint32 error)
 #ifdef ENXIO
 	case ENXIO: return ERROR_DEV_NOT_EXIST;
 #endif
+#ifdef ENOTCONN
+	case ENOTCONN: return ERROR_DEV_NOT_EXIST;
+#endif
+#ifdef EHOSTDOWN
+	case EHOSTDOWN: return ERROR_DEV_NOT_EXIST;
+#endif
 
 	default:
-		g_error ("%s: unknown error (%d) \"%s\"", __FILE__, error, g_strerror (error));
+		g_warning ("%s: unknown error (%d) \"%s\"", __FILE__, error, g_strerror (error));
+		return ERROR_NOT_SUPPORTED;
 	}
 }
