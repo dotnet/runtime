@@ -4669,7 +4669,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 JITDUMP("> limit %d is invalid\n", limit);
                 return false;
             }
-            ident = LC_Ident(limit, LC_Ident::Const);
+            ident = LC_Ident(static_cast<unsigned>(limit), LC_Ident::Const);
         }
         else if (loop->lpFlags & LPFLG_VAR_LIMIT)
         {
