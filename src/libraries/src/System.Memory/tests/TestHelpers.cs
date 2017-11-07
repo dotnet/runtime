@@ -276,6 +276,11 @@ namespace System
             e3,
             e4,
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void DoNotIgnore<T>(T value, int consumed)
+        {
+        }
     }
 }
 
