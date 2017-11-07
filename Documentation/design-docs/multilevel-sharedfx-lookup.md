@@ -19,7 +19,7 @@ Versions that are not pre-releases are called productions.
 	For instance, a valid Semantic Versioning number sort would be:
 	1.0.0 -> 1.0.1-alpha -> 1.0.1 -> 1.1.0-alpha -> 1.1.0-rc1 -> 1.1.0 -> 1.1.1 -> 2.0.0.
 
-## Executable
+ ## Executable
 
 The executable’s only task is to find and load the hostfxr.dll file and pass on its arguments.
 
@@ -65,7 +65,7 @@ Hostfxr must then locate the hostpolicy.dll file:
 
 The hostpolicy is then loaded into memory and executed.
 
-### Proposed hostfxr changes for 2.1
+### Proposed hostfxr changes for 2.1 (and 2.0.x long-term-servicing)
 There can only be one framework in 2.0. That framework is located in the app's runtimeconfig.json:
 ```javascript
 {
@@ -118,7 +118,7 @@ Both files carry the filenames for dependencies that must be found. They can be 
 
 At last, the coreclr is loaded into memory and called to run the application.
 
-### Proposed hostpolicy changes for 2.1
+### Proposed hostpolicy changes for 2.1 (and 2.0.x long-term-servicing)
 For 2.0, there are several probing paths that are used to find the dependencies. These paths follow a certain order and the first assembly found wins and that location will be passed to the coreclr. For example, the local app location has priority over the shared framework locations and if the same assembly exists in both locations, the coreclr will end up using the local app's copy of that assembly.
 
 These semantics will be unchanged for 2.1 except when a roll-forward is performed at a non-patch version (meaning a change to the major or minor version). For these cases, the highest assembly version wins. This is necessary in run-time scenarios to prevent assembly load exceptions which occur when an assembly is referencing a higher version of another assembly, but a lower version is actually found.
