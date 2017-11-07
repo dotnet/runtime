@@ -11253,6 +11253,8 @@ GenTree* Compiler::fgMorphRecognizeBoxNullable(GenTree* compare)
         compare->gtOp.gtOp2 = newOp;
     }
 
+    opCns->gtType = TYP_INT;
+
     return compare;
 }
 
