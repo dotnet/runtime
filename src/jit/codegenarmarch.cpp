@@ -3626,9 +3626,7 @@ void CodeGen::genStructReturn(GenTreePtr treeNode)
         LclVarDsc*           varDsc  = &(compiler->lvaTable[lclVar->gtLclNum]);
         var_types            lclType = genActualType(varDsc->TypeGet());
 
-        // Currently only multireg TYP_STRUCT types such as HFA's(ARM32, ARM64) and 16-byte structs(ARM64) are supported
-        // In the future we could have FEATURE_SIMD types like TYP_SIMD16
-        assert(lclType == TYP_STRUCT);
+        assert(varTypeIsStruct(lclType));
         assert(varDsc->lvIsMultiRegRet);
 
         ReturnTypeDesc retTypeDesc;
@@ -3638,17 +3636,58 @@ void CodeGen::genStructReturn(GenTreePtr treeNode)
         regCount = retTypeDesc.GetReturnRegCount();
 
         assert(regCount >= 2);
-        assert(op1->isContained());
 
-        // Copy var on stack into ABI return registers
-        // TODO: It could be optimized by reducing two float loading to one double
-        int offset = 0;
-        for (unsigned i = 0; i < regCount; ++i)
+        assert(varTypeIsSIMD(lclType) || op1->isContained());
+
+        if (op1->isContained())
         {
-            var_types type = retTypeDesc.GetReturnRegType(i);
-            regNumber reg  = retTypeDesc.GetABIReturnReg(i);
-            getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
-            offset += genTypeSize(type);
+            // Copy var on stack into ABI return registers
+            // TODO: It could be optimized by reducing two float loading to one double
+            int offset = 0;
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                var_types type = retTypeDesc.GetReturnRegType(i);
+                regNumber reg  = retTypeDesc.GetABIReturnReg(i);
+                getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
+                offset += genTypeSize(type);
+            }
+        }
+        else
+        {
+            // Handle SIMD genStructReturn case
+            NYI_ARM("SIMD genStructReturn");
+
+#ifdef _TARGET_ARM64_
+            genConsumeRegs(op1);
+            regNumber src = op1->gtRegNum;
+
+            // Treat src register as a homogenous vector with element size equal to the reg size
+            // Insert pieces in order
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                var_types type = retTypeDesc.GetReturnRegType(i);
+                regNumber reg  = retTypeDesc.GetABIReturnReg(i);
+                if (varTypeIsFloating(type))
+                {
+                    // If the register piece is to be passed in a floating point register
+                    // Use a vector mov element instruction
+                    // reg is not a vector, so it is in the first element reg[0]
+                    // mov reg[0], src[i]
+                    // This effectively moves from `src[i]` to `reg[0]`, upper bits of reg remain unchanged
+                    // For the case where src == reg, since we are only writing reg[0], as long as we iterate
+                    // so that src[0] is consumed before writing reg[0], we do not need a temporary.
+                    getEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(type), reg, src, 0, i);
+                }
+                else
+                {
+                    // If the register piece is to be passed in an integer register
+                    // Use a vector mov to general purpose register instruction
+                    // mov reg, src[i]
+                    // This effectively moves from `src[i]` to `reg`
+                    getEmitter()->emitIns_R_R_I(INS_mov, emitTypeSize(type), reg, src, i);
+                }
+            }
+#endif // _TARGET_ARM64_
         }
     }
     else // op1 must be multi-reg GT_CALL
