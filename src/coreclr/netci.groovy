@@ -81,6 +81,7 @@ class Constants {
                'jitstress2_jitstressregs0x1000' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x1000'],
                'tailcallstress'                 : ['COMPlus_TailcallStress' : '1'],
                'jitsse2only'                    : ['COMPlus_EnableAVX' : '0', 'COMPlus_EnableSSE3_4' : '0'],
+               'jitnosimd'                      : ['COMPlus_FeatureSIMD' : '0'],
                'corefx_baseline'                : [ : ], // corefx baseline
                'corefx_minopts'                 : ['COMPlus_JITMinOpts' : '1'],
                'corefx_tieredcompilation'       : ['COMPlus_EXPERIMENTAL_TieredCompilation' : '1'],
@@ -604,6 +605,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'jitstress2_jitstressregs0x1000':
         case 'tailcallstress':
         case 'jitsse2only':
+        case 'jitnosimd':
         case 'corefx_baseline':
         case 'corefx_minopts':
         case 'corefx_jitstress1':
@@ -871,6 +873,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'jitstress2_jitstressregs0x1000':
                         case 'tailcallstress':
                         case 'jitsse2only':
+                        case 'jitnosimd':
                         case 'gcstress0x3':
                         case 'gcstress0xc':
                         case 'zapdisable':
@@ -1046,6 +1049,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'jitstress2_jitstressregs0x1000':
                         case 'tailcallstress':
                         case 'jitsse2only':
+                        case 'jitnosimd':
                         case 'gcstress0x3':
                         case 'gcstress0xc':
                         case 'zapdisable':
@@ -1378,6 +1382,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'jitstress2_jitstressregs0x1000':
                 case 'tailcallstress':
                 case 'jitsse2only':
+                case 'jitnosimd':
                 case 'gcstress0x3':
                 case 'gcstress0xc':
                 case 'zapdisable':
