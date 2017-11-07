@@ -3,8 +3,6 @@ if (WIN32)
   add_precompiled_header(common.h ../common.cpp VM_SOURCES_WKS)
   # mscorlib.cpp does not compile with precompiled header file
   set_source_files_properties(../mscorlib.cpp PROPERTIES COMPILE_FLAGS "/Y-") 
-  # .c file cannot use cpp precompiled header 
-  set_source_files_properties(../microsoft.comservices_i.c PROPERTIES COMPILE_FLAGS "/Y-") 
 
   # asm files require preprocessing using cl.exe on arm32 and arm64
   if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
