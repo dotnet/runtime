@@ -2162,7 +2162,7 @@ public:
 
     unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
 
-    void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* adr, bool constOnly);
+    void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* base, bool constOnly);
 
 #ifdef DEBUG
     unsigned gtHashValue(GenTree* tree);
