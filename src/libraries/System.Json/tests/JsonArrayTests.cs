@@ -118,10 +118,11 @@ namespace System.Json.Tests
         }
 
         [Fact]
-        public void Add_NullItem_ThrowsArgumentNullException()
+        public void Add_NullItem()
         {
             JsonArray array = new JsonArray();
-            AssertExtensions.Throws<ArgumentNullException>("item", () => array.Add(null));
+            array.Add(null);
+            Assert.Equal(1, array.Count);
         }
 
         [Fact]
