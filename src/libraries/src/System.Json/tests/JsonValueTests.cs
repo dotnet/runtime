@@ -88,6 +88,8 @@ namespace System.Json.Tests
                 Assert.Equal(4, value.Count);
                 Assert.Equal(JsonType.Array, value.JsonType);
                 Assert.Equal("[1, 2, 3, null]", value.ToString());
+                ((JsonArray) value).Add(null);
+                Assert.Equal("[1, 2, 3, null, null]", value.ToString());
             });
         }
         
