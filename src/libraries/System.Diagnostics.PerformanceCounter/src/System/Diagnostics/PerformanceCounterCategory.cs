@@ -53,9 +53,6 @@ namespace System.Diagnostics
             if (!SyntaxCheck.CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, categoryName);
-            permission.Demand();
-
             _categoryName = categoryName;
             _machineName = machineName;
         }
@@ -82,9 +79,6 @@ namespace System.Diagnostics
                 // checks depend on both pieces of info. 
                 lock (this)
                 {
-                    PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, _machineName, value);
-                    permission.Demand();
-
                     _categoryName = value;
                 }
             }
@@ -147,12 +141,6 @@ namespace System.Diagnostics
                 // checks depend on both pieces of info. 
                 lock (this)
                 {
-                    if (_categoryName != null)
-                    {
-                        PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, value, _categoryName);
-                        permission.Demand();
-                    }
-
                     _machineName = value;
                 }
             }
@@ -197,9 +185,6 @@ namespace System.Diagnostics
             if (!SyntaxCheck.CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, categoryName);
-            permission.Demand();
-
             return PerformanceCounterLib.CounterExists(machineName, categoryName, counterName);
         }
 
@@ -243,11 +228,7 @@ namespace System.Diagnostics
             }
             string machineName = ".";
 
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Administer, machineName, categoryName);
-            permission.Demand();
-
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 SharedUtils.EnterMutex(PerfMutexName, ref mutex);
@@ -401,13 +382,9 @@ namespace System.Diagnostics
             CheckValidCategory(categoryName);
             string machineName = ".";
 
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Administer, machineName, categoryName);
-            permission.Demand();
-
             categoryName = categoryName.ToLower(CultureInfo.InvariantCulture);
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 SharedUtils.EnterMutex(PerfMutexName, ref mutex);
@@ -451,9 +428,6 @@ namespace System.Diagnostics
             if (!SyntaxCheck.CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
 
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, categoryName);
-            permission.Demand();
-
             if (PerformanceCounterLib.IsCustomCategory(machineName, categoryName))
                 return true;
 
@@ -466,9 +440,6 @@ namespace System.Diagnostics
         /// <internalonly/>
         internal static string[] GetCounterInstances(string categoryName, string machineName)
         {
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, categoryName);
-            permission.Demand();
-
             CategorySample categorySample = PerformanceCounterLib.GetCategorySample(machineName, categoryName);
             if (categorySample._instanceNameTable.Count == 0)
                 return Array.Empty<string>();
@@ -529,9 +500,6 @@ namespace System.Diagnostics
         {
             if (!SyntaxCheck.CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName), nameof(machineName));
-
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, machineName, "*");
-            permission.Demand();
 
             string[] categoryNames = PerformanceCounterLib.GetCategories(machineName);
             PerformanceCounterCategory[] categories = new PerformanceCounterCategory[categoryNames.Length];
