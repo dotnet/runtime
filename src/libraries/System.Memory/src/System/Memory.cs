@@ -178,8 +178,22 @@ namespace System
             get
             {
                 if (_index < 0)
+                {
                     return ((OwnedMemory<T>)_object).Span.Slice(_index & RemoveOwnedFlagBitMask, _length);
-                return new Span<T>((T[])_object, _index, _length);
+                }
+                else if (typeof(T) == typeof(char) && _object is string s)
+                {
+                    // This is dangerous, returning a writable span for a string that should be immutable.
+                    // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
+                    // and then cast to a Memory<T>.  Such a cast can only be done with unsafe or marshaling code,
+                    // in which case that's the dangerous operation performed by the dev, and we're just following
+                    // suit here to make it work as best as possible.
+                    return new Span<T>(Unsafe.As<Pinnable<T>>(s), SpanExtensions.StringAdjustment, s.Length).Slice(_index, _length);
+                }
+                else
+                {
+                    return new Span<T>((T[])_object, _index, _length);
+                }
             }
         }
 
@@ -199,8 +213,7 @@ namespace System
                 }
                 else
                 {
-                    var array = (T[])_object;
-                    var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+                    var handle = GCHandle.Alloc(_object, GCHandleType.Pinned);
                     void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
                     memoryHandle = new MemoryHandle(null, pointer, handle);
                 }
@@ -236,8 +249,12 @@ namespace System
             }
             else
             {
-                arraySegment = new ArraySegment<T>((T[])_object, _index, _length);
-                return true;
+                T[] arr = _object as T[];
+                if (typeof(T) != typeof(char) || arr != null)
+                {
+                    arraySegment = new ArraySegment<T>(arr, _index, _length);
+                    return true;
+                }
             }
 
             arraySegment = default(ArraySegment<T>);
