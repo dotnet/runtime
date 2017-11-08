@@ -3342,10 +3342,10 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
     }
 }
 
-void Compiler::SwitchUniqueSuccSet::UpdateTarget(IAllocator* alloc,
-                                                 BasicBlock* switchBlk,
-                                                 BasicBlock* from,
-                                                 BasicBlock* to)
+void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator* alloc,
+                                                 BasicBlock*    switchBlk,
+                                                 BasicBlock*    from,
+                                                 BasicBlock*    to)
 {
     assert(switchBlk->bbJumpKind == BBJ_SWITCH); // Precondition.
     unsigned     jmpTabCnt = switchBlk->bbJumpSwt->bbsCount;
@@ -10422,7 +10422,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     if (fgDomsComputed && block->bbNum > fgDomBBcount)
     {
         BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-        BlockSetOps::OldStyleClearD(this, bNext->bbReach);
+        BlockSetOps::ClearD(this, bNext->bbReach);
 
         block->bbIDom = bNext->bbIDom;
         bNext->bbIDom = nullptr;
@@ -14916,7 +14916,15 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 #if DEBUG
     if (verbose)
     {
-        printf("\nAfter this change in fgOptimizeBranch");
+        // Dump out the newStmtList that we created
+        printf("\nfgOptimizeBranch added these statements(s) at the end of BB%02u:\n", bJump->bbNum);
+        for (stmt = newStmtList->AsStmt(); stmt; stmt = stmt->gtNextStmt)
+        {
+            gtDispTree(stmt);
+        }
+        printf("\nfgOptimizeBranch changed block BB%02u from BBJ_ALWAYS to BBJ_COND.\n", bJump->bbNum);
+
+        printf("\nAfter this change in fgOptimizeBranch the BB graph is:");
         fgDispBasicBlocks(verboseTrees);
         printf("\n");
     }
@@ -16107,7 +16115,7 @@ void Compiler::fgReorderBlocks()
 #if DEBUG
         if (verbose)
         {
-            printf("\nAfter this change in fgReorderBlocks");
+            printf("\nAfter this change in fgReorderBlocks the BB graph is:");
             fgDispBasicBlocks(verboseTrees);
             printf("\n");
         }
@@ -19367,7 +19375,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
 
     if (subsitutionRequired)
     {
-        char* newName = (char*)compGetMemA(lengthOut, CMK_DebugOnly);
+        char* newName = (char*)compGetMem(lengthOut, CMK_DebugOnly);
         char* pDest;
         pDest = newName;
         pChar = nameIn;

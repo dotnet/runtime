@@ -33,8 +33,6 @@ To run a clean, priority 1, crossgen test pass:
 
 **buildtest /?** will list additional supported parameters.
 
-Additionally, there is a Visual Studio solution, `<repo_root>\tests\src\AllTestProjects.sln`, where users can build a particular testcase, or all priority 0 testcases that are within it.
-
 **Building Individual Tests**
 
 Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast once
@@ -87,12 +85,11 @@ If test changes are needed, make the change and build the test project. This wil
 1. Use an existing test such as `<repo_root>\tests\src\Exceptions\Finalization\Finalizer.csproj` as a template and copy it to a new folder under `<repo_root>\tests\src`.
 2. Be sure that the AssemblyName has been removed (this causes confusion with the way tests are generally handled behind the scenes by the build system). 
 3. [Assign a CLRTestKind/CLRTestPriority.](test-configuration.md)
-4. Add the project of the new test to `<repo_root>\tests\src\AllTestProjects.sln` in VS
-5. Add source files to this newly added project.
-6. Indicate the success of the test by returning `100`.
-8. Add any other projects as a dependency, if needed.
-9. Build the test.
-10. Follow the steps to re-run a failed test to validate the new test.
+4. Add source files to this newly added project.
+5. Indicate the success of the test by returning `100`.
+6. Add any other projects as a dependency, if needed.
+7. Build the test.
+8. Follow the steps to re-run a failed test to validate the new test.
 
 Note:
 

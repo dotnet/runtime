@@ -545,6 +545,11 @@ namespace System
             return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, out decimal result)
+        {
+            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
+        }
+
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
@@ -558,7 +563,11 @@ namespace System
             return Number.TryParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out decimal result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParse(ReadOnlySpan<char> s, out decimal result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null) =>
+            TryParse(s, style, provider, out result);
+
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out decimal result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result);
