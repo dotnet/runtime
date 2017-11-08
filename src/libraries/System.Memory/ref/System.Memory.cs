@@ -92,6 +92,8 @@ namespace System
         public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
         
         public static ReadOnlySpan<char> AsReadOnlySpan(this string text) { throw null; }
+        public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text) { throw null; }
+
         public static Span<T> AsSpan<T>(this T[] array) { throw null; }
         public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment) { throw null; }
         public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) { throw null; }
@@ -113,6 +115,7 @@ namespace System
         public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
         
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+        public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
     }
 
     public readonly struct ReadOnlyMemory<T>
