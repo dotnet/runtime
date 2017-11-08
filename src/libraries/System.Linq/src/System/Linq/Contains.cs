@@ -9,27 +9,34 @@ namespace System.Linq
     public static partial class Enumerable
     {
         public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value) =>
-            source is ICollection<TSource> collection
-            ? collection.Contains(value)
-            : Contains(source, value, null);
+            source is ICollection<TSource> collection ? collection.Contains(value) :
+            Contains(source, value, null);
 
         public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value, IEqualityComparer<TSource> comparer)
         {
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TSource>.Default;
-            }
-
             if (source == null)
             {
                 throw Error.ArgumentNull(nameof(source));
             }
 
-            foreach (TSource element in source)
+            if (comparer == null)
             {
-                if (comparer.Equals(element, value))
+                foreach (TSource element in source)
                 {
-                    return true;
+                    if (EqualityComparer<TSource>.Default.Equals(element, value)) // benefits from devirtualization and likely inlining
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (comparer.Equals(element, value))
+                    {
+                        return true;
+                    }
                 }
             }
 
