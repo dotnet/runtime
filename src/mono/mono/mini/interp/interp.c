@@ -209,6 +209,9 @@ set_resume_state (ThreadContext *context, InterpFrame *frame)
 /* Set the current execution state to the resume state in context */
 #define SET_RESUME_STATE(context) do { \
 		ip = (context)->handler_ip;						\
+		/* spec says stack should be empty at endfinally so it should be at the start too */ \
+		sp = frame->stack; \
+		vt_sp = (unsigned char *) sp + rtm->stack_size; \
 		if (frame->ex) { \
 		sp->data.p = frame->ex;											\
 		++sp;															\
@@ -5028,6 +5031,7 @@ array_constructed:
 			ip = finally_ips->data;
 			finally_ips = g_slist_remove (finally_ips, ip);
 			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
+			vt_sp = (unsigned char *) sp + rtm->stack_size;
 			goto main_loop;
 		}
 
@@ -5068,6 +5072,7 @@ array_constructed:
 			ip = finally_ips->data;
 			finally_ips = g_slist_remove (finally_ips, ip);
 			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
+			vt_sp = (unsigned char *) sp + rtm->stack_size;
 			goto main_loop;
 		}
 	}
