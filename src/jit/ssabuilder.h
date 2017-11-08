@@ -62,7 +62,7 @@ private:
 
 public:
     // Constructor
-    SsaBuilder(Compiler* pCompiler, IAllocator* pIAllocator);
+    SsaBuilder(Compiler* pCompiler, CompAllocator* pAllocator);
 
     // Requires stmt nodes to be already sequenced in evaluation order. Analyzes the graph
     // for introduction of phi-nodes as GT_PHI tree nodes at the beginning of each block.

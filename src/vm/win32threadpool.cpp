@@ -617,7 +617,7 @@ BOOL ThreadpoolMgr::SetMinThreads(DWORD MinWorkerThreads,
 
         if (GetForceMinWorkerThreadsValue() == 0)
         {
-            MinLimitTotalWorkerThreads = min(MinWorkerThreads, (DWORD)ThreadCounter::MaxPossibleCount);
+            MinLimitTotalWorkerThreads = max(1, min(MinWorkerThreads, (DWORD)ThreadCounter::MaxPossibleCount));
 
             ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
             while (counts.MaxWorking < MinLimitTotalWorkerThreads)
@@ -647,7 +647,7 @@ BOOL ThreadpoolMgr::SetMinThreads(DWORD MinWorkerThreads,
 
         END_SO_INTOLERANT_CODE;
 
-        MinLimitTotalCPThreads = min(MinIOCompletionThreads, (DWORD)ThreadCounter::MaxPossibleCount);
+        MinLimitTotalCPThreads = max(1, min(MinIOCompletionThreads, (DWORD)ThreadCounter::MaxPossibleCount));
 
         init_result = TRUE;
     }

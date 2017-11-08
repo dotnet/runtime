@@ -69,8 +69,6 @@ inline PerfCounterIPCControlBlock *PerfCounters::GetPrivatePerfCounterPtr()
     return m_pPrivatePerf;
 };
 
-extern "C" Perf_Contexts * STDMETHODCALLTYPE GetPrivateContextsPerfCounters();
-
 #define COUNTER_ONLY(x) x
 
 #define PERF_COUNTER_NUM_OF_ITERATIONS 10

@@ -211,11 +211,19 @@ namespace System.Runtime
                 }
                 bool needContiguousVASpace = (ulong)LastKnownFreeAddressSpace < segmentSize;
 
-                BCLDebug.Trace("MEMORYFAILPOINT", "MemoryFailPoint: Checking for {0} MB, for allocation size of {1} MB, stage {9}.  Need page file? {2}  Need Address Space? {3}  Need Contiguous address space? {4}  Avail page file: {5} MB  Total free VA space: {6} MB  Contiguous free address space (found): {7} MB  Space reserved via process's MemoryFailPoints: {8} MB",
-                               segmentSize >> 20, sizeInMegabytes, needPageFile,
-                               needAddressSpace, needContiguousVASpace,
-                               availPageFile >> 20, totalAddressSpaceFree >> 20,
-                               LastKnownFreeAddressSpace >> 20, reserved, stage);
+#if false
+                Console.WriteLine($"MemoryFailPoint:" +
+                    $"Checking for {(segmentSize >> 20)} MB, " +
+                    $"for allocation size of {sizeInMegabytes} MB, " +
+                    $"stage {stage}. " +
+                    $"Need page file? {needPageFile} " +
+                    $"Need Address Space? {needAddressSpace} " +
+                    $"Need Contiguous address space? {needContiguousVASpace} " +
+                    $"Avail page file: {(availPageFile >> 20)} MB " +
+                    $"Total free VA space: {totalAddressSpaceFree >> 20} MB " +
+                    $"Contiguous free address space (found): {LastKnownFreeAddressSpace >> 20} MB " +
+                    $"Space reserved via process's MemoryFailPoints: {reserved} MB");
+#endif
 
                 if (!needPageFile && !needAddressSpace && !needContiguousVASpace)
                     break;
@@ -313,7 +321,7 @@ namespace System.Runtime
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             availPageFile = memory.availPageFile;
             totalAddressSpaceFree = memory.availVirtual;
-            //Console.WriteLine("Memory gate:  Mem load: {0}%  Available memory (physical + page file): {1} MB  Total free address space: {2} MB  GC Heap: {3} MB", memory.memoryLoad, memory.availPageFile >> 20, memory.availVirtual >> 20, GC.GetTotalMemory(true) >> 20);
+            // Console.WriteLine($"Memory gate:  Mem load: {memory.memoryLoad}%  Available memory (physical + page file): {(memory.availPageFile >> 20)} MB  Total free address space: {memory.availVirtual >> 20} MB  GC Heap: {(GC.GetTotalMemory(true) >> 20)} MB");
         }
 
         // Based on the shouldThrow parameter, this will throw an exception, or 
@@ -328,7 +336,7 @@ namespace System.Runtime
             // know whether VirtualAlloc could succeed.
             ulong freeSpaceAfterGCHeap = MemFreeAfterAddress(null, size);
 
-            BCLDebug.Trace("MEMORYFAILPOINT", "MemoryFailPoint: Checked for free VA space.  Found enough? {0}  Asked for: {1}  Found: {2}", (freeSpaceAfterGCHeap >= size), size, freeSpaceAfterGCHeap);
+            // Console.WriteLine($"MemoryFailPoint: Checked for free VA space.  Found enough? {(freeSpaceAfterGCHeap >= size)}  Asked for: {size}  Found: {freeSpaceAfterGCHeap}");
 
             // We may set these without taking a lock - I don't believe
             // this will hurt, as long as we never increment this number in 
