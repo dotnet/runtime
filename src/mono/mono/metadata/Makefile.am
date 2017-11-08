@@ -196,7 +196,9 @@ common_sources = \
 	debug-internals.h	\
 	mono-endian.c		\
 	mono-endian.h		\
+	mono-hash.c		\
 	mono-hash.h		\
+	mono-conc-hash.c		\
 	mono-conc-hash.h		\
 	mono-mlist.c		\
 	mono-mlist.h		\
@@ -291,9 +293,7 @@ common_sources = \
 gc_dependent_sources = \
 	gc-stats.c	\
 	gc.c		\
-	monitor.c	\
-	mono-hash.c	\
-	mono-conc-hash.c
+	monitor.c
 
 boehm_sources = \
 	boehm-gc.c

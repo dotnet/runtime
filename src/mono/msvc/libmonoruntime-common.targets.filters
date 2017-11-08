@@ -196,9 +196,15 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-endian.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-hash.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-hash.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-conc-hash.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-conc-hash.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
@@ -502,12 +508,6 @@
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common\gc</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\monitor.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common\gc</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-hash.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common\gc</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-conc-hash.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common\gc</Filter>
     </ClCompile>
   </ItemGroup>

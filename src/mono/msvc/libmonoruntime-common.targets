@@ -69,7 +69,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-endian.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-endian.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-hash.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-hash.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-conc-hash.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-conc-hash.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-mlist.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-mlist.h" />
@@ -185,8 +187,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\gc-stats.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\gc.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\monitor.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-hash.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-conc-hash.c" />
   </ItemGroup>
   <ItemGroup Label="boehm_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\boehm-gc.c" />
