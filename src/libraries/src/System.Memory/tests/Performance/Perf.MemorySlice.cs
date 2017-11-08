@@ -15,12 +15,12 @@ namespace System.Memory.Tests
         [Benchmark(InnerIterationCount = InnerCount)]
         [InlineData(1000)]
         [InlineData(1000 * 1000)]
-        private static void MemorySliceThenGetSpan(int numberOfBytes)
+        private static void Memory_Byte_SliceThenGetSpan(int numberOfBytes)
         {
             Memory<byte> memory = new byte[numberOfBytes];
             int numberOfSlices = numberOfBytes / 10 - 1;
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 int localInt = 0;
                 using (iteration.StartMeasurement())
@@ -41,12 +41,12 @@ namespace System.Memory.Tests
         [Benchmark(InnerIterationCount = InnerCount)]
         [InlineData(1000)]
         [InlineData(1000 * 1000)]
-        private static void MemoryGetSpanThenSlice(int numberOfBytes)
+        private static void Memory_Byte_GetSpanThenSlice(int numberOfBytes)
         {
             Memory<byte> memory = new byte[numberOfBytes];
             int numberOfSlices = numberOfBytes / 10 - 1;
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 int localInt = 0;
                 using (iteration.StartMeasurement())
@@ -64,5 +64,100 @@ namespace System.Memory.Tests
             }
         }
 
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1000)]
+        [InlineData(1000 * 1000)]
+        private static void ReadOnlyMemory_Byte_GetSpanThenSlice(int numberOfBytes)
+        {
+            ReadOnlyMemory<byte> memory = new byte[numberOfBytes];
+            int numberOfSlices = numberOfBytes / 10 - 1;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                int localInt = 0;
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iters; i++)
+                    {
+                        for (int j = 0; j < numberOfSlices; j++)
+                        {
+                            var span = memory.Span.Slice(10, 1);
+                            localInt ^= span[0];
+                        }
+                    }
+                }
+                volatileInt = localInt;
+            }
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1000)]
+        [InlineData(1000 * 1000)]
+        private static void ReadOnlyMemory_Char_GetSpanThenSlice(int numberOfChars)
+        {
+            ReadOnlyMemory<char> memory = new char[numberOfChars];
+            int numberOfSlices = numberOfChars / 10 - 1;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                int localInt = 0;
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iters; i++)
+                    {
+                        for (int j = 0; j < numberOfSlices; j++)
+                        {
+                            var span = memory.Span.Slice(10, 1);
+                            localInt ^= span[0];
+                        }
+                    }
+                }
+                volatileInt = localInt;
+            }
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        public static void ReadOnlyMemory_Byte_TryGetArray()
+        {
+            ReadOnlyMemory<byte> memory = new byte[1];
+            ArraySegment<byte> result;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iters; i++)
+                    {
+                        memory.DangerousTryGetArray(out result);
+                    }
+                }
+            }
+
+            volatileInt = result.Count;
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        public static void ReadOnlyMemory_Char_TryGetArray()
+        {
+            ReadOnlyMemory<char> memory = new char[1];
+            ArraySegment<char> result;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iters; i++)
+                    {
+                        memory.DangerousTryGetArray(out result);
+                    }
+                }
+            }
+
+            volatileInt = result.Count;
+        }
     }
 }
