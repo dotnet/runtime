@@ -360,7 +360,7 @@ inline regMaskTP Compiler::genReturnRegForTree(GenTreePtr tree)
 {
     var_types type = tree->TypeGet();
 
-    if (type == TYP_STRUCT && IsHfa(tree))
+    if (varTypeIsStruct(type) && IsHfa(tree))
     {
         int retSlots = GetHfaCount(tree);
         return ((1 << retSlots) - 1) << REG_FLOATRET;
@@ -751,7 +751,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 #endif // _TARGET_ARM_
 
 #if FEATURE_MULTIREG_ARGS
-    if (argDsc->lvType == TYP_STRUCT)
+    if (varTypeIsStruct(argDsc->lvType))
     {
         if (argDsc->lvIsHfaRegArg())
         {
